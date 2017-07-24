@@ -38,10 +38,15 @@ import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.query.ContinuousQuery;
+import org.apache.ignite.cache.query.ContinuousQueryWithTransformer;
+import org.apache.ignite.cache.query.ContinuousQueryWithTransformer.TransformedEventListener;
+import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.CI2;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteAsyncCallback;
@@ -51,7 +56,6 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -66,7 +70,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  *
  */
-public class CacheContinuousQueryAsyncFilterListenerTest extends GridCommonAbstractTest {
+public class CacheContinuousQueryAsyncFilterListenerTest extends AbstractContinuousQueryTest {
     /** */
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
@@ -78,6 +82,10 @@ public class CacheContinuousQueryAsyncFilterListenerTest extends GridCommonAbstr
 
     /** */
     private boolean client;
+
+    @Override public boolean isContinuousWithTransformer() {
+        return false;
+    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -360,10 +368,9 @@ public class CacheContinuousQueryAsyncFilterListenerTest extends GridCommonAbstr
                         }
                     };
 
-                IgniteBiInClosure<Ignite, CacheEntryEvent<? extends QueryTestKey, ? extends QueryTestValue>> lsnrClsr =
-                    new IgniteBiInClosure<Ignite, CacheEntryEvent<? extends QueryTestKey, ? extends QueryTestValue>>() {
-                        @Override public void apply(Ignite ignite, CacheEntryEvent<? extends QueryTestKey,
-                            ? extends QueryTestValue> e) {
+                CI2<Ignite, T2<QueryTestKey, QueryTestValue>> lsnrClsr =
+                    new CI2<Ignite, T2<QueryTestKey, QueryTestValue>>() {
+                        @Override public void apply(Ignite ignite, T2<QueryTestKey, QueryTestValue> e) {
                             IgniteCache<Object, Object> cache0 = ignite.cache(cacheName);
 
                             QueryTestValue val = e.getValue();
@@ -408,11 +415,11 @@ public class CacheContinuousQueryAsyncFilterListenerTest extends GridCommonAbstr
                 QueryCursor qry = null;
                 MutableCacheEntryListenerConfiguration<QueryTestKey, QueryTestValue> lsnrCfg = null;
 
-                CacheInvokeListener locLsnr = asyncLsnr ? new CacheInvokeListenerAsync(lsnrClsr)
-                    : new CacheInvokeListener(lsnrClsr);
+                CacheInvokeListener<QueryTestKey, QueryTestValue> locLsnr =
+                    asyncLsnr ? new CacheInvokeListenerAsync<>(lsnrClsr) : new CacheInvokeListener<>(lsnrClsr);
 
-                CacheEntryEventSerializableFilter<QueryTestKey, QueryTestValue> rmtFltr = asyncFltr ?
-                    new CacheTestRemoteFilterAsync(fltrClsr) : new CacheTestRemoteFilter(fltrClsr);
+                CacheEntryEventSerializableFilter<QueryTestKey, QueryTestValue> rmtFltr =
+                    asyncFltr ? new CacheTestRemoteFilterAsync(fltrClsr) : new CacheTestRemoteFilter(fltrClsr);
 
                 if (jcacheApi) {
                     lsnrCfg = new MutableCacheEntryListenerConfiguration<>(
@@ -425,11 +432,17 @@ public class CacheContinuousQueryAsyncFilterListenerTest extends GridCommonAbstr
                     cache.registerCacheEntryListener(lsnrCfg);
                 }
                 else {
-                    ContinuousQuery<QueryTestKey, QueryTestValue> conQry = new ContinuousQuery<>();
+                    Query conQry = createContinuousQuery();
 
-                    conQry.setLocalListener(locLsnr);
+                    if (isContinuousWithTransformer()) {
+                        TransformedEventListener locTransLsnr = asyncFltr ?
+                            new TransformedEventListenerImplAsync(lsnrClsr) :
+                            new TransformedEventListenerImpl(lsnrClsr);
+                        ((ContinuousQueryWithTransformer)conQry).setLocalTransformedEventListener(locTransLsnr);
+                    } else
+                        ((ContinuousQuery)conQry).setLocalListener(locLsnr);
 
-                    conQry.setRemoteFilterFactory(FactoryBuilder.factoryOf(rmtFltr));
+                    setRemoteFilterFactory(conQry, FactoryBuilder.factoryOf(rmtFltr));
 
                     qry = cache.query(conQry);
                 }
@@ -556,10 +569,9 @@ public class CacheContinuousQueryAsyncFilterListenerTest extends GridCommonAbstr
                         }
                     };
 
-                IgniteBiInClosure<Ignite, CacheEntryEvent<? extends QueryTestKey, ? extends QueryTestValue>> lsnrClsr =
-                    new IgniteBiInClosure<Ignite, CacheEntryEvent<? extends QueryTestKey, ? extends QueryTestValue>>() {
-                        @Override public void apply(Ignite ignite, CacheEntryEvent<? extends QueryTestKey,
-                            ? extends QueryTestValue> e) {
+                CI2<Ignite, T2<QueryTestKey, QueryTestValue>> lsnrClsr =
+                    new CI2<Ignite, T2<QueryTestKey, QueryTestValue>>() {
+                        @Override public void apply(Ignite ignite, T2<QueryTestKey, QueryTestValue> e) {
                             if (asyncLsnr) {
                                 assertFalse("Failed: " + Thread.currentThread().getName(),
                                     Thread.currentThread().getName().contains("sys-"));
@@ -583,8 +595,8 @@ public class CacheContinuousQueryAsyncFilterListenerTest extends GridCommonAbstr
                 QueryCursor qry = null;
                 MutableCacheEntryListenerConfiguration<QueryTestKey, QueryTestValue> lsnrCfg = null;
 
-                CacheInvokeListener locLsnr = asyncLsnr ? new CacheInvokeListenerAsync(lsnrClsr)
-                    : new CacheInvokeListener(lsnrClsr);
+                CacheInvokeListener<QueryTestKey, QueryTestValue> locLsnr =
+                    asyncLsnr ? new CacheInvokeListenerAsync<>(lsnrClsr) : new CacheInvokeListener<>(lsnrClsr);
 
                 CacheEntryEventSerializableFilter<QueryTestKey, QueryTestValue> rmtFltr = asyncFilter ?
                     new CacheTestRemoteFilterAsync(fltrClsr) : new CacheTestRemoteFilter(fltrClsr);
@@ -600,11 +612,17 @@ public class CacheContinuousQueryAsyncFilterListenerTest extends GridCommonAbstr
                     cache.registerCacheEntryListener(lsnrCfg);
                 }
                 else {
-                    ContinuousQuery<QueryTestKey, QueryTestValue> conQry = new ContinuousQuery<>();
+                    Query conQry = createContinuousQuery();
 
-                    conQry.setLocalListener(locLsnr);
+                    if (isContinuousWithTransformer()) {
+                        TransformedEventListener locTransLsnr = asyncLsnr ?
+                            new TransformedEventListenerImplAsync(lsnrClsr) :
+                            new TransformedEventListenerImpl(lsnrClsr);
+                        ((ContinuousQueryWithTransformer)conQry).setLocalTransformedEventListener(locTransLsnr);
+                    } else
+                        ((ContinuousQuery)conQry).setLocalListener(locLsnr);
 
-                    conQry.setRemoteFilterFactory(FactoryBuilder.factoryOf(rmtFltr));
+                    setRemoteFilterFactory(conQry, FactoryBuilder.factoryOf(rmtFltr));
 
                     qry = cache.query(conQry);
                 }
@@ -624,7 +642,7 @@ public class CacheContinuousQueryAsyncFilterListenerTest extends GridCommonAbstr
 
                     assert U.await(latch, 3, SECONDS) : "Failed to waiting event.";
 
-                    assertEquals(cache.get(key), new QueryTestValue(2));
+                    assertEquals(new QueryTestValue(2), cache.get(key));
 
                     assertTrue("Failed to waiting event from filter.", U.await(latch, 3, SECONDS));
                 }
@@ -666,97 +684,6 @@ public class CacheContinuousQueryAsyncFilterListenerTest extends GridCommonAbstr
         return TimeUnit.SECONDS.toMillis(2 * 60);
     }
 
-    /**
-     *
-     */
-    @IgniteAsyncCallback
-    private static class CacheTestRemoteFilterAsync extends CacheTestRemoteFilter {
-        /**
-         * @param clsr Closure.
-         */
-        public CacheTestRemoteFilterAsync(
-            IgniteBiInClosure<Ignite, CacheEntryEvent<? extends QueryTestKey, ? extends QueryTestValue>> clsr) {
-            super(clsr);
-        }
-    }
-
-    /**
-     *
-     */
-    private static class CacheTestRemoteFilter implements
-        CacheEntryEventSerializableFilter<QueryTestKey, QueryTestValue> {
-        /** */
-        @IgniteInstanceResource
-        private Ignite ignite;
-
-        /** */
-        private IgniteBiInClosure<Ignite, CacheEntryEvent<? extends QueryTestKey, ? extends QueryTestValue>> clsr;
-
-        /**
-         * @param clsr Closure.
-         */
-        public CacheTestRemoteFilter(IgniteBiInClosure<Ignite, CacheEntryEvent<? extends QueryTestKey,
-            ? extends QueryTestValue>> clsr) {
-            this.clsr = clsr;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean evaluate(CacheEntryEvent<? extends QueryTestKey, ? extends QueryTestValue> e)
-            throws CacheEntryListenerException {
-            clsr.apply(ignite, e);
-
-            return true;
-        }
-    }
-
-    /**
-     *
-     */
-    @IgniteAsyncCallback
-    private static class CacheInvokeListenerAsync extends CacheInvokeListener {
-        /**
-         * @param clsr Closure.
-         */
-        public CacheInvokeListenerAsync(
-            IgniteBiInClosure<Ignite, CacheEntryEvent<? extends QueryTestKey, ? extends QueryTestValue>> clsr) {
-            super(clsr);
-        }
-    }
-
-    /**
-     *
-     */
-    private static class CacheInvokeListener implements CacheEntryUpdatedListener<QueryTestKey, QueryTestValue>,
-        CacheEntryCreatedListener<QueryTestKey, QueryTestValue>, Serializable {
-        @IgniteInstanceResource
-        private Ignite ignite;
-
-        /** */
-        private IgniteBiInClosure<Ignite, CacheEntryEvent<? extends QueryTestKey, ? extends QueryTestValue>> clsr;
-
-        /**
-         * @param clsr Closure.
-         */
-        public CacheInvokeListener(IgniteBiInClosure<Ignite, CacheEntryEvent<? extends QueryTestKey,
-            ? extends QueryTestValue>> clsr) {
-            this.clsr = clsr;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onUpdated(Iterable<CacheEntryEvent<? extends QueryTestKey,
-            ? extends QueryTestValue>> events)
-            throws CacheEntryListenerException {
-            for (CacheEntryEvent<? extends QueryTestKey, ? extends QueryTestValue> e : events)
-                clsr.apply(ignite, e);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onCreated(Iterable<CacheEntryEvent<? extends QueryTestKey,
-            ? extends QueryTestValue>> events) throws CacheEntryListenerException {
-            for (CacheEntryEvent<? extends QueryTestKey, ? extends QueryTestValue> e : events)
-                clsr.apply(ignite, e);
-        }
-    }
 
     /**
      * @param cacheMode Cache mode.

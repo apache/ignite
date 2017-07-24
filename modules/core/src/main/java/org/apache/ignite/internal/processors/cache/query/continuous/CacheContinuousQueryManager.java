@@ -69,7 +69,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteAsyncCallback;
 import org.apache.ignite.lang.IgniteBiClosure;
-import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.security.SecurityPermission;
@@ -189,13 +188,23 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
         assert lsnrs != null;
 
         for (CacheContinuousQueryListener lsnr : lsnrs.values()) {
+            Object transVal = null;
+
+            if (lsnr.transformer() != null) {
+                try {
+                    transVal = lsnr.transformer().apply(cctx.unwrapBinaryIfNeeded(key, lsnr.keepBinary()), null);
+                } catch (Exception ex) {
+                    log().warning("Exception in continuous query transformer", ex);
+                }
+            }
+
             CacheContinuousQueryEntry e0 = new CacheContinuousQueryEntry(
                 cctx.cacheId(),
                 UPDATED,
                 key,
                 null,
                 null,
-                null,
+                transVal == null ? null : cctx.toCacheObject(transVal),
                 lsnr.keepBinary(),
                 partId,
                 updCntr,
@@ -355,13 +364,32 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                 initialized = true;
             }
 
+            Object transVal = null;
+
+            if (lsnr.transformer() != null) {
+                if (!initialized) {
+                    if (newVal != null)
+                        newVal.finishUnmarshal(cctx.cacheObjectContext(), cctx.deploy().globalLoader());
+
+                    initialized = true;
+                }
+
+                try {
+                    transVal = lsnr.transformer().apply(
+                        cctx.unwrapBinaryIfNeeded(key, lsnr.keepBinary()),
+                        newVal == null ? null : cctx.unwrapBinaryIfNeeded(newVal, lsnr.keepBinary()));
+                } catch (Exception ex) {
+                    log().warning("Exception in continuous query transformer", ex);
+                }
+            }
+
             CacheContinuousQueryEntry e0 = new CacheContinuousQueryEntry(
                 cctx.cacheId(),
                 evtType,
                 key,
-                newVal,
-                lsnr.oldValueRequired() ? oldVal : null,
-                null,
+                lsnr.transformer() == null ? newVal : null,
+                (lsnr.oldValueRequired() && lsnr.transformer() == null) ? oldVal : null,
+                transVal == null ? null : cctx.toCacheObject(transVal),
                 lsnr.keepBinary(),
                 partId,
                 updateCntr,
@@ -409,7 +437,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
 
             for (CacheContinuousQueryListener lsnr : lsnrCol.values()) {
                 if (!initialized) {
-                    if (lsnr.oldValueRequired())
+                    if (lsnr.oldValueRequired() && lsnr.transformer() == null)
                         oldVal = (CacheObject)cctx.unwrapTemporary(oldVal);
 
                     if (oldVal != null)
@@ -418,13 +446,23 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                     initialized = true;
                 }
 
+                Object transVal = null;
+
+                if (lsnr.transformer() != null) {
+                    try {
+                        transVal = lsnr.transformer().apply(cctx.unwrapBinaryIfNeeded(key, lsnr.keepBinary()), null);
+                    } catch (Exception ex) {
+                        log().warning("Exception in continuous query transformer", ex);
+                    }
+                }
+
                 CacheContinuousQueryEntry e0 = new CacheContinuousQueryEntry(
                     cctx.cacheId(),
                     EXPIRED,
                     key,
                     null,
-                    lsnr.oldValueRequired() ? oldVal : null,
-                    null,
+                    (lsnr.oldValueRequired() && lsnr.transformer() == null) ? oldVal : null,
+                    transVal == null ? null : cctx.toCacheObject(transVal),
                     lsnr.keepBinary(),
                     e.partition(),
                     -1,
@@ -1322,13 +1360,18 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
 
                 CacheDataRow e = it.next();
 
+                Object transVal = null;
+
+                if (hnd.getTransformer() != null)
+                    transVal = hnd.getTransformer().apply(e.key(), e.value());
+
                 CacheContinuousQueryEntry entry = new CacheContinuousQueryEntry(
                     cctx.cacheId(),
                     CREATED,
                     e.key(),
-                    e.value(),
+                    hnd.getTransformer() == null ? e.value() : null,
                     null,
-                    null,
+                    transVal == null ? null : cctx.toCacheObject(transVal),
                     keepBinary,
                     0,
                     -1,

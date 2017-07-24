@@ -20,19 +20,23 @@ package org.apache.ignite.internal.processors.cache.query.continuous;
 import java.io.Serializable;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
-import javax.cache.event.CacheEntryListenerException;
-import javax.cache.event.CacheEntryUpdatedListener;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.query.ContinuousQuery;
+import org.apache.ignite.cache.query.ContinuousQueryWithTransformer;
+import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
+import org.apache.ignite.internal.util.typedef.CI1;
+import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.PA;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
@@ -40,7 +44,6 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -52,7 +55,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTAN
 /**
  * Continuous queries tests.
  */
-public class CacheContinuousBatchAckTest extends GridCommonAbstractTest implements Serializable {
+public class CacheContinuousBatchAckTest extends AbstractContinuousQueryTest implements Serializable {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
@@ -70,6 +73,10 @@ public class CacheContinuousBatchAckTest extends GridCommonAbstractTest implemen
 
     /** */
     protected static final AtomicBoolean filterOn = new AtomicBoolean(false);
+
+    @Override public boolean isContinuousWithTransformer() {
+        return false;
+    }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
@@ -209,13 +216,20 @@ public class CacheContinuousBatchAckTest extends GridCommonAbstractTest implemen
         IgniteCache<Object, Object> cache = null;
 
         try {
-            ContinuousQuery q = new ContinuousQuery();
+            Query q = createContinuousQuery();
 
-            q.setLocalListener(new CacheEntryUpdatedListener() {
-                @Override public void onUpdated(Iterable iterable) throws CacheEntryListenerException {
-                    // No-op.
-                }
-            });
+            CI2<Ignite, T2<?, ?>> lsnrClsr =
+                new CI2<Ignite, T2<?, ?>>() {
+                    @Override public void apply(Ignite ignite, T2<?, ?> e) {
+                        // No-op.
+                    }
+                };
+
+            if (isContinuousWithTransformer()) {
+                ((ContinuousQueryWithTransformer)q)
+                    .setLocalTransformedEventListener(new TransformedEventListenerImpl(lsnrClsr));
+            } else
+                ((ContinuousQuery)q).setLocalListener(new CacheInvokeListener(lsnrClsr));
 
             cache = grid(SERVER).getOrCreateCache(ccfg);
 

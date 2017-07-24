@@ -50,10 +50,12 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheAffinityManager;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDeploymentManager;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicAbstractUpdateFuture;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
@@ -605,6 +607,13 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                 return notifyExisting;
             }
 
+            @Override public IgniteBiClosure transformer() {
+                if (rmtTransFactory == null)
+                    return null;
+
+                return rmtTransFactory.create();
+            }
+
             private String taskName() {
                 return ctx.security().enabled() ? ctx.task().resolveTaskName(taskHash) : null;
             }
@@ -848,6 +857,8 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         boolean notify = !entry.isFiltered();
 
         try {
+            //TODO: здесь сейчас evt.newVal == null т.к. мы храним уже трансформированную запись
+            //Запускать transformder после запуска фильтра!
             if (notify && getEventFilter() != null)
                 notify = getEventFilter().evaluate(evt);
         }
@@ -903,7 +914,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                 }
             }
             else {
-                CacheContinuousQueryEntry entry = transEvt(evt.entry(), cctx);
+                CacheContinuousQueryEntry entry = evt.entry();
 
                 if (!entry.isFiltered())
                     prepareEntry(cctx, nodeId, entry);
@@ -1344,41 +1355,14 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
     }
 
     private Collection<Object> unpackTransEvts(Collection evts, final GridCacheContext cctx) {
-        return F.transform((Collection<CacheContinuousQueryEvent<? extends K, ? extends V>>)evts,
-            new IgniteClosure<CacheContinuousQueryEvent<? extends K, ? extends V>, Object>() {
-                @Override public Object apply(CacheContinuousQueryEvent<? extends K, ? extends V> evt) {
-                    return evt.entry().transformedValue().value(cctx.cacheObjectContext(), false);
+        return F.transform((Collection<CacheContinuousQueryEvent>)evts,
+            new IgniteClosure<CacheContinuousQueryEvent, Object>() {
+                @Override public Object apply(CacheContinuousQueryEvent evt) {
+                     Object value = evt.entry().transformedValue().value(cctx.cacheObjectContext(), false);
+
+                    return cctx.unwrapBinaryIfNeeded(value, keepBinary);
                 }
             }
         );
-    }
-
-    private CacheContinuousQueryEntry transEvt(CacheContinuousQueryEntry entry, GridCacheContext cctx) {
-        if (entry == null)
-            return null;
-
-        final IgniteBiClosure transformer = getTransformer();
-
-        if (transformer != null) {
-            Object key = cctx.unwrapBinaryIfNeeded(entry.key(), entry.isKeepBinary());
-            Object val = cctx.unwrapBinaryIfNeeded(entry.value(), entry.isKeepBinary());
-
-            Object transVal = transformer.apply(key, val);
-
-            return new CacheContinuousQueryEntry(
-                entry.cacheId(),
-                entry.eventType(),
-                entry.key(),
-                null,
-                null,
-                transVal == null ? null : cctx.toCacheObject(transVal),
-                entry.isKeepBinary(),
-                entry.partition(),
-                entry.updateCounter(),
-                entry.topologyVersion(),
-                entry.flags());
-        }
-
-        return entry;
     }
 }

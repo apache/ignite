@@ -113,6 +113,45 @@ public class SimpleCacheContinuousWithTransformerTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    public void testTransformerException() throws Exception {
+        try {
+            startGrids(DFLT_SERVER_NODE_CNT);
+
+            Ignite ignite = startGrid(getClientConfiguration());
+            IgniteCache<Integer, Employee> cache = ignite.cache(DEFAULT_CACHE_NAME);
+
+            ContinuousQueryWithTransformer<Integer, Employee, String> qry = new ContinuousQueryWithTransformer<>();
+
+            qry.setLocalTransformedEventListener(new TransformedEventListener() {
+                @Override public void onUpdated(Iterable events) throws CacheEntryListenerException {
+                    // No-op.
+                }
+            });
+
+            qry.setRemoteTransformerFactory(FactoryBuilder.factoryOf(new IgniteBiClosure<Integer, Employee, String>() {
+                    @Override public String apply(Integer integer, Employee employee) {
+                        throw new RuntimeException("Test error.");
+                    }
+                }));
+
+            qry.setRemoteFilterFactory(FactoryBuilder.factoryOf(new CacheEntryEventSerializableFilter<Integer, Employee>() {
+                @Override public boolean evaluate(CacheEntryEvent<? extends Integer, ? extends Employee> evt) {
+                    return true;
+                }
+            }));
+
+            try (QueryCursor<Cache.Entry<Integer, Employee>> ignored = cache.query(qry)) {
+                for (int i = 0; i < 100; i++)
+                    cache.put(i, new Employee(JOHN_CONNOR, i));
+            }
+        } finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testContinuousWithTransformerAndRegularListenerWithFilterKeepBinary() throws Exception {
         runContinuousQueryWithTransformer(ADD_EVT_FILTER, DFLT_ENTRY_CNT / 2, KEEP_BINARY);
     }
