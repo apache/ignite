@@ -18,6 +18,7 @@
 package org.apache.ignite.yardstick.cache.classloader;
 
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.yardstick.IgniteAbstractBenchmark;
 import org.jetbrains.annotations.NotNull;
@@ -28,7 +29,12 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 /**
  */
@@ -40,7 +46,7 @@ public class DeserializeWithClassLoaderBenchmark extends IgniteAbstractBenchmark
     private static final String ADDRESS_CLASS_NAME = "org.apache.ignite.tests.p2p.cache.Address";
 
     /** Value classes. */
-    private String[] valueClasses = {
+    private String[] valClasses = {
         PERSON_CLASS_NAME,
         ENUM_CLASS_NAME,
         ORGANIZATION_CLASS_NAME,
@@ -51,28 +57,83 @@ public class DeserializeWithClassLoaderBenchmark extends IgniteAbstractBenchmark
     ClassLoader testClassLoader;
     boolean useCache;
 
+    /** List off all available cache. */
+    private List<IgniteCache<Object, Object>> availableCaches;
+
     @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
         super.setUp(cfg);
+
+        availableCaches = new ArrayList<>(ignite().cacheNames().size());
+
+        for (String cacheName : ignite().cacheNames()) {
+            IgniteCache<Object, Object> cache = ignite().cache(cacheName);
+
+            availableCaches.add(cache);
+        }
 
         testClassLoader = new URLClassLoader(new URL[] {new URL(jarPath)});
         useCache = args.isNearCache();
 
         BenchmarkUtils.println("Use cache fals: " + useCache);
 
+        preLoading();
+
 //        ClassLoader testClassLoader = new GridTestExternalClassLoader(new URL[]{
 //            new URL(GridTestProperties.getProperty("p2p.uri.cls"))});
 
     }
 
+    /**
+     * @throws Exception If fail.
+     */
+    private void preLoading() throws Exception {
+        startPreloadLogging(args.preloadLogsInterval());
+
+        ExecutorService executor = Executors.newFixedThreadPool(10);
+
+        try {
+            List<Future<?>> futs = new ArrayList<>();
+
+            final Thread thread = Thread.currentThread();
+
+            for (int i = 0; i < availableCaches.size(); i++) {
+                final String cacheName = availableCaches.get(i).getName();
+
+                futs.add(executor.submit(new Runnable() {
+                    @Override public void run() {
+                        try (IgniteDataStreamer<Object, Object> dataLdr = ignite().dataStreamer(cacheName)) {
+                            for (int i = 0; i < args.range(); i++) {
+                                if (i % 100 == 0 && thread.isInterrupted())
+                                    break;
+
+                                try {
+                                    dataLdr.addData(i, createValueObject(i));
+                                }
+                                catch (Exception e) {
+                                    BenchmarkUtils.error("Error on preloding.", e);
+                                }
+                            }
+                        }
+                    }
+                }));
+            }
+
+            for (Future<?> fut : futs)
+                fut.get();
+        }
+        finally {
+            executor.shutdown();
+        }
+
+        stopPreloadLogging();
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> map) throws Exception {
 
         int key = nextRandom(args.range());
 
-        for (String cacheName : ignite().cacheNames()) {
-            IgniteCache cache = ignite().cache(cacheName);
-
-            cache.put(key, createValueObject(key));
-
+        for (IgniteCache cache : availableCaches) {
             BinaryObject bo = (BinaryObject)cache.withKeepBinary().get(key);
 
             bo.deserialize(testClassLoader, useCache);
@@ -86,7 +147,7 @@ public class DeserializeWithClassLoaderBenchmark extends IgniteAbstractBenchmark
      */
     private Object createValueObject(
         int id) throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
-        String clsName = valueClasses[id % valueClasses.length];
+        String clsName = valClasses[id % valClasses.length];
         Class objCls = testClassLoader.loadClass(clsName);
 
         Object res;
@@ -111,6 +172,10 @@ public class DeserializeWithClassLoaderBenchmark extends IgniteAbstractBenchmark
         return res;
     }
 
+    /**
+     * @param id Id.
+     * @param objCls Object class.
+     */
     @NotNull private Object createOrganization(long id, Class objCls)
         throws ClassNotFoundException, NoSuchMethodException, InstantiationException, IllegalAccessException, InvocationTargetException {
         Class personCls = testClassLoader.loadClass(PERSON_CLASS_NAME);
@@ -123,6 +188,10 @@ public class DeserializeWithClassLoaderBenchmark extends IgniteAbstractBenchmark
         return res;
     }
 
+    /**
+     * @param id Id.
+     * @param objCls Object class.
+     */
     @NotNull private Object createAddress(long id, Class objCls)
         throws NoSuchMethodException, InstantiationException, IllegalAccessException, InvocationTargetException {
         Constructor addressConstructor = objCls.getConstructor(String.class, Integer.TYPE);
@@ -132,6 +201,10 @@ public class DeserializeWithClassLoaderBenchmark extends IgniteAbstractBenchmark
         return res;
     }
 
+    /**
+     * @param id Id.
+     * @param objCls Object class.
+     */
     private Object createColor(long id, Class objCls)
         throws NoSuchMethodException, IllegalAccessException, InvocationTargetException {
 
@@ -144,6 +217,10 @@ public class DeserializeWithClassLoaderBenchmark extends IgniteAbstractBenchmark
         return res;
     }
 
+    /**
+     * @param id Id.
+     * @param objCls Object class.
+     */
     @NotNull private Object createPerson(long id, Class objCls)
         throws NoSuchMethodException, InstantiationException, IllegalAccessException, InvocationTargetException {
 
