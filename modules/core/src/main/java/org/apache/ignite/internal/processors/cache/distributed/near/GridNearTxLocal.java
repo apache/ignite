@@ -175,9 +175,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
     @GridToStringExclude
     private TransactionProxyImpl proxy;
 
-    /** Cached topology version for suspended transaction. */
-    private AffinityTopologyVersion txTopForSuspension;
-
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -4015,21 +4012,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
      */
     public void threadId(long threadId) throws IgniteCheckedException {
         this.threadId = threadId;
-    }
-
-    /**
-     * @param txTop Affinity topology version to cache for suspended transaction.
-     * @throws IgniteCheckedException If method executed not in the middle of resume or suspend.
-     */
-    public void txTopForSuspension(AffinityTopologyVersion txTop) throws IgniteCheckedException {
-        this.txTopForSuspension = txTop;
-    }
-
-    /**
-     * @return Cached affinity topology version.
-     */
-    public AffinityTopologyVersion txTopForSuspension() {
-        return txTopForSuspension;
     }
 
     /**

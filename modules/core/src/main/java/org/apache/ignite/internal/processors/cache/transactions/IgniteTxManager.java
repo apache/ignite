@@ -2257,8 +2257,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
         transactionMap(tx).remove(tx.xidVersion(), tx);
 
-        tx.txTopForSuspension(txTop.get());
-
         tx.state(SUSPENDED);
     }
 
@@ -2300,7 +2298,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
         txIdMap.put(tx.xidVersion(), tx);
 
-        txTop.set(tx.txTopForSuspension());
+        txTop.set(tx.topologyVersionSnapshot());
 
         tx.threadId(threadId);
 
