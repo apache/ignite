@@ -350,7 +350,6 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
                     }
                 }, 1);
 
-
                 tx.resume();
                 tx.close();
 
