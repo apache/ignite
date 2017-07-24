@@ -282,25 +282,21 @@ public class GridAffinityAssignmentCache {
 
         List<List<ClusterNode>> assignment;
 
-        GridAffinityFunctionContextImpl afCtxt = new GridAffinityFunctionContextImpl(sorted, prevAssignment,
-            discoEvt, topVer, backups);
-
         if (prevAssignment != null && discoEvt != null) {
             boolean affNode = CU.affinityNode(discoEvt.eventNode(), nodeFilter);
 
             if (!affNode)
                 assignment = prevAssignment;
             else
-                assignment = aff.assignPartitions(afCtxt);
+                assignment = aff.assignPartitions(new GridAffinityFunctionContextImpl(sorted, prevAssignment, discoEvt, topVer, backups));
+
         }
         else
-            assignment = aff.assignPartitions(afCtxt);
+            assignment = aff.assignPartitions(new GridAffinityFunctionContextImpl(sorted, prevAssignment, discoEvt, topVer, backups));
 
         assert assignment != null;
 
-        List<List<Integer>> dist = freqDistribution(assignment, sorted);
-
-        printDistribution(dist, cacheOrGrpName, ctx.localNodeId().toString(), assignment.size());
+        printDistribution(assignment, sorted, cacheOrGrpName, ctx.localNodeId().toString(), assignment.size());
 
         idealAssignment = assignment;
 
@@ -311,12 +307,16 @@ public class GridAffinityAssignmentCache {
     }
 
     /**
-     * @param nodesParts Frequency distribution.
+     * @param partitionsByNodes Affinity result.
+     * @param nodes Topology.
      * @param cacheName
      * @param localNodeID
      * @param parts
      */
-    private void printDistribution(Collection<List<Integer>> nodesParts, String cacheName, String localNodeID, int parts) {
+    private void printDistribution(List<List<ClusterNode>> partitionsByNodes,
+        Collection<ClusterNode> nodes, String cacheName, String localNodeID, int parts) {
+        List<List<Integer>> nodesParts = freqDistribution(partitionsByNodes, nodes);
+
         if (nodesParts.size() != 0) {
             log.info(" #### NODES COUNT:" + nodesParts.size());
 
@@ -352,7 +352,7 @@ public class GridAffinityAssignmentCache {
      * @param nodes Topology.
      * @return Frequency distribution: counts of partitions on node.
      */
-    private static List<List<Integer>> freqDistribution(List<List<ClusterNode>> partitionsByNodes,
+    private List<List<Integer>> freqDistribution(List<List<ClusterNode>> partitionsByNodes,
         Collection<ClusterNode> nodes) {
         List<Map<ClusterNode, AtomicInteger>> nodeMaps = new ArrayList<>();
 
