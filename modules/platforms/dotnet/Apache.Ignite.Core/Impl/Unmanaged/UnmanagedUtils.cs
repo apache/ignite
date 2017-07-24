@@ -145,6 +145,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         {
             void* res = JNI.TargetInStreamOutObject(target.Context, target.Target, opType, inMemPtr);
 
+            if (res == null)
+                return null;
+
             return target.ChangeTarget(res);
         }
 
