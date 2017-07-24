@@ -1010,16 +1010,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
             assert exchFut != null;
 
-            if (exchFut.isDone()) {
-                // Collect ready assignments.
-                try {
-                    Map<Integer, Map<Integer, List<UUID>>> map = cctx.affinity().readyAssignmentChanges(exchFut);
-
-                    m.assignmentChange(map);
-                } catch (IgniteCheckedException e) {
-                    U.error(log, "Failed to collect ready assignments [node=" + node + ", exchId=" + id + ']', e);
-                }
-            }
+            if (exchFut.isDone())
+                m.assignmentChange(exchFut.finishMessage().assignmentChange());
         }
 
         if (log.isDebugEnabled())

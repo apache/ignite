@@ -266,6 +266,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     /** */
     private volatile boolean resend;
 
+    /** */
+    private volatile GridDhtFinishExchangeMessage finishMsg;
+
     /**
      * Dummy future created to trigger reassignments if partition
      * topology changed while preloading.
@@ -1864,13 +1867,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             if (centralizedAff && resend) {
                 assert isDone();
 
-                Map<Integer, Map<Integer, List<UUID>>> map = assignmentChanges();
-
-                // No nodes have finished exchange, use local node's ready assignment.
-                if (map == null)
-                    map = cctx.affinity().readyAssignmentChanges(this);
-
-                GridFinishedFuture<Map<Integer, Map<Integer, List<UUID>>>> fut = new GridFinishedFuture<>(map);
+                GridFinishedFuture<Map<Integer, Map<Integer, List<UUID>>>> fut =
+                    new GridFinishedFuture<>(finishMsg.assignmentChange());
 
                 onAffinityInitialized(fut);
 
@@ -2163,6 +2161,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                             updatePartitionFullMap(partsMsg);
                         }
 
+                        finishMsg = msg;
+
                         onDone(topologyVersion());
 
                         if (!crd.isLocal())
@@ -2339,20 +2339,10 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
                                 sendPartitionsRequest(reqFrom);
                             } else {
-                                // Re-send finish message to clients, if any.
-                                GridDhtPartitionsFullMessage m = createPartitionsMessage(null, true);
-
-                                ClusterNode n = crd2;
+                                finishMsg.ackUuid(cctx.localNodeId());
 
                                 try {
-                                    Map<Integer, Map<Integer, List<UUID>>> assignmentChange =
-                                            cctx.affinity().readyAssignmentChanges(GridDhtPartitionsExchangeFuture.this);
-
-                                    GridDhtFinishExchangeMessage msg =
-                                            new GridDhtFinishExchangeMessage(exchId, assignmentChange, m,
-                                                    n == null ? null : n.id());
-
-                                    cctx.io().safeSend(discoCache.remoteNodesWithCaches(), msg,
+                                    cctx.io().safeSend(discoCache.remoteNodesWithCaches(), finishMsg,
                                             GridIoPolicy.SYSTEM_POOL, null);
                                 } catch (IgniteCheckedException e) {
                                     U.error(log, "Failed to re-send finish message to clients: exchId=" + this, e);
@@ -2414,6 +2404,11 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         finally {
             leaveBusy();
         }
+    }
+
+    /** */
+    public GridDhtFinishExchangeMessage finishMessage() {
+        return finishMsg;
     }
 
     /** */

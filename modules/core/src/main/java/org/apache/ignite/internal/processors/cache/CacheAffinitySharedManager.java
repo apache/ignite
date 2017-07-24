@@ -1789,41 +1789,6 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     }
 
     /**
-     * @param exchFut Exchange future.
-     */
-    public Map<Integer, Map<Integer, List<UUID>>> readyAssignmentChanges(final GridDhtPartitionsExchangeFuture exchFut)
-            throws IgniteCheckedException {
-
-        final Map<Integer, Map<Integer, List<UUID>>> res = new HashMap<>();
-
-        forAllRegisteredCaches(new CIX1<DynamicCacheDescriptor>() {
-            @Override public void applyx(DynamicCacheDescriptor dynamicCacheDesc) throws IgniteCheckedException {
-                CacheHolder cache = cache(exchFut, dynamicCacheDesc);
-
-                AffinityAssignment affAssignment = cache.affinity().cachedAffinity(exchFut.topologyVersion());
-
-                List<List<ClusterNode>> assignment = affAssignment.assignment();
-                List<List<ClusterNode>> idealAssignment = affAssignment.idealAssignment();
-
-                for (int p = 0; p < cache.affinity().partitions(); p++) {
-                    List<ClusterNode> nodes = assignment.get(p);
-
-                    if (!nodes.equals(idealAssignment.get(p))) {
-                        Map<Integer, List<UUID>> map = res.get(cache.cacheId());
-
-                        if (map == null)
-                            res.put(cache.cacheId(), (map = U.newHashMap(nodes.size())));
-
-                        map.put(p, new ArrayList<>(F.nodeIds(nodes)));
-                    }
-                }
-            }
-        });
-
-        return res;
-    }
-
-    /**
      *
      */
     abstract static class CacheHolder {
