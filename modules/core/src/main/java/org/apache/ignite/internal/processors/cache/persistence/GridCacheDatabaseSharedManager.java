@@ -1550,8 +1550,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     if (storeMgr.pages(grpId, i) <= 1)
                         continue;
 
-                    GridDhtLocalPartition part = grp.topology()
-                        .localPartition(i, AffinityTopologyVersion.NONE, true);
+                    GridDhtLocalPartition part = grp.topology().forceCreatePartition(i);
 
                     assert part != null;
 
@@ -1631,7 +1630,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         if (partId == -1)
             partId = cacheCtx.affinity().partition(dataEntry.key());
 
-        GridDhtLocalPartition locPart = cacheCtx.topology().localPartition(partId);
+        GridDhtLocalPartition locPart = cacheCtx.topology().forceCreatePartition(dataEntry.partitionId());
 
         switch (dataEntry.op()) {
             case CREATE:

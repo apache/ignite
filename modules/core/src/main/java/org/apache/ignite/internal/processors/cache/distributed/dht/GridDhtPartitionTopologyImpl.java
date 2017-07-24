@@ -135,9 +135,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     /** */
     private volatile AffinityTopologyVersion rebalancedTopVer = AffinityTopologyVersion.NONE;
 
-    /** */
-    private volatile boolean treatAllPartAsLoc;
-
     /**
      * @param ctx Cache shared context.
      * @param grp Cache group.
@@ -421,14 +418,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     /** {@inheritDoc} */
     @Override public void beforeExchange(GridDhtPartitionsExchangeFuture exchFut, boolean affReady)
         throws IgniteCheckedException {
-        DiscoveryEvent discoEvt = exchFut.discoveryEvent();
-
-        treatAllPartAsLoc = exchFut.activateCluster()
-            || (discoEvt.type() == EventType.EVT_NODE_JOINED
-            && discoEvt.eventNode().isLocal()
-            && !ctx.kernalContext().clientNode()
-        );
-
         ClusterNode loc = ctx.localNode();
 
         ctx.database().checkpointReadLock();
@@ -540,8 +529,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
     /** {@inheritDoc} */
     @Override public boolean afterExchange(GridDhtPartitionsExchangeFuture exchFut) throws IgniteCheckedException {
-        treatAllPartAsLoc = false;
-
         boolean changed = false;
 
         int num = grp.affinity().partitions();
@@ -701,6 +688,29 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         return loc;
     }
 
+    /** {@inheritDoc} */
+    @Override public GridDhtLocalPartition forceCreatePartition(int p) throws IgniteCheckedException {
+        lock.writeLock().lock();
+
+        try {
+            GridDhtLocalPartition part = locParts.get(p);
+
+            if (part != null)
+                return part;
+
+            part = new GridDhtLocalPartition(ctx, grp, p);
+
+            locParts.set(p, part);
+
+            ctx.pageStore().onPartitionCreated(grp.groupId(), p);
+
+            return part;
+        }
+        finally {
+            lock.writeLock().unlock();
+        }
+    }
+
     /**
      * @param p Partition number.
      * @param topVer Topology version.
@@ -747,7 +757,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                 locParts.set(p, loc = null);
 
-                if (!treatAllPartAsLoc && !belongs)
+                if (!belongs)
                     throw new GridDhtInvalidPartitionException(p, "Adding entry to evicted partition " +
                         "(often may be caused by inconsistent 'key.hashCode()' implementation) " +
                         "[part=" + p + ", topVer=" + topVer + ", this.topVer=" + this.topVer + ']');
@@ -757,7 +767,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                     "[part=" + p + ", shouldBeMoving=" + loc.reload() + "]");
 
             if (loc == null) {
-                if (!treatAllPartAsLoc && !belongs)
+                if (!belongs)
                     throw new GridDhtInvalidPartitionException(p, "Creating partition which does not belong to " +
                         "local node (often may be caused by inconsistent 'key.hashCode()' implementation) " +
                         "[part=" + p + ", topVer=" + topVer + ", this.topVer=" + this.topVer + ']');
@@ -1520,12 +1530,15 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
-    @Override public void onExchangeDone(AffinityAssignment assignment) {
+    @Override public void onExchangeDone(AffinityAssignment assignment, boolean updateRebalanceVer) {
         lock.writeLock().lock();
 
         try {
             if (assignment.topologyVersion().compareTo(diffFromAffinityVer) >= 0)
                 rebuildDiff(assignment);
+
+            if (updateRebalanceVer)
+                updateRebalanceVersion(assignment.assignment());
         }
         finally {
             lock.writeLock().unlock();

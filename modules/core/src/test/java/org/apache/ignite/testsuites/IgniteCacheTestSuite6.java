@@ -21,6 +21,7 @@ import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteOptimisticTxSuspendResumeMultiServerTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteOptimisticTxSuspendResumeTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgnitePessimisticTxSuspendResumeTest;
+import org.apache.ignite.internal.processors.cache.distributed.CachePartitionStateTest;
 
 /**
  * Test suite.
@@ -36,6 +37,8 @@ public class IgniteCacheTestSuite6 extends TestSuite {
         suite.addTestSuite(IgniteOptimisticTxSuspendResumeTest.class);
         suite.addTestSuite(IgniteOptimisticTxSuspendResumeMultiServerTest.class);
         suite.addTestSuite(IgnitePessimisticTxSuspendResumeTest.class);
+
+        suite.addTestSuite(CachePartitionStateTest.class);
 
         return suite;
     }
