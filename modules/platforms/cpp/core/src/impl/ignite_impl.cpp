@@ -25,7 +25,9 @@ namespace ignite
     namespace impl
     {
         IgniteImpl::IgniteImpl(SharedPointer<IgniteEnvironment> env, jobject javaRef) :
-            InteropTarget(env, javaRef)
+            InteropTarget(env, javaRef),
+            env(env),
+            javaRef(javaRef)
         {
             IgniteError err;
 
