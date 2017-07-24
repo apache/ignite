@@ -23,12 +23,8 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCountDownLatch;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -47,15 +43,15 @@ public class CacheCreateInitDestroyRaceSelfTest extends GridCommonAbstractTest {
         IP_FINDER.setAddresses(Collections.singletonList("127.0.0.1:47500..47509"));
     }
 
-    /** {@inheritDoc}*/
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
+
         discoSpi.setIpFinder(IP_FINDER);
 
         cfg.setDiscoverySpi(discoSpi);
-
         cfg.setPeerClassLoadingEnabled(false);
 
         return cfg;
@@ -80,7 +76,7 @@ public class CacheCreateInitDestroyRaceSelfTest extends GridCommonAbstractTest {
         final CountDownLatch noiseLatch = new CountDownLatch(1);
 
         // This thread generates "noise" to keep future queue in partition-exchanger filled
-        final Thread noiseGenerator = new Thread(new Runnable() {
+        final Thread noiseGenerator = new Thread() {
             @Override public void run() {
                 final int cacheCountLowThreshold = 5;
                 final int cacheCountHighThreshold = 10;
@@ -90,31 +86,35 @@ public class CacheCreateInitDestroyRaceSelfTest extends GridCommonAbstractTest {
                         int cacheCount = existingCacheNames.size();
                         if (cacheCount < cacheCountLowThreshold) {
                             final String cacheName = UUID.randomUUID().toString();
-                            new Thread(new Runnable() {
+                            new Thread() {
                                 @Override public void run() {
                                     igniteClient.getOrCreateCache(cacheName);
                                     existingCacheNames.add(cacheName);
                                 }
-                            }).start();
-                        } else if (cacheCount > cacheCountHighThreshold) {
+                            }.start();
+                        }
+                        else if (cacheCount > cacheCountHighThreshold) {
                             noiseLatch.countDown();
-                            new Thread(new Runnable() {
+                            new Thread() {
                                 @Override public void run() {
                                     try {
                                         String cacheNameToRemove = existingCacheNames.iterator().next();
                                         existingCacheNames.remove(cacheNameToRemove);
                                         igniteClient.destroyCache(cacheNameToRemove);
-                                    } catch (Exception ignored) {}
+                                    }
+                                    catch (Exception ignored) {
+                                    }
                                 }
-                            }).start();
+                            }.start();
                         }
                         Thread.sleep(10);
-                    } catch (InterruptedException e) {
+                    }
+                    catch (InterruptedException e) {
                         break;
                     }
                 }
             }
-        });
+        };
 
         noiseGenerator.start();
 
@@ -122,21 +122,23 @@ public class CacheCreateInitDestroyRaceSelfTest extends GridCommonAbstractTest {
 
         try {
             final CountDownLatch latch = new CountDownLatch(1);
-            new Thread(new Runnable() {
+            new Thread() {
                 @Override public void run() {
                     noiseGenerator.interrupt();
                     latch.countDown();
                     ignite2.getOrCreateCache(CHECKPOINT_CACHE_NAME);
                 }
-            }).start();
+            }.start();
             latch.await();
             Thread.sleep(100); // large enough to start cache creation on ignite2
-            new Thread(new Runnable() {
+            new Thread() {
                 @Override public void run() {
                     ignite3.destroyCache(CHECKPOINT_CACHE_NAME);
                 }
-            }).start();
-        } catch (InterruptedException ignored) {}
+            }.start();
+        }
+        catch (InterruptedException ignored) {
+        }
 
         awaitPartitionMapExchange();
 
