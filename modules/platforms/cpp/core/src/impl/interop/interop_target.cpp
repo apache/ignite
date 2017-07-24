@@ -226,7 +226,7 @@ namespace ignite
                 return OperationResult::AI_ERROR;
             }
 
-            jobject InteropTarget::InStreamOutObject(int32_t opType, InteropMemory& outInMem)
+            jobject InteropTarget::InStreamOutObject(int32_t opType, InteropMemory& outInMem, IgniteError& err)
             {
                 JniErrorInfo jniErr;
 
@@ -236,7 +236,6 @@ namespace ignite
                 {
                     jobject res = env.Get()->Context()->TargetInStreamOutObject(javaRef, opType, outInPtr, &jniErr);
 
-                    IgniteError err;
                     IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
                     IgniteError::ThrowIfNeeded(err);
 

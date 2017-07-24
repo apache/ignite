@@ -221,8 +221,6 @@ namespace ignite
                 template<typename K, typename V>
             cache::CacheImpl* GetOrCreateCache(const char* name, IgniteError& err, int32_t op)
             {
-                ignite::jni::java::JniErrorInfo jniErr;
-
                 SharedPointer<InteropMemory> mem = env.Get()->AllocateMemory();
                 InteropMemory* mem0 = mem.Get();
                 InteropOutputStream out(mem0);
@@ -233,12 +231,10 @@ namespace ignite
 
                 out.Synchronize();
 
-                jobject cacheJavaRef = InStreamOutObject(op, *mem0);
+                jobject cacheJavaRef = InStreamOutObject(op, *mem0, err);
 
                 if (!cacheJavaRef)
                 {
-                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
-
                     return NULL;
                 }
 

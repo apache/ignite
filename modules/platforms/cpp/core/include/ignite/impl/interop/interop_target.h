@@ -149,9 +149,10 @@ namespace ignite
                  *
                  * @param opType Type of operation.
                  * @param outInMem Input and output memory.
+                 * @param err Error.
                  * @return Java object references.
                  */
-                jobject InStreamOutObject(int32_t opType, InteropMemory& outInMem);
+                jobject InStreamOutObject(int32_t opType, InteropMemory& outInMem, IgniteError& err);
 
                 /**
                 * Internal out-in operation.
