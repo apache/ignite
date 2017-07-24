@@ -29,6 +29,7 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionTimeoutException;
 
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionState.ACTIVE;
@@ -47,7 +48,7 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
     private static final int FUT_TIMEOUT = 5000;
 
     /**
-     * List of closures to execute transaction operation that prohibited in suspended or committed state.
+     * List of closures to execute transaction operation that prohibited in suspended state.
      */
     private static final List<CI1Exc<Transaction>> SUSP_TX_PROHIB_OPS = Arrays.asList(
         new CI1Exc<Transaction>() {
@@ -92,7 +93,9 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setClientMode(false);
-        cfg.setCacheConfiguration(defaultCacheConfiguration().setCacheMode(PARTITIONED));
+        cfg.setCacheConfiguration(defaultCacheConfiguration()
+            .setCacheMode(PARTITIONED)
+            .setAtomicityMode(TRANSACTIONAL));
 
         return cfg;
     }
@@ -142,7 +145,7 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
 
             assertNull(cache.get(1));
 
-            for (int i=1; i<4; i++) {
+            for (int i = 1; i < 4; i++) {
                 final int finalI = i;
                 GridTestUtils.runAsync(new Runnable() {
                     @Override public void run() {
@@ -165,7 +168,7 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
 
             assertEquals(COMMITTED, tx.state());
 
-            for (int i=0; i<4; i++)
+            for (int i = 0; i < 4; i++)
                 assertEquals(Integer.toString(i), cache.get(i));
 
             assertFalse(cache.containsKey(20));
@@ -195,7 +198,7 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
 
             tx.suspend();
 
-            for (int i=1; i<4; i++) {
+            for (int i = 1; i < 4; i++) {
                 final int finalI = i;
                 GridTestUtils.runAsync(new Runnable() {
                     @Override public void run() {
@@ -220,7 +223,7 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
 
             assertEquals(COMMITTED, tx.state());
 
-            for (int i=1; i<4; i++) {
+            for (int i = 1; i < 4; i++) {
                 assertEquals(Integer.toString(i), cache1.get(10 + i));
                 assertEquals(Integer.toString(i), cache2.get(20 + i));
             }
@@ -298,15 +301,15 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
 
             GridTestUtils.runMultiThreaded(new CI1Exc<Integer>() {
                 public void applyx(Integer idx) throws Exception {
-                        Transaction tx = clientTxs.get(idx);
+                    Transaction tx = clientTxs.get(idx);
 
-                        assertEquals(SUSPENDED, tx.state());
+                    assertEquals(SUSPENDED, tx.state());
 
-                        tx.resume();
+                    tx.resume();
 
-                        assertEquals(ACTIVE, tx.state());
+                    assertEquals(ACTIVE, tx.state());
 
-                        tx.commit();
+                    tx.commit();
                 }
             }, 3, "th-suspend");
 
@@ -417,7 +420,8 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
             }
             catch (TransactionTimeoutException ignored) {
                 // No-op.
-            } finally {
+            }
+            finally {
                 tx.close();
             }
         }
@@ -443,7 +447,8 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
             }
             catch (TransactionTimeoutException ignored) {
                 // No-op.
-            } finally {
+            }
+            finally {
                 tx.close();
             }
 
@@ -481,121 +486,6 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
 
                 cache.removeAll();
             }
-        }
-    }
-
-    /**
-     * Test for concurrent transaction commit.
-     *
-     * @throws Exception If failed.
-     */
-    public void testTxProhibOpsAfterCommit() throws Exception {
-        final CI1Exc<Transaction> operationBefore = new CI1Exc<Transaction>() {
-            @Override public void applyx(Transaction tx) throws Exception {
-                tx.resume();
-                tx.commit();
-            }
-        };
-
-        doProhibitedOperationAfter(operationBefore, "1");
-    }
-
-    /**
-     * Test for concurrent transaction rollback.
-     *
-     * @throws Exception If failed.
-     */
-    public void testTxProhibOpsAfterRollback() throws Exception {
-        final CI1Exc<Transaction> operationBefore = new CI1Exc<Transaction>() {
-            @Override public void applyx(Transaction tx) throws Exception {
-                tx.resume();
-                tx.rollback();
-            }
-        };
-
-        doProhibitedOperationAfter(operationBefore, null);
-    }
-
-    /**
-     * Test for concurrent transaction rollback.
-     *
-     * @throws Exception If failed.
-     */
-    public void testTxProhibOpsAfterRollbackAsync() throws Exception {
-        final CI1Exc<Transaction> operationBefore = new CI1Exc<Transaction>() {
-            @Override public void applyx(Transaction tx) throws Exception {
-                tx.resume();
-                tx.rollbackAsync().get(FUT_TIMEOUT);
-            }
-        };
-
-        doProhibitedOperationAfter(operationBefore, null);
-    }
-
-    /**
-     * Test for concurrent transaction close.
-     *
-     * @throws Exception If failed.
-     */
-    public void testTxProhibOpsAfterClose() throws Exception {
-        final CI1Exc<Transaction> operationBefore = new CI1Exc<Transaction>() {
-            @Override public void applyx(Transaction tx) throws Exception {
-                tx.resume();
-                tx.close();
-            }
-        };
-
-        doProhibitedOperationAfter(operationBefore, null);
-    }
-
-    /**
-     * 1. Start tx.<br>
-     * 2. Put some data.<br>
-     * 3. Suspend tx.<br>
-     * 4. Runs <code>opeartionBefore</code> in other thread.<br>
-     * 5. Run all <code>SUSP_TX_PROHIB_OPS</code>.<br>
-     * 6. Check all <code>SUSP_TX_PROHIB_OPS</code> fail.
-     *
-     * @param operationBefore operation to execute before trying to execute prohibited operations.
-     * @param expVal expected val in cache after operations.
-     * @throws Exception If failed.
-     */
-    private void doProhibitedOperationAfter(final CI1<Transaction> operationBefore,
-        final String expVal) throws Exception {
-        for (TransactionIsolation isolation : TransactionIsolation.values()) {
-            final IgniteCache<Integer, String> cache = jcache();
-
-            final Transaction tx = grid().transactions().txStart(OPTIMISTIC, isolation);
-
-            cache.put(1, "1");
-
-            tx.suspend();
-
-            GridTestUtils.runMultiThreaded(new CI1Exc<Integer>() {
-                @Override public void applyx(Integer threadNum) throws Exception {
-                    operationBefore.apply(tx);
-
-                    GridTestUtils.runMultiThreaded(new CI1Exc<Integer>() {
-                        @Override public void applyx(Integer idx) throws Exception {
-                            boolean opSuc = false;
-
-                            try {
-                                SUSP_TX_PROHIB_OPS.get(idx).apply(tx);
-
-                                opSuc = true;
-                            }
-                            catch (Exception ignored) {
-                                // No-op.
-                            }
-
-                            assertFalse(opSuc);
-                        }
-                    }, SUSP_TX_PROHIB_OPS.size(), "th-commit");
-
-                }
-            }, 1, "th-commit-outer");
-
-            assertEquals(expVal, jcache().get(1));
         }
     }
 

@@ -111,10 +111,6 @@ public class TransactionProxyImpl<K, V> implements TransactionProxy, Externaliza
      * Enters a call without check for not {@code SUSPENDED} status.
      */
     private void enter0() {
-        if ((threadId() != Thread.currentThread().getId()) &&
-            !(threadId() == UNDEFINED_THREAD_ID && state() == SUSPENDED))
-            throw new IgniteException("Only thread owns transaction can execute operations with it.");
-
         if (cctx.deploymentEnabled())
             cctx.deploy().onEnter();
 
