@@ -1644,7 +1644,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 else
                     getSpi().sendMessage(node, ioMsg);
             }
-            catch (IgniteSpiException e) {
+            catch (Exception e) {
                 if (e.getCause() instanceof ClusterTopologyCheckedException)
                     throw (ClusterTopologyCheckedException)e.getCause();
 
