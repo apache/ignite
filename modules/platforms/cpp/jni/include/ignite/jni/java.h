@@ -310,9 +310,6 @@ namespace ignite
 
                 void IgnitionStart(char* cfgPath, char* name, int factoryId, long long dataPtr);
                 void IgnitionStart(char* cfgPath, char* name, int factoryId, long long dataPtr, JniErrorInfo* errInfo);
-                // TODO: Remove these.
-                jobject IgnitionInstance(char* name);
-                jobject IgnitionInstance(char* name, JniErrorInfo* errInfo);
                 long long IgnitionEnvironmentPointer(char* name);
                 long long IgnitionEnvironmentPointer(char* name, JniErrorInfo* errInfo);
                 bool IgnitionStop(char* name, bool cancel);

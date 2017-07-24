@@ -842,27 +842,7 @@ namespace ignite
 
                 ExceptionCheck(env, errInfo);
             }
-
-
-            jobject JniContext::IgnitionInstance(char* name)
-            {
-                return IgnitionInstance(name, NULL);
-            }
-
-            jobject JniContext::IgnitionInstance(char* name, JniErrorInfo* errInfo)
-            {
-                JNIEnv* env = Attach();
-
-                jstring name0 = env->NewStringUTF(name);
-
-                jobject interop = env->CallStaticObjectMethod(jvm->GetMembers().c_PlatformIgnition,
-                    jvm->GetMembers().m_PlatformIgnition_instance, name0);
-
-                ExceptionCheck(env, errInfo);
-
-                return LocalToGlobal(env, interop);
-            }
-
+            
             long long JniContext::IgnitionEnvironmentPointer(char* name)
             {
                 return IgnitionEnvironmentPointer(name, NULL);

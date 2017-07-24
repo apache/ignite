@@ -2,7 +2,6 @@ LIBRARY ignite.jni.dll
 EXPORTS
 IgniteReallocate @1 
 IgniteIgnitionStart @2 
-IgniteIgnitionInstance @3 
 IgniteIgnitionEnvironmentPointer @4 
 IgniteIgnitionStop @5 
 IgniteIgnitionStopAll @6 

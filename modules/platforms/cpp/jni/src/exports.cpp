@@ -30,10 +30,6 @@ extern "C" {
         ctx->IgnitionStart(cfgPath, name, factoryId, dataPtr);
     }
 
-	void* IGNITE_CALL IgniteIgnitionInstance(gcj::JniContext* ctx, char* name) {
-        return ctx->IgnitionInstance(name);
-    }
-
     long long IGNITE_CALL IgniteIgnitionEnvironmentPointer(gcj::JniContext* ctx, char* name) {
         return ctx->IgnitionEnvironmentPointer(name);
     }
