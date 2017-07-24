@@ -327,7 +327,7 @@ namespace ignite
             JniMethod M_PLATFORM_UTILS_GET_FULL_STACK_TRACE = JniMethod("getFullStackTrace", "(Ljava/lang/Throwable;)Ljava/lang/String;", true);
 
             const char* C_PLATFORM_IGNITION = "org/apache/ignite/internal/processors/platform/PlatformIgnition";
-            JniMethod M_PLATFORM_IGNITION_START = JniMethod("start", "(Ljava/lang/String;Ljava/lang/String;IJJ)Lorg/apache/ignite/internal/processors/platform/PlatformProcessor;", true);
+            JniMethod M_PLATFORM_IGNITION_START = JniMethod("start", "(Ljava/lang/String;Ljava/lang/String;IJJ)V", true);
             JniMethod M_PLATFORM_IGNITION_INSTANCE = JniMethod("instance", "(Ljava/lang/String;)Lorg/apache/ignite/internal/processors/platform/PlatformProcessor;", true);
             JniMethod M_PLATFORM_IGNITION_ENVIRONMENT_POINTER = JniMethod("environmentPointer", "(Ljava/lang/String;)J", true);
             JniMethod M_PLATFORM_IGNITION_STOP = JniMethod("stop", "(Ljava/lang/String;Z)Z", true);
@@ -819,18 +819,18 @@ namespace ignite
                 }
             }
 
-            jobject JniContext::IgnitionStart(char* cfgPath, char* name, int factoryId, long long dataPtr) {
+            void JniContext::IgnitionStart(char* cfgPath, char* name, int factoryId, long long dataPtr) {
                 return IgnitionStart(cfgPath, name, factoryId, dataPtr, NULL);
             }
 
-            jobject JniContext::IgnitionStart(char* cfgPath, char* name, int factoryId, long long dataPtr, JniErrorInfo* errInfo)
+            void JniContext::IgnitionStart(char* cfgPath, char* name, int factoryId, long long dataPtr, JniErrorInfo* errInfo)
             {
                 JNIEnv* env = Attach();
 
                 jstring cfgPath0 = env->NewStringUTF(cfgPath);
                 jstring name0 = env->NewStringUTF(name);
 
-                jobject interop = env->CallStaticObjectMethod(
+                env->CallStaticVoidMethod(
                     jvm->GetMembers().c_PlatformIgnition,
                     jvm->GetMembers().m_PlatformIgnition_start,
                     cfgPath0,
@@ -841,8 +841,6 @@ namespace ignite
                 );
 
                 ExceptionCheck(env, errInfo);
-
-                return LocalToGlobal(env, interop);
             }
 
 

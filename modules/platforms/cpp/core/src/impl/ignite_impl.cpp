@@ -24,10 +24,9 @@ namespace ignite
 {    
     namespace impl
     {
-        IgniteImpl::IgniteImpl(SharedPointer<IgniteEnvironment> env, jobject javaRef) :
-            InteropTarget(env, javaRef),
-            env(env),
-            javaRef(javaRef)
+        IgniteImpl::IgniteImpl(SharedPointer<IgniteEnvironment> env) :
+            InteropTarget(env, static_cast<jobject>(env.Get()->GetProcessor())),
+            env(env)
         {
             IgniteError err;
 
@@ -38,11 +37,6 @@ namespace ignite
             prjImpl = InternalGetProjection(err);
 
             IgniteError::ThrowIfNeeded(err);
-        }
-
-        IgniteImpl::~IgniteImpl()
-        {
-            JniContext::Release(javaRef);
         }
 
         const char* IgniteImpl::GetName() const

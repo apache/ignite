@@ -68,13 +68,8 @@ namespace ignite
              * @param env Environment.
              * @param javaRef Reference to java object.
              */
-            IgniteImpl(SP_IgniteEnvironment env, jobject javaRef);
+            IgniteImpl(SP_IgniteEnvironment env);
             
-            /**
-             * Destructor.
-             */
-            ~IgniteImpl();
-
             /**
              * Get name of the Ignite.
              *
@@ -207,9 +202,6 @@ namespace ignite
 
             /** Environment. */
             SP_IgniteEnvironment env;
-
-            /** Native Java counterpart: PlatformProcessorImpl. */
-            jobject javaRef;
 
             /** Transactions implementaion. */
             SP_TransactionsImpl txImpl;
