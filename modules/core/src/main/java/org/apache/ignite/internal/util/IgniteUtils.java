@@ -109,6 +109,7 @@ import java.util.StringTokenizer;
 import java.util.TimeZone;
 import java.util.TreeMap;
 import java.util.UUID;
+import java.util.WeakHashMap;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CancellationException;
@@ -8454,6 +8455,9 @@ public abstract class IgniteUtils {
         return forName(clsName, ldr, true);
     }
 
+    private static Map<ClassLoader, ConcurrentMap<String, Class>> weakCache =
+        Collections.synchronizedMap(new WeakHashMap<ClassLoader, ConcurrentMap<String, Class>>());
+
     /**
      * Gets class for provided name. Accepts primitive types names.
      *
@@ -8474,16 +8478,32 @@ public abstract class IgniteUtils {
         if (ldr != null) {
             if (ldr instanceof ClassCache)
                 return ((ClassCache)ldr).getFromCache(clsName);
-            else if (!useCache)
-                return ldr.loadClass(clsName);
+            else if (!useCache) {
+                cls = loadClassFromCache(clsName, ldr, weakCache);
+
+                return cls;
+            }
         }
         else
             ldr = gridClassLoader;
 
-        ConcurrentMap<String, Class> ldrMap = classCache.get(ldr);
+        cls = loadClassFromCache(clsName, ldr, classCache);
+
+        return cls;
+    }
+
+    /**
+     * @param clsName Class name.
+     * @param ldr Loader.
+     */
+    private static Class<?> loadClassFromCache(String clsName, @Nullable ClassLoader ldr,
+        Map<ClassLoader, ConcurrentMap<String, Class>> cache) throws ClassNotFoundException {
+        Class<?> cls;
+
+        ConcurrentMap<String, Class> ldrMap = cache.get(ldr);
 
         if (ldrMap == null) {
-            ConcurrentMap<String, Class> old = classCache.putIfAbsent(ldr, ldrMap = new ConcurrentHashMap8<>());
+            ConcurrentMap<String, Class> old = cache.putIfAbsent(ldr, ldrMap = new ConcurrentHashMap8<>());
 
             if (old != null)
                 ldrMap = old;
@@ -8497,7 +8517,6 @@ public abstract class IgniteUtils {
             if (old != null)
                 cls = old;
         }
-
         return cls;
     }
 
