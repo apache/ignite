@@ -20,7 +20,9 @@ package org.apache.ignite.internal.processors.cache.distributed;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -338,18 +340,7 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
 
                 multithreaded(new RunnableX() {
                     @Override public void runx() throws Exception {
-                        boolean opSuc = false;
-
-                        try {
-                            txOperation.apply(tx);
-
-                            opSuc = true;
-                        }
-                        catch (Exception ignored) {
-                            // No-op.
-                        }
-
-                        assertFalse(opSuc);
+                        GridTestUtils.assertThrowsWithCause(txOperation, tx, IgniteException.class);
                     }
                 }, 1);
 
@@ -377,17 +368,7 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
 
                 tx.suspend();
 
-                boolean opSuc = false;
-                try {
-                    txOperation.apply(tx);
-
-                    opSuc = true;
-                }
-                catch (Exception ignored) {
-                    // No-op.
-                }
-
-                assertFalse(opSuc);
+                GridTestUtils.assertThrowsWithCause(txOperation, tx, IgniteException.class);
 
                 tx.resume();
                 tx.close();
@@ -404,7 +385,7 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
      */
     public void testTxTimeoutOnResumed() throws Exception {
         for (TransactionIsolation isolation : TransactionIsolation.values()) {
-            Transaction tx = grid().transactions().txStart(OPTIMISTIC, isolation, TX_TIMEOUT, 0);
+            final Transaction tx = grid().transactions().txStart(OPTIMISTIC, isolation, TX_TIMEOUT, 0);
 
             jcache().put(1, "1");
 
@@ -412,18 +393,16 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
 
             Thread.sleep(TX_TIMEOUT * 2);
 
-            try {
-                tx.resume();
-                tx.commit();
+            GridTestUtils.assertThrowsWithCause(new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    tx.resume();
+                    tx.commit();
 
-                fail("tx.suspend shouldn't succeed.");
-            }
-            catch (TransactionTimeoutException ignored) {
-                // No-op.
-            }
-            finally {
-                tx.close();
-            }
+                    return null;
+                }
+            }, TransactionTimeoutException.class);
+
+            tx.close();
         }
     }
 
@@ -434,23 +413,21 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
      */
     public void testTxTimeoutOnSuspend() throws Exception {
         for (TransactionIsolation isolation : TransactionIsolation.values()) {
-            Transaction tx = grid().transactions().txStart(OPTIMISTIC, isolation, TX_TIMEOUT, 0);
+            final Transaction tx = grid().transactions().txStart(OPTIMISTIC, isolation, TX_TIMEOUT, 0);
 
             jcache().put(1, "1");
 
             Thread.sleep(TX_TIMEOUT * 2);
 
-            try {
-                tx.suspend();
+            GridTestUtils.assertThrowsWithCause(new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    tx.suspend();
 
-                fail("tx.suspend shouldn't succeed.");
-            }
-            catch (TransactionTimeoutException ignored) {
-                // No-op.
-            }
-            finally {
-                tx.close();
-            }
+                    return null;
+                }
+            }, TransactionTimeoutException.class);
+
+            tx.close();
 
             assertNull(jcache().get(1));
         }

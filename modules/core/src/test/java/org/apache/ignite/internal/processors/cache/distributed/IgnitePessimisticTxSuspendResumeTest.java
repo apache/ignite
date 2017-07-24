@@ -17,11 +17,13 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
+import java.util.concurrent.Callable;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -68,23 +70,19 @@ public class IgnitePessimisticTxSuspendResumeTest extends GridCommonAbstractTest
             IgniteTransactions txs = g.transactions();
 
             for (TransactionIsolation isolation : TransactionIsolation.values()) {
-                Transaction tx = txs.txStart(TransactionConcurrency.PESSIMISTIC, isolation);
+                final Transaction tx = txs.txStart(TransactionConcurrency.PESSIMISTIC, isolation);
 
                 cache.put(1, "1");
 
-                boolean opSuc = false;
-                try {
-                    tx.suspend();
+                GridTestUtils.assertThrowsWithCause(new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        tx.suspend();
 
-                    opSuc = true;
-                }
-                catch (UnsupportedOperationException ignored) {
-                    // No-op.
-                } finally {
-                    tx.close();
-                }
+                        return null;
+                    }
+                }, UnsupportedOperationException.class);
 
-                assertFalse(opSuc);
+                tx.close();
 
                 assertNull(cache.get(1));
             }
