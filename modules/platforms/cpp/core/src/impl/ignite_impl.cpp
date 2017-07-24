@@ -25,7 +25,7 @@ namespace ignite
     namespace impl
     {
         IgniteImpl::IgniteImpl(SharedPointer<IgniteEnvironment> env) :
-            InteropTarget(env, static_cast<jobject>(env.Get()->GetProcessor())),
+            InteropTarget(env, static_cast<jobject>(env.Get()->GetProcessor()), true),
             env(env)
         {
             IgniteError err;

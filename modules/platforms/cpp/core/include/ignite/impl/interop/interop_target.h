@@ -60,6 +60,16 @@ namespace ignite
                 InteropTarget(ignite::common::concurrent::SharedPointer<IgniteEnvironment> env, jobject javaRef);
 
                 /**
+                * Constructor used to create new instance.
+                *
+                * @param env Environment.
+                * @param javaRef Reference to java object.
+                * @param javaRef Whether javaRef release in destructor should be skipped.
+                */
+                InteropTarget(ignite::common::concurrent::SharedPointer<IgniteEnvironment> env, jobject javaRef, 
+                    bool skipJavaRefRelease);
+
+                /**
                  * Destructor.
                  */
                 virtual ~InteropTarget();
@@ -189,6 +199,9 @@ namespace ignite
 
                 /** Handle to Java object. */
                 jobject javaRef;
+
+                /** javaRef release flag. */
+                bool skipJavaRefRelease;
 
                 IGNITE_NO_COPY_ASSIGNMENT(InteropTarget)
 
