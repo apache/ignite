@@ -413,8 +413,8 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         checkAffinity(2, topVer(6, 0), true);
 
-        assertNull(((IgniteKernal)ignite(2)).context().cache().internalCache(CACHE_NAME1));
-        assertNotNull(((IgniteKernal)ignite(3)).context().cache().internalCache(CACHE_NAME1));
+        assertNull(((IgniteKernal) ignite(2)).context().cache().internalCache(CACHE_NAME1));
+        assertNotNull(((IgniteKernal) ignite(3)).context().cache().internalCache(CACHE_NAME1));
 
         assertNotNull(ignite(2).cache(CACHE_NAME1));
 
@@ -1990,8 +1990,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
         }, NODES, "update-thread");
 
         IgniteInternalFuture<?> srvRestartFut = GridTestUtils.runAsync(new Callable<Void>() {
-            @Override
-            public Void call() throws Exception {
+            @Override public Void call() throws Exception {
                 while (!fail.get() && System.currentTimeMillis() < stopTime) {
                     Ignite node = startGrid(NODES);
 
@@ -2744,7 +2743,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
             List<List<ClusterNode>> assignment = func.assignPartitions(affCtx);
 
             if (cur != null) {
-                List<List<ClusterNode>> prev = cur.get(cacheDesc.cacheConfiguration().getName());
+                List<List<ClusterNode>> prev = cur.get(CU.cacheId(cacheDesc.cacheConfiguration().getName()));
 
                 assertEquals(prev.size(), assignment.size());
 
