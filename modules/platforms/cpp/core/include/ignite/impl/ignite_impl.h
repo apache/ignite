@@ -239,6 +239,8 @@ namespace ignite
 
                 rawWriter.WriteString(name);
 
+                out.Synchronize();
+
                 jobject cacheJavaRef = InStreamOutObject(op, *mem0);
 
                 if (!cacheJavaRef)
