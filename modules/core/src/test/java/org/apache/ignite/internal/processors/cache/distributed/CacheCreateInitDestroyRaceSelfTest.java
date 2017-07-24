@@ -33,7 +33,11 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-public class CacheCreateInitDestroyRaceTest extends GridCommonAbstractTest {
+/**
+ * Ensures stable behavior on fast create-destroy sequence for the same cache in a cluster.
+ * As of v. 1.6 non-atomic multi-step cache initialization could fail sporadically.
+ */
+public class CacheCreateInitDestroyRaceSelfTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder();
 
@@ -41,10 +45,10 @@ public class CacheCreateInitDestroyRaceTest extends GridCommonAbstractTest {
     private static final int CACHE_COUNT_LOW_THRESHOLD = 5;
 
     /** */
-    private static final String CHECKPOINT_CACHE_NAME = "myCache";
+    private static final int CACHE_COUNT_HIGH_THRESHOLD = 10;
 
     /** */
-    private static final long NOISE_STABILIZATION_TERM_MS = 5000L;
+    private static final String CHECKPOINT_CACHE_NAME = "myCache";
 
     static {
         IP_FINDER.setAddresses(Collections.singletonList("127.0.0.1:47500..47509"));
@@ -70,10 +74,7 @@ public class CacheCreateInitDestroyRaceTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Tests for stable behavior on fast create-destroy sequence for the same cache in a cluster.
-     * Non-atomic multi-step cache initialization could fail sporadically.
-     *
-     * @throws Exception if failed
+     * @throws Exception if failed.
      */
     public void testCacheCreateInitDestroyRace() throws Exception {
         Ignition.setClientMode(false);
@@ -86,19 +87,31 @@ public class CacheCreateInitDestroyRaceTest extends GridCommonAbstractTest {
 
         final Set<String> existingCacheNames = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
 
+        final CountDownLatch noiseLatch = new CountDownLatch(1);
+
         // This thread generates "noise" to keep future queue in partition-exchanger filled
-        new Thread(new Runnable() {
+        final Thread noiseGenerator = new Thread(new Runnable() {
             @Override public void run() {
-                while (!existingCacheNames.contains(CHECKPOINT_CACHE_NAME)) {
+                while (!Thread.currentThread().isInterrupted()) {
                     try {
-                        if (existingCacheNames.size() < CACHE_COUNT_LOW_THRESHOLD) {
+                        int cacheCount = existingCacheNames.size();
+                        if (cacheCount < CACHE_COUNT_LOW_THRESHOLD) {
                             final String cacheName = UUID.randomUUID().toString();
                             new Thread(new Runnable() {
                                 @Override public void run() {
                                     igniteClient.getOrCreateCache(cacheName);
                                     existingCacheNames.add(cacheName);
-                                    igniteClient.destroyCache(cacheName);
-                                    existingCacheNames.remove(cacheName);
+                                }
+                            }).start();
+                        } else if (cacheCount > CACHE_COUNT_HIGH_THRESHOLD) {
+                            noiseLatch.countDown();
+                            new Thread(new Runnable() {
+                                @Override public void run() {
+                                    try {
+                                        String cacheNameToRemove = existingCacheNames.iterator().next();
+                                        existingCacheNames.remove(cacheNameToRemove);
+                                        igniteClient.destroyCache(cacheNameToRemove);
+                                    } catch (Exception ignored) {}
                                 }
                             }).start();
                         }
@@ -108,15 +121,17 @@ public class CacheCreateInitDestroyRaceTest extends GridCommonAbstractTest {
                     }
                 }
             }
-        }).start();
+        });
 
-        Thread.sleep(NOISE_STABILIZATION_TERM_MS);
+        noiseGenerator.start();
+
+        noiseLatch.await();
 
         try {
             final CountDownLatch latch = new CountDownLatch(1);
             new Thread(new Runnable() {
                 @Override public void run() {
-                    existingCacheNames.add(CHECKPOINT_CACHE_NAME);
+                    noiseGenerator.interrupt();
                     latch.countDown();
                     ignite2.getOrCreateCache(CHECKPOINT_CACHE_NAME);
                 }
