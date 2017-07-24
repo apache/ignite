@@ -1683,7 +1683,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
                     }
 
                     U.warn(log, "Partition has been scheduled for rebalancing due to outdated update counter " +
-                        "[nodeId=" + cctx.localNodeId() + ", partId=" + locPart.id() + ", haveHistory=" + haveHistory + "]");
+                        "[nodeId=" + cctx.localNodeId() + ", partId=" + p + ", haveHistory=" + haveHistory + "]");
                 }
             }
 

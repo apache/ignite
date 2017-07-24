@@ -70,6 +70,14 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
     @Nullable public CacheDataRow read(GridCacheMapEntry entry) throws IgniteCheckedException;
 
     /**
+     * @param key Key to read.
+     * @param locPart Local partition to read from, {@code null} for LOCAL cache.
+     * @return Read row.
+     * @throws IgniteCheckedException If failed.
+     */
+    @Nullable public CacheDataRow read(KeyCacheObject key, GridDhtLocalPartition locPart) throws IgniteCheckedException;
+
+    /**
      * @param p Partition.
      * @return Data store.
      * @throws IgniteCheckedException If failed.

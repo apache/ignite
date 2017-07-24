@@ -95,7 +95,7 @@ public interface CacheObjectBinaryProcessor extends IgniteCacheObjectProcessor {
      * @return Binaries interface.
      * @throws IgniteException If failed.
      */
-    public IgniteBinary binary() throws IgniteException;
+    @Override public IgniteBinary binary() throws IgniteException;
 
     /**
      * @param obj Original object.
@@ -103,4 +103,9 @@ public interface CacheObjectBinaryProcessor extends IgniteCacheObjectProcessor {
      * @throws IgniteException If failed.
      */
     public Object marshalToBinary(Object obj) throws IgniteException;
+
+    /**
+     * @param restoreMode Restore mode.
+     */
+    public void restoreMode(boolean restoreMode);
 }
