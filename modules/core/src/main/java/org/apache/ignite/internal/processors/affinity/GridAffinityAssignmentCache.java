@@ -283,7 +283,7 @@ public class GridAffinityAssignmentCache {
         List<List<ClusterNode>> assignment;
 
         GridAffinityFunctionContextImpl afCtxt = new GridAffinityFunctionContextImpl(sorted, prevAssignment,
-            discoEvt, topVer, backups, cacheOrGrpName, ctx.localNodeId().toString());
+            discoEvt, topVer, backups);
 
         if (prevAssignment != null && discoEvt != null) {
             boolean affNode = CU.affinityNode(discoEvt.eventNode(), nodeFilter);

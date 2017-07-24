@@ -68,28 +68,4 @@ public interface AffinityFunctionContext {
      *      not available.
      */
     @Nullable public DiscoveryEvent discoveryEvent();
-
-    /**
-     * Gets cache name.
-     *
-     * @return Cache name.
-     */
-    public String getCacheName();
-
-    /**
-     * Sets cache name.
-     */
-    public void setCacheName(String name);
-
-    /**
-     * Gets node ID.
-     *
-     * @return Node ID.
-     */
-    public String getNodeId();
-
-    /**
-     * Sets Node ID.
-     */
-    public void setNodeId(String nodeId);
 }

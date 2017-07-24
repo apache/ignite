@@ -43,12 +43,6 @@ public class GridAffinityFunctionContextImpl implements AffinityFunctionContext 
     /** Number of backups to assign. */
     private final int backups;
 
-    /** Cache Name. */
-    private String cacheName;
-
-    /** Node ID. */
-    private String nodeId;
-
     /**
      * @param topSnapshot Topology snapshot.
      * @param prevAssignment Prevent Assignment.
@@ -63,23 +57,6 @@ public class GridAffinityFunctionContextImpl implements AffinityFunctionContext 
         this.discoEvt = discoEvt;
         this.topVer = topVer;
         this.backups = backups;
-    }
-
-    /**
-     * @param topSnapshot Topology snapshot.
-     * @param prevAssignment Prevent Assignment.
-     * @param discoEvt Discovery Event.
-     * @param topVer Topology version.
-     * @param backups Quantity of backups.
-     * @param cacheName Name of cache.
-     * @param nodeId Node ID.
-     */
-    public GridAffinityFunctionContextImpl(List<ClusterNode> topSnapshot, List<List<ClusterNode>> prevAssignment,
-                                           DiscoveryEvent discoEvt, @NotNull AffinityTopologyVersion topVer, int backups,
-                                           String cacheName, String nodeId) {
-        this(topSnapshot, prevAssignment, discoEvt, topVer, backups);
-        this.cacheName = cacheName;
-        this.nodeId = nodeId;
     }
 
     /** {@inheritDoc} */
@@ -105,24 +82,6 @@ public class GridAffinityFunctionContextImpl implements AffinityFunctionContext 
     /** {@inheritDoc} */
     @Override public int backups() {
         return backups;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String getCacheName() {
-        return cacheName;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void setCacheName(String cacheName) {
-        this.cacheName = cacheName;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String getNodeId() { return nodeId; }
-
-    /** {@inheritDoc} */
-    @Override public void setNodeId(String nodeId) {
-        this.nodeId = nodeId;
     }
 
     /**
