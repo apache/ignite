@@ -87,6 +87,11 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
     @GridCodegenConverter(get = "isFiltered() ? null : oldVal")
     private CacheObject oldVal;
 
+    /** Transformed value. */
+    @GridToStringInclude
+    @GridCodegenConverter(get = "isFiltered() ? null : transVal")
+    private CacheObject transVal;
+
     /** Cache name. */
     private int cacheId;
 
@@ -136,6 +141,7 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
         KeyCacheObject key,
         @Nullable CacheObject newVal,
         @Nullable CacheObject oldVal,
+        @Nullable CacheObject transVal,
         boolean keepBinary,
         int part,
         long updateCntr,
@@ -146,6 +152,7 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
         this.key = key;
         this.newVal = newVal;
         this.oldVal = oldVal;
+        this.transVal = transVal;
         this.part = part;
         this.updateCntr = updateCntr;
         this.topVer = topVer;
@@ -249,6 +256,7 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
             null,
             null,
             null,
+            null,
             false,
             part,
             updateCntr,
@@ -291,6 +299,9 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
 
         if (oldVal != null)
             oldVal.prepareMarshal(cctx.cacheObjectContext());
+
+        if (transVal != null)
+            transVal.prepareMarshal(cctx.cacheObjectContext());
     }
 
     /**
@@ -307,6 +318,9 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
 
             if (oldVal != null)
                 oldVal.finishUnmarshal(cctx.cacheObjectContext(), ldr);
+
+            if (transVal != null)
+                transVal.finishUnmarshal(cctx.cacheObjectContext(), ldr);
         }
     }
 
@@ -329,6 +343,10 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
      */
     CacheObject oldValue() {
         return oldVal;
+    }
+
+    CacheObject transformedValue() {
+        return transVal;
     }
 
     /** {@inheritDoc} */
@@ -423,6 +441,11 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
 
                 writer.incrementState();
 
+            case 10:
+                if (!writer.writeMessage("transVal", isFiltered() ? null : transVal))
+                    return false;
+
+                writer.incrementState();
         }
 
         return true;
@@ -515,7 +538,13 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
                     return false;
 
                 reader.incrementState();
+            case 10:
+                transVal = reader.readMessage("transVal");
 
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
         }
 
         return reader.afterMessageRead(CacheContinuousQueryEntry.class);
@@ -523,7 +552,7 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 10;
+        return 11;
     }
 
     /** {@inheritDoc} */

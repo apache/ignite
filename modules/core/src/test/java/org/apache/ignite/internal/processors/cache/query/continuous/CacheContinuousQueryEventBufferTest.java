@@ -117,6 +117,7 @@ public class CacheContinuousQueryEventBufferTest extends GridCommonAbstractTest 
                 null,
                 null,
                 null,
+                null,
                 false,
                 0,
                 cntr,
@@ -134,6 +135,7 @@ public class CacheContinuousQueryEventBufferTest extends GridCommonAbstractTest 
                 CacheContinuousQueryEntry expEntry = new CacheContinuousQueryEntry(
                     0,
                     EventType.CREATED,
+                    null,
                     null,
                     null,
                     null,

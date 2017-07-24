@@ -106,7 +106,7 @@ public class PlatformEventsWriteEventTask extends ComputeTaskAdapter<Long, Objec
 
                 //noinspection unchecked
                 ctx.writeEvent(writer, new CacheQueryExecutedEvent(node, msg, evtType, "qryType", "cacheName",
-                    "clsName", "clause", null, null, null, uuid, "taskName"));
+                    "clsName", "clause", null, null, null, null, uuid, "taskName"));
 
                 //noinspection unchecked
                 ctx.writeEvent(writer, new CacheQueryReadEvent(node, msg, evtType, "qryType", "cacheName",

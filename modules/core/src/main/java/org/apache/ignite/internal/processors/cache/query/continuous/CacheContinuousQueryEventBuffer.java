@@ -355,6 +355,7 @@ public class CacheContinuousQueryEventBuffer {
                             e.key(),
                             e.value(),
                             e.oldValue(),
+                            e.transformedValue(),
                             e.isKeepBinary(),
                             e.partition(),
                             e.updateCounter(),
@@ -396,6 +397,7 @@ public class CacheContinuousQueryEventBuffer {
          */
         private CacheContinuousQueryEntry filteredEntry(long cntr, long filtered) {
             CacheContinuousQueryEntry e = new CacheContinuousQueryEntry(0,
+                null,
                 null,
                 null,
                 null,
