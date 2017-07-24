@@ -517,6 +517,16 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             }
         }
 
+        for (DynamicCacheDescriptor desc : startDescs) {
+            if (desc.cacheConfiguration().getCacheMode() != LOCAL) {
+                CacheGroupContext grp = cctx.cache().cacheGroup(desc.groupId());
+
+                assert grp != null;
+
+                grp.topology().onExchangeDone(grp.affinity().cachedAffinity(topVer), true);
+            }
+        }
+
         cctx.cache().initCacheProxies(topVer, null);
 
         cctx.cache().completeClientCacheChangeFuture(msg.requestId(), null);
@@ -1299,6 +1309,19 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     }
 
     /**
+     * @param grpId Group ID.
+     * @return Group name for debug purpose.
+     */
+    private String debugGroupName(int grpId) {
+        CacheGroupDescriptor desc = caches.group(grpId);
+
+        if (desc != null)
+            return desc.cacheOrGroupName();
+        else
+            return "Unknown group: " + grpId;
+    }
+
+    /**
      * @param fut Exchange future.
      * @throws IgniteCheckedException If failed.
      */
@@ -1396,19 +1419,31 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      * Called on exchange initiated by server node leave.
      *
      * @param fut Exchange future.
+     * @param crd Coordinator flag.
      * @throws IgniteCheckedException If failed.
      * @return {@code True} if affinity should be assigned by coordinator.
      */
-    public boolean onServerLeft(final GridDhtPartitionsExchangeFuture fut) throws IgniteCheckedException {
+    public boolean onServerLeft(final GridDhtPartitionsExchangeFuture fut, boolean crd) throws IgniteCheckedException {
         ClusterNode leftNode = fut.discoveryEvent().eventNode();
 
         assert !leftNode.isClient() : leftNode;
 
-        for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
-            if (grp.isLocal())
-                continue;
+        if (crd) {
+            // Need initialize CacheGroupHolders if this node become coordinator on this exchange.
+            forAllRegisteredCacheGroups(new IgniteInClosureX<CacheGroupDescriptor>() {
+                @Override public void applyx(CacheGroupDescriptor desc) throws IgniteCheckedException {
+                    CacheGroupHolder cache = groupHolder(fut.topologyVersion(), desc);
 
-            grp.affinity().calculate(fut.topologyVersion(), fut.discoveryEvent(), fut.discoCache());
+                    cache.aff.calculate(fut.topologyVersion(), fut.discoveryEvent(), fut.discoCache());
+                }
+            });
+        }
+        else {
+            forAllCacheGroups(false, new IgniteInClosureX<GridAffinityAssignmentCache>() {
+                @Override public void applyx(GridAffinityAssignmentCache aff) throws IgniteCheckedException {
+                    aff.calculate(fut.topologyVersion(), fut.discoveryEvent(), fut.discoCache());
+                }
+            });
         }
 
         synchronized (mux) {
@@ -1433,12 +1468,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             @Override public void applyx(CacheGroupDescriptor desc) throws IgniteCheckedException {
                 CacheGroupHolder grpHolder = grpHolders.get(desc.groupId());
 
-                if (grpHolder != null) {
-                    if (grpHolder.client()) // Affinity for non-client holders calculated in {@link #onServerLeft}.
-                        grpHolder.affinity().calculate(fut.topologyVersion(), fut.discoveryEvent(), fut.discoCache());
-
+                if (grpHolder != null)
                     return;
-                }
 
                 // Need initialize holders and affinity if this node became coordinator during this exchange.
                 final Integer grpId = desc.groupId();

@@ -130,6 +130,15 @@ public interface GridDhtPartitionTopology {
         throws GridDhtInvalidPartitionException;
 
     /**
+     * Unconditionally creates partition during restore of persisted partition state.
+     *
+     * @param p Partition ID.
+     * @return Partition.
+     * @throws IgniteCheckedException If failed.
+     */
+    public GridDhtLocalPartition forceCreatePartition(int p) throws IgniteCheckedException;
+
+    /**
      * @param topVer Topology version at the time of creation.
      * @param p Partition ID.
      * @param create If {@code true}, then partition will be created if it's not there.
@@ -331,6 +340,7 @@ public interface GridDhtPartitionTopology {
      * Callback on exchange done.
      *
      * @param assignment New affinity assignment.
+     * @param updateRebalanceVer {@code True} if need check rebalance state.
      */
-    public void onExchangeDone(AffinityAssignment assignment);
+    public void onExchangeDone(AffinityAssignment assignment, boolean updateRebalanceVer);
 }

@@ -367,6 +367,11 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
+    @Override public GridDhtLocalPartition forceCreatePartition(int p) throws IgniteCheckedException {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
     @Override public GridDhtLocalPartition localPartition(int p) {
         return localPartition(p, AffinityTopologyVersion.NONE, false);
     }
@@ -830,7 +835,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
-    @Override public void onExchangeDone(AffinityAssignment assignment) {
+    @Override public void onExchangeDone(AffinityAssignment assignment, boolean updateRebalanceVer) {
         // No-op.
     }
 
