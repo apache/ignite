@@ -44,7 +44,6 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionState;
 
-import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager.UNDEFINED_THREAD_ID;
 import static org.apache.ignite.transactions.TransactionState.SUSPENDED;
 
 /**

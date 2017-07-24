@@ -2256,9 +2256,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     public void suspendTx(final GridNearTxLocal tx) throws IgniteCheckedException {
         assert tx != null;
 
-        if (!tx.suspendInProgress())
-            throw new IgniteCheckedException("Use suspendTx prohibited. Use tx.suspend() instead.");
-
         clearThreadMap(tx);
 
         transactionMap(tx).remove(tx.xidVersion(), tx);
@@ -2266,8 +2263,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         tx.txTopForSuspension(txTop.get());
 
         tx.state(SUSPENDED);
-
-        tx.threadId(UNDEFINED_THREAD_ID);
     }
 
     /**
@@ -2283,12 +2278,9 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     public void resumeTx(GridNearTxLocal tx) throws IgniteCheckedException {
         assert tx != null;
         assert !tx.system() && !tx.pessimistic();
-        assert tx.threadId() == UNDEFINED_THREAD_ID;
+        assert tx.state() == SUSPENDED;
         assert !threadMap.containsValue(tx);
         assert !transactionMap(tx).containsValue(tx);
-
-        if (!tx.resumeInProgress())
-            throw new IgniteCheckedException("Use resumeTx prohibited. Use tx.resume() instead.");
 
         long threadId = Thread.currentThread().getId();
 
