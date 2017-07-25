@@ -300,7 +300,7 @@ public class GridAffinityAssignmentCache {
 
         String ignitePartDistribution = System.getProperty(IgniteSystemProperties.IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD);
 
-        if (Boolean.valueOf(ignitePartDistribution)) {
+        if (Boolean.valueOf(ignitePartDistribution) || ignitePartDistribution == null) {
             printDistribution(assignment, sorted, cacheOrGrpName, ctx.localNodeId().toString(), assignment.size());
         }
 

@@ -53,36 +53,6 @@ public abstract class AbstractAffinityFunctionSelfTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
-    public void testDistributionCalculationEnabled() throws Exception {
-        checkDistributionCalculation(true);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testDistributionCalculationDisabled() throws Exception {
-        checkDistributionCalculation(false);
-    }
-
-    private void checkDistributionCalculation(boolean enabled) {
-        System.setProperty(IgniteSystemProperties.IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD, String.valueOf(enabled));
-
-        AffinityFunction aff = new RendezvousAffinityFunction(true, 1024);
-
-        GridTestUtils.setFieldValue(aff, "log", log);
-
-        List<ClusterNode> nodes = createBaseNodes(4);
-
-        assignPartitions(aff, nodes, null, 2, 0);
-
-        List<List<ClusterNode>> lst = assignPartitions(aff, nodes, null, 2, 1).get2();
-
-    }
-
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testNodeRemovedNoBackups() throws Exception {
         checkNodeRemoved(0);
     }
@@ -137,7 +107,6 @@ public abstract class AbstractAffinityFunctionSelfTest extends GridCommonAbstrac
     }
 
     /**
-     * @param backups Number of backups.
      * @throws Exception If failed.
      */
     public void testNullKeyForPartitionCalculation() throws Exception {

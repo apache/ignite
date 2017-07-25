@@ -30,6 +30,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.AffinityFunctionContext;
 import org.apache.ignite.cluster.ClusterNode;
@@ -94,6 +95,8 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        System.setProperty(IgniteSystemProperties.IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD, String.valueOf(true));
+
         ignite = startGrid();
     }
 
@@ -355,7 +358,26 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
-    public void testImprovedLog() throws Exception {
+    public void testDistributionCalculationEnabled() throws Exception {
+        checkDistributionCalculation(true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDistributionCalculationDisabled() throws Exception {
+        checkDistributionCalculation(false);
+    }
+
+    /**
+     *
+     * @param enabled Distribution calculation control.
+     */
+    private void checkDistributionCalculation(boolean enabled) {
+        System.setProperty(IgniteSystemProperties.IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD, String.valueOf(enabled));
+
+        String backup = System.getProperty(IgniteSystemProperties.IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD);
+
         AffinityFunction aff = new RendezvousAffinityFunction(true, 1024);
 
         GridTestUtils.setFieldValue(aff, "log", log);
