@@ -3493,7 +3493,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         assert futIds != null && futIds.size() > 0 : futIds;
 
         for (int i = 0; i < futIds.size(); i++) {
-            Long id = futIds.get(i);
+            long id = futIds.get(i);
 
             GridDhtAtomicAbstractUpdateFuture updateFut = (GridDhtAtomicAbstractUpdateFuture)ctx.mvcc().atomicFuture(id);
 
