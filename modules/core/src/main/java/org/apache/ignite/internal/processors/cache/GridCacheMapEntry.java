@@ -4663,7 +4663,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                     writeObj = cctx.toCacheObject(cctx.unwrapTemporary(invokeEntry.getValue()));
 
-                    cctx.validateKeyAndValue(entry.key, (CacheObject)writeObj);
+                    if (writeObj != null) // no validation for remove case
+                        cctx.validateKeyAndValue(entry.key, (CacheObject)writeObj);
                 }
                 else
                     writeObj = invokeEntry.valObj;
