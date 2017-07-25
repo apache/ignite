@@ -1502,39 +1502,39 @@ public class IgniteTxHandler {
                                 entry.op() == TRANSFORM &&
                                 entry.oldValueOnPrimary() &&
                                 !entry.hasValue()) {
-                                while (true) {
-                                    try {
-                                        GridCacheEntryEx cached = entry.cached();
+                                    while (true) {
+                                        try {
+                                            GridCacheEntryEx cached = entry.cached();
 
-                                        if (cached == null) {
-                                            cached = cacheCtx.cache().entryEx(entry.key(), req.topologyVersion());
+                                            if (cached == null) {
+                                                cached = cacheCtx.cache().entryEx(entry.key(), req.topologyVersion());
 
-                                            entry.cached(cached);
-                                        }
+                                                entry.cached(cached);
+                                            }
 
-                                        CacheObject val = cached.innerGet(
-                                            /*ver*/null,
-                                            tx,
-                                            /*readThrough*/false,
-                                            /*updateMetrics*/false,
-                                            /*evt*/false,
-                                            tx.subjectId(),
-                                            /*transformClo*/null,
-                                            tx.resolveTaskName(),
-                                            /*expiryPlc*/null,
-                                            /*keepBinary*/true);
+                                            CacheObject val = cached.innerGet(
+                                                /*ver*/null,
+                                                tx,
+                                                /*readThrough*/false,
+                                                /*updateMetrics*/false,
+                                                /*evt*/false,
+                                                tx.subjectId(),
+                                                /*transformClo*/null,
+                                                tx.resolveTaskName(),
+                                                /*expiryPlc*/null,
+                                                /*keepBinary*/true);
 
-                                        if (val == null)
-                                            val = cacheCtx.toCacheObject(cacheCtx.store().load(null, entry.key()));
+                                            if (val == null)
+                                                val = cacheCtx.toCacheObject(cacheCtx.store().load(null, entry.key()));
 
-                                        if (val != null)
-                                            entry.readValue(val);
+                                            if (val != null)
+                                                entry.readValue(val);
 
-                                    break;
-                                }
-                                catch (GridCacheEntryRemovedException ignored) {
-                                    if (log.isDebugEnabled())
-                                        log.debug("Got entry removed exception, will retry: " + entry.txKey());
+                                        break;
+                                    }
+                                    catch (GridCacheEntryRemovedException ignored) {
+                                        if (log.isDebugEnabled())
+                                            log.debug("Got entry removed exception, will retry: " + entry.txKey());
 
                                         entry.cached(cacheCtx.cache().entryEx(entry.key(), req.topologyVersion()));
                                     }

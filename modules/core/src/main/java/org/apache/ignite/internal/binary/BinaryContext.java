@@ -275,6 +275,7 @@ public class BinaryContext {
 
         colTypes.put(ArrayList.class, GridBinaryMarshaller.ARR_LIST);
         colTypes.put(LinkedList.class, GridBinaryMarshaller.LINKED_LIST);
+        colTypes.put(BinaryUtils.SINGLETON_LIST_CLS, GridBinaryMarshaller.SINGLETON_LIST);
         colTypes.put(HashSet.class, GridBinaryMarshaller.HASH_SET);
         colTypes.put(LinkedHashSet.class, GridBinaryMarshaller.LINKED_HASH_SET);
 

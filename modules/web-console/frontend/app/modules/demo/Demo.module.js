@@ -24,7 +24,7 @@ angular
 .module('ignite-console.demo', [
     'ignite-console.socket'
 ])
-.config(['$stateProvider', 'AclRouteProvider', ($stateProvider, AclRoute) => {
+.config(['$stateProvider', ($stateProvider) => {
     $stateProvider
         .state('demo', {
             abstract: true,
@@ -33,17 +33,17 @@ angular
         })
         .state('demo.resume', {
             url: '/resume',
-            onEnter: AclRoute.checkAccess('demo'),
+            permission: 'demo',
             controller: ['$state', ($state) => {
                 $state.go('base.configuration.tabs.advanced.clusters');
             }],
-            metaTags: {
+            tfMetaTags: {
                 title: 'Demo resume'
             }
         })
         .state('demo.reset', {
             url: '/reset',
-            onEnter: AclRoute.checkAccess('demo'),
+            permission: 'demo',
             controller: ['$state', '$http', 'IgniteMessages', ($state, $http, Messages) => {
                 $http.post('/api/v1/demo/reset')
                     .then(() => $state.go('base.configuration.tabs.advanced.clusters'))
@@ -53,7 +53,7 @@ angular
                         Messages.showError(res);
                     });
             }],
-            metaTags: {
+            tfMetaTags: {
                 title: 'Demo reset'
             }
         });

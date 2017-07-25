@@ -2159,7 +2159,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                         }
                     }
                     // Special case for optimal sequence of nodes processing.
-                    else if (nearTxLoc && requestedKeys != null && requestedKeys.contains(txKey.key())) {
+                    else if (nearTxLoc && requestedKeys != null && requestedKeys.contains(txKey)) {
                         TxLock txLock = new TxLock(
                             tx.nearXidVersion(),
                             tx.nodeId(),

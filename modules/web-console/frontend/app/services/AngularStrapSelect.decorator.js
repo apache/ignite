@@ -21,7 +21,7 @@ import angular from 'angular';
  * Special decorator that fix problem in AngularStrap selectAll / deselectAll methods.
  * If this problem will be fixed in AngularStrap we can remove this delegate.
  */
-angular.module('mgcrea.ngStrap.select')
+export default angular.module('mgcrea.ngStrap.select')
     .decorator('$select', ['$delegate', ($delegate) => {
         function SelectFactoryDecorated(element, controller, config) {
             const delegate = $delegate(element, controller, config);

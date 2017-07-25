@@ -1166,7 +1166,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             if (loc)
             {
-                var target = DoOutOpObject((int) CacheOp.LocIterator, w => w.WriteInt(peekModes));
+                var target = DoOutOpObject((int) CacheOp.LocIterator, (IBinaryStream s) => s.WriteInt(peekModes));
 
                 return new CacheEnumerator<TK, TV>(target, Marshaller, _flagKeepBinary);
             }

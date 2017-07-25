@@ -253,7 +253,9 @@ namespace Apache.Ignite.Core
 
                     var javaLogger = log as JavaLogger;
                     if (javaLogger != null)
-                        javaLogger.SetProcessor(interopProc);
+                    {
+                        javaLogger.SetIgnite(node);
+                    }
 
                     // 6. On-start callback (notify lifecycle components).
                     node.OnStart();
@@ -291,10 +293,14 @@ namespace Apache.Ignite.Core
                 }
                 finally
                 {
+                    var ignite = _startup.Ignite;
+
                     _startup = null;
 
-                    if (interopProc != null)
-                        UU.ProcessorReleaseStart(interopProc);
+                    if (ignite != null)
+                    {
+                        ignite.ProcessorReleaseStart();
+                    }
                 }
             }
         }

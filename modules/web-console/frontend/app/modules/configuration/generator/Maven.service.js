@@ -47,12 +47,9 @@ export default class IgniteMavenGenerator {
             return _.isArray(version) ? _.find(version, (v) => versionService.since(igniteVer, v.range)).version : version;
         };
 
-        if (!_.has(POM_DEPENDENCIES, key))
-            return;
-
-        const {groupId, artifactId, version, jar} = POM_DEPENDENCIES[key];
-
-        this.addDependency(deps, groupId || 'org.apache.ignite', artifactId, extractVersion(version) || dfltVer, jar);
+        _.forEach(POM_DEPENDENCIES[key], ({groupId, artifactId, version, jar}) => {
+            this.addDependency(deps, groupId || 'org.apache.ignite', artifactId, extractVersion(version) || dfltVer, jar);
+        });
     }
 
     addResource(sb, dir, exclude) {

@@ -23,6 +23,7 @@ import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.exceptions.CardinalityException;
 import org.apache.ignite.ml.math.exceptions.NonPositiveDefiniteMatrixException;
 import org.apache.ignite.ml.math.exceptions.NonSymmetricMatrixException;
+import org.apache.ignite.ml.math.util.MatrixUtil;
 
 import static org.apache.ignite.ml.math.util.MatrixUtil.like;
 import static org.apache.ignite.ml.math.util.MatrixUtil.likeVector;
@@ -252,7 +253,7 @@ public class CholeskyDecomposition implements Destroyable {
             throw new CardinalityException(b.rowSize(), m);
 
         final int nColB = b.columnSize();
-        final double[][] x = b.getStorage().data();
+        final double[][] x = MatrixUtil.unflatten(b.getStorage().data(), b.columnSize());
 
         // Solve LY = b
         for (int j = 0; j < m; j++) {
@@ -295,15 +296,13 @@ public class CholeskyDecomposition implements Destroyable {
     /** */
     private double[][] toDoubleArr(Matrix mtx) {
         if (mtx.isArrayBased())
-            return mtx.getStorage().data();
+            return MatrixUtil.unflatten(mtx.getStorage().data(), mtx.columnSize());
 
-        double[][] res = new double[mtx.rowSize()][];
+        double[][] res = new double[mtx.rowSize()][mtx.columnSize()];
 
-        for (int row = 0; row < mtx.rowSize(); row++) {
-            res[row] = new double[mtx.columnSize()];
+        for (int row = 0; row < mtx.rowSize(); row++)
             for (int col = 0; col < mtx.columnSize(); col++)
                 res[row][col] = mtx.get(row, col);
-        }
 
         return res;
     }

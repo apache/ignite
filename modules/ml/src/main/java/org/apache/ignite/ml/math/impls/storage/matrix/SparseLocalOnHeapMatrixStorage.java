@@ -19,6 +19,8 @@ package org.apache.ignite.ml.math.impls.storage.matrix;
 
 import it.unimi.dsi.fastutil.ints.Int2DoubleOpenHashMap;
 import it.unimi.dsi.fastutil.ints.Int2DoubleRBTreeMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectArrayMap;
+import it.unimi.dsi.fastutil.ints.IntSet;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
@@ -26,6 +28,7 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.ml.math.MatrixStorage;
 import org.apache.ignite.ml.math.StorageConstants;
+import org.apache.ignite.ml.math.functions.IgniteTriFunction;
 
 /**
  * Storage for sparse, local, on-heap matrix.
@@ -224,5 +227,20 @@ public class SparseLocalOnHeapMatrixStorage implements MatrixStorage, StorageCon
 
         return rows == that.rows && cols == that.cols && acsMode == that.acsMode && stoMode == that.stoMode
             && (sto != null ? sto.equals(that.sto) : that.sto == null);
+    }
+
+    /** */
+    public void compute(int row, int col, IgniteTriFunction<Integer, Integer, Double, Double> f) {
+        sto.get(row).compute(col, (c, val) -> f.apply(row, c, val));
+    }
+
+    /** */
+    public Int2ObjectArrayMap<IntSet> indexesMap() {
+        Int2ObjectArrayMap<IntSet> res = new Int2ObjectArrayMap<>();
+
+        for (Integer row : sto.keySet())
+            res.put(row.intValue(), (IntSet)sto.get(row).keySet());
+
+        return res;
     }
 }
