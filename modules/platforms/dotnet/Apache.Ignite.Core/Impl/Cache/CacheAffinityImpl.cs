@@ -182,7 +182,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             IgniteArgumentCheck.NotNull(keys, "keys");
 
-            return DoOutInOp(OpMapKeysToNodes, w => WriteEnumerable(w, keys),
+            return DoOutInOp(OpMapKeysToNodes, w => w.WriteEnumerable(keys),
                 reader => ReadDictionary(reader, ReadNode, r => (IList<TK>) r.ReadCollectionAsList<TK>()));
         }
 
@@ -214,7 +214,7 @@ namespace Apache.Ignite.Core.Impl.Cache
             IgniteArgumentCheck.NotNull(parts, "parts");
 
             return DoOutInOp(OpMapPartitionsToNodes,
-                w => WriteEnumerable(w, parts),
+                w => w.WriteEnumerable(parts),
                 reader => ReadDictionary(reader, r => r.ReadInt(), ReadNode));
         }
 

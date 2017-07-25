@@ -252,10 +252,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         {
             Debug.Assert(items != null);
 
-            IUnmanagedTarget prj = DoOutOpObject(OpForNodeIds, writer =>
-            {
-                WriteEnumerable(writer, items, func);
-            });
+            IUnmanagedTarget prj = DoOutOpObject(OpForNodeIds, writer => writer.WriteEnumerable(items, func));
             
             return GetClusterGroup(prj);
         }
@@ -404,15 +401,14 @@ namespace Apache.Ignite.Core.Impl.Cluster
                     return reader.ReadBoolean() ? new ClusterMetricsImpl(reader) : null;
                 });
             }
-            return DoOutInOp(OpMetricsFiltered, writer =>
-            {
-                WriteEnumerable(writer, GetNodes().Select(node => node.Id));
-            }, stream =>
-            {
-                IBinaryRawReader reader = Marshaller.StartUnmarshal(stream, false);
+            return DoOutInOp(OpMetricsFiltered,
+                writer => writer.WriteEnumerable(GetNodes().Select(node => node.Id)),
+                stream =>
+                {
+                    IBinaryRawReader reader = Marshaller.StartUnmarshal(stream, false);
 
-                return reader.ReadBoolean() ? new ClusterMetricsImpl(reader) : null;
-            });
+                    return reader.ReadBoolean() ? new ClusterMetricsImpl(reader) : null;
+                });
         }
 
         /** <inheritDoc /> */

@@ -102,7 +102,7 @@ namespace Apache.Ignite.Core.Impl.Messaging
             {
                 writer.Write(topic);
 
-                WriteEnumerable(writer, messages.OfType<object>());
+                writer.WriteEnumerable(messages.OfType<object>());
             });
         }
 
