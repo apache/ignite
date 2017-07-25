@@ -642,8 +642,6 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_CLIENT_CACHE_CHANGE_MESSAGE_TIMEOUT =
         "IGNITE_CLIENT_CACHE_CHANGE_MESSAGE_TIMEOUT";
 
-
-
     /**
      * Enforces singleton.
      */

@@ -54,7 +54,6 @@ public class RendezvousAffinityFunctionCalculateDistributionSelfTest extends Abs
 
         assertEquals("Test\r\njava.lang.RuntimeException: Test exception 1.\r\n", logger.toString());
 
-
         stopAllGrids();
     }
 
@@ -70,15 +69,12 @@ public class RendezvousAffinityFunctionCalculateDistributionSelfTest extends Abs
     }
 
     /**
-     *
      * @return affinityFunction AffinityFunction
      */
     @Override protected AffinityFunction affinityFunction() {
         AffinityFunction aff = new RendezvousAffinityFunction(true, 1024);
 
         GridTestUtils.setFieldValue(aff, "log", logger);
-
-        System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!!*********" + logger.toString());
 
         return aff;
     }
