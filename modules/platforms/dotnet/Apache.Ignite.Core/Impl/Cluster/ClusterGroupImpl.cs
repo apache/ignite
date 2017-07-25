@@ -135,6 +135,18 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /** */
         private const int OpGetPersistentStoreMetrics = 30;
 
+        /** */
+        private const int OpGetCompute = 31;
+
+        /** */
+        private const int OpGetMessaging = 32;
+
+        /** */
+        private const int OpGetEvents = 33;
+
+        /** */
+        private const int OpGetServices = 34;
+
         /** Initial Ignite instance. */
         private readonly Ignite _ignite;
         
@@ -147,17 +159,14 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /** Nodes for the given topology version. */
         private volatile IList<IClusterNode> _nodes;
 
-        /** Processor. */
-        private readonly IUnmanagedTarget _proc;
-
         /** Compute. */
-        private readonly Lazy<Compute> _comp;
+        private readonly Lazy<ICompute> _comp;
 
         /** Messaging. */
-        private readonly Lazy<Messaging> _msg;
+        private readonly Lazy<IMessaging> _msg;
 
         /** Events. */
-        private readonly Lazy<Events> _events;
+        private readonly Lazy<IEvents> _events;
 
         /** Services. */
         private readonly Lazy<IServices> _services;
@@ -165,29 +174,20 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /// <summary>
         /// Constructor.
         /// </summary>
-        /// <param name="proc">Processor.</param>
         /// <param name="target">Target.</param>
-        /// <param name="marsh">Marshaller.</param>
         /// <param name="ignite">Grid.</param>
         /// <param name="pred">Predicate.</param>
         [SuppressMessage("Microsoft.Performance", "CA1805:DoNotInitializeUnnecessarily")]
-        public ClusterGroupImpl(IUnmanagedTarget proc, IUnmanagedTarget target, Marshaller marsh,
-            Ignite ignite, Func<IClusterNode, bool> pred)
-            : base(target, marsh)
+        public ClusterGroupImpl(IUnmanagedTarget target, Ignite ignite, Func<IClusterNode, bool> pred)
+            : base(target, ignite.Marshaller)
         {
-            _proc = proc;
             _ignite = ignite;
             _pred = pred;
 
-            _comp = new Lazy<Compute>(() => 
-                new Compute(new ComputeImpl(UU.ProcessorCompute(proc, target), marsh, this, false)));
-
-            _msg = new Lazy<Messaging>(() => new Messaging(UU.ProcessorMessage(proc, target), marsh, this));
-
-            _events = new Lazy<Events>(() => new Events(UU.ProcessorEvents(proc, target), marsh, this));
-
-            _services = new Lazy<IServices>(() => 
-                new Services(UU.ProcessorServices(proc, target), marsh, this, false, false));
+            _comp = new Lazy<ICompute>(() => CreateCompute());
+            _msg = new Lazy<IMessaging>(() => CreateMessaging());
+            _events = new Lazy<IEvents>(() => CreateEvents());
+            _services = new Lazy<IServices>(() => CreateServices());
         }
 
         /** <inheritDoc /> */
@@ -200,6 +200,14 @@ namespace Apache.Ignite.Core.Impl.Cluster
         public ICompute GetCompute()
         {
             return _comp.Value;
+        }
+
+        /// <summary>
+        /// Creates the compute.
+        /// </summary>
+        private ICompute CreateCompute()
+        {
+            return new Compute(new ComputeImpl(DoOutOpObject(OpGetCompute), Marshaller, this, false));
         }
 
         /** <inheritDoc /> */
@@ -257,7 +265,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         {
             var newPred = _pred == null ? p : node => _pred(node) && p(node);
 
-            return new ClusterGroupImpl(_proc, Target, Marshaller, _ignite, newPred);
+            return new ClusterGroupImpl(Target, _ignite, newPred);
         }
 
         /** <inheritDoc /> */
@@ -413,16 +421,40 @@ namespace Apache.Ignite.Core.Impl.Cluster
             return _msg.Value;
         }
 
+        /// <summary>
+        /// Creates the messaging.
+        /// </summary>
+        private IMessaging CreateMessaging()
+        {
+            return new Messaging(DoOutOpObject(OpGetMessaging), Marshaller, this);
+        }
+
         /** <inheritDoc /> */
         public IEvents GetEvents()
         {
             return _events.Value;
         }
 
+        /// <summary>
+        /// Creates the events.
+        /// </summary>
+        private IEvents CreateEvents()
+        {
+            return new Events(DoOutOpObject(OpGetEvents), Marshaller, this);
+        }
+
         /** <inheritDoc /> */
         public IServices GetServices()
         {
             return _services.Value;
+        }
+
+        /// <summary>
+        /// Creates the services.
+        /// </summary>
+        private IServices CreateServices()
+        {
+            return new Services(DoOutOpObject(OpGetServices), Marshaller, this, false, false);
         }
 
         /// <summary>
@@ -635,7 +667,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /// <returns>New cluster group.</returns>
         private IClusterGroup GetClusterGroup(IUnmanagedTarget prj)
         {
-            return new ClusterGroupImpl(_proc, prj, Marshaller, _ignite, _pred);
+            return new ClusterGroupImpl(prj, _ignite, _pred);
         }
 
         /// <summary>

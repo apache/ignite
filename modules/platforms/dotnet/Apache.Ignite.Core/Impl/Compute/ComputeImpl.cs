@@ -186,10 +186,10 @@ namespace Apache.Ignite.Core.Impl.Compute
 
             long ptr = Marshaller.Ignite.HandleRegistry.Allocate(holder);
 
-            var futTarget = DoOutOpObject(OpExecNative, w =>
+            var futTarget = DoOutOpObject(OpExecNative, (IBinaryStream s) =>
             {
-                w.WriteLong(ptr);
-                w.WriteLong(_prj.TopologyVersion);
+                s.WriteLong(ptr);
+                s.WriteLong(_prj.TopologyVersion);
             });
 
             var future = holder.Future;
