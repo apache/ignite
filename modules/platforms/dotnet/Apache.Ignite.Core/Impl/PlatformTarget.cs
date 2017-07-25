@@ -47,10 +47,7 @@ namespace Apache.Ignite.Core.Impl
         protected const int True = 1;
 
         /** */
-        protected const int Error = -1;
-
-        /** */
-        public const int OpNone = -2;
+        private const int Error = -1;
 
         /** */
         private static readonly Dictionary<Type, FutureType> IgniteFutureTypeMap
@@ -77,7 +74,7 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         /// <param name="target">Target.</param>
         /// <param name="marsh">Marshaller.</param>
-        public PlatformTarget(IUnmanagedTarget target, Marshaller marsh)
+        protected PlatformTarget(IUnmanagedTarget target, Marshaller marsh)
         {
             Debug.Assert(target != null);
             Debug.Assert(marsh != null);
@@ -109,32 +106,9 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         /// <param name="writer">Writer.</param>
         /// <param name="vals">Values.</param>
-        /// <returns>The same writer for chaining.</returns>
-        protected static BinaryWriter WriteCollection<T>(BinaryWriter writer, ICollection<T> vals)
-        {
-            return WriteCollection<T, T>(writer, vals, null);
-        }
-
-        /// <summary>
-        /// Write nullable collection.
-        /// </summary>
-        /// <param name="writer">Writer.</param>
-        /// <param name="vals">Values.</param>
-        /// <returns>The same writer for chaining.</returns>
-        protected static BinaryWriter WriteNullableCollection<T>(BinaryWriter writer, ICollection<T> vals)
-        {
-            return WriteNullable(writer, vals, WriteCollection);
-        }
-
-        /// <summary>
-        /// Write collection.
-        /// </summary>
-        /// <param name="writer">Writer.</param>
-        /// <param name="vals">Values.</param>
         /// <param name="selector">A transform function to apply to each element.</param>
         /// <returns>The same writer for chaining.</returns>
-        protected static BinaryWriter WriteCollection<T1, T2>(BinaryWriter writer,
-            ICollection<T1> vals, Func<T1, T2> selector)
+        private static void WriteCollection<T1, T2>(BinaryWriter writer, ICollection<T1> vals, Func<T1, T2> selector)
         {
             writer.WriteInt(vals.Count);
 
@@ -148,8 +122,6 @@ namespace Apache.Ignite.Core.Impl
                 foreach (var val in vals)
                     writer.Write(selector(val));
             }
-
-            return writer;
         }
 
         /// <summary>
@@ -158,9 +130,9 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="writer">Writer.</param>
         /// <param name="vals">Values.</param>
         /// <returns>The same writer for chaining.</returns>
-        protected static BinaryWriter WriteEnumerable<T>(BinaryWriter writer, IEnumerable<T> vals)
+        protected static void WriteEnumerable<T>(BinaryWriter writer, IEnumerable<T> vals)
         {
-            return WriteEnumerable<T, T>(writer, vals, null);
+            WriteEnumerable<T, T>(writer, vals, null);
         }
 
         /// <summary>
@@ -170,14 +142,15 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="vals">Values.</param>
         /// <param name="selector">A transform function to apply to each element.</param>
         /// <returns>The same writer for chaining.</returns>
-        protected static BinaryWriter WriteEnumerable<T1, T2>(BinaryWriter writer,
-            IEnumerable<T1> vals, Func<T1, T2> selector)
+        protected static void WriteEnumerable<T1, T2>(BinaryWriter writer, IEnumerable<T1> vals, Func<T1, T2> selector)
         {
             var col = vals as ICollection<T1>;
 
             if (col != null)
-                return WriteCollection(writer, col, selector);
-            
+            {
+                WriteCollection(writer, col, selector);
+            }
+
             var stream = writer.Stream;
 
             var pos = stream.Position;
@@ -206,8 +179,6 @@ namespace Apache.Ignite.Core.Impl
             }
 
             stream.WriteInt(pos, size);
-                
-            return writer;
         }
 
         /// <summary>
@@ -231,28 +202,6 @@ namespace Apache.Ignite.Core.Impl
             }
 
             writer.Stream.WriteInt(pos, cnt);
-        }
-
-        /// <summary>
-        /// Write a nullable item.
-        /// </summary>
-        /// <param name="writer">Writer.</param>
-        /// <param name="item">Item.</param>
-        /// <param name="writeItem">Write action to perform on item when it is not null.</param>
-        /// <returns>The same writer for chaining.</returns>
-        private static BinaryWriter WriteNullable<T>(BinaryWriter writer, T item,
-            Func<BinaryWriter, T, BinaryWriter> writeItem) where T : class
-        {
-            if (item == null)
-            {
-                writer.WriteBoolean(false);
-
-                return writer;
-            }
-
-            writer.WriteBoolean(true);
-
-            return writeItem(writer, item);
         }
 
         #endregion
@@ -368,24 +317,6 @@ namespace Apache.Ignite.Core.Impl
             {
                 writer.Write(val1);
                 writer.Write(val2);
-            });
-        }
-
-        /// <summary>
-        /// Perform simple output operation accepting three arguments.
-        /// </summary>
-        /// <param name="type">Operation type.</param>
-        /// <param name="val1">Value 1.</param>
-        /// <param name="val2">Value 2.</param>
-        /// <param name="val3">Value 3.</param>
-        /// <returns>Result.</returns>
-        protected long DoOutOp<T1, T2, T3>(int type, T1 val1, T2 val2, T3 val3)
-        {
-            return DoOutOp(type, writer =>
-            {
-                writer.Write(val1);
-                writer.Write(val2);
-                writer.Write(val3);
             });
         }
 
@@ -697,35 +628,6 @@ namespace Apache.Ignite.Core.Impl
         /// Perform simple out-in operation accepting two arguments.
         /// </summary>
         /// <param name="type">Operation type.</param>
-        /// <param name="val1">Value.</param>
-        /// <param name="val2">Value.</param>
-        /// <returns>Result.</returns>
-        protected TR DoOutInOp<T1, T2, TR>(int type, T1 val1, T2 val2)
-        {
-            using (PlatformMemoryStream outStream = IgniteManager.Memory.Allocate().GetStream())
-            {
-                using (PlatformMemoryStream inStream = IgniteManager.Memory.Allocate().GetStream())
-                {
-                    BinaryWriter writer = _marsh.StartMarshal(outStream);
-
-                    writer.WriteObject(val1);
-                    writer.WriteObject(val2);
-
-                    FinishMarshal(writer);
-
-                    UU.TargetInStreamOutStream(_target, type, outStream.SynchronizeOutput(), inStream.MemoryPointer);
-
-                    inStream.SynchronizeInput();
-
-                    return Unmarshal<TR>(inStream);
-                }
-            }
-        }
-
-        /// <summary>
-        /// Perform simple out-in operation accepting two arguments.
-        /// </summary>
-        /// <param name="type">Operation type.</param>
         /// <param name="val">Value.</param>
         /// <returns>Result.</returns>
         protected long DoOutInOp(int type, long val = 0)
@@ -902,7 +804,7 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="keepBinary">Keep binary flag, only applicable to object futures. False by default.</param>
         /// <param name="convertFunc">The function to read future result from stream.</param>
         /// <returns>Created future.</returns>
-        protected Future<T> GetFuture<T>(Action<long, int> listenAction, bool keepBinary = false,
+        private Future<T> GetFuture<T>(Action<long, int> listenAction, bool keepBinary = false,
             Func<BinaryReader, T> convertFunc = null)
         {
             var futType = FutureType.Object;
