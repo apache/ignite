@@ -547,8 +547,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
                 return result;
             }
 
-            return new DataStreamerImpl<TK1, TV1>(UU.ProcessorDataStreamer(Marshaller.Ignite.InteropProcessor,
-                _cacheName, true), Marshaller, _cacheName, true);
+            return Marshaller.Ignite.GetDataStreamer<TK1, TV1>(_cacheName, true);
         }
 
         /** <inheritDoc /> */

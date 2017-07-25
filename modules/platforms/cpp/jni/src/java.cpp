@@ -223,32 +223,6 @@ namespace ignite
 
             const char* C_PLATFORM_PROCESSOR = "org/apache/ignite/internal/processors/platform/PlatformProcessor";
             JniMethod M_PLATFORM_PROCESSOR_RELEASE_START = JniMethod("releaseStart", "()V", false);
-            JniMethod M_PLATFORM_PROCESSOR_PROJECTION = JniMethod("projection", "()Lorg/apache/ignite/internal/processors/platform/PlatformTargetProxy;", false);
-            JniMethod M_PLATFORM_PROCESSOR_CACHE = JniMethod("cache", "(Ljava/lang/String;)Lorg/apache/ignite/internal/processors/platform/PlatformTargetProxy;", false);
-            JniMethod M_PLATFORM_PROCESSOR_CREATE_CACHE = JniMethod("createCache", "(Ljava/lang/String;)Lorg/apache/ignite/internal/processors/platform/PlatformTargetProxy;", false);
-            JniMethod M_PLATFORM_PROCESSOR_GET_OR_CREATE_CACHE = JniMethod("getOrCreateCache", "(Ljava/lang/String;)Lorg/apache/ignite/internal/processors/platform/PlatformTargetProxy;", false);
-            JniMethod M_PLATFORM_PROCESSOR_CREATE_CACHE_FROM_CONFIG = JniMethod("createCacheFromConfig", "(J)Lorg/apache/ignite/internal/processors/platform/PlatformTargetProxy;", false);
-            JniMethod M_PLATFORM_PROCESSOR_GET_OR_CREATE_CACHE_FROM_CONFIG = JniMethod("getOrCreateCacheFromConfig", "(J)Lorg/apache/ignite/internal/processors/platform/PlatformTargetProxy;", false);
-            JniMethod M_PLATFORM_PROCESSOR_CREATE_NEAR_CACHE = JniMethod("createNearCache", "(Ljava/lang/String;J)Lorg/apache/ignite/internal/processors/platform/PlatformTargetProxy;", false);
-            JniMethod M_PLATFORM_PROCESSOR_GET_OR_CREATE_NEAR_CACHE = JniMethod("getOrCreateNearCache", "(Ljava/lang/String;J)Lorg/apache/ignite/internal/processors/platform/PlatformTargetProxy;", false);
-            JniMethod M_PLATFORM_PROCESSOR_DESTROY_CACHE = JniMethod("destroyCache", "(Ljava/lang/String;)V", false);
-            JniMethod M_PLATFORM_PROCESSOR_AFFINITY = JniMethod("affinity", "(Ljava/lang/String;)Lorg/apache/ignite/internal/processors/platform/PlatformTargetProxy;", false);
-            JniMethod M_PLATFORM_PROCESSOR_DATA_STREAMER = JniMethod("dataStreamer", "(Ljava/lang/String;Z)Lorg/apache/ignite/internal/processors/platform/PlatformTargetProxy;", false);
-            JniMethod M_PLATFORM_PROCESSOR_TRANSACTIONS = JniMethod("transactions", "()Lorg/apache/ignite/internal/processors/platform/PlatformTargetProxy;", false);
-            JniMethod M_PLATFORM_PROCESSOR_COMPUTE = JniMethod("compute", "(Lorg/apache/ignite/internal/processors/platform/PlatformTargetProxy;)Lorg/apache/ignite/internal/processors/platform/PlatformTargetProxy;", false);
-            JniMethod M_PLATFORM_PROCESSOR_MESSAGE = JniMethod("message", "(Lorg/apache/ignite/internal/processors/platform/PlatformTargetProxy;)Lorg/apache/ignite/internal/processors/platform/PlatformTargetProxy;", false);
-            JniMethod M_PLATFORM_PROCESSOR_EVENTS = JniMethod("events", "(Lorg/apache/ignite/internal/processors/platform/PlatformTargetProxy;)Lorg/apache/ignite/internal/processors/platform/PlatformTargetProxy;", false);
-            JniMethod M_PLATFORM_PROCESSOR_SERVICES = JniMethod("services", "(Lorg/apache/ignite/internal/processors/platform/PlatformTargetProxy;)Lorg/apache/ignite/internal/processors/platform/PlatformTargetProxy;", false);
-            JniMethod M_PLATFORM_PROCESSOR_EXTENSIONS = JniMethod("extensions", "()Lorg/apache/ignite/internal/processors/platform/PlatformTargetProxy;", false);
-            JniMethod M_PLATFORM_PROCESSOR_EXTENSION = JniMethod("extension", "(I)Lorg/apache/ignite/internal/processors/platform/PlatformTargetProxy;", false);
-            JniMethod M_PLATFORM_PROCESSOR_ATOMIC_LONG = JniMethod("atomicLong", "(Ljava/lang/String;JZ)Lorg/apache/ignite/internal/processors/platform/PlatformTargetProxy;", false);
-            JniMethod M_PLATFORM_PROCESSOR_ATOMIC_SEQUENCE = JniMethod("atomicSequence", "(Ljava/lang/String;JZ)Lorg/apache/ignite/internal/processors/platform/PlatformTargetProxy;", false);
-            JniMethod M_PLATFORM_PROCESSOR_ATOMIC_REFERENCE = JniMethod("atomicReference", "(Ljava/lang/String;JZ)Lorg/apache/ignite/internal/processors/platform/PlatformTargetProxy;", false);
-            JniMethod M_PLATFORM_PROCESSOR_GET_IGNITE_CONFIGURATION = JniMethod("getIgniteConfiguration", "(J)V", false);
-            JniMethod M_PLATFORM_PROCESSOR_GET_CACHE_NAMES = JniMethod("getCacheNames", "(J)V", false);
-            JniMethod M_PLATFORM_PROCESSOR_LOGGER_IS_LEVEL_ENABLED = JniMethod("loggerIsLevelEnabled", "(I)Z", false);
-            JniMethod M_PLATFORM_PROCESSOR_LOGGER_LOG = JniMethod("loggerLog", "(ILjava/lang/String;Ljava/lang/String;Ljava/lang/String;)V", false);
-            JniMethod M_PLATFORM_PROCESSOR_BINARY_PROCESSOR = JniMethod("binaryProcessor", "()Lorg/apache/ignite/internal/processors/platform/PlatformTargetProxy;", false);
 
             const char* C_PLATFORM_TARGET = "org/apache/ignite/internal/processors/platform/PlatformTargetProxy";
             JniMethod M_PLATFORM_TARGET_IN_LONG_OUT_LONG = JniMethod("inLongOutLong", "(IJ)J", false);
@@ -262,85 +236,8 @@ namespace ignite
 
             const char* C_PLATFORM_CALLBACK_UTILS = "org/apache/ignite/internal/processors/platform/callback/PlatformCallbackUtils";
 
-            JniMethod M_PLATFORM_CALLBACK_UTILS_CACHE_STORE_CREATE = JniMethod("cacheStoreCreate", "(JJ)J", true);
-            JniMethod M_PLATFORM_CALLBACK_UTILS_CACHE_STORE_INVOKE = JniMethod("cacheStoreInvoke", "(JJJ)I", true);
-            JniMethod M_PLATFORM_CALLBACK_UTILS_CACHE_STORE_DESTROY = JniMethod("cacheStoreDestroy", "(JJ)V", true);
-            JniMethod M_PLATFORM_CALLBACK_UTILS_CACHE_STORE_SESSION_CREATE = JniMethod("cacheStoreSessionCreate", "(JJ)J", true);
-
-            JniMethod M_PLATFORM_CALLBACK_UTILS_CACHE_ENTRY_FILTER_CREATE = JniMethod("cacheEntryFilterCreate", "(JJ)J", true);
-            JniMethod M_PLATFORM_CALLBACK_UTILS_CACHE_ENTRY_FILTER_APPLY = JniMethod("cacheEntryFilterApply", "(JJJ)I", true);
-            JniMethod M_PLATFORM_CALLBACK_UTILS_CACHE_ENTRY_FILTER_DESTROY = JniMethod("cacheEntryFilterDestroy", "(JJ)V", true);
-
-            JniMethod M_PLATFORM_CALLBACK_UTILS_CACHE_INVOKE = JniMethod("cacheInvoke", "(JJJ)V", true);
-
-            JniMethod M_PLATFORM_CALLBACK_UTILS_COMPUTE_TASK_MAP = JniMethod("computeTaskMap", "(JJJJ)V", true);
-            JniMethod M_PLATFORM_CALLBACK_UTILS_COMPUTE_TASK_JOB_RESULT = JniMethod("computeTaskJobResult", "(JJJJ)I", true);
-            JniMethod M_PLATFORM_CALLBACK_UTILS_COMPUTE_TASK_REDUCE = JniMethod("computeTaskReduce", "(JJ)V", true);
-            JniMethod M_PLATFORM_CALLBACK_UTILS_COMPUTE_TASK_COMPLETE = JniMethod("computeTaskComplete", "(JJJ)V", true);
-            JniMethod M_PLATFORM_CALLBACK_UTILS_COMPUTE_JOB_SERIALIZE = JniMethod("computeJobSerialize", "(JJJ)I", true);
-            JniMethod M_PLATFORM_CALLBACK_UTILS_COMPUTE_JOB_CREATE = JniMethod("computeJobCreate", "(JJ)J", true);
-            JniMethod M_PLATFORM_CALLBACK_UTILS_COMPUTE_JOB_EXECUTE = JniMethod("computeJobExecute", "(JJIJ)V", true);
-            JniMethod M_PLATFORM_CALLBACK_UTILS_COMPUTE_JOB_DESTROY = JniMethod("computeJobDestroy", "(JJ)V", true);
-            JniMethod M_PLATFORM_CALLBACK_UTILS_COMPUTE_JOB_CANCEL = JniMethod("computeJobCancel", "(JJ)V", true);
-
-            JniMethod M_PLATFORM_CALLBACK_UTILS_CONTINUOUS_QUERY_LSNR_APPLY = JniMethod("continuousQueryListenerApply", "(JJJ)V", true);
-            JniMethod M_PLATFORM_CALLBACK_UTILS_CONTINUOUS_QUERY_FILTER_CREATE = JniMethod("continuousQueryFilterCreate", "(JJ)J", true);
-            JniMethod M_PLATFORM_CALLBACK_UTILS_CONTINUOUS_QUERY_FILTER_EVAL = JniMethod("continuousQueryFilterApply", "(JJJ)I", true);
-            JniMethod M_PLATFORM_CALLBACK_UTILS_CONTINUOUS_QUERY_FILTER_RELEASE = JniMethod("continuousQueryFilterRelease", "(JJ)V", true);
-
-            JniMethod M_PLATFORM_CALLBACK_UTILS_DATA_STREAMER_TOPOLOGY_UPDATE = JniMethod("dataStreamerTopologyUpdate", "(JJJI)V", true);
-            JniMethod M_PLATFORM_CALLBACK_UTILS_DATA_STREAMER_STREAM_RECEIVER_INVOKE = JniMethod("dataStreamerStreamReceiverInvoke", "(JJLorg/apache/ignite/internal/processors/platform/PlatformTargetProxy;JZ)V", true);
-
-            JniMethod M_PLATFORM_CALLBACK_UTILS_FUTURE_BYTE_RES = JniMethod("futureByteResult", "(JJI)V", true);
-            JniMethod M_PLATFORM_CALLBACK_UTILS_FUTURE_BOOL_RES = JniMethod("futureBoolResult", "(JJI)V", true);
-            JniMethod M_PLATFORM_CALLBACK_UTILS_FUTURE_SHORT_RES = JniMethod("futureShortResult", "(JJI)V", true);
-            JniMethod M_PLATFORM_CALLBACK_UTILS_FUTURE_CHAR_RES = JniMethod("futureCharResult", "(JJI)V", true);
-            JniMethod M_PLATFORM_CALLBACK_UTILS_FUTURE_INT_RES = JniMethod("futureIntResult", "(JJI)V", true);
-            JniMethod M_PLATFORM_CALLBACK_UTILS_FUTURE_FLOAT_RES = JniMethod("futureFloatResult", "(JJF)V", true);
-            JniMethod M_PLATFORM_CALLBACK_UTILS_FUTURE_LONG_RES = JniMethod("futureLongResult", "(JJJ)V", true);
-            JniMethod M_PLATFORM_CALLBACK_UTILS_FUTURE_DOUBLE_RES = JniMethod("futureDoubleResult", "(JJD)V", true);
-            JniMethod M_PLATFORM_CALLBACK_UTILS_FUTURE_OBJ_RES = JniMethod("futureObjectResult", "(JJJ)V", true);
-            JniMethod M_PLATFORM_CALLBACK_UTILS_FUTURE_NULL_RES = JniMethod("futureNullResult", "(JJ)V", true);
-            JniMethod M_PLATFORM_CALLBACK_UTILS_FUTURE_ERR = JniMethod("futureError", "(JJJ)V", true);
-
-            JniMethod M_PLATFORM_CALLBACK_UTILS_LIFECYCLE_EVENT = JniMethod("lifecycleEvent", "(JJI)V", true);
-
-            JniMethod M_PLATFORM_CALLBACK_UTILS_MESSAGING_FILTER_CREATE = JniMethod("messagingFilterCreate", "(JJ)J", true);
-            JniMethod M_PLATFORM_CALLBACK_UTILS_MESSAGING_FILTER_APPLY = JniMethod("messagingFilterApply", "(JJJ)I", true);
-            JniMethod M_PLATFORM_CALLBACK_UTILS_MESSAGING_FILTER_DESTROY = JniMethod("messagingFilterDestroy", "(JJ)V", true);
-
-            JniMethod M_PLATFORM_CALLBACK_UTILS_EVENT_FILTER_CREATE = JniMethod("eventFilterCreate", "(JJ)J", true);
-            JniMethod M_PLATFORM_CALLBACK_UTILS_EVENT_FILTER_APPLY = JniMethod("eventFilterApply", "(JJJ)I", true);
-            JniMethod M_PLATFORM_CALLBACK_UTILS_EVENT_FILTER_DESTROY = JniMethod("eventFilterDestroy", "(JJ)V", true);
-
-            JniMethod M_PLATFORM_CALLBACK_UTILS_SERVICE_INIT = JniMethod("serviceInit", "(JJ)J", true);
-            JniMethod M_PLATFORM_CALLBACK_UTILS_SERVICE_EXECUTE = JniMethod("serviceExecute", "(JJJ)V", true);
-            JniMethod M_PLATFORM_CALLBACK_UTILS_SERVICE_CANCEL = JniMethod("serviceCancel", "(JJJ)V", true);
-            JniMethod M_PLATFORM_CALLBACK_UTILS_SERVICE_INVOKE_METHOD = JniMethod("serviceInvokeMethod", "(JJJJ)V", true);
-
-            JniMethod M_PLATFORM_CALLBACK_UTILS_CLUSTER_NODE_FILTER_APPLY = JniMethod("clusterNodeFilterApply", "(JJ)I", true);
-
-            JniMethod M_PLATFORM_CALLBACK_UTILS_NODE_INFO = JniMethod("nodeInfo", "(JJ)V", true);
-
-            JniMethod M_PLATFORM_CALLBACK_UTILS_MEMORY_REALLOCATE = JniMethod("memoryReallocate", "(JJI)V", true);
-
-            JniMethod M_PLATFORM_CALLBACK_UTILS_ON_START = JniMethod("onStart", "(JLjava/lang/Object;J)V", true);
-            JniMethod M_PLATFORM_CALLBACK_UTILS_ON_STOP = JniMethod("onStop", "(J)V", true);
-
-            JniMethod M_PLATFORM_CALLBACK_UTILS_EXTENSION_CALLBACK_IN_LONG_OUT_LONG = JniMethod("extensionCallbackInLongOutLong", "(JIJ)J", true);
-            JniMethod M_PLATFORM_CALLBACK_UTILS_EXTENSION_CALLBACK_IN_LONG_LONG_OUT_LONG = JniMethod("extensionCallbackInLongLongOutLong", "(JIJJ)J", true);
-
-            JniMethod M_PLATFORM_CALLBACK_UTILS_ON_CLIENT_DISCONNECTED = JniMethod("onClientDisconnected", "(J)V", true);
-            JniMethod M_PLATFORM_CALLBACK_UTILS_ON_CLIENT_RECONNECTED = JniMethod("onClientReconnected", "(JZ)V", true);
-
             JniMethod M_PLATFORM_CALLBACK_UTILS_LOGGER_LOG = JniMethod("loggerLog", "(JILjava/lang/String;Ljava/lang/String;Ljava/lang/String;J)V", true);
             JniMethod M_PLATFORM_CALLBACK_UTILS_LOGGER_IS_LEVEL_ENABLED = JniMethod("loggerIsLevelEnabled", "(JI)Z", true);
-
-            JniMethod M_PLATFORM_CALLBACK_UTILS_AFFINITY_FUNCTION_INIT = JniMethod("affinityFunctionInit", "(JJLorg/apache/ignite/internal/processors/platform/PlatformTargetProxy;)J", true);
-            JniMethod M_PLATFORM_CALLBACK_UTILS_AFFINITY_FUNCTION_PARTITION = JniMethod("affinityFunctionPartition", "(JJJ)I", true);
-            JniMethod M_PLATFORM_CALLBACK_UTILS_AFFINITY_FUNCTION_ASSIGN_PARTITIONS = JniMethod("affinityFunctionAssignPartitions", "(JJJJ)V", true);
-            JniMethod M_PLATFORM_CALLBACK_UTILS_AFFINITY_FUNCTION_REMOVE_NODE = JniMethod("affinityFunctionRemoveNode", "(JJJ)V", true);
-            JniMethod M_PLATFORM_CALLBACK_UTILS_AFFINITY_FUNCTION_DESTROY = JniMethod("affinityFunctionDestroy", "(JJ)V", true);
 
             JniMethod M_PLATFORM_CALLBACK_UTILS_CONSOLE_WRITE = JniMethod("consoleWrite", "(Ljava/lang/String;Z)V", true);
 
@@ -353,7 +250,7 @@ namespace ignite
             JniMethod M_PLATFORM_UTILS_GET_FULL_STACK_TRACE = JniMethod("getFullStackTrace", "(Ljava/lang/Throwable;)Ljava/lang/String;", true);
 
             const char* C_PLATFORM_IGNITION = "org/apache/ignite/internal/processors/platform/PlatformIgnition";
-            JniMethod M_PLATFORM_IGNITION_START = JniMethod("start", "(Ljava/lang/String;Ljava/lang/String;IJJ)Lorg/apache/ignite/internal/processors/platform/PlatformProcessor;", true);
+            JniMethod M_PLATFORM_IGNITION_START = JniMethod("start", "(Ljava/lang/String;Ljava/lang/String;IJJ)V", true);
             JniMethod M_PLATFORM_IGNITION_INSTANCE = JniMethod("instance", "(Ljava/lang/String;)Lorg/apache/ignite/internal/processors/platform/PlatformProcessor;", true);
             JniMethod M_PLATFORM_IGNITION_ENVIRONMENT_POINTER = JniMethod("environmentPointer", "(Ljava/lang/String;)J", true);
             JniMethod M_PLATFORM_IGNITION_STOP = JniMethod("stop", "(Ljava/lang/String;Z)Z", true);
@@ -554,32 +451,6 @@ namespace ignite
 
                 c_PlatformProcessor = FindClass(env, C_PLATFORM_PROCESSOR);
                 m_PlatformProcessor_releaseStart = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_RELEASE_START);
-                m_PlatformProcessor_cache = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_CACHE);
-                m_PlatformProcessor_createCache = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_CREATE_CACHE);
-                m_PlatformProcessor_getOrCreateCache = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_GET_OR_CREATE_CACHE);
-                m_PlatformProcessor_createCacheFromConfig = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_CREATE_CACHE_FROM_CONFIG);
-                m_PlatformProcessor_getOrCreateCacheFromConfig = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_GET_OR_CREATE_CACHE_FROM_CONFIG);
-                m_PlatformProcessor_createNearCache = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_CREATE_NEAR_CACHE);
-                m_PlatformProcessor_getOrCreateNearCache = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_GET_OR_CREATE_NEAR_CACHE);
-                m_PlatformProcessor_destroyCache = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_DESTROY_CACHE);
-                m_PlatformProcessor_affinity = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_AFFINITY);
-                m_PlatformProcessor_dataStreamer = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_DATA_STREAMER);
-                m_PlatformProcessor_transactions = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_TRANSACTIONS);
-                m_PlatformProcessor_projection = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_PROJECTION);
-                m_PlatformProcessor_compute = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_COMPUTE);
-                m_PlatformProcessor_message = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_MESSAGE);
-                m_PlatformProcessor_events = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_EVENTS);
-                m_PlatformProcessor_services = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_SERVICES);
-                m_PlatformProcessor_extensions = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_EXTENSIONS);
-                m_PlatformProcessor_extension = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_EXTENSION);
-                m_PlatformProcessor_atomicLong = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_ATOMIC_LONG);
-                m_PlatformProcessor_atomicSequence = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_ATOMIC_SEQUENCE);
-                m_PlatformProcessor_atomicReference = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_ATOMIC_REFERENCE);
-				m_PlatformProcessor_getIgniteConfiguration = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_GET_IGNITE_CONFIGURATION);
-				m_PlatformProcessor_getCacheNames = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_GET_CACHE_NAMES);
-				m_PlatformProcessor_loggerIsLevelEnabled = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_LOGGER_IS_LEVEL_ENABLED);
-				m_PlatformProcessor_loggerLog = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_LOGGER_LOG);
-				m_PlatformProcessor_binaryProcessor = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_BINARY_PROCESSOR);
 
                 c_PlatformTarget = FindClass(env, C_PLATFORM_TARGET);
                 m_PlatformTarget_inLongOutLong = FindMethod(env, c_PlatformTarget, M_PLATFORM_TARGET_IN_LONG_OUT_LONG);
@@ -871,18 +742,18 @@ namespace ignite
                 }
             }
 
-            jobject JniContext::IgnitionStart(char* cfgPath, char* name, int factoryId, long long dataPtr) {
+            void JniContext::IgnitionStart(char* cfgPath, char* name, int factoryId, long long dataPtr) {
                 return IgnitionStart(cfgPath, name, factoryId, dataPtr, NULL);
             }
 
-            jobject JniContext::IgnitionStart(char* cfgPath, char* name, int factoryId, long long dataPtr, JniErrorInfo* errInfo)
+            void JniContext::IgnitionStart(char* cfgPath, char* name, int factoryId, long long dataPtr, JniErrorInfo* errInfo)
             {
                 JNIEnv* env = Attach();
 
                 jstring cfgPath0 = env->NewStringUTF(cfgPath);
                 jstring name0 = env->NewStringUTF(name);
 
-                jobject interop = env->CallStaticObjectMethod(
+                env->CallStaticVoidMethod(
                     jvm->GetMembers().c_PlatformIgnition,
                     jvm->GetMembers().m_PlatformIgnition_start,
                     cfgPath0,
@@ -893,30 +764,8 @@ namespace ignite
                 );
 
                 ExceptionCheck(env, errInfo);
-
-                return LocalToGlobal(env, interop);
             }
-
-
-            jobject JniContext::IgnitionInstance(char* name)
-            {
-                return IgnitionInstance(name, NULL);
-            }
-
-            jobject JniContext::IgnitionInstance(char* name, JniErrorInfo* errInfo)
-            {
-                JNIEnv* env = Attach();
-
-                jstring name0 = env->NewStringUTF(name);
-
-                jobject interop = env->CallStaticObjectMethod(jvm->GetMembers().c_PlatformIgnition,
-                    jvm->GetMembers().m_PlatformIgnition_instance, name0);
-
-                ExceptionCheck(env, errInfo);
-
-                return LocalToGlobal(env, interop);
-            }
-
+            
             long long JniContext::IgnitionEnvironmentPointer(char* name)
             {
                 return IgnitionEnvironmentPointer(name, NULL);
@@ -970,318 +819,6 @@ namespace ignite
                 ExceptionCheck(env, errInfo);
             }
 
-            void JniContext::ProcessorReleaseStart(jobject obj) {
-                JNIEnv* env = Attach();
-
-                env->CallVoidMethod(obj, jvm->GetMembers().m_PlatformProcessor_releaseStart);
-
-                ExceptionCheck(env);
-            }
-
-            jobject JniContext::ProcessorProjection(jobject obj, JniErrorInfo* errInfo) {
-                JNIEnv* env = Attach();
-
-                jobject prj = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformProcessor_projection);
-
-                ExceptionCheck(env, errInfo);
-
-                return LocalToGlobal(env, prj);
-            }
-
-            jobject JniContext::ProcessorCache0(jobject obj, const char* name, jmethodID mthd, JniErrorInfo* errInfo)
-            {
-                JNIEnv* env = Attach();
-
-                jstring name0 = name != NULL ? env->NewStringUTF(name) : NULL;
-
-                jobject cache = env->CallObjectMethod(obj, mthd, name0);
-
-                if (name0)
-                    env->DeleteLocalRef(name0);
-
-                ExceptionCheck(env, errInfo);
-
-                return LocalToGlobal(env, cache);
-            }
-
-            jobject JniContext::ProcessorCacheFromConfig0(jobject obj, long long memPtr, jmethodID mthd, JniErrorInfo* errInfo)
-            {
-                JNIEnv* env = Attach();
-
-                jobject cache = env->CallObjectMethod(obj, mthd, memPtr);
-
-                ExceptionCheck(env, errInfo);
-
-                return LocalToGlobal(env, cache);
-            }
-
-            jobject JniContext::ProcessorCache(jobject obj, const char* name) {
-                return ProcessorCache(obj, name, NULL);
-            }
-
-            jobject JniContext::ProcessorCache(jobject obj, const char* name, JniErrorInfo* errInfo) {
-                return ProcessorCache0(obj, name, jvm->GetMembers().m_PlatformProcessor_cache, errInfo);
-            }
-
-            jobject JniContext::ProcessorCreateCache(jobject obj, const char* name) {
-                return ProcessorCreateCache(obj, name, NULL);
-            }
-
-            jobject JniContext::ProcessorCreateCache(jobject obj, const char* name, JniErrorInfo* errInfo)
-            {
-                return ProcessorCache0(obj, name, jvm->GetMembers().m_PlatformProcessor_createCache, errInfo);
-            }
-
-            jobject JniContext::ProcessorGetOrCreateCache(jobject obj, const char* name) {
-                return ProcessorGetOrCreateCache(obj, name, NULL);
-            }
-
-            jobject JniContext::ProcessorGetOrCreateCache(jobject obj, const char* name, JniErrorInfo* errInfo)
-            {
-                return ProcessorCache0(obj, name, jvm->GetMembers().m_PlatformProcessor_getOrCreateCache, errInfo);
-            }
-
-            void JniContext::ProcessorDestroyCache(jobject obj, const char* name) {
-                ProcessorDestroyCache(obj, name, NULL);
-            }
-
-            void JniContext::ProcessorDestroyCache(jobject obj, const char* name, JniErrorInfo* errInfo)
-            {
-                JNIEnv* env = Attach();
-
-                jstring name0 = name != NULL ? env->NewStringUTF(name) : NULL;
-
-                env->CallVoidMethod(obj, jvm->GetMembers().m_PlatformProcessor_destroyCache, name0);
-
-                if (name0)
-                    env->DeleteLocalRef(name0);
-
-                ExceptionCheck(env, errInfo);
-            }
-
-            jobject JniContext::ProcessorCreateCacheFromConfig(jobject obj, long long memPtr) {
-                return ProcessorCreateCacheFromConfig(obj, memPtr, NULL);
-            }
-
-            jobject JniContext::ProcessorCreateCacheFromConfig(jobject obj, long long memPtr, JniErrorInfo* errInfo)
-            {
-                return ProcessorCacheFromConfig0(obj, memPtr, jvm->GetMembers().m_PlatformProcessor_createCacheFromConfig, errInfo);
-            }
-
-            jobject JniContext::ProcessorGetOrCreateCacheFromConfig(jobject obj, long long memPtr) {
-                return ProcessorGetOrCreateCacheFromConfig(obj, memPtr, NULL);
-            }
-
-            jobject JniContext::ProcessorGetOrCreateCacheFromConfig(jobject obj, long long memPtr, JniErrorInfo* errInfo)
-            {
-                return ProcessorCacheFromConfig0(obj, memPtr, jvm->GetMembers().m_PlatformProcessor_getOrCreateCacheFromConfig, errInfo);
-            }
-
-            jobject JniContext::ProcessorCreateNearCache(jobject obj, const char* name, long long memPtr)
-            {
-                return ProcessorGetOrCreateNearCache0(obj, name, memPtr, jvm->GetMembers().m_PlatformProcessor_createNearCache);
-            }
-
-            jobject JniContext::ProcessorGetOrCreateNearCache(jobject obj, const char* name, long long memPtr)
-            {
-                return ProcessorGetOrCreateNearCache0(obj, name, memPtr, jvm->GetMembers().m_PlatformProcessor_getOrCreateNearCache);
-            }
-
-            jobject JniContext::ProcessorGetOrCreateNearCache0(jobject obj, const char* name, long long memPtr, jmethodID methodID)
-            {
-                JNIEnv* env = Attach();
-
-                jstring name0 = name != NULL ? env->NewStringUTF(name) : NULL;
-
-                jobject cache = env->CallObjectMethod(obj, methodID, name0, memPtr);
-
-                if (name0)
-                    env->DeleteLocalRef(name0);
-
-                ExceptionCheck(env);
-
-                return LocalToGlobal(env, cache);
-            }
-
-            jobject JniContext::ProcessorAffinity(jobject obj, const char* name) {
-                JNIEnv* env = Attach();
-
-                jstring name0 = name != NULL ? env->NewStringUTF(name) : NULL;
-
-                jobject aff = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformProcessor_affinity, name0);
-
-                if (name0)
-                    env->DeleteLocalRef(name0);
-
-                ExceptionCheck(env);
-
-                return LocalToGlobal(env, aff);
-            }
-
-            jobject JniContext::ProcessorDataStreamer(jobject obj, const char* name, bool keepPortable) {
-                JNIEnv* env = Attach();
-
-                jstring name0 = name != NULL ? env->NewStringUTF(name) : NULL;
-
-                jobject ldr = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformProcessor_dataStreamer, name0,
-                    keepPortable);
-
-                if (name0)
-                    env->DeleteLocalRef(name0);
-
-                ExceptionCheck(env);
-
-                return LocalToGlobal(env, ldr);
-            }
-
-            jobject JniContext::ProcessorTransactions(jobject obj, JniErrorInfo* errInfo) {
-                JNIEnv* env = Attach();
-
-                jobject tx = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformProcessor_transactions);
-
-                ExceptionCheck(env, errInfo);
-
-                return LocalToGlobal(env, tx);
-            }
-
-            jobject JniContext::ProcessorCompute(jobject obj, jobject prj) {
-                JNIEnv* env = Attach();
-
-                jobject res = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformProcessor_compute, prj);
-
-                ExceptionCheck(env);
-
-                return LocalToGlobal(env, res);
-            }
-
-            jobject JniContext::ProcessorCompute(jobject obj, jobject prj, JniErrorInfo* errInfo) {
-                JNIEnv* env = Attach();
-
-                jobject res = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformProcessor_compute, prj);
-
-                ExceptionCheck(env, errInfo);
-
-                return LocalToGlobal(env, res);
-            }
-
-            jobject JniContext::ProcessorMessage(jobject obj, jobject prj) {
-                JNIEnv* env = Attach();
-
-                jobject res = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformProcessor_message, prj);
-
-                ExceptionCheck(env);
-
-                return LocalToGlobal(env, res);
-            }
-
-            jobject JniContext::ProcessorEvents(jobject obj, jobject prj) {
-                JNIEnv* env = Attach();
-
-                jobject res = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformProcessor_events, prj);
-
-                ExceptionCheck(env);
-
-                return LocalToGlobal(env, res);
-            }
-
-            jobject JniContext::ProcessorServices(jobject obj, jobject prj) {
-                JNIEnv* env = Attach();
-
-                jobject res = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformProcessor_services, prj);
-
-                ExceptionCheck(env);
-
-                return LocalToGlobal(env, res);
-            }
-
-            jobject JniContext::ProcessorExtensions(jobject obj)
-            {
-                JNIEnv* env = Attach();
-
-                jobject res = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformProcessor_extensions);
-
-                ExceptionCheck(env);
-
-                return LocalToGlobal(env, res);
-            }
-
-            jobject JniContext::ProcessorExtension(jobject obj, int id)
-            {
-                JNIEnv* env = Attach();
-
-                jobject res = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformProcessor_extension, id);
-
-                ExceptionCheck(env);
-
-                return LocalToGlobal(env, res);
-            }
-
-            jobject JniContext::ProcessorAtomicLong(jobject obj, char* name, long long initVal, bool create)
-            {
-                JNIEnv* env = Attach();
-
-                jstring name0 = name != NULL ? env->NewStringUTF(name) : NULL;
-
-                jobject res = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformProcessor_atomicLong, name0, initVal, create);
-
-                if (name0)
-                    env->DeleteLocalRef(name0);
-
-                ExceptionCheck(env);
-
-                return LocalToGlobal(env, res);
-            }
-
-            jobject JniContext::ProcessorAtomicSequence(jobject obj, char* name, long long initVal, bool create)
-            {
-                JNIEnv* env = Attach();
-
-                jstring name0 = name != NULL ? env->NewStringUTF(name) : NULL;
-
-                jobject res = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformProcessor_atomicSequence, name0, initVal, create);
-
-                if (name0)
-                    env->DeleteLocalRef(name0);
-
-                ExceptionCheck(env);
-
-                return LocalToGlobal(env, res);
-            }
-
-            jobject JniContext::ProcessorAtomicReference(jobject obj, char* name, long long memPtr, bool create)
-            {
-                JNIEnv* env = Attach();
-
-                jstring name0 = name != NULL ? env->NewStringUTF(name) : NULL;
-
-                jobject res = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformProcessor_atomicReference, name0, memPtr, create);
-
-                if (name0)
-                    env->DeleteLocalRef(name0);
-
-                ExceptionCheck(env);
-
-                return LocalToGlobal(env, res);
-            }
-
-            void JniContext::ProcessorGetIgniteConfiguration(jobject obj, long long memPtr)
-            {
-                JNIEnv* env = Attach();
-
-                env->CallVoidMethod(obj, jvm->GetMembers().m_PlatformProcessor_getIgniteConfiguration, memPtr);
-
-                ExceptionCheck(env);
-            }
-
-            void JniContext::ProcessorGetCacheNames(jobject obj, long long memPtr)
-            {
-                JNIEnv* env = Attach();
-
-                env->CallVoidMethod(obj, jvm->GetMembers().m_PlatformProcessor_getCacheNames, memPtr);
-
-                ExceptionCheck(env);
-            }
-
             long long JniContext::TargetInLongOutLong(jobject obj, int opType, long long val, JniErrorInfo* err) {
                 JNIEnv* env = Attach();
 
@@ -1290,51 +827,6 @@ namespace ignite
                 ExceptionCheck(env, err);
 
                 return res;
-            }
-
-            bool JniContext::ProcessorLoggerIsLevelEnabled(jobject obj, int level)
-            {
-                JNIEnv* env = Attach();
-
-                jboolean res = env->CallBooleanMethod(obj, jvm->GetMembers().m_PlatformProcessor_loggerIsLevelEnabled, level);
-
-                ExceptionCheck(env);
-
-                return res != 0;
-            }
-
-            void JniContext::ProcessorLoggerLog(jobject obj, int level, char* message, char* category, char* errorInfo)
-            {
-                JNIEnv* env = Attach();
-
-                jstring message0 = message != NULL ? env->NewStringUTF(message) : NULL;
-                jstring category0 = category != NULL ? env->NewStringUTF(category) : NULL;
-                jstring errorInfo0 = errorInfo != NULL ? env->NewStringUTF(errorInfo) : NULL;
-
-
-                env->CallVoidMethod(obj, jvm->GetMembers().m_PlatformProcessor_loggerLog, level, message0, category0, errorInfo0);
-
-                if (message0)
-                    env->DeleteLocalRef(message0);
-
-                if (category0)
-                    env->DeleteLocalRef(category0);
-
-                if (errorInfo0)
-                    env->DeleteLocalRef(errorInfo0);
-
-                ExceptionCheck(env);
-            }
-
-            jobject JniContext::ProcessorBinaryProcessor(jobject obj)
-            {
-                JNIEnv* env = Attach();
-
-                jobject res = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformProcessor_binaryProcessor);
-
-                ExceptionCheck(env);
-
-                return LocalToGlobal(env, res);
             }
 
             long long JniContext::TargetInStreamOutLong(jobject obj, int opType, long long memPtr, JniErrorInfo* err) {
