@@ -104,10 +104,12 @@ public class TransactionProxyImpl<K, V> implements TransactionProxy, Externaliza
     }
 
     /**
-     * Enters a call without check for not {@code SUSPENDED} status.
+     * Enters a call.
+     *
+     * @param resume Flag to indicate that resume operation in progress.
      */
-    private void enter(boolean isResume) {
-        if (state() == SUSPENDED && !isResume)
+    private void enter(boolean resume) {
+        if (state() == SUSPENDED && !resume)
             throw new IgniteException("Tx in SUSPENDED state. All operations except resume prohibited.");
 
         if (cctx.deploymentEnabled())
