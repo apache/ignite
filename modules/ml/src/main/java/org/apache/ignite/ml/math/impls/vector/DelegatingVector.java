@@ -367,6 +367,7 @@ public class DelegatingVector implements Vector {
         return guid;
     }
 
+    /** {@inheritDoc} */
     @Override public void compute(int i, IgniteIntDoubleToDoubleBiFunction f) {
         dlg.compute(i, f);
     }

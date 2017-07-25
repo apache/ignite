@@ -39,7 +39,7 @@ public class ArrayMatrixStorage implements MatrixStorage {
     /** Mode specifying if this matrix is row-major or column-major. */
     private int acsMode;
     /** Index mapper */
-    private IgniteIntIntToIntBiFunction indexMapper;
+    private IgniteIntIntToIntBiFunction idxMapper;
 
     /**
      *
@@ -56,6 +56,7 @@ public class ArrayMatrixStorage implements MatrixStorage {
         this(rows, cols, StorageConstants.ROW_STORAGE_MODE);
     }
 
+    /** */
     public ArrayMatrixStorage(int rows, int cols, int acsMode) {
         assert rows > 0;
         assert cols > 0;
@@ -63,7 +64,7 @@ public class ArrayMatrixStorage implements MatrixStorage {
         this.data = new double[rows * cols];
         this.rows = rows;
         this.cols = cols;
-        indexMapper = indexMapper(acsMode);
+        idxMapper = indexMapper(acsMode);
         this.acsMode = acsMode;
     }
 
@@ -91,7 +92,7 @@ public class ArrayMatrixStorage implements MatrixStorage {
         this.data = data;
         this.rows = rows;
         this.cols = data.length / rows;
-        indexMapper = indexMapper(acsMode);
+        idxMapper = indexMapper(acsMode);
         this.acsMode = acsMode;
 
         assert rows > 0;
@@ -107,7 +108,7 @@ public class ArrayMatrixStorage implements MatrixStorage {
 
     /** {@inheritDoc} */
     @Override public double get(int x, int y) {
-        return data[indexMapper.apply(x, y)];
+        return data[idxMapper.apply(x, y)];
     }
 
     /** {@inheritDoc} */
@@ -132,7 +133,7 @@ public class ArrayMatrixStorage implements MatrixStorage {
 
     /** {@inheritDoc} */
     @Override public void set(int x, int y, double v) {
-        data[indexMapper.apply(x, y)] = v;
+        data[idxMapper.apply(x, y)] = v;
     }
 
     /** {@inheritDoc} */
@@ -179,7 +180,7 @@ public class ArrayMatrixStorage implements MatrixStorage {
         rows = in.readInt();
         cols = in.readInt();
         acsMode = in.readInt();
-        indexMapper = indexMapper(acsMode);
+        idxMapper = indexMapper(acsMode);
 
         data = (double[])in.readObject();
     }

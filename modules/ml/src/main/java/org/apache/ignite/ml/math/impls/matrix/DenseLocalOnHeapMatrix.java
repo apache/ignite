@@ -87,10 +87,14 @@ public class DenseLocalOnHeapMatrix extends AbstractMatrix implements OrderedMat
         setStorage(new ArrayMatrixStorage(mtx, rows, acsMode));
     }
 
+    /**
+     * Build new matrix from flat raw array.
+     */
     public DenseLocalOnHeapMatrix(double[] mtx, int rows) {
         this(mtx, StorageConstants.ROW_STORAGE_MODE, rows);
     }
 
+    /** */
     private DenseLocalOnHeapMatrix(DenseLocalOnHeapMatrix orig) {
         this(orig, orig.accessMode());
     }

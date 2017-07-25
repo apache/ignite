@@ -18,7 +18,6 @@
 package org.apache.ignite.ml.math;
 
 import com.github.fommil.netlib.BLAS;
-
 import com.github.fommil.netlib.F2jBLAS;
 import it.unimi.dsi.fastutil.ints.Int2ObjectArrayMap;
 import it.unimi.dsi.fastutil.ints.IntIterator;
@@ -60,7 +59,8 @@ public class Blas {
         else if (x instanceof SparseLocalVector && y.isArrayBased())
             axpy(a, (SparseLocalVector)x, y.getStorage().data());
         else
-            throw new MathIllegalArgumentException("Operation 'axpy' doesn't support this combintaion of parameters");
+            throw new MathIllegalArgumentException("Operation 'axpy' doesn't support this combination of parameters [x="
+                + x.getClass().getName() + ", y="+y.getClass().getName()+"].");
     }
 
     /** */
@@ -124,7 +124,7 @@ public class Blas {
                 }
             }
         } else
-            throw new IllegalArgumentException("y must be array based in copy");
+            throw new IllegalArgumentException("Vector y must be array based in copy.");
     }
 
 
@@ -190,13 +190,14 @@ public class Blas {
         if (mA != x.size())
             throw new CardinalityException(x.size(), mA);
 
-        // TODO: Process DenseLocalOffHeapVector
+        // TODO: IGNITE-5535, Process DenseLocalOffHeapVector
         if (x instanceof DenseLocalOnHeapVector)
             syr(alpha, x, a);
         else if (x instanceof SparseLocalVector)
             syr(alpha, x, a);
         else
-            throw new IllegalArgumentException("Operation 'syr' does not support vector class " + x.getClass().getName());
+            throw new IllegalArgumentException("Operation 'syr' does not support vector [class="
+                + x.getClass().getName() + "].");
     }
 
     /** */
@@ -250,8 +251,8 @@ public class Blas {
                 nativeBlas.dgemm("N", "N", a.rowSize(), b.columnSize(), a.columnSize(), alpha, fA,
                     a.rowSize(), fB, b.rowSize(), beta, fC, c.rowSize());
             } else
-                throw new IllegalArgumentException("Operation 'gemm' doesn't support matrix type "
-                    + a.getClass().getName());
+                throw new IllegalArgumentException("Operation 'gemm' doesn't support for matrix [class="
+                    + a.getClass().getName() + "].");
         }
     }
 
@@ -331,8 +332,8 @@ public class Blas {
         else if (a instanceof DenseLocalOnHeapMatrix && x instanceof SparseLocalVector)
             gemv(alpha, (DenseLocalOnHeapMatrix)a, (SparseLocalVector)x, beta, y);
         else
-            throw new IllegalArgumentException("Operation gemv doesn't support running on matrix type " +
-                a.getClass().getSimpleName() + " and vector type " + x.getClass().getSimpleName());
+            throw new IllegalArgumentException("Operation gemv doesn't support running thist input [matrix=" +
+                a.getClass().getSimpleName() + ", vector=" + x.getClass().getSimpleName()+"].");
     }
 
     /**

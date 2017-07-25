@@ -22,5 +22,6 @@ import java.io.Serializable;
 /** BiFunction (int, int) -> int. */
 @FunctionalInterface
 public interface IgniteIntIntToIntBiFunction extends Serializable {
+    /** */
     public int apply(int x, int y);
 }
