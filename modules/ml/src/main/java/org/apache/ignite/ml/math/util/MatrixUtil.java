@@ -53,7 +53,7 @@ public class MatrixUtil {
      */
     public static Matrix identityLike(Matrix matrix, int n) {
         Matrix res = like(matrix, n, n);
-        // TODO: Maybe we should introduce API for walking(and changing) matrix in
+        // TODO: IGNITE-5216, Maybe we should introduce API for walking(and changing) matrix in.
         // a fastest possible visiting order.
         for (int i = 0; i < n; i++)
             res.setX(i, i, 1.0);
@@ -143,7 +143,7 @@ public class MatrixUtil {
         return res;
     }
 
-    /** TODO: rewrite in a more optimal way. */
+    /** TODO: IGNTIE-5723, rewrite in a more optimal way. */
     public static DenseLocalOnHeapVector localCopyOf(Vector vec) {
         DenseLocalOnHeapVector res = new DenseLocalOnHeapVector(vec.size());
 
