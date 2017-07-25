@@ -29,7 +29,7 @@ angular
             .state('404', {
                 url: '/404',
                 templateUrl: templateNotFoundPage,
-                metaTags: {
+                tfMetaTags: {
                     title: 'Page not found'
                 },
                 unsaved: true
@@ -37,7 +37,7 @@ angular
             .state('403', {
                 url: '/403',
                 templateUrl: templateNotAuthorizedPage,
-                metaTags: {
+                tfMetaTags: {
                     title: 'Not authorized'
                 },
                 unsaved: true

@@ -70,9 +70,6 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     /** Flag to control amount of output for full map. */
     private static final boolean FULL_MAP_DEBUG = false;
 
-    /** */
-    private static final Long ZERO = 0L;
-
     /** Cache shared context. */
     private GridCacheSharedContext cctx;
 
@@ -633,8 +630,13 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
                     }
                 }
 
-                for (GridDhtPartitionMap part : partMap.values())
-                    fullMapUpdated |= !node2part.containsKey(part);
+                // Check that we have new nodes.
+                for (GridDhtPartitionMap part : partMap.values()) {
+                    if (fullMapUpdated)
+                        break;
+
+                    fullMapUpdated = !node2part.containsKey(part.nodeId());
+                }
 
                 // Remove entry if node left.
                 for (Iterator<UUID> it = partMap.keySet().iterator(); it.hasNext(); ) {
@@ -1041,8 +1043,12 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
                 Map<Integer, T2<Long, Long>> res = U.newHashMap(cntrMap.size());
 
                 for (Map.Entry<Integer, T2<Long, Long>> e : cntrMap.entrySet()) {
-                    if (!e.getValue().equals(ZERO))
-                        res.put(e.getKey(), e.getValue());
+                    T2<Long, Long> val = e.getValue();
+
+                    if (val.get1() == 0L && val.get2() == 0L)
+                        continue;
+
+                    res.put(e.getKey(), e.getValue());
                 }
 
                 return res;

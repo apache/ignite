@@ -138,7 +138,7 @@ public abstract class AbstractMultipleLinearRegression implements MultipleLinear
             throw new NullArgumentException();
         if (y.size() == 0)
             throw new NoDataException();
-        // TODO: Should we copy here?
+        // TODO: IGNITE-5826, Should we copy here?
         yVector = y;
     }
 
@@ -174,7 +174,7 @@ public abstract class AbstractMultipleLinearRegression implements MultipleLinear
         if (x.rowSize() == 0)
             throw new NoDataException();
         if (noIntercept)
-            // TODO: Should we copy here?
+            // TODO: IGNITE-5826, Should we copy here?
             xMatrix = x;
         else { // Augment design matrix with initial unitary column
             xMatrix = MatrixUtil.like(x, x.rowSize(), x.columnSize() + 1);

@@ -3260,14 +3260,17 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     "operating system firewall is disabled on local and remote hosts) " +
                     "[addrs=" + addrs + ']');
 
-            if (enableForcibleNodeKill) {if (getSpiContext().node(node.id()) != null && (CU.clientNode(node) || !CU.clientNode(getLocalNode())) &&
-                X.hasCause(errs, ConnectException.class,HandshakeException.class, SocketTimeoutException.class, HandshakeTimeoutException.class,
-                    IgniteSpiOperationTimeoutException.class)) {String msg = "TcpCommunicationSpi failed to establish connection to node, node will be dropped from " +
+            if (enableForcibleNodeKill) {
+                if (getSpiContext().node(node.id()) != null
+                    && (CU.clientNode(node) ||  !CU.clientNode(getLocalNode())) &&
+                    connectionError(errs)) {
+                    String msg = "TcpCommunicationSpi failed to establish connection to node, node will be dropped from " +
                         "cluster [" + "rmtNode=" + node + ']';
 
-                if(enableTroubleshootingLog)U.error(log, msg, errs);
+                    if (enableTroubleshootingLog)
+                        U.error(log, msg, errs);
                     else
-                    U.warn(log, msg);
+                        U.warn(log, msg);
 
                     getSpiContext().failNode(node.id(), "TcpCommunicationSpi failed to establish connection to node [" +
                         "rmtNode=" + node +
@@ -3281,6 +3284,18 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         }
 
         return client;
+    }
+
+    /**
+     * @param errs Error.
+     * @return {@code True} if error was caused by some connection IO error.
+     */
+    private static boolean connectionError(IgniteCheckedException errs) {
+        return X.hasCause(errs, ConnectException.class,
+            HandshakeException.class,
+            SocketTimeoutException.class,
+            HandshakeTimeoutException.class,
+            IgniteSpiOperationTimeoutException.class);
     }
 
     /**

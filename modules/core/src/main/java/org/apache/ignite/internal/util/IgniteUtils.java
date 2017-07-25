@@ -3380,18 +3380,18 @@ public abstract class IgniteUtils {
      * @throws IOException If error occurred.
      */
     public static String readFileToString(String fileName, String charset) throws IOException {
-        Reader input = new InputStreamReader(new FileInputStream(fileName), charset);
+        try (Reader input = new InputStreamReader(new FileInputStream(fileName), charset)) {
+            StringWriter output = new StringWriter();
 
-        StringWriter output = new StringWriter();
+            char[] buf = new char[4096];
 
-        char[] buf = new char[4096];
+            int n;
 
-        int n;
+            while ((n = input.read(buf)) != -1)
+                output.write(buf, 0, n);
 
-        while ((n = input.read(buf)) != -1)
-            output.write(buf, 0, n);
-
-        return output.toString();
+            return output.toString();
+        }
     }
 
     /**
