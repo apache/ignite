@@ -158,7 +158,7 @@ public class QuerySchema implements Serializable {
 
                 QueryEntity target = null;
 
-                for (QueryEntity entity : entities) {
+                for (QueryEntity entity : entities()) {
                     if (F.eq(entity.getTableName(), op0.tableName())) {
                         target = entity;
 
