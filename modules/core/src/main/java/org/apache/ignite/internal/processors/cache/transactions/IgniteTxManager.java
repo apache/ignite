@@ -2272,27 +2272,13 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      */
     public void resumeTx(GridNearTxLocal tx) throws IgniteCheckedException {
         assert tx != null;
-        assert !tx.system() && !tx.pessimistic();
-        assert tx.state() == SUSPENDED;
         assert !threadMap.containsValue(tx);
         assert !transactionMap(tx).containsValue(tx);
 
         long threadId = Thread.currentThread().getId();
 
-        if (threadMap.containsKey(threadId))
+        if (threadMap.putIfAbsent(threadId, tx) != null)
             throw new IgniteCheckedException("Thread already start a transaction.");
-
-        if (!sysThreadMap.isEmpty()) {
-            for (GridCacheContext cacheCtx : cctx.cache().context().cacheContexts()) {
-                if (!cacheCtx.systemTx())
-                    continue;
-
-                if (sysThreadMap.containsKey(new TxThreadKey(threadId, cacheCtx.cacheId())))
-                    throw new IgniteCheckedException("Thread already start system transaction.");
-            }
-        }
-
-        threadMap.put(threadId, tx);
 
         ConcurrentMap<GridCacheVersion, IgniteInternalTx> txIdMap = transactionMap(tx);
 

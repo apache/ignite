@@ -100,16 +100,16 @@ public class TransactionProxyImpl<K, V> implements TransactionProxy, Externaliza
      * Enters a call.
      */
     private void enter() {
-        if (state() == SUSPENDED)
-            throw new IgniteException("Tx in SUSPENDED state. All operations except resume prohibited.");
-
-        enter0();
+        enter(false);
     }
 
     /**
      * Enters a call without check for not {@code SUSPENDED} status.
      */
-    private void enter0() {
+    private void enter(boolean isResume) {
+        if (state() == SUSPENDED && !isResume)
+            throw new IgniteException("Tx in SUSPENDED state. All operations except resume prohibited.");
+
         if (cctx.deploymentEnabled())
             cctx.deploy().onEnter();
 
@@ -361,7 +361,7 @@ public class TransactionProxyImpl<K, V> implements TransactionProxy, Externaliza
 
     /** {@inheritDoc} */
     @Override public void resume() throws IgniteException {
-        enter0();
+        enter(true);
 
         try {
             cctx.resumeTx(tx);

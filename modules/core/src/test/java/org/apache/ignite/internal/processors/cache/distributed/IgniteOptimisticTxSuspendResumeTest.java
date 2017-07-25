@@ -396,7 +396,6 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
             GridTestUtils.assertThrowsWithCause(new Callable<Object>() {
                 @Override public Object call() throws Exception {
                     tx.resume();
-                    tx.commit();
 
                     return null;
                 }
