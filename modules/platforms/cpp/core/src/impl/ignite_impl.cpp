@@ -28,19 +28,14 @@ namespace ignite
 {
     namespace impl
     {
-        IgniteImpl::IgniteImpl(SharedPointer<IgniteEnvironment> env, jobject javaRef) :
+        IgniteImpl::IgniteImpl(SharedPointer<IgniteEnvironment> env) :
+            InteropTarget(env, static_cast<jobject>(env.Get()->GetProcessor()), true),
             env(env),
-            javaRef(javaRef),
             txImpl(),
             prjImpl()
         {
             txImpl.Init(common::Bind(this, &IgniteImpl::InternalGetTransactions));
             prjImpl.Init(common::Bind(this, &IgniteImpl::InternalGetProjection));
-        }
-
-        IgniteImpl::~IgniteImpl()
-        {
-            JniContext::Release(javaRef);
         }
 
         const char* IgniteImpl::GetName() const
@@ -72,32 +67,22 @@ namespace ignite
 
         transactions::TransactionsImpl* IgniteImpl::InternalGetTransactions()
         {
-            JniErrorInfo jniErr;
+            IgniteError err;
 
-            jobject txJavaRef = env.Get()->Context()->ProcessorTransactions(javaRef, &jniErr);
+            jobject txJavaRef = InOpObject(ProcessorOp::GET_TRANSACTIONS, err);
 
-            if (!txJavaRef)
-            {
-                IgniteError err;
-                IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
-                throw err;
-            }
+            IgniteError::ThrowIfNeeded(err);
 
             return new transactions::TransactionsImpl(env, txJavaRef);
         }
 
         cluster::ClusterGroupImpl* IgniteImpl::InternalGetProjection()
         {
-            JniErrorInfo jniErr;
+            IgniteError err;
 
-            jobject clusterGroupJavaRef = env.Get()->Context()->ProcessorProjection(javaRef, &jniErr);
+            jobject clusterGroupJavaRef = InOpObject(ProcessorOp::GET_CLUSTER_GROUP, err);
 
-            if (!clusterGroupJavaRef)
-            {
-                IgniteError err;
-                IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
-                throw err;
-            }
+            IgniteError::ThrowIfNeeded(err);
 
             return new cluster::ClusterGroupImpl(env, clusterGroupJavaRef);
         }

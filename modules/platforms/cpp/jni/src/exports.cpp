@@ -26,12 +26,8 @@ extern "C" {
         return gcj::JniContext::Reallocate(memPtr, cap);
     }
 
-    void* IGNITE_CALL IgniteIgnitionStart(gcj::JniContext* ctx, char* cfgPath, char* name, int factoryId, long long dataPtr) {
-        return ctx->IgnitionStart(cfgPath, name, factoryId, dataPtr);
-    }
-
-	void* IGNITE_CALL IgniteIgnitionInstance(gcj::JniContext* ctx, char* name) {
-        return ctx->IgnitionInstance(name);
+    void IGNITE_CALL IgniteIgnitionStart(gcj::JniContext* ctx, char* cfgPath, char* name, int factoryId, long long dataPtr) {
+        ctx->IgnitionStart(cfgPath, name, factoryId, dataPtr);
     }
 
     long long IGNITE_CALL IgniteIgnitionEnvironmentPointer(gcj::JniContext* ctx, char* name) {
@@ -46,116 +42,8 @@ extern "C" {
         return ctx->IgnitionStopAll(cancel);
     }
 
-    void IGNITE_CALL IgniteProcessorReleaseStart(gcj::JniContext* ctx, void* obj) {
-        return ctx->ProcessorReleaseStart(static_cast<jobject>(obj));
-    }
-
-    void* IGNITE_CALL IgniteProcessorProjection(gcj::JniContext* ctx, void* obj) {
-        return ctx->ProcessorProjection(static_cast<jobject>(obj));
-    }
-
-    void* IGNITE_CALL IgniteProcessorCache(gcj::JniContext* ctx, void* obj, char* name) {
-        return ctx->ProcessorCache(static_cast<jobject>(obj), name);
-    }
-
-    void* IGNITE_CALL IgniteProcessorCreateCache(gcj::JniContext* ctx, void* obj, char* name) {
-        return ctx->ProcessorCreateCache(static_cast<jobject>(obj), name);
-    }
-
-    void* IGNITE_CALL IgniteProcessorGetOrCreateCache(gcj::JniContext* ctx, void* obj, char* name) {
-        return ctx->ProcessorGetOrCreateCache(static_cast<jobject>(obj), name);
-    }
-
-    void* IGNITE_CALL IgniteProcessorCreateCacheFromConfig(gcj::JniContext* ctx, void* obj, long long memPtr) {
-        return ctx->ProcessorCreateCacheFromConfig(static_cast<jobject>(obj), memPtr);
-    }
-
-    void* IGNITE_CALL IgniteProcessorGetOrCreateCacheFromConfig(gcj::JniContext* ctx, void* obj, long long memPtr) {
-        return ctx->ProcessorGetOrCreateCacheFromConfig(static_cast<jobject>(obj), memPtr);
-    }
-
-    void* IGNITE_CALL IgniteProcessorCreateNearCache(gcj::JniContext* ctx, void* obj, char* name, long long memPtr) {
-        return ctx->ProcessorCreateNearCache(static_cast<jobject>(obj), name, memPtr);
-    }
-
-    void* IGNITE_CALL IgniteProcessorGetOrCreateNearCache(gcj::JniContext* ctx, void* obj, char* name, long long memPtr) {
-        return ctx->ProcessorGetOrCreateNearCache(static_cast<jobject>(obj), name, memPtr);
-    }
-
-    void IGNITE_CALL IgniteProcessorDestroyCache(gcj::JniContext* ctx, void* obj, char* name) {
-        ctx->ProcessorDestroyCache(static_cast<jobject>(obj), name);
-    }
-
-    void* IGNITE_CALL IgniteProcessorAffinity(gcj::JniContext* ctx, void* obj, char* name) {
-        return ctx->ProcessorAffinity(static_cast<jobject>(obj), name);
-    }
-
-    void*IGNITE_CALL IgniteProcessorDataStreamer(gcj::JniContext* ctx, void* obj, char* name, bool keepPortable) {
-        return ctx->ProcessorDataStreamer(static_cast<jobject>(obj), name, keepPortable);
-    }
-
-    void* IGNITE_CALL IgniteProcessorTransactions(gcj::JniContext* ctx, void* obj) {
-        return ctx->ProcessorTransactions(static_cast<jobject>(obj));
-    }
-
-    void* IGNITE_CALL IgniteProcessorCompute(gcj::JniContext* ctx, void* obj, void* prj) {
-        return ctx->ProcessorCompute(static_cast<jobject>(obj), static_cast<jobject>(prj));
-    }
-
-    void* IGNITE_CALL IgniteProcessorMessage(gcj::JniContext* ctx, void* obj, void* prj) {
-        return ctx->ProcessorMessage(static_cast<jobject>(obj), static_cast<jobject>(prj));
-    }
-
-    void* IGNITE_CALL IgniteProcessorEvents(gcj::JniContext* ctx, void* obj, void* prj) {
-        return ctx->ProcessorEvents(static_cast<jobject>(obj), static_cast<jobject>(prj));
-    }
-
-    void* IGNITE_CALL IgniteProcessorServices(gcj::JniContext* ctx, void* obj, void* prj) {
-        return ctx->ProcessorServices(static_cast<jobject>(obj), static_cast<jobject>(prj));
-    }
-
-    void* IGNITE_CALL IgniteProcessorExtensions(gcj::JniContext* ctx, void* obj) {
-        return ctx->ProcessorExtensions(static_cast<jobject>(obj));
-    }
-
-    void* IGNITE_CALL IgniteProcessorExtension(gcj::JniContext* ctx, void* obj, int id) {
-        return ctx->ProcessorExtension(static_cast<jobject>(obj), id);
-    }
-
-    void* IGNITE_CALL IgniteProcessorAtomicLong(gcj::JniContext* ctx, void* obj, char* name, long long initVal, bool create) {
-        return ctx->ProcessorAtomicLong(static_cast<jobject>(obj), name, initVal, create);
-    }
-
-    void* IGNITE_CALL IgniteProcessorAtomicSequence(gcj::JniContext* ctx, void* obj, char* name, long long initVal, bool create) {
-        return ctx->ProcessorAtomicSequence(static_cast<jobject>(obj), name, initVal, create);
-    }
-
-    void* IGNITE_CALL IgniteProcessorAtomicReference(gcj::JniContext* ctx, void* obj, char* name, long long memPtr, bool create) {
-        return ctx->ProcessorAtomicReference(static_cast<jobject>(obj), name, memPtr, create);
-    }
-
-	void IGNITE_CALL IgniteProcessorGetIgniteConfiguration(gcj::JniContext* ctx, void* obj, long long memPtr) {
-        return ctx->ProcessorGetIgniteConfiguration(static_cast<jobject>(obj), memPtr);
-    }
-
-	void IGNITE_CALL IgniteProcessorGetCacheNames(gcj::JniContext* ctx, void* obj, long long memPtr) {
-        return ctx->ProcessorGetCacheNames(static_cast<jobject>(obj), memPtr);
-    }
-
     long long IGNITE_CALL IgniteTargetInLongOutLong(gcj::JniContext* ctx, void* obj, int opType, long long val) {
         return ctx->TargetInLongOutLong(static_cast<jobject>(obj), opType, val);
-    }
-
-    bool IGNITE_CALL IgniteProcessorLoggerIsLevelEnabled(gcj::JniContext* ctx, void* obj, int level) {
-        return ctx->ProcessorLoggerIsLevelEnabled(static_cast<jobject>(obj), level);
-    }
-
-    void IGNITE_CALL IgniteProcessorLoggerLog(gcj::JniContext* ctx, void* obj, int level, char* message, char* category, char* errorInfo) {
-        ctx->ProcessorLoggerLog(static_cast<jobject>(obj), level, message, category, errorInfo);
-    }
-
-    void* IGNITE_CALL IgniteProcessorBinaryProcessor(gcj::JniContext* ctx, void* obj) {
-        return ctx->ProcessorBinaryProcessor(static_cast<jobject>(obj));
     }
 
     long long IGNITE_CALL IgniteTargetInStreamOutLong(gcj::JniContext* ctx, void* obj, int opType, long long memPtr) {

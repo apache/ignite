@@ -42,6 +42,7 @@ namespace Apache.Ignite.Core.Impl
     using Apache.Ignite.Core.Impl.Plugin;
     using Apache.Ignite.Core.Impl.Transactions;
     using Apache.Ignite.Core.Impl.Unmanaged;
+    using Apache.Ignite.Core.Interop;
     using Apache.Ignite.Core.Lifecycle;
     using Apache.Ignite.Core.Log;
     using Apache.Ignite.Core.Messaging;
@@ -53,8 +54,37 @@ namespace Apache.Ignite.Core.Impl
     /// <summary>
     /// Native Ignite wrapper.
     /// </summary>
-    internal class Ignite : IIgnite, ICluster
+    internal class Ignite : PlatformTarget, IIgnite, ICluster
     {
+        /// <summary>
+        /// Operation codes for PlatformProcessorImpl calls.
+        /// </summary>
+        private enum Op
+        {
+            GetCache = 1,
+            CreateCache = 2,
+            GetOrCreateCache = 3,
+            CreateCacheFromConfig = 4,
+            GetOrCreateCacheFromConfig = 5,
+            DestroyCache = 6,
+            GetAffinity = 7,
+            GetDataStreamer = 8,
+            GetTransactions = 9,
+            GetClusterGroup = 10,
+            GetExtension = 11,
+            GetAtomicLong = 12,
+            GetAtomicReference = 13,
+            GetAtomicSequence = 14,
+            GetIgniteConfiguration = 15,
+            GetCacheNames = 16,
+            CreateNearCache = 17,
+            GetOrCreateNearCache = 18,
+            LoggerIsLevelEnabled = 19,
+            LoggerLog = 20,
+            GetBinaryProcessor = 21,
+            ReleaseStart = 22
+        }
+
         /** */
         private readonly IgniteConfiguration _cfg;
 
@@ -109,7 +139,7 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="lifecycleHandlers">Lifecycle beans.</param>
         /// <param name="cbs">Callbacks.</param>
         public Ignite(IgniteConfiguration cfg, string name, IUnmanagedTarget proc, Marshaller marsh,
-            IList<LifecycleHandlerHolder> lifecycleHandlers, UnmanagedCallbacks cbs)
+            IList<LifecycleHandlerHolder> lifecycleHandlers, UnmanagedCallbacks cbs) : base(proc, marsh)
         {
             Debug.Assert(cfg != null);
             Debug.Assert(proc != null);
@@ -126,17 +156,17 @@ namespace Apache.Ignite.Core.Impl
 
             marsh.Ignite = this;
 
-            _prj = new ClusterGroupImpl(proc, UU.ProcessorProjection(proc), marsh, this, null);
+            _prj = new ClusterGroupImpl(DoOutOpObject((int) Op.GetClusterGroup), this, null);
 
             _binary = new Binary.Binary(marsh);
 
-            _binaryProc = new BinaryProcessor(UU.ProcessorBinaryProcessor(proc), marsh);
+            _binaryProc = new BinaryProcessor(DoOutOpObject((int) Op.GetBinaryProcessor), marsh);
 
             cbs.Initialize(this);
 
             // Grid is not completely started here, can't initialize interop transactions right away.
             _transactions = new Lazy<TransactionsImpl>(
-                    () => new TransactionsImpl(UU.ProcessorTransactions(proc), marsh, GetLocalNode().Id));
+                () => new TransactionsImpl(DoOutOpObject((int) Op.GetTransactions), marsh, GetLocalNode().Id));
 
             // Set reconnected task to completed state for convenience.
             _clientReconnectTaskCompletionSource.SetResult(false);
@@ -207,7 +237,7 @@ namespace Apache.Ignite.Core.Impl
         /** <inheritdoc /> */
         public IClusterGroup ForNodes(IEnumerable<IClusterNode> nodes)
         {
-            return ((IClusterGroup) _prj).ForNodes(nodes);
+            return _prj.ForNodes(nodes);
         }
 
         /** <inheritdoc /> */
@@ -218,12 +248,6 @@ namespace Apache.Ignite.Core.Impl
 
         /** <inheritdoc /> */
         public IClusterGroup ForNodeIds(IEnumerable<Guid> ids)
-        {
-            return ((IClusterGroup) _prj).ForNodeIds(ids);
-        }
-
-        /** <inheritdoc /> */
-        public IClusterGroup ForNodeIds(ICollection<Guid> ids)
         {
             return _prj.ForNodeIds(ids);
         }
@@ -389,7 +413,8 @@ namespace Apache.Ignite.Core.Impl
         {
             IgniteArgumentCheck.NotNull(name, "name");
 
-            return Cache<TK, TV>(UU.ProcessorCache(_proc, name));
+
+            return GetCache<TK, TV>(DoOutOpObject((int) Op.GetCache, w => w.WriteString(name)));
         }
 
         /** <inheritdoc /> */
@@ -397,7 +422,7 @@ namespace Apache.Ignite.Core.Impl
         {
             IgniteArgumentCheck.NotNull(name, "name");
 
-            return Cache<TK, TV>(UU.ProcessorGetOrCreateCache(_proc, name));
+            return GetCache<TK, TV>(DoOutOpObject((int) Op.GetOrCreateCache, w => w.WriteString(name)));
         }
 
         /** <inheritdoc /> */
@@ -407,31 +432,10 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
-        public ICache<TK, TV> GetOrCreateCache<TK, TV>(CacheConfiguration configuration, 
+        public ICache<TK, TV> GetOrCreateCache<TK, TV>(CacheConfiguration configuration,
             NearCacheConfiguration nearConfiguration)
         {
-            IgniteArgumentCheck.NotNull(configuration, "configuration");
-            IgniteArgumentCheck.NotNull(configuration.Name, "CacheConfiguration.Name");
-            configuration.Validate(Logger);
-
-            using (var stream = IgniteManager.Memory.Allocate().GetStream())
-            {
-                var writer = BinaryUtils.Marshaller.StartMarshal(stream);
-
-                configuration.Write(writer);
-
-                if (nearConfiguration != null)
-                {
-                    writer.WriteBoolean(true);
-                    nearConfiguration.Write(writer);
-                }
-                else
-                    writer.WriteBoolean(false);
-
-                stream.SynchronizeOutput();
-
-                return Cache<TK, TV>(UU.ProcessorGetOrCreateCache(_proc, stream.MemoryPointer));
-            }
+            return GetOrCreateCache<TK, TV>(configuration, nearConfiguration, Op.GetOrCreateCacheFromConfig);
         }
 
         /** <inheritdoc /> */
@@ -439,7 +443,9 @@ namespace Apache.Ignite.Core.Impl
         {
             IgniteArgumentCheck.NotNull(name, "name");
 
-            return Cache<TK, TV>(UU.ProcessorCreateCache(_proc, name));
+            var cacheTarget = DoOutOpObject((int) Op.CreateCache, w => w.WriteString(name));
+
+            return GetCache<TK, TV>(cacheTarget);
         }
 
         /** <inheritdoc /> */
@@ -452,29 +458,37 @@ namespace Apache.Ignite.Core.Impl
         public ICache<TK, TV> CreateCache<TK, TV>(CacheConfiguration configuration, 
             NearCacheConfiguration nearConfiguration)
         {
+            return GetOrCreateCache<TK, TV>(configuration, nearConfiguration, Op.CreateCacheFromConfig);
+        }
+
+        /// <summary>
+        /// Gets or creates the cache.
+        /// </summary>
+        private ICache<TK, TV> GetOrCreateCache<TK, TV>(CacheConfiguration configuration, 
+            NearCacheConfiguration nearConfiguration, Op op)
+        {
             IgniteArgumentCheck.NotNull(configuration, "configuration");
             IgniteArgumentCheck.NotNull(configuration.Name, "CacheConfiguration.Name");
             configuration.Validate(Logger);
 
-            using (var stream = IgniteManager.Memory.Allocate().GetStream())
+            var cacheTarget = DoOutOpObject((int) op, s =>
             {
-                // Use system marshaller: full footers, always unregistered mode.
-                var writer = BinaryUtils.Marshaller.StartMarshal(stream);
+                var w = BinaryUtils.Marshaller.StartMarshal(s);
 
-                configuration.Write(writer);
+                configuration.Write(w);
 
                 if (nearConfiguration != null)
                 {
-                    writer.WriteBoolean(true);
-                    nearConfiguration.Write(writer);
+                    w.WriteBoolean(true);
+                    nearConfiguration.Write(w);
                 }
                 else
-                    writer.WriteBoolean(false);
+                {
+                    w.WriteBoolean(false);
+                }
+            });
 
-                stream.SynchronizeOutput();
-
-                return Cache<TK, TV>(UU.ProcessorCreateCache(_proc, stream.MemoryPointer));
-            }
+            return GetCache<TK, TV>(cacheTarget);
         }
 
         /** <inheritdoc /> */
@@ -482,7 +496,7 @@ namespace Apache.Ignite.Core.Impl
         {
             IgniteArgumentCheck.NotNull(name, "name");
 
-            UU.ProcessorDestroyCache(_proc, name);
+            DoOutOp((int) Op.DestroyCache, w => w.WriteString(name));
         }
 
         /// <summary>
@@ -493,7 +507,7 @@ namespace Apache.Ignite.Core.Impl
         /// <returns>
         /// New instance of cache wrapping specified native cache.
         /// </returns>
-        public ICache<TK, TV> Cache<TK, TV>(IUnmanagedTarget nativeCache, bool keepBinary = false)
+        public ICache<TK, TV> GetCache<TK, TV>(IUnmanagedTarget nativeCache, bool keepBinary = false)
         {
             return new CacheImpl<TK, TV>(this, nativeCache, _marsh, false, keepBinary, false, false);
         }
@@ -541,8 +555,21 @@ namespace Apache.Ignite.Core.Impl
         {
             IgniteArgumentCheck.NotNull(cacheName, "cacheName");
 
-            return new DataStreamerImpl<TK, TV>(UU.ProcessorDataStreamer(_proc, cacheName, false),
-                _marsh, cacheName, false);
+            return GetDataStreamer<TK, TV>(cacheName, false);
+        }
+
+        /// <summary>
+        /// Gets the data streamer.
+        /// </summary>
+        internal IDataStreamer<TK, TV> GetDataStreamer<TK, TV>(string cacheName, bool keepBinary)
+        {
+            var streamerTarget = DoOutOpObject((int) Op.GetDataStreamer, w =>
+            {
+                w.WriteString(cacheName);
+                w.WriteBoolean(keepBinary);
+            });
+
+            return new DataStreamerImpl<TK, TV>(streamerTarget, _marsh, cacheName, keepBinary);
         }
 
         /** <inheritdoc /> */
@@ -556,11 +583,12 @@ namespace Apache.Ignite.Core.Impl
         {
             IgniteArgumentCheck.NotNull(cacheName, "cacheName");
 
-            return new CacheAffinityImpl(UU.ProcessorAffinity(_proc, cacheName), _marsh, false, this);
+            var aff = DoOutOpObject((int) Op.GetAffinity, w => w.WriteString(cacheName));
+            
+            return new CacheAffinityImpl(aff, _marsh, false, this);
         }
 
         /** <inheritdoc /> */
-
         public ITransactions GetTransactions()
         {
             return _transactions.Value;
@@ -589,7 +617,12 @@ namespace Apache.Ignite.Core.Impl
         {
             IgniteArgumentCheck.NotNullOrEmpty(name, "name");
 
-            var nativeLong = UU.ProcessorAtomicLong(_proc, name, initialValue, create);
+            var nativeLong = DoOutOpObject((int) Op.GetAtomicLong, w =>
+            {
+                w.WriteString(name);
+                w.WriteLong(initialValue);
+                w.WriteBoolean(create);
+            });
 
             if (nativeLong == null)
                 return null;
@@ -602,7 +635,12 @@ namespace Apache.Ignite.Core.Impl
         {
             IgniteArgumentCheck.NotNullOrEmpty(name, "name");
 
-            var nativeSeq = UU.ProcessorAtomicSequence(_proc, name, initialValue, create);
+            var nativeSeq = DoOutOpObject((int) Op.GetAtomicSequence, w =>
+            {
+                w.WriteString(name);
+                w.WriteLong(initialValue);
+                w.WriteBoolean(create);
+            });
 
             if (nativeSeq == null)
                 return null;
@@ -615,81 +653,47 @@ namespace Apache.Ignite.Core.Impl
         {
             IgniteArgumentCheck.NotNullOrEmpty(name, "name");
 
-            var refTarget = GetAtomicReferenceUnmanaged(name, initialValue, create);
+            var refTarget = DoOutOpObject((int) Op.GetAtomicReference, w =>
+            {
+                w.WriteString(name);
+                w.WriteObject(initialValue);
+                w.WriteBoolean(create);
+            });
 
             return refTarget == null ? null : new AtomicReference<T>(refTarget, Marshaller, name);
-        }
-
-        /// <summary>
-        /// Gets the unmanaged atomic reference.
-        /// </summary>
-        /// <param name="name">The name.</param>
-        /// <param name="initialValue">The initial value.</param>
-        /// <param name="create">Create flag.</param>
-        /// <returns>Unmanaged atomic reference, or null.</returns>
-        private IUnmanagedTarget GetAtomicReferenceUnmanaged<T>(string name, T initialValue, bool create)
-        {
-            IgniteArgumentCheck.NotNullOrEmpty(name, "name");
-
-            // Do not allocate memory when default is not used.
-            if (!create)
-                return UU.ProcessorAtomicReference(_proc, name, 0, false);
-            
-            using (var stream = IgniteManager.Memory.Allocate().GetStream())
-            {
-                var writer = Marshaller.StartMarshal(stream);
-
-                writer.Write(initialValue);
-
-                Marshaller.FinishMarshal(writer);
-
-                var memPtr = stream.SynchronizeOutput();
-
-                return UU.ProcessorAtomicReference(_proc, name, memPtr, true);
-            }
         }
 
         /** <inheritdoc /> */
         public IgniteConfiguration GetConfiguration()
         {
-            using (var stream = IgniteManager.Memory.Allocate(1024).GetStream())
-            {
-                UU.ProcessorGetIgniteConfiguration(_proc, stream.MemoryPointer);
-
-                stream.SynchronizeInput();
-
-                return new IgniteConfiguration(BinaryUtils.Marshaller.StartUnmarshal(stream), _cfg);
-            }
+            return DoInOp((int) Op.GetIgniteConfiguration,
+                s => new IgniteConfiguration(BinaryUtils.Marshaller.StartUnmarshal(s), _cfg));
         }
 
         /** <inheritdoc /> */
         public ICache<TK, TV> CreateNearCache<TK, TV>(string name, NearCacheConfiguration configuration)
         {
-            return GetOrCreateNearCache0<TK, TV>(name, configuration, UU.ProcessorCreateNearCache);
+            return GetOrCreateNearCache0<TK, TV>(name, configuration, Op.CreateNearCache);
         }
 
         /** <inheritdoc /> */
         public ICache<TK, TV> GetOrCreateNearCache<TK, TV>(string name, NearCacheConfiguration configuration)
         {
-            return GetOrCreateNearCache0<TK, TV>(name, configuration, UU.ProcessorGetOrCreateNearCache);
+            return GetOrCreateNearCache0<TK, TV>(name, configuration, Op.GetOrCreateNearCache);
         }
 
         /** <inheritdoc /> */
         public ICollection<string> GetCacheNames()
         {
-            using (var stream = IgniteManager.Memory.Allocate(1024).GetStream())
+            return OutStream((int) Op.GetCacheNames, r =>
             {
-                UU.ProcessorGetCacheNames(_proc, stream.MemoryPointer);
-                stream.SynchronizeInput();
+                var res = new string[r.ReadInt()];
 
-                var reader = _marsh.StartUnmarshal(stream);
-                var res = new string[stream.ReadInt()];
+                for (var i = 0; i < res.Length; i++)
+                    res[i] = r.ReadString();
 
-                for (int i = 0; i < res.Length; i++)
-                    res[i] = reader.ReadString();
-
-                return res;
-            }
+                return (ICollection<string>) res;
+            });
         }
 
         /** <inheritdoc /> */
@@ -768,20 +772,17 @@ namespace Apache.Ignite.Core.Impl
         /// Gets or creates near cache.
         /// </summary>
         private ICache<TK, TV> GetOrCreateNearCache0<TK, TV>(string name, NearCacheConfiguration configuration,
-            Func<IUnmanagedTarget, string, long, IUnmanagedTarget> func)
+            Op op)
         {
             IgniteArgumentCheck.NotNull(configuration, "configuration");
 
-            using (var stream = IgniteManager.Memory.Allocate().GetStream())
+            var cacheTarget = DoOutOpObject((int) op, w =>
             {
-                var writer = BinaryUtils.Marshaller.StartMarshal(stream);
+                w.WriteString(name);
+                configuration.Write(w);
+            });
 
-                configuration.Write(writer);
-
-                stream.SynchronizeOutput();
-
-                return Cache<TK, TV>(func(_proc, name, stream.MemoryPointer));
-            }
+            return GetCache<TK, TV>(cacheTarget);
         }
 
         /// <summary>
@@ -791,14 +792,6 @@ namespace Apache.Ignite.Core.Impl
         internal ClusterGroupImpl ClusterGroup
         {
             get { return _prj; }
-        }
-
-        /// <summary>
-        /// Marshaller.
-        /// </summary>
-        internal Marshaller Marshaller
-        {
-            get { return _marsh; }
         }
 
         /// <summary>
@@ -891,6 +884,44 @@ namespace Apache.Ignite.Core.Impl
         internal PluginProcessor PluginProcessor
         {
             get { return _pluginProcessor; }
+        }
+
+        /// <summary>
+        /// Notify processor that it is safe to use.
+        /// </summary>
+        internal void ProcessorReleaseStart()
+        {
+            InLongOutLong((int) Op.ReleaseStart, 0);
+        }
+
+        /// <summary>
+        /// Checks whether log level is enabled in Java logger.
+        /// </summary>
+        internal bool LoggerIsLevelEnabled(LogLevel logLevel)
+        {
+            return InLongOutLong((int) Op.LoggerIsLevelEnabled, (long) logLevel) == True;
+        }
+
+        /// <summary>
+        /// Logs to the Java logger.
+        /// </summary>
+        internal void LoggerLog(LogLevel level, string msg, string category, string err)
+        {
+            InStreamOutLong((int) Op.LoggerLog, w =>
+            {
+                w.WriteInt((int) level);
+                w.WriteString(msg);
+                w.WriteString(category);
+                w.WriteString(err);
+            });
+        }
+
+        /// <summary>
+        /// Gets the platform plugin extension.
+        /// </summary>
+        internal IPlatformTarget GetExtension(int id)
+        {
+            return InStreamOutObject((int) Op.GetExtension, w => w.WriteInt(id));
         }
     }
 }

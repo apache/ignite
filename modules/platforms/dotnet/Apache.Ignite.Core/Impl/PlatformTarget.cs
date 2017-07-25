@@ -160,7 +160,7 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         /// <param name="type">Operation type.</param>
         /// <param name="action">Action to be performed on the stream.</param>
-        /// <returns></returns>
+        /// <returns>Resulting object.</returns>
         protected IUnmanagedTarget DoOutOpObject(int type, Action<BinaryWriter> action)
         {
             using (var stream = IgniteManager.Memory.Allocate().GetStream())
@@ -170,6 +170,22 @@ namespace Apache.Ignite.Core.Impl
                 action(writer);
 
                 FinishMarshal(writer);
+
+                return UU.TargetInStreamOutObject(_target, type, stream.SynchronizeOutput());
+            }
+        }
+
+        /// <summary>
+        /// Perform out operation.
+        /// </summary>
+        /// <param name="type">Operation type.</param>
+        /// <param name="action">Action to be performed on the stream.</param>
+        /// <returns>Resulting object.</returns>
+        protected IUnmanagedTarget DoOutOpObject(int type, Action<IBinaryStream> action)
+        {
+            using (var stream = IgniteManager.Memory.Allocate().GetStream())
+            {
+                action(stream);
 
                 return UU.TargetInStreamOutObject(_target, type, stream.SynchronizeOutput());
             }
