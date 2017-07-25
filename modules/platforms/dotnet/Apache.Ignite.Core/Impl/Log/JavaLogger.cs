@@ -21,7 +21,6 @@ namespace Apache.Ignite.Core.Impl.Log
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
-    using Apache.Ignite.Core.Impl.Unmanaged;
     using Apache.Ignite.Core.Log;
 
     /// <summary>
@@ -30,7 +29,7 @@ namespace Apache.Ignite.Core.Impl.Log
     internal class JavaLogger : ILogger
     {
         /** */
-        private IUnmanagedTarget _proc;
+        private Ignite _ignite;
 
         /** */
         private readonly List<LogLevel> _enabledLevels = new List<LogLevel>(5);
@@ -45,19 +44,19 @@ namespace Apache.Ignite.Core.Impl.Log
         /// <summary>
         /// Sets the processor.
         /// </summary>
-        /// <param name="proc">The proc.</param>
-        public void SetProcessor(IUnmanagedTarget proc)
+        /// <param name="ignite">The proc.</param>
+        public void SetIgnite(Ignite ignite)
         {
-            Debug.Assert(proc != null);
+            Debug.Assert(ignite != null);
 
             lock (_syncRoot)
             {
-                _proc = proc;
+                _ignite = ignite;
 
                 // Preload enabled levels.
                 _enabledLevels.AddRange(
-                    new[] { LogLevel.Trace, LogLevel.Debug, LogLevel.Info, LogLevel.Warn, LogLevel.Error }
-                        .Where(x => UnmanagedUtils.ProcessorLoggerIsLevelEnabled(proc, (int)x)));
+                    new[] {LogLevel.Trace, LogLevel.Debug, LogLevel.Info, LogLevel.Warn, LogLevel.Error}
+                        .Where(x => ignite.LoggerIsLevelEnabled(x)));
 
                 foreach (var log in _pendingLogs)
                 {
@@ -82,7 +81,7 @@ namespace Apache.Ignite.Core.Impl.Log
                 var msg = args == null ? message : string.Format(formatProvider, message, args);
                 var err = ex != null ? ex.ToString() : null;
 
-                if (_proc != null)
+                if (_ignite != null)
                     Log(level, msg, category, err);
                 else
                     _pendingLogs.Add(Tuple.Create(level, msg, category, err));
@@ -94,7 +93,7 @@ namespace Apache.Ignite.Core.Impl.Log
         {
             lock (_syncRoot)
             {
-                return _proc == null || _enabledLevels.Contains(level);
+                return _ignite == null || _enabledLevels.Contains(level);
             }
         }
 
@@ -104,7 +103,9 @@ namespace Apache.Ignite.Core.Impl.Log
         private void Log(LogLevel level, string msg, string category, string err)
         {
             if (IsEnabled(level))
-                UnmanagedUtils.ProcessorLoggerLog(_proc, (int)level, msg, category, err);
+            {
+                _ignite.LoggerLog(level, msg, category, err);
+            }
         }
     }
 }

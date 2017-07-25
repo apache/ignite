@@ -17,6 +17,6 @@
 
 /**
  * <!-- Package description. -->
- * Contains automatic JDBC store example.
+ * Some math utils.
  */
-package org.apache.ignite.examples.binary.datagrid.store.auto;
+package org.apache.ignite.ml.math.util;

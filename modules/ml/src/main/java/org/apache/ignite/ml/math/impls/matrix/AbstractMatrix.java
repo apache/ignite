@@ -44,8 +44,6 @@ import org.apache.ignite.ml.math.impls.vector.MatrixVectorView;
  * interface to minimize the effort required to implement it.
  * Subclasses may override some of the implemented methods if a more
  * specific or optimized implementation is desirable.
- *
- * TODO: add row/column optimization.
  */
 public abstract class AbstractMatrix implements Matrix {
     // Stochastic sparsity analysis.
@@ -503,7 +501,7 @@ public abstract class AbstractMatrix implements Matrix {
 
     /** {@inheritDoc} */
     @Override public double determinant() {
-        //TODO: This decomposition should be cached
+        //TODO: IGNITE-5799, This decomposition should be cached
         LUDecomposition dec = new LUDecomposition(this);
         double res = dec.determinant();
         dec.destroy();
@@ -515,7 +513,7 @@ public abstract class AbstractMatrix implements Matrix {
         if (rowSize() != columnSize())
             throw new CardinalityException(rowSize(), columnSize());
 
-        //TODO: This decomposition should be cached
+        //TODO: IGNITE-5799, This decomposition should be cached
         LUDecomposition dec = new LUDecomposition(this);
 
         Matrix res = dec.solve(likeIdentity());

@@ -19,5 +19,5 @@ import angular from 'angular';
 import component from './component';
 
 export default angular
-	.module('ignite-console.web-console-header', [])
-	.component('webConsoleHeader', component);
+    .module('ignite-console.web-console-header', [])
+    .component('webConsoleHeader', component);
