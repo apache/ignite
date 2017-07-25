@@ -503,7 +503,7 @@ public abstract class AbstractMatrix implements Matrix {
 
     /** {@inheritDoc} */
     @Override public double determinant() {
-        //TODO: This decomposition should be cached
+        //TODO: IGNITE-5799, This decomposition should be cached
         LUDecomposition dec = new LUDecomposition(this);
         double res = dec.determinant();
         dec.destroy();
@@ -515,7 +515,7 @@ public abstract class AbstractMatrix implements Matrix {
         if (rowSize() != columnSize())
             throw new CardinalityException(rowSize(), columnSize());
 
-        //TODO: This decomposition should be cached
+        //TODO: IGNITE-5799, This decomposition should be cached
         LUDecomposition dec = new LUDecomposition(this);
 
         Matrix res = dec.solve(likeIdentity());

@@ -51,7 +51,7 @@ angular.module('ignite-console.states.configuration', ['ui.router'])
         $templateCache.put('summary-tabs.html', summaryTabsTemplateUrl);
     }])
     // Configure state provider.
-    .config(['$stateProvider', 'AclRouteProvider', ($stateProvider, AclRoute) => {
+    .config(['$stateProvider', ($stateProvider) => {
         // Setup the states.
         $stateProvider
             .state('base.configuration', {
@@ -64,15 +64,21 @@ angular.module('ignite-console.states.configuration', ['ui.router'])
             })
             .state('base.configuration.tabs', {
                 url: '/configuration',
+                permission: 'configuration',
                 template: '<page-configure></page-configure>',
-                metaTags: {
+                redirectTo: (trans) => {
+                    const PageConfigure = trans.injector().get('PageConfigure');
+
+                    return PageConfigure.onStateEnterRedirect(trans.to());
+                },
+                tfMetaTags: {
                     title: 'Configuration'
                 }
             })
             .state('base.configuration.tabs.basic', {
                 url: '/basic',
                 template: '<page-configure-basic></page-configure-basic>',
-                metaTags: {
+                tfMetaTags: {
                     title: 'Basic Configuration'
                 },
                 resolve: {
@@ -88,13 +94,14 @@ angular.module('ignite-console.states.configuration', ['ui.router'])
             })
             .state('base.configuration.tabs.advanced', {
                 url: '/advanced',
-                template: '<page-configure-advanced></page-configure-advanced>'
+                template: '<page-configure-advanced></page-configure-advanced>',
+                redirectTo: 'base.configuration.tabs.advanced.clusters'
             })
             .state('base.configuration.tabs.advanced.clusters', {
                 url: '/clusters',
                 templateUrl: clustersTpl,
-                onEnter: AclRoute.checkAccess('configuration'),
-                metaTags: {
+                permission: 'configuration',
+                tfMetaTags: {
                     title: 'Configure Clusters'
                 },
                 controller: clustersCtrl,
@@ -103,8 +110,8 @@ angular.module('ignite-console.states.configuration', ['ui.router'])
             .state('base.configuration.tabs.advanced.caches', {
                 url: '/caches',
                 templateUrl: cachesTpl,
-                onEnter: AclRoute.checkAccess('configuration'),
-                metaTags: {
+                permission: 'configuration',
+                tfMetaTags: {
                     title: 'Configure Caches'
                 },
                 controller: cachesCtrl,
@@ -113,8 +120,8 @@ angular.module('ignite-console.states.configuration', ['ui.router'])
             .state('base.configuration.tabs.advanced.domains', {
                 url: '/domains',
                 templateUrl: domainsTpl,
-                onEnter: AclRoute.checkAccess('configuration'),
-                metaTags: {
+                permission: 'configuration',
+                tfMetaTags: {
                     title: 'Configure Domain Model'
                 },
                 controller: domainsCtrl,
@@ -123,8 +130,8 @@ angular.module('ignite-console.states.configuration', ['ui.router'])
             .state('base.configuration.tabs.advanced.igfs', {
                 url: '/igfs',
                 templateUrl: igfsTpl,
-                onEnter: AclRoute.checkAccess('configuration'),
-                metaTags: {
+                permission: 'configuration',
+                tfMetaTags: {
                     title: 'Configure IGFS'
                 },
                 controller: igfsCtrl,
@@ -133,10 +140,10 @@ angular.module('ignite-console.states.configuration', ['ui.router'])
             .state('base.configuration.tabs.advanced.summary', {
                 url: '/summary',
                 templateUrl: summaryTpl,
-                onEnter: AclRoute.checkAccess('configuration'),
+                permission: 'configuration',
                 controller: ConfigurationSummaryCtrl,
                 controllerAs: 'ctrl',
-                metaTags: {
+                tfMetaTags: {
                     title: 'Configurations Summary'
                 }
             });

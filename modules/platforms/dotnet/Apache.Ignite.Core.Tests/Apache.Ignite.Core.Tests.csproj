@@ -89,6 +89,8 @@
     <Compile Include="Cache\Query\Linq\CacheLinqTest.Misc.cs" />
     <Compile Include="Cache\Query\Linq\CacheLinqTest.Custom.cs" />
     <Compile Include="Cache\Query\Linq\CacheLinqTest.Contains.cs" />
+    <Compile Include="Cache\Store\CacheStoreSessionTestCodeConfig.cs" />
+    <Compile Include="Cache\Store\CacheStoreSessionTestSharedFactory.cs" />
     <Compile Include="Deployment\CacheGetFunc.cs" />
     <Compile Include="Deployment\GetAddressFunc.cs" />
     <Compile Include="Deployment\PeerAssemblyLoadingAllApisTest.cs" />
@@ -312,6 +314,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Config\Cache\Affinity\affinity-function.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Config\Cache\Store\cache-store-session-shared-factory.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Config\Cache\Store\cache-store-session.xml">
