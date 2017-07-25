@@ -112,7 +112,6 @@ namespace Apache.Ignite.Core.Interop
         /// <returns>
         /// Task.
         /// </returns>
-        // TODO: How does cancellation work?
         Task<T> DoOutOpAsync<T>(int type, Action<IBinaryRawWriter> writeAction,
             Func<IBinaryRawReader, T> readAction, CancellationToken cancellationToken);
     }

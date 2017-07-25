@@ -788,6 +788,7 @@ namespace Apache.Ignite.Core.Impl
         public Task<T> DoOutOpAsync<T>(int type, Action<IBinaryRawWriter> writeAction, 
             Func<IBinaryRawReader, T> readAction, CancellationToken cancellationToken)
         {
+            // TODO: SetTarget must be called on the future.
             return DoOutOpAsyncFuture(type, writeAction, readAction).GetTask(cancellationToken);
         }
 
