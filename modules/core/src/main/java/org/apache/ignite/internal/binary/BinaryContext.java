@@ -461,14 +461,14 @@ public class BinaryContext {
                     String pkgName = clsName.substring(0, clsName.length() - 2);
 
                     for (String clsName0 : classesInPackage(pkgName)) {
-                        String affField = affinityFieldName(affFields, clsName0);
+                        String affField = affFields.remove(clsName0);
 
                         descs.add(clsName0, mapper, serializer, identity, affField,
                             typeCfg.isEnum(), typeCfg.getEnumValues(), true);
                     }
                 }
                 else {
-                    String affField = affinityFieldName(affFields, clsName);
+                    String affField = affFields.remove(clsName);
 
                     descs.add(clsName, mapper, serializer, identity, affField,
                         typeCfg.isEnum(), typeCfg.getEnumValues(), false);
@@ -489,39 +489,6 @@ public class BinaryContext {
             int typeId = globalMapper.typeId(typeName);
 
             affKeyFieldNames.putIfAbsent(typeId, entry.getValue());
-        }
-    }
-
-    /**
-     * Get affinity field name from either {@link CacheKeyConfiguration} or {@link AffinityKeyMapped} annotation
-     * applied to a field of the class specified by {@code clsName} parameter.
-     * Configuration ({@link CacheKeyConfiguration}) takes precedence over code ({@link AffinityKeyMapped}) if
-     * different affinity field is specified in the configuration and code. A warning is logged in such a case.
-     *
-     * @param affFieldCfg Pre-configured Class name -> Affinity field name mappings
-     * @param clsName Class name to get affinity field for.
-     * @return Affinity field name or {@code null} if field name was not found.
-     */
-    private String affinityFieldName(Map<String, String> affFieldCfg, String clsName) {
-        String cfgVal = affFieldCfg.remove(clsName);
-
-        ClassLoader ldr = U.gridClassLoader();
-
-        try {
-            Class cls = Class.forName(clsName, false, ldr);
-
-            String codeVal = affinityFieldName(cls);
-
-            if (cfgVal != null && codeVal != null && !cfgVal.equals(codeVal))
-                U.warn(log(), String.format("Affinity field name for class \"%s\" is specified in the configuration " +
-                    "and code. The configured affinity field \"%s\" will be used.", clsName, cfgVal));
-
-            return cfgVal == null ? codeVal : cfgVal;
-        }
-        catch (ClassNotFoundException e) {
-            U.error(log(), String.format("Failed to get affinity field name for class \"%s\": %s", clsName, e));
-
-            return cfgVal;
         }
     }
 
