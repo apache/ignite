@@ -49,6 +49,7 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
+import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.GridTestNode;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -373,14 +374,16 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
      *
      * @param enabled Distribution calculation control.
      */
-    private void checkDistributionCalculation(boolean enabled) {
-        System.setProperty(IgniteSystemProperties.IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD, String.valueOf(enabled));
+    private void checkDistributionCalculation(boolean enabled) throws Exception {
+        AffinityFunction aff = new RendezvousAffinityFunctionOld(true, 1024);
 
-        String backup = System.getProperty(IgniteSystemProperties.IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD);
+        GridStringLogger logger = new GridStringLogger();
 
-        AffinityFunction aff = new RendezvousAffinityFunction(true, 1024);
+        GridTestUtils.setFieldValue(aff, "log", logger);
 
-        GridTestUtils.setFieldValue(aff, "log", log);
+        GridTestUtils.setFieldValue(aff, "ignite", ignite);
+
+        System.out.println("!!!!!!!!!!!!!!!!!!    " + logger.toString());
 
         List<ClusterNode> nodes = createBaseNodes(4);
 
@@ -399,7 +402,7 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
 
         GridTestUtils.setFieldValue(aff1, "ignite", ignite);
 
-        affinityDistribution(aff0, aff1);
+//        affinityDistribution(aff0, aff1);
     }
 
     /**
