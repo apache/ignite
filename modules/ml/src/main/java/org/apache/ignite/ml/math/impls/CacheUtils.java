@@ -30,6 +30,7 @@ import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -43,12 +44,11 @@ import org.apache.ignite.ml.math.functions.IgniteDoubleFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.impls.matrix.BlockEntry;
 import org.apache.ignite.ml.math.impls.storage.matrix.BlockMatrixKey;
-import org.apache.ignite.internal.util.typedef.internal.A;
 
 /**
  * Distribution-related misc. support.
  *
- * TODO: IGNITE-5102, fix sparse key filters
+ * TODO: IGNITE-5102, fix sparse key filters.
  */
 public class CacheUtils {
     /**
