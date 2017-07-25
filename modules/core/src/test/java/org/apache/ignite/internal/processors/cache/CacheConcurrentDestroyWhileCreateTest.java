@@ -17,12 +17,20 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.Collections;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.query.schema.SchemaExchangeWorkerTask;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaAbstractDiscoveryMessage;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -90,6 +98,102 @@ public class CacheConcurrentDestroyWhileCreateTest extends GridCommonAbstractTes
                 destroyLatch.await(2000, TimeUnit.MILLISECONDS));
         }
         finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    public void testWithPublicAPI() throws Exception {
+        try {
+            Ignition.setClientMode(false);
+
+            startGrid(0);
+            final Ignite ignite2 = startGrid(1);
+            final Ignite ignite3 = startGrid(2);
+
+            Ignition.setClientMode(true);
+
+            final Ignite igniteClient = startGrid(3);
+
+            final Set<String> existingCacheNames = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
+
+            final CountDownLatch noiseLatch = new CountDownLatch(1);
+
+            // This thread generates "noise" to keep future queue in partition-exchanger filled
+            final Thread noiseGenerator = new Thread() {
+                @Override public void run() {
+                    final int cacheCountLowThreshold = 5;
+                    final int cacheCountHighThreshold = 10;
+
+                    while (!Thread.currentThread().isInterrupted()) {
+                        try {
+                            int cacheCount = existingCacheNames.size();
+
+                            if (cacheCount < cacheCountLowThreshold) {
+                                final String cacheName = UUID.randomUUID().toString();
+
+                                new Thread() {
+                                    @Override public void run() {
+                                        igniteClient.getOrCreateCache(cacheName);
+
+                                        existingCacheNames.add(cacheName);
+                                    }
+                                }.start();
+                            }
+                            else if (cacheCount > cacheCountHighThreshold) {
+                                noiseLatch.countDown();
+
+                                new Thread() {
+                                    @Override public void run() {
+                                        try {
+                                            String cacheNameToRemove = existingCacheNames.iterator().next();
+
+                                            existingCacheNames.remove(cacheNameToRemove);
+
+                                            igniteClient.destroyCache(cacheNameToRemove);
+                                        }
+                                        catch (Exception ignored) {
+                                        }
+                                    }
+                                }.start();
+                            }
+
+                            U.sleep(10);
+                        }
+                        catch (IgniteInterruptedCheckedException ignored) {
+                        }
+                    }
+                }
+            };
+
+            noiseGenerator.start();
+
+            noiseLatch.await();
+
+            final CountDownLatch latch = new CountDownLatch(1);
+
+            new Thread() {
+                @Override public void run() {
+                    noiseGenerator.interrupt();
+                    latch.countDown();
+                    ignite2.getOrCreateCache(DEFAULT_CACHE_NAME);
+                }
+            }.start();
+
+            latch.await();
+
+            U.sleep(100); // large enough to start cache creation on ignite2
+
+            new Thread() {
+                @Override public void run() {
+                    ignite3.destroyCache(DEFAULT_CACHE_NAME);
+                }
+            }.start();
+
+            awaitPartitionMapExchange();
+        } finally {
             stopAllGrids();
         }
     }
