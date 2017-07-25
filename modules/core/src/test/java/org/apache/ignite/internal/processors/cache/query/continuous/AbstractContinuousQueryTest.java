@@ -46,11 +46,19 @@ public abstract class AbstractContinuousQueryTest extends GridCommonAbstractTest
         return new ContinuousQuery();
     }
 
-    protected void setRemoteFilterFactory(Query contQry, Factory<? extends CacheEntryEventFilter> rmtFilterFactory) {
+    protected <K, V> void setLocalListener(Query q, CI2<Ignite, T2<K, V>> lsnrClsr) {
+        if (isContinuousWithTransformer()) {
+            ((ContinuousQueryWithTransformer)q)
+                .setLocalTransformedEventListener(new TransformedEventListenerImpl(lsnrClsr));
+        } else
+            ((ContinuousQuery)q).setLocalListener(new CacheInvokeListener(lsnrClsr));
+    }
+
+    protected void setRemoteFilterFactory(Query q, Factory<? extends CacheEntryEventFilter> rmtFilterFactory) {
         if (isContinuousWithTransformer())
-            ((ContinuousQueryWithTransformer)contQry).setRemoteFilterFactory(rmtFilterFactory);
+            ((ContinuousQueryWithTransformer)q).setRemoteFilterFactory(rmtFilterFactory);
         else
-            ((ContinuousQuery)contQry).setRemoteFilterFactory(rmtFilterFactory);
+            ((ContinuousQuery)q).setRemoteFilterFactory(rmtFilterFactory);
     }
 
     /**

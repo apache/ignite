@@ -188,23 +188,13 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
         assert lsnrs != null;
 
         for (CacheContinuousQueryListener lsnr : lsnrs.values()) {
-            Object transVal = null;
-
-            if (lsnr.transformer() != null) {
-                try {
-                    transVal = lsnr.transformer().apply(cctx.unwrapBinaryIfNeeded(key, lsnr.keepBinary()), null);
-                } catch (Exception ex) {
-                    log().warning("Exception in continuous query transformer", ex);
-                }
-            }
-
             CacheContinuousQueryEntry e0 = new CacheContinuousQueryEntry(
                 cctx.cacheId(),
                 UPDATED,
                 key,
                 null,
                 null,
-                transVal == null ? null : cctx.toCacheObject(transVal),
+                null,
                 lsnr.keepBinary(),
                 partId,
                 updCntr,
@@ -364,32 +354,13 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                 initialized = true;
             }
 
-            Object transVal = null;
-
-            if (lsnr.transformer() != null) {
-                if (!initialized) {
-                    if (newVal != null)
-                        newVal.finishUnmarshal(cctx.cacheObjectContext(), cctx.deploy().globalLoader());
-
-                    initialized = true;
-                }
-
-                try {
-                    transVal = lsnr.transformer().apply(
-                        cctx.unwrapBinaryIfNeeded(key, lsnr.keepBinary()),
-                        newVal == null ? null : cctx.unwrapBinaryIfNeeded(newVal, lsnr.keepBinary()));
-                } catch (Exception ex) {
-                    log().warning("Exception in continuous query transformer", ex);
-                }
-            }
-
             CacheContinuousQueryEntry e0 = new CacheContinuousQueryEntry(
                 cctx.cacheId(),
                 evtType,
                 key,
-                lsnr.transformer() == null ? newVal : null,
-                (lsnr.oldValueRequired() && lsnr.transformer() == null) ? oldVal : null,
-                transVal == null ? null : cctx.toCacheObject(transVal),
+                newVal,
+                lsnr.oldValueRequired() ? oldVal : null,
+                null,
                 lsnr.keepBinary(),
                 partId,
                 updateCntr,
@@ -446,23 +417,13 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                     initialized = true;
                 }
 
-                Object transVal = null;
-
-                if (lsnr.transformer() != null) {
-                    try {
-                        transVal = lsnr.transformer().apply(cctx.unwrapBinaryIfNeeded(key, lsnr.keepBinary()), null);
-                    } catch (Exception ex) {
-                        log().warning("Exception in continuous query transformer", ex);
-                    }
-                }
-
                 CacheContinuousQueryEntry e0 = new CacheContinuousQueryEntry(
                     cctx.cacheId(),
                     EXPIRED,
                     key,
                     null,
-                    (lsnr.oldValueRequired() && lsnr.transformer() == null) ? oldVal : null,
-                    transVal == null ? null : cctx.toCacheObject(transVal),
+                    lsnr.oldValueRequired() ? oldVal : null,
+                    null,
                     lsnr.keepBinary(),
                     e.partition(),
                     -1,
@@ -1360,18 +1321,13 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
 
                 CacheDataRow e = it.next();
 
-                Object transVal = null;
-
-                if (hnd.getTransformer() != null)
-                    transVal = hnd.getTransformer().apply(e.key(), e.value());
-
                 CacheContinuousQueryEntry entry = new CacheContinuousQueryEntry(
                     cctx.cacheId(),
                     CREATED,
                     e.key(),
-                    hnd.getTransformer() == null ? e.value() : null,
+                    e.value(),
                     null,
-                    transVal == null ? null : cctx.toCacheObject(transVal),
+                    null,
                     keepBinary,
                     0,
                     -1,

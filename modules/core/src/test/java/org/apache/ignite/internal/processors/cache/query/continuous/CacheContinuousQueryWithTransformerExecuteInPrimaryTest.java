@@ -2,7 +2,7 @@ package org.apache.ignite.internal.processors.cache.query.continuous;
 
 /**
  */
-public class CacheContinuousQueryWithTransformerAsyncFilterListenerTest extends CacheContinuousQueryAsyncFilterListenerTest {
+public class CacheContinuousQueryWithTransformerExecuteInPrimaryTest extends CacheContinuousQueryExecuteInPrimaryTest {
     @Override public boolean isContinuousWithTransformer() {
         return true;
     }

@@ -329,7 +329,7 @@ public class CacheContinuousQueryAsyncFilterListenerTest extends AbstractContinu
      * @param jcacheApi Use JCache api for registration entry update listener.
      * @throws Exception If failed.
      */
-    private void testNonDeadLockInListener(CacheConfiguration ccfg,
+    protected void testNonDeadLockInListener(CacheConfiguration ccfg,
         final boolean asyncFltr,
         boolean asyncLsnr,
         boolean jcacheApi) throws Exception {
@@ -435,7 +435,7 @@ public class CacheContinuousQueryAsyncFilterListenerTest extends AbstractContinu
                     Query conQry = createContinuousQuery();
 
                     if (isContinuousWithTransformer()) {
-                        TransformedEventListener locTransLsnr = asyncFltr ?
+                        TransformedEventListener locTransLsnr = asyncLsnr ?
                             new TransformedEventListenerImplAsync(lsnrClsr) :
                             new TransformedEventListenerImpl(lsnrClsr);
                         ((ContinuousQueryWithTransformer)conQry).setLocalTransformedEventListener(locTransLsnr);

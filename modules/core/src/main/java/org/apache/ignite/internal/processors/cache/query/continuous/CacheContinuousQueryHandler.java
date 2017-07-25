@@ -338,7 +338,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         if (locTransLsnr != null) {
             ctx.resource().injectGeneric(locTransLsnr);
 
-            asyncCb = U.hasAnnotation(locLsnr, IgniteAsyncCallback.class);
+            asyncCb = U.hasAnnotation(locTransLsnr, IgniteAsyncCallback.class);
         }
 
         final CacheEntryEventFilter filter = getEventFilter();
@@ -409,7 +409,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                 return keepBinary;
             }
 
-            @Override public void onEntryUpdated(final CacheContinuousQueryEvent<K, V> evt,
+            @Override public void onEntryUpdated(CacheContinuousQueryEvent<K, V> evt,
                 boolean primary,
                 final boolean recordIgniteEvt,
                 GridDhtAtomicAbstractUpdateFuture fut) {
@@ -439,6 +439,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                 }
                 else {
                     final boolean notify = filter(evt);
+                    evt = transform(evt);
 
                     if (log.isDebugEnabled())
                         log.debug("Filter invoked for event [evt=" + evt + ", primary=" + primary
@@ -448,12 +449,14 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                         if (fut == null)
                             onEntryUpdate(evt, notify, loc, recordIgniteEvt);
                         else {
+                            final CacheContinuousQueryEvent<K, V> evt0 = evt;
+
                             fut.addContinuousQueryClosure(new CI1<Boolean>() {
                                 @Override public void apply(Boolean suc) {
                                     if (!suc)
-                                        evt.entry().markFiltered();
+                                        evt0.entry().markFiltered();
 
-                                    onEntryUpdate(evt, notify, loc, recordIgniteEvt);
+                                    onEntryUpdate(evt0, notify, loc, recordIgniteEvt);
                                 }
                             }, sync);
                         }
@@ -625,6 +628,34 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
             return RegisterStatus.DELAYED;
 
         return mgr.registerListener(routineId, lsnr, internal);
+    }
+
+    private CacheContinuousQueryEvent<K,V> transform(CacheContinuousQueryEvent<K, V> evt) {
+        IgniteBiClosure transformer = getTransformer();
+
+        if (evt.entry().isFiltered() || transformer == null)
+            return evt;
+
+        Object transVal = null;
+        try {
+            transVal = transformer.apply(evt.getKey(), evt.getValue());
+        } catch (Throwable ignored) {
+            // No-op.
+        }
+
+        CacheContinuousQueryEntry entry = new CacheContinuousQueryEntry(evt.entry().cacheId(),
+            evt.entry().eventType(),
+            evt.entry().key(),
+            null,
+            null,
+            transVal == null ? null : evt.context().toCacheObject(transVal),
+            evt.entry().isKeepBinary(),
+            evt.entry().partition(),
+            evt.entry().updateCounter(),
+            evt.entry().topologyVersion(),
+            evt.entry().flags());
+
+        return new CacheContinuousQueryEvent<>(evt.getSource(), evt.context(), entry);
     }
 
     /**
@@ -857,8 +888,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         boolean notify = !entry.isFiltered();
 
         try {
-            //TODO: здесь сейчас evt.newVal == null т.к. мы храним уже трансформированную запись
-            //Запускать transformder после запуска фильтра!
+            //TODO: ставить trans value после фильтра!
             if (notify && getEventFilter() != null)
                 notify = getEventFilter().evaluate(evt);
         }
@@ -1315,37 +1345,38 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         /** {@inheritDoc} */
         @Override public void run() {
             final boolean notify = filter(evt);
+            final CacheContinuousQueryEvent<K, V> evt0 = transform(evt);
 
             if (primary || skipPrimaryCheck) {
                 if (fut == null) {
-                    onEntryUpdate(evt, notify, nodeId.equals(ctx.localNodeId()), recordIgniteEvt);
+                    onEntryUpdate(evt0, notify, nodeId.equals(ctx.localNodeId()), recordIgniteEvt);
 
                     return;
                 }
 
                 if (fut.isDone()) {
                     if (fut.error() != null)
-                        evt.entry().markFiltered();
+                        evt0.entry().markFiltered();
 
-                    onEntryUpdate(evt, notify, nodeId.equals(ctx.localNodeId()), recordIgniteEvt);
+                    onEntryUpdate(evt0, notify, nodeId.equals(ctx.localNodeId()), recordIgniteEvt);
                 }
                 else {
                     fut.listen(new CI1<IgniteInternalFuture<?>>() {
                         @Override public void apply(IgniteInternalFuture<?> f) {
                             if (f.error() != null)
-                                evt.entry().markFiltered();
+                                evt0.entry().markFiltered();
 
                             ctx.asyncCallbackPool().execute(new Runnable() {
                                 @Override public void run() {
-                                    onEntryUpdate(evt, notify, nodeId.equals(ctx.localNodeId()), recordIgniteEvt);
+                                    onEntryUpdate(evt0, notify, nodeId.equals(ctx.localNodeId()), recordIgniteEvt);
                                 }
-                            }, evt.entry().partition());
+                            }, evt0.entry().partition());
                         }
                     });
                 }
             }
             else
-                handleBackupEntry(cacheContext(ctx), evt.entry());
+                handleBackupEntry(cacheContext(ctx), evt0.entry());
         }
 
         /** {@inheritDoc} */

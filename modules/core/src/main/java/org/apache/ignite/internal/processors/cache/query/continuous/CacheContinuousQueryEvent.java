@@ -56,6 +56,10 @@ class CacheContinuousQueryEvent<K, V> extends CacheQueryEntryEvent<K, V> {
         return e;
     }
 
+    public GridCacheContext context() {
+        return cctx;
+    }
+
     /**
      * @return Partition ID.
      */
