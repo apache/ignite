@@ -34,6 +34,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.query.QueryTable;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.h2.database.H2RowFactory;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
@@ -51,9 +53,11 @@ import org.h2.result.Row;
 import org.h2.result.SearchRow;
 import org.h2.result.SortOrder;
 import org.h2.schema.SchemaObject;
+import org.h2.table.Column;
 import org.h2.table.IndexColumn;
 import org.h2.table.TableBase;
 import org.h2.table.TableType;
+import org.h2.value.DataType;
 import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
@@ -1118,5 +1122,77 @@ public class GridH2Table extends TableBase {
         }
 
         return null;
+    }
+
+    /**
+     * Add new columns to this table.
+     * @param cols Columns to add.
+     * @param beforeColName Column name before which new columns must be added.
+     * @param afterColName Column name after which new columns must be added.
+     * @param ifNotExists Ignore this command if {@code cols} has size of 1 and column with given name already exists.
+     */
+    public void addColumns(List<QueryField> cols, String beforeColName, String afterColName, boolean ifNotExists) {
+        assert !ifNotExists || cols.size() == 1;
+
+        lock(true);
+
+        try {
+            int pos = columns.length;
+
+            Column splitCol = null;
+
+            boolean before = false;
+
+            if (!F.isEmpty(beforeColName)) {
+                splitCol = getColumn(beforeColName);
+
+                before = true;
+            }
+            else if (!F.isEmpty(afterColName))
+                splitCol = getColumn(afterColName);
+
+            if (splitCol != null) {
+                for (int i = 0; i < columns.length; i++)
+                    if (columns[i] == splitCol) {
+                        pos = i;
+
+                        break;
+                    }
+
+                assert pos < columns.length;
+
+                if (!before)
+                    ++pos;
+            }
+
+            Column[] newCols = new Column[columns.length + cols.size()];
+
+            // First, let's copy existing columns to new array
+            System.arraycopy(columns, 0, newCols, 0, pos);
+            System.arraycopy(columns, pos, newCols, pos + cols.size(), columns.length - pos);
+
+            // And now, let's add new columns
+            for (QueryField col : cols) {
+                if (doesColumnExist(col.name())) {
+                    if (ifNotExists && cols.size() == 1)
+                        break;
+                    else
+                        throw new IgniteSQLException("Column already exists [tblName=" + getName() +
+                            ", colName=" + col.name() + ']');
+                }
+
+                try {
+                    newCols[pos++] = new Column(col.name(), DataType.getTypeFromClass(Class.forName(col.typeName())));
+                }
+                catch (ClassNotFoundException e) {
+                    throw new IgniteSQLException("H2 data type not found for class: " + col.typeName(), e);
+                }
+            }
+
+            setColumns(newCols);
+        }
+        finally {
+            unlock(true);
+        }
     }
 }

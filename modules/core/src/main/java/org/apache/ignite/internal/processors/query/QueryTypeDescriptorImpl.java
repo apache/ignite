@@ -47,7 +47,7 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
 
     /** Value field names and types with preserved order. */
     @GridToStringInclude
-    private final Map<String, Class<?>> fields = new LinkedHashMap<>();
+    private final LinkedHashMap<String, Class<?>> fields = new LinkedHashMap<>();
 
     /** */
     @GridToStringExclude
@@ -147,7 +147,7 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     }
 
     /** {@inheritDoc} */
-    @Override public Map<String, Class<?>> fields() {
+    @Override public LinkedHashMap<String, Class<?>> fields() {
         return fields;
     }
 
@@ -166,6 +166,17 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
      */
     public Map<String, GridQueryProperty> properties() {
         return props;
+    }
+
+    /**
+     * Clear maps with fields and properties.
+     */
+    void clearFieldsAndProperties() {
+        props.clear();
+
+        uppercaseProps.clear();
+
+        fields.clear();
     }
 
     /** {@inheritDoc} */

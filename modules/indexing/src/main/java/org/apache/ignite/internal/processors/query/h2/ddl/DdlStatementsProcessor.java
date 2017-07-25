@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.h2.ddl;
 
 import java.sql.PreparedStatement;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -34,6 +35,7 @@ import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
@@ -225,8 +227,48 @@ public class DdlStatementsProcessor {
                         throw new SchemaOperationException(SchemaOperationException.CODE_TABLE_NOT_FOUND,
                             cmd.tableName());
                 }
-                else
-                    ; // GridQueryProc call here
+                else {
+                    if (!ctx.cache().cacheDescriptor(tbl.cacheName()).sql())
+                        throw new SchemaOperationException("ALTER TABLE may only be executed on tables " +
+                            "created with CREATE TABLE: " + tbl.getName());
+
+                    List<QueryField> cols = null;
+
+                    if (cmd.columns().length > 1) {
+                        cols = new ArrayList<>(cmd.columns().length);
+
+                        for (GridSqlColumn col : cmd.columns()) {
+                            if (tbl.doesColumnExist(col.columnName())) {
+                                throw new SchemaOperationException("Column already exists [tblName=" + tbl.getName() +
+                                    ", colName=" + col.columnName() + ']');
+                            }
+
+                            cols.add(new QueryField(col.columnName(),
+                                DataType.getTypeClassName(col.column().getType())));
+                        }
+                    }
+                    else {
+                        if (tbl.doesColumnExist(cmd.columns()[0].columnName())) {
+                            if (!cmd.ifNotExists()) {
+                                throw new SchemaOperationException("Column already exists [tblName=" + tbl.getName() +
+                                    ", colName=" + cmd.columns()[0].columnName() + ']');
+                            }
+                        }
+                        else {
+                            cols = Collections.singletonList(new QueryField(cmd.columns()[0].columnName(),
+                                DataType.getTypeClassName(cmd.columns()[0].column().getType())));
+                        }
+                    }
+
+                    if (cols != null) {
+                        assert tbl.rowDescriptor() != null;
+
+                        fut = ctx.query().dynamicColumnAdd(tbl.cacheName(), cmd.schemaName(),
+                            tbl.rowDescriptor().type().tableName(),
+                            cols, cmd.beforeColumnName(), cmd.afterColumnName(), cmd.ifTableExists(),
+                            cmd.ifNotExists());
+                    }
+                }
             }
             else
                 throw new IgniteSQLException("Unsupported DDL operation: " + sql,

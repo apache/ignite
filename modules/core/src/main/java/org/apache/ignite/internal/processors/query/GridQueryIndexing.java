@@ -21,6 +21,7 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
@@ -163,6 +164,18 @@ public interface GridQueryIndexing {
      */
     @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
     public void dynamicIndexDrop(String schemaName, String idxName, boolean ifExists) throws IgniteCheckedException;
+
+    /**
+     * Add columns to dynamic table.
+     *
+     * @param schemaName Schema name.
+     * @param tblName Table name.
+     * @param ifTableExists Ignore operation if target table does not exist (instead of throwing an error).
+     * @throws IgniteCheckedException If failed.
+     */
+    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
+    public void dynamicAddColumn(String schemaName, String tblName, List<QueryField> cols, String beforeColName,
+        String afterColName, boolean ifTableExists, boolean ifNotExists) throws IgniteCheckedException;
 
     /**
      * Registers cache.

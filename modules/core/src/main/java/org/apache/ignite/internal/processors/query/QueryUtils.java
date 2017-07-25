@@ -21,6 +21,7 @@ import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -580,6 +581,67 @@ public class QueryUtils {
 
         if (idx != null)
             processIndex(idx, d);
+    }
+
+    /**
+     * Update type descriptor with new fields metadata.
+     *
+     * @param ctx Kernal context.
+     * @param d Type descriptor to update.
+     * @param cols Columns to add.
+     * @param beforeFldName Property name before which new fields must be added.
+     * @param afterFldName Property name after which new fields must be added.
+     * @throws IgniteCheckedException If failed to update type descriptor.
+     */
+    static void processDynamicAddColumn(GridKernalContext ctx, QueryTypeDescriptorImpl d, List<QueryField> cols,
+        String beforeFldName, String afterFldName) throws IgniteCheckedException {
+        assert F.isEmpty(beforeFldName) || F.isEmpty(afterFldName);
+
+        List<GridQueryProperty> props = new ArrayList<>(d.properties().size() + cols.size());
+
+        props.addAll(d.properties().values());
+
+        int pos = props.size();
+
+        String name = null;
+
+        if (!F.isEmpty(beforeFldName) && d.properties().containsKey(beforeFldName))
+            name = beforeFldName;
+
+        if (!F.isEmpty(afterFldName) && d.properties().containsKey(afterFldName))
+            name = afterFldName;
+
+        if (name != null) {
+            int i = 0;
+
+            for (String fldName : d.properties().keySet()) {
+                if (F.eq(name, fldName)) {
+                    pos = i;
+
+                    break;
+                }
+                else
+                    ++i;
+            }
+
+            if (!F.isEmpty(afterFldName))
+                ++pos;
+        }
+
+        for (QueryField fld : cols) {
+            try {
+                props.add(pos++, new QueryBinaryProperty(ctx, fld.name(), null, Class.forName(fld.typeName()),
+                    false, null));
+            }
+            catch (ClassNotFoundException e) {
+                throw new SchemaOperationException("Class not found for new property: " + fld.typeName());
+            }
+        }
+
+        d.clearFieldsAndProperties();
+
+        for (GridQueryProperty p : props)
+            d.addProperty(p, true);
     }
 
     /**
