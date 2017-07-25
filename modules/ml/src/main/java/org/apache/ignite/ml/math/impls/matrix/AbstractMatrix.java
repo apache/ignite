@@ -44,8 +44,6 @@ import org.apache.ignite.ml.math.impls.vector.MatrixVectorView;
  * interface to minimize the effort required to implement it.
  * Subclasses may override some of the implemented methods if a more
  * specific or optimized implementation is desirable.
- *
- * TODO: add row/column optimization.
  */
 public abstract class AbstractMatrix implements Matrix {
     // Stochastic sparsity analysis.

@@ -37,10 +37,10 @@ public class SparseLocalVector extends AbstractVector implements StorageConstant
 
     /**
      * @param map Underlying map.
-     * @param copy Should given map be copied.
+     * @param cp Should given map be copied.
      */
-    public SparseLocalVector(Map<Integer, Double> map, boolean copy) {
-        setStorage(new SparseLocalOnHeapVectorStorage(map, copy));
+    public SparseLocalVector(Map<Integer, Double> map, boolean cp) {
+        setStorage(new SparseLocalOnHeapVectorStorage(map, cp));
     }
 
     /**
