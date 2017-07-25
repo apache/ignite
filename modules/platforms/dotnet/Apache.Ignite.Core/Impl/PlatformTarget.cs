@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Impl
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
+    using System.Threading;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary;
@@ -780,9 +781,25 @@ namespace Apache.Ignite.Core.Impl
         public Task<T> DoOutOpAsync<T>(int type, Action<IBinaryRawWriter> writeAction = null, 
             Func<IBinaryRawReader, T> readAction = null)
         {
-            var convertFunc = readAction != null 
-                ? r => readAction(r) 
-                : (Func<BinaryReader, T>) null;
+            return DoOutOpAsyncFuture(type, writeAction, readAction).Task;
+        }
+
+        /** <inheritdoc /> */
+        public Task<T> DoOutOpAsync<T>(int type, Action<IBinaryRawWriter> writeAction, 
+            Func<IBinaryRawReader, T> readAction, CancellationToken cancellationToken)
+        {
+            return DoOutOpAsyncFuture(type, writeAction, readAction).GetTask(cancellationToken);
+        }
+
+        /// <summary>
+        /// Performs async operation.
+        /// </summary>
+        private Future<T> DoOutOpAsyncFuture<T>(int type, Action<IBinaryRawWriter> writeAction,
+            Func<IBinaryRawReader, T> readAction)
+        {
+            var convertFunc = readAction != null
+                ? r => readAction(r)
+                : (Func<BinaryReader, T>)null;
 
             return GetFuture((futId, futType) =>
             {
@@ -802,7 +819,7 @@ namespace Apache.Ignite.Core.Impl
 
                     UU.TargetInStreamAsync(_target, type, stream.SynchronizeOutput());
                 }
-            }, false, convertFunc).Task;
+            }, false, convertFunc);
         }
 
         /// <summary>
