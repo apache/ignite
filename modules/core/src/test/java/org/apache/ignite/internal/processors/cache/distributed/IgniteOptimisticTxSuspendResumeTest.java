@@ -145,14 +145,14 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
      */
     public void testResumeTxInAnotherThread() throws Exception {
         for (TransactionIsolation isolation : TransactionIsolation.values()) {
-            final IgniteCache<Integer, String> cache = jcache();
+            final IgniteCache<Integer, Integer> cache = jcache();
 
             final Transaction tx = grid().transactions().txStart(OPTIMISTIC, isolation);
 
             final AtomicInteger cntr = new AtomicInteger(-1);
 
-            cache.put(-1, "-1");
-            cache.put(cntr.incrementAndGet(), Integer.toString(cntr.get()));
+            cache.put(-1, -1);
+            cache.put(cntr.incrementAndGet(), cntr.get());
 
             tx.suspend();
 
@@ -170,7 +170,7 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
 
                         assertEquals(ACTIVE, tx.state());
 
-                        cache.put(cntr.incrementAndGet(), Integer.toString(cntr.get()));
+                        cache.put(cntr.incrementAndGet(), cntr.get());
 
                         tx.suspend();
 
@@ -189,8 +189,8 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
 
             assertEquals(COMMITTED, tx.state());
 
-            for (int i = 0; i < 3; i++)
-                assertEquals(Integer.toString(i), cache.get(i));
+            for (int i = 0; i < cntr.get(); i++)
+                assertEquals(i, (int)cache.get(i));
 
             assertFalse(cache.containsKey(-1));
 
@@ -206,23 +206,20 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
      */
     public void testCrossCacheTxInAnotherThread() throws Exception {
         for (TransactionIsolation isolation : TransactionIsolation.values()) {
-            final IgniteCache<Integer, String> cache1 =
+            final IgniteCache<Integer, Integer> cache1 =
                 grid().getOrCreateCache(getCacheConfiguration("cache1"));
 
-            final IgniteCache<Integer, String> cache2 =
+            final IgniteCache<Integer, Integer> cache2 =
                 grid().getOrCreateCache(getCacheConfiguration("cache2"));
 
             final Transaction tx = grid().transactions().txStart(OPTIMISTIC, isolation);
 
             final AtomicInteger cntr = new AtomicInteger(-1);
 
-            cache1.put(-1, "-1");
-            cache2.put(-1, "-1");
+            cache1.put(-1, -1);
+            cache2.put(-1, -1);
 
             tx.suspend();
-
-            assertFalse(cache1.containsKey(-1));
-            assertFalse(cache2.containsKey(-1));
 
             for (int i = 0; i < 3; i++) {
                 GridTestUtils.runAsync(new Runnable() {
@@ -231,13 +228,10 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
 
                         assertEquals(ACTIVE, tx.state());
 
-                        cache1.put(cntr.incrementAndGet(), Integer.toString(cntr.get()));
-                        cache2.put(cntr.get(), Integer.toString(cntr.get()));
+                        cache1.put(cntr.incrementAndGet(), cntr.get());
+                        cache2.put(cntr.get(), cntr.get());
 
                         tx.suspend();
-
-                        assertFalse(cache1.containsKey(-1));
-                        assertFalse(cache2.containsKey(-1));
                     }
                 }).get(FUT_TIMEOUT);
             }
@@ -251,9 +245,9 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
 
             assertEquals(COMMITTED, tx.state());
 
-            for (int i = 0; i < 3; i++) {
-                assertEquals(Integer.toString(i), cache1.get(i));
-                assertEquals(Integer.toString(i), cache2.get(i));
+            for (int i = 0; i < cntr.get(); i++) {
+                assertEquals(i, (int)cache1.get(i));
+                assertEquals(i, (int)cache2.get(i));
             }
 
             assertFalse(cache1.containsKey(-1));
@@ -271,12 +265,12 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
      */
     public void testTxRollback() throws Exception {
         for (TransactionIsolation isolation : TransactionIsolation.values()) {
-            final IgniteCache<Integer, String> cache = jcache();
+            final IgniteCache<Integer, Integer> cache = jcache();
 
             final Transaction tx = grid().transactions().txStart(OPTIMISTIC, isolation);
 
-            cache.put(1, "1");
-            cache.put(2, "2");
+            cache.put(1, 1);
+            cache.put(2, 2);
 
             tx.suspend();
 
@@ -290,7 +284,7 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
 
                     assertEquals(ACTIVE, tx.state());
 
-                    cache.put(3, "3");
+                    cache.put(3, 3);
 
                     tx.rollback();
                 }
@@ -313,14 +307,14 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
      */
     public void testMultiTxSuspendResume() throws Exception {
         for (TransactionIsolation isolation : TransactionIsolation.values()) {
-            IgniteCache<Integer, String> cache = jcache();
+            IgniteCache<Integer, Integer> cache = jcache();
 
             final List<Transaction> clientTxs = new ArrayList<>();
 
             for (int i = 0; i < 3; i++) {
                 Transaction tx = grid().transactions().txStart(OPTIMISTIC, isolation);
 
-                cache.put(i, Integer.toString(i));
+                cache.put(i, i);
 
                 tx.suspend();
 
@@ -342,7 +336,7 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
             }, 3, "th-suspend");
 
             for (int i = 0; i < 3; i++)
-                assertEquals(Integer.toString(i), cache.get(i));
+                assertEquals(i, (int)cache.get(i));
 
             cache.removeAll();
         }
@@ -356,11 +350,11 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
     public void testOpsProhibitedOnSuspendedTxFromOtherThread() throws Exception {
         for (final CI1Exc<Transaction> txOperation : SUSPENDED_TX_PROHIBITED_OPS) {
             for (TransactionIsolation isolation : TransactionIsolation.values()) {
-                final IgniteCache<Integer, String> cache = jcache();
+                final IgniteCache<Integer, Integer> cache = jcache();
 
                 final Transaction tx = grid().transactions().txStart(OPTIMISTIC, isolation);
 
-                cache.put(1, "1");
+                cache.put(1, 1);
 
                 tx.suspend();
 
@@ -386,11 +380,11 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
     public void testOpsProhibitedOnSuspendedTx() throws Exception {
         for (CI1Exc<Transaction> txOperation : SUSPENDED_TX_PROHIBITED_OPS) {
             for (TransactionIsolation isolation : TransactionIsolation.values()) {
-                final IgniteCache<Integer, String> cache = jcache();
+                final IgniteCache<Integer, Integer> cache = jcache();
 
                 Transaction tx = grid().transactions().txStart(OPTIMISTIC, isolation);
 
-                cache.put(1, "1");
+                cache.put(1, 1);
 
                 tx.suspend();
 
@@ -413,7 +407,7 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
         for (TransactionIsolation isolation : TransactionIsolation.values()) {
             final Transaction tx = grid().transactions().txStart(OPTIMISTIC, isolation, TX_TIMEOUT, 0);
 
-            jcache().put(1, "1");
+            jcache().put(1, 1);
 
             tx.suspend();
 
@@ -440,7 +434,7 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
         for (TransactionIsolation isolation : TransactionIsolation.values()) {
             final Transaction tx = grid().transactions().txStart(OPTIMISTIC, isolation, TX_TIMEOUT, 0);
 
-            jcache().put(1, "1");
+            jcache().put(1, 1);
 
             Thread.sleep(TX_TIMEOUT * 2);
 
@@ -467,23 +461,28 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
     public void testSuspendTxAndStartNew() throws Exception {
         for (TransactionIsolation tx1Isolation : TransactionIsolation.values()) {
             for (TransactionIsolation tx2Isolation : TransactionIsolation.values()) {
-                IgniteCache<Integer, String> cache = grid().cache(DEFAULT_CACHE_NAME);
+                IgniteCache<Integer, Integer> cache = grid().cache(DEFAULT_CACHE_NAME);
 
                 Transaction tx1 = grid().transactions().txStart(OPTIMISTIC, tx1Isolation);
 
-                cache.put(1, "1");
+                cache.put(1, 1);
 
                 tx1.suspend();
 
+                assertFalse(cache.containsKey(1));
+
                 Transaction tx2 = grid().transactions().txStart(OPTIMISTIC, tx2Isolation);
 
-                cache.put(1, "2");
+                cache.put(1, 2);
 
                 tx2.commit();
 
-                assertEquals("2", cache.get(1));
+                assertEquals(2, (int)cache.get(1));
 
                 tx1.resume();
+
+                assertEquals(1, (int)cache.get(1));
+
                 tx1.close();
 
                 cache.removeAll();

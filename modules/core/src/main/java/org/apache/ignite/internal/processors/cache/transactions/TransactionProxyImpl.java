@@ -112,6 +112,9 @@ public class TransactionProxyImpl<K, V> implements TransactionProxy, Externaliza
         if (state() == SUSPENDED && !resume)
             throw new IgniteException("Tx in SUSPENDED state. All operations except resume prohibited.");
 
+        if (threadId() != Thread.currentThread().getId() && !resume)
+            throw new IgniteException("Only thread owns transaction can execute operations with it.");
+
         if (cctx.deploymentEnabled())
             cctx.deploy().onEnter();
 
