@@ -97,10 +97,9 @@ namespace ignite
              * @param name Cache name.
              * @param err Error.
              */
-            template<typename K, typename V> 
             cache::CacheImpl* GetCache(const char* name, IgniteError& err)
             {
-                return GetOrCreateCache<K, V>(name, err, ProcessorOp::GET_CACHE);
+                return GetOrCreateCache(name, err, ProcessorOp::GET_CACHE);
             }
 
             /**
@@ -109,10 +108,9 @@ namespace ignite
              * @param name Cache name.
              * @param err Error.
              */
-            template<typename K, typename V>
             cache::CacheImpl* GetOrCreateCache(const char* name, IgniteError& err)
             {
-                return GetOrCreateCache<K, V>(name, err, ProcessorOp::GET_OR_CREATE_CACHE);
+                return GetOrCreateCache(name, err, ProcessorOp::GET_OR_CREATE_CACHE);
             }
 
             /**
@@ -121,10 +119,9 @@ namespace ignite
              * @param name Cache name.
              * @param err Error.
              */
-            template<typename K, typename V>
             cache::CacheImpl* CreateCache(const char* name, IgniteError& err)
             {
-                return GetOrCreateCache<K, V>(name, err, ProcessorOp::CREATE_CACHE);
+                return GetOrCreateCache(name, err, ProcessorOp::CREATE_CACHE);
             }
 
             /**
@@ -218,7 +215,6 @@ namespace ignite
             * @param err Error.
             * @param op Operation code.
             */
-            template<typename K, typename V>
             cache::CacheImpl* GetOrCreateCache(const char* name, IgniteError& err, int32_t op)
             {
                 SharedPointer<InteropMemory> mem = env.Get()->AllocateMemory();
