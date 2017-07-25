@@ -34,14 +34,14 @@ angular
     .state('password.reset', {
         url: '/reset?{token}',
         templateUrl,
-        metaTags: {
+        tfMetaTags: {
             title: 'Reset password'
         }
     })
     .state('password.send', {
         url: '/send',
         templateUrl,
-        metaTags: {
+        tfMetaTags: {
             title: 'Password Send'
         }
     });

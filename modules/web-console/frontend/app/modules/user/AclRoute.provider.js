@@ -17,11 +17,9 @@
 
 export default [() => {
     class AclRoute {
-        static checkAccess(permissions, failState) {
-            failState = failState || '403';
-
+        static checkAccess(permissions, failState = '403') {
             return ['$q', '$state', 'AclService', 'User', 'IgniteActivitiesData', function($q, $state, AclService, User, Activities) {
-                const action = this.name ? $state.href(this.name) : null;
+                const action = '';
 
                 return User.read()
                     .catch(() => {
