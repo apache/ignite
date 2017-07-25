@@ -6,6 +6,9 @@ import java.util.UUID;
  * Parent class for ALTER TABLE command variants.
  */
 public class SchemaAbstractAlterTableOperation extends SchemaAbstractOperation {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /**
      * Constructor.
      *

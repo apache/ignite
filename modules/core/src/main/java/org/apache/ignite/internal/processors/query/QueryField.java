@@ -6,6 +6,9 @@ import java.io.Serializable;
  * Query field metadata.
  */
 public class QueryField implements Serializable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Field name. */
     private String name;
 
