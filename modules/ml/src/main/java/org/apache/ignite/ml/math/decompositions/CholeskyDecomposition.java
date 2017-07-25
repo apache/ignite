@@ -300,11 +300,9 @@ public class CholeskyDecomposition implements Destroyable {
 
         double[][] res = new double[mtx.rowSize()][mtx.columnSize()];
 
-        for (int row = 0; row < mtx.rowSize(); row++) {
-            res[row] = new double[mtx.columnSize()];
+        for (int row = 0; row < mtx.rowSize(); row++)
             for (int col = 0; col < mtx.columnSize(); col++)
                 res[row][col] = mtx.get(row, col);
-        }
 
         return res;
     }
