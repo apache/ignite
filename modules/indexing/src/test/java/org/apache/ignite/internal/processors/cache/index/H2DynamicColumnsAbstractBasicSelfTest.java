@@ -32,7 +32,7 @@ import java.util.Map;
 /**
  * Test to check dynamic columns related features.
  */
-public abstract class H2DynamicColumnsSelfTest extends GridCommonAbstractTest {
+public abstract class H2DynamicColumnsAbstractBasicSelfTest extends GridCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 

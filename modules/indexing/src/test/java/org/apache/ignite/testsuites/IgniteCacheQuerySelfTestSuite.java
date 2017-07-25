@@ -92,10 +92,9 @@ import org.apache.ignite.internal.processors.cache.index.DynamicIndexServerBasic
 import org.apache.ignite.internal.processors.cache.index.DynamicIndexServerCoordinatorBasicSelfTest;
 import org.apache.ignite.internal.processors.cache.index.DynamicIndexServerNodeFIlterBasicSelfTest;
 import org.apache.ignite.internal.processors.cache.index.DynamicIndexServerNodeFilterCoordinatorBasicSelfTest;
-import org.apache.ignite.internal.processors.cache.index.H2DynamicColumnsClientSelfTest;
-import org.apache.ignite.internal.processors.cache.index.H2DynamicColumnsSelfTest;
-import org.apache.ignite.internal.processors.cache.index.H2DynamicColumnsServerCoordinatorSelfTest;
-import org.apache.ignite.internal.processors.cache.index.H2DynamicColumnsServerSelfTest;
+import org.apache.ignite.internal.processors.cache.index.H2DynamicColumnsClientBasicSelfTest;
+import org.apache.ignite.internal.processors.cache.index.H2DynamicColumnsServerCoordinatorBasicSelfTest;
+import org.apache.ignite.internal.processors.cache.index.H2DynamicColumnsServerBasicSelfTest;
 import org.apache.ignite.internal.processors.cache.index.H2DynamicIndexAtomicPartitionedNearSelfTest;
 import org.apache.ignite.internal.processors.cache.index.H2DynamicIndexAtomicPartitionedSelfTest;
 import org.apache.ignite.internal.processors.cache.index.H2DynamicIndexAtomicReplicatedSelfTest;
@@ -249,9 +248,9 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
         suite.addTestSuite(H2DynamicIndexAtomicPartitionedSelfTest.class);
         suite.addTestSuite(H2DynamicIndexAtomicPartitionedNearSelfTest.class);
         suite.addTestSuite(H2DynamicTableSelfTest.class);
-        suite.addTestSuite(H2DynamicColumnsClientSelfTest.class);
-        suite.addTestSuite(H2DynamicColumnsServerSelfTest.class);
-        suite.addTestSuite(H2DynamicColumnsServerCoordinatorSelfTest.class);
+        suite.addTestSuite(H2DynamicColumnsClientBasicSelfTest.class);
+        suite.addTestSuite(H2DynamicColumnsServerBasicSelfTest.class);
+        suite.addTestSuite(H2DynamicColumnsServerCoordinatorBasicSelfTest.class);
 
         // DML+DDL.
         suite.addTestSuite(H2DynamicIndexingComplexClientAtomicPartitionedTest.class);
