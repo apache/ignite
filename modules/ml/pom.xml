@@ -36,6 +36,7 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <netlibjava.version>1.1.2</netlibjava.version>
     </properties>
 
     <dependencies>
@@ -88,6 +89,13 @@
         </dependency>
 
         <dependency>
+            <groupId>com.github.fommil.netlib</groupId>
+            <artifactId>core</artifactId>
+            <version>${netlibjava.version}</version>
+            <type>pom</type>
+        </dependency>
+
+        <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-rng-core</artifactId>
             <version>1.0</version>
@@ -100,6 +108,20 @@
         </dependency>
 
     </dependencies>
+
+    <profiles>
+        <profile>
+            <id>lgpl</id>
+
+            <dependencies>
+                <dependency>
+                    <groupId>com.github.fommil.netlib</groupId>
+                    <artifactId>all</artifactId>
+                    <version>${netlibjava.version}</version>
+                </dependency>
+            </dependencies>
+        </profile>
+    </profiles>
 
     <build>
         <plugins>

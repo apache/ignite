@@ -15,21 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.math;
+package org.apache.ignite.ml.math.functions;
 
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import java.io.Serializable;
+import java.util.Objects;
+import java.util.function.Function;
 
-/**
- * Test suite for local and distributed math tests.
- */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    MathImplLocalTestSuite.class,
-    MathImplDistributedTestSuite.class,
-    TracerTest.class,
-    BlasTest.class
-})
-public class MathImplMainTestSuite {
-    // No-op.
+/** Serializable TriFunction (A, B, C) -> R. */
+@FunctionalInterface
+public interface IgniteTriFunction<A,B,C,R> extends Serializable {
+    /** */
+    R apply(A a, B b, C c);
+
+    /** */
+    default <V> IgniteTriFunction<A, B, C, V> andThen(Function<? super R, ? extends V> after) {
+        Objects.requireNonNull(after);
+        return (A a, B b, C c) -> after.apply(apply(a, b, c));
+    }
 }

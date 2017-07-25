@@ -122,7 +122,7 @@ public class DenseOffHeapMatrixStorage implements MatrixStorage {
     }
 
     /** {@inheritDoc} */
-    @Override public double[][] data() {
+    @Override public double[] data() {
         return null;
     }
 

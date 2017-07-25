@@ -17,19 +17,8 @@
 
 package org.apache.ignite.ml.math;
 
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
-
-/**
- * Test suite for local and distributed math tests.
- */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    MathImplLocalTestSuite.class,
-    MathImplDistributedTestSuite.class,
-    TracerTest.class,
-    BlasTest.class
-})
-public class MathImplMainTestSuite {
-    // No-op.
+/** Interface for matrix with particular order for storing entities. */
+public interface OrderedMatrix {
+    /** Get access mode. */
+    public int accessMode();
 }
