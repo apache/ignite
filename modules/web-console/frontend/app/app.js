@@ -20,9 +20,6 @@ import '../app/primitives';
 
 import './app.config';
 
-import './decorator/select';
-import './decorator/tooltip';
-
 import './modules/form/form.module';
 import './modules/agent/agent.module';
 import './modules/sql/sql.module';
@@ -97,6 +94,9 @@ import UnsavedChangesGuard from './services/UnsavedChangesGuard.service';
 import Clusters from './services/Clusters';
 import Caches from './services/Caches';
 
+import AngularStrapTooltip from './services/AngularStrapTooltip.decorator';
+import AngularStrapSelect from './services/AngularStrapSelect.decorator';
+
 // Filters.
 import byName from './filters/byName.filter';
 import defaultName from './filters/default-name.filter';
@@ -133,8 +133,7 @@ import IgniteModules from 'IgniteModules/index';
 
 import baseTemplate from 'views/base.pug';
 
-angular
-.module('ignite-console', [
+angular.module('ignite-console', [
     // Optional AngularJS modules.
     'ngAnimate',
     'ngSanitize',
@@ -143,6 +142,7 @@ angular
     'btford.socket-io',
     'mgcrea.ngStrap',
     'ui.router',
+    'ui.router.state.events',
     'gridster',
     'dndLists',
     'nvd3',
@@ -195,6 +195,8 @@ angular
     gridColumnSelector.name,
     bsSelectMenu.name,
     protectFromBsSelectRender.name,
+    AngularStrapTooltip.name,
+    AngularStrapSelect.name,
     // Ignite modules.
     IgniteModules.name
 ])
@@ -276,33 +278,32 @@ angular
     $urlRouterProvider.otherwise('/404');
     $locationProvider.html5Mode(true);
 }])
-.run(['$rootScope', '$state', 'MetaTags', 'gettingStarted', ($root, $state, $meta, gettingStarted) => {
+.run(['$rootScope', '$state', 'gettingStarted', ($root, $state, gettingStarted) => {
     $root._ = _;
     $root.$state = $state;
-    $root.$meta = $meta;
     $root.gettingStarted = gettingStarted;
 }])
 .run(['$rootScope', 'AgentManager', ($root, agentMgr) => {
     $root.$on('user', () => agentMgr.connect());
 }])
-.run(['$rootScope', ($root) => {
-    $root.$on('$stateChangeStart', () => {
+.run(['$transitions', ($transitions) => {
+    $transitions.onStart({ }, () => {
         _.forEach(angular.element('.modal'), (m) => angular.element(m).scope().$hide());
     });
 
-    if (!$root.IgniteDemoMode) {
-        $root.$on('$stateChangeSuccess', (event, {name, unsaved}, params) => {
-            try {
-                if (unsaved)
-                    localStorage.removeItem('lastStateChangeSuccess');
-                else
-                    localStorage.setItem('lastStateChangeSuccess', JSON.stringify({name, params}));
-            }
-            catch (ignored) {
-                // No-op.
-            }
-        });
-    }
+    $transitions.onSuccess({ }, (trans) => {
+        try {
+            const {name, params, unsaved} = trans.$to();
+
+            if (unsaved)
+                localStorage.removeItem('lastStateChangeSuccess');
+            else
+                localStorage.setItem('lastStateChangeSuccess', JSON.stringify({name, params}));
+        }
+        catch (ignored) {
+            // No-op.
+        }
+    });
 }])
 .run(['$rootScope', '$http', '$state', 'IgniteMessages', 'User', 'IgniteNotebookData',
     ($root, $http, $state, Messages, User, Notebook) => { // eslint-disable-line no-shadow

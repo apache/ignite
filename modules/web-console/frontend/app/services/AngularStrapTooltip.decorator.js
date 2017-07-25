@@ -16,13 +16,16 @@
  */
 
 import angular from 'angular';
+import flow from 'lodash/flow';
 
 /**
- * Special decorator that fix problem in AngularStrap $tooltip in special case.
- * Case: when tooltip is shown on table row remove button and user click this button.
- * If this problem will be fixed in AngularStrap we can remove this delegate.
+ * Decorator that fix problem in AngularStrap $tooltip.
  */
-angular.module('mgcrea.ngStrap.tooltip')
+export default angular
+    .module('mgcrea.ngStrap.tooltip')
+    /**
+     * Don't hide tooltip when mouse move from element to tooltip.
+     */
     .decorator('$tooltip', ['$delegate', ($delegate) => {
         function TooltipFactoryDecorated(element, config) {
             let tipElementEntered = false;
@@ -70,4 +73,31 @@ angular.module('mgcrea.ngStrap.tooltip')
         }
 
         return TooltipFactoryDecorated;
+    }])
+    /**
+     * Set width for dropdown as for element.
+     */
+    .decorator('$tooltip', ['$delegate', ($delegate) => {
+        return function(el, config) {
+            const $tooltip = $delegate(el, config);
+
+            $tooltip.$referenceElement = el;
+            $tooltip.destroy = flow($tooltip.destroy, () => $tooltip.$referenceElement = null);
+            $tooltip.$applyPlacement = flow($tooltip.$applyPlacement, () => {
+                if (!$tooltip.$element)
+                    return;
+
+                const refWidth = $tooltip.$referenceElement[0].getBoundingClientRect().width;
+                const elWidth = $tooltip.$element[0].getBoundingClientRect().width;
+
+                if (refWidth > elWidth) {
+                    $tooltip.$element.css({
+                        width: refWidth,
+                        maxWidth: 'initial'
+                    });
+                }
+            });
+
+            return $tooltip;
+        };
     }]);
