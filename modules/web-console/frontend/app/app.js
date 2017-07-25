@@ -20,9 +20,6 @@ import '../app/primitives';
 
 import './app.config';
 
-import './decorator/select';
-import './decorator/tooltip';
-
 import './modules/form/form.module';
 import './modules/agent/agent.module';
 import './modules/sql/sql.module';
@@ -96,6 +93,9 @@ import ModelNormalizer from './services/ModelNormalizer.service.js';
 import UnsavedChangesGuard from './services/UnsavedChangesGuard.service';
 import Clusters from './services/Clusters';
 import Caches from './services/Caches';
+
+import AngularStrapTooltip from './services/AngularStrapTooltip.decorator';
+import AngularStrapSelect from './services/AngularStrapSelect.decorator';
 
 // Filters.
 import byName from './filters/byName.filter';
@@ -195,6 +195,8 @@ angular
     gridColumnSelector.name,
     bsSelectMenu.name,
     protectFromBsSelectRender.name,
+    AngularStrapTooltip.name,
+    AngularStrapSelect.name,
     // Ignite modules.
     IgniteModules.name
 ])
