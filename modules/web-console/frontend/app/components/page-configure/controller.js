@@ -16,15 +16,9 @@
  */
 
 export default class PageConfigureController {
-    static $inject = ['$scope', 'PageConfigure'];
+    static $inject = ['$scope'];
 
-    constructor($scope, PageConfigure) {
-        Object.assign(this, {$scope, PageConfigure});
-    }
-
-    $onInit() {
-        this.$scope.$on('$stateChangeSuccess', (e, toState) => {
-            this.PageConfigure.onStateEnterRedirect(toState);
-        });
+    constructor($scope) {
+        Object.assign(this, {$scope});
     }
 }

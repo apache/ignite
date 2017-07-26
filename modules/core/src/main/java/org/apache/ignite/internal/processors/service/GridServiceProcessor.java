@@ -26,6 +26,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
@@ -1509,18 +1510,11 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
                 }
 
                 @Override public void onTimeout() {
-                    GridSpinBusyLock busyLock = GridServiceProcessor.this.busyLock;
-
-                    if (busyLock == null || !busyLock.enterBusy())
-                        return;
-
-                    try {
-                        // Try again.
-                        onDeployment(dep, topVer);
-                    }
-                    finally {
-                        busyLock.leaveBusy();
-                    }
+                    depExe.execute(new DepRunnable() {
+                        @Override public void run0() {
+                            onDeployment(dep, topVer);
+                        }
+                    });
                 }
             });
         }
@@ -1534,7 +1528,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
         private volatile AffinityTopologyVersion currTopVer = null;
 
         /** {@inheritDoc} */
-        @Override public void onEvent(DiscoveryEvent evt, final DiscoCache discoCache) {
+        @Override public void onEvent(final DiscoveryEvent evt, final DiscoCache discoCache) {
             GridSpinBusyLock busyLock = GridServiceProcessor.this.busyLock;
 
             if (busyLock == null || !busyLock.enterBusy())
@@ -1595,7 +1589,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
                                             log.info("Service processor detected a topology change during " +
                                                 "assignments calculation (will abort current iteration and " +
                                                 "re-calculate on the newer version): " +
-                                                "[topVer=" + topVer + ", newTopVer=" + currTopVer + ']');
+                                                "[topVer=" + topVer + ", newTopVer=" + currTopVer0 + ']');
 
                                         return;
                                     }
@@ -1716,7 +1710,11 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
                         }
 
                         @Override public void onTimeout() {
-                            onReassignmentFailed(topVer, retries);
+                            depExe.execute(new Runnable() {
+                                public void run() {
+                                    onReassignmentFailed(topVer, retries);
+                                }
+                            });
                         }
                     });
                 }

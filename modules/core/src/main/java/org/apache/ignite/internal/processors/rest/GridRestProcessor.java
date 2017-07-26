@@ -67,6 +67,8 @@ import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.internal.util.worker.GridWorkerFuture;
+import org.apache.ignite.internal.visor.compute.VisorGatewayTask;
+import org.apache.ignite.internal.visor.misc.VisorChangeGridActiveStateTask;
 import org.apache.ignite.internal.visor.util.VisorClusterGroupEmptyException;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;

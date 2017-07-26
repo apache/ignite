@@ -79,8 +79,6 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setLateAffinityAssignment(true);
-
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
         CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);

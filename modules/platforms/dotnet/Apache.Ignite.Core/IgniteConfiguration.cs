@@ -146,9 +146,6 @@ namespace Apache.Ignite.Core
         private bool? _isDaemon;
 
         /** */
-        private bool? _isLateAffinityAssignment;
-
-        /** */
         private bool? _clientMode;
 
         /** */
@@ -274,7 +271,6 @@ namespace Apache.Ignite.Core
             writer.WriteString(WorkDirectory);
             writer.WriteString(Localhost);
             writer.WriteBooleanNullable(_isDaemon);
-            writer.WriteBooleanNullable(_isLateAffinityAssignment);
             writer.WriteTimeSpanAsLongNullable(_failureDetectionTimeout);
             writer.WriteTimeSpanAsLongNullable(_clientFailureDetectionTimeout);
             writer.WriteTimeSpanAsLongNullable(_longQueryWarningTimeout);
@@ -525,7 +521,6 @@ namespace Apache.Ignite.Core
             WorkDirectory = r.ReadString();
             Localhost = r.ReadString();
             _isDaemon = r.ReadBooleanNullable();
-            _isLateAffinityAssignment = r.ReadBooleanNullable();
             _failureDetectionTimeout = r.ReadTimeSpanNullable();
             _clientFailureDetectionTimeout = r.ReadTimeSpanNullable();
             _longQueryWarningTimeout = r.ReadTimeSpanNullable();
@@ -975,11 +970,15 @@ namespace Apache.Ignite.Core
         /// <para />
         /// If not provided, default value is <see cref="DefaultIsLateAffinityAssignment"/>.
         /// </summary>
+        [SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
+        [SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "value")]
         [DefaultValue(DefaultIsLateAffinityAssignment)]
+        [Obsolete("No longer supported, always true.")]
         public bool IsLateAffinityAssignment
         {
-            get { return _isLateAffinityAssignment ?? DefaultIsLateAffinityAssignment; }
-            set { _isLateAffinityAssignment = value; }
+            get { return DefaultIsLateAffinityAssignment; }
+            // ReSharper disable once ValueParameterNotUsed
+            set { /* No-op. */ }
         }
 
         /// <summary>

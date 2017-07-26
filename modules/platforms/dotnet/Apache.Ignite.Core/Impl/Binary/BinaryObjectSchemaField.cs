@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Impl.Binary
 {
+    using System.Diagnostics;
     using System.Runtime.InteropServices;
 
     /// <summary>
@@ -41,6 +42,8 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="offset">The offset.</param>
         public BinaryObjectSchemaField(int id, int offset)
         {
+            Debug.Assert(offset >= 0);
+
             Id = id;
             Offset = offset;
         }

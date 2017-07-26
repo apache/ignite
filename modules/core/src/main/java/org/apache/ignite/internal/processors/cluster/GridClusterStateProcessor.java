@@ -577,6 +577,10 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
 
                     ctx.dataStructures().onActivate(ctx);
 
+                    ctx.igfs().onActivate(ctx);
+
+                    ctx.task().onActivate(ctx);
+
                     if (log.isInfoEnabled())
                         log.info("Successfully performed final activation steps [nodeId="
                             + ctx.localNodeId() + ", client=" + client + ", topVer=" + req.topologyVersion() + "]");
