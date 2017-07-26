@@ -23,6 +23,7 @@ import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.DoubleStream;
@@ -47,6 +48,7 @@ import org.apache.ignite.ml.math.Destroyable;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.functions.IgniteConsumer;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
+import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.apache.ignite.ml.math.impls.CacheUtils;
 import org.apache.ignite.ml.trees.ContinuousRegionInfo;
 import org.apache.ignite.ml.trees.ContinuousSplitCalculator;
@@ -238,6 +240,7 @@ public class ColumnDecisionTreeTrainer<D extends ContinuousRegionInfo> implement
         return doTrain(i.featuresCount(), i);
     }
 
+    /** */
     @NotNull private DecisionTreeModel doTrain(int size, ColumnDecisionTreeInput input) {
         RootNode root = new RootNode();
 
@@ -250,9 +253,12 @@ public class ColumnDecisionTreeTrainer<D extends ContinuousRegionInfo> implement
         // TODO: currently if the best split makes tree deeper than max depth process will be terminated, but actually we should
         // only stop when *any* improving split makes tree deeper than max depth. Can be fixed if we will store which
         // regions cannot be split more and split only those that can.
+        IgniteSupplier<Set<FeatureVectorKey>> keysGen = () -> IntStream.range(0, size).mapToObj(i -> getCacheKey(i, input.affinityKey(i))).collect(Collectors.toSet());
+
         while (curDepth < maxDepth) {
             // Get locally (for node) optimal (by information gain) splits.
             long before = System.currentTimeMillis();
+
             List<IndexAndSplitInfo> splits = CacheUtils.sparseFold(cache.getName(),
                 (Cache.Entry<FeatureVectorKey, FeatureVector<D, ? extends SplitInfo<D>>> e, List<IndexAndSplitInfo> lst) -> {
                     SplitInfo<D> locallyBest = e.getValue().findBestSplit();
@@ -260,7 +266,7 @@ public class ColumnDecisionTreeTrainer<D extends ContinuousRegionInfo> implement
                         lst.add(new IndexAndSplitInfo(e.getKey().rowKey.get1(), locallyBest));
                     return lst;
                 },
-                () -> IntStream.range(0, size).mapToObj(i -> getCacheKey(i, input.affinityKey(i))).collect(Collectors.toSet()),
+                keysGen,
                 (infos, infos2) -> {
                     List<IndexAndSplitInfo> res = new LinkedList<>();
                     res.addAll(infos);
@@ -294,12 +300,27 @@ public class ColumnDecisionTreeTrainer<D extends ContinuousRegionInfo> implement
                 int d = tipToSplit.depth++;
                 tips.add(ind + 1, new TreeTip(sn::setRight, d));
 
-                if (d > curDepth)
+                if (d > curDepth) {
                     curDepth = d;
+                    System.out.println("Depth: " + curDepth);
+                    System.out.println("Cache size: " + cache.size(CachePeekMode.PRIMARY));
+                }
 
                 Map<Integer, Integer> catFeaturesInfo = input.catFeaturesInfo();
 
+                before = System.currentTimeMillis();
                 // Perform split on all feature vectors.
+                CacheUtils.update(cache.getName(),
+                    (Cache.Entry<IgniteBiTuple<Integer, IgniteUuid>, FeatureVector> e) -> {
+                        IgniteBiTuple<Integer, IgniteUuid> k = e.getKey();
+                        FeatureVector v = e.getValue();
+                        if ((!catFeaturesInfo.containsKey(k.get1()) && !catFeaturesInfo.containsKey(best.featureIdx)))
+                            v.performSplit(bs, ind, (D)best.info.leftData(), (D)best.info.rightData());
+                        else
+                            v.performSplitGeneric(bs, ind, best.info.leftData(), best.info.rightData());
+                    },
+                    keysGen);
+
                 IntStream.range(0, size).forEach(k -> updateFeatureVector(k, input,
                     vector -> {
                         // Best split and updated vector a both continuous.
@@ -308,6 +329,7 @@ public class ColumnDecisionTreeTrainer<D extends ContinuousRegionInfo> implement
                         else
                             vector.performSplitGeneric(bs, ind, best.info.leftData(), best.info.rightData());
                     }));
+                System.out.println("Update took " + (System.currentTimeMillis() - before));
             }
             else
                 break;
@@ -356,16 +378,16 @@ public class ColumnDecisionTreeTrainer<D extends ContinuousRegionInfo> implement
 
     /** */
     private void updateFeatureVector(Integer i, ColumnDecisionTreeInput input,
-        IgniteConsumer<FeatureVector<D, ? extends SplitInfo<D>>> f) {
+        IgniteConsumer<FeatureVector> f) {
         String cn = cache.getName();
 
         FeatureVectorKey key = getCacheKey(i, input.affinityKey(i));
 
         Ignition.localIgnite().compute(groupForKey(cn, key)).run(() -> {
-            IgniteCache<FeatureVectorKey, FeatureVector<D, ? extends SplitInfo<D>>> cache = Ignition.localIgnite().getOrCreateCache(cn);
+            IgniteCache<FeatureVectorKey, FeatureVector> cache = Ignition.localIgnite().getOrCreateCache(cn);
 
             // Local get.
-            FeatureVector<D, ? extends SplitInfo<D>> fv = cache.localPeek(key, CachePeekMode.PRIMARY);
+            FeatureVector fv = cache.localPeek(key, CachePeekMode.PRIMARY);
 
             if (fv == null)
                 fv = cache.get(key); //Remote entry get.

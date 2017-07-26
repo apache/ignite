@@ -425,6 +425,37 @@ public class CacheUtils {
     }
 
     /**
+     * @param cacheName Cache name.
+     * @param fun An operation that accepts a cache entry and processes it.
+     * @param keysGen Keys generator.
+     * @param <K> Cache key object type.
+     * @param <V> Cache value object type.
+     */
+    public static <K, V> void update(String cacheName, IgniteConsumer<Cache.Entry<K, V>> fun,
+        IgniteSupplier<Set<K>> keysGen) {
+        bcast(cacheName, () -> {
+            Ignite ignite = Ignition.localIgnite();
+            IgniteCache<K, V> cache = ignite.getOrCreateCache(cacheName);
+
+            int partsCnt = ignite.affinity(cacheName).partitions();
+
+            // Use affinity in filter for scan query. Otherwise we accept consumer in each node which is wrong.
+            Affinity<K> affinity = ignite.affinity(cacheName);
+            ClusterNode locNode = ignite.cluster().localNode();
+
+            Collection<K> ks = affinity.mapKeysToNodes(keysGen.get()).get(locNode);
+            if (ks == null)
+                return;
+            for (K k : ks) {
+                V v = cache.localPeek(k);
+                fun.accept(new CacheEntryImpl<>(k, v));
+
+                cache.put(k, v);
+            }
+        });
+    }
+
+    /**
      * <b>Currently fold supports only commutative operations.<b/>
      *
      * @param cacheName Cache name.

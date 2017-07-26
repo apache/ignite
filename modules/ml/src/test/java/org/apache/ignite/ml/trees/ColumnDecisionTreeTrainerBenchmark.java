@@ -19,6 +19,7 @@ package org.apache.ignite.ml.trees;
 
 import it.unimi.dsi.fastutil.ints.Int2DoubleOpenHashMap;
 import java.util.function.Function;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.Ignition;
@@ -78,10 +79,18 @@ public class ColumnDecisionTreeTrainerBenchmark extends BaseDecisionTreeTest {
     @Test
     public void testF1() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
-        int ptsCnt = 10000;
-        double[][] ranges = {{-100.0, 100.0}, {-100.0, 100.0}, {-100.0, 100.0}};
-        Vector[] trainVectors = vecsFromRanges(ranges, new Random(123L), ptsCnt, f1);
-        int featCnt = ranges.length;
+        int ptsCnt = 20000;
+        Map<Integer, double[]> ranges = new HashMap<>();
+
+        ranges.put(0, new double[] {-100.0, 100.0});
+        ranges.put(1, new double[] {-100.0, 100.0});
+        ranges.put(2, new double[] {-100.0, 100.0});
+
+        int featCnt = 20;
+        double[] defRng = {-1.0, 1.0};
+
+        Vector[] trainVectors = vecsFromRanges(ranges, featCnt, defRng, new Random(123L), ptsCnt, f1);
+
         SparseDistributedMatrix m = new SparseDistributedMatrix(ptsCnt, featCnt + 1, StorageConstants.COLUMN_STORAGE_MODE, StorageConstants.RANDOM_ACCESS_MODE);
 
         SparseDistributedMatrixStorage sto = (SparseDistributedMatrixStorage) m.getStorage();
@@ -91,14 +100,14 @@ public class ColumnDecisionTreeTrainerBenchmark extends BaseDecisionTreeTest {
         IgniteFunction<DoubleStream, Double> regCalc = s -> s.average().orElse(0.0);
 
         ColumnDecisionTreeTrainer<VarianceSplitCalculator.VarianceData> trainer =
-            new ColumnDecisionTreeTrainer<>(10, new VarianceSplitCalculator(), SIMPLE_VARIANCE_CALCULATOR, regCalc);
+            new ColumnDecisionTreeTrainer<>(11, new VarianceSplitCalculator(), SIMPLE_VARIANCE_CALCULATOR, regCalc);
 
         System.out.println(">>> Training started");
         long before = System.currentTimeMillis();
         DecisionTreeModel mdl = trainer.train(new ColumnDecisionTreeMatrixInput(m, new HashMap<>()));
         System.out.println(">>> Training finished in " + (System.currentTimeMillis() - before));
 
-        Vector[] testVectors = vecsFromRanges(ranges, new Random(123L), 20, f1);
+        Vector[] testVectors = vecsFromRanges(ranges, 50, defRng, new Random(123L), 20, f1);
 
         IgniteTriFunction<Model<Vector, Double>, Stream<IgniteBiTuple<Vector, Double>>, Function<Double, Double>, Double> mse = Estimators.MSE();
         Double accuracy = mse.apply(mdl, Arrays.stream(testVectors).map(v -> new IgniteBiTuple<>(v.viewPart(0, featCnt), v.getX(featCnt))), Function.identity());
@@ -165,9 +174,10 @@ public class ColumnDecisionTreeTrainerBenchmark extends BaseDecisionTreeTest {
             streamer.receiver(StreamTransformer.from((e, arg) -> {
                 Map<Integer, Double> value = e.getValue();
                 Integer featIdx = e.getKey().get1();
-                if (value == null) {
+
+                if (value == null)
                     value = new Int2DoubleOpenHashMap();
-                }
+
                 value.putAll((Map<Integer, Double>)arg[0]);
 
                 e.setValue(value);
@@ -175,32 +185,49 @@ public class ColumnDecisionTreeTrainerBenchmark extends BaseDecisionTreeTest {
                 return null;
             }));
 
+            // Feature index -> (sample index -> value)
+            Map<Integer, Map<Integer, Double>> batch = new HashMap<>();
+            IntStream.range(0, vectorSize).forEach(i -> batch.put(i, new HashMap<>()));
+            int batchSize = 100;
+
             while (str.hasNext()) {
                 org.apache.ignite.ml.math.Vector next = str.next();
-                for (int i = 0; i < vectorSize; i++) {
-                    Map<Integer, Double> m = Collections.singletonMap(sampleIdx, next.getX(i));
-                    streamer.addData(new IgniteBiTuple<>(i, uuid), m);
-                }
+
+                for (int i = 0; i < vectorSize; i++)
+                    batch.get(i).put(sampleIdx, next.getX(i));
+
                 System.out.println(sampleIdx);
+                if (sampleIdx % batchSize == 0) {
+                    batch.keySet().forEach(fi -> {
+                        streamer.addData(new IgniteBiTuple<>(fi, uuid), batch.get(fi));
+                    });
+                    IntStream.range(0, vectorSize).forEach(i -> batch.put(i, new HashMap<>()));
+                }
                 sampleIdx++;
+            }
+            if (sampleIdx % batchSize != 0) {
+                batch.keySet().forEach(fi -> {
+                    streamer.addData(new IgniteBiTuple<>(fi, uuid), batch.get(fi));
+                });
+                IntStream.range(0, vectorSize).forEach(i -> batch.put(i, new HashMap<>()));
             }
         }
     }
 
-    private Vector[] vecsFromRanges(double[][] ranges, Random rnd, int ptsCnt, Function<Vector, Double> f) {
-        int vs = ranges.length + 1;
+    private Vector[] vecsFromRanges(Map<Integer, double[]> ranges, int featCnt, double[] defRng, Random rnd, int ptsCnt, Function<Vector, Double> f) {
+        int vs = featCnt + 1;
         DenseLocalOnHeapVector[] res = new DenseLocalOnHeapVector[ptsCnt];
         for (int pt = 0; pt < ptsCnt; pt++) {
             DenseLocalOnHeapVector v = new DenseLocalOnHeapVector(vs);
-            for (int i = 0; i < ranges.length; i++) {
-                double[] range = ranges[i];
+            for (int i = 0; i < featCnt; i++) {
+                double[] range = ranges.getOrDefault(i, defRng);
                 double from = range[0];
                 double to = range[1];
                 double rng = to - from;
 
                 v.setX(i, rnd.nextDouble() * rng);
             }
-            v.setX(ranges.length, f.apply(v));
+            v.setX(featCnt, f.apply(v));
             res[pt] = v;
         }
 
