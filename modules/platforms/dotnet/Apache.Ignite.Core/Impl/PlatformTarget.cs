@@ -110,7 +110,7 @@ namespace Apache.Ignite.Core.Impl
         /// <returns></returns>
         protected long DoOutOp(int type, Action<IBinaryStream> action)
         {
-            return _target.DoOutOp(type, action);
+            return _target.OutOp(type, action);
         }
 
         /// <summary>

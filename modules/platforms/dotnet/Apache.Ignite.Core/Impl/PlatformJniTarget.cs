@@ -81,7 +81,7 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
-        public long DoOutOp(int type, Action<IBinaryStream> action)
+        public long OutOp(int type, Action<IBinaryStream> action)
         {
             using (var stream = IgniteManager.Memory.Allocate().GetStream())
             {

@@ -30,6 +30,6 @@ namespace Apache.Ignite.Core.Impl
         // TODO: Stream-based methods
         IUnmanagedTarget Target { get; }
 
-        long DoOutOp(int type, Action<IBinaryStream> action);
+        long OutOp(int type, Action<IBinaryStream> action);
     }
 }
