@@ -2,14 +2,14 @@ Ignite Fabric Maven Build Instructions
 ======================================
 1) Optional: build Apache Ignite.NET as described at modules/platforms/dotnet/DEVNOTES.txt.
 
-2) Compile and package:
+2) Compile and install:
 
-  mvn clean package -Pall-java,all-scala,licenses -DskipTests
+  mvn clean install -Pall-java,all-scala,licenses -DskipTests
 
   or if you have built Apache Ignite.NET on the first step use following command:
   (Note that 'doxygen' should be installed before running this command.)
 
-  mvn clean package -Pall-java,all-scala,licenses -DskipTests -DclientDocs
+  mvn clean install -Pall-java,all-scala,licenses -DskipTests -DclientDocs
 
 3) Javadoc generation (optional):
 
@@ -25,14 +25,14 @@ Ignite Fabric with LGPL Maven Build Instructions
 ======================================
 1) Optional: build Apache Ignite.NET as described at modules/platforms/dotnet/DEVNOTES.txt.
 
-2) Compile and package:
+2) Compile and install:
 
-  mvn clean package -Pall-java,all-scala,licenses -DskipTests
+  mvn clean install -Pall-java,all-scala,licenses -DskipTests
 
   or if you have built Apache Ignite.NET on the first step use following command:
   (Note that 'doxygen' should be installed before running this command.)
 
-  mvn clean package -Pall-java,all-scala,licenses -DskipTests -DclientDocs
+  mvn clean install -Pall-java,all-scala,licenses -DskipTests -DclientDocs
 
 3) Javadoc generation with LGPL (optional):
 
@@ -46,15 +46,15 @@ Look for apache-ignite-fabric-lgpl-<version>-bin.zip in ./target/bin directory.
 
 Ignite Hadoop Accelerator Maven Build Instructions
 ============================================
-1) Compile and package:
+1) Compile and install:
 
-    mvn clean package -Pall-java,all-scala,licenses -DskipTests
+    mvn clean install -Pall-java,all-scala,licenses -DskipTests
 
 Use 'hadoop.version' parameter to build Ignite against a specific Hadoop version.
 Use 'spark.version' parameter to build ignite-spark module for a specific Spark version. Version should be >= 2.0.0.
 For example:
 
-    mvn clean package -Pall-java,all-scala,licenses -DskipTests -Dhadoop.version=2.4.2 -Dspark.version=2.1.1
+    mvn clean install -Pall-java,all-scala,licenses -DskipTests -Dhadoop.version=2.4.2 -Dspark.version=2.1.1
 
 2) Assembly Hadoop Accelerator:
   mvn initialize -Prelease -Dignite.edition=hadoop

@@ -77,6 +77,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloaderAssignments;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtPartitionHistorySuppliersMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtPartitionsToReloadMap;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.RebalanceReassignExchangeTask;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotDiscoveryMessage;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
@@ -89,7 +90,6 @@ import org.apache.ignite.internal.util.GridListSet;
 import org.apache.ignite.internal.util.GridPartitionStateMap;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI1;
@@ -101,7 +101,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteBiInClosure;
-import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
@@ -157,10 +156,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
     /** */
     private final ConcurrentMap<AffinityTopologyVersion, AffinityReadyFuture> readyFuts =
-        new ConcurrentSkipListMap<>();
-
-    /** */
-    private final ConcurrentSkipListMap<AffinityTopologyVersion, IgnitePair<IgniteProductVersion>> nodeVers =
         new ConcurrentSkipListMap<>();
 
     /** */
@@ -377,7 +372,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 "Node joined with smaller-than-local " +
                     "order [newOrder=" + n.order() + ", locOrder=" + loc.order() + ']';
 
-            exchId = exchangeId(n.id(), affinityTopologyVersion(evt), evt.type());
+            exchId = exchangeId(n.id(), affinityTopologyVersion(evt), evt);
 
             exchFut = exchangeFuture(exchId, evt, cache,null, null);
         }
@@ -390,7 +385,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 ExchangeActions exchActions = stateChangeMsg.exchangeActions();
 
                 if (exchActions != null) {
-                    exchId = exchangeId(n.id(), affinityTopologyVersion(evt), evt.type());
+                    exchId = exchangeId(n.id(), affinityTopologyVersion(evt), evt);
 
                     exchFut = exchangeFuture(exchId, evt, cache, exchActions, null);
                 }
@@ -401,7 +396,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 ExchangeActions exchActions = batch.exchangeActions();
 
                 if (exchActions != null) {
-                    exchId = exchangeId(n.id(), affinityTopologyVersion(evt), evt.type());
+                    exchId = exchangeId(n.id(), affinityTopologyVersion(evt), evt);
 
                     exchFut = exchangeFuture(exchId, evt, cache, exchActions, null);
                 }
@@ -486,7 +481,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         assert discoEvt.topologyVersion() == startTopVer.topologyVersion();
 
-        return exchangeId(cctx.localNode().id(), startTopVer, EVT_NODE_JOINED);
+        return exchangeId(cctx.localNode().id(), startTopVer, discoEvt);
     }
 
     /**
@@ -806,18 +801,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     }
 
     /**
-     * Gets minimum node version for the given topology version.
-     *
-     * @param topVer Topology version to get minimum node version for.
-     * @return Minimum node version.
-     */
-    public IgniteProductVersion minimumNodeVersion(AffinityTopologyVersion topVer) {
-        IgnitePair<IgniteProductVersion> vers = nodeVers.get(topVer);
-
-        return vers == null ? cctx.localNode().version() : vers.get1();
-    }
-
-    /**
      * @return {@code true} if entered to busy state.
      */
     private boolean enterBusy() {
@@ -863,27 +846,18 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     }
 
     /**
-     * @param exchFut Exchange future.
-     * @param reassign Dummy reassign flag.
+     * @param exchId Exchange ID.
      */
-    public void forceDummyExchange(boolean reassign,
-        GridDhtPartitionsExchangeFuture exchFut) {
-        exchWorker.addExchangeFuture(
-            new GridDhtPartitionsExchangeFuture(cctx, reassign, exchFut.discoveryEvent(), exchFut.exchangeId()));
+    public void forceReassign(GridDhtPartitionExchangeId exchId) {
+        exchWorker.forceReassign(exchId);
     }
 
     /**
-     * Forces preload exchange.
-     *
-     * @param exchFut Exchange future.
+     * @param exchId Exchange ID.
+     * @return Rebalance future.
      */
-    public IgniteInternalFuture<Boolean> forceRebalance(GridDhtPartitionsExchangeFuture exchFut) {
-        GridCompoundFuture<Boolean, Boolean> fut = new GridCompoundFuture<>(CU.boolReducer());
-
-        exchWorker.addExchangeFuture(
-            new GridDhtPartitionsExchangeFuture(cctx, exchFut.discoveryEvent(), exchFut.exchangeId(), fut));
-
-        return fut;
+    public IgniteInternalFuture<Boolean> forceRebalance(GridDhtPartitionExchangeId exchId) {
+        return exchWorker.forceRebalance(exchId);
     }
 
     /**
@@ -1212,8 +1186,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     /**
      * @param nodeId Cause node ID.
      * @param topVer Topology version.
-     * @param evt Event type, see {@link org.apache.ignite.events.EventType EventType}
-     * @return Activity future ID.
+     * @param evt Event.
+     * @return Exchange ID instance.
      */
     private GridDhtPartitionExchangeId exchangeId(UUID nodeId, AffinityTopologyVersion topVer, int evt) {
         return new GridDhtPartitionExchangeId(nodeId, evt, topVer);
@@ -1265,30 +1239,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         if (log.isDebugEnabled())
             log.debug("Exchange done [topVer=" + topVer + ", fut=" + exchFut + ", err=" + err + ']');
-
-        IgniteProductVersion minVer = cctx.localNode().version();
-        IgniteProductVersion maxVer = cctx.localNode().version();
-
-        if (err == null) {
-            if (!F.isEmpty(exchFut.discoveryEvent().topologyNodes())) {
-                for (ClusterNode node : exchFut.discoveryEvent().topologyNodes()) {
-                    IgniteProductVersion ver = node.version();
-
-                    if (ver.compareTo(minVer) < 0)
-                        minVer = ver;
-
-                    if (ver.compareTo(maxVer) > 0)
-                        maxVer = ver;
-                }
-            }
-        }
-
-        nodeVers.put(topVer, new IgnitePair<>(minVer, maxVer));
-
-        AffinityTopologyVersion histVer = new AffinityTopologyVersion(topVer.topologyVersion() - 10, 0);
-
-        for (AffinityTopologyVersion oldVer : nodeVers.headMap(histVer).keySet())
-            nodeVers.remove(oldVer);
 
         if (err == null) {
             while (true) {

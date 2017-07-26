@@ -1006,7 +1006,7 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
             walSegmentSize: Number,
             walHistorySize: Number,
             walFlushFrequency: Number,
-            walFsyncDelay: Number,
+            walFsyncDelayNanos: Number,
             walRecordIteratorBufferSize: Number,
             lockWaitTime: Number,
             rateTimeInterval: Number,

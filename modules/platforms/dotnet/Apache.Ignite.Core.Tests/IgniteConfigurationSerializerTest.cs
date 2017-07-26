@@ -151,7 +151,6 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual("c:", cfg.WorkDirectory);
             Assert.AreEqual("127.1.1.1", cfg.Localhost);
             Assert.IsTrue(cfg.IsDaemon);
-            Assert.IsFalse(cfg.IsLateAffinityAssignment);
             Assert.AreEqual(1024, cfg.JvmMaxMemoryMb);
             Assert.AreEqual(TimeSpan.FromSeconds(10), cfg.MetricsLogFrequency);
             Assert.AreEqual(TimeSpan.FromMinutes(1), ((TcpDiscoverySpi)cfg.DiscoverySpi).JoinTimeout);
@@ -836,7 +835,6 @@ namespace Apache.Ignite.Core.Tests
                     SocketSendBufferSize = 2045,
                     UnacknowledgedMessagesBufferSize = 3450
                 },
-                IsLateAffinityAssignment = false,
                 SpringConfigUrl = "test",
                 Logger = new IgniteNLogLogger(),
                 FailureDetectionTimeout = TimeSpan.FromMinutes(2),

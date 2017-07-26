@@ -1528,7 +1528,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
         private volatile AffinityTopologyVersion currTopVer = null;
 
         /** {@inheritDoc} */
-        @Override public void onEvent(DiscoveryEvent evt, final DiscoCache discoCache) {
+        @Override public void onEvent(final DiscoveryEvent evt, final DiscoCache discoCache) {
             GridSpinBusyLock busyLock = GridServiceProcessor.this.busyLock;
 
             if (busyLock == null || !busyLock.enterBusy())
@@ -1589,7 +1589,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
                                             log.info("Service processor detected a topology change during " +
                                                 "assignments calculation (will abort current iteration and " +
                                                 "re-calculate on the newer version): " +
-                                                "[topVer=" + topVer + ", newTopVer=" + currTopVer + ']');
+                                                "[topVer=" + topVer + ", newTopVer=" + currTopVer0 + ']');
 
                                         return;
                                     }

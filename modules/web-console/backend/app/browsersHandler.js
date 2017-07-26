@@ -179,7 +179,7 @@ module.exports.factory = (_, socketio, configure, errors, mongo) => {
          */
         executeOnNode(agent, demo, params) {
             return agent
-                .then((agentSock) => agentSock.emitEvent('node:rest', {uri: 'ignite', demo, params, method: 'GET'}))
+                .then((agentSock) => agentSock.emitEvent('node:rest', {uri: 'ignite', demo, params}))
                 .then((res) => {
                     if (res.status === 0)
                         return JSON.parse(res.data);

@@ -23,23 +23,13 @@ html(ng-app='ignite-console' id='app' ng-strict-di)
         meta(http-equiv='content-language' content='en')
         meta(http-equiv='X-UA-Compatible' content='IE=Edge')
 
-        title(ng-bind='$meta.title')
+        title(ng-bind='tfMetaTags.title')
+        meta(ng-repeat='(key, value) in tfMetaTags.properties' name='{{::key}}' content='{{::value}}')
 
         meta(name='fragment' content='!')
-        meta(name='description' content='{{$meta.description}}')
-        meta(name='keywords' content='{{$meta.keywords}}')
-        meta(ng-repeat='(key, value) in $meta.properties' name='{{::key}}' content='{{::value}}')
 
     body.theme-line.body-overlap
 
-        .splash.splash-max-foreground(hide-on-state-change)
-            .splash-wrapper
-                .spinner
-                    .bounce1
-                    .bounce2
-                    .bounce3
-
-                .splash-wellcome Loading...
 
         .ribbon-wrapper.right(ng-cloak)
             .ribbon(ng-style='IgniteDemoMode && {"background": "#1b6d88"}')

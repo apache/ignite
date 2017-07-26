@@ -197,9 +197,7 @@ public class MarshallerContextImpl implements MarshallerContext {
      * @throws IOException In case of error.
      */
     private void processResource(URL url) throws IOException {
-        try (InputStream in = url.openStream()) {
-            BufferedReader rdr = new BufferedReader(new InputStreamReader(in));
-
+        try (BufferedReader rdr = new BufferedReader(new InputStreamReader(url.openStream()))) {
             String line;
 
             while ((line = rdr.readLine()) != null) {

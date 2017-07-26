@@ -186,7 +186,7 @@ public class OLSMultipleLinearRegressionTest extends AbstractMultipleLinearRegre
         Assert.assertEquals(0.995479004577296, mdl.calculateRSquared(), 1E-12);
         Assert.assertEquals(0.992465007628826, mdl.calculateAdjustedRSquared(), 1E-12);
 
-        // TODO: uncomment
+        // TODO: IGNITE-5826, uncomment.
         // checkVarianceConsistency(model);
 
         // Estimate model without intercept
@@ -336,7 +336,7 @@ public class OLSMultipleLinearRegressionTest extends AbstractMultipleLinearRegre
         Assert.assertEquals(0.649789742860228, mdl.calculateRSquared(), 1E-12);
         Assert.assertEquals(0.6164363850373927, mdl.calculateAdjustedRSquared(), 1E-12);
 
-        // TODO: uncomment
+        // TODO: IGNITE-5826, uncomment.
         // checkVarianceConsistency(model);
 
         // Estimate the model with no intercept
@@ -812,7 +812,7 @@ public class OLSMultipleLinearRegressionTest extends AbstractMultipleLinearRegre
 
     /** */
     @Test(expected = MathIllegalArgumentException.class)
-    public void testMathIllegalArgumentException(){
+    public void testMathIllegalArgumentException() {
         OLSMultipleLinearRegression mdl = new OLSMultipleLinearRegression();
         mdl.validateSampleData(new DenseLocalOnHeapMatrix(1, 2), new DenseLocalOnHeapVector(1));
     }
