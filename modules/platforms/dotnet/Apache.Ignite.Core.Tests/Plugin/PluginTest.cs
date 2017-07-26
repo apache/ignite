@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Tests.Plugin
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
+    using System.Threading;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Interop;
@@ -140,6 +141,15 @@ namespace Apache.Ignite.Core.Tests.Plugin
             Assert.IsFalse(task.IsCompleted);
             var asyncRes = task.Result;
             Assert.IsTrue(task.IsCompleted);
+            Assert.AreEqual("FOO", asyncRes);
+
+            // Async operation with cancellation.
+            var cts = new CancellationTokenSource();
+            task = target.DoOutOpAsync(1, w => w.WriteString("foo"), r => r.ReadString(), cts.Token);
+            Assert.IsFalse(task.IsCompleted);
+            cts.Cancel();
+            asyncRes = task.Result; // TODO: ??
+            Assert.IsTrue(task.IsCanceled);
             Assert.AreEqual("FOO", asyncRes);
 
             // Async operation with exception in entry point.
