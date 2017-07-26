@@ -36,7 +36,7 @@ namespace Apache.Ignite.Core.Impl
     /// <summary>
     /// Base class for interop targets.
     /// </summary>
-    internal class PlatformJniTarget : IPlatformTarget
+    internal class PlatformJniTarget : IPlatformTargetInternal
     {
         /** */
         private const int False = 0;

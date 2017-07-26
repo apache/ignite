@@ -65,7 +65,7 @@ namespace Apache.Ignite.Core.Impl
             };
         
         /** Unmanaged target. */
-        private readonly PlatformJniTarget _target;
+        private readonly IPlatformTargetInternal _target;
 
         /** Marshaller. */
         private readonly Marshaller _marsh;
