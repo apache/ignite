@@ -448,7 +448,7 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         private static unsafe void* GetTargetPtr(IPlatformTarget target)
         {
-            return target == null ? null : ((PlatformTarget) target).Target.Target;
+            return target == null ? null : ((PlatformJniTarget) target)._target.Target;
         }
 
         #endregion
