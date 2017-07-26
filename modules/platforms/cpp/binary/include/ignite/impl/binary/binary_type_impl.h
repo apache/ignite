@@ -18,6 +18,7 @@
 #ifndef _IGNITE_IMPL_BINARY_BINARY_TYPE_IMPL
 #define _IGNITE_IMPL_BINARY_BINARY_TYPE_IMPL
 
+#include <memory>
 #include <stdint.h>
 
 #include <ignite/ignite_error.h>
@@ -82,6 +83,43 @@ namespace ignite
                     writer.WriteNull();
                 else
                     writer.WriteTopObject0(*val);
+            }
+        };
+
+        /**
+         * Read helper. Takes care of proper reading of pointers.
+         */
+        template<typename T>
+        struct ReadHelper
+        {
+            template<typename R>
+            static T Read(R& reader)
+            {
+                T res;
+
+                reader.template ReadTopObject0<T>(res);
+
+                return res;
+            }
+        };
+
+        /**
+         * Specialization for the pointer case.
+         */
+        template<typename T>
+        struct ReadHelper<T*>
+        {
+            template<typename R>
+            static T* Read(R& reader)
+            {
+                if (reader.SkipIfNull())
+                    return 0;
+
+                std::auto_ptr<T> res(new T());
+
+                reader.template ReadTopObject0<T>(*res);
+
+                return res.release();
             }
         };
     }
