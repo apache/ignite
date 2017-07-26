@@ -65,7 +65,7 @@ namespace Apache.Ignite.Core.Impl
             };
         
         /** Unmanaged target. */
-        private readonly IUnmanagedTarget _target;
+        private readonly PlatformJniTarget _target;
 
         /** Marshaller. */
         private readonly Marshaller _marsh;
@@ -80,7 +80,7 @@ namespace Apache.Ignite.Core.Impl
             Debug.Assert(target != null);
             Debug.Assert(marsh != null);
 
-            _target = target;
+            _target = new PlatformJniTarget(target, marsh);
             _marsh = marsh;
         }
 
@@ -89,7 +89,7 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         internal IUnmanagedTarget Target
         {
-            get { return _target; }
+            get { return _target.Target; }
         }
 
         /// <summary>
@@ -110,6 +110,7 @@ namespace Apache.Ignite.Core.Impl
         /// <returns></returns>
         protected long DoOutOp(int type, Action<IBinaryStream> action)
         {
+            // TODO
             using (var stream = IgniteManager.Memory.Allocate().GetStream())
             {
                 action(stream);
@@ -124,18 +125,9 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="type">Operation type.</param>
         /// <param name="action">Action to be performed on the stream.</param>
         /// <returns></returns>
-        protected long DoOutOp(int type, Action<BinaryWriter> action)
+        protected long DoOutOp(int type, Action<IBinaryRawWriter> action)
         {
-            using (var stream = IgniteManager.Memory.Allocate().GetStream())
-            {
-                var writer = _marsh.StartMarshal(stream);
-
-                action(writer);
-
-                FinishMarshal(writer);
-
-                return UU.TargetInStreamOutLong(_target, type, stream.SynchronizeOutput());
-            }
+            return _target.InStreamOutLong(type, action);
         }
 
         /// <summary>

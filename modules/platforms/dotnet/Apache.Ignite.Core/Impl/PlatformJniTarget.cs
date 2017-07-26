@@ -81,6 +81,14 @@ namespace Apache.Ignite.Core.Impl
             _marsh = marsh;
         }
 
+        /// <summary>
+        /// Gets the target.
+        /// </summary>
+        public IUnmanagedTarget Target
+        {
+            get { return _target; }
+        }
+
         #region OUT operations
 
         /// <summary>
