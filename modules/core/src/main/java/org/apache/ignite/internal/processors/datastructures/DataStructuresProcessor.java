@@ -79,6 +79,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
+import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
@@ -106,6 +107,9 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
     /** */
     private static final String DEFAULT_VOLATILE_DS_GROUP_NAME = "default-volatile-ds-group";
+
+    /** */
+    private static final String DEFAULT_REENTRANT_LOCK_GROUP_NAME = "default-reentrant_lock-group";
 
     /** */
     private static final String DS_CACHE_NAME_PREFIX = "datastructures_";
@@ -329,7 +333,8 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         return cacheName != null && (cacheName.startsWith(ATOMICS_CACHE_NAME) ||
             cacheName.startsWith(DS_CACHE_NAME_PREFIX) ||
             cacheName.equals(DEFAULT_DS_GROUP_NAME) ||
-            cacheName.equals(DEFAULT_VOLATILE_DS_GROUP_NAME));
+            cacheName.equals(DEFAULT_VOLATILE_DS_GROUP_NAME) ||
+            cacheName.equals(DEFAULT_REENTRANT_LOCK_GROUP_NAME));
     }
 
     /**
@@ -338,7 +343,8 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      */
     public static boolean isReservedGroup(@Nullable String grpName) {
         return DEFAULT_DS_GROUP_NAME.equals(grpName) ||
-            DEFAULT_VOLATILE_DS_GROUP_NAME.equals(grpName);
+            DEFAULT_VOLATILE_DS_GROUP_NAME.equals(grpName)
+            || DEFAULT_REENTRANT_LOCK_GROUP_NAME.equals(grpName);
     }
 
     /**
@@ -491,7 +497,9 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
         final String grpName;
 
-        if (type.isVolatile())
+        if (type.equals(REENTRANT_LOCK))
+            grpName = DEFAULT_REENTRANT_LOCK_GROUP_NAME;
+        else if (type.isVolatile())
             grpName = DEFAULT_VOLATILE_DS_GROUP_NAME;
         else if (cfg.getGroupName() != null)
             grpName = cfg.getGroupName();
@@ -506,7 +514,12 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
             if (!create && ctx.cache().cacheDescriptor(cacheName) == null)
                 return null;
 
-            ctx.cache().dynamicStartCache(cacheConfiguration(cfg, cacheName, grpName),
+            CacheConfiguration tcfg = cacheConfiguration(cfg, cacheName, grpName);
+
+            if (type.equals(REENTRANT_LOCK))
+                tcfg.setAtomicityMode(ATOMIC);
+
+            ctx.cache().dynamicStartCache(tcfg,
                 cacheName,
                 null,
                 CacheType.DATA_STRUCTURES,
@@ -536,7 +549,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
             @Override public T applyx() throws IgniteCheckedException {
                 cache.context().gate().enter();
 
-                try (GridNearTxLocal tx = cache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
+                try {
                     AtomicDataStructureValue val = cache.get(key);
 
                     if (isObsolete(val))
@@ -561,9 +574,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                         dsMap.put(key, ret.get1());
 
                         if (ret.get2() != null)
-                            cache.put(key, ret.get2());
-
-                        tx.commit();
+                            cache.putIfAbsent(key, ret.get2());
                     }
                     catch (Error | Exception e) {
                         dsMap.remove(key);
