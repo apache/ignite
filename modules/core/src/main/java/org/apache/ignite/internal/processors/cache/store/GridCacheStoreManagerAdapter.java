@@ -872,7 +872,8 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
                         lsnr.onSessionEnd(locSes, !threwEx);
                 }
 
-                store.sessionEnd(!threwEx);
+                if (!sesHolder.get().ended(store))
+                    store.sessionEnd(!threwEx);
             }
         }
         catch (Exception e) {
