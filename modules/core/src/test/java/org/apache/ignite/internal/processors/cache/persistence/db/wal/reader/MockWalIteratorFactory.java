@@ -28,6 +28,7 @@ import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.jetbrains.annotations.Nullable;
 import org.mockito.Mockito;
@@ -41,6 +42,9 @@ import static org.mockito.Mockito.when;
 public class MockWalIteratorFactory {
     /** Logger. */
     private final IgniteLogger log;
+
+    /** */
+    private final FileIOFactory ioFactory;
 
     /** Page size. */
     private final int pageSize;
@@ -58,8 +62,9 @@ public class MockWalIteratorFactory {
      * @param consistentId Consistent id.
      * @param segments Segments.
      */
-    public MockWalIteratorFactory(@Nullable IgniteLogger log, int pageSize, String consistentId, int segments) {
+    public MockWalIteratorFactory(@Nullable IgniteLogger log, FileIOFactory ioFactory, int pageSize, String consistentId, int segments) {
         this.log = log == null ? Mockito.mock(IgniteLogger.class) : log;
+        this.ioFactory = ioFactory;
         this.pageSize = pageSize;
         this.consistentId = consistentId;
         this.segments = segments;
@@ -80,6 +85,7 @@ public class MockWalIteratorFactory {
         when(persistentCfg1.getWalSegments()).thenReturn(segments);
         when(persistentCfg1.getTlbSize()).thenReturn(PersistentStoreConfiguration.DFLT_TLB_SIZE);
         when(persistentCfg1.getWalRecordIteratorBufferSize()).thenReturn(PersistentStoreConfiguration.DFLT_WAL_RECORD_ITERATOR_BUFFER_SIZE);
+        when(persistentCfg1.getFileIOFactory()).thenReturn(ioFactory);
 
         final IgniteConfiguration cfg = Mockito.mock(IgniteConfiguration.class);
 

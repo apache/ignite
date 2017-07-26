@@ -55,6 +55,8 @@ class ConnectionState {
         if (_.nonEmpty(this.clusters) && !this.cluster.connected) {
             this.cluster = _.head(this.clusters);
 
+            this.cluster.connected = true;
+
             this.state = State.CONNECTED;
         }
     }
@@ -368,7 +370,7 @@ export default class IgniteAgentManager {
      * @private
      */
     _rest(event, ...args) {
-        return this._emit(event, _.get(this, 'cluster.id'), ...args);
+        return this._emit(event, _.get(this.connectionSbj.getValue(), 'cluster.id'), ...args);
     }
 
     /**

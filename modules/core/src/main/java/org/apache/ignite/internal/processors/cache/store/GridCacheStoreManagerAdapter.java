@@ -185,6 +185,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
         store.setFlushThreadCount(cfg.getWriteBehindFlushThreadCount());
         store.setFlushFrequency(cfg.getWriteBehindFlushFrequency());
         store.setBatchSize(cfg.getWriteBehindBatchSize());
+        store.setWriteCoalescing(cfg.getWriteBehindCoalescing());
 
         return store;
     }

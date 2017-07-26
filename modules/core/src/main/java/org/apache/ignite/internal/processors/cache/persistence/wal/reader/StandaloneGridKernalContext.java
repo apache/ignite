@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridComponent;
@@ -82,13 +83,25 @@ import org.jetbrains.annotations.Nullable;
  * Dummy grid kernal context
  */
 public class StandaloneGridKernalContext implements GridKernalContext {
+    /** */
     private IgniteLogger log;
+
+    /** */
+    private IgnitePluginProcessor pluginProc;
 
     /**
      * @param log Logger.
      */
     StandaloneGridKernalContext(IgniteLogger log) {
         this.log = log;
+
+        try {
+            pluginProc = new StandaloneIgnitePluginProcessor(
+                this, config());
+        }
+        catch (IgniteCheckedException e) {
+            throw new IllegalStateException("Must not fail on empty providers list.", e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -278,7 +291,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
     /** {@inheritDoc} */
     @Override public IgnitePluginProcessor plugins() {
-        return null;
+        return pluginProc;
     }
 
     /** {@inheritDoc} */

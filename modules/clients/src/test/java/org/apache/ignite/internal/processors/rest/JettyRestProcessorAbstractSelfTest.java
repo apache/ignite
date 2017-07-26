@@ -1976,7 +1976,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
     /**
      * Init cache.
      */
-    private void initCache() {
+    protected void initCache() {
         CacheConfiguration<Integer, Organization> orgCacheCfg = new CacheConfiguration<>("organization");
 
         orgCacheCfg.setIndexedTypes(Integer.class, Organization.class);

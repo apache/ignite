@@ -212,7 +212,7 @@ namespace ignite
     {
         using odbc::Statement;
 
-        LOG_MSG("SQLFreeStmt called");
+        LOG_MSG("SQLFreeStmt called [option=" << option << ']');
 
         Statement *statement = reinterpret_cast<Statement*>(stmt);
 

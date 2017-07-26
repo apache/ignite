@@ -67,6 +67,15 @@ mixin table-index-item-edit(prefix, index, sortAvailable, idAddition)
                 div(ng-if=`${model}.queryMetadata === 'Configuration'`)
                     .settings-row
                         +text('Table name:', `${model}.tableName`, '"tableName"', 'false', 'Enter table name', 'Table name for this query entity')
+                    div(ng-if='$ctrl.available("2.0.0")')
+                        .settings-row
+                            +text('Key field name:', `${model}.keyFieldName`, '"keyFieldName"', 'false', 'Enter key field name',
+                                'Key name.<br/>' +
+                                'Can be used in field list to denote the key as a whole')
+                        .settings-row
+                            +text('Value field name:', `${model}.valueFieldName`, '"valueFieldName"', 'false', 'Enter value field name',
+                                'Value name.<br/>' +
+                                'Can be used in field list to denote the entire value')
                     .settings-row
                         +ignite-form-group(ng-model=queryFields ng-form=queryFieldsForm)
                             ignite-form-field-label(id='queryFields')

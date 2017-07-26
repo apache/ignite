@@ -29,6 +29,7 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.IgniteJdbcDriver.CFG_URL_PREFIX;
@@ -139,6 +140,17 @@ public abstract class JdbcAbstractDmlStatementSelfTest extends GridCommonAbstrac
 
         conn.close();
         assertTrue(conn.isClosed());
+
+        cleanUpWorkingDir();
+    }
+
+    /**
+     * Clean up working directory.
+     */
+    private void cleanUpWorkingDir() throws Exception {
+        String workDir = U.defaultWorkDirectory();
+
+        deleteRecursively(U.resolveWorkDirectory(workDir, "marshaller", false));
     }
 
     /**

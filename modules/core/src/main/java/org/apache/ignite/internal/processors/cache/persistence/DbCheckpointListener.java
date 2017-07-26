@@ -17,22 +17,35 @@
 
 package org.apache.ignite.internal.processors.cache.persistence;
 
-import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.processors.cache.persistence.partstate.PartitionAllocationMap;
 
 /**
  *
  */
 public interface DbCheckpointListener {
+    /**
+     * Context with information about current snapshots.
+     */
     public interface Context {
+        /**
+         *
+         */
         public boolean nextSnapshot();
 
-        public Map<T2<Integer, Integer>, T2<Integer, Integer>> partitionStatMap();
+        /**
+         * @return Partition allocation statistic map
+         */
+        public PartitionAllocationMap partitionStatMap();
+
+        /**
+         * @param cacheOrGrpName Cache or group name.
+         */
+        public boolean needToSnapshot(String cacheOrGrpName);
     }
 
     /**
      * @throws IgniteCheckedException If failed.
      */
-    public void onCheckpointBegin(Context context) throws IgniteCheckedException;
+    public void onCheckpointBegin(Context ctx) throws IgniteCheckedException;
 }
