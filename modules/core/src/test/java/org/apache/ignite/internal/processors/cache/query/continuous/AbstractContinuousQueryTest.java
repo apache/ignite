@@ -131,8 +131,9 @@ public abstract class AbstractContinuousQueryTest extends GridCommonAbstractTest
 
         @Override public void onUpdated(Iterable evts) throws CacheEntryListenerException {
             for (Object e : evts) {
-                IgniteBiTuple t2 = (IgniteBiTuple)e;
-                clsr.apply(ignite, new T2(t2.getKey(), t2.getValue()));
+                //IgniteBiTuple t2 = (IgniteBiTuple)e;
+                //clsr.apply(ignite, new T2(t2.getKey(), t2.getValue()));
+                clsr.apply(ignite, (T2)e);
             }
         }
     }
