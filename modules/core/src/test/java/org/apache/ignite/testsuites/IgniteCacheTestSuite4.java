@@ -21,6 +21,7 @@ import junit.framework.TestSuite;
 import org.apache.ignite.cache.store.jdbc.CacheJdbcStoreSessionListenerSelfTest;
 import org.apache.ignite.internal.processors.GridCacheTxLoadFromStoreOnLockSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheClientStoreSelfTest;
+import org.apache.ignite.internal.processors.cache.CacheConnectionLeakStoreTxTest;
 import org.apache.ignite.internal.processors.cache.CacheGetEntryOptimisticReadCommittedSeltTest;
 import org.apache.ignite.internal.processors.cache.CacheGetEntryOptimisticRepeatableReadSeltTest;
 import org.apache.ignite.internal.processors.cache.CacheGetEntryOptimisticSerializableSeltTest;
@@ -286,6 +287,7 @@ public class IgniteCacheTestSuite4 extends TestSuite {
         suite.addTestSuite(CacheStoreUsageMultinodeStaticStartTxTest.class);
         suite.addTestSuite(CacheStoreUsageMultinodeDynamicStartAtomicTest.class);
         suite.addTestSuite(CacheStoreUsageMultinodeDynamicStartTxTest.class);
+        suite.addTestSuite(CacheConnectionLeakStoreTxTest.class);
 
         suite.addTestSuite(GridCacheStoreManagerDeserializationTest.class);
         suite.addTestSuite(GridLocalCacheStoreManagerDeserializationTest.class);
