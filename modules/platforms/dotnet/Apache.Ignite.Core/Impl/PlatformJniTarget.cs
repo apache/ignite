@@ -80,6 +80,7 @@ namespace Apache.Ignite.Core.Impl
             get { return _target; }
         }
 
+        /** <inheritdoc /> */
         public long DoOutOp(int type, Action<IBinaryStream> action)
         {
             using (var stream = IgniteManager.Memory.Allocate().GetStream())
@@ -87,96 +88,6 @@ namespace Apache.Ignite.Core.Impl
                 action(stream);
 
                 return UU.TargetInStreamOutLong(_target, type, stream.SynchronizeOutput());
-            }
-        }
-
-        /// <summary>
-        /// Perform out operation.
-        /// </summary>
-        /// <param name="type">Operation type.</param>
-        /// <param name="action">Action to be performed on the stream.</param>
-        /// <returns>Resulting object.</returns>
-        private IUnmanagedTarget DoOutOpObject(int type, Action<BinaryWriter> action)
-        {
-            using (var stream = IgniteManager.Memory.Allocate().GetStream())
-            {
-                var writer = _marsh.StartMarshal(stream);
-
-                action(writer);
-
-                FinishMarshal(writer);
-
-                return UU.TargetInStreamOutObject(_target, type, stream.SynchronizeOutput());
-            }
-        }
-
-        /// <summary>
-        /// Perform out operation.
-        /// </summary>
-        /// <param name="type">Operation type.</param>
-        /// <returns>Resulting object.</returns>
-        private IUnmanagedTarget DoOutOpObject(int type)
-        {
-            return UU.TargetOutObject(_target, type);
-        }
-
-        /// <summary>
-        /// Perform out-in operation.
-        /// </summary>
-        /// <param name="type">Operation type.</param>
-        /// <param name="outAction">Out action.</param>
-        /// <param name="inAction">In action.</param>
-        /// <param name="arg">Argument.</param>
-        /// <returns>Result.</returns>
-        private unsafe TR DoOutInOp<TR>(int type, Action<BinaryWriter> outAction,
-            Func<IBinaryStream, IUnmanagedTarget, TR> inAction, void* arg)
-        {
-            PlatformMemoryStream outStream = null;
-            long outPtr = 0;
-
-            PlatformMemoryStream inStream = null;
-            long inPtr = 0;
-
-            try
-            {
-                if (outAction != null)
-                {
-                    outStream = IgniteManager.Memory.Allocate().GetStream();
-                    var writer = _marsh.StartMarshal(outStream);
-                    outAction(writer);
-                    FinishMarshal(writer);
-                    outPtr = outStream.SynchronizeOutput();
-                }
-
-                if (inAction != null)
-                {
-                    inStream = IgniteManager.Memory.Allocate().GetStream();
-                    inPtr = inStream.MemoryPointer;
-                }
-
-                var res = UU.TargetInObjectStreamOutObjectStream(_target, type, arg, outPtr, inPtr);
-
-                if (inAction == null)
-                    return default(TR);
-
-                inStream.SynchronizeInput();
-
-                return inAction(inStream, res);
-
-            }
-            finally
-            {
-                try
-                {
-                    if (inStream != null)
-                        inStream.Dispose();
-
-                }
-                finally
-                {
-                    if (outStream != null)
-                        outStream.Dispose();
-                }
             }
         }
 
@@ -316,15 +227,69 @@ namespace Apache.Ignite.Core.Impl
         /** <inheritdoc /> */
         public IPlatformTarget InStreamOutObject(int type, Action<IBinaryRawWriter> writeAction)
         {
-            return GetPlatformTarget(DoOutOpObject(type, writeAction));
+            using (var stream = IgniteManager.Memory.Allocate().GetStream())
+            {
+                var writer = _marsh.StartMarshal(stream);
+
+                writeAction(writer);
+
+                FinishMarshal(writer);
+
+                return GetPlatformTarget(UU.TargetInStreamOutObject(_target, type, stream.SynchronizeOutput()));
+            }
         }
 
         /** <inheritdoc /> */
-        public unsafe T InObjectStreamOutObjectStream<T>(int type, IPlatformTarget arg, Action<IBinaryRawWriter> writeAction,
-            Func<IBinaryRawReader, IPlatformTarget, T> readAction)
+        public unsafe T InObjectStreamOutObjectStream<T>(int type, IPlatformTarget arg, 
+            Action<IBinaryRawWriter> writeAction, Func<IBinaryRawReader, IPlatformTarget, T> readAction)
         {
-            return DoOutInOp(type, writeAction, (stream, obj) => readAction(_marsh.StartUnmarshal(stream),
-                GetPlatformTarget(obj)), GetTargetPtr(arg));
+            PlatformMemoryStream outStream = null;
+            long outPtr = 0;
+
+            PlatformMemoryStream inStream = null;
+            long inPtr = 0;
+
+            try
+            {
+                if (writeAction != null)
+                {
+                    outStream = IgniteManager.Memory.Allocate().GetStream();
+                    var writer = _marsh.StartMarshal(outStream);
+                    writeAction(writer);
+                    FinishMarshal(writer);
+                    outPtr = outStream.SynchronizeOutput();
+                }
+
+                if (readAction != null)
+                {
+                    inStream = IgniteManager.Memory.Allocate().GetStream();
+                    inPtr = inStream.MemoryPointer;
+                }
+
+                var res = UU.TargetInObjectStreamOutObjectStream(_target, type, GetTargetPtr(arg), outPtr, inPtr);
+
+                if (readAction == null)
+                    return default(T);
+
+                inStream.SynchronizeInput();
+
+                return readAction(_marsh.StartUnmarshal(inStream), GetPlatformTarget(res));
+
+            }
+            finally
+            {
+                try
+                {
+                    if (inStream != null)
+                        inStream.Dispose();
+
+                }
+                finally
+                {
+                    if (outStream != null)
+                        outStream.Dispose();
+                }
+            }
         }
 
         /** <inheritdoc /> */
@@ -343,7 +308,7 @@ namespace Apache.Ignite.Core.Impl
         /** <inheritdoc /> */
         public IPlatformTarget OutObject(int type)
         {
-            return GetPlatformTarget(DoOutOpObject(type));
+            return GetPlatformTarget(UU.TargetOutObject(_target, type));
         }
 
         /** <inheritdoc /> */
