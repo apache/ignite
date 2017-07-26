@@ -153,7 +153,6 @@ namespace Apache.Ignite.Core.Tests.Plugin
             var aex = Assert.Throws<AggregateException>(() => { asyncRes = task.Result; });
             Assert.IsInstanceOf<TaskCanceledException>(aex.GetBaseException());
 
-
             // Async operation with exception in entry point.
             Assert.Throws<TestIgnitePluginException>(() => target.DoOutOpAsync<object>(2, null, null));
 
