@@ -39,6 +39,7 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionState.ACTIVE;
 import static org.apache.ignite.transactions.TransactionState.COMMITTED;
+import static org.apache.ignite.transactions.TransactionState.MARKED_ROLLBACK;
 import static org.apache.ignite.transactions.TransactionState.ROLLED_BACK;
 import static org.apache.ignite.transactions.TransactionState.SUSPENDED;
 
@@ -158,12 +159,12 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
 
             assertEquals(SUSPENDED, tx.state());
 
-            assertNull("There is no transaction for current thread", grid().transactions().tx());
+            assertNull("Thread already have tx", grid().transactions().tx());
 
             assertNull(cache.get(-1));
             assertNull(cache.get(cntr.get()));
 
-            for (int i = 0; i < 3; i++) {
+            for (int i = 0; i < 10; i++) {
                 GridTestUtils.runAsync(new Runnable() {
                     @Override public void run() {
                         assertEquals(SUSPENDED, tx.state());
@@ -219,7 +220,7 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
 
             tx.suspend();
 
-            for (int i = 0; i < 3; i++) {
+            for (int i = 0; i < 10; i++) {
                 GridTestUtils.runAsync(new Runnable() {
                     @Override public void run() {
                         tx.resume();
@@ -309,7 +310,7 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
 
             final List<Transaction> clientTxs = new ArrayList<>();
 
-            for (int i = 0; i < 3; i++) {
+            for (int i = 0; i < 10; i++) {
                 Transaction tx = grid().transactions().txStart(OPTIMISTIC, isolation);
 
                 cache.put(i, i);
@@ -331,9 +332,9 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
 
                     tx.commit();
                 }
-            }, 3, "th-suspend");
+            }, 10, "th-suspend");
 
-            for (int i = 0; i < 3; i++)
+            for (int i = 0; i < 10; i++)
                 assertEquals(i, (int)cache.get(i));
 
             cache.removeAll();
@@ -419,6 +420,8 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
                 }
             }, TransactionTimeoutException.class);
 
+            assertEquals(MARKED_ROLLBACK, tx.state());
+
             tx.close();
         }
     }
@@ -443,6 +446,8 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
                     return null;
                 }
             }, TransactionTimeoutException.class);
+
+            assertEquals(MARKED_ROLLBACK, tx.state());
 
             tx.close();
 
