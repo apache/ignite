@@ -146,6 +146,7 @@ import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.GridDiscoveryData;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.JoiningNodeDiscoveryData;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CACHE_REMOVED_ENTRIES_TTL;
@@ -1046,7 +1047,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         sharedCtx.onDisconnected(reconnectFut);
 
-        cachesInfo.onDisconnect();
+        cachesInfo.onDisconnected();
     }
 
     /**
@@ -1733,7 +1734,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /**
      * @return Caches to be started when this node starts.
      */
-    public List<T2<DynamicCacheDescriptor, NearCacheConfiguration>> cachesToStartOnLocalJoin() {
+    @NotNull public List<T2<DynamicCacheDescriptor, NearCacheConfiguration>> cachesToStartOnLocalJoin() {
         return cachesInfo.cachesToStartOnLocalJoin();
     }
 
@@ -1771,22 +1772,20 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         throws IgniteCheckedException {
         List<DynamicCacheDescriptor> started = cachesInfo.cachesReceivedFromJoin(nodeId);
 
-        if (started != null) {
-            for (DynamicCacheDescriptor desc : started) {
-                IgnitePredicate<ClusterNode> filter = desc.groupDescriptor().config().getNodeFilter();
+        for (DynamicCacheDescriptor desc : started) {
+            IgnitePredicate<ClusterNode> filter = desc.groupDescriptor().config().getNodeFilter();
 
-                if (CU.affinityNode(ctx.discovery().localNode(), filter)) {
-                    prepareCacheStart(
-                        desc.cacheConfiguration(),
-                        desc,
-                        null,
-                        exchTopVer
-                    );
-                }
+            if (CU.affinityNode(ctx.discovery().localNode(), filter)) {
+                prepareCacheStart(
+                    desc.cacheConfiguration(),
+                    desc,
+                    null,
+                    exchTopVer
+                );
             }
         }
 
-        return started != null ? started : Collections.<DynamicCacheDescriptor>emptyList();
+        return started;
     }
 
     /**
