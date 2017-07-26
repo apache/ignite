@@ -152,7 +152,7 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
             final AtomicInteger cntr = new AtomicInteger(0);
 
             cache.put(-1, -1);
-            cache.put(cntr.get(), cntr.get());
+            cache.put(cntr.get(), cntr.getAndIncrement());
 
             tx.suspend();
 
@@ -172,7 +172,7 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
 
                         assertEquals(ACTIVE, tx.state());
 
-                        cache.put(cntr.incrementAndGet(), cntr.get());
+                        cache.put(cntr.get(), cntr.getAndIncrement());
 
                         tx.suspend();
                     }
@@ -212,7 +212,7 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
 
             final Transaction tx = grid().transactions().txStart(OPTIMISTIC, isolation);
 
-            final AtomicInteger cntr = new AtomicInteger(-1);
+            final AtomicInteger cntr = new AtomicInteger(0);
 
             cache1.put(-1, -1);
             cache2.put(-1, -1);
@@ -226,8 +226,8 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
 
                         assertEquals(ACTIVE, tx.state());
 
-                        cache1.put(cntr.incrementAndGet(), cntr.get());
-                        cache2.put(cntr.get(), cntr.get());
+                        cache1.put(cntr.get(), cntr.get());
+                        cache2.put(cntr.get(), cntr.getAndIncrement());
 
                         tx.suspend();
                     }
