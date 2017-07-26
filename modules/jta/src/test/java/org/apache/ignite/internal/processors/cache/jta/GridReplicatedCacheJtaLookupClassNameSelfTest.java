@@ -15,18 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.internal.processors.cache.jta;
 
-import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.cache.CacheMode;
+
+import static org.apache.ignite.cache.CacheMode.REPLICATED;
 
 /**
- * Factory JTA integration test using REPLICATED cache.
+ * Lookup class name based JTA integration test using REPLICATED cache.
  */
-public class GridReplicatedCacheJtaFactoryUseSyncSelfTest extends GridReplicatedCacheJtaFactorySelfTest {
+public class GridReplicatedCacheJtaLookupClassNameSelfTest extends GridPartitionedCacheJtaLookupClassNameSelfTest {
     /** {@inheritDoc} */
-    @Override protected void configureJta(IgniteConfiguration cfg) {
-        super.configureJta(cfg);
-
-        cfg.getTransactionConfiguration().setUseJtaSynchronization(true);
+    @Override protected CacheMode cacheMode() {
+        return REPLICATED;
     }
 }
