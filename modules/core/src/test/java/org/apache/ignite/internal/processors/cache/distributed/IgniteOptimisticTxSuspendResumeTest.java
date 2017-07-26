@@ -149,10 +149,10 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
 
             final Transaction tx = grid().transactions().txStart(OPTIMISTIC, isolation);
 
-            final AtomicInteger cntr = new AtomicInteger(-1);
+            final AtomicInteger cntr = new AtomicInteger(0);
 
             cache.put(-1, -1);
-            cache.put(cntr.incrementAndGet(), cntr.get());
+            cache.put(cntr.get(), cntr.get());
 
             tx.suspend();
 
@@ -166,6 +166,8 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
             for (int i = 0; i < 3; i++) {
                 GridTestUtils.runAsync(new Runnable() {
                     @Override public void run() {
+                        assertEquals(SUSPENDED, tx.state());
+
                         tx.resume();
 
                         assertEquals(ACTIVE, tx.state());
@@ -173,12 +175,8 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
                         cache.put(cntr.incrementAndGet(), cntr.get());
 
                         tx.suspend();
-
-                        assertNull(cache.get(-1));
                     }
                 }).get(FUT_TIMEOUT);
-
-                assertNull(cache.get(cntr.get()));
             }
 
             tx.resume();
@@ -484,6 +482,53 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
                 assertEquals(1, (int)cache.get(1));
 
                 tx1.close();
+
+                cache.removeAll();
+            }
+        }
+    }
+
+    /**
+     * Test start 1 transaction, suspendTx it. And then start another transaction, trying to write
+     * the same key.
+     *
+     * @throws Exception If failed.
+     */
+    public void testSuspendTxAndStartNewWithoutCommit() throws Exception {
+        for (TransactionIsolation tx1Isolation : TransactionIsolation.values()) {
+            for (TransactionIsolation tx2Isolation : TransactionIsolation.values()) {
+                IgniteCache<Integer, Integer> cache = grid().cache(DEFAULT_CACHE_NAME);
+
+                Transaction tx1 = grid().transactions().txStart(OPTIMISTIC, tx1Isolation);
+
+                cache.put(1, 1);
+
+                tx1.suspend();
+
+                assertFalse(cache.containsKey(1));
+
+                Transaction tx2 = grid().transactions().txStart(OPTIMISTIC, tx2Isolation);
+
+                cache.put(1, 2);
+
+                tx2.suspend();
+
+                assertFalse(cache.containsKey(1));
+
+                tx1.resume();
+
+                assertEquals(1, (int)cache.get(1));
+
+                tx1.suspend();
+
+                tx2.resume();
+
+                assertEquals(2, (int)cache.get(1));
+
+                tx2.rollback();
+
+                tx1.resume();
+                tx1.rollback();
 
                 cache.removeAll();
             }
