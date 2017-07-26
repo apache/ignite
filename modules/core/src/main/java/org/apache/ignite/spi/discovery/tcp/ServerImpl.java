@@ -6385,6 +6385,12 @@ class ServerImpl extends TcpDiscoveryImpl {
         /** Current client metrics. */
         private volatile ClusterMetrics metrics;
 
+        /** Last heartbeat message receive time. */
+        private volatile long lastHbMsgTime;
+
+        /** Max heartbeat message receive interval. */
+        private final long maxHbInterval;
+
         /** */
         private final AtomicReference<GridFutureAdapter<Boolean>> pingFut = new AtomicReference<>();
 
@@ -6396,10 +6402,13 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @param clientNodeId Node ID.
          */
         protected ClientMessageWorker(Socket sock, UUID clientNodeId) throws IOException {
-            super("tcp-disco-client-message-worker", 2000);
+            super("tcp-disco-client-message-worker", Math.max(spi.hbFreq, 10));
 
             this.sock = sock;
             this.clientNodeId = clientNodeId;
+
+            maxHbInterval = spi.hbFreq * spi.maxMissedClientHbs;
+            lastHbMsgTime = U.currentTimeMillis();
         }
 
         /**
@@ -6420,6 +6429,9 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @param metrics New current client metrics.
          */
         void metrics(ClusterMetrics metrics) {
+            // Updates only on heartbeat message.
+            lastHbMsgTime = U.currentTimeMillis();
+
             this.metrics = metrics;
         }
 
@@ -6593,6 +6605,38 @@ class ServerImpl extends TcpDiscoveryImpl {
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteSpiException("Internal error: ping future cannot be done with exception", e);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void noMessageLoop() {
+            if (U.currentTimeMillis() - lastHbMsgTime > maxHbInterval) {
+                TcpDiscoveryNode clientNode = ring.node(clientNodeId);
+
+                if (clientNode != null) {
+                    boolean failedNode;
+
+                    synchronized (mux) {
+                        failedNode = failedNodes.containsKey(clientNode);
+                    }
+
+                    if (!failedNode) {
+                        String msg = "Client node considered as unreachable " +
+                            "and will be dropped from cluster, " +
+                            "because no heartbeat messages received in interval: " +
+                            "TcpDiscoverySpi.getHeartbeatFrequency() * TcpDiscoverySpi.getMaxMissedClientHeartbeats() ms. " +
+                            "It maybe caused by network problems or long GC pause on client node, try to increase mentioned " +
+                            "parameters. " +
+                            "[nodeId=" + clientNodeId +
+                            ", heartBeatFrequency=" + spi.hbFreq +
+                            ", maxMissedClientHeartbeats=" + spi.maxMissedClientHbs +
+                            ']';
+
+                        failNode(clientNodeId, msg);
+
+                        U.warn(log, msg);
+                    }
+                }
             }
         }
 

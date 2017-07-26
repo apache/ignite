@@ -136,6 +136,7 @@ import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 import javax.management.DynamicMBean;
 import javax.management.JMException;
+import javax.management.MBeanRegistrationException;
 import javax.management.MBeanServer;
 import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
@@ -152,6 +153,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteDeploymentException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
@@ -509,11 +511,14 @@ public abstract class IgniteUtils {
         }
     };
 
+    /** Ignite MBeans disabled flag. */
+    public static boolean IGNITE_MBEANS_DISABLED = IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_MBEANS_DISABLED);
+
     /** */
     private static final boolean assertionsEnabled;
 
-    /*
-     *
+    /**
+     * Initializes enterprise check.
      */
     static {
         boolean assertionsEnabled0 = true;
@@ -4463,10 +4468,13 @@ public abstract class IgniteUtils {
      * @param impl MBean implementation.
      * @param itf MBean interface.
      * @return JMX object name.
+     * @throws MBeanRegistrationException if MBeans are disabled.
      * @throws JMException If MBean creation failed.
      */
     public static <T> ObjectName registerMBean(MBeanServer mbeanSrv, @Nullable String gridName, @Nullable String grp,
         String name, T impl, @Nullable Class<T> itf) throws JMException {
+        if(IGNITE_MBEANS_DISABLED)
+            throw new MBeanRegistrationException(new IgniteIllegalStateException("No MBeans are allowed."));
         assert mbeanSrv != null;
         assert name != null;
         assert itf != null;
@@ -4487,10 +4495,14 @@ public abstract class IgniteUtils {
      * @param impl MBean implementation.
      * @param itf MBean interface.
      * @return JMX object name.
+     * @throws MBeanRegistrationException if MBeans are disabled.
      * @throws JMException If MBean creation failed.
      */
     public static <T> ObjectName registerMBean(MBeanServer mbeanSrv, ObjectName name, T impl, Class<T> itf)
         throws JMException {
+        if(IGNITE_MBEANS_DISABLED)
+            throw new MBeanRegistrationException(new IgniteIllegalStateException("MBeans are disabled."));
+
         assert mbeanSrv != null;
         assert name != null;
         assert itf != null;
@@ -4513,10 +4525,14 @@ public abstract class IgniteUtils {
      * @param impl MBean implementation.
      * @param itf MBean interface.
      * @return JMX object name.
+     * @throws MBeanRegistrationException if MBeans are disabled.
      * @throws JMException If MBean creation failed.
      */
     public static <T> ObjectName registerCacheMBean(MBeanServer mbeanSrv, @Nullable String gridName,
         @Nullable String cacheName, String name, T impl, Class<T> itf) throws JMException {
+        if(IGNITE_MBEANS_DISABLED)
+            throw new MBeanRegistrationException(new IgniteIllegalStateException("MBeans are disabled."));
+
         assert mbeanSrv != null;
         assert name != null;
         assert itf != null;

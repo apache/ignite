@@ -34,6 +34,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheD
 import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheQueryNodeFailTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheQueryNodeRestartSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheQueryNodeRestartSelfTest2;
+import org.apache.ignite.internal.processors.cache.query.ScanQueryOffheapExpiryPolicySelfTest;
 import org.apache.ignite.testframework.IgniteTestSuite;
 
 /**
@@ -63,6 +64,7 @@ public class IgniteCacheQuerySelfTestSuite2 extends TestSuite {
         suite.addTestSuite(CacheScanPartitionQueryFallbackSelfTest.class);
         suite.addTestSuite(IgniteCacheDistributedQueryStopOnCancelOrTimeoutSelfTest.class);
         suite.addTestSuite(IgniteCacheObjectKeyIndexingSelfTest.class);
+        suite.addTestSuite(ScanQueryOffheapExpiryPolicySelfTest.class);
 
         return suite;
     }

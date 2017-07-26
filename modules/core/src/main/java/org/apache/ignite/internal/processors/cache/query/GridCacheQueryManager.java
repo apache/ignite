@@ -3679,7 +3679,12 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     if (expiryPlc != null)
                         entry.unswap();
 
-                    return entry.peek(true, true, true, topVer, expiryPlc);
+                    CacheObject cacheObj = entry.peek(true, true, true, topVer, expiryPlc);
+
+                    if (expiryPlc != null)
+                        cctx.evicts().touch(entry, topVer);
+
+                    return cacheObj;
                 }
                 catch (GridCacheEntryRemovedException ignore) {
                     entry = null;
