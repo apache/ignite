@@ -110,13 +110,7 @@ namespace Apache.Ignite.Core.Impl
         /// <returns></returns>
         protected long DoOutOp(int type, Action<IBinaryStream> action)
         {
-            // TODO
-            using (var stream = IgniteManager.Memory.Allocate().GetStream())
-            {
-                action(stream);
-
-                return UU.TargetInStreamOutLong(_target, type, stream.SynchronizeOutput());
-            }
+            return _target.DoOutOp(type, action);
         }
 
         /// <summary>
@@ -125,9 +119,16 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="type">Operation type.</param>
         /// <param name="action">Action to be performed on the stream.</param>
         /// <returns></returns>
-        protected long DoOutOp(int type, Action<IBinaryRawWriter> action)
+        protected long DoOutOp(int type, Action<BinaryWriter> action)
         {
-            return _target.InStreamOutLong(type, action);
+            return DoOutOp(type, stream =>
+            {
+                var writer = _marsh.StartMarshal(stream);
+
+                action(writer);
+
+                FinishMarshal(writer);
+            });
         }
 
         /// <summary>

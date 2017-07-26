@@ -39,15 +39,6 @@ namespace Apache.Ignite.Core.Impl
     internal class PlatformJniTarget : IPlatformTargetInternal
     {
         /** */
-        private const int False = 0;
-
-        /** */
-        private const int True = 1;
-
-        /** */
-        private const int Error = -1;
-
-        /** */
         private static readonly Dictionary<Type, FutureType> IgniteFutureTypeMap
             = new Dictionary<Type, FutureType>
             {
@@ -89,23 +80,11 @@ namespace Apache.Ignite.Core.Impl
             get { return _target; }
         }
 
-        #region OUT operations
-
-        /// <summary>
-        /// Perform out operation.
-        /// </summary>
-        /// <param name="type">Operation type.</param>
-        /// <param name="action">Action to be performed on the stream.</param>
-        /// <returns></returns>
-        private long DoOutOp(int type, Action<BinaryWriter> action)
+        public long DoOutOp(int type, Action<IBinaryStream> action)
         {
             using (var stream = IgniteManager.Memory.Allocate().GetStream())
             {
-                var writer = _marsh.StartMarshal(stream);
-
-                action(writer);
-
-                FinishMarshal(writer);
+                action(stream);
 
                 return UU.TargetInStreamOutLong(_target, type, stream.SynchronizeOutput());
             }
@@ -139,42 +118,6 @@ namespace Apache.Ignite.Core.Impl
         private IUnmanagedTarget DoOutOpObject(int type)
         {
             return UU.TargetOutObject(_target, type);
-        }
-
-        #endregion
-
-        #region IN operations
-
-        #endregion
-
-        #region OUT-IN operations
-        
-        /// <summary>
-        /// Perform out-in operation.
-        /// </summary>
-        /// <param name="type">Operation type.</param>
-        /// <param name="outAction">Out action.</param>
-        /// <param name="inAction">In action.</param>
-        /// <returns>Result.</returns>
-        private TR DoOutInOp<TR>(int type, Action<BinaryWriter> outAction, Func<IBinaryStream, TR> inAction)
-        {
-            using (PlatformMemoryStream outStream = IgniteManager.Memory.Allocate().GetStream())
-            {
-                using (PlatformMemoryStream inStream = IgniteManager.Memory.Allocate().GetStream())
-                {
-                    BinaryWriter writer = _marsh.StartMarshal(outStream);
-
-                    outAction(writer);
-
-                    FinishMarshal(writer);
-
-                    UU.TargetInStreamOutStream(_target, type, outStream.SynchronizeOutput(), inStream.MemoryPointer);
-
-                    inStream.SynchronizeInput();
-
-                    return inAction(inStream);
-                }
-            }
         }
 
         /// <summary>
@@ -236,10 +179,6 @@ namespace Apache.Ignite.Core.Impl
                 }
             }
         }
-
-        #endregion
-
-        #region Miscelanneous
 
         /// <summary>
         /// Finish marshaling.
@@ -330,8 +269,6 @@ namespace Apache.Ignite.Core.Impl
             return fut;
         }
 
-        #endregion
-
         #region IPlatformTarget
 
         /** <inheritdoc /> */
@@ -343,14 +280,37 @@ namespace Apache.Ignite.Core.Impl
         /** <inheritdoc /> */
         public long InStreamOutLong(int type, Action<IBinaryRawWriter> writeAction)
         {
-            return DoOutOp(type, writer => writeAction(writer));
+            using (var stream = IgniteManager.Memory.Allocate().GetStream())
+            {
+                var writer = _marsh.StartMarshal(stream);
+
+                writeAction(writer);
+
+                FinishMarshal(writer);
+
+                return UU.TargetInStreamOutLong(_target, type, stream.SynchronizeOutput());
+            }
         }
 
         /** <inheritdoc /> */
         public T InStreamOutStream<T>(int type, Action<IBinaryRawWriter> writeAction, 
             Func<IBinaryRawReader, T> readAction)
         {
-            return DoOutInOp(type, writeAction, stream => readAction(_marsh.StartUnmarshal(stream)));
+            using (var outStream = IgniteManager.Memory.Allocate().GetStream())
+            using (var inStream = IgniteManager.Memory.Allocate().GetStream())
+            {
+                var writer = _marsh.StartMarshal(outStream);
+
+                writeAction(writer);
+
+                FinishMarshal(writer);
+
+                UU.TargetInStreamOutStream(_target, type, outStream.SynchronizeOutput(), inStream.MemoryPointer);
+
+                inStream.SynchronizeInput();
+
+                return readAction(_marsh.StartUnmarshal(inStream));
+            }
         }
 
         /** <inheritdoc /> */
