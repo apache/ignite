@@ -91,5 +91,29 @@ namespace ignite
 
             return res;
         }
+
+        cache::CacheImpl* IgniteImpl::GetOrCreateCache(const char* name, IgniteError& err, int32_t op)
+        {
+            SharedPointer<InteropMemory> mem = env.Get()->AllocateMemory();
+            InteropMemory* mem0 = mem.Get();
+            InteropOutputStream out(mem0);
+            BinaryWriterImpl writer(&out, env.Get()->GetTypeManager());
+            BinaryRawWriter rawWriter(&writer);
+
+            rawWriter.WriteString(name);
+
+            out.Synchronize();
+
+            jobject cacheJavaRef = InStreamOutObject(op, *mem0, err);
+
+            if (!cacheJavaRef)
+            {
+                return NULL;
+            }
+
+            char* name0 = common::CopyChars(name);
+
+            return new cache::CacheImpl(name0, env, cacheJavaRef);
+        }
     }
 }
