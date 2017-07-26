@@ -19,6 +19,7 @@ package org.apache.ignite.ml.math.impls.storage.vector;
 
 import it.unimi.dsi.fastutil.ints.Int2DoubleOpenHashMap;
 import it.unimi.dsi.fastutil.ints.Int2DoubleRBTreeMap;
+import it.unimi.dsi.fastutil.ints.IntSet;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
@@ -177,5 +178,10 @@ public class SparseLocalOnHeapVectorStorage implements VectorStorage, StorageCon
         res = 31 * res + (sto != null ? sto.hashCode() : 0);
 
         return res;
+    }
+
+    /** */
+    public IntSet indexes() {
+        return (IntSet)sto.keySet();
     }
 }
