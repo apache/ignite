@@ -720,13 +720,6 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             }
 
             try {
-                // Save configuration before cache started.
-                if (cctx.pageStore() != null && !cctx.kernalContext().clientNode()) {
-                    cctx.pageStore().storeCacheData(
-                        new StoredCacheData(req.startCacheConfiguration())
-                    );
-                }
-
                 if (startCache) {
                     cctx.cache().prepareCacheStart(req.startCacheConfiguration(),
                         cacheDesc,
@@ -2176,7 +2169,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     /**
      *
      */
-    static class CachesInfo {
+    class CachesInfo {
         /** Registered cache groups (updated from exchange thread). */
         private final ConcurrentHashMap<Integer, CacheGroupDescriptor> registeredGrps = new ConcurrentHashMap<>();
 
@@ -2189,10 +2182,19 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
          */
         void init(Map<Integer, CacheGroupDescriptor> grps, Map<String, DynamicCacheDescriptor> caches) {
             for (CacheGroupDescriptor grpDesc : grps.values())
-                registeredGrps.put(grpDesc.groupId(), grpDesc);
+                registerGroup(grpDesc);
 
             for (DynamicCacheDescriptor cacheDesc : caches.values())
                 registeredCaches.put(cacheDesc.cacheId(), cacheDesc);
+        }
+
+        /**
+         * @param grpDesc Group description.
+         */
+        private CacheGroupDescriptor registerGroup(CacheGroupDescriptor grpDesc) {
+            saveCacheConfiguration(grpDesc);
+
+            return registeredGrps.put(grpDesc.groupId(), grpDesc);
         }
 
         /**
@@ -2222,7 +2224,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 CacheGroupDescriptor grpDesc = desc.groupDescriptor();
 
                 if (!registeredGrps.containsKey(grpDesc.groupId()))
-                    registeredGrps.put(grpDesc.groupId(), grpDesc);
+                    registerGroup(grpDesc);
 
                 if (!registeredCaches.containsKey(desc.cacheId()))
                     registeredCaches.put(desc.cacheId(), desc);
@@ -2240,7 +2242,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             }
 
             for (ExchangeActions.CacheGroupActionData startAction : exchActions.cacheGroupsToStart()) {
-                CacheGroupDescriptor old = registeredGrps.put(startAction.descriptor().groupId(), startAction.descriptor());
+                CacheGroupDescriptor old = registerGroup(startAction.descriptor());
 
                 assert old == null : old;
             }
@@ -2267,6 +2269,22 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             registeredGrps.clear();
 
             registeredCaches.clear();
+        }
+    }
+
+    /**
+     * @param grpDesc Group description.
+     */
+    private void saveCacheConfiguration(CacheGroupDescriptor grpDesc) {
+        if (cctx.pageStore() != null && cctx.database().persistenceEnabled() && !cctx.kernalContext().clientNode()) {
+            try {
+                cctx.pageStore().storeCacheData(
+                    new StoredCacheData(grpDesc.config())
+                );
+            }
+            catch (IgniteCheckedException e) {
+                U.error(log(), "Error while saving cache configuration on disk, group = " + grpDesc, e);
+            }
         }
     }
 }
