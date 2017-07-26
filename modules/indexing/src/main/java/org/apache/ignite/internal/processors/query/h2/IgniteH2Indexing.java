@@ -36,6 +36,7 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -66,14 +67,14 @@ import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheAffinityManager;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
+import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
-import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryPartitionInfo;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
@@ -92,14 +93,14 @@ import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryIndexDescriptorImpl;
 import org.apache.ignite.internal.processors.query.QueryUtils;
-import org.apache.ignite.internal.processors.query.h2.ddl.DdlStatementsProcessor;
-import org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode;
 import org.apache.ignite.internal.processors.query.h2.database.H2RowFactory;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2ExtrasInnerIO;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2ExtrasLeafIO;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2InnerIO;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2LeafIO;
+import org.apache.ignite.internal.processors.query.h2.ddl.DdlStatementsProcessor;
+import org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2DefaultTableEngine;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
@@ -244,7 +245,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     private String dbUrl = "jdbc:h2:mem:";
 
     /** */
-    private final Collection<H2ConnectionWrapper> conns = Collections.synchronizedCollection(new ArrayList<H2ConnectionWrapper>());
+    private final Set<H2ConnectionWrapper> conns =
+        Collections.newSetFromMap(new ConcurrentHashMap8<H2ConnectionWrapper, Boolean>());
 
     /** */
     private GridMapQueryExecutor mapQryExec;
@@ -387,12 +389,15 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (cache == null)
             throw new IgniteCheckedException("Failed to get DB connection cache for thread (check log for details).");
 
+        schema = U.firstNotNull(schema, DFLT_SCHEMA);
+
         H2ConnectionWrapper conn = cache.current();
 
         boolean reconnect = true;
 
+        // TODO move this check to separate method to reduce code duplication
         try {
-            reconnect = (conn == null || conn.connection() == null || conn.connection().isClosed());
+            reconnect = (conn == null || conn.connection().isClosed());
         }
         catch (SQLException e) {
             U.warn(log, "Failed to check connection status.", e);
@@ -401,14 +406,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (!reconnect && (schema == null || F.eq(schema, conn.schema())))
             return conn.connection();
 
-        H2Schema schemaObj = (schema != null) ? schemas.get(schema) : schemas.get(DFLT_SCHEMA);
-
-        if (schemaObj == null)
-            throw new IgniteCheckedException("Failed to get DB connection for schema [schema='" + schema + "']");
-
         // The current connection is either closed (reconnect)
         // or has different schema set.
-        conn = cache.get(schemaObj);
+        conn = cache.get(schema);
 
         // Reset statement cache.
         stmtCache.remove(Thread.currentThread());
@@ -416,7 +416,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         reconnect = true;
 
         try {
-            reconnect = (conn == null || conn.connection() == null || conn.connection().isClosed());
+            reconnect = (conn == null || conn.connection().isClosed());
         }
         catch (SQLException e) {
             U.warn(log, "Failed to check connection status.", e);
@@ -432,33 +432,29 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 throw new IgniteSQLException("Failed to initialize DB connection: " + dbUrl, e);
             }
 
-            conn = new H2ConnectionWrapper(c);
-
-            conns.add(conn);
-
-            cache.put(schemaObj, conn);
-
             Statement stmt = null;
 
-            String schemaName = schemaObj.schemaName();
-
             try {
-                stmt = conn.connection().createStatement();
+                stmt = c.createStatement();
 
-                stmt.executeUpdate("SET SCHEMA " + H2Utils.withQuotes(schemaName));
+                stmt.executeUpdate("SET SCHEMA " + H2Utils.withQuotes(schema));
 
                 if (log.isDebugEnabled())
-                    log.debug("Set schema: " + schemaName);
-
-                conn.schema(schemaName);
+                    log.debug("Set schema: " + schema);
             }
             catch (SQLException e) {
+                U.closeQuiet(c);
+
                 throw new IgniteSQLException("Failed to set schema for DB connection for thread [schema=" +
-                    schemaName + "]", e);
+                    schema + "]", e);
             }
             finally {
                 U.close(stmt, log);
             }
+
+            conn = new H2ConnectionWrapper(c, schema, cache);
+
+            conns.add(conn);
         }
 
         return conn.connection();
@@ -547,15 +543,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         cache.current(null);
 
         if (conn != null) {
-            H2Schema schemaObj = schemas.get(conn.schema());
-
-            if (schemaObj != null)
-                cache.remove(schemaObj);
-
             conns.remove(conn);
 
-            // Reset connection to receive new one at next call.
-            U.close(conn.connection(), log);
+            U.close(conn, log);
         }
     }
 
@@ -2099,7 +2089,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
 
         for (H2ConnectionWrapper c : conns)
-            U.close(c.connection(), log);
+            U.close(c, log);
 
         conns.clear();
         schemas.clear();
@@ -2152,7 +2142,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         boolean dflt = isDefaultSchema(schemaName);
 
-        H2Schema schema = dflt ? schemas.get(schemaName) : schemas.get(schemaName);
+        H2Schema schema = dflt ? schemas.get(schemaName) : schemas.remove(schemaName);
 
         if (schema != null) {
             mapQryExec.onCacheStop(cacheName);
@@ -2180,8 +2170,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             }
 
             if (!dflt) {
-                schemas.remove(schemaName);
-
                 try {
                     dropSchema(schemaName);
                 }
@@ -2191,9 +2179,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             }
 
             // Close connections for schema
-            for (H2ConnectionWrapper conn: conns) {
-                if (F.eq(schemaName, conn.schema()))
-                    U.close(conn.connection(), log);
+            for (Iterator<H2ConnectionWrapper> it = conns.iterator(); it.hasNext();) {
+                H2ConnectionWrapper conn = it.next();
+
+                if (F.eq(schemaName, conn.schema())) {
+                    it.remove();
+
+                    U.close(conn, log);
+                }
             }
 
             for (H2TableDescriptor tbl : rmvTbls) {
@@ -2386,7 +2379,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** {@inheritDoc} */
     @Override public void cancelAllQueries() {
         for (H2ConnectionWrapper conn : conns)
-            U.close(conn.connection(), log);
+            U.close(conn, log);
     }
 
     /**

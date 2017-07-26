@@ -17,45 +17,45 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
+import java.util.HashMap;
 import java.util.Map;
-import java.util.WeakHashMap;
 
 /** */
 public class H2ConnectionCache {
     /** */
-    private H2ConnectionWrapper current;
+    private H2ConnectionWrapper curr;
 
     /** */
-    private final Map<H2Schema, H2ConnectionWrapper> schemaCons = new WeakHashMap<H2Schema, H2ConnectionWrapper>();
+    private final Map<String, H2ConnectionWrapper> schemaConns = new HashMap<>();
 
     /** */
     public H2ConnectionWrapper current()  {
-        return current;
+        return curr;
     }
 
     /** */
     public void current(H2ConnectionWrapper conn) {
-        current = conn;
+        curr = conn;
     }
 
     /** */
-    public H2ConnectionWrapper get(H2Schema schema) {
-        H2ConnectionWrapper conn = schemaCons.get(schema);
+    public H2ConnectionWrapper get(String schema) {
+        H2ConnectionWrapper conn = schemaConns.get(schema);
 
-        current = conn;
+        curr = conn;
 
         return conn;
     }
 
     /** */
-    public void put(H2Schema schema, H2ConnectionWrapper conn) {
-        schemaCons.put(schema, conn);
+    public void put(String schema, H2ConnectionWrapper conn) {
+        schemaConns.put(schema, conn);
 
-        current = conn;
+        curr = conn;
     }
 
     /** */
-    public void remove(H2Schema schema) {
-        schemaCons.remove(schema);
+    public void remove(String schema) {
+        schemaConns.remove(schema);
     }
 }

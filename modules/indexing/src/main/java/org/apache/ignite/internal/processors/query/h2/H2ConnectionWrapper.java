@@ -17,26 +17,41 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
-import org.apache.ignite.internal.util.typedef.internal.S;
-import org.jetbrains.annotations.Nullable;
-
+import java.io.Closeable;
+import java.io.IOException;
 import java.sql.Connection;
+import java.sql.SQLException;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Wrapper to store connection and flag is schema set or not.
+ * TODO I suggest that we merge this with statements cache to manage their lifecycles as a whole,
+ * currently they are separated.
+ * Also, we would not lose all of cached statements
+ * if we used connection, its schema and associated statements all together.
  */
-public class H2ConnectionWrapper {
+class H2ConnectionWrapper implements Closeable {
     /** */
-    private Connection conn;
+    private final Connection conn;
 
     /** */
-    private volatile String schema;
+    private final String schema;
+
+    /** Cache. */
+    private final H2ConnectionCache cache;
 
     /**
      * @param conn Connection to use.
+     * @param schema Schema name.
+     * @param cache Cache.
      */
-    H2ConnectionWrapper(Connection conn) {
+    H2ConnectionWrapper(Connection conn, String schema, H2ConnectionCache cache) {
         this.conn = conn;
+        this.schema = schema;
+        this.cache = cache;
+
+        cache.put(schema, this);
     }
 
     /**
@@ -44,13 +59,6 @@ public class H2ConnectionWrapper {
      */
     public String schema() {
         return schema;
-    }
-
-    /**
-     * @param schema Schema name set on this connection.
-     */
-    public void schema(@Nullable String schema) {
-        this.schema = schema;
     }
 
     /**
@@ -63,5 +71,17 @@ public class H2ConnectionWrapper {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(H2ConnectionWrapper.class, this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void close() throws IOException {
+        try {
+            conn.close();
+        }
+        catch (SQLException e) {
+            throw new IgniteSQLException(e);
+        }
+
+        cache.remove(schema);
     }
 }
