@@ -118,7 +118,9 @@ public class PlatformTargetProxyImpl implements PlatformTargetProxy {
     @Override public Object inStreamOutObjectAsync(int type, long memPtr) throws Exception {
         PlatformListenable listenable = inStreamOutListenableAsync(type, memPtr);
 
-        return new PlatformListenableTarget(listenable, platformCtx);
+        PlatformListenableTarget target = new PlatformListenableTarget(listenable, platformCtx);
+
+        return wrapProxy(target);
     }
 
     /** {@inheritDoc} */
