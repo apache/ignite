@@ -50,6 +50,7 @@ public class CacheEntryPredicateContainsValue extends CacheEntryPredicateAdapter
      */
     public CacheEntryPredicateContainsValue(CacheObject val) {
         assert val != null;
+        
         this.val = val;
     }
 
