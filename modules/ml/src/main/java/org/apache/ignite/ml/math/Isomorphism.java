@@ -15,25 +15,28 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml;
+package org.apache.ignite.ml.math;
 
-import org.apache.ignite.ml.clustering.ClusteringTestSuite;
-import org.apache.ignite.ml.math.MathImplMainTestSuite;
-import org.apache.ignite.ml.regressions.RegressionsTestSuite;
-import org.apache.ignite.ml.trees.DecisionTreesTestSuite;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.apache.ignite.ml.math.functions.IgniteFunction;
 
-/**
- * Test suite for all module tests.
- */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    MathImplMainTestSuite.class,
-    RegressionsTestSuite.class,
-    ClusteringTestSuite.class,
-    DecisionTreesTestSuite.class
-})
-public class IgniteMLTestSuite {
-    // No-op.
+public class Isomorphism<K, V> {
+    private IgniteFunction<K, V> forward;
+    private IgniteFunction<V, K> back;
+
+    public static <K> Isomorphism<K, K> id() {
+        return new Isomorphism<>(a -> a, a -> a);
+    }
+
+    public Isomorphism(IgniteFunction<K, V> forward, IgniteFunction<V, K> back) {
+        this.forward = forward;
+        this.back = back;
+    }
+
+    public V forward(K k) {
+        return forward.apply(k);
+    }
+
+    public K back(V v) {
+        return back.apply(v);
+    }
 }

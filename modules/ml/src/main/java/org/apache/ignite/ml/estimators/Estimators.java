@@ -15,25 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml;
+package org.apache.ignite.ml.estimators;
 
-import org.apache.ignite.ml.clustering.ClusteringTestSuite;
-import org.apache.ignite.ml.math.MathImplMainTestSuite;
-import org.apache.ignite.ml.regressions.RegressionsTestSuite;
-import org.apache.ignite.ml.trees.DecisionTreesTestSuite;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import java.util.function.Function;
+import java.util.stream.Stream;
+import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.math.functions.IgniteTriFunction;
 
-/**
- * Test suite for all module tests.
- */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    MathImplMainTestSuite.class,
-    RegressionsTestSuite.class,
-    ClusteringTestSuite.class,
-    DecisionTreesTestSuite.class
-})
-public class IgniteMLTestSuite {
-    // No-op.
+/** Estimators. */
+public class Estimators {
+    /** Simple implementation of mean squared error estimator. */
+    public static <T, V> IgniteTriFunction<Model<T, V>, Stream<IgniteBiTuple<T, V>>, Function<V, Double>, Double> MSE() {
+        return (model, stream, f) -> stream.mapToDouble(dp -> {
+            double diff = f.apply(dp.get2()) - f.apply(model.predict(dp.get1()));
+            return diff * diff;
+        }).average().orElse(0);
+    }
 }

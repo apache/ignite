@@ -15,25 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml;
-
-import org.apache.ignite.ml.clustering.ClusteringTestSuite;
-import org.apache.ignite.ml.math.MathImplMainTestSuite;
-import org.apache.ignite.ml.regressions.RegressionsTestSuite;
-import org.apache.ignite.ml.trees.DecisionTreesTestSuite;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+package org.apache.ignite.ml.structures;
 
 /**
- * Test suite for all module tests.
- */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    MathImplMainTestSuite.class,
-    RegressionsTestSuite.class,
-    ClusteringTestSuite.class,
-    DecisionTreesTestSuite.class
-})
-public class IgniteMLTestSuite {
-    // No-op.
+ *  An interface for ordered collection of elements. This is not a collection, because it lacks many of its methods
+ * (add, remove etc)
+ * */
+public interface Ordered<T> {
+    public int size();
+    public T get(int i);
+    public void set(int i, T val);
 }

@@ -42,6 +42,7 @@ import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteConsumer;
 import org.apache.ignite.ml.math.functions.IgniteDoubleFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
+import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.apache.ignite.ml.math.impls.matrix.BlockEntry;
 import org.apache.ignite.ml.math.impls.storage.matrix.BlockMatrixKey;
 
@@ -480,11 +481,11 @@ public class CacheUtils {
      * @param folder Folder.
      * @param keyFilter Key filter.
      * @param accumulator Accumulator.
-     * @param zeroVal Zero value.
+     * @param zeroValSupp Zero value supplier.
      */
     public static <K, V, A> A distributedFold(String cacheName, IgniteBiFunction<Cache.Entry<K, V>, A, A> folder,
-        IgnitePredicate<K> keyFilter, BinaryOperator<A> accumulator, A zeroVal) {
-        return sparseFold(cacheName, folder, keyFilter, accumulator, zeroVal, null, null, 0,
+        IgnitePredicate<K> keyFilter, BinaryOperator<A> accumulator, IgniteSupplier<A> zeroValSupp) {
+        return sparseFold(cacheName, folder, keyFilter, accumulator, zeroValSupp, null, null, 0 ,
             false);
     }
 
@@ -495,17 +496,16 @@ public class CacheUtils {
      * @param folder Folder.
      * @param keyFilter Key filter.
      * @param accumulator Accumulator.
-     * @param zeroVal Zero value.
+     * @param zeroValSupp Zero value supplier.
      * @param defVal Def value.
      * @param defKey Def key.
      * @param defValCnt Def value count.
      * @param isNilpotent Is nilpotent.
      */
     private static <K, V, A> A sparseFold(String cacheName, IgniteBiFunction<Cache.Entry<K, V>, A, A> folder,
-        IgnitePredicate<K> keyFilter, BinaryOperator<A> accumulator, A zeroVal, V defVal, K defKey, long defValCnt,
-        boolean isNilpotent) {
+        IgnitePredicate<K> keyFilter, BinaryOperator<A> accumulator, IgniteSupplier<A> zeroValSupp, V defVal, K defKey, long defValCnt, boolean isNilpotent) {
 
-        A defRes = zeroVal;
+        A defRes = zeroValSupp.get();
 
         if (!isNilpotent)
             for (int i = 0; i < defValCnt; i++)
@@ -519,9 +519,9 @@ public class CacheUtils {
 
             // Use affinity in filter for ScanQuery. Otherwise we accept consumer in each node which is wrong.
             Affinity affinity = ignite.affinity(cacheName);
-            ClusterNode locNode = ignite.cluster().localNode();
+            ClusterNode localNode = ignite.cluster().localNode();
 
-            A a = zeroVal;
+            A a = zeroValSupp.get();
 
             // Iterate over all partitions. Some of them will be stored on that local node.
             for (int part = 0; part < partsCnt; part++) {
@@ -530,14 +530,13 @@ public class CacheUtils {
                 // Iterate over given partition.
                 // Query returns an empty cursor if this partition is not stored on this node.
                 for (Cache.Entry<K, V> entry : cache.query(new ScanQuery<K, V>(part,
-                    (k, v) -> affinity.mapPartitionToNode(p) == locNode && (keyFilter == null || keyFilter.apply(k)))))
+                    (k, v) -> affinity.mapPartitionToNode(p) == localNode  && (keyFilter == null || keyFilter.apply(k)))))
                     a = folder.apply(entry, a);
             }
 
             return a;
         });
-        totalRes.add(defRes);
-        return totalRes.stream().reduce(zeroVal, accumulator);
+        return totalRes.stream().reduce(defRes, accumulator);
     }
 
     /**

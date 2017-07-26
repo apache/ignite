@@ -15,25 +15,28 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml;
+package org.apache.ignite.ml.trees;
 
-import org.apache.ignite.ml.clustering.ClusteringTestSuite;
-import org.apache.ignite.ml.math.MathImplMainTestSuite;
-import org.apache.ignite.ml.regressions.RegressionsTestSuite;
-import org.apache.ignite.ml.trees.DecisionTreesTestSuite;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import java.io.Serializable;
 
-/**
- * Test suite for all module tests.
- */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    MathImplMainTestSuite.class,
-    RegressionsTestSuite.class,
-    ClusteringTestSuite.class,
-    DecisionTreesTestSuite.class
-})
-public class IgniteMLTestSuite {
-    // No-op.
+/** Class containing information about region. */
+public class RegionInfo implements Serializable {
+    /** Impurity in this region. */
+    private double impurity;
+
+    /**
+     * @param impurity Impurity of this region.
+     */
+    public RegionInfo(double impurity) {
+        this.impurity = impurity;
+    }
+
+    /**
+     * Get impurity in this region.
+     *
+     * @return Impurity of this region.
+     */
+    public double impurity() {
+        return impurity;
+    }
 }

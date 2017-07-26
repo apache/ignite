@@ -15,25 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml;
+package org.apache.ignite.ml.trees.nodes;
 
-import org.apache.ignite.ml.clustering.ClusteringTestSuite;
-import org.apache.ignite.ml.math.MathImplMainTestSuite;
-import org.apache.ignite.ml.regressions.RegressionsTestSuite;
-import org.apache.ignite.ml.trees.DecisionTreesTestSuite;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.apache.ignite.ml.math.Vector;
 
 /**
- * Test suite for all module tests.
+ * Node of decision tree.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    MathImplMainTestSuite.class,
-    RegressionsTestSuite.class,
-    ClusteringTestSuite.class,
-    DecisionTreesTestSuite.class
-})
-public class IgniteMLTestSuite {
-    // No-op.
+public interface DecisionTreeNode {
+    /**
+     * Assign the double value to the given vector.
+     *
+     * @param v Vector.
+     * @return Value assigned to the given vector.
+     */
+    double process(Vector v);
 }

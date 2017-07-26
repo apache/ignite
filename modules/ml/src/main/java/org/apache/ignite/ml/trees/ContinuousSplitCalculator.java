@@ -15,25 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml;
+package org.apache.ignite.ml.trees;
 
-import org.apache.ignite.ml.clustering.ClusteringTestSuite;
-import org.apache.ignite.ml.math.MathImplMainTestSuite;
-import org.apache.ignite.ml.regressions.RegressionsTestSuite;
-import org.apache.ignite.ml.trees.DecisionTreesTestSuite;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import java.util.stream.DoubleStream;
+import java.util.stream.Stream;
+import org.apache.ignite.ml.trees.trainers.columnbased.vectors.SampleInfo;
+import org.apache.ignite.ml.trees.trainers.columnbased.vectors.SplitInfo;
 
-/**
- * Test suite for all module tests.
- */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    MathImplMainTestSuite.class,
-    RegressionsTestSuite.class,
-    ClusteringTestSuite.class,
-    DecisionTreesTestSuite.class
-})
-public class IgniteMLTestSuite {
-    // No-op.
+public interface ContinuousSplitCalculator<C extends ContinuousRegionInfo> {
+    C calculateIntervalInfo(DoubleStream s, int l);
+
+    SplitInfo<C> splitInterval(Stream<SampleInfo> s, int intervalIdx, C data);
 }
