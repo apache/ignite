@@ -781,27 +781,9 @@ namespace Apache.Ignite.Core.Impl
         public Task<T> DoOutOpAsync<T>(int type, Action<IBinaryRawWriter> writeAction = null, 
             Func<IBinaryRawReader, T> readAction = null)
         {
-            return DoOutOpAsyncFuture(type, writeAction, readAction).Task;
-        }
-
-        /** <inheritdoc /> */
-        public Task<T> DoOutOpAsync<T>(int type, Action<IBinaryRawWriter> writeAction, 
-            Func<IBinaryRawReader, T> readAction, CancellationToken cancellationToken)
-        {
-            // TODO: SetTarget must be called on the future.
-            return DoOutOpAsyncFuture(type, writeAction, readAction).GetTask(cancellationToken);
-        }
-
-        /// <summary>
-        /// Performs async operation.
-        /// </summary>
-        private Future<T> DoOutOpAsyncFuture<T>(int type, Action<IBinaryRawWriter> writeAction,
-            Func<IBinaryRawReader, T> readAction)
-        {
             var convertFunc = readAction != null
                 ? r => readAction(r)
                 : (Func<BinaryReader, T>)null;
-
             return GetFuture((futId, futType) =>
             {
                 using (var stream = IgniteManager.Memory.Allocate().GetStream())
@@ -820,7 +802,36 @@ namespace Apache.Ignite.Core.Impl
 
                     UU.TargetInStreamAsync(_target, type, stream.SynchronizeOutput());
                 }
-            }, false, convertFunc);
+            }, false, convertFunc).Task;
+        }
+
+        /** <inheritdoc /> */
+        public Task<T> DoOutOpAsync<T>(int type, Action<IBinaryRawWriter> writeAction, 
+            Func<IBinaryRawReader, T> readAction, CancellationToken cancellationToken)
+        {
+            var convertFunc = readAction != null
+                ? r => readAction(r)
+                : (Func<BinaryReader, T>) null;
+
+            return GetFuture((futId, futType) =>
+            {
+                using (var stream = IgniteManager.Memory.Allocate().GetStream())
+                {
+                    stream.WriteLong(futId);
+                    stream.WriteInt(futType);
+
+                    if (writeAction != null)
+                    {
+                        var writer = _marsh.StartMarshal(stream);
+
+                        writeAction(writer);
+
+                        FinishMarshal(writer);
+                    }
+
+                    return UU.TargetInStreamOutObjectAsync(_target, type, stream.SynchronizeOutput());
+                }
+            }, false, convertFunc).GetTask(cancellationToken);
         }
 
         /// <summary>
