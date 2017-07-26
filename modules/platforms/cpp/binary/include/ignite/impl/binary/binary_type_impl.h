@@ -55,6 +55,35 @@ namespace ignite
 
             static void Read(BinaryReader& reader, IgniteError& dst);
         };
+
+        /**
+         * Write helper. Takes care of proper writing of pointers.
+         */
+        template<typename T>
+        struct WriteHelper
+        {
+            template<typename W>
+            static void Write(W& writer, const T& val)
+            {
+                writer.WriteTopObject0(val);
+            }
+        };
+
+        /**
+         * Specialization for the pointer case.
+         */
+        template<typename T>
+        struct WriteHelper<T*>
+        {
+            template<typename W>
+            static void Write(W& writer, const T* val)
+            {
+                if (!val)
+                    writer.WriteNull();
+                else
+                    writer.WriteTopObject0(*val);
+            }
+        };
     }
 }
 

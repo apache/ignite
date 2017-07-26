@@ -681,6 +681,18 @@ namespace ignite
                 template<typename T>
                 void WriteTopObject(const T& obj)
                 {
+                    ignite::binary::WriteHelper<T>::Write(*this, obj);
+                }
+
+                /**
+                 * Write object.
+                 * Does not work for primitive pointer types.
+                 *
+                 * @param obj Object to write.
+                 */
+                template<typename T>
+                void WriteTopObject0(const T& obj)
+                {
                     typedef ignite::binary::BinaryType<T> BType;
 
                     if (BType::IsNull(obj))
