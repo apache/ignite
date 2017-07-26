@@ -18,13 +18,19 @@
 package org.apache.ignite.ml.trees;
 
 import it.unimi.dsi.fastutil.ints.Int2DoubleOpenHashMap;
+import java.util.function.Function;
+import java.util.stream.Stream;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.estimators.Estimators;
 import org.apache.ignite.ml.math.*;
+import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
+import org.apache.ignite.ml.math.functions.IgniteTriFunction;
 import org.apache.ignite.ml.math.impls.matrix.SparseDistributedMatrix;
 import org.apache.ignite.ml.math.impls.storage.matrix.SparseDistributedMatrixStorage;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
@@ -41,6 +47,10 @@ import java.util.stream.Collectors;
 import java.util.stream.DoubleStream;
 
 public class ColumnDecisionTreeTrainerBenchmark extends BaseDecisionTreeTest {
+    private static Function<Vector, Double> f1 = v -> {
+        return v.get(0) * v.get(0) + Math.sin(v.get(1)) + v.get(2);
+    };
+
     /**
      * This test is for manual run only.
      */
@@ -65,11 +75,43 @@ public class ColumnDecisionTreeTrainerBenchmark extends BaseDecisionTreeTest {
         testByGenStreamerLoad(ptsPerReg, catsInfo, gen, rnd);
     }
 
+    @Test
+    public void testF1() {
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
+        int ptsCnt = 10000;
+        double[][] ranges = {{-100.0, 100.0}, {-100.0, 100.0}, {-100.0, 100.0}};
+        Vector[] trainVectors = vecsFromRanges(ranges, new Random(123L), ptsCnt, f1);
+        int featCnt = ranges.length;
+        SparseDistributedMatrix m = new SparseDistributedMatrix(ptsCnt, featCnt + 1, StorageConstants.COLUMN_STORAGE_MODE, StorageConstants.RANDOM_ACCESS_MODE);
+
+        SparseDistributedMatrixStorage sto = (SparseDistributedMatrixStorage) m.getStorage();
+
+        loadVectorsIntoCache(sto.cache().getName(), sto.getUUID(), Arrays.stream(trainVectors).iterator(), featCnt + 1);
+
+        IgniteFunction<DoubleStream, Double> regCalc = s -> s.average().orElse(0.0);
+
+        ColumnDecisionTreeTrainer<VarianceSplitCalculator.VarianceData> trainer =
+            new ColumnDecisionTreeTrainer<>(10, new VarianceSplitCalculator(), SIMPLE_VARIANCE_CALCULATOR, regCalc);
+
+        System.out.println(">>> Training started");
+        long before = System.currentTimeMillis();
+        DecisionTreeModel mdl = trainer.train(new ColumnDecisionTreeMatrixInput(m, new HashMap<>()));
+        System.out.println(">>> Training finished in " + (System.currentTimeMillis() - before));
+
+        Vector[] testVectors = vecsFromRanges(ranges, new Random(123L), 20, f1);
+
+        IgniteTriFunction<Model<Vector, Double>, Stream<IgniteBiTuple<Vector, Double>>, Function<Double, Double>, Double> mse = Estimators.MSE();
+        Double accuracy = mse.apply(mdl, Arrays.stream(testVectors).map(v -> new IgniteBiTuple<>(v.viewPart(0, featCnt), v.getX(featCnt))), Function.identity());
+        System.out.println(">>> MSE: " + accuracy);
+
+        trainer.destroy();
+    }
+
     private void testByGenStreamerLoad(int ptsPerReg, HashMap<Integer, Integer> catsInfo,
                            SplitDataGenerator<DenseLocalOnHeapVector> gen, Random rnd) {
 
         List<IgniteBiTuple<Integer, DenseLocalOnHeapVector>> lst = gen.
-                points(ptsPerReg, (i, rn) -> i /*+ rn.nextDouble() * (i / 100)*/).
+                points(ptsPerReg, (i, rn) -> i).
                 collect(Collectors.toList());
 
         int featCnt = gen.featCnt();
@@ -143,5 +185,25 @@ public class ColumnDecisionTreeTrainerBenchmark extends BaseDecisionTreeTest {
                 sampleIdx++;
             }
         }
+    }
+
+    private Vector[] vecsFromRanges(double[][] ranges, Random rnd, int ptsCnt, Function<Vector, Double> f) {
+        int vs = ranges.length + 1;
+        DenseLocalOnHeapVector[] res = new DenseLocalOnHeapVector[ptsCnt];
+        for (int pt = 0; pt < ptsCnt; pt++) {
+            DenseLocalOnHeapVector v = new DenseLocalOnHeapVector(vs);
+            for (int i = 0; i < ranges.length; i++) {
+                double[] range = ranges[i];
+                double from = range[0];
+                double to = range[1];
+                double rng = to - from;
+
+                v.setX(i, rnd.nextDouble() * rng);
+            }
+            v.setX(ranges.length, f.apply(v));
+            res[pt] = v;
+        }
+
+        return res;
     }
 }

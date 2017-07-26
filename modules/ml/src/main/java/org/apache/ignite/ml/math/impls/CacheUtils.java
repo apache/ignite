@@ -19,8 +19,11 @@ package org.apache.ignite.ml.math.impls;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.BinaryOperator;
+import java.util.function.Supplier;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -515,7 +518,9 @@ public class CacheUtils {
             Ignite ignite = Ignition.localIgnite();
             IgniteCache<K, V> cache = ignite.getOrCreateCache(cacheName);
 
+            long before = System.currentTimeMillis();
             int partsCnt = ignite.affinity(cacheName).partitions();
+
 
             // Use affinity in filter for ScanQuery. Otherwise we accept consumer in each node which is wrong.
             Affinity affinity = ignite.affinity(cacheName);
@@ -532,6 +537,39 @@ public class CacheUtils {
                 for (Cache.Entry<K, V> entry : cache.query(new ScanQuery<K, V>(part,
                     (k, v) -> affinity.mapPartitionToNode(p) == localNode  && (keyFilter == null || keyFilter.apply(k)))))
                     a = folder.apply(entry, a);
+            }
+            System.out.println("Aff time: " + (System.currentTimeMillis() - before));
+
+            return a;
+        });
+        return totalRes.stream().reduce(defRes, accumulator);
+    }
+
+    public static <K, V, A> A sparseFold(String cacheName, IgniteBiFunction<Cache.Entry<K, V>, A, A> folder,
+        IgniteSupplier<Set<K>> keysGen, BinaryOperator<A> accumulator, IgniteSupplier<A> zeroValSupp, V defVal, K defKey, long defValCnt, boolean isNilpotent) {
+
+        A defRes = zeroValSupp.get();
+
+        if (!isNilpotent)
+            for (int i = 0; i < defValCnt; i++)
+                defRes = folder.apply(new CacheEntryImpl<>(defKey, defVal), defRes);
+
+        Collection<A> totalRes = bcast(cacheName, () -> {
+            Ignite ignite = Ignition.localIgnite();
+            IgniteCache<K, V> cache = ignite.getOrCreateCache(cacheName);
+
+            // Use affinity in filter for ScanQuery. Otherwise we accept consumer in each node which is wrong.
+            Affinity<K> affinity = ignite.affinity(cacheName);
+            ClusterNode localNode = ignite.cluster().localNode();
+
+            A a = zeroValSupp.get();
+
+            Collection<K> ks = affinity.mapKeysToNodes(keysGen.get()).get(localNode);
+            if (ks == null)
+                return a;
+            for (K k : ks) {
+                V v = cache.localPeek(k);
+                a = folder.apply(new CacheEntryImpl<>(k, v), a);
             }
 
             return a;

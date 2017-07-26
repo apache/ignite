@@ -252,26 +252,34 @@ public class ColumnDecisionTreeTrainer<D extends ContinuousRegionInfo> implement
         // regions cannot be split more and split only those that can.
         while (curDepth < maxDepth) {
             // Get locally (for node) optimal (by information gain) splits.
-            List<IndexAndSplitInfo> splits = CacheUtils.distributedFold(cache.getName(),
+            long before = System.currentTimeMillis();
+            List<IndexAndSplitInfo> splits = CacheUtils.sparseFold(cache.getName(),
                 (Cache.Entry<FeatureVectorKey, FeatureVector<D, ? extends SplitInfo<D>>> e, List<IndexAndSplitInfo> lst) -> {
                     SplitInfo<D> locallyBest = e.getValue().findBestSplit();
                     if (locallyBest != null)
                         lst.add(new IndexAndSplitInfo(e.getKey().rowKey.get1(), locallyBest));
                     return lst;
                 },
-                null,
+                () -> IntStream.range(0, size).mapToObj(i -> getCacheKey(i, input.affinityKey(i))).collect(Collectors.toSet()),
                 (infos, infos2) -> {
                     List<IndexAndSplitInfo> res = new LinkedList<>();
                     res.addAll(infos);
                     res.addAll(infos2);
                     return res;
                 },
-                LinkedList::new);
+                LinkedList::new,
+                null,
+                null,
+                0,
+                true
+            );
+            long total = System.currentTimeMillis() - before;
 
             // Find globally optimal split.
             IndexAndSplitInfo best = splits.stream().max(Comparator.comparingDouble(o -> o.info.infoGain())).orElse(null);
 
             if (best != null && best.info.infoGain() > minInfoGain) {
+                System.out.println("Globally best: " + best.info + " time: " + total);
                 // Request bitset for split region.
                 SparseBitSet bs = cache.invoke(getCacheKey(best.featureIdx, input.affinityKey(best.featureIdx)), (entry, arguments) -> entry.getValue().calculateOwnershipBitSet(best.info));
 

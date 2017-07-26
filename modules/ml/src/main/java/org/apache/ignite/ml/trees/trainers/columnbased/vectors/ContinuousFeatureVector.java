@@ -74,8 +74,8 @@ public class ContinuousFeatureVector<D extends ContinuousRegionInfo> implements
         SplitInfo<D> res = null;
 
         // Try to split every possible interval and find the best split.
-        for (int i = 0; i < intervals.size(); i++) {
-            D info = intervals.get(i);
+        int i = 0;
+        for (D info : intervals) {
             int l = info.left();
             int r = info.right();
             int size = (r - l) + 1;
@@ -83,8 +83,10 @@ public class ContinuousFeatureVector<D extends ContinuousRegionInfo> implements
             double curImpurity = info.impurity();
             SplitInfo<D> split = calc.splitInterval(samples.subList(l, r + 1).stream(), i, info);
 
-            if (split == null)
+            if (split == null) {
+                i++;
                 continue;
+            }
 
             double lWeight = ((double)split.leftData().right() - split.leftData().left() + 1) / size;
             double rWeight = ((double)split.rightData().right() - split.rightData().left() + 1) / size;
@@ -96,6 +98,7 @@ public class ContinuousFeatureVector<D extends ContinuousRegionInfo> implements
                 res = split;
                 res.setInfoGain(maxInfoGain);
             }
+            i++;
         }
 
         return res;
