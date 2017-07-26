@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.processors.rest.handlers.redis.server;
 
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
@@ -91,24 +91,19 @@ public class GridRedisFlushCommandHandler extends GridRedisRestCommandHandler {
                 break;
             default:
                 // CACHE_CLEAR
-                List<String> redisCaches = new ArrayList<>();
+                Map<Object, Object> redisCaches = new HashMap<>();
 
                 for (IgniteCacheProxy<?, ?> cache : ctx.cache().publicCaches()) {
                     if (cache.getName().startsWith(CACHE_NAME_PREFIX)) {
-                        redisCaches.add(cache.getName());
+                        redisCaches.put(cache.getName(), null);
                     }
                 }
 
                 if (redisCaches.isEmpty())
                     throw new GridRedisGenericException("No Redis caches found");
 
-                Map<Object, Object> caches = U.newHashMap(redisCaches.size());
-
-                for (String c : redisCaches)
-                    caches.put(c, null);
-
                 restReq.command(CACHE_CLEAR);
-                restReq.values(caches);
+                restReq.values(redisCaches);
         }
 
         return restReq;
