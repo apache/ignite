@@ -469,7 +469,6 @@ namespace ignite
             void JniMembers::Destroy(JNIEnv* env) {
                 DeleteClass(env, c_IgniteException);
                 DeleteClass(env, c_PlatformIgnition);
-                DeleteClass(env, c_PlatformProcessor);
                 DeleteClass(env, c_PlatformTarget);
                 DeleteClass(env, c_PlatformUtils);
             }
