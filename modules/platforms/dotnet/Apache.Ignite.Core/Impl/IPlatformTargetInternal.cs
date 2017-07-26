@@ -27,9 +27,11 @@ namespace Apache.Ignite.Core.Impl
     /// </summary>
     internal interface IPlatformTargetInternal : IPlatformTarget
     {
-        // TODO: Stream-based methods
         IUnmanagedTarget Target { get; }
 
         long OutOp(int type, Action<IBinaryStream> action);
+
+        // TODO: Return type should be IPlatformTargetInternal?
+        IUnmanagedTarget OutOpObject(int type, Action<IBinaryStream> action);
     }
 }

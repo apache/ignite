@@ -159,12 +159,7 @@ namespace Apache.Ignite.Core.Impl
         /// <returns>Resulting object.</returns>
         protected IUnmanagedTarget DoOutOpObject(int type, Action<IBinaryStream> action)
         {
-            using (var stream = IgniteManager.Memory.Allocate().GetStream())
-            {
-                action(stream);
-
-                return UU.TargetInStreamOutObject(_target, type, stream.SynchronizeOutput());
-            }
+            return _target.OutOpObject(type, action);
         }
 
         /// <summary>

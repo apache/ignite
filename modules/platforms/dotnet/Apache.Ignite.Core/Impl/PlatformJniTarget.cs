@@ -91,6 +91,17 @@ namespace Apache.Ignite.Core.Impl
             }
         }
 
+        /** <inheritdoc /> */
+        public IUnmanagedTarget OutOpObject(int type, Action<IBinaryStream> action)
+        {
+            using (var stream = IgniteManager.Memory.Allocate().GetStream())
+            {
+                action(stream);
+
+                return UU.TargetInStreamOutObject(_target, type, stream.SynchronizeOutput());
+            }
+        }
+
         /// <summary>
         /// Finish marshaling.
         /// </summary>
