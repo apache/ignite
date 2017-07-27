@@ -721,9 +721,6 @@ namespace ignite
 
             bool BinaryReaderImpl::SkipIfNull()
             {
-                CheckRawMode(true);
-                CheckSingleMode(true);
-
                 InteropStreamPositionGuard<InteropInputStream> positionGuard(*stream);
 
                 int8_t hdr = stream->ReadInt8();
