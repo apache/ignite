@@ -179,35 +179,6 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
-        public bool InStreamOutLong(int type, Action<BinaryWriter> writeAction, 
-            Func<IBinaryStream, Exception> readErrorAction)
-        {
-            Debug.Assert(readErrorAction != null);
-
-            using (var stream = IgniteManager.Memory.Allocate().GetStream())
-            {
-                var writer = _marsh.StartMarshal(stream);
-
-                writeAction(writer);
-
-                FinishMarshal(writer);
-
-                var res = UU.TargetInStreamOutLong(_target, type, stream.SynchronizeOutput());
-
-                if (res != PlatformTargetAdapter.Error)
-                {
-                    return res == PlatformTargetAdapter.True;
-                }
-
-                stream.SynchronizeInput();
-
-                stream.Seek(0, SeekOrigin.Begin);
-
-                throw readErrorAction(stream);
-            }
-        }
-
-        /** <inheritdoc /> */
         public unsafe TR InObjectStreamOutObjectStream<TR>(int type, Action<BinaryWriter> writeAction, 
             Func<IBinaryStream, IPlatformTargetInternal, TR> readAction, IPlatformTargetInternal arg)
         {

@@ -54,18 +54,6 @@ namespace Apache.Ignite.Core.Impl
             Func<IBinaryStream, Exception> readErrorAction);
 
         /// <summary>
-        /// Performs InStreamOutLong operation with stream reuse.
-        /// </summary>
-        /// <param name="type">Operation type code.</param>
-        /// <param name="writeAction">Write action.</param>
-        /// <param name="readErrorAction">Error action.</param>
-        /// <returns>
-        /// Result.
-        /// </returns>
-        bool InStreamOutLong(int type, Action<BinaryWriter> writeAction, 
-            Func<IBinaryStream, Exception> readErrorAction);  // TODO: Same as above?
-
-        /// <summary>
         /// Performs InStreamOutStream operation.
         /// </summary>
         /// <typeparam name="T">Result type.</typeparam>
