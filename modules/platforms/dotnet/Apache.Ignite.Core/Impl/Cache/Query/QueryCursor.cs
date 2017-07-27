@@ -33,7 +33,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
         /// <param name="marsh">Marshaler.</param>
         /// <param name="keepBinary">Keep poratble flag.</param>
         public QueryCursor(IPlatformTargetInternal target, Marshaller marsh,
-            bool keepBinary) : base(target, marsh, keepBinary)
+            bool keepBinary) : base(target, keepBinary)
         {
             // No-op.
         }

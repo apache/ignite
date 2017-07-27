@@ -137,7 +137,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
             for (var i = 0; i < size; i++)
                 entries.Add(new CacheEntry<TK, TV>(reader.ReadObject<TK>(), reader.ReadObject<TV>()));
 
-            receiver.Receive(grid.GetCache<TK, TV>(cache, keepBinary), entries);
+            receiver.Receive(Ignite.GetCache<TK, TV>(cache, keepBinary), entries);
         }
     }
 }

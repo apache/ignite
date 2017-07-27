@@ -1162,10 +1162,10 @@ namespace Apache.Ignite.Core.Impl.Cache
             {
                 var target = DoOutOpObject((int) CacheOp.LocIterator, (IBinaryStream s) => s.WriteInt(peekModes));
 
-                return new CacheEnumerator<TK, TV>(target, Marshaller, _flagKeepBinary);
+                return new CacheEnumerator<TK, TV>(target, _flagKeepBinary);
             }
 
-            return new CacheEnumerator<TK, TV>(DoOutOpObject((int) CacheOp.Iterator), Marshaller, _flagKeepBinary);
+            return new CacheEnumerator<TK, TV>(DoOutOpObject((int) CacheOp.Iterator), _flagKeepBinary);
         }
 
         #endregion

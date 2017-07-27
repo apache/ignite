@@ -63,10 +63,8 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
         /// Constructor.
         /// </summary>
         /// <param name="target">Target.</param>
-        /// <param name="marsh">Marshaller.</param>
         /// <param name="keepBinary">Keep binary flag.</param>
-        protected AbstractQueryCursor(IPlatformTargetInternal target, Marshaller marsh, bool keepBinary) : 
-            base(target)
+        protected AbstractQueryCursor(IPlatformTargetInternal target, bool keepBinary) : base(target)
         {
             _keepBinary = keepBinary;
         }

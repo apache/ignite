@@ -515,7 +515,7 @@ namespace Apache.Ignite.Core.Impl
         /// <returns>
         /// New instance of cache wrapping specified native cache.
         /// </returns>
-        public ICache<TK, TV> GetCache<TK, TV>(IPlatformTargetInternal nativeCache, bool keepBinary = false)
+        public static ICache<TK, TV> GetCache<TK, TV>(IPlatformTargetInternal nativeCache, bool keepBinary = false)
         {
             return new CacheImpl<TK, TV>(nativeCache, false, keepBinary, false, false);
         }

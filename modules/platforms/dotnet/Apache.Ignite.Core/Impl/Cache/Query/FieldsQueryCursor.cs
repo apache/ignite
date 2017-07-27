@@ -40,7 +40,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
         /// <param name="readerFunc">The reader function.</param>
         public FieldsQueryCursor(IPlatformTargetInternal target, Marshaller marsh, bool keepBinary, 
             Func<IBinaryRawReader, int, T> readerFunc)
-            : base(target, marsh, keepBinary)
+            : base(target, keepBinary)
         {
             Debug.Assert(readerFunc != null);
 

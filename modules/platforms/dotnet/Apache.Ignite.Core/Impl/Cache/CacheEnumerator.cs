@@ -21,7 +21,6 @@ namespace Apache.Ignite.Core.Impl.Cache
     using System.Collections;
     using System.Collections.Generic;
     using Apache.Ignite.Core.Cache;
-    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
 
     /// <summary>
@@ -42,10 +41,8 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// Constructor.
         /// </summary>
         /// <param name="target">Target.</param>
-        /// <param name="marsh">Marshaller.</param>
         /// <param name="keepBinary">Keep binary flag.</param>
-        public CacheEnumerator(IPlatformTargetInternal target, Marshaller marsh, bool keepBinary) : 
-            base(target)
+        public CacheEnumerator(IPlatformTargetInternal target, bool keepBinary) : base(target)
         {
             _keepBinary = keepBinary;
         }
