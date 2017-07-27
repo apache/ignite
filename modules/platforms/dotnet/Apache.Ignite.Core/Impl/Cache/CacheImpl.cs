@@ -62,6 +62,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** Transaction manager. */
         private readonly CacheTransactionManager _txManager;
 
+        /** Pre-allocated delegate. */
+        private readonly Func<IBinaryStream, Exception> _readException;
+
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -83,6 +86,8 @@ namespace Apache.Ignite.Core.Impl.Cache
             _txManager = GetConfiguration().AtomicityMode == CacheAtomicityMode.Transactional
                 ? new CacheTransactionManager(_ignite.GetTransactions())
                 : null;
+
+            _readException = stream => ReadException(Marshaller.StartUnmarshal(stream));
         }
 
         /** <inheritDoc /> */
@@ -214,7 +219,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public void LoadCache(ICacheEntryFilter<TK, TV> p, params object[] args)
         {
-            DoOutInOpX((int) CacheOp.LoadCache, writer => WriteLoadCacheData(writer, p, args), ReadException);
+            DoOutInOpX((int) CacheOp.LoadCache, writer => WriteLoadCacheData(writer, p, args), _readException);
         }
 
         /** <inheritDoc /> */
@@ -226,7 +231,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public void LocalLoadCache(ICacheEntryFilter<TK, TV> p, params object[] args)
         {
-            DoOutInOpX((int) CacheOp.LocLoadCache, writer => WriteLoadCacheData(writer, p, args), ReadException);
+            DoOutInOpX((int) CacheOp.LocLoadCache, writer => WriteLoadCacheData(writer, p, args), _readException);
         }
 
         /** <inheritDoc /> */
@@ -336,7 +341,7 @@ namespace Apache.Ignite.Core.Impl.Cache
                     w.WriteInt(EncodePeekModes(modes));
                 },
                 (s, r) => r == True ? new CacheResult<TV>(Unmarshal<TV>(s)) : new CacheResult<TV>(),
-                ReadException);
+                _readException);
 
             value = res.Success ? res.Value : default(TV);
 
@@ -369,7 +374,7 @@ namespace Apache.Ignite.Core.Impl.Cache
                         throw GetKeyNotFoundException();
 
                     return Unmarshal<TV>(stream);
-                }, ReadException);
+                }, _readException);
         }
 
         /** <inheritDoc /> */
@@ -414,7 +419,7 @@ namespace Apache.Ignite.Core.Impl.Cache
             return DoOutInOpX((int) CacheOp.GetAll,
                 writer => writer.WriteEnumerable(keys),
                 (s, r) => r == True ? ReadGetAllDictionary(Marshaller.StartUnmarshal(s, _flagKeepBinary)) : null,
-                ReadException);
+                _readException);
         }
 
         /** <inheritDoc /> */
@@ -837,7 +842,7 @@ namespace Apache.Ignite.Core.Impl.Cache
                     writer.Write(holder);
                 },
                 (input, res) => res == True ? Unmarshal<TRes>(input) : default(TRes),
-                ReadException);
+                _readException);
         }
 
         /** <inheritDoc /> */
@@ -888,7 +893,9 @@ namespace Apache.Ignite.Core.Impl.Cache
                     writer.WriteEnumerable(keys);
                     writer.Write(holder);
                 },
-                (input, res) => res == True ? ReadInvokeAllResults<TRes>(Marshaller.StartUnmarshal(input, IsKeepBinary)): null, ReadException);
+                (input, res) => res == True
+                    ? ReadInvokeAllResults<TRes>(Marshaller.StartUnmarshal(input, IsKeepBinary))
+                    : null, _readException);
         }
 
         /** <inheritDoc /> */
@@ -925,7 +932,7 @@ namespace Apache.Ignite.Core.Impl.Cache
                 },
                 (input, res) => res == True
                     ? readFunc(Marshaller.StartUnmarshal(input))
-                    : default(T), ReadException);
+                    : default(T), _readException);
         }
 
         /** <inheritdoc /> */
@@ -934,7 +941,7 @@ namespace Apache.Ignite.Core.Impl.Cache
             IgniteArgumentCheck.NotNull(key, "key");
 
             return DoOutInOpX((int) CacheOp.Lock, w => w.Write(key),
-                (stream, res) => new CacheLock(stream.ReadInt(), this), ReadException);
+                (stream, res) => new CacheLock(stream.ReadInt(), this), _readException);
         }
 
         /** <inheritdoc /> */
@@ -943,7 +950,7 @@ namespace Apache.Ignite.Core.Impl.Cache
             IgniteArgumentCheck.NotNull(keys, "keys");
 
             return DoOutInOpX((int) CacheOp.LockAll, w => w.WriteEnumerable(keys),
-                (stream, res) => new CacheLock(stream.ReadInt(), this), ReadException);
+                (stream, res) => new CacheLock(stream.ReadInt(), this), _readException);
         }
 
         /** <inheritdoc /> */
@@ -1309,7 +1316,7 @@ namespace Apache.Ignite.Core.Impl.Cache
             return DoOutInOpX((int) op, w =>
             {
                 w.Write(x);
-            }, ReadException);
+            }, _readException);
         }
 
         /// <summary>
@@ -1321,7 +1328,7 @@ namespace Apache.Ignite.Core.Impl.Cache
             {
                 w.Write(x);
                 w.Write(y);
-            }, ReadException);
+            }, _readException);
         }
 
         /// <summary>
@@ -1334,7 +1341,7 @@ namespace Apache.Ignite.Core.Impl.Cache
                 w.Write(x);
                 w.Write(y);
                 w.Write(z);
-            }, ReadException);
+            }, _readException);
         }
 
         /// <summary>
@@ -1342,7 +1349,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// </summary>
         private bool DoOutOp(CacheOp op, Action<BinaryWriter> write)
         {
-            return DoOutInOpX((int) op, write, ReadException);
+            return DoOutInOpX((int) op, write, _readException);
         }
 
         /// <summary>
@@ -1353,7 +1360,7 @@ namespace Apache.Ignite.Core.Impl.Cache
             return DoOutInOpX((int)cacheOp,
                 w => w.Write(x),
                 (stream, res) => res == True ? new CacheResult<TV>(Unmarshal<TV>(stream)) : new CacheResult<TV>(),
-                ReadException);
+                _readException);
         }
 
         /// <summary>
@@ -1368,7 +1375,7 @@ namespace Apache.Ignite.Core.Impl.Cache
                     w.Write(y);
                 },
                 (stream, res) => res == True ? new CacheResult<TV>(Unmarshal<TV>(stream)) : new CacheResult<TV>(),
-                ReadException);
+                _readException);
         }
 
         /** <inheritdoc /> */
