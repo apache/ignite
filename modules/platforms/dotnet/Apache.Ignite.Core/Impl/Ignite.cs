@@ -929,7 +929,7 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         internal IPlatformTarget GetExtension(int id)
         {
-            return Target.InStreamOutObject((int) Op.GetExtension, w => w.WriteInt(id));
+            return ((IPlatformTarget) Target).InStreamOutObject((int) Op.GetExtension, w => w.WriteInt(id));
         }
     }
 }

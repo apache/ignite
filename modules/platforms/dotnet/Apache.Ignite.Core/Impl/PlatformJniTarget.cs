@@ -85,18 +85,18 @@ namespace Apache.Ignite.Core.Impl
         public Marshaller Marshaller { get { return _marsh; } }
 
         /** <inheritdoc /> */
-        public long OutOp(int type, Action<IBinaryStream> action)
+        public long InStreamOutLong(int type, Action<IBinaryStream> writeAction)
         {
             using (var stream = IgniteManager.Memory.Allocate().GetStream())
             {
-                action(stream);
+                writeAction(stream);
 
                 return UU.TargetInStreamOutLong(_target, type, stream.SynchronizeOutput());
             }
         }
 
         /** <inheritdoc /> */
-        public IPlatformTargetInternal OutOpObject(int type, Action<IBinaryStream> action)
+        public IPlatformTargetInternal InStreamOutObject(int type, Action<IBinaryStream> action)
         {
             using (var stream = IgniteManager.Memory.Allocate().GetStream())
             {
@@ -114,7 +114,7 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
-        public T InOp<T>(int type, Func<IBinaryStream, T> action)
+        public T OutStream<T>(int type, Func<IBinaryStream, T> action)
         {
             using (var stream = IgniteManager.Memory.Allocate().GetStream())
             {

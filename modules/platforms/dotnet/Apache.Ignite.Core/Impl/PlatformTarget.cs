@@ -102,7 +102,7 @@ namespace Apache.Ignite.Core.Impl
         /// <returns></returns>
         protected long DoOutOp(int type, Action<IBinaryStream> action)
         {
-            return _target.OutOp(type, action);
+            return _target.InStreamOutLong(type, action);
         }
 
         /// <summary>
@@ -131,7 +131,7 @@ namespace Apache.Ignite.Core.Impl
         /// <returns>Resulting object.</returns>
         protected IPlatformTargetInternal DoOutOpObject(int type, Action<BinaryWriter> action)
         {
-            return _target.OutOpObject(type, stream => action(_marsh.StartMarshal(stream)));
+            return _target.InStreamOutObject(type, stream => action(_marsh.StartMarshal(stream)));
         }
 
         /// <summary>
@@ -142,7 +142,7 @@ namespace Apache.Ignite.Core.Impl
         /// <returns>Resulting object.</returns>
         protected IPlatformTargetInternal DoOutOpObject(int type, Action<IBinaryStream> action)
         {
-            return _target.OutOpObject(type, action);
+            return _target.InStreamOutObject(type, action);
         }
 
         /// <summary>
@@ -197,7 +197,7 @@ namespace Apache.Ignite.Core.Impl
         /// <returns>Result.</returns>
         protected T DoInOp<T>(int type, Func<IBinaryStream, T> action)
         {
-            return _target.InOp(type, action);
+            return _target.OutStream(type, action);
         }
 
         /// <summary>
@@ -207,7 +207,7 @@ namespace Apache.Ignite.Core.Impl
         /// <returns>Result.</returns>
         protected T DoInOp<T>(int type)
         {
-            return _target.InOp(type, s => Unmarshal<T>(s));
+            return _target.OutStream(type, s => Unmarshal<T>(s));
         }
 
         #endregion

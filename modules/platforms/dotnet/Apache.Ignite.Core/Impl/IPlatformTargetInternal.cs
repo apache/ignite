@@ -32,13 +32,19 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         Marshaller Marshaller { get; }
 
-        T InOp<T>(int type, Func<IBinaryStream, T> action);
+        T OutStream<T>(int type, Func<IBinaryStream, T> action);
 
-        long OutOp(int type, Action<IBinaryStream> action);
+        /// <summary>
+        /// Performs InStreamOutLong operation.
+        /// </summary>
+        /// <param name="type">Operation type code.</param>
+        /// <param name="writeAction">Write action.</param>
+        /// <returns>Result.</returns>
+        long InStreamOutLong(int type, Action<IBinaryStream> writeAction);
 
         IPlatformTargetInternal OutOpObject(int type);
 
-        IPlatformTargetInternal OutOpObject(int type, Action<IBinaryStream> action);
+        IPlatformTargetInternal InStreamOutObject(int type, Action<IBinaryStream> action);
         
         T DoOutInOp<T>(int type, Action<BinaryWriter> outAction, Func<IBinaryStream, T> inAction);
 
