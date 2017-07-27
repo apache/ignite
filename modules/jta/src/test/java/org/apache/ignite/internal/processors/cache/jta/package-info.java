@@ -15,18 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
-
-import org.apache.ignite.cache.CacheMode;
-
-import static org.apache.ignite.cache.CacheMode.REPLICATED;
-
 /**
- * Factory JTA integration test using REPLICATED cache.
+ * <!-- Package description. -->
+ * Contains internal tests or test related classes and interfaces.
  */
-public class GridReplicatedCacheJtaFactorySelfTest extends GridPartitionedCacheJtaFactorySelfTest {
-    /** {@inheritDoc} */
-    @Override protected CacheMode cacheMode() {
-        return REPLICATED;
-    }
-}
+package org.apache.ignite.internal.processors.cache.jta;

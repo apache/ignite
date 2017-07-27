@@ -15,14 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.internal.processors.cache.jta;
 
 import org.apache.ignite.configuration.IgniteConfiguration;
 
 /**
- * Factory JTA integration test using PARTITIONED cache.
+ * Factory JTA integration test using REPLICATED cache.
  */
-public class GridPartitionedCacheJtaFactoryUseSyncSelfTest extends GridPartitionedCacheJtaFactorySelfTest {
+public class GridReplicatedCacheJtaFactoryUseSyncSelfTest extends GridReplicatedCacheJtaFactorySelfTest {
     /** {@inheritDoc} */
     @Override protected void configureJta(IgniteConfiguration cfg) {
         super.configureJta(cfg);
