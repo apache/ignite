@@ -333,7 +333,7 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="arg">Argument.</param>
         /// <returns>Result.</returns>
         protected unsafe TR DoOutInOp<TR>(int type, Action<BinaryWriter> outAction,
-            Func<IBinaryStream, IPlatformTargetInternal, TR> inAction, void* arg)
+            Func<IBinaryStream, IPlatformTargetInternal, TR> inAction, IPlatformTargetInternal arg)
         {
             PlatformMemoryStream outStream = null;
             long outPtr = 0;

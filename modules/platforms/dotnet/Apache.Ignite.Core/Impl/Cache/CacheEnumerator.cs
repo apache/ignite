@@ -23,7 +23,6 @@ namespace Apache.Ignite.Core.Impl.Cache
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
-    using Apache.Ignite.Core.Impl.Unmanaged;
 
     /// <summary>
     /// Real cache enumerator communicating with Java.
@@ -45,7 +44,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <param name="target">Target.</param>
         /// <param name="marsh">Marshaller.</param>
         /// <param name="keepBinary">Keep binary flag.</param>
-        public CacheEnumerator(IUnmanagedTarget target, Marshaller marsh, bool keepBinary) : 
+        public CacheEnumerator(IPlatformTargetInternal target, Marshaller marsh, bool keepBinary) : 
             base(target, marsh)
         {
             _keepBinary = keepBinary;

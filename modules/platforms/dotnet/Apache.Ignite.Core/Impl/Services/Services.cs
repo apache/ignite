@@ -26,9 +26,7 @@ namespace Apache.Ignite.Core.Impl.Services
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Common;
-    using Apache.Ignite.Core.Impl.Unmanaged;
     using Apache.Ignite.Core.Services;
-    using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
 
     /// <summary>
     /// Services implementation.
@@ -372,12 +370,13 @@ namespace Apache.Ignite.Core.Impl.Services
         /// <returns>
         /// Invocation result.
         /// </returns>
-        private unsafe object InvokeProxyMethod(IUnmanagedTarget proxy, MethodBase method, object[] args, 
+        private object InvokeProxyMethod(IPlatformTargetInternal proxy, MethodBase method, object[] args, 
             Platform platform)
         {
             return DoOutInOp(OpInvokeMethod,
                 writer => ServiceProxySerializer.WriteProxyMethod(writer, method, args, platform),
-                (stream, res) => ServiceProxySerializer.ReadInvocationResult(stream, Marshaller, _keepBinary), proxy.Target);
+                (stream, res) => ServiceProxySerializer.ReadInvocationResult(stream, Marshaller, _keepBinary), 
+                proxy);
         }
 
         /// <summary>

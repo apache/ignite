@@ -81,6 +81,9 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
+        public Marshaller Marshaller { get { return _marsh; } }
+
+        /** <inheritdoc /> */
         public long OutOp(int type, Action<IBinaryStream> action)
         {
             using (var stream = IgniteManager.Memory.Allocate().GetStream())

@@ -22,7 +22,6 @@ namespace Apache.Ignite.Core.Impl.Cache.Affinity
     using Apache.Ignite.Core.Cache.Affinity;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Impl.Binary;
-    using Apache.Ignite.Core.Impl.Unmanaged;
 
     /// <summary>
     /// Affinity function that delegates to Java.
@@ -42,7 +41,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Affinity
         /// </summary>
         /// <param name="target">Target.</param>
         /// <param name="marsh">Marshaller.</param>
-        public PlatformAffinityFunction(IUnmanagedTarget target, Marshaller marsh) : base(target, marsh)
+        public PlatformAffinityFunction(IPlatformTargetInternal target, Marshaller marsh) : base(target, marsh)
         {
             // No-op.
         }
