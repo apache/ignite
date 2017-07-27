@@ -127,14 +127,14 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
-        public TR DoOutInOp<TR>(int type, Action<BinaryWriter> outAction, Func<IBinaryStream, TR> inAction)
+        public TR InStreamOutStream<TR>(int type, Action<BinaryWriter> writeAction, Func<IBinaryStream, TR> readAction)
         {
             using (var outStream = IgniteManager.Memory.Allocate().GetStream())
             using (var inStream = IgniteManager.Memory.Allocate().GetStream())
             {
                 var writer = _marsh.StartMarshal(outStream);
 
-                outAction(writer);
+                writeAction(writer);
 
                 FinishMarshal(writer);
 
@@ -142,7 +142,7 @@ namespace Apache.Ignite.Core.Impl
 
                 inStream.SynchronizeInput();
 
-                return inAction(inStream);
+                return readAction(inStream);
             }
         }
 

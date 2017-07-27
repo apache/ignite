@@ -223,7 +223,7 @@ namespace Apache.Ignite.Core.Impl
         /// <returns>Result.</returns>
         protected TR DoOutInOp<TR>(int type, Action<BinaryWriter> outAction, Func<IBinaryStream, TR> inAction)
         {
-            return _target.DoOutInOp(type, outAction, inAction);
+            return _target.InStreamOutStream(type, outAction, inAction);
         }
 
         /// <summary>
@@ -280,7 +280,7 @@ namespace Apache.Ignite.Core.Impl
         /// <returns>Result.</returns>
         protected TR DoOutInOp<TR>(int type, Action<BinaryWriter> outAction)
         {
-            return Target.DoOutInOp(type, outAction, stream => Unmarshal<TR>(stream));
+            return Target.InStreamOutStream(type, outAction, stream => Unmarshal<TR>(stream));
         }
 
         /// <summary>
@@ -291,7 +291,7 @@ namespace Apache.Ignite.Core.Impl
         /// <returns>Result.</returns>
         protected TR DoOutInOp<T1, TR>(int type, T1 val)
         {
-            return Target.DoOutInOp(type, writer => writer.WriteObject(val), stream => Unmarshal<TR>(stream));
+            return Target.InStreamOutStream(type, writer => writer.WriteObject(val), stream => Unmarshal<TR>(stream));
         }
 
         /// <summary>
