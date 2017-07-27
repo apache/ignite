@@ -37,5 +37,15 @@ namespace Apache.Ignite.Core.Impl
         IPlatformTargetInternal OutOpObject(int type);
 
         T InOp<T>(int type, Func<IBinaryStream, T> action);
+
+        TR DoOutInOp<TR>(int type, Action<BinaryWriter> outAction, Func<IBinaryStream, TR> inAction);
+
+        TR DoOutInOpX<TR>(int type, Action<BinaryWriter> outAction, Func<IBinaryStream, long, TR> inAction,
+            Func<IBinaryStream, Exception> inErrorAction);
+
+        bool DoOutInOpX(int type, Action<BinaryWriter> outAction, Func<IBinaryStream, Exception> inErrorAction);
+
+        TR DoOutInOp<TR>(int type, Action<BinaryWriter> outAction,
+            Func<IBinaryStream, IPlatformTargetInternal, TR> inAction, IPlatformTargetInternal arg);
     }
 }

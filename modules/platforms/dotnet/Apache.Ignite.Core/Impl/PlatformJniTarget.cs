@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Impl
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Binary;
@@ -38,6 +39,15 @@ namespace Apache.Ignite.Core.Impl
     /// </summary>
     internal class PlatformJniTarget : IPlatformTargetInternal
     {
+        /** */
+        private const int False = 0;
+
+        /** */
+        private const int True = 1;
+
+        /** */
+        private const int Error = -1;
+
         /** */
         private static readonly Dictionary<Type, FutureType> IgniteFutureTypeMap
             = new Dictionary<Type, FutureType>
@@ -122,6 +132,135 @@ namespace Apache.Ignite.Core.Impl
                 stream.SynchronizeInput();
 
                 return action(stream);
+            }
+        }
+
+        /** <inheritdoc /> */
+        public TR DoOutInOp<TR>(int type, Action<BinaryWriter> outAction, Func<IBinaryStream, TR> inAction)
+        {
+            using (var outStream = IgniteManager.Memory.Allocate().GetStream())
+            using (var inStream = IgniteManager.Memory.Allocate().GetStream())
+            {
+                var writer = _marsh.StartMarshal(outStream);
+
+                outAction(writer);
+
+                FinishMarshal(writer);
+
+                UU.TargetInStreamOutStream(_target, type, outStream.SynchronizeOutput(), inStream.MemoryPointer);
+
+                inStream.SynchronizeInput();
+
+                return inAction(inStream);
+            }
+        }
+
+        /** <inheritdoc /> */
+        public TR DoOutInOpX<TR>(int type, Action<BinaryWriter> outAction, Func<IBinaryStream, long, TR> inAction, Func<IBinaryStream, Exception> inErrorAction)
+        {
+            Debug.Assert(inErrorAction != null);
+
+            using (var stream = IgniteManager.Memory.Allocate().GetStream())
+            {
+                var writer = _marsh.StartMarshal(stream);
+
+                outAction(writer);
+
+                FinishMarshal(writer);
+
+                var res = UU.TargetInStreamOutLong(_target, type, stream.SynchronizeOutput());
+
+                if (res != Error && inAction == null)
+                    return default(TR);  // quick path for void operations
+
+                stream.SynchronizeInput();
+
+                stream.Seek(0, SeekOrigin.Begin);
+
+                if (res != Error)
+                    return inAction != null ? inAction(stream, res) : default(TR);
+
+                throw inErrorAction(stream);
+            }
+        }
+
+        /** <inheritdoc /> */
+        public bool DoOutInOpX(int type, Action<BinaryWriter> outAction, Func<IBinaryStream, Exception> inErrorAction)
+        {
+            Debug.Assert(inErrorAction != null);
+
+            using (var stream = IgniteManager.Memory.Allocate().GetStream())
+            {
+                var writer = _marsh.StartMarshal(stream);
+
+                outAction(writer);
+
+                FinishMarshal(writer);
+
+                var res = UU.TargetInStreamOutLong(_target, type, stream.SynchronizeOutput());
+
+                if (res != Error)
+                    return res == True;
+
+                stream.SynchronizeInput();
+
+                stream.Seek(0, SeekOrigin.Begin);
+
+                throw inErrorAction(stream);
+            }
+        }
+
+        /** <inheritdoc /> */
+        public unsafe TR DoOutInOp<TR>(int type, Action<BinaryWriter> outAction, 
+            Func<IBinaryStream, IPlatformTargetInternal, TR> inAction, IPlatformTargetInternal arg)
+        {
+            PlatformMemoryStream outStream = null;
+            long outPtr = 0;
+
+            PlatformMemoryStream inStream = null;
+            long inPtr = 0;
+
+            try
+            {
+                if (outAction != null)
+                {
+                    outStream = IgniteManager.Memory.Allocate().GetStream();
+                    var writer = _marsh.StartMarshal(outStream);
+                    outAction(writer);
+                    FinishMarshal(writer);
+                    outPtr = outStream.SynchronizeOutput();
+                }
+
+                if (inAction != null)
+                {
+                    inStream = IgniteManager.Memory.Allocate().GetStream();
+                    inPtr = inStream.MemoryPointer;
+                }
+
+                var res = UU.TargetInObjectStreamOutObjectStream(_target, type, 
+                    ((PlatformJniTarget)arg).Target.Target, outPtr, inPtr);
+
+                if (inAction == null)
+                    return default(TR);
+
+                inStream.SynchronizeInput();
+
+                return inAction(inStream, new PlatformJniTarget(res, _marsh));
+
+            }
+            finally
+            {
+                try
+                {
+                    if (inStream != null)
+                        inStream.Dispose();
+
+                }
+                finally
+                {
+                    if (outStream != null)
+                        outStream.Dispose();
+                }
             }
         }
 

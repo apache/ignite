@@ -226,23 +226,7 @@ namespace Apache.Ignite.Core.Impl
         /// <returns>Result.</returns>
         protected TR DoOutInOp<TR>(int type, Action<BinaryWriter> outAction, Func<IBinaryStream, TR> inAction)
         {
-            using (PlatformMemoryStream outStream = IgniteManager.Memory.Allocate().GetStream())
-            {
-                using (PlatformMemoryStream inStream = IgniteManager.Memory.Allocate().GetStream())
-                {
-                    BinaryWriter writer = _marsh.StartMarshal(outStream);
-
-                    outAction(writer);
-
-                    FinishMarshal(writer);
-
-                    UU.TargetInStreamOutStream(_target, type, outStream.SynchronizeOutput(), inStream.MemoryPointer);
-
-                    inStream.SynchronizeInput();
-
-                    return inAction(inStream);
-                }
-            }
+            return _target.DoOutInOp(type, outAction, inAction);
         }
 
         /// <summary>
@@ -259,30 +243,7 @@ namespace Apache.Ignite.Core.Impl
         protected TR DoOutInOpX<TR>(int type, Action<BinaryWriter> outAction, Func<IBinaryStream, long, TR> inAction,
             Func<IBinaryStream, Exception> inErrorAction)
         {
-            Debug.Assert(inErrorAction != null);
-
-            using (var stream = IgniteManager.Memory.Allocate().GetStream())
-            {
-                var writer = _marsh.StartMarshal(stream);
-
-                outAction(writer);
-
-                FinishMarshal(writer);
-
-                var res = UU.TargetInStreamOutLong(_target, type, stream.SynchronizeOutput());
-
-                if (res != Error && inAction == null)
-                    return default(TR);  // quick path for void operations
-
-                stream.SynchronizeInput();
-
-                stream.Seek(0, SeekOrigin.Begin);
-
-                if (res != Error)
-                    return inAction != null ? inAction(stream, res) : default(TR);
-
-                throw inErrorAction(stream);
-            }
+            return Target.DoOutInOpX(type, outAction, inAction, inErrorAction);
         }
 
         /// <summary>
@@ -297,27 +258,7 @@ namespace Apache.Ignite.Core.Impl
         protected bool DoOutInOpX(int type, Action<BinaryWriter> outAction,
             Func<IBinaryStream, Exception> inErrorAction)
         {
-            Debug.Assert(inErrorAction != null);
-
-            using (var stream = IgniteManager.Memory.Allocate().GetStream())
-            {
-                var writer = _marsh.StartMarshal(stream);
-
-                outAction(writer);
-
-                FinishMarshal(writer);
-
-                var res = UU.TargetInStreamOutLong(_target, type, stream.SynchronizeOutput());
-
-                if (res != Error)
-                    return res == True;
-
-                stream.SynchronizeInput();
-
-                stream.Seek(0, SeekOrigin.Begin);
-
-                throw inErrorAction(stream);
-            }
+            return Target.DoOutInOpX(type, outAction, inErrorAction);
         }
 
         /// <summary>
@@ -328,56 +269,10 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="inAction">In action.</param>
         /// <param name="arg">Argument.</param>
         /// <returns>Result.</returns>
-        protected unsafe TR DoOutInOp<TR>(int type, Action<BinaryWriter> outAction,
+        protected TR DoOutInOp<TR>(int type, Action<BinaryWriter> outAction,
             Func<IBinaryStream, IPlatformTargetInternal, TR> inAction, IPlatformTargetInternal arg)
         {
-            PlatformMemoryStream outStream = null;
-            long outPtr = 0;
-
-            PlatformMemoryStream inStream = null;
-            long inPtr = 0;
-
-            try
-            {
-                if (outAction != null)
-                {
-                    outStream = IgniteManager.Memory.Allocate().GetStream();
-                    var writer = _marsh.StartMarshal(outStream);
-                    outAction(writer);
-                    FinishMarshal(writer);
-                    outPtr = outStream.SynchronizeOutput();
-                }
-
-                if (inAction != null)
-                {
-                    inStream = IgniteManager.Memory.Allocate().GetStream();
-                    inPtr = inStream.MemoryPointer;
-                }
-
-                var res = UU.TargetInObjectStreamOutObjectStream(_target, type, arg, outPtr, inPtr);
-
-                if (inAction == null)
-                    return default(TR);
-
-                inStream.SynchronizeInput();
-
-                return inAction(inStream, res);
-
-            }
-            finally
-            {
-                try
-                {
-                    if (inStream != null)
-                        inStream.Dispose();
-
-                }
-                finally
-                {
-                    if (outStream != null)
-                        outStream.Dispose();
-                }
-            }
+            return Target.DoOutInOp(type, outAction, inAction, arg);
         }
 
         /// <summary>
