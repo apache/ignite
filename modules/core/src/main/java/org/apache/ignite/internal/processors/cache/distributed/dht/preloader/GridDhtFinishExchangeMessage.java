@@ -23,19 +23,13 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectTransient;
-import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Message is send to finish exchange.
@@ -60,10 +54,6 @@ public class GridDhtFinishExchangeMessage extends GridCacheMessage {
     @GridToStringInclude
     private GridDhtPartitionsFullMessage partFullMsg;
 
-    /** */
-    @GridToStringInclude
-    private UUID ackUuid;
-
     /**
      * Default constructor.
      */
@@ -79,12 +69,10 @@ public class GridDhtFinishExchangeMessage extends GridCacheMessage {
     public GridDhtFinishExchangeMessage(
         GridDhtPartitionExchangeId exchId,
         Map<Integer, Map<Integer, List<UUID>>> assignmentChange,
-        GridDhtPartitionsFullMessage partFullMsg,
-        UUID ackUuid) {
+        GridDhtPartitionsFullMessage partFullMsg) {
         this.exchId = exchId;
         this.assignmentChange = assignmentChange;
         this.partFullMsg = partFullMsg;
-        this.ackUuid = ackUuid;
     }
 
     /**
@@ -146,7 +134,7 @@ public class GridDhtFinishExchangeMessage extends GridCacheMessage {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 7;
+        return 6;
     }
 
     /**
@@ -161,20 +149,6 @@ public class GridDhtFinishExchangeMessage extends GridCacheMessage {
      */
     public void partitionFullMessage(GridDhtPartitionsFullMessage partFullMsg) {
         this.partFullMsg = partFullMsg;
-    }
-
-    /**
-     * @param ackUuid New ack uuid.
-     */
-    public void ackUuid(UUID ackUuid) {
-        this.ackUuid = ackUuid;
-    }
-
-    /**
-     * @return Ack uuid.
-     */
-    public UUID ackUuid() {
-        return ackUuid;
     }
 
     /** {@inheritDoc} */
@@ -193,24 +167,18 @@ public class GridDhtFinishExchangeMessage extends GridCacheMessage {
 
         switch (writer.state()) {
             case 3:
-                if (!writer.writeUuid("ackUuid", ackUuid))
-                    return false;
-
-                writer.incrementState();
-
-            case 4:
                 if (!writer.writeMessage("exchId", exchId))
                     return false;
 
                 writer.incrementState();
 
-            case 5:
+            case 4:
                 if (!writer.writeMessage("partFullMsg", partFullMsg))
                     return false;
 
                 writer.incrementState();
 
-            case 6:
+            case 5:
                 if (!writer.writeByteArray("serializedAssignmentChange", serializedAssignmentChange))
                     return false;
 
@@ -233,14 +201,6 @@ public class GridDhtFinishExchangeMessage extends GridCacheMessage {
 
         switch (reader.state()) {
             case 3:
-                ackUuid = reader.readUuid("ackUuid");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 4:
                 exchId = reader.readMessage("exchId");
 
                 if (!reader.isLastRead())
@@ -248,7 +208,7 @@ public class GridDhtFinishExchangeMessage extends GridCacheMessage {
 
                 reader.incrementState();
 
-            case 5:
+            case 4:
                 partFullMsg = reader.readMessage("partFullMsg");
 
                 if (!reader.isLastRead())
@@ -256,7 +216,7 @@ public class GridDhtFinishExchangeMessage extends GridCacheMessage {
 
                 reader.incrementState();
 
-            case 6:
+            case 5:
                 serializedAssignmentChange = reader.readByteArray("serializedAssignmentChange");
 
                 if (!reader.isLastRead())
