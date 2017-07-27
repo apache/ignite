@@ -61,7 +61,7 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="writeAction">Write action.</param>
         /// <param name="readAction">Read action.</param>
         /// <returns>Result.</returns>
-        T InStreamOutStream<T>(int type, Action<BinaryWriter> writeAction, Func<IBinaryStream, T> readAction);
+        T InStreamOutStream<T>(int type, Action<IBinaryStream> writeAction, Func<IBinaryStream, T> readAction);
 
         /// <summary>
         /// Performs InStreamOutObject operation.

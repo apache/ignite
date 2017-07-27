@@ -223,7 +223,7 @@ namespace Apache.Ignite.Core.Impl
         /// <returns>Result.</returns>
         protected TR DoOutInOp<TR>(int type, Action<BinaryWriter> outAction, Func<IBinaryStream, TR> inAction)
         {
-            return _target.InStreamOutStream(type, outAction, inAction);
+            return _target.InStreamOutStream(type, stream => WriteToStream(outAction, stream, _marsh), inAction);
         }
 
         /// <summary>
@@ -282,7 +282,8 @@ namespace Apache.Ignite.Core.Impl
         /// <returns>Result.</returns>
         protected TR DoOutInOp<TR>(int type, Action<BinaryWriter> outAction)
         {
-            return _target.InStreamOutStream(type, outAction, stream => Unmarshal<TR>(stream));
+            return _target.InStreamOutStream(type, stream => WriteToStream(outAction, stream, _marsh), 
+                stream => Unmarshal<TR>(stream));
         }
 
         /// <summary>
@@ -293,7 +294,8 @@ namespace Apache.Ignite.Core.Impl
         /// <returns>Result.</returns>
         protected TR DoOutInOp<T1, TR>(int type, T1 val)
         {
-            return _target.InStreamOutStream(type, writer => writer.WriteObject(val), stream => Unmarshal<TR>(stream));
+            return _target.InStreamOutStream(type, stream => WriteToStream(val, stream, _marsh),
+                stream => Unmarshal<TR>(stream));
         }
 
         /// <summary>
@@ -516,6 +518,18 @@ namespace Apache.Ignite.Core.Impl
             var writer = marsh.StartMarshal(stream);
 
             action(writer);
+
+            marsh.FinishMarshal(writer);
+        }
+
+        /// <summary>
+        /// Writes to stream.
+        /// </summary>
+        private static void WriteToStream<T>(T obj, IBinaryStream stream, Marshaller marsh)
+        {
+            var writer = marsh.StartMarshal(stream);
+
+            writer.WriteObject(obj);
 
             marsh.FinishMarshal(writer);
         }
