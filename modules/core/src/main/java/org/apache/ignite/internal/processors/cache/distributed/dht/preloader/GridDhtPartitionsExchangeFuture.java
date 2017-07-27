@@ -127,7 +127,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     @GridToStringExclude
     private final Set<UUID> remaining = new HashSet<>();
 
-    /** */
+    /** Guarded by this */
     @GridToStringExclude
     private int pendingSingleUpdates;
 
@@ -154,7 +154,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     @GridToStringExclude
     private final CountDownLatch evtLatch = new CountDownLatch(1);
 
-    /** */
+    /** Exchange future init method completes this future. */
     private GridFutureAdapter<Boolean> initFut;
 
     /** */
@@ -196,7 +196,10 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     /** Init timestamp. Used to track the amount of time spent to complete the future. */
     private long initTs;
 
-    /** */
+    /**
+     * Centralized affinity assignment required. Activated for node left of failed. For this mode crd will send full
+     * partitions maps to nodes using discovery (ring) instead of communication.
+     */
     private boolean centralizedAff;
 
     /** Change global state exception. */
@@ -613,7 +616,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     top.update(topologyVersion(),
                         clientTop.partitionMap(true),
                         clientTop.updateCounters(false),
-                        Collections.<Integer>emptySet());
+                        Collections.<Integer>emptySet(),
+                        null);
                 }
             }
 
@@ -1092,7 +1096,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
-     * @param node Node.
+     * @param node Target Node.
      * @throws IgniteCheckedException If failed.
      */
     private void sendLocalPartitions(ClusterNode node) throws IgniteCheckedException {
@@ -1191,7 +1195,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
-     * @param oldestNode Oldest node.
+     * @param oldestNode Oldest node. Target node to send message to.
      */
     private void sendPartitions(ClusterNode oldestNode) {
         try {
@@ -1368,6 +1372,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
+     * Processing of received single message. Actual processing in future may be delayed if init method was not
+     * completed, see {@link #initDone()}
+     *
      * @param node Sender node.
      * @param msg Single partition info.
      */
@@ -1409,11 +1416,14 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
+     * Note this method performs heavy updatePartitionSingleMap operation, this operation is moved out from the
+     * synchronized block. Only count of such updates {@link #pendingSingleUpdates} is managed under critical section.
+     *
      * @param node Sender node.
-     * @param msg Message.
+     * @param msg Partition single message.
      */
     private void processMessage(ClusterNode node, GridDhtPartitionsSingleMessage msg) {
-        boolean allReceived = false;
+        boolean allReceived = false; // Received all expected messages.
         boolean updateSingleMap = false;
 
         synchronized (this) {
@@ -1895,7 +1905,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
     /**
      * @param node Sender node.
-     * @param msg Message.
+     * @param msg Message with full partition info.
      */
     private void processMessage(ClusterNode node, GridDhtPartitionsFullMessage msg) {
         assert exchId.equals(msg.exchangeId()) : msg;
@@ -1953,7 +1963,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 grp.topology().update(topologyVersion(),
                     entry.getValue(),
                     cntrMap,
-                    msg.partsToReload(cctx.localNodeId(), grpId));
+                    msg.partsToReload(cctx.localNodeId(), grpId),
+                    null);
             }
             else {
                 ClusterNode oldest = cctx.discovery().oldestAliveCacheServerNode(AffinityTopologyVersion.NONE);
@@ -1962,7 +1973,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     cctx.exchange().clientTopology(grpId, this).update(topologyVersion(),
                         entry.getValue(),
                         cntrMap,
-                        Collections.<Integer>emptySet());
+                        Collections.<Integer>emptySet(),
+                        null);
                 }
             }
         }
@@ -2054,7 +2066,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
-     *
+     * Moves exchange future to state 'init done' using {@link #initFut}.
      */
     private void initDone() {
         while (!isDone()) {
