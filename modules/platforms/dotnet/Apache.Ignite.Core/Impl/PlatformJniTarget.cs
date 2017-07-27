@@ -103,7 +103,8 @@ namespace Apache.Ignite.Core.Impl
                 writeAction(stream);
 
                 var target = UU.TargetInStreamOutObject(_target, type, stream.SynchronizeOutput());
-                return new PlatformJniTarget(target, _marsh);
+
+                return target == null ? null : new PlatformJniTarget(target, _marsh);
             }
         }
 
@@ -204,7 +205,9 @@ namespace Apache.Ignite.Core.Impl
 
                 inStream.SynchronizeInput();
 
-                return readAction(inStream, new PlatformJniTarget(res, _marsh));
+                var target = res == null ? null : new PlatformJniTarget(res, _marsh);
+
+                return readAction(inStream, target);
 
             }
             finally
