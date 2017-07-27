@@ -20,12 +20,14 @@ package org.apache.ignite.ml.math.util;
 import java.util.List;
 import org.apache.ignite.internal.util.GridArgumentCheck;
 import org.apache.ignite.ml.math.Matrix;
+import org.apache.ignite.ml.math.StorageConstants;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.impls.matrix.CacheMatrix;
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.ml.math.impls.matrix.MatrixView;
 import org.apache.ignite.ml.math.impls.matrix.PivotedMatrixView;
 import org.apache.ignite.ml.math.impls.matrix.RandomMatrix;
+import org.apache.ignite.ml.math.impls.matrix.SparseLocalOnHeapMatrix;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 
 /**
@@ -53,7 +55,7 @@ public class MatrixUtil {
      */
     public static Matrix identityLike(Matrix matrix, int n) {
         Matrix res = like(matrix, n, n);
-        // TODO: Maybe we should introduce API for walking(and changing) matrix in
+        // TODO: IGNITE-5216, Maybe we should introduce API for walking(and changing) matrix in.
         // a fastest possible visiting order.
         for (int i = 0; i < n; i++)
             res.setX(i, i, 1.0);
@@ -116,6 +118,18 @@ public class MatrixUtil {
     }
 
     /** */
+    public static DenseLocalOnHeapMatrix asDense(SparseLocalOnHeapMatrix m, int acsMode) {
+        DenseLocalOnHeapMatrix res = new DenseLocalOnHeapMatrix(m.rowSize(), m.columnSize(), acsMode);
+
+        for (Integer row : m.indexesMap().keySet()) {
+            for (Integer col : m.indexesMap().get(row))
+                res.set(row, col, m.get(row, col));
+        }
+
+        return res;
+    }
+
+    /** */
     private static boolean isCopyLikeSupport(Matrix matrix) {
         return matrix instanceof RandomMatrix || matrix instanceof MatrixView || matrix instanceof CacheMatrix ||
             matrix instanceof PivotedMatrixView;
@@ -143,12 +157,46 @@ public class MatrixUtil {
         return res;
     }
 
-    /** TODO: rewrite in a more optimal way. */
+    /** TODO: IGNTIE-5723, rewrite in a more optimal way. */
     public static DenseLocalOnHeapVector localCopyOf(Vector vec) {
         DenseLocalOnHeapVector res = new DenseLocalOnHeapVector(vec.size());
 
         for (int i = 0; i < vec.size(); i++)
             res.setX(i, vec.getX(i));
+
+        return res;
+    }
+
+    /** */
+    public static double[][] unflatten(double[] fArr, int colsCnt) {
+        int rowsCnt = fArr.length / colsCnt;
+
+        double[][] res = new double[rowsCnt][colsCnt];
+
+        for (int i = 0; i < rowsCnt; i++)
+            for (int j = 0; j < colsCnt; j++)
+                res[i][j] = fArr[i * colsCnt + j];
+
+        return res;
+    }
+
+    /** */
+    public static double[] flatten(double[][] arr, int acsMode) {
+        assert arr != null;
+        assert arr[0] != null;
+
+        int size = arr.length * arr[0].length;
+        int rows = acsMode == StorageConstants.ROW_STORAGE_MODE ? arr.length : arr[0].length;
+        int cols = size / rows;
+
+        double[] res = new double[size];
+
+        int iLim = acsMode == StorageConstants.ROW_STORAGE_MODE ? rows : cols;
+        int jLim = acsMode == StorageConstants.ROW_STORAGE_MODE ? cols : rows;
+
+        for (int i = 0; i < iLim; i++)
+            for (int j = 0; j < jLim; j++)
+                res[i * jLim + j] = arr[i][j];
 
         return res;
     }

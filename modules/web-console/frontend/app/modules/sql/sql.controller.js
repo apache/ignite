@@ -1247,7 +1247,7 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
 
             const chartHistory = paragraph.chartHistory;
 
-                // Clear history on query change.
+            // Clear history on query change.
             if (clearChart) {
                 chartHistory.length = 0;
 

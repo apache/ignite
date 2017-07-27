@@ -541,11 +541,6 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     @Override public Map<Integer, BinaryType> metadata(Collection<Integer> typeIds)
         throws BinaryObjectException {
         try {
-            Collection<BinaryMetadataKey> keys = new ArrayList<>(typeIds.size());
-
-            for (Integer typeId : typeIds)
-                keys.add(new BinaryMetadataKey(typeId));
-
             Map<Integer, BinaryType> res = U.newHashMap(metadataLocCache.size());
 
             for (Map.Entry<Integer, BinaryMetadataHolder> e : metadataLocCache.entrySet())

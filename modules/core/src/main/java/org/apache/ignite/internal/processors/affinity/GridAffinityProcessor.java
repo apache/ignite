@@ -471,7 +471,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
                     continue;
                 }
 
-                affMap.remove(cacheName, fut0);
+                affMap.remove(key, fut0);
 
                 fut0.onDone(new IgniteCheckedException("Failed to get affinity mapping from node: " + n, e));
 

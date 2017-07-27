@@ -28,14 +28,34 @@
 #include <ignite/impl/cluster/cluster_group_impl.h>
 #include <ignite/impl/compute/compute_impl.h>
 
+using namespace ignite::impl::interop;
+using namespace ignite::common::concurrent;
+using namespace ignite::impl::binary;
+using namespace ignite::binary;
+
 namespace ignite 
 {
     namespace impl 
     {
+        /*
+        * PlatformProcessor op codes.
+        */
+        struct ProcessorOp
+        {
+            enum Type
+            {
+                GET_CACHE = 1,
+                CREATE_CACHE = 2,
+                GET_OR_CREATE_CACHE = 3,
+                GET_TRANSACTIONS = 9,
+                GET_CLUSTER_GROUP = 10,
+            };
+        };
+
         /**
          * Ignite implementation.
          */
-        class IGNITE_FRIEND_EXPORT IgniteImpl
+        class IGNITE_FRIEND_EXPORT IgniteImpl : private interop::InteropTarget
         {
             typedef common::concurrent::SharedPointer<IgniteEnvironment> SP_IgniteEnvironment;
             typedef common::concurrent::SharedPointer<transactions::TransactionsImpl> SP_TransactionsImpl;
@@ -48,13 +68,8 @@ namespace ignite
              * @param env Environment.
              * @param javaRef Reference to java object.
              */
-            IgniteImpl(SP_IgniteEnvironment env, jobject javaRef);
+            IgniteImpl(SP_IgniteEnvironment env);
             
-            /**
-             * Destructor.
-             */
-            ~IgniteImpl();
-
             /**
              * Get name of the Ignite.
              *
@@ -82,23 +97,9 @@ namespace ignite
              * @param name Cache name.
              * @param err Error.
              */
-            template<typename K, typename V> 
             cache::CacheImpl* GetCache(const char* name, IgniteError& err)
             {
-                ignite::jni::java::JniErrorInfo jniErr;
-
-                jobject cacheJavaRef = env.Get()->Context()->ProcessorCache(javaRef, name, &jniErr);
-
-                if (!cacheJavaRef)
-                {
-                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
-
-                    return NULL;
-                }
-
-                char* name0 = common::CopyChars(name);
-
-                return new cache::CacheImpl(name0, env, cacheJavaRef);
+                return GetOrCreateCache(name, err, ProcessorOp::GET_CACHE);
             }
 
             /**
@@ -107,23 +108,9 @@ namespace ignite
              * @param name Cache name.
              * @param err Error.
              */
-            template<typename K, typename V>
             cache::CacheImpl* GetOrCreateCache(const char* name, IgniteError& err)
             {
-                ignite::jni::java::JniErrorInfo jniErr;
-
-                jobject cacheJavaRef = env.Get()->Context()->ProcessorGetOrCreateCache(javaRef, name, &jniErr);
-
-                if (!cacheJavaRef)
-                {
-                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
-
-                    return NULL;
-                }
-
-                char* name0 = common::CopyChars(name);
-
-                return new cache::CacheImpl(name0, env, cacheJavaRef);
+                return GetOrCreateCache(name, err, ProcessorOp::GET_OR_CREATE_CACHE);
             }
 
             /**
@@ -132,23 +119,9 @@ namespace ignite
              * @param name Cache name.
              * @param err Error.
              */
-            template<typename K, typename V>
             cache::CacheImpl* CreateCache(const char* name, IgniteError& err)
             {
-                ignite::jni::java::JniErrorInfo jniErr;
-
-                jobject cacheJavaRef = env.Get()->Context()->ProcessorCreateCache(javaRef, name, &jniErr);
-
-                if (!cacheJavaRef)
-                {
-                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
-
-                    return NULL;
-                }
-
-                char* name0 = common::CopyChars(name);
-
-                return new cache::CacheImpl(name0, env, cacheJavaRef);
+                return GetOrCreateCache(name, err, ProcessorOp::CREATE_CACHE);
             }
 
             /**
@@ -227,9 +200,6 @@ namespace ignite
             /** Environment. */
             SP_IgniteEnvironment env;
 
-            /** Native Java counterpart. */
-            jobject javaRef;
-
             /** Transactions implementaion. */
             SP_TransactionsImpl txImpl;
 
@@ -237,6 +207,38 @@ namespace ignite
             cluster::SP_ClusterGroupImpl prjImpl;
 
             IGNITE_NO_COPY_ASSIGNMENT(IgniteImpl)
+
+            /**
+            * Get or create cache.
+            *
+            * @param name Cache name.
+            * @param err Error.
+            * @param op Operation code.
+            */
+            cache::CacheImpl* GetOrCreateCache(const char* name, IgniteError& err, int32_t op)
+            {
+                SharedPointer<InteropMemory> mem = env.Get()->AllocateMemory();
+                InteropMemory* mem0 = mem.Get();
+                InteropOutputStream out(mem0);
+                BinaryWriterImpl writer(&out, env.Get()->GetTypeManager());
+                BinaryRawWriter rawWriter(&writer);
+
+                rawWriter.WriteString(name);
+
+                out.Synchronize();
+
+                jobject cacheJavaRef = InStreamOutObject(op, *mem0, err);
+
+                if (!cacheJavaRef)
+                {
+                    return NULL;
+                }
+
+                char* name0 = common::CopyChars(name);
+
+                return new cache::CacheImpl(name0, env, cacheJavaRef);
+            }
+
         };
     }
 }

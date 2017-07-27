@@ -15,16 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.internal.processors.cache.jta;
 
 import org.apache.ignite.cache.CacheMode;
 
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 
 /**
- * Lookup class name based JTA integration test using REPLICATED cache.
+ * Factory JTA integration test using REPLICATED cache.
  */
-public class GridReplicatedCacheJtaLookupClassNameSelfTest extends GridPartitionedCacheJtaLookupClassNameSelfTest {
+public class GridReplicatedCacheJtaFactorySelfTest extends GridPartitionedCacheJtaFactorySelfTest {
     /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {
         return REPLICATED;

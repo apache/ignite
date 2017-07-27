@@ -15,18 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
-
-import org.apache.ignite.configuration.IgniteConfiguration;
-
 /**
- * Factory JTA integration test using REPLICATED cache.
+ * <!-- Package description. -->
+ * Contains internal tests or test related classes and interfaces.
  */
-public class GridReplicatedCacheJtaFactoryUseSyncSelfTest extends GridReplicatedCacheJtaFactorySelfTest {
-    /** {@inheritDoc} */
-    @Override protected void configureJta(IgniteConfiguration cfg) {
-        super.configureJta(cfg);
-
-        cfg.getTransactionConfiguration().setUseJtaSynchronization(true);
-    }
-}
+package org.apache.ignite.internal.processors.cache.jta;

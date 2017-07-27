@@ -15,18 +15,10 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.ml.math;
 
-import org.apache.ignite.cache.CacheMode;
-
-import static org.apache.ignite.cache.CacheMode.REPLICATED;
-
-/**
- * Factory JTA integration test using REPLICATED cache.
- */
-public class GridReplicatedCacheJtaFactorySelfTest extends GridPartitionedCacheJtaFactorySelfTest {
-    /** {@inheritDoc} */
-    @Override protected CacheMode cacheMode() {
-        return REPLICATED;
-    }
+/** Interface for matrix with particular order for storing entities. */
+public interface OrderedMatrix {
+    /** Get access mode. */
+    public int accessMode();
 }
