@@ -33,15 +33,6 @@ namespace Apache.Ignite.Core.Impl
         Marshaller Marshaller { get; }
 
         /// <summary>
-        /// Performs OutStream operation.
-        /// </summary>
-        /// <typeparam name="T">Result type.</typeparam>
-        /// <param name="type">Operation type code.</param>
-        /// <param name="readAction">Read action.</param>
-        /// <returns>Result.</returns>
-        T OutStream<T>(int type, Func<IBinaryStream, T> readAction);
-
-        /// <summary>
         /// Performs InStreamOutLong operation.
         /// </summary>
         /// <param name="type">Operation type code.</param>
@@ -96,7 +87,7 @@ namespace Apache.Ignite.Core.Impl
         /// <returns>
         /// Result.
         /// </returns>
-        bool DoOutInOpX(int type, Action<BinaryWriter> writeAction, Func<IBinaryStream, Exception> readErrorAction);
+        bool InStreamOutLong(int type, Action<BinaryWriter> writeAction, Func<IBinaryStream, Exception> readErrorAction);
 
         /// <summary>
         /// Performs InObjectStreamOutObjectStream operation.
@@ -109,5 +100,14 @@ namespace Apache.Ignite.Core.Impl
         /// <returns>Result.</returns>
         T InObjectStreamOutObjectStream<T>(int type, Action<BinaryWriter> writeAction,
             Func<IBinaryStream, IPlatformTargetInternal, T> readAction, IPlatformTargetInternal arg);
+
+        /// <summary>
+        /// Performs OutStream operation.
+        /// </summary>
+        /// <typeparam name="T">Result type.</typeparam>
+        /// <param name="type">Operation type code.</param>
+        /// <param name="readAction">Read action.</param>
+        /// <returns>Result.</returns>
+        T OutStream<T>(int type, Func<IBinaryStream, T> readAction);
     }
 }

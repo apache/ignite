@@ -262,7 +262,7 @@ namespace Apache.Ignite.Core.Impl
         protected bool DoOutInOpX(int type, Action<BinaryWriter> outAction,
             Func<IBinaryStream, Exception> inErrorAction)
         {
-            return _target.DoOutInOpX(type, outAction, inErrorAction);
+            return _target.InStreamOutLong(type, outAction, inErrorAction);
         }
 
         /// <summary>
