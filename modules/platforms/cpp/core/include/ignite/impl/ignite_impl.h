@@ -28,11 +28,6 @@
 #include <ignite/impl/cluster/cluster_group_impl.h>
 #include <ignite/impl/compute/compute_impl.h>
 
-using namespace ignite::impl::interop;
-using namespace ignite::common::concurrent;
-using namespace ignite::impl::binary;
-using namespace ignite::binary;
-
 namespace ignite 
 {
     namespace impl 
@@ -66,7 +61,6 @@ namespace ignite
              * Constructor used to create new instance.
              *
              * @param env Environment.
-             * @param javaRef Reference to java object.
              */
             IgniteImpl(SP_IgniteEnvironment env);
             
@@ -215,30 +209,7 @@ namespace ignite
             * @param err Error.
             * @param op Operation code.
             */
-            cache::CacheImpl* GetOrCreateCache(const char* name, IgniteError& err, int32_t op)
-            {
-                SharedPointer<InteropMemory> mem = env.Get()->AllocateMemory();
-                InteropMemory* mem0 = mem.Get();
-                InteropOutputStream out(mem0);
-                BinaryWriterImpl writer(&out, env.Get()->GetTypeManager());
-                BinaryRawWriter rawWriter(&writer);
-
-                rawWriter.WriteString(name);
-
-                out.Synchronize();
-
-                jobject cacheJavaRef = InStreamOutObject(op, *mem0, err);
-
-                if (!cacheJavaRef)
-                {
-                    return NULL;
-                }
-
-                char* name0 = common::CopyChars(name);
-
-                return new cache::CacheImpl(name0, env, cacheJavaRef);
-            }
-
+            cache::CacheImpl* GetOrCreateCache(const char* name, IgniteError& err, int32_t op);
         };
     }
 }
