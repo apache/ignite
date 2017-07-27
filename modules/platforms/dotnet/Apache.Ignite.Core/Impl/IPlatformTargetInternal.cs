@@ -27,24 +27,27 @@ namespace Apache.Ignite.Core.Impl
     /// </summary>
     internal interface IPlatformTargetInternal : IPlatformTarget, IDisposable  // TODO: Verify consistent naming.
     {
+        /// <summary>
+        /// Gets the marshaller.
+        /// </summary>
         Marshaller Marshaller { get; }
-
-        long OutOp(int type, Action<IBinaryStream> action);
-
-        IPlatformTargetInternal OutOpObject(int type, Action<IBinaryStream> action);
-        
-        IPlatformTargetInternal OutOpObject(int type);
 
         T InOp<T>(int type, Func<IBinaryStream, T> action);
 
-        TR DoOutInOp<TR>(int type, Action<BinaryWriter> outAction, Func<IBinaryStream, TR> inAction);
+        long OutOp(int type, Action<IBinaryStream> action);
 
-        TR DoOutInOpX<TR>(int type, Action<BinaryWriter> outAction, Func<IBinaryStream, long, TR> inAction,
+        IPlatformTargetInternal OutOpObject(int type);
+
+        IPlatformTargetInternal OutOpObject(int type, Action<IBinaryStream> action);
+        
+        T DoOutInOp<T>(int type, Action<BinaryWriter> outAction, Func<IBinaryStream, T> inAction);
+
+        T DoOutInOpX<T>(int type, Action<BinaryWriter> outAction, Func<IBinaryStream, long, T> inAction,
             Func<IBinaryStream, Exception> inErrorAction);
 
         bool DoOutInOpX(int type, Action<BinaryWriter> outAction, Func<IBinaryStream, Exception> inErrorAction);
 
-        TR DoOutInOp<TR>(int type, Action<BinaryWriter> outAction,
-            Func<IBinaryStream, IPlatformTargetInternal, TR> inAction, IPlatformTargetInternal arg);
+        T DoOutInOp<T>(int type, Action<BinaryWriter> outAction,
+            Func<IBinaryStream, IPlatformTargetInternal, T> inAction, IPlatformTargetInternal arg);
     }
 }
