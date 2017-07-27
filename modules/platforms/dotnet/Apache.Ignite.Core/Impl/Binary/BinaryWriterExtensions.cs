@@ -127,6 +127,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (col != null)
             {
                 WriteCollection(writer, col, selector);
+                return;
             }
 
             var stream = writer.Stream;
