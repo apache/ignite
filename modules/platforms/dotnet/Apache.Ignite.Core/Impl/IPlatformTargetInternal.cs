@@ -67,7 +67,17 @@ namespace Apache.Ignite.Core.Impl
         /// <returns>Result.</returns>
         T InStreamOutStream<T>(int type, Action<BinaryWriter> writeAction, Func<IBinaryStream, T> readAction);
 
-        T DoOutInOpX<T>(int type, Action<BinaryWriter> outAction, Func<IBinaryStream, long, T> inAction,
+        /// <summary>
+        /// Performs InStreamOutLong operation with stream reuse.
+        /// </summary>
+        /// <param name="type">Operation type code.</param>
+        /// <param name="writeAction">Write action.</param>
+        /// <param name="readAction">Read action.</param>
+        /// <param name="inErrorAction">Error action.</param>
+        /// <returns>
+        /// Result.
+        /// </returns>
+        T InStreamOutLong<T>(int type, Action<BinaryWriter> writeAction, Func<IBinaryStream, long, T> readAction,
             Func<IBinaryStream, Exception> inErrorAction);
 
         bool DoOutInOpX(int type, Action<BinaryWriter> outAction, Func<IBinaryStream, Exception> inErrorAction);

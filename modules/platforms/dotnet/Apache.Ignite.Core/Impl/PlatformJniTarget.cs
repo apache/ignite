@@ -147,7 +147,8 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
-        public TR DoOutInOpX<TR>(int type, Action<BinaryWriter> outAction, Func<IBinaryStream, long, TR> inAction, Func<IBinaryStream, Exception> inErrorAction)
+        public TR InStreamOutLong<TR>(int type, Action<BinaryWriter> outAction, Func<IBinaryStream, long, TR> inAction, 
+            Func<IBinaryStream, Exception> inErrorAction)
         {
             Debug.Assert(inErrorAction != null);
 

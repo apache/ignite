@@ -240,7 +240,7 @@ namespace Apache.Ignite.Core.Impl
         protected TR DoOutInOpX<TR>(int type, Action<BinaryWriter> outAction, Func<IBinaryStream, long, TR> inAction,
             Func<IBinaryStream, Exception> inErrorAction)
         {
-            return Target.DoOutInOpX(type, outAction, inAction, inErrorAction);
+            return Target.InStreamOutLong(type, outAction, inAction, inErrorAction);
         }
 
         /// <summary>
