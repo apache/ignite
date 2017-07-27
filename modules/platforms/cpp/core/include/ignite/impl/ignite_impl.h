@@ -182,6 +182,27 @@ namespace ignite
              */
             SP_ComputeImpl GetCompute();
 
+            /**
+             * Check if the Ignite grid is active.
+             *
+             * @return True if grid is active and false otherwise.
+             */
+            bool IsActive()
+            {
+                return prjImpl.Get()->IsActive();
+            }
+
+            /**
+             * Change Ignite grid state to active or inactive.
+             *
+             * @param active If true start activation process. If false start
+             *    deactivation process.
+             */
+            void SetActive(bool active)
+            {
+                prjImpl.Get()->SetActive(active);
+            }
+
         private:
             /**
              * Get transactions internal call.
@@ -215,30 +236,7 @@ namespace ignite
             * @param err Error.
             * @param op Operation code.
             */
-            cache::CacheImpl* GetOrCreateCache(const char* name, IgniteError& err, int32_t op)
-            {
-                SharedPointer<InteropMemory> mem = env.Get()->AllocateMemory();
-                InteropMemory* mem0 = mem.Get();
-                InteropOutputStream out(mem0);
-                BinaryWriterImpl writer(&out, env.Get()->GetTypeManager());
-                BinaryRawWriter rawWriter(&writer);
-
-                rawWriter.WriteString(name);
-
-                out.Synchronize();
-
-                jobject cacheJavaRef = InStreamOutObject(op, *mem0, err);
-
-                if (!cacheJavaRef)
-                {
-                    return NULL;
-                }
-
-                char* name0 = common::CopyChars(name);
-
-                return new cache::CacheImpl(name0, env, cacheJavaRef);
-            }
-
+            cache::CacheImpl* GetOrCreateCache(const char* name, IgniteError& err, int32_t op);
         };
     }
 }
