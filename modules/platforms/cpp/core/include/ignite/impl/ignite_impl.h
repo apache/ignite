@@ -82,7 +82,7 @@ namespace ignite
              * @param name Cache name.
              * @param err Error.
              */
-            template<typename K, typename V> 
+            template<typename K, typename V>
             cache::CacheImpl* GetCache(const char* name, IgniteError& err)
             {
                 ignite::jni::java::JniErrorInfo jniErr;
@@ -208,6 +208,27 @@ namespace ignite
              * @return ComputeImpl instance.
              */
             SP_ComputeImpl GetCompute();
+
+            /**
+             * Check if the Ignite grid is active.
+             *
+             * @return True if grid is active and false otherwise.
+             */
+            bool IsActive()
+            {
+                return prjImpl.Get()->IsActive();
+            }
+
+            /**
+             * Change Ignite grid state to active or inactive.
+             *
+             * @param active If true start activation process. If false start
+             *    deactivation process.
+             */
+            void SetActive(bool active)
+            {
+                prjImpl.Get()->SetActive(active);
+            }
 
         private:
             /**
