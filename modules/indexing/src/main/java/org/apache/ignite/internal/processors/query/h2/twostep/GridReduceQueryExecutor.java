@@ -540,7 +540,7 @@ public class GridReduceQueryExecutor {
             final long qryReqId = qryIdGen.incrementAndGet();
 
             final ReduceQueryRun r = new ReduceQueryRun(qryReqId, qry.originalSql(), schemaName,
-                h2.connectionForSchema(schemaName), qry.mapQueries().size(), qry.pageSize(),
+                h2.connectionForSchema(schemaName).connection(), qry.mapQueries().size(), qry.pageSize(),
                 U.currentTimeMillis(), cancel);
 
             AffinityTopologyVersion topVer = h2.readyTopologyVersion();
@@ -791,14 +791,15 @@ public class GridReduceQueryExecutor {
 
                         try {
                             if (qry.explain())
-                                return explainPlan(r.connection(), qry, params);
+                                return explainPlan(schemaName, r.connection(), qry, params);
 
                             GridCacheSqlQuery rdc = qry.reduceQuery();
 
-                            ResultSet res = h2.executeSqlQueryWithTimer(r.connection(),
+                            ResultSet res = h2.executeSqlQueryWithTimer(schemaName,
+                                r.connection(),
                                 rdc.query(),
                                 F.asList(rdc.parameters(params)),
-                                false, // The statement will cache some extra thread local objects.
+                                null, // The statement will cache some extra thread local objects.
                                 timeoutMillis,
                                 cancel);
 
@@ -1208,19 +1209,20 @@ public class GridReduceQueryExecutor {
     }
 
     /**
+     * @param schemaName Schema name.
      * @param c Connection.
      * @param qry Query.
      * @param params Query parameters.
      * @return Cursor for plans.
      * @throws IgniteCheckedException if failed.
      */
-    private Iterator<List<?>> explainPlan(JdbcConnection c, GridCacheTwoStepQuery qry, Object[] params)
+    private Iterator<List<?>> explainPlan(@Nullable String schemaName, JdbcConnection c, GridCacheTwoStepQuery qry, Object[] params)
         throws IgniteCheckedException {
         List<List<?>> lists = new ArrayList<>();
 
         for (int i = 0, mapQrys = qry.mapQueries().size(); i < mapQrys; i++) {
             ResultSet rs =
-                h2.executeSqlQueryWithTimer(c, "SELECT PLAN FROM " + mergeTableIdentifier(i), null, false, 0, null);
+                h2.executeSqlQueryWithTimer(null, c, "SELECT PLAN FROM " + mergeTableIdentifier(i), null, null, 0, null);
 
             lists.add(F.asList(getPlan(rs)));
         }
@@ -1235,10 +1237,10 @@ public class GridReduceQueryExecutor {
 
         GridCacheSqlQuery rdc = qry.reduceQuery();
 
-        ResultSet rs = h2.executeSqlQueryWithTimer(c,
+        ResultSet rs = h2.executeSqlQueryWithTimer(schemaName, c,
             "EXPLAIN " + rdc.query(),
             F.asList(rdc.parameters(params)),
-            false,
+            null,
             0,
             null);
 

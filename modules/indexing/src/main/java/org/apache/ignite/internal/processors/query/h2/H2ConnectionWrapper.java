@@ -20,38 +20,41 @@ package org.apache.ignite.internal.processors.query.h2;
 import java.io.Closeable;
 import java.io.IOException;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
- * Wrapper to store connection and flag is schema set or not.
- * TODO I suggest that we merge this with statements cache to manage their lifecycles as a whole,
- * currently they are separated.
- * Also, we would not lose all of cached statements
- * if we used connection, its schema and associated statements all together.
+ * Wrapper to store connection, schema set on that connection and
+ * a statement cache for that connection.
  */
-class H2ConnectionWrapper implements Closeable {
+public class H2ConnectionWrapper implements Closeable {
+    /** */
+    private static final int PREPARED_STMT_CACHE_SIZE = 256;
+
     /** */
     private final Connection conn;
 
     /** */
     private final String schema;
 
-    /** Cache. */
-    private final H2ConnectionCache cache;
+    /** Last usage. */
+    private volatile long lastUsage;
+
+    /** Statement cache. */
+    private final H2StatementCache stmtCache = new H2StatementCache(PREPARED_STMT_CACHE_SIZE);
 
     /**
      * @param conn Connection to use.
      * @param schema Schema name.
-     * @param cache Cache.
      */
-    H2ConnectionWrapper(Connection conn, String schema, H2ConnectionCache cache) {
+    H2ConnectionWrapper(Connection conn, String schema) {
         this.conn = conn;
         this.schema = schema;
-        this.cache = cache;
 
-        cache.put(schema, this);
+        updateLastUsage();
     }
 
     /**
@@ -68,20 +71,51 @@ class H2ConnectionWrapper implements Closeable {
         return conn;
     }
 
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(H2ConnectionWrapper.class, this);
+    /**
+     * @return Statement cache.
+     */
+    public H2StatementCache statementCache() {
+        return stmtCache;
+    }
+
+    /**
+     * The timestamp of the last usage of the connection.
+     *
+     * @return last usage timestamp
+     */
+    public long lastUsage() {
+        return lastUsage;
+    }
+
+    /**
+     * Updates the {@link #lastUsage} timestamp by current time.
+     */
+    public void updateLastUsage() {
+        lastUsage = U.currentTimeMillis();
+    }
+
+    /**
+     * Closes cached statements.
+     */
+    public void closeCachedStatements() {
+        for (PreparedStatement stmt: stmtCache.values())
+            U.closeQuiet(stmt);
     }
 
     /** {@inheritDoc} */
     @Override public void close() throws IOException {
+        closeCachedStatements();
+
         try {
             conn.close();
         }
         catch (SQLException e) {
             throw new IgniteSQLException(e);
         }
+    }
 
-        cache.remove(schema);
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(H2ConnectionWrapper.class, this);
     }
 }

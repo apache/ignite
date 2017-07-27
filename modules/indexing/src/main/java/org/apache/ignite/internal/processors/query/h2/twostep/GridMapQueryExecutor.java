@@ -58,6 +58,7 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshalla
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.cache.query.QueryTable;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
+import org.apache.ignite.internal.processors.query.h2.H2ConnectionWrapper;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode;
@@ -587,7 +588,9 @@ public class GridMapQueryExecutor {
                 }
             }
 
-            Connection conn = h2.connectionForSchema(schemaName);
+            H2ConnectionWrapper c = h2.connectionForSchema(schemaName);
+
+            Connection conn = c.connection();
 
             H2Utils.setupConnection(conn, distributedJoinMode != OFF, enforceJoinOrder);
 
@@ -616,8 +619,8 @@ public class GridMapQueryExecutor {
                     // If we are not the target node for this replicated query, just ignore it.
                     if (qry.node() == null ||
                         (segmentId == 0 && qry.node().equals(ctx.localNodeId()))) {
-                        rs = h2.executeSqlQueryWithTimer(conn, qry.query(),
-                            F.asList(qry.parameters(params)), true,
+                        rs = h2.executeSqlQueryWithTimer(schemaName, conn, qry.query(),
+                            F.asList(qry.parameters(params)), c.statementCache(),
                             timeout,
                             qr.cancels[qryIdx]);
 

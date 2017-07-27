@@ -30,9 +30,6 @@ public class H2StatementCache extends LinkedHashMap<String, PreparedStatement> {
     /** */
     private int size;
 
-    /** Last usage. */
-    private volatile long lastUsage;
-
     /**
      * @param size Size.
      */
@@ -53,21 +50,5 @@ public class H2StatementCache extends LinkedHashMap<String, PreparedStatement> {
         }
 
         return rmv;
-    }
-
-    /**
-     * The timestamp of the last usage of the cache.
-     *
-     * @return last usage timestamp
-     */
-    public long lastUsage() {
-        return lastUsage;
-    }
-
-    /**
-     * Updates the {@link #lastUsage} timestamp by current time.
-     */
-    public void updateLastUsage() {
-        lastUsage = U.currentTimeMillis();
     }
 }
