@@ -2282,8 +2282,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         assert !haveSystemTxForThread(Thread.currentThread().getId());
 
         if(!tx.state(ACTIVE)) {
-            throw new IgniteCheckedException("Trying to suspendTx transaction with incorrect state "
-                + "[expected=" + ACTIVE + ", actual=" + tx.state() + ']');
+            throw new IgniteCheckedException("Trying to resumeTx transaction with incorrect state "
+                + "[expected=" + SUSPENDED + ", actual=" + tx.state() + ']');
         }
 
         long threadId = Thread.currentThread().getId();
