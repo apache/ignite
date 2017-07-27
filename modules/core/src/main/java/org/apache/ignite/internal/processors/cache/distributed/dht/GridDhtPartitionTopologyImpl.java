@@ -465,7 +465,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                         lastTopChangeVer = readyTopVer = evts.topologyVersion();
                     }
-
                     ClusterNode oldest = discoCache.oldestAliveServerNodeWithCache();
 
                     if (log.isDebugEnabled()) {
@@ -1176,7 +1175,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         @Nullable AffinityTopologyVersion exchangeVer,
         GridDhtPartitionFullMap partMap,
         @Nullable CachePartitionFullCountersMap incomeCntrMap,
-        Set<Integer> partsToReload) {
+        Set<Integer> partsToReload,
+        @Nullable AffinityTopologyVersion msgTopVer) {
         if (log.isDebugEnabled())
             log.debug("Updating full partition map [exchVer=" + exchangeVer + ", parts=" + fullMapString() + ']');
 
@@ -1215,6 +1215,15 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                     return false;
                 }
+            }
+
+            if (msgTopVer != null && lastTopChangeVer.compareTo(msgTopVer) > 0) {
+                U.warn(log, "Stale version for full partition map update message (will ignore) [" +
+                    "lastTopChange=" + lastTopChangeVer +
+                    ", readTopVer=" + readyTopVer +
+                    ", msgVer=" + msgTopVer + ']');
+
+                return false;
             }
 
             boolean fullMapUpdated = (node2part == null);

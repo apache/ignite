@@ -140,7 +140,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     /** */
     private static final IgniteProductVersion EXCHANGE_PROTOCOL_2_SINCE = IgniteProductVersion.fromString("2.1.4");
 
-    /** Atomic reference for pending timeout object. */
+    /** Atomic reference for pending partition resend timeout object. */
     private AtomicReference<ResendTimeoutObject> pendingResend = new AtomicReference<>();
 
     /** Partition resend timeout after eviction. */
@@ -161,7 +161,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     private final ConcurrentMap<Integer, GridClientPartitionTopology> clientTops = new ConcurrentHashMap8<>();
 
     /** */
-    private volatile GridDhtPartitionsExchangeFuture lastInitializedFut;
+    @Nullable private volatile GridDhtPartitionsExchangeFuture lastInitializedFut;
 
     /** */
     private final AtomicReference<GridDhtTopologyFuture> lastFinishedFut = new AtomicReference<>();
@@ -921,6 +921,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
     /**
      * Partition refresh callback.
+     * For coordinator causes {@link GridDhtPartitionsFullMessage FullMessages} send,
+     * for non coordinator -  {@link GridDhtPartitionsSingleMessage SingleMessages} send
      */
     private void refreshPartitions() {
         ClusterNode oldest = cctx.discovery().oldestAliveCacheServerNode(AffinityTopologyVersion.NONE);
@@ -958,7 +960,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             if (log.isDebugEnabled())
                 log.debug("Refreshing partitions from oldest node: " + cctx.localNodeId());
 
-            sendAllPartitions(rmts);
+            sendAllPartitions(rmts, rmtTopVer);
         }
         else {
             if (log.isDebugEnabled())
@@ -971,9 +973,13 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
     /**
      * @param nodes Nodes.
+     * @param msgTopVer Topology version. Will be added to full message.
      */
-    private void sendAllPartitions(Collection<ClusterNode> nodes) {
+    private void sendAllPartitions(Collection<ClusterNode> nodes,
+        AffinityTopologyVersion msgTopVer) {
         GridDhtPartitionsFullMessage m = createPartitionsFullMessage(true, false, null, null, null, null);
+
+        m.topologyVersion(msgTopVer);
 
         if (log.isDebugEnabled())
             log.debug("Sending all partitions [nodeIds=" + U.nodeIds(nodes) + ", msg=" + m + ']');
@@ -1126,8 +1132,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     }
 
     /**
-     * @param node Node.
-     * @param id ID.
+     * @param node Destination cluster node.
+     * @param id Exchange ID.
      */
     private void sendLocalPartitions(ClusterNode node, @Nullable GridDhtPartitionExchangeId id) {
         GridDhtPartitionsSingleMessage m = createPartitionsSingleMessage(id,
@@ -1153,7 +1159,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     }
 
     /**
-     * @param exchangeId ID.
+     * @param exchangeId Exchange ID.
      * @param clientOnlyExchange Client exchange flag.
      * @param sndCounters {@code True} if need send partition update counters.
      * @param newCntrMap {@code True} if possible to use {@link CachePartitionPartialCountersMap}.
@@ -1372,7 +1378,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     }
 
     /**
-     * @param node Node.
+     * @param node Sender cluster node.
      * @param msg Message.
      */
     private void processFullPartitionUpdate(ClusterNode node, GridDhtPartitionsFullMessage msg) {
@@ -1398,8 +1404,13 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     else if (!grp.isLocal())
                         top = grp.topology();
 
-                    if (top != null)
-                        updated |= top.update(null, entry.getValue(), null, msg.partsToReload(cctx.localNodeId(), grpId));
+                    if (top != null) {
+                        updated |= top.update(null,
+                            entry.getValue(),
+                            null,
+                            msg.partsToReload(cctx.localNodeId(), grpId),
+                            msg.topologyVersion());
+                    }
                 }
 
                 if (!cctx.kernalContext().clientNode() && updated)
@@ -1427,7 +1438,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     }
 
     /**
-     * @param node Node ID.
+     * @param node Sender cluster node.
      * @param msg Message.
      */
     private void processSinglePartitionUpdate(final ClusterNode node, final GridDhtPartitionsSingleMessage msg) {
@@ -1477,7 +1488,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     }
 
     /**
-     * @param node Node ID.
+     * @param node Sender cluster node.
      * @param msg Message.
      */
     private void processSinglePartitionRequest(ClusterNode node, GridDhtPartitionsSingleRequest msg) {
@@ -2595,7 +2606,10 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         /** */
         private static final long serialVersionUID = 0L;
 
-        /** {@inheritDoc} */
+        /**
+         * @param nodeId Sender node ID.
+         * @param msg Message.
+         */
         @Override public void apply(UUID nodeId, M msg) {
             ClusterNode node = cctx.node(nodeId);
 
@@ -2613,7 +2627,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         }
 
         /**
-         * @param node Node.
+         * @param node Sender cluster node.
          * @param msg Message.
          */
         protected abstract void onMessage(ClusterNode node, M msg);
