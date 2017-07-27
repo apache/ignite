@@ -1,3 +1,4 @@
+#!/bin/bash
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
@@ -15,32 +16,36 @@
 # limitations under the License.
 #
 
-# Start from a Java image.
-FROM java:8
+if [ ! -z "$OPTION_LIBS" ]; then
+  IFS=, LIBS_LIST=("$OPTION_LIBS")
 
-# Ignite version
-ENV IGNITE_VERSION 2.1.0
+  for lib in ${LIBS_LIST[@]}; do
+    cp -r $IGNITE_HOME/libs/optional/"$lib"/* \
+        $IGNITE_HOME/libs/
+  done
+fi
 
-# Ignite home
-ENV IGNITE_HOME /opt/ignite/apache-ignite-fabric-${IGNITE_VERSION}-bin
+if [ ! -z "$EXTERNAL_LIBS" ]; then
+  IFS=, LIBS_LIST=("$EXTERNAL_LIBS")
 
-# Do not rely on anything provided by base image(s), but be explicit, if they are installed already it is noop then
-RUN apt-get update && apt-get install -y --no-install-recommends \
-        unzip \
-        curl \
-    && rm -rf /var/lib/apt/lists/*
+  for lib in ${LIBS_LIST[@]}; do
+    echo $lib >> temp
+  done
 
-WORKDIR /opt/ignite
+  wget -i temp -P $IGNITE_HOME/libs
 
-RUN curl https://dist.apache.org/repos/dist/release/ignite/${IGNITE_VERSION}/apache-ignite-fabric-${IGNITE_VERSION}-bin.zip -o ignite.zip \
-    && unzip ignite.zip \
-    && rm ignite.zip
+  rm temp
+fi
 
-# Copy sh files and set permission
-COPY ./run.sh $IGNITE_HOME/
+QUIET=""
 
-RUN chmod +x $IGNITE_HOME/run.sh
+if [ "$IGNITE_QUIET" = "false" ]; then
+  QUIET="-v"
+fi
 
-CMD $IGNITE_HOME/run.sh
+if [ -z $CONFIG_URI ]; then
+  $IGNITE_HOME/bin/ignite.sh $QUIET
+else
+  $IGNITE_HOME/bin/ignite.sh $QUIET $CONFIG_URI
+fi
 
-EXPOSE 11211 47100 47500 49112
