@@ -1987,7 +1987,7 @@ BOOST_AUTO_TEST_CASE(TestPrimitivePointers)
 {
     TemplatedBinaryIdResolver<BinaryDummy> idRslvr;
 
-    InteropUnpooledMemory mem(1024 * 1024);
+    InteropUnpooledMemory mem(1024);
 
     InteropOutputStream out(&mem);
     BinaryWriterImpl writerImpl(&out, &idRslvr, 0, 0, 0);
@@ -2016,7 +2016,7 @@ BOOST_AUTO_TEST_CASE(TestPrimitivePointers)
 
     in.Position(IGNITE_DFLT_HDR_LEN);
 
-    std::auto_ptr<int32_t> field2Res(reader.ReadObject<int32_t*>("field2")); 
+    std::auto_ptr<int32_t> field2Res(reader.ReadObject<int32_t*>("field2"));
     std::auto_ptr<std::string> field1Res(reader.ReadObject<std::string*>("field1"));
 
     BOOST_CHECK_EQUAL(*field1Res, field1);
