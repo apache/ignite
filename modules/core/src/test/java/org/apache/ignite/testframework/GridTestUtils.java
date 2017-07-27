@@ -434,8 +434,7 @@ public final class GridTestUtils {
      * @param cls Expected class.
      * @return Thrown throwable.
      */
-    @Nullable public static <P> Throwable assertThrowsWithCause(IgniteInClosure<P> call, P p,
-        Class<? extends Throwable> cls) {
+    public static <P> Throwable assertThrowsWithCause(IgniteInClosure<P> call, P p, Class<? extends Throwable> cls) {
         assert call != null;
         assert cls != null;
 

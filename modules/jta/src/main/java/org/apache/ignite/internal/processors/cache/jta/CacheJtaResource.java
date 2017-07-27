@@ -153,7 +153,7 @@ final class CacheJtaResource implements XAResource, Synchronization {
             try {
                 cacheTx.suspend();
             }
-            catch (Throwable e) {
+            catch (IgniteCheckedException e) {
                 throwException("Failed to suspend cache transaction: " + e.getMessage(), e);
             }
         }

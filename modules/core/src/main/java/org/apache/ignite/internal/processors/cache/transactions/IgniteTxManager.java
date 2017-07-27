@@ -2252,12 +2252,16 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      */
     public void suspendTx(final GridNearTxLocal tx) throws IgniteCheckedException {
         assert tx != null;
+        assert !tx.system();
+
+        if(!tx.state(SUSPENDED)) {
+            throw new IgniteCheckedException("Trying to suspendTx transaction with incorrect state "
+                + "[expected=" + ACTIVE + ", actual=" + tx.state() + ']');
+        }
 
         clearThreadMap(tx);
 
         transactionMap(tx).remove(tx.xidVersion(), tx);
-
-        tx.state(SUSPENDED);
     }
 
     /**
@@ -2272,8 +2276,15 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      */
     public void resumeTx(GridNearTxLocal tx) throws IgniteCheckedException {
         assert tx != null;
+        assert !tx.system();
         assert !threadMap.containsValue(tx);
         assert !transactionMap(tx).containsValue(tx);
+        assert !haveSystemTxForThread(Thread.currentThread().getId());
+
+        if(!tx.state(ACTIVE)) {
+            throw new IgniteCheckedException("Trying to suspendTx transaction with incorrect state "
+                + "[expected=" + ACTIVE + ", actual=" + tx.state() + ']');
+        }
 
         long threadId = Thread.currentThread().getId();
 
@@ -2287,7 +2298,24 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
         tx.threadId(threadId);
 
-        tx.state(ACTIVE);
+    }
+
+    /**
+     * @param threadId Thread id.
+     * @return True if thread have system transaction. False otherwise.
+     */
+    private boolean haveSystemTxForThread(long threadId) {
+        if (!sysThreadMap.isEmpty()) {
+            for (GridCacheContext cacheCtx : cctx.cache().context().cacheContexts()) {
+                if (!cacheCtx.systemTx())
+                    continue;
+
+                if (sysThreadMap.containsKey(new TxThreadKey(threadId, cacheCtx.cacheId())))
+                    return true;
+            }
+        }
+
+        return false;
     }
 
     /**

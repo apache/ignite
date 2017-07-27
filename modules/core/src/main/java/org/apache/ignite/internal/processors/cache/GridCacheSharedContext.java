@@ -950,7 +950,7 @@ public class GridCacheSharedContext<K, V> {
      * @throws IgniteCheckedException If suspension failed.
      */
     public void suspendTx(GridNearTxLocal tx) throws IgniteCheckedException {
-        tx.txState().awaitLastFut(this);
+        tx.txState().awaitLastFuture(this);
 
         tx.suspend();
     }
@@ -962,7 +962,7 @@ public class GridCacheSharedContext<K, V> {
      * @throws IgniteCheckedException If resume failed.
      */
     public void resumeTx(GridNearTxLocal tx) throws IgniteCheckedException {
-        tx.txState().awaitLastFut(this);
+        tx.txState().awaitLastFuture(this);
 
         tx.resume();
     }

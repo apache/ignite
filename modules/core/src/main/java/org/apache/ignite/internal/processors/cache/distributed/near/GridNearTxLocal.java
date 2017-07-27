@@ -2867,11 +2867,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
         if (threadId() != Thread.currentThread().getId())
             throw new IgniteCheckedException("Only thread started transaction can suspend it.");
 
-        if (state() != ACTIVE) {
-            throw new IgniteCheckedException("Trying to suspendTx transaction with incorrect state "
-                + "[expected=" + ACTIVE + ", actual=" + state() + ']');
-        }
-
         checkValid();
 
         cctx.tm().suspendTx(this);
@@ -2890,11 +2885,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
             throw new UnsupportedOperationException("Resume is not supported for pessimistic transactions.");
 
         synchronized (this) {
-            if (state() != SUSPENDED) {
-                throw new IgniteCheckedException("Trying to resume transaction with incorrect state "
-                    + "[expected=" + SUSPENDED + ", actual=" + state() + "]");
-            }
-
             checkValid();
 
             cctx.tm().resumeTx(this);
@@ -4010,7 +4000,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
      * @param threadId new owner of transaction.
      * @throws IgniteCheckedException if method executed not in the middle of resume or suspend.
      */
-    public void threadId(long threadId) throws IgniteCheckedException {
+    public void threadId(long threadId) {
         this.threadId = threadId;
     }
 
