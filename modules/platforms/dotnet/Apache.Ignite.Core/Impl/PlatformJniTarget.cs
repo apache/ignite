@@ -114,7 +114,7 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
-        public T OutStream<T>(int type, Func<IBinaryStream, T> action)
+        public T OutStream<T>(int type, Func<IBinaryStream, T> readAction)
         {
             using (var stream = IgniteManager.Memory.Allocate().GetStream())
             {
@@ -122,7 +122,7 @@ namespace Apache.Ignite.Core.Impl
 
                 stream.SynchronizeInput();
 
-                return action(stream);
+                return readAction(stream);
             }
         }
 
@@ -206,8 +206,8 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
-        public unsafe TR DoOutInOp<TR>(int type, Action<BinaryWriter> outAction, 
-            Func<IBinaryStream, IPlatformTargetInternal, TR> inAction, IPlatformTargetInternal arg)
+        public unsafe TR InObjectStreamOutObjectStream<TR>(int type, Action<BinaryWriter> writeAction, 
+            Func<IBinaryStream, IPlatformTargetInternal, TR> readAction, IPlatformTargetInternal arg)
         {
             PlatformMemoryStream outStream = null;
             long outPtr = 0;
@@ -217,16 +217,16 @@ namespace Apache.Ignite.Core.Impl
 
             try
             {
-                if (outAction != null)
+                if (writeAction != null)
                 {
                     outStream = IgniteManager.Memory.Allocate().GetStream();
                     var writer = _marsh.StartMarshal(outStream);
-                    outAction(writer);
+                    writeAction(writer);
                     FinishMarshal(writer);
                     outPtr = outStream.SynchronizeOutput();
                 }
 
-                if (inAction != null)
+                if (readAction != null)
                 {
                     inStream = IgniteManager.Memory.Allocate().GetStream();
                     inPtr = inStream.MemoryPointer;
@@ -235,12 +235,12 @@ namespace Apache.Ignite.Core.Impl
                 var res = UU.TargetInObjectStreamOutObjectStream(_target, type, 
                     ((PlatformJniTarget)arg).Target.Target, outPtr, inPtr);
 
-                if (inAction == null)
+                if (readAction == null)
                     return default(TR);
 
                 inStream.SynchronizeInput();
 
-                return inAction(inStream, new PlatformJniTarget(res, _marsh));
+                return readAction(inStream, new PlatformJniTarget(res, _marsh));
 
             }
             finally

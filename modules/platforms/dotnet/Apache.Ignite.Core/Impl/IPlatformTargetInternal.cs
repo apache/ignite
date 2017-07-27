@@ -23,16 +23,23 @@ namespace Apache.Ignite.Core.Impl
     using Apache.Ignite.Core.Interop;
 
     /// <summary>
-    /// Extended platform target interface.
+    /// Extended platform target interface with methods that operate on internal entities (streams and targets).
     /// </summary>
-    internal interface IPlatformTargetInternal : IPlatformTarget, IDisposable  // TODO: Verify consistent naming.
+    internal interface IPlatformTargetInternal : IPlatformTarget, IDisposable
     {
         /// <summary>
         /// Gets the marshaller.
         /// </summary>
         Marshaller Marshaller { get; }
 
-        T OutStream<T>(int type, Func<IBinaryStream, T> action);
+        /// <summary>
+        /// Performs OutStream operation.
+        /// </summary>
+        /// <typeparam name="T">Result type.</typeparam>
+        /// <param name="type">Operation type code.</param>
+        /// <param name="readAction">Read action.</param>
+        /// <returns>Result.</returns>
+        T OutStream<T>(int type, Func<IBinaryStream, T> readAction);
 
         /// <summary>
         /// Performs InStreamOutLong operation.
@@ -91,7 +98,16 @@ namespace Apache.Ignite.Core.Impl
         /// </returns>
         bool DoOutInOpX(int type, Action<BinaryWriter> writeAction, Func<IBinaryStream, Exception> readErrorAction);
 
-        T DoOutInOp<T>(int type, Action<BinaryWriter> outAction,
-            Func<IBinaryStream, IPlatformTargetInternal, T> inAction, IPlatformTargetInternal arg);
+        /// <summary>
+        /// Performs InObjectStreamOutObjectStream operation.
+        /// </summary>
+        /// <typeparam name="T">Result type.</typeparam>
+        /// <param name="type">Operation type code.</param>
+        /// <param name="arg">Target argument.</param>
+        /// <param name="writeAction">Write action.</param>
+        /// <param name="readAction">Read action.</param>
+        /// <returns>Result.</returns>
+        T InObjectStreamOutObjectStream<T>(int type, Action<BinaryWriter> writeAction,
+            Func<IBinaryStream, IPlatformTargetInternal, T> readAction, IPlatformTargetInternal arg);
     }
 }

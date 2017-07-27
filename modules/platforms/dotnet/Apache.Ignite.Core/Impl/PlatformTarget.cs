@@ -269,7 +269,7 @@ namespace Apache.Ignite.Core.Impl
         protected TR DoOutInOp<TR>(int type, Action<BinaryWriter> outAction,
             Func<IBinaryStream, IPlatformTargetInternal, TR> inAction, IPlatformTargetInternal arg)
         {
-            return Target.DoOutInOp(type, outAction, inAction, arg);
+            return Target.InObjectStreamOutObjectStream(type, outAction, inAction, arg);
         }
 
         /// <summary>
