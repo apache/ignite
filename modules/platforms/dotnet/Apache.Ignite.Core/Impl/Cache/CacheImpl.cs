@@ -1086,7 +1086,7 @@ namespace Apache.Ignite.Core.Impl.Cache
                 writer.WriteString(qry.Schema); // Schema
             });
         
-            return new FieldsQueryCursor<T>(cursor, Marshaller, _flagKeepBinary, readerFunc);
+            return new FieldsQueryCursor<T>(cursor, _flagKeepBinary, readerFunc);
         }
 
         /** <inheritDoc /> */
@@ -1096,7 +1096,7 @@ namespace Apache.Ignite.Core.Impl.Cache
 
             var cursor = DoOutOpObject((int) qry.OpId, writer => qry.Write(writer, IsKeepBinary));
 
-            return new QueryCursor<TK, TV>(cursor, Marshaller, _flagKeepBinary);
+            return new QueryCursor<TK, TV>(cursor, _flagKeepBinary);
         }
                 
         /** <inheritdoc /> */

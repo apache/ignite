@@ -35,10 +35,9 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
         /// Constructor.
         /// </summary>
         /// <param name="target">Target.</param>
-        /// <param name="marsh">Marshaler.</param>
         /// <param name="keepBinary">Keep poratble flag.</param>
         /// <param name="readerFunc">The reader function.</param>
-        public FieldsQueryCursor(IPlatformTargetInternal target, Marshaller marsh, bool keepBinary, 
+        public FieldsQueryCursor(IPlatformTargetInternal target, bool keepBinary, 
             Func<IBinaryRawReader, int, T> readerFunc)
             : base(target, keepBinary)
         {

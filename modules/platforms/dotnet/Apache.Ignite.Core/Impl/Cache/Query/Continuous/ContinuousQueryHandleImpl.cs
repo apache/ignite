@@ -139,7 +139,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
                 var nativeInitialQryCur = _nativeQry.OutOpObject(0);
                 _initialQueryCursor = nativeInitialQryCur == null
                     ? null
-                    : new QueryCursor<TK, TV>(nativeInitialQryCur, _marsh, _keepBinary);
+                    : new QueryCursor<TK, TV>(nativeInitialQryCur, _keepBinary);
             }
             catch (Exception)
             {
