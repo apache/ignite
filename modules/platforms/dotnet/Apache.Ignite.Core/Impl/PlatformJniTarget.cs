@@ -148,9 +148,9 @@ namespace Apache.Ignite.Core.Impl
 
         /** <inheritdoc /> */
         public TR InStreamOutLong<TR>(int type, Action<BinaryWriter> outAction, Func<IBinaryStream, long, TR> inAction, 
-            Func<IBinaryStream, Exception> inErrorAction)
+            Func<IBinaryStream, Exception> readErrorAction)
         {
-            Debug.Assert(inErrorAction != null);
+            Debug.Assert(readErrorAction != null);
 
             using (var stream = IgniteManager.Memory.Allocate().GetStream())
             {
@@ -172,20 +172,21 @@ namespace Apache.Ignite.Core.Impl
                 if (res != PlatformTarget.Error)
                     return inAction != null ? inAction(stream, res) : default(TR);
 
-                throw inErrorAction(stream);
+                throw readErrorAction(stream);
             }
         }
 
         /** <inheritdoc /> */
-        public bool DoOutInOpX(int type, Action<BinaryWriter> outAction, Func<IBinaryStream, Exception> inErrorAction)
+        public bool DoOutInOpX(int type, Action<BinaryWriter> writeAction, 
+            Func<IBinaryStream, Exception> readErrorAction)
         {
-            Debug.Assert(inErrorAction != null);
+            Debug.Assert(readErrorAction != null);
 
             using (var stream = IgniteManager.Memory.Allocate().GetStream())
             {
                 var writer = _marsh.StartMarshal(stream);
 
-                outAction(writer);
+                writeAction(writer);
 
                 FinishMarshal(writer);
 
@@ -200,7 +201,7 @@ namespace Apache.Ignite.Core.Impl
 
                 stream.Seek(0, SeekOrigin.Begin);
 
-                throw inErrorAction(stream);
+                throw readErrorAction(stream);
             }
         }
 
