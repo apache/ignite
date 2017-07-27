@@ -96,14 +96,14 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
-        public IPlatformTargetInternal InStreamOutObject(int type, Action<IBinaryStream> action)
+        public IPlatformTargetInternal InStreamOutObject(int type, Action<IBinaryStream> writeAction)
         {
             using (var stream = IgniteManager.Memory.Allocate().GetStream())
             {
-                action(stream);
+                writeAction(stream);
 
-                return new PlatformJniTarget(UU.TargetInStreamOutObject(_target, type, stream.SynchronizeOutput()),
-                    _marsh);
+                var target = UU.TargetInStreamOutObject(_target, type, stream.SynchronizeOutput());
+                return new PlatformJniTarget(target, _marsh);
             }
         }
 

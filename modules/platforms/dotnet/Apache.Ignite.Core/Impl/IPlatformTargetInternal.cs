@@ -42,9 +42,20 @@ namespace Apache.Ignite.Core.Impl
         /// <returns>Result.</returns>
         long InStreamOutLong(int type, Action<IBinaryStream> writeAction);
 
+        /// <summary>
+        /// Performs the OutObject operation.
+        /// </summary>
+        /// <param name="type">Operation type code.</param>
+        /// <returns>Result.</returns>
         IPlatformTargetInternal OutOpObject(int type);
 
-        IPlatformTargetInternal InStreamOutObject(int type, Action<IBinaryStream> action);
+        /// <summary>
+        /// Performs InStreamOutObject operation.
+        /// </summary>
+        /// <param name="type">Operation type code.</param>
+        /// <param name="writeAction">Write action.</param>
+        /// <returns>Result.</returns>
+        IPlatformTargetInternal InStreamOutObject(int type, Action<IBinaryStream> writeAction);
         
         T DoOutInOp<T>(int type, Action<BinaryWriter> outAction, Func<IBinaryStream, T> inAction);
 
