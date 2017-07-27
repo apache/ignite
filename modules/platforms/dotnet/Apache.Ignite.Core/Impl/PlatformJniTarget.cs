@@ -170,7 +170,9 @@ namespace Apache.Ignite.Core.Impl
                 stream.Seek(0, SeekOrigin.Begin);
 
                 if (res != PlatformTargetAdapter.Error)
+                {
                     return inAction != null ? inAction(stream, res) : default(TR);
+                }
 
                 throw readErrorAction(stream);
             }

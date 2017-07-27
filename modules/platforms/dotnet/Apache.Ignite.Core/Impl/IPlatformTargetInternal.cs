@@ -62,7 +62,8 @@ namespace Apache.Ignite.Core.Impl
         /// <returns>
         /// Result.
         /// </returns>
-        bool InStreamOutLong(int type, Action<BinaryWriter> writeAction, Func<IBinaryStream, Exception> readErrorAction);  // TODO: Same as above?
+        bool InStreamOutLong(int type, Action<BinaryWriter> writeAction, 
+            Func<IBinaryStream, Exception> readErrorAction);  // TODO: Same as above?
 
         /// <summary>
         /// Performs InStreamOutStream operation.
