@@ -18,11 +18,13 @@
 package org.apache.ignite.ml.trees;
 
 import it.unimi.dsi.fastutil.ints.Int2DoubleOpenHashMap;
+import java.io.IOException;
 import java.util.function.Function;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
@@ -40,6 +42,7 @@ import org.apache.ignite.ml.trees.models.DecisionTreeModel;
 import org.apache.ignite.ml.trees.trainers.columnbased.ColumnDecisionTreeMatrixInput;
 import org.apache.ignite.ml.trees.trainers.columnbased.ColumnDecisionTreeTrainer;
 import org.apache.ignite.stream.StreamTransformer;
+import org.apache.ignite.testframework.junits.IgniteTestResources;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -55,6 +58,17 @@ public class ColumnDecisionTreeTrainerBenchmark extends BaseDecisionTreeTest {
     private static Function<Vector, Double> f1 = v -> {
         return v.get(0) * v.get(0) + 2 * Math.sin(v.get(1)) + v.get(2);
     };
+
+    @Override protected long getTestTimeout() {
+        return 6000000;
+    }
+
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName,
+        IgniteTestResources rsrcs) throws Exception {
+        IgniteConfiguration configuration = super.getConfiguration(igniteInstanceName, rsrcs);
+        configuration.setIncludeEventTypes();
+        return configuration;
+    }
 
     /**
      * This test is for manual run only.
@@ -80,17 +94,58 @@ public class ColumnDecisionTreeTrainerBenchmark extends BaseDecisionTreeTest {
         testByGenStreamerLoad(ptsPerReg, catsInfo, gen, rnd);
     }
 
+    public void testMNIST() throws IOException {
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
+
+        int ptsCnt = 20000;
+        int featCnt = 784;
+
+        Stream<DenseLocalOnHeapVector> trainingMnistStream = ReadMnistData.mnist("~/Downloads/train-images-idx3-ubyte", "~/Downloads/train-labels-idx1-ubyte", ptsCnt);
+        Stream<DenseLocalOnHeapVector> testMnistStream = ReadMnistData.mnist("~/Downloads/t10k-images.idx3-ubyte", "~/Downloads/t10k-labels.idx1-ubyte", ptsCnt / 10);
+
+        SparseDistributedMatrix m = new SparseDistributedMatrix(ptsCnt, featCnt + 1, StorageConstants.COLUMN_STORAGE_MODE, StorageConstants.RANDOM_ACCESS_MODE);
+
+        SparseDistributedMatrixStorage sto = (SparseDistributedMatrixStorage) m.getStorage();
+
+        loadVectorsIntoCache(sto.cache().getName(), sto.getUUID(), trainingMnistStream.iterator(), featCnt + 1);
+
+        IgniteFunction<DoubleStream, Double> regCalc = s -> {
+            PrimitiveIterator.OfDouble itr = s.iterator();
+            Map<Double, Integer> voc = new HashMap<>();
+            while (itr.hasNext())
+                voc.compute(itr.next(), (aDouble, integer) -> integer != null ? integer + 1 : 0);
+            return voc.entrySet().stream().max(Comparator.comparing(Map.Entry::getValue)).map(Map.Entry::getKey).orElse(0.0);
+        };
+
+        ColumnDecisionTreeTrainer<VarianceSplitCalculator.VarianceData> trainer =
+            new ColumnDecisionTreeTrainer<>(9, new VarianceSplitCalculator(), SIMPLE_VARIANCE_CALCULATOR, regCalc);
+
+        System.out.println(">>> Training started");
+        long before = System.currentTimeMillis();
+        DecisionTreeModel mdl = trainer.train(new ColumnDecisionTreeMatrixInput(m, new HashMap<>()));
+        System.out.println(">>> Training finished in " + (System.currentTimeMillis() - before));
+
+
+
+        IgniteTriFunction<Model<Vector, Double>, Stream<IgniteBiTuple<Vector, Double>>, Function<Double, Double>, Double> mse = Estimators.errorsPercentage();
+        Double accuracy = mse.apply(mdl, testMnistStream.map(v -> new IgniteBiTuple<>(v.viewPart(0, featCnt), v.getX(featCnt))), Function.identity());
+        System.out.println(">>> Errs percentage: " + accuracy);
+
+        trainer.destroy();
+    }
+
+    @Ignore
     @Test
     public void testF1() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
-        int ptsCnt = 13000;
+        int ptsCnt = 10000;
         Map<Integer, double[]> ranges = new HashMap<>();
 
         ranges.put(0, new double[] {-100.0, 100.0});
         ranges.put(1, new double[] {-100.0, 100.0});
         ranges.put(2, new double[] {-100.0, 100.0});
 
-        int featCnt = 10;
+        int featCnt = 100;
         double[] defRng = {-1.0, 1.0};
 
         Vector[] trainVectors = vecsFromRanges(ranges, featCnt, defRng, new Random(123L), ptsCnt, f1);
@@ -104,7 +159,7 @@ public class ColumnDecisionTreeTrainerBenchmark extends BaseDecisionTreeTest {
         IgniteFunction<DoubleStream, Double> regCalc = s -> s.average().orElse(0.0);
 
         ColumnDecisionTreeTrainer<VarianceSplitCalculator.VarianceData> trainer =
-            new ColumnDecisionTreeTrainer<>(9, new VarianceSplitCalculator(), SIMPLE_VARIANCE_CALCULATOR, regCalc);
+            new ColumnDecisionTreeTrainer<>(10, new VarianceSplitCalculator(), SIMPLE_VARIANCE_CALCULATOR, regCalc);
 
         System.out.println(">>> Training started");
         long before = System.currentTimeMillis();

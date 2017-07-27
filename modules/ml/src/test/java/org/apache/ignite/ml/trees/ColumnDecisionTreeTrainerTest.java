@@ -111,8 +111,6 @@ public class ColumnDecisionTreeTrainerTest extends BaseDecisionTreeTest {
 
         System.out.println("Total pts: " + lst.size());
 
-        int numRegs = gen.numRegs();
-
         SparseDistributedMatrix m = new SparseDistributedMatrix(totalPts, featCnt + 1, StorageConstants.COLUMN_STORAGE_MODE, StorageConstants.RANDOM_ACCESS_MODE);
 
         IgniteFunction<DoubleStream, Double> regCalc = s -> s.average().orElse(0.0);

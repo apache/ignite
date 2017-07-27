@@ -17,8 +17,10 @@
 
 package org.apache.ignite.ml.estimators;
 
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.math.functions.IgniteTriFunction;
@@ -31,5 +33,19 @@ public class Estimators {
             double diff = f.apply(dp.get2()) - f.apply(model.predict(dp.get1()));
             return diff * diff;
         }).average().orElse(0);
+    }
+
+    public static <T, V> IgniteTriFunction<Model<T, V>, Stream<IgniteBiTuple<T, V>>, Function<V, Double>, Double> errorsPercentage() {
+        return  (model, stream, f) -> {
+            AtomicLong total = new AtomicLong(0);
+            AtomicLong err = new AtomicLong(0);
+
+            long count = stream.
+                peek((ib) -> total.incrementAndGet()).
+                filter(dp -> !model.predict(dp.get1()).equals(dp.get2())).
+                count();
+
+            return (double) count / total.get();
+        };
     }
 }
