@@ -1776,8 +1776,7 @@ public class IgnitionEx {
                 cfg.getIgfsThreadPoolSize(),
                 DFLT_THREAD_KEEP_ALIVE_TIME,
                 new LinkedBlockingQueue<Runnable>(),
-                new IgfsThreadFactory(cfg.getIgniteInstanceName(), "igfs"),
-                null /* Abort policy will be used. */);
+                new IgfsThreadFactory(cfg.getIgniteInstanceName(), "igfs"));
 
             igfsExecSvc.allowCoreThreadTimeOut(true);
 
