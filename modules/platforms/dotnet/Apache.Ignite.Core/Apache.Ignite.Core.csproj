@@ -101,6 +101,7 @@
     <Compile Include="Configuration\Package-Info.cs" />
     <Compile Include="Impl\IPlatformTargetInternal.cs" />
     <Compile Include="Impl\PersistentStore\PersistentStoreMetrics.cs" />
+    <Compile Include="Impl\PlatformDisposableTargetAdapter.cs" />
     <Compile Include="Impl\PlatformJniTarget.cs" />
     <Compile Include="PersistentStore\IPersistentStoreMetrics.cs" />
     <Compile Include="PersistentStore\Package-Info.cs" />

@@ -30,7 +30,7 @@ namespace Apache.Ignite.Core.Impl
     using BinaryWriter = Apache.Ignite.Core.Impl.Binary.BinaryWriter;
 
     /// <summary>
-    /// Base class for interop targets.
+    /// Base class for interop targets, provides additional functionality over <see cref="IPlatformTargetInternal"/>.
     /// </summary>
     [SuppressMessage("ReSharper", "LocalVariableHidesMember")]
     internal class PlatformTargetAdapter
@@ -530,59 +530,5 @@ namespace Apache.Ignite.Core.Impl
 
 
         #endregion
-    }
-
-    /// <summary>
-    /// PlatformTargetAdapter with IDisposable pattern.
-    /// </summary>
-    internal abstract class PlatformDisposableTargetAdapter : PlatformTargetAdapter, IDisposable
-    {
-        /** Disposed flag. */
-        private volatile bool _disposed;
-
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="target">Target.</param>
-        protected PlatformDisposableTargetAdapter(IPlatformTargetInternal target) : base(target)
-        {
-            // No-op.
-        }
-
-        /** <inheritdoc /> */
-        public void Dispose()
-        {
-            lock (this)
-            {
-                if (_disposed)
-                    return;
-
-                Dispose(true);
-
-                GC.SuppressFinalize(this);
-
-                _disposed = true;
-            }
-        }
-
-        /// <summary>
-        /// Releases unmanaged and - optionally - managed resources.
-        /// </summary>
-        /// <param name="disposing">
-        /// <c>true</c> when called from Dispose;  <c>false</c> when called from finalizer.
-        /// </param>
-        protected virtual void Dispose(bool disposing)
-        {
-            Target.Dispose();
-        }
-
-        /// <summary>
-        /// Throws <see cref="ObjectDisposedException"/> if this instance has been disposed.
-        /// </summary>
-        protected void ThrowIfDisposed()
-        {
-            if (_disposed)
-                throw new ObjectDisposedException(GetType().Name, "Object has been disposed.");
-        }
     }
 }
