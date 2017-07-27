@@ -131,7 +131,14 @@ namespace Apache.Ignite.Core.Impl
         /// <returns>Resulting object.</returns>
         protected IPlatformTargetInternal DoOutOpObject(int type, Action<BinaryWriter> action)
         {
-            return _target.InStreamOutObject(type, stream => action(_marsh.StartMarshal(stream)));
+            return _target.InStreamOutObject(type, stream =>
+            {
+                var writer = _marsh.StartMarshal(stream);
+
+                action(writer);
+
+                FinishMarshal(writer);
+            });
         }
 
         /// <summary>
@@ -240,7 +247,7 @@ namespace Apache.Ignite.Core.Impl
         protected TR DoOutInOpX<TR>(int type, Action<BinaryWriter> outAction, Func<IBinaryStream, long, TR> inAction,
             Func<IBinaryStream, Exception> inErrorAction)
         {
-            return Target.InStreamOutLong(type, outAction, inAction, inErrorAction);
+            return _target.InStreamOutLong(type, outAction, inAction, inErrorAction);
         }
 
         /// <summary>
@@ -255,7 +262,7 @@ namespace Apache.Ignite.Core.Impl
         protected bool DoOutInOpX(int type, Action<BinaryWriter> outAction,
             Func<IBinaryStream, Exception> inErrorAction)
         {
-            return Target.DoOutInOpX(type, outAction, inErrorAction);
+            return _target.DoOutInOpX(type, outAction, inErrorAction);
         }
 
         /// <summary>
@@ -269,7 +276,7 @@ namespace Apache.Ignite.Core.Impl
         protected TR DoOutInOp<TR>(int type, Action<BinaryWriter> outAction,
             Func<IBinaryStream, IPlatformTargetInternal, TR> inAction, IPlatformTargetInternal arg)
         {
-            return Target.InObjectStreamOutObjectStream(type, outAction, inAction, arg);
+            return _target.InObjectStreamOutObjectStream(type, outAction, inAction, arg);
         }
 
         /// <summary>
@@ -280,7 +287,7 @@ namespace Apache.Ignite.Core.Impl
         /// <returns>Result.</returns>
         protected TR DoOutInOp<TR>(int type, Action<BinaryWriter> outAction)
         {
-            return Target.InStreamOutStream(type, outAction, stream => Unmarshal<TR>(stream));
+            return _target.InStreamOutStream(type, outAction, stream => Unmarshal<TR>(stream));
         }
 
         /// <summary>
@@ -291,7 +298,7 @@ namespace Apache.Ignite.Core.Impl
         /// <returns>Result.</returns>
         protected TR DoOutInOp<T1, TR>(int type, T1 val)
         {
-            return Target.InStreamOutStream(type, writer => writer.WriteObject(val), stream => Unmarshal<TR>(stream));
+            return _target.InStreamOutStream(type, writer => writer.WriteObject(val), stream => Unmarshal<TR>(stream));
         }
 
         /// <summary>
@@ -335,7 +342,9 @@ namespace Apache.Ignite.Core.Impl
             return GetFuture((futId, futType) => DoOutOp(type, w =>
             {
                 if (writeAction != null)
+                {
                     writeAction(w);
+                }
                 w.WriteLong(futId);
                 w.WriteInt(futType);
             }), keepBinary, convertFunc).Task;
