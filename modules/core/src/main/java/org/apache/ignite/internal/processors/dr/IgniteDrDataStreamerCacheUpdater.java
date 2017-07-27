@@ -62,7 +62,7 @@ public class IgniteDrDataStreamerCacheUpdater implements StreamReceiver<KeyCache
             IgniteLogger log = ctx.log(IgniteDrDataStreamerCacheUpdater.class);
             GridCacheAdapter internalCache = ctx.cache().internalCache(cacheName);
 
-            CacheOperationContext opCtx = ((IgniteCacheProxy)cache0).operationContext();
+            CacheOperationContext opCtx = ((IgniteCacheProxy)cache0).context().operationContextPerCall();
 
             IgniteInternalCache cache =
                 opCtx != null ? new GridCacheProxyImpl(internalCache.context(), internalCache, opCtx) : internalCache;
