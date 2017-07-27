@@ -29,7 +29,6 @@ namespace Apache.Ignite.Core.Impl
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Memory;
-    using Apache.Ignite.Core.Impl.Unmanaged;
     using Apache.Ignite.Core.Interop;
     using BinaryReader = Apache.Ignite.Core.Impl.Binary.BinaryReader;
     using BinaryWriter = Apache.Ignite.Core.Impl.Binary.BinaryWriter;
@@ -39,7 +38,7 @@ namespace Apache.Ignite.Core.Impl
     /// Base class for interop targets.
     /// </summary>
     [SuppressMessage("ReSharper", "LocalVariableHidesMember")]
-    internal class PlatformTarget : IPlatformTarget
+    internal class PlatformTarget
     {
         /** */
         protected const int False = 0;
@@ -75,21 +74,21 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         /// <param name="target">Target.</param>
         /// <param name="marsh">Marshaller.</param>
-        protected PlatformTarget(IUnmanagedTarget target, Marshaller marsh)
+        protected PlatformTarget(IPlatformTargetInternal target, Marshaller marsh)
         {
             Debug.Assert(target != null);
             Debug.Assert(marsh != null);
 
-            _target = new PlatformJniTarget(target, marsh);
+            _target = target;
             _marsh = marsh;
         }
 
         /// <summary>
         /// Unmanaged target.
         /// </summary>
-        internal IUnmanagedTarget Target
+        internal IPlatformTargetInternal Target
         {
-            get { return _target.Target; }
+            get { return _target; }
         }
 
         /// <summary>
@@ -137,18 +136,9 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="type">Operation type.</param>
         /// <param name="action">Action to be performed on the stream.</param>
         /// <returns>Resulting object.</returns>
-        protected IUnmanagedTarget DoOutOpObject(int type, Action<BinaryWriter> action)
+        protected IPlatformTargetInternal DoOutOpObject(int type, Action<BinaryWriter> action)
         {
-            using (var stream = IgniteManager.Memory.Allocate().GetStream())
-            {
-                var writer = _marsh.StartMarshal(stream);
-
-                action(writer);
-
-                FinishMarshal(writer);
-
-                return UU.TargetInStreamOutObject(_target, type, stream.SynchronizeOutput());
-            }
+            return (IPlatformTargetInternal) _target.InStreamOutObject(type, w => action((BinaryWriter) w));
         }
 
         /// <summary>
@@ -157,7 +147,7 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="type">Operation type.</param>
         /// <param name="action">Action to be performed on the stream.</param>
         /// <returns>Resulting object.</returns>
-        protected IUnmanagedTarget DoOutOpObject(int type, Action<IBinaryStream> action)
+        protected IPlatformTargetInternal DoOutOpObject(int type, Action<IBinaryStream> action)
         {
             return _target.OutOpObject(type, action);
         }
@@ -167,9 +157,9 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         /// <param name="type">Operation type.</param>
         /// <returns>Resulting object.</returns>
-        protected IUnmanagedTarget DoOutOpObject(int type)
+        protected IPlatformTargetInternal DoOutOpObject(int type)
         {
-            return UU.TargetOutObject(_target, type);
+            return (IPlatformTargetInternal) _target.OutObject(type);
         }
 
         /// <summary>
@@ -211,34 +201,10 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         /// <param name="type">Type.</param>
         /// <param name="action">Action.</param>
-        protected void DoInOp(int type, Action<IBinaryStream> action)
-        {
-            using (var stream = IgniteManager.Memory.Allocate().GetStream())
-            {
-                UU.TargetOutStream(_target, type, stream.MemoryPointer);
-                
-                stream.SynchronizeInput();
-
-                action(stream);
-            }
-        }
-
-        /// <summary>
-        /// Perform in operation.
-        /// </summary>
-        /// <param name="type">Type.</param>
-        /// <param name="action">Action.</param>
         /// <returns>Result.</returns>
         protected T DoInOp<T>(int type, Func<IBinaryStream, T> action)
         {
-            using (var stream = IgniteManager.Memory.Allocate().GetStream())
-            {
-                UU.TargetOutStream(_target, type, stream.MemoryPointer);
-
-                stream.SynchronizeInput();
-
-                return action(stream);
-            }
+            return _target.InOp(type, action);
         }
 
         /// <summary>
@@ -248,47 +214,13 @@ namespace Apache.Ignite.Core.Impl
         /// <returns>Result.</returns>
         protected T DoInOp<T>(int type)
         {
-            using (var stream = IgniteManager.Memory.Allocate().GetStream())
-            {
-                UU.TargetOutStream(_target, type, stream.MemoryPointer);
-
-                stream.SynchronizeInput();
-
-                return Unmarshal<T>(stream);
-            }
+            return _target.InOp(type, s => Unmarshal<T>(s));
         }
 
         #endregion
 
         #region OUT-IN operations
         
-        /// <summary>
-        /// Perform out-in operation.
-        /// </summary>
-        /// <param name="type">Operation type.</param>
-        /// <param name="outAction">Out action.</param>
-        /// <param name="inAction">In action.</param>
-        protected void DoOutInOp(int type, Action<BinaryWriter> outAction, Action<IBinaryStream> inAction)
-        {
-            using (PlatformMemoryStream outStream = IgniteManager.Memory.Allocate().GetStream())
-            {
-                using (PlatformMemoryStream inStream = IgniteManager.Memory.Allocate().GetStream())
-                {
-                    BinaryWriter writer = _marsh.StartMarshal(outStream);
-
-                    outAction(writer);
-
-                    FinishMarshal(writer);
-
-                    UU.TargetInStreamOutStream(_target, type, outStream.SynchronizeOutput(), inStream.MemoryPointer);
-
-                    inStream.SynchronizeInput();
-
-                    inAction(inStream);
-                }
-            }
-        }
-
         /// <summary>
         /// Perform out-in operation.
         /// </summary>
@@ -401,7 +333,7 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="arg">Argument.</param>
         /// <returns>Result.</returns>
         protected unsafe TR DoOutInOp<TR>(int type, Action<BinaryWriter> outAction,
-            Func<IBinaryStream, IUnmanagedTarget, TR> inAction, void* arg)
+            Func<IBinaryStream, IPlatformTargetInternal, TR> inAction, void* arg)
         {
             PlatformMemoryStream outStream = null;
             long outPtr = 0;
@@ -514,7 +446,7 @@ namespace Apache.Ignite.Core.Impl
         /// <returns>Result.</returns>
         protected long DoOutInOp(int type, long val = 0)
         {
-            return UU.TargetInLongOutLong(_target, type, val);
+            return _target.InLongOutLong(type, val);
         }
 
         #endregion
@@ -644,7 +576,7 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="keepBinary">Keep binary flag, only applicable to object futures. False by default.</param>
         /// <param name="convertFunc">The function to read future result from stream.</param>
         /// <returns>Created future.</returns>
-        private Future<T> GetFuture<T>(Func<long, int, IUnmanagedTarget> listenAction, bool keepBinary = false,
+        private Future<T> GetFuture<T>(Func<long, int, IPlatformTargetInternal> listenAction, bool keepBinary = false,
             Func<BinaryReader, T> convertFunc = null)
         {
             var futType = FutureType.Object;
@@ -660,7 +592,7 @@ namespace Apache.Ignite.Core.Impl
 
             var futHnd = _marsh.Ignite.HandleRegistry.Allocate(fut);
 
-            IUnmanagedTarget futTarget;
+            IPlatformTargetInternal futTarget;
 
             try
             {
@@ -717,128 +649,6 @@ namespace Apache.Ignite.Core.Impl
         }
 
         #endregion
-
-        #region IPlatformTarget
-
-        /** <inheritdoc /> */
-        public long InLongOutLong(int type, long val)
-        {
-            return DoOutInOp(type, val);
-        }
-
-        /** <inheritdoc /> */
-        public long InStreamOutLong(int type, Action<IBinaryRawWriter> writeAction)
-        {
-            return DoOutOp(type, writer => writeAction(writer));
-        }
-
-        /** <inheritdoc /> */
-        public T InStreamOutStream<T>(int type, Action<IBinaryRawWriter> writeAction, 
-            Func<IBinaryRawReader, T> readAction)
-        {
-            return DoOutInOp(type, writeAction, stream => readAction(Marshaller.StartUnmarshal(stream)));
-        }
-
-        /** <inheritdoc /> */
-        public IPlatformTarget InStreamOutObject(int type, Action<IBinaryRawWriter> writeAction)
-        {
-            return GetPlatformTarget(DoOutOpObject(type, writeAction));
-        }
-
-        /** <inheritdoc /> */
-        public unsafe T InObjectStreamOutObjectStream<T>(int type, IPlatformTarget arg, Action<IBinaryRawWriter> writeAction,
-            Func<IBinaryRawReader, IPlatformTarget, T> readAction)
-        {
-            return DoOutInOp(type, writeAction, (stream, obj) => readAction(Marshaller.StartUnmarshal(stream),
-                GetPlatformTarget(obj)), GetTargetPtr(arg));
-        }
-
-        /** <inheritdoc /> */
-        public T OutStream<T>(int type, Func<IBinaryRawReader, T> readAction)
-        {
-            return DoInOp(type, stream => readAction(Marshaller.StartUnmarshal(stream)));
-        }
-
-        /** <inheritdoc /> */
-        public IPlatformTarget OutObject(int type)
-        {
-            return GetPlatformTarget(DoOutOpObject(type));
-        }
-
-        /** <inheritdoc /> */
-        public Task<T> DoOutOpAsync<T>(int type, Action<IBinaryRawWriter> writeAction = null, 
-            Func<IBinaryRawReader, T> readAction = null)
-        {
-            var convertFunc = readAction != null
-                ? r => readAction(r)
-                : (Func<BinaryReader, T>)null;
-            return GetFuture((futId, futType) =>
-            {
-                using (var stream = IgniteManager.Memory.Allocate().GetStream())
-                {
-                    stream.WriteLong(futId);
-                    stream.WriteInt(futType);
-
-                    if (writeAction != null)
-                    {
-                        var writer = _marsh.StartMarshal(stream);
-
-                        writeAction(writer);
-
-                        FinishMarshal(writer);
-                    }
-
-                    UU.TargetInStreamAsync(_target, type, stream.SynchronizeOutput());
-                }
-            }, false, convertFunc).Task;
-        }
-
-        /** <inheritdoc /> */
-        public Task<T> DoOutOpAsync<T>(int type, Action<IBinaryRawWriter> writeAction, 
-            Func<IBinaryRawReader, T> readAction, CancellationToken cancellationToken)
-        {
-            var convertFunc = readAction != null
-                ? r => readAction(r)
-                : (Func<BinaryReader, T>) null;
-
-            return GetFuture((futId, futType) =>
-            {
-                using (var stream = IgniteManager.Memory.Allocate().GetStream())
-                {
-                    stream.WriteLong(futId);
-                    stream.WriteInt(futType);
-
-                    if (writeAction != null)
-                    {
-                        var writer = _marsh.StartMarshal(stream);
-
-                        writeAction(writer);
-
-                        FinishMarshal(writer);
-                    }
-
-                    return UU.TargetInStreamOutObjectAsync(_target, type, stream.SynchronizeOutput());
-                }
-            }, false, convertFunc).GetTask(cancellationToken);
-        }
-
-        /// <summary>
-        /// Gets the platform target.
-        /// </summary>
-        private IPlatformTarget GetPlatformTarget(IUnmanagedTarget target)
-        {
-            return target == null ? null : new PlatformTarget(target, Marshaller);
-        }
-
-        /// <summary>
-        /// Gets the target pointer.
-        /// </summary>
-        private static unsafe void* GetTargetPtr(IPlatformTarget target)
-        {
-            return target == null ? null : ((PlatformTarget) target).Target.Target;
-        }
-
-        #endregion
     }
 
     /// <summary>
@@ -854,7 +664,7 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         /// <param name="target">Target.</param>
         /// <param name="marsh">Marshaller.</param>
-        protected PlatformDisposableTarget(IUnmanagedTarget target, Marshaller marsh) : base(target, marsh)
+        protected PlatformDisposableTarget(IPlatformTargetInternal target, Marshaller marsh) : base(target, marsh)
         {
             // No-op.
         }

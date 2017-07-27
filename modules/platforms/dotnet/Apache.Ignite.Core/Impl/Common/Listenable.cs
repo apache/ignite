@@ -18,7 +18,6 @@
 namespace Apache.Ignite.Core.Impl.Common
 {
     using Apache.Ignite.Core.Impl.Binary;
-    using Apache.Ignite.Core.Impl.Unmanaged;
 
     /// <summary>
     /// Platform listenable.
@@ -33,7 +32,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// </summary>
         /// <param name="target">Target.</param>
         /// <param name="marsh">Marshaller.</param>
-        public Listenable(IUnmanagedTarget target, Marshaller marsh) : base(target, marsh)
+        public Listenable(IPlatformTargetInternal target, Marshaller marsh) : base(target, marsh)
         {
             // No-op.
         }

@@ -79,7 +79,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// <param name="marsh">Marshaller.</param>
         /// <param name="prj">Projection.</param>
         /// <param name="keepBinary">Binary flag.</param>
-        public ComputeImpl(IUnmanagedTarget target, Marshaller marsh, ClusterGroupImpl prj, bool keepBinary)
+        public ComputeImpl(IPlatformTargetInternal target, Marshaller marsh, ClusterGroupImpl prj, bool keepBinary)
             : base(target, marsh)
         {
             _prj = prj;

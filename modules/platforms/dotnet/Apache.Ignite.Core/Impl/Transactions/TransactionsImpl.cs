@@ -22,7 +22,6 @@ namespace Apache.Ignite.Core.Impl.Transactions
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary;
-    using Apache.Ignite.Core.Impl.Unmanaged;
     using Apache.Ignite.Core.Transactions;
 
     /// <summary>
@@ -84,27 +83,19 @@ namespace Apache.Ignite.Core.Impl.Transactions
         /// <param name="target">Target.</param>
         /// <param name="marsh">Marshaller.</param>
         /// <param name="localNodeId">Local node id.</param>
-        public TransactionsImpl(IUnmanagedTarget target, Marshaller marsh,
+        public TransactionsImpl(IPlatformTargetInternal target, Marshaller marsh,
             Guid localNodeId) : base(target, marsh)
         {
             _localNodeId = localNodeId;
 
-            TransactionConcurrency concurrency = default(TransactionConcurrency);
-            TransactionIsolation isolation = default(TransactionIsolation);
-            TimeSpan timeout = default(TimeSpan);
+            var res = target.OutStream(OpCacheConfigParameters, reader => Tuple.Create(
+                (TransactionConcurrency) reader.ReadInt(),
+                (TransactionIsolation) reader.ReadInt(),
+                reader.ReadLongAsTimespan()));
 
-            DoInOp(OpCacheConfigParameters, stream =>
-            {
-                var reader = marsh.StartUnmarshal(stream).GetRawReader();
-
-                concurrency = (TransactionConcurrency) reader.ReadInt();
-                isolation = (TransactionIsolation) reader.ReadInt();
-                timeout = reader.ReadLongAsTimespan();
-            });
-
-            _dfltConcurrency = concurrency;
-            _dfltIsolation = isolation;
-            _dfltTimeout = timeout;
+            _dfltConcurrency = res.Item1;
+            _dfltIsolation = res.Item2;
+            _dfltTimeout = res.Item3;
         }
 
         /** <inheritDoc /> */

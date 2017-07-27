@@ -38,7 +38,6 @@ namespace Apache.Ignite.Core.Impl.Cache
     using Apache.Ignite.Core.Impl.Cluster;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Transactions;
-    using Apache.Ignite.Core.Impl.Unmanaged;
 
     /// <summary>
     /// Native cache wrapper.
@@ -74,7 +73,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <param name="flagKeepBinary">Keep binary flag.</param>
         /// <param name="flagNoRetries">No-retries mode flag.</param>
         /// <param name="flagPartitionRecover">Partition recover mode flag.</param>
-        public CacheImpl(Ignite grid, IUnmanagedTarget target, Marshaller marsh,
+        public CacheImpl(Ignite grid, IPlatformTargetInternal target, Marshaller marsh,
             bool flagSkipStore, bool flagKeepBinary, bool flagNoRetries, bool flagPartitionRecover)
             : base(target, marsh)
         {

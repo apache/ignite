@@ -30,8 +30,6 @@ namespace Apache.Ignite.Core.Impl.Events
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Handle;
-    using Apache.Ignite.Core.Impl.Unmanaged;
-    using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
 
     /// <summary>
     /// Ignite events.
@@ -73,7 +71,7 @@ namespace Apache.Ignite.Core.Impl.Events
         /// <param name="target">Target.</param>
         /// <param name="marsh">Marshaller.</param>
         /// <param name="clusterGroup">Cluster group.</param>
-        public Events(IUnmanagedTarget target, Marshaller marsh, IClusterGroup clusterGroup) 
+        public Events(IPlatformTargetInternal target, Marshaller marsh, IClusterGroup clusterGroup) 
             : base(target, marsh)
         {
             Debug.Assert(clusterGroup != null);

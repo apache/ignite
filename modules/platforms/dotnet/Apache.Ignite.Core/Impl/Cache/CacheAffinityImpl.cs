@@ -25,8 +25,6 @@ namespace Apache.Ignite.Core.Impl.Cache
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Common;
-    using Apache.Ignite.Core.Impl.Unmanaged;
-    using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
 
     /// <summary>
     /// Cache affinity implementation.
@@ -91,7 +89,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <param name="marsh">Marshaller.</param>
         /// <param name="keepBinary">Keep binary flag.</param>
         /// <param name="ignite">Grid.</param>
-        public CacheAffinityImpl(IUnmanagedTarget target, Marshaller marsh, bool keepBinary, 
+        public CacheAffinityImpl(IPlatformTargetInternal target, Marshaller marsh, bool keepBinary, 
             Ignite ignite) : base(target, marsh)
         {
             _keepBinary = keepBinary;

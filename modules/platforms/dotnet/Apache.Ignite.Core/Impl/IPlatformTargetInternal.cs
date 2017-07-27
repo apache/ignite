@@ -25,13 +25,16 @@ namespace Apache.Ignite.Core.Impl
     /// <summary>
     /// Extended platform target interface.
     /// </summary>
-    internal interface IPlatformTargetInternal : IPlatformTarget
+    internal interface IPlatformTargetInternal : IPlatformTarget, IDisposable  // TODO: Verify consistent naming.
     {
         IUnmanagedTarget Target { get; }
 
         long OutOp(int type, Action<IBinaryStream> action);
 
-        // TODO: Return type should be IPlatformTargetInternal?
-        IUnmanagedTarget OutOpObject(int type, Action<IBinaryStream> action);
+        IPlatformTargetInternal OutOpObject(int type, Action<IBinaryStream> action);
+        
+        IPlatformTargetInternal OutOpObject(int type);
+
+        T InOp<T>(int type, Func<IBinaryStream, T> action);
     }
 }

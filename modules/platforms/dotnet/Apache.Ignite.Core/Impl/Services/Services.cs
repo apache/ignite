@@ -91,7 +91,7 @@ namespace Apache.Ignite.Core.Impl.Services
         /// <param name="clusterGroup">Cluster group.</param>
         /// <param name="keepBinary">Invoker binary flag.</param>
         /// <param name="srvKeepBinary">Server binary flag.</param>
-        public Services(IUnmanagedTarget target, Marshaller marsh, IClusterGroup clusterGroup, 
+        public Services(IPlatformTargetInternal target, Marshaller marsh, IClusterGroup clusterGroup, 
             bool keepBinary, bool srvKeepBinary)
             : base(target, marsh)
         {

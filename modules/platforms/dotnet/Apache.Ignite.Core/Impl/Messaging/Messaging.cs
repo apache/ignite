@@ -29,7 +29,6 @@ namespace Apache.Ignite.Core.Impl.Messaging
     using Apache.Ignite.Core.Impl.Collections;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Resource;
-    using Apache.Ignite.Core.Impl.Unmanaged;
     using Apache.Ignite.Core.Messaging;
 
     /// <summary>
@@ -69,7 +68,7 @@ namespace Apache.Ignite.Core.Impl.Messaging
         /// <param name="target">Target.</param>
         /// <param name="marsh">Marshaller.</param>
         /// <param name="prj">Cluster group.</param>
-        public Messaging(IUnmanagedTarget target, Marshaller marsh, IClusterGroup prj)
+        public Messaging(IPlatformTargetInternal target, Marshaller marsh, IClusterGroup prj)
             : base(target, marsh)
         {
             Debug.Assert(prj != null);

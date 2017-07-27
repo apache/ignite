@@ -92,13 +92,33 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
-        public IUnmanagedTarget OutOpObject(int type, Action<IBinaryStream> action)
+        public IPlatformTargetInternal OutOpObject(int type, Action<IBinaryStream> action)
         {
             using (var stream = IgniteManager.Memory.Allocate().GetStream())
             {
                 action(stream);
 
-                return UU.TargetInStreamOutObject(_target, type, stream.SynchronizeOutput());
+                return new PlatformJniTarget(UU.TargetInStreamOutObject(_target, type, stream.SynchronizeOutput()),
+                    _marsh);
+            }
+        }
+
+        /** <inheritdoc /> */
+        public IPlatformTargetInternal OutOpObject(int type)
+        {
+            return GetPlatformTarget(UU.TargetOutObject(_target, type));
+        }
+
+        /** <inheritdoc /> */
+        public T InOp<T>(int type, Func<IBinaryStream, T> action)
+        {
+            using (var stream = IgniteManager.Memory.Allocate().GetStream())
+            {
+                UU.TargetOutStream(_target, type, stream.MemoryPointer);
+
+                stream.SynchronizeInput();
+
+                return action(stream);
             }
         }
 
@@ -148,7 +168,7 @@ namespace Apache.Ignite.Core.Impl
                 throw;
             }
 
-            fut.SetTarget(new Listenable(futTarget, _marsh));
+            fut.SetTarget(new Listenable(new PlatformJniTarget(futTarget, _marsh), _marsh));
 
             return fut;
         }
@@ -319,7 +339,7 @@ namespace Apache.Ignite.Core.Impl
         /** <inheritdoc /> */
         public IPlatformTarget OutObject(int type)
         {
-            return GetPlatformTarget(UU.TargetOutObject(_target, type));
+            return OutOpObject(type);
         }
 
         /** <inheritdoc /> */
@@ -382,7 +402,7 @@ namespace Apache.Ignite.Core.Impl
         /// <summary>
         /// Gets the platform target.
         /// </summary>
-        private IPlatformTarget GetPlatformTarget(IUnmanagedTarget target)
+        private IPlatformTargetInternal GetPlatformTarget(IUnmanagedTarget target)
         {
             return target == null ? null : new PlatformJniTarget(target, _marsh);
         }
@@ -396,5 +416,14 @@ namespace Apache.Ignite.Core.Impl
         }
 
         #endregion
+
+        /** <inheritdoc /> */
+        public void Dispose()
+        {
+            if (_target != null)
+            {
+                _target.Dispose();
+            }
+        }
     }
 }

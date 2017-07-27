@@ -26,8 +26,6 @@ namespace Apache.Ignite.Core.Impl.Datastream
     using Apache.Ignite.Core.Datastream;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Common;
-    using Apache.Ignite.Core.Impl.Unmanaged;
-    using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
 
     /// <summary>
     /// Data streamer internal interface to get rid of generics.
@@ -141,7 +139,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
         /// <param name="marsh">Marshaller.</param>
         /// <param name="cacheName">Cache name.</param>
         /// <param name="keepBinary">Binary flag.</param>
-        public DataStreamerImpl(IUnmanagedTarget target, Marshaller marsh, string cacheName, bool keepBinary)
+        public DataStreamerImpl(IPlatformTargetInternal target, Marshaller marsh, string cacheName, bool keepBinary)
             : base(target, marsh)
         {
             _cacheName = cacheName;

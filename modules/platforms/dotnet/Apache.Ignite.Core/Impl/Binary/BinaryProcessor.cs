@@ -21,7 +21,6 @@ namespace Apache.Ignite.Core.Impl.Binary
     using System.Diagnostics;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary.Metadata;
-    using Apache.Ignite.Core.Impl.Unmanaged;
 
     /// <summary>
     /// Binary metadata processor, delegates to PlatformBinaryProcessor in Java.
@@ -47,7 +46,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         /// <param name="target">Target.</param>
         /// <param name="marsh">Marshaller.</param>
-        public BinaryProcessor(IUnmanagedTarget target, Marshaller marsh) : base(target, marsh)
+        public BinaryProcessor(IPlatformTargetInternal target, Marshaller marsh) : base(target, marsh)
         {
             // No-op.
         }

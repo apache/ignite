@@ -22,7 +22,6 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
     using System.Diagnostics.CodeAnalysis;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary;
-    using Apache.Ignite.Core.Impl.Unmanaged;
 
     /// <summary>
     /// Cursor for entry-based queries.
@@ -39,7 +38,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
         /// <param name="marsh">Marshaler.</param>
         /// <param name="keepBinary">Keep poratble flag.</param>
         /// <param name="readerFunc">The reader function.</param>
-        public FieldsQueryCursor(IUnmanagedTarget target, Marshaller marsh, bool keepBinary, 
+        public FieldsQueryCursor(IPlatformTargetInternal target, Marshaller marsh, bool keepBinary, 
             Func<IBinaryRawReader, int, T> readerFunc)
             : base(target, marsh, keepBinary)
         {
