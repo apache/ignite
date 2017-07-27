@@ -19,6 +19,7 @@ package org.apache.ignite.ml.math.impls;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
@@ -431,13 +432,10 @@ public class CacheUtils {
      * @param <K> Cache key object type.
      * @param <V> Cache value object type.
      */
-    public static <K, V> void update(String cacheName, IgniteConsumer<Cache.Entry<K, V>> fun,
-        IgniteSupplier<Set<K>> keysGen) {
+    public static <K, V> void update(String cacheName, IgniteConsumer<Cache.Entry<K, V>> fun, IgniteSupplier<Set<K>> keysGen) {
         bcast(cacheName, () -> {
             Ignite ignite = Ignition.localIgnite();
             IgniteCache<K, V> cache = ignite.getOrCreateCache(cacheName);
-
-            int partsCnt = ignite.affinity(cacheName).partitions();
 
             // Use affinity in filter for scan query. Otherwise we accept consumer in each node which is wrong.
             Affinity<K> affinity = ignite.affinity(cacheName);
@@ -446,12 +444,13 @@ public class CacheUtils {
             Collection<K> ks = affinity.mapKeysToNodes(keysGen.get()).get(locNode);
             if (ks == null)
                 return;
+            Map<K, V> m = new HashMap<>();
             for (K k : ks) {
                 V v = cache.localPeek(k);
                 fun.accept(new CacheEntryImpl<>(k, v));
-
-                cache.put(k, v);
+                m.put(k, v);
             }
+            cache.putAll(m);
         });
     }
 

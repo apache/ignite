@@ -44,8 +44,8 @@ public class ContinuousFeatureVector<D extends ContinuousRegionInfo> implements
     /** Samples. */
     private List<SampleInfo> samples;
 
-    // TODO: Optimize: should store only one instance of intervals per node instead of instance per feature vector.
-    private final List<D> intervals = new LinkedList<>();
+    /** Information about regions. */
+    private final List<D> regions = new LinkedList<>();
 
     /**
      * @param splitCalc Calculator used for calculating splits.
@@ -65,7 +65,7 @@ public class ContinuousFeatureVector<D extends ContinuousRegionInfo> implements
         this.calc = splitCalc;
 
         samples.sort(Comparator.comparingDouble(SampleInfo::getVal));
-        intervals.add(calc.calculateIntervalInfo(samples.stream().mapToDouble(SampleInfo::getLabel), 0));
+        regions.add(calc.calculateRegionInfo(samples.stream().mapToDouble(SampleInfo::getLabel), 0));
     }
 
     /** {@inheritDoc} */
@@ -75,13 +75,13 @@ public class ContinuousFeatureVector<D extends ContinuousRegionInfo> implements
 
         // Try to split every possible interval and find the best split.
         int i = 0;
-        for (D info : intervals) {
+        for (D info : regions) {
             int l = info.left();
             int r = info.right();
             int size = (r - l) + 1;
 
             double curImpurity = info.impurity();
-            SplitInfo<D> split = calc.splitInterval(samples.subList(l, r + 1).stream(), i, info);
+            SplitInfo<D> split = calc.splitRegion(samples.subList(l, r + 1).stream(), i, info);
 
             if (split == null) {
                 i++;
@@ -118,11 +118,11 @@ public class ContinuousFeatureVector<D extends ContinuousRegionInfo> implements
 
     /** {@inheritDoc} */
     @Override public double[] calculateRegions(IgniteFunction<DoubleStream, Double> regCalc) {
-        double[] res = new double[intervals.size()];
+        double[] res = new double[regions.size()];
 
         int i = 0;
 
-        for (D interval : intervals) {
+        for (D interval : regions) {
             int l = interval.left();
             int r = interval.right();
 
@@ -135,14 +135,14 @@ public class ContinuousFeatureVector<D extends ContinuousRegionInfo> implements
 
     /** {@inheritDoc} */
     @Override public ContinuousFeatureVector<D> performSplit(SparseBitSet bs, int regionIdx, D leftData, D rightData) {
-        D info = intervals.get(regionIdx);
+        D info = regions.get(regionIdx);
         int l = info.left();
         int r = info.right();
 
         sortByBitSet(l, r, bs);
 
-        intervals.set(regionIdx, leftData);
-        intervals.add(regionIdx + 1, rightData);
+        regions.set(regionIdx, leftData);
+        regions.add(regionIdx + 1, rightData);
 
         return this;
     }
@@ -150,7 +150,7 @@ public class ContinuousFeatureVector<D extends ContinuousRegionInfo> implements
     /** {@inheritDoc} */
     @Override public ContinuousFeatureVector<D> performSplitGeneric(SparseBitSet bs, int regionIdx, RegionInfo leftData,
         RegionInfo rightData) {
-        D info = intervals.get(regionIdx);
+        D info = regions.get(regionIdx);
         int l = info.left();
         int r = info.right();
 
@@ -160,11 +160,11 @@ public class ContinuousFeatureVector<D extends ContinuousRegionInfo> implements
 
         // TODO: maybe we should optimize here: because we keep extra information for calculations in <D>, we are obliged
         // to do following calculations even though we already have impurity for each region calculated.
-        D ld = calc.calculateIntervalInfo(samples.subList(l, l + newLSize).stream().mapToDouble(SampleInfo::getLabel), l);
-        D rd = calc.calculateIntervalInfo(samples.subList(l + newLSize, r + 1).stream().mapToDouble(SampleInfo::getLabel), l + newLSize);
+        D ld = calc.calculateRegionInfo(samples.subList(l, l + newLSize).stream().mapToDouble(SampleInfo::getLabel), l);
+        D rd = calc.calculateRegionInfo(samples.subList(l + newLSize, r + 1).stream().mapToDouble(SampleInfo::getLabel), l + newLSize);
 
-        intervals.set(regionIdx, ld);
-        intervals.add(regionIdx + 1, rd);
+        regions.set(regionIdx, ld);
+        regions.add(regionIdx + 1, rd);
 
         return this;
     }

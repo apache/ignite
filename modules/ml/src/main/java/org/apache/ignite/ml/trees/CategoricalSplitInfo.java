@@ -54,4 +54,13 @@ public class CategoricalSplitInfo<D extends RegionInfo> extends SplitInfo<D> {
     public BitSet bitSet() {
         return bs;
     }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return "CategoricalSplitInfo{" +
+            "infoGain=" + infoGain +
+            ", regionIdx=" + regionIdx +
+            ", bs=" + bs +
+            '}';
+    }
 }

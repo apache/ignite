@@ -52,6 +52,9 @@ public class CategoricalFeatureVector
     /** Function for calculating impurity of a given region of points. */
     private IgniteFunction<DoubleStream, Double> calc;
 
+    /** Minimal information gain value which is regarded as positive information gain. */
+    private static double MIN_INGORMATION_GAIN = 1E-10;
+
     /**
      * @param calc Function for calculating impurity of a given region of points.
      * @param data Projection of samples on given feature in format of stream of (sample index, projection value).
@@ -84,7 +87,7 @@ public class CategoricalFeatureVector
     /** {@inheritDoc} */
     @Override public SplitInfo<CategoricalRegionInfo> findBestSplit() {
         SplitInfo<CategoricalRegionInfo> res = null;
-        double curInfoGain = 0.0;
+        double curInfoGain = MIN_INGORMATION_GAIN;
 
         int i = 0;
 
@@ -165,14 +168,17 @@ public class CategoricalFeatureVector
     /** */
     private SplitInfo<CategoricalRegionInfo> split(BitSet leftCats, int intervalIdx, Map<Integer, Integer> mapping,
         CategoricalRegionInfo interval) {
+        System.out.println("mapping:" + mapping);
         Map<Boolean, List<Integer>> leftRight = Arrays.stream(interval.vectors()).boxed().
             collect(Collectors.partitioningBy((bi) -> leftCats.get(mapping.get((int)samples.get(bi).getVal()))));
 
-        int leftSize = leftRight.get(true).size();
-        double leftImpurity = calc.apply(leftRight.get(true).stream().mapToDouble(i -> samples.get(i).getLabel()));
+        List<Integer> leftIndx = leftRight.get(true);
+        int leftSize = leftIndx.size();
+        double leftImpurity = calc.apply(leftIndx.stream().mapToDouble(i -> samples.get(i).getLabel()));
 
-        int rightSize = leftRight.get(false).size();
-        double rightImpurity = calc.apply(leftRight.get(false).stream().mapToDouble(i -> samples.get(i).getLabel()));
+        List<Integer> rightIndx = leftRight.get(false);
+        int rightSize = rightIndx.size();
+        double rightImpurity = calc.apply(rightIndx.stream().mapToDouble(i -> samples.get(i).getLabel()));
 
         int totalSize = leftSize + rightSize;
 
@@ -183,6 +189,7 @@ public class CategoricalFeatureVector
             leftCats);
 
         res.setInfoGain(interval.impurity() - (double)leftSize / totalSize * leftImpurity - (double)rightSize / totalSize * rightImpurity);
+        System.out.println("lsize: " + leftSize + "rsize: " + rightSize + " ig: " + res.infoGain() + " lcats: " + leftCats);
         return res;
     }
 

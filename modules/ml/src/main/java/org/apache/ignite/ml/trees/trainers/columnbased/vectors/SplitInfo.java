@@ -27,16 +27,16 @@ import org.apache.ignite.ml.trees.nodes.SplitNode;
  */
 public abstract class SplitInfo<D extends RegionInfo> {
     /** Information gain of this split. */
-    private double infoGain;
+    protected double infoGain;
 
     /** Index of the region to split. */
-    private int regionIdx;
+    protected int regionIdx;
 
     /** Data of left subregion. */
-    private D leftData;
+    protected D leftData;
 
     /** Data of right subregion. */
-    private D rightData;
+    protected D rightData;
 
     /**
      * Construct the split info.

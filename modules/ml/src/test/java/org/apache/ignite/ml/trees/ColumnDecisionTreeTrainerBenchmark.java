@@ -48,16 +48,20 @@ import java.util.stream.Collectors;
 import java.util.stream.DoubleStream;
 
 public class ColumnDecisionTreeTrainerBenchmark extends BaseDecisionTreeTest {
+//    private static Function<Vector, Double> f1 = v -> {
+//        return v.get(0);
+//    };
+
     private static Function<Vector, Double> f1 = v -> {
-        return v.get(0) * v.get(0) + Math.sin(v.get(1)) + v.get(2);
+        return v.get(0) * v.get(0) + 2 * Math.sin(v.get(1)) + v.get(2);
     };
 
     /**
      * This test is for manual run only.
      */
     @Ignore
-    @Test
-    public void testCacheMixed() {
+//    @Test
+    public void destCacheMixed() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
         int ptsPerReg = 150;
         int featCnt = 10;
@@ -79,14 +83,14 @@ public class ColumnDecisionTreeTrainerBenchmark extends BaseDecisionTreeTest {
     @Test
     public void testF1() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
-        int ptsCnt = 20000;
+        int ptsCnt = 13000;
         Map<Integer, double[]> ranges = new HashMap<>();
 
         ranges.put(0, new double[] {-100.0, 100.0});
         ranges.put(1, new double[] {-100.0, 100.0});
         ranges.put(2, new double[] {-100.0, 100.0});
 
-        int featCnt = 20;
+        int featCnt = 10;
         double[] defRng = {-1.0, 1.0};
 
         Vector[] trainVectors = vecsFromRanges(ranges, featCnt, defRng, new Random(123L), ptsCnt, f1);
@@ -100,14 +104,14 @@ public class ColumnDecisionTreeTrainerBenchmark extends BaseDecisionTreeTest {
         IgniteFunction<DoubleStream, Double> regCalc = s -> s.average().orElse(0.0);
 
         ColumnDecisionTreeTrainer<VarianceSplitCalculator.VarianceData> trainer =
-            new ColumnDecisionTreeTrainer<>(11, new VarianceSplitCalculator(), SIMPLE_VARIANCE_CALCULATOR, regCalc);
+            new ColumnDecisionTreeTrainer<>(9, new VarianceSplitCalculator(), SIMPLE_VARIANCE_CALCULATOR, regCalc);
 
         System.out.println(">>> Training started");
         long before = System.currentTimeMillis();
         DecisionTreeModel mdl = trainer.train(new ColumnDecisionTreeMatrixInput(m, new HashMap<>()));
         System.out.println(">>> Training finished in " + (System.currentTimeMillis() - before));
 
-        Vector[] testVectors = vecsFromRanges(ranges, 50, defRng, new Random(123L), 20, f1);
+        Vector[] testVectors = vecsFromRanges(ranges, featCnt, defRng, new Random(123L), 20, f1);
 
         IgniteTriFunction<Model<Vector, Double>, Stream<IgniteBiTuple<Vector, Double>>, Function<Double, Double>, Double> mse = Estimators.MSE();
         Double accuracy = mse.apply(mdl, Arrays.stream(testVectors).map(v -> new IgniteBiTuple<>(v.viewPart(0, featCnt), v.getX(featCnt))), Function.identity());
@@ -173,7 +177,6 @@ public class ColumnDecisionTreeTrainerBenchmark extends BaseDecisionTreeTest {
 
             streamer.receiver(StreamTransformer.from((e, arg) -> {
                 Map<Integer, Double> value = e.getValue();
-                Integer featIdx = e.getKey().get1();
 
                 if (value == null)
                     value = new Int2DoubleOpenHashMap();

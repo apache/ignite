@@ -49,7 +49,7 @@ public class VarianceSplitCalculator implements ContinuousSplitCalculator<Varian
     }
 
     /** {@inheritDoc} */
-    @Override public VarianceData calculateIntervalInfo(DoubleStream s, int l) {
+    @Override public VarianceData calculateRegionInfo(DoubleStream s, int l) {
         PrimitiveIterator.OfDouble itr = s.iterator();
         int i = 0;
 
@@ -69,7 +69,7 @@ public class VarianceSplitCalculator implements ContinuousSplitCalculator<Varian
     }
 
     /** {@inheritDoc} */
-    @Override public SplitInfo<VarianceData> splitInterval(Stream<SampleInfo> s, int intervalIdx, VarianceData d) {
+    @Override public SplitInfo<VarianceData> splitRegion(Stream<SampleInfo> s, int regionIdx, VarianceData d) {
         int size = d.right() - d.left() + 1;
 
         double lm2 = 0.0;
@@ -141,7 +141,7 @@ public class VarianceSplitCalculator implements ContinuousSplitCalculator<Varian
         VarianceData lData = new VarianceData(d.left(), d.left() + lSize - 1, lm2 / (lSize != 0 ? lSize : 1), lMean);
         VarianceData rData = new VarianceData(d.left() + lSize, d.right(), rm2 / ((size - lSize) != 0 ? (size - lSize) : 1), rMean);
 
-        return new ContinuousSplitInfo<>(intervalIdx, threshold, lData, rData);
+        return new ContinuousSplitInfo<>(regionIdx, threshold, lData, rData);
     }
 
     /**

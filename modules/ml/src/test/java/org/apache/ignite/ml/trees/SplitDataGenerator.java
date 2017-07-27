@@ -77,7 +77,7 @@ public class SplitDataGenerator<V extends Vector> {
             boundsData.put(i, new IgniteBiTuple<>(-1.0, 1.0));
         });
 
-        Region firstReg = new Region(catCoords, contCoords);
+        Region firstReg = new Region(catCoords, contCoords, 0);
         regs.add(firstReg);
     }
 
@@ -118,10 +118,20 @@ public class SplitDataGenerator<V extends Vector> {
     private static class Region implements Serializable {
         private Map<Integer, CatCoordInfo> catCoords;
         private Map<Integer, ContCoordInfo> contCoords;
+        private int twoPow;
 
-        public Region(Map<Integer, CatCoordInfo> catCoords, Map<Integer, ContCoordInfo> contCoords) {
+        public Region(Map<Integer, CatCoordInfo> catCoords, Map<Integer, ContCoordInfo> contCoords, int twoPow) {
             this.catCoords = catCoords;
             this.contCoords = contCoords;
+            this.twoPow = twoPow;
+        }
+
+        public int divideBy() {
+            return 1 << twoPow;
+        }
+
+        public void incTwoPow() {
+            twoPow++;
         }
 
         @Override public String toString() {
@@ -170,7 +180,7 @@ public class SplitDataGenerator<V extends Vector> {
             Map<Integer, IgniteBiTuple<Double, Double>> boundsData, Map<Boolean, List<Integer>> catCont,
             Supplier<V> s,
             Random rnd) {
-            return IntStream.range(0, ptsCnt).mapToObj(i -> {
+            return IntStream.range(0, ptsCnt / divideBy()).mapToObj(i -> {
                 V v = s.get();
                 int coordsCnt = v.size();
                 catCont.get(false).forEach(ci -> v.setX(ci, generateContCoord(ci, boundsData, rnd)));
@@ -191,6 +201,8 @@ public class SplitDataGenerator<V extends Vector> {
 
         if (threshold < left || threshold > right)
             throw new MathIllegalArgumentException("Threshold is out of region bounds.");
+
+        regToSplit.incTwoPow();
 
         Region newReg = copy(regToSplit);
         newReg.contCoords.get(coordIdx).left = threshold;
@@ -221,6 +233,7 @@ public class SplitDataGenerator<V extends Vector> {
         ssc.xor(set);
         set.and(subset);
 
+        regToSplit.incTwoPow();
         Region newReg = copy(regToSplit);
         newReg.catCoords.put(coordIdx, new CatCoordInfo(ssc));
 
@@ -229,12 +242,12 @@ public class SplitDataGenerator<V extends Vector> {
         return this;
     }
 
-    public Stream<IgniteBiTuple<Integer, V>> points(int ptsPerReg, BiFunction<Double, Random, Double> f) {
+    public Stream<IgniteBiTuple<Integer, V>> points(int totalPts, BiFunction<Double, Random, Double> f) {
         regs.stream().forEach(System.out::println);
 
         return IntStream.range(0, regs.size()).
             boxed().
-            map(i -> regs.get(i).generatePoints(ptsPerReg, f.apply((double)i, rnd), boundsData, di, s, rnd).map(v -> new IgniteBiTuple<>(i, v))).flatMap(Function.identity());
+            map(i -> regs.get(i).generatePoints(totalPts, f.apply((double)i, rnd), boundsData, di, s, rnd).map(v -> new IgniteBiTuple<>(i, v))).flatMap(Function.identity());
     }
 
     public int numRegs() {
