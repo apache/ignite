@@ -1229,14 +1229,6 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /// <summary>
-        /// Reads the exception.
-        /// </summary>
-        private Exception ReadException(IBinaryStream stream)
-        {
-            return ReadException(Marshaller.StartUnmarshal(stream));
-        }
-
-        /// <summary>
         /// Reads the exception, either in binary wrapper form, or as a pair of strings.
         /// </summary>
         /// <param name="reader">The stream.</param>
