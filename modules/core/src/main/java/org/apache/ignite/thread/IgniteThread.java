@@ -18,6 +18,7 @@
 package org.apache.ignite.thread;
 
 import java.util.concurrent.atomic.AtomicLong;
+import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.worker.GridWorker;
@@ -52,13 +53,16 @@ public class IgniteThread extends Thread {
     /** */
     private final int stripe;
 
+    /** */
+    private final byte plc;
+
     /**
      * Creates thread with given worker.
      *
      * @param worker Runnable to create thread with.
      */
     public IgniteThread(GridWorker worker) {
-        this(DFLT_GRP, worker.igniteInstanceName(), worker.name(), worker, GRP_IDX_UNASSIGNED, -1);
+        this(worker.igniteInstanceName(), worker.name(), worker, GRP_IDX_UNASSIGNED, -1, GridIoPolicy.UNDEFINED);
     }
 
     /**
@@ -69,41 +73,28 @@ public class IgniteThread extends Thread {
      * @param r Runnable to execute.
      */
     public IgniteThread(String igniteInstanceName, String threadName, Runnable r) {
-        this(igniteInstanceName, threadName, r, GRP_IDX_UNASSIGNED, -1);
-    }
-
-    /**
-     * Creates grid thread with given name for a given Ignite instance.
-     *
-     * @param igniteInstanceName Name of the Ignite instance this thread is created for.
-     * @param threadName Name of thread.
-     * @param r Runnable to execute.
-     * @param grpIdx Index within a group.
-     * @param stripe Non-negative stripe number if this thread is striped pool thread.
-     */
-    public IgniteThread(String igniteInstanceName, String threadName, Runnable r, int grpIdx, int stripe) {
-        this(DFLT_GRP, igniteInstanceName, threadName, r, grpIdx, stripe);
+        this(igniteInstanceName, threadName, r, GRP_IDX_UNASSIGNED, -1, GridIoPolicy.UNDEFINED);
     }
 
     /**
      * Creates grid thread with given name for a given Ignite instance with specified
      * thread group.
      *
-     * @param grp Thread group.
      * @param igniteInstanceName Name of the Ignite instance this thread is created for.
      * @param threadName Name of thread.
      * @param r Runnable to execute.
      * @param grpIdx Thread index within a group.
      * @param stripe Non-negative stripe number if this thread is striped pool thread.
      */
-    public IgniteThread(ThreadGroup grp, String igniteInstanceName, String threadName, Runnable r, int grpIdx, int stripe) {
-        super(grp, r, createName(cntr.incrementAndGet(), threadName, igniteInstanceName));
+    public IgniteThread(String igniteInstanceName, String threadName, Runnable r, int grpIdx, int stripe, byte plc) {
+        super(DFLT_GRP, r, createName(cntr.incrementAndGet(), threadName, igniteInstanceName));
 
         A.ensure(grpIdx >= -1, "grpIdx >= -1");
 
         this.igniteInstanceName = igniteInstanceName;
         this.compositeRwLockIdx = grpIdx;
         this.stripe = stripe;
+        this.plc = plc;
     }
 
     /**
@@ -117,6 +108,14 @@ public class IgniteThread extends Thread {
         this.igniteInstanceName = igniteInstanceName;
         this.compositeRwLockIdx = GRP_IDX_UNASSIGNED;
         this.stripe = -1;
+        this.plc = GridIoPolicy.UNDEFINED;
+    }
+
+    /**
+     * @return Related {@link GridIoPolicy} for internal Ignite pools.
+     */
+    public byte policy() {
+        return plc;
     }
 
     /**
