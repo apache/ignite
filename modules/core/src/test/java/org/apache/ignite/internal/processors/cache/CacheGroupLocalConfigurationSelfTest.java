@@ -22,6 +22,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -30,25 +31,43 @@ public class CacheGroupLocalConfigurationSelfTest extends GridCommonAbstractTest
     /** */
     private static final String SECOND_NODE_NAME = "secondNode";
 
+    /** */
     private static final int NON_STANDARD_REBALANCE_VALUE = 101;
 
+    /** */
+    private static final String NON_DEFAULT_GROUP_NAME = "cacheGroup";
+
+    /** */
+    private boolean useNonDfltCacheGrp = true;
+
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        if (igniteInstanceName.equals(SECOND_NODE_NAME))
-            cfg.setCacheConfiguration(new CacheConfiguration()
+        if (igniteInstanceName.equals(SECOND_NODE_NAME)) {
+            CacheConfiguration ccfg = new CacheConfiguration()
                 .setName(DEFAULT_CACHE_NAME)
                 .setRebalanceDelay(NON_STANDARD_REBALANCE_VALUE)
                 .setRebalanceBatchesPrefetchCount(NON_STANDARD_REBALANCE_VALUE)
                 .setRebalanceBatchSize(NON_STANDARD_REBALANCE_VALUE)
                 .setRebalanceOrder(NON_STANDARD_REBALANCE_VALUE)
                 .setRebalanceThrottle(NON_STANDARD_REBALANCE_VALUE)
-                .setRebalanceTimeout(NON_STANDARD_REBALANCE_VALUE)
-            );
-        else
-            cfg.setCacheConfiguration(new CacheConfiguration()
-                .setName(DEFAULT_CACHE_NAME)
-            );
+                .setRebalanceTimeout(NON_STANDARD_REBALANCE_VALUE);
+
+            if (useNonDfltCacheGrp)
+                ccfg.setGroupName(NON_DEFAULT_GROUP_NAME);
+
+            cfg.setCacheConfiguration(ccfg);
+        }
+        else {
+            CacheConfiguration ccfg = new CacheConfiguration()
+                .setName(DEFAULT_CACHE_NAME);
+
+            if (useNonDfltCacheGrp)
+                ccfg.setGroupName(NON_DEFAULT_GROUP_NAME);
+
+            cfg.setCacheConfiguration(ccfg);
+        }
 
 
         return cfg;
@@ -61,9 +80,28 @@ public class CacheGroupLocalConfigurationSelfTest extends GridCommonAbstractTest
 
     /**
      * Test validates that all cache group configuration attributes from local config
-     * that must not be overwritten by grid config are preserved.
+     * that must not be overwritten by grid config are preserved for default cache group.
      */
-    public void testLocalConfigurationAttributesPreserved() throws Exception {
+    public void testDefaultGroupLocalAttributesPreserved() throws Exception {
+        useNonDfltCacheGrp = false;
+
+        executeTest();
+    }
+
+    /**
+     * Test validates that all cache group configuration attributes from local config
+     * that must not be overwritten by grid config are preserved for non-default cache group.
+     */
+    public void testNonDefaultGroupLocalAttributesPreserved() throws Exception {
+        useNonDfltCacheGrp = true;
+
+        executeTest();
+    }
+
+    /**
+     * Executes actual test logic.
+     */
+    private void executeTest() throws Exception {
         startGrid(0);
 
         IgniteKernal ignite = (IgniteKernal) startGrid("secondNode");
@@ -72,28 +110,36 @@ public class CacheGroupLocalConfigurationSelfTest extends GridCommonAbstractTest
 
         Map<Integer, CacheGroupContext> cacheGrps = U.field(cacheProc, "cacheGrps");
 
-        CacheConfiguration dfltCacheGroupCfg = findDefaultGroupConfig(cacheGrps);
+        CacheConfiguration cacheGroupCfg = findGroupConfig(cacheGrps,
+            useNonDfltCacheGrp ? NON_DEFAULT_GROUP_NAME : DEFAULT_CACHE_NAME);
 
-        assertNotNull("Default cache group must be presented", dfltCacheGroupCfg);
+        assertNotNull("Default cache group must be presented", cacheGroupCfg);
 
-        assertEquals("Rebalance delay", dfltCacheGroupCfg.getRebalanceDelay(), NON_STANDARD_REBALANCE_VALUE);
+        assertEquals("Rebalance delay", cacheGroupCfg.getRebalanceDelay(), NON_STANDARD_REBALANCE_VALUE);
 
         assertEquals("Rebalance batches prefetch count",
-            dfltCacheGroupCfg.getRebalanceBatchesPrefetchCount(),
+            cacheGroupCfg.getRebalanceBatchesPrefetchCount(),
             NON_STANDARD_REBALANCE_VALUE);
 
-        assertEquals("Rebalance batch size", dfltCacheGroupCfg.getRebalanceBatchSize(), NON_STANDARD_REBALANCE_VALUE);
+        assertEquals("Rebalance batch size", cacheGroupCfg.getRebalanceBatchSize(), NON_STANDARD_REBALANCE_VALUE);
 
-        assertEquals("Rebalance order", dfltCacheGroupCfg.getRebalanceOrder(), NON_STANDARD_REBALANCE_VALUE);
+        assertEquals("Rebalance order", cacheGroupCfg.getRebalanceOrder(), NON_STANDARD_REBALANCE_VALUE);
 
-        assertEquals("Rebalance throttle", dfltCacheGroupCfg.getRebalanceThrottle(), NON_STANDARD_REBALANCE_VALUE);
+        assertEquals("Rebalance throttle", cacheGroupCfg.getRebalanceThrottle(), NON_STANDARD_REBALANCE_VALUE);
 
-        assertEquals("Rebalance timeout", dfltCacheGroupCfg.getRebalanceTimeout(), NON_STANDARD_REBALANCE_VALUE);
+        assertEquals("Rebalance timeout", cacheGroupCfg.getRebalanceTimeout(), NON_STANDARD_REBALANCE_VALUE);
     }
 
-    private CacheConfiguration findDefaultGroupConfig(Map<Integer, CacheGroupContext> cacheGrps) {
+    /**
+     * @param cacheGrps All configured cache groups.
+     * @param groupName Name of group to find.
+     */
+    private CacheConfiguration findGroupConfig(Map<Integer, CacheGroupContext> cacheGrps, @Nullable String groupName) {
+        if (groupName == null)
+            groupName = DEFAULT_CACHE_NAME;
+
         for (CacheGroupContext grpCtx : cacheGrps.values()) {
-            if (DEFAULT_CACHE_NAME.equals(grpCtx.cacheOrGroupName()))
+            if (groupName.equals(grpCtx.cacheOrGroupName()))
                 return grpCtx.config();
         }
 
