@@ -510,6 +510,11 @@ namespace ignite
                 void WriteNull(const char* fieldName);
 
                 /**
+                 * Write NULL value.
+                 */
+                void WriteNull0();
+
+                /**
                  * Start array write.
                  *
                  * @param typ Collection type.

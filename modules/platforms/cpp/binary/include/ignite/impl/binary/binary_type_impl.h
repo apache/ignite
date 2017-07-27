@@ -80,7 +80,7 @@ namespace ignite
             static void Write(W& writer, const T* val)
             {
                 if (!val)
-                    writer.WriteNull();
+                    writer.WriteNull0();
                 else
                     writer.WriteTopObject0(*val);
             }

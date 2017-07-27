@@ -526,7 +526,7 @@ namespace ignite
                 CheckRawMode(true);
                 CheckSingleMode(true);
 
-                stream->WriteInt8(IGNITE_HDR_NULL);
+                WriteNull0();
             }
 
             void BinaryWriterImpl::WriteNull(const char* fieldName)
@@ -535,6 +535,11 @@ namespace ignite
                 CheckSingleMode(true);
 
                 WriteFieldId(fieldName, IGNITE_TYPE_OBJECT);
+                WriteNull0();
+            }
+
+            void BinaryWriterImpl::WriteNull0()
+            {
                 stream->WriteInt8(IGNITE_HDR_NULL);
             }
 

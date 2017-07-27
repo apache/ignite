@@ -1999,6 +1999,7 @@ BOOST_AUTO_TEST_CASE(TestPrimitivePointers)
     int32_t field2 = 42;
 
     writer.WriteObject("field1", &field1);
+    writer.WriteObject<int8_t*>("null", 0);
     writer.WriteObject("field2", &field2);
 
     writerImpl.PostWrite();
@@ -2008,7 +2009,7 @@ BOOST_AUTO_TEST_CASE(TestPrimitivePointers)
     InteropInputStream in(&mem);
 
     int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
-    int32_t footerEnd = footerBegin + 5 * 2;
+    int32_t footerEnd = footerBegin + 5 * 3;
 
     BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100,
         footerBegin, footerEnd, BinaryOffsetType::ONE_BYTE);
@@ -2017,9 +2018,11 @@ BOOST_AUTO_TEST_CASE(TestPrimitivePointers)
     in.Position(IGNITE_DFLT_HDR_LEN);
 
     std::auto_ptr<int32_t> field2Res(reader.ReadObject<int32_t*>("field2"));
+    std::auto_ptr<int8_t> fieldNullRes(reader.ReadObject<int8_t*>("null"));
     std::auto_ptr<std::string> field1Res(reader.ReadObject<std::string*>("field1"));
 
     BOOST_CHECK_EQUAL(*field1Res, field1);
+    BOOST_CHECK(fieldNullRes.get() == 0);
     BOOST_CHECK_EQUAL(*field2Res, field2);
 }
 

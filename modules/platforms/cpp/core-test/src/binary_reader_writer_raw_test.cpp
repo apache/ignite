@@ -1293,6 +1293,7 @@ BOOST_AUTO_TEST_CASE(TestPrimitivePointers)
     int32_t field2 = 42;
 
     rawWriter.WriteObject(&field1);
+    rawWriter.WriteObject<int8_t*>(0);
     rawWriter.WriteObject(&field2);
 
     writer.PostWrite();
@@ -1306,9 +1307,11 @@ BOOST_AUTO_TEST_CASE(TestPrimitivePointers)
     in.Position(IGNITE_DFLT_HDR_LEN);
 
     std::auto_ptr<std::string> field1Res(rawReader.ReadObject<std::string*>());
+    std::auto_ptr<int8_t> fieldNullRes(rawReader.ReadObject<int8_t*>());
     std::auto_ptr<int32_t> field2Res(rawReader.ReadObject<int32_t*>());
 
     BOOST_CHECK_EQUAL(*field1Res, field1);
+    BOOST_CHECK(fieldNullRes.get() == 0);
     BOOST_CHECK_EQUAL(*field2Res, field2);
 }
 
