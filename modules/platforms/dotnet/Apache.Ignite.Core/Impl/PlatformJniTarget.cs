@@ -172,7 +172,7 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
-        public unsafe TR InObjectStreamOutObjectStream<TR>(int type, Action<BinaryWriter> writeAction, 
+        public unsafe TR InObjectStreamOutObjectStream<TR>(int type, Action<IBinaryStream> writeAction, 
             Func<IBinaryStream, IPlatformTargetInternal, TR> readAction, IPlatformTargetInternal arg)
         {
             PlatformMemoryStream outStream = null;
@@ -186,9 +186,7 @@ namespace Apache.Ignite.Core.Impl
                 if (writeAction != null)
                 {
                     outStream = IgniteManager.Memory.Allocate().GetStream();
-                    var writer = _marsh.StartMarshal(outStream);
-                    writeAction(writer);
-                    FinishMarshal(writer);
+                    writeAction(outStream);
                     outPtr = outStream.SynchronizeOutput();
                 }
 

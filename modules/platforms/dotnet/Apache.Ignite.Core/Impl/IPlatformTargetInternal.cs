@@ -80,7 +80,7 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="writeAction">Write action.</param>
         /// <param name="readAction">Read action.</param>
         /// <returns>Result.</returns>
-        T InObjectStreamOutObjectStream<T>(int type, Action<BinaryWriter> writeAction,
+        T InObjectStreamOutObjectStream<T>(int type, Action<IBinaryStream> writeAction,
             Func<IBinaryStream, IPlatformTargetInternal, T> readAction, IPlatformTargetInternal arg);
 
         /// <summary>
