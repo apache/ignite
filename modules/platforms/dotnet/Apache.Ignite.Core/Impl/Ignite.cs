@@ -515,7 +515,7 @@ namespace Apache.Ignite.Core.Impl
         /// <returns>
         /// New instance of cache wrapping specified native cache.
         /// </returns>
-        public ICache<TK, TV> GetCache<TK, TV>(IUnmanagedTarget nativeCache, bool keepBinary = false)
+        public ICache<TK, TV> GetCache<TK, TV>(IPlatformTargetInternal nativeCache, bool keepBinary = false)
         {
             return new CacheImpl<TK, TV>(this, nativeCache, _marsh, false, keepBinary, false, false);
         }
@@ -693,7 +693,7 @@ namespace Apache.Ignite.Core.Impl
         /** <inheritdoc /> */
         public ICollection<string> GetCacheNames()
         {
-            return OutStream((int) Op.GetCacheNames, r =>
+            return Target.OutStream((int) Op.GetCacheNames, r =>
             {
                 var res = new string[r.ReadInt()];
 
