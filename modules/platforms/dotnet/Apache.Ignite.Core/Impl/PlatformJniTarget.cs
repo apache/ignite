@@ -147,18 +147,14 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
-        public TR InStreamOutLong<TR>(int type, Action<BinaryWriter> outAction, Func<IBinaryStream, long, TR> inAction, 
+        public TR InStreamOutLong<TR>(int type, Action<IBinaryStream> outAction, Func<IBinaryStream, long, TR> inAction, 
             Func<IBinaryStream, Exception> readErrorAction)
         {
             Debug.Assert(readErrorAction != null);
 
             using (var stream = IgniteManager.Memory.Allocate().GetStream())
             {
-                var writer = _marsh.StartMarshal(stream);
-
-                outAction(writer);
-
-                FinishMarshal(writer);
+                outAction(stream);
 
                 var res = UU.TargetInStreamOutLong(_target, type, stream.SynchronizeOutput());
 

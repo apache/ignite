@@ -131,14 +131,7 @@ namespace Apache.Ignite.Core.Impl
         /// <returns>Resulting object.</returns>
         protected IPlatformTargetInternal DoOutOpObject(int type, Action<BinaryWriter> action)
         {
-            return _target.InStreamOutObject(type, stream =>
-            {
-                var writer = _marsh.StartMarshal(stream);
-
-                action(writer);
-
-                FinishMarshal(writer);
-            });
+            return _target.InStreamOutObject(type, stream => WriteToStream(action, stream, _marsh));
         }
 
         /// <summary>
@@ -247,7 +240,8 @@ namespace Apache.Ignite.Core.Impl
         protected TR DoOutInOpX<TR>(int type, Action<BinaryWriter> outAction, Func<IBinaryStream, long, TR> inAction,
             Func<IBinaryStream, Exception> inErrorAction)
         {
-            return _target.InStreamOutLong(type, outAction, inAction, inErrorAction);
+            return _target.InStreamOutLong(type, stream => WriteToStream(outAction, stream, _marsh), 
+                inAction, inErrorAction);
         }
 
         /// <summary>
@@ -262,7 +256,8 @@ namespace Apache.Ignite.Core.Impl
         protected bool DoOutInOpX(int type, Action<BinaryWriter> outAction,
             Func<IBinaryStream, Exception> inErrorAction)
         {
-            return _target.InStreamOutLong(type, outAction, (stream, res) => res == True, inErrorAction);
+            return _target.InStreamOutLong(type, stream => WriteToStream(outAction, stream, _marsh), 
+                (stream, res) => res == True, inErrorAction);
         }
 
         /// <summary>
@@ -512,6 +507,19 @@ namespace Apache.Ignite.Core.Impl
 
             return fut;
         }
+
+        /// <summary>
+        /// Writes to stream.
+        /// </summary>
+        private static void WriteToStream(Action<BinaryWriter> action, IBinaryStream stream, Marshaller marsh)
+        {
+            var writer = marsh.StartMarshal(stream);
+
+            action(writer);
+
+            marsh.FinishMarshal(writer);
+        }
+
 
         #endregion
     }
