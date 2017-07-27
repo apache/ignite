@@ -25,7 +25,7 @@ namespace Apache.Ignite.Core.Impl
     /// <summary>
     /// Extended platform target interface with methods that operate on internal entities (streams and targets).
     /// </summary>
-    internal interface IPlatformTargetInternal : IPlatformTarget, IDisposable
+    internal interface IPlatformTargetInternal : IPlatformTarget, IDisposable  // TODO: Must be pure streams.
     {
         /// <summary>
         /// Gets the marshaller.
@@ -39,31 +39,6 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="writeAction">Write action.</param>
         /// <returns>Result.</returns>
         long InStreamOutLong(int type, Action<IBinaryStream> writeAction);
-
-        /// <summary>
-        /// Performs the OutObject operation.
-        /// </summary>
-        /// <param name="type">Operation type code.</param>
-        /// <returns>Result.</returns>
-        IPlatformTargetInternal OutOpObject(int type);
-
-        /// <summary>
-        /// Performs InStreamOutObject operation.
-        /// </summary>
-        /// <param name="type">Operation type code.</param>
-        /// <param name="writeAction">Write action.</param>
-        /// <returns>Result.</returns>
-        IPlatformTargetInternal InStreamOutObject(int type, Action<IBinaryStream> writeAction);
-
-        /// <summary>
-        /// Performs InStreamOutStream operation.
-        /// </summary>
-        /// <typeparam name="T">Result type.</typeparam>
-        /// <param name="type">Operation type code.</param>
-        /// <param name="writeAction">Write action.</param>
-        /// <param name="readAction">Read action.</param>
-        /// <returns>Result.</returns>
-        T InStreamOutStream<T>(int type, Action<BinaryWriter> writeAction, Func<IBinaryStream, T> readAction);
 
         /// <summary>
         /// Performs InStreamOutLong operation with stream reuse.
@@ -87,7 +62,25 @@ namespace Apache.Ignite.Core.Impl
         /// <returns>
         /// Result.
         /// </returns>
-        bool InStreamOutLong(int type, Action<BinaryWriter> writeAction, Func<IBinaryStream, Exception> readErrorAction);
+        bool InStreamOutLong(int type, Action<BinaryWriter> writeAction, Func<IBinaryStream, Exception> readErrorAction);  // TODO: Same as above?
+
+        /// <summary>
+        /// Performs InStreamOutStream operation.
+        /// </summary>
+        /// <typeparam name="T">Result type.</typeparam>
+        /// <param name="type">Operation type code.</param>
+        /// <param name="writeAction">Write action.</param>
+        /// <param name="readAction">Read action.</param>
+        /// <returns>Result.</returns>
+        T InStreamOutStream<T>(int type, Action<BinaryWriter> writeAction, Func<IBinaryStream, T> readAction);
+
+        /// <summary>
+        /// Performs InStreamOutObject operation.
+        /// </summary>
+        /// <param name="type">Operation type code.</param>
+        /// <param name="writeAction">Write action.</param>
+        /// <returns>Result.</returns>
+        IPlatformTargetInternal InStreamOutObject(int type, Action<IBinaryStream> writeAction);
 
         /// <summary>
         /// Performs InObjectStreamOutObjectStream operation.
@@ -109,5 +102,12 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="readAction">Read action.</param>
         /// <returns>Result.</returns>
         T OutStream<T>(int type, Func<IBinaryStream, T> readAction);
+
+        /// <summary>
+        /// Performs the OutObject operation.
+        /// </summary>
+        /// <param name="type">Operation type code.</param>
+        /// <returns>Result.</returns>
+        IPlatformTargetInternal OutObjectInternal(int type);
     }
 }

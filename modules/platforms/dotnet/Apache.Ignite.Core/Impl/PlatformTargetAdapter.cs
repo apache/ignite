@@ -159,7 +159,7 @@ namespace Apache.Ignite.Core.Impl
         /// <returns>Resulting object.</returns>
         protected IPlatformTargetInternal DoOutOpObject(int type)
         {
-            return _target.OutOpObject(type);
+            return _target.OutObjectInternal(type);
         }
 
         /// <summary>

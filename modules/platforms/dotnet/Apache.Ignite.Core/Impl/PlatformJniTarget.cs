@@ -108,7 +108,7 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
-        public IPlatformTargetInternal OutOpObject(int type)
+        public IPlatformTargetInternal OutObjectInternal(int type)
         {
             return GetPlatformTarget(UU.TargetOutObject(_target, type));
         }
@@ -476,7 +476,7 @@ namespace Apache.Ignite.Core.Impl
         /** <inheritdoc /> */
         public IPlatformTarget OutObject(int type)
         {
-            return OutOpObject(type);
+            return OutObjectInternal(type);
         }
 
         /** <inheritdoc /> */

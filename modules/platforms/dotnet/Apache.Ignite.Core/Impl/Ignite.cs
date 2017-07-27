@@ -157,7 +157,7 @@ namespace Apache.Ignite.Core.Impl
 
             marsh.Ignite = this;
 
-            _prj = new ClusterGroupImpl(Target.OutOpObject((int) Op.GetClusterGroup), null);
+            _prj = new ClusterGroupImpl(Target.OutObjectInternal((int) Op.GetClusterGroup), null);
 
             _binary = new Binary.Binary(marsh);
 
