@@ -40,15 +40,6 @@ namespace Apache.Ignite.Core.Impl
     internal class PlatformJniTarget : IPlatformTargetInternal
     {
         /** */
-        private const int False = 0;
-
-        /** */
-        private const int True = 1;
-
-        /** */
-        private const int Error = -1;
-
-        /** */
         private static readonly Dictionary<Type, FutureType> IgniteFutureTypeMap
             = new Dictionary<Type, FutureType>
             {
@@ -170,14 +161,14 @@ namespace Apache.Ignite.Core.Impl
 
                 var res = UU.TargetInStreamOutLong(_target, type, stream.SynchronizeOutput());
 
-                if (res != Error && inAction == null)
+                if (res != PlatformTarget.Error && inAction == null)
                     return default(TR);  // quick path for void operations
 
                 stream.SynchronizeInput();
 
                 stream.Seek(0, SeekOrigin.Begin);
 
-                if (res != Error)
+                if (res != PlatformTarget.Error)
                     return inAction != null ? inAction(stream, res) : default(TR);
 
                 throw inErrorAction(stream);
@@ -199,8 +190,10 @@ namespace Apache.Ignite.Core.Impl
 
                 var res = UU.TargetInStreamOutLong(_target, type, stream.SynchronizeOutput());
 
-                if (res != Error)
-                    return res == True;
+                if (res != PlatformTarget.Error)
+                {
+                    return res == PlatformTarget.True;
+                }
 
                 stream.SynchronizeInput();
 

@@ -21,16 +21,13 @@ namespace Apache.Ignite.Core.Impl
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
-    using System.IO;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Common;
-    using Apache.Ignite.Core.Impl.Memory;
     using BinaryReader = Apache.Ignite.Core.Impl.Binary.BinaryReader;
     using BinaryWriter = Apache.Ignite.Core.Impl.Binary.BinaryWriter;
-    using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
 
     /// <summary>
     /// Base class for interop targets.
@@ -39,13 +36,13 @@ namespace Apache.Ignite.Core.Impl
     internal class PlatformTarget
     {
         /** */
-        protected const int False = 0;
+        internal const int False = 0;
 
         /** */
-        protected const int True = 1;
+        internal const int True = 1;
 
         /** */
-        private const int Error = -1;
+        internal const int Error = -1;
 
         /** */
         private static readonly Dictionary<Type, FutureType> IgniteFutureTypeMap
@@ -283,23 +280,7 @@ namespace Apache.Ignite.Core.Impl
         /// <returns>Result.</returns>
         protected TR DoOutInOp<TR>(int type, Action<BinaryWriter> outAction)
         {
-            using (PlatformMemoryStream outStream = IgniteManager.Memory.Allocate().GetStream())
-            {
-                using (PlatformMemoryStream inStream = IgniteManager.Memory.Allocate().GetStream())
-                {
-                    BinaryWriter writer = _marsh.StartMarshal(outStream);
-
-                    outAction(writer);
-
-                    FinishMarshal(writer);
-
-                    UU.TargetInStreamOutStream(_target, type, outStream.SynchronizeOutput(), inStream.MemoryPointer);
-
-                    inStream.SynchronizeInput();
-
-                    return Unmarshal<TR>(inStream);
-                }
-            }
+            return Target.DoOutInOp(type, outAction, stream => Unmarshal<TR>(stream));
         }
 
         /// <summary>
@@ -310,23 +291,7 @@ namespace Apache.Ignite.Core.Impl
         /// <returns>Result.</returns>
         protected TR DoOutInOp<T1, TR>(int type, T1 val)
         {
-            using (PlatformMemoryStream outStream = IgniteManager.Memory.Allocate().GetStream())
-            {
-                using (PlatformMemoryStream inStream = IgniteManager.Memory.Allocate().GetStream())
-                {
-                    BinaryWriter writer = _marsh.StartMarshal(outStream);
-
-                    writer.WriteObject(val);
-
-                    FinishMarshal(writer);
-
-                    UU.TargetInStreamOutStream(_target, type, outStream.SynchronizeOutput(), inStream.MemoryPointer);
-
-                    inStream.SynchronizeInput();
-
-                    return Unmarshal<TR>(inStream);
-                }
-            }
+            return Target.DoOutInOp(type, writer => writer.WriteObject(val), stream => Unmarshal<TR>(stream));
         }
 
         /// <summary>
