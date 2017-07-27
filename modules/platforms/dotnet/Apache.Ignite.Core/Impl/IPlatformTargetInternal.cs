@@ -25,7 +25,7 @@ namespace Apache.Ignite.Core.Impl
     /// <summary>
     /// Extended platform target interface with methods that operate on internal entities (streams and targets).
     /// </summary>
-    internal interface IPlatformTargetInternal : IPlatformTarget, IDisposable  // TODO: Must be pure streams.
+    internal interface IPlatformTargetInternal : IPlatformTarget, IDisposable
     {
         /// <summary>
         /// Gets the marshaller.
