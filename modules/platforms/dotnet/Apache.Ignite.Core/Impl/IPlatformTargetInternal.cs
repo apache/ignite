@@ -20,7 +20,6 @@ namespace Apache.Ignite.Core.Impl
     using System;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
-    using Apache.Ignite.Core.Impl.Unmanaged;
     using Apache.Ignite.Core.Interop;
 
     /// <summary>
