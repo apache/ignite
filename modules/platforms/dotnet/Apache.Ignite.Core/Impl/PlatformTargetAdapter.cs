@@ -33,7 +33,7 @@ namespace Apache.Ignite.Core.Impl
     /// Base class for interop targets.
     /// </summary>
     [SuppressMessage("ReSharper", "LocalVariableHidesMember")]
-    internal class PlatformTarget
+    internal class PlatformTargetAdapter
     {
         /** */
         internal const int False = 0;
@@ -68,7 +68,7 @@ namespace Apache.Ignite.Core.Impl
         /// Constructor.
         /// </summary>
         /// <param name="target">Target.</param>
-        protected PlatformTarget(IPlatformTargetInternal target)
+        protected PlatformTargetAdapter(IPlatformTargetInternal target)
         {
             Debug.Assert(target != null);
 
@@ -517,9 +517,9 @@ namespace Apache.Ignite.Core.Impl
     }
 
     /// <summary>
-    /// PlatformTarget with IDisposable pattern.
+    /// PlatformTargetAdapter with IDisposable pattern.
     /// </summary>
-    internal abstract class PlatformDisposableTarget : PlatformTarget, IDisposable
+    internal abstract class PlatformDisposableTargetAdapter : PlatformTargetAdapter, IDisposable
     {
         /** Disposed flag. */
         private volatile bool _disposed;
@@ -528,7 +528,7 @@ namespace Apache.Ignite.Core.Impl
         /// Constructor.
         /// </summary>
         /// <param name="target">Target.</param>
-        protected PlatformDisposableTarget(IPlatformTargetInternal target) : base(target)
+        protected PlatformDisposableTargetAdapter(IPlatformTargetInternal target) : base(target)
         {
             // No-op.
         }

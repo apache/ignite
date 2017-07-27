@@ -25,7 +25,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     /// <summary>
     /// Binary metadata processor, delegates to PlatformBinaryProcessor in Java.
     /// </summary>
-    internal class BinaryProcessor : PlatformTarget
+    internal class BinaryProcessor : PlatformTargetAdapter
     {
         /// <summary>
         /// Op codes.

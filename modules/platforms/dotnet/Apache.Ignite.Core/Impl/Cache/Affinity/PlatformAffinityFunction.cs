@@ -25,7 +25,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Affinity
     /// <summary>
     /// Affinity function that delegates to Java.
     /// </summary>
-    internal class PlatformAffinityFunction : PlatformTarget, IAffinityFunction
+    internal class PlatformAffinityFunction : PlatformTargetAdapter, IAffinityFunction
     {
         /** Opcodes. */
         private enum  Op

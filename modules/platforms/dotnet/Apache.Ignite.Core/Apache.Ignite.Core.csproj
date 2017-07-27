@@ -387,7 +387,7 @@
     <Compile Include="Impl\Ignite.cs" />
     <Compile Include="Impl\IgniteManager.cs" />
     <Compile Include="Impl\Log\JavaLogger.cs" />
-    <Compile Include="Impl\PlatformTarget.cs" />
+    <Compile Include="Impl\PlatformTargetAdapter.cs" />
     <Compile Include="Impl\IgniteUtils.cs" />
     <Compile Include="Impl\Handle\Handle.cs" />
     <Compile Include="Impl\Handle\HandleRegistry.cs" />

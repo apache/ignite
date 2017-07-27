@@ -39,7 +39,7 @@ namespace Apache.Ignite.Core.Impl.Compute
     /// Compute implementation.
     /// </summary>
     [SuppressMessage("Microsoft.Design", "CA1001:TypesThatOwnDisposableFieldsShouldBeDisposable")]
-    internal class ComputeImpl : PlatformTarget
+    internal class ComputeImpl : PlatformTargetAdapter
     {
         /** */
         private const int OpAffinity = 1;

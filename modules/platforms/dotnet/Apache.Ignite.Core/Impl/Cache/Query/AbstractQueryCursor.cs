@@ -27,7 +27,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
     /// <summary>
     /// Abstract query cursor implementation.
     /// </summary>
-    internal abstract class AbstractQueryCursor<T> : PlatformDisposableTarget, IQueryCursor<T>, IEnumerator<T>
+    internal abstract class AbstractQueryCursor<T> : PlatformDisposableTargetAdapter, IQueryCursor<T>, IEnumerator<T>
     {
         /** */
         private const int OpGetAll = 1;

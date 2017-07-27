@@ -23,7 +23,7 @@ namespace Apache.Ignite.Core.Impl.DataStructures
     /// <summary>
     /// Atomic reference.
     /// </summary>
-    internal class AtomicReference<T> : PlatformTarget, IAtomicReference<T>
+    internal class AtomicReference<T> : PlatformTargetAdapter, IAtomicReference<T>
     {
         /** Opcodes. */
         private enum Op

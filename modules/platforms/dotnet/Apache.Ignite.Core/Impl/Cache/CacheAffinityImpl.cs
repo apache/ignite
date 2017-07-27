@@ -28,7 +28,7 @@ namespace Apache.Ignite.Core.Impl.Cache
     /// <summary>
     /// Cache affinity implementation.
     /// </summary>
-    internal class CacheAffinityImpl : PlatformTarget, ICacheAffinity
+    internal class CacheAffinityImpl : PlatformTargetAdapter, ICacheAffinity
     {
         /** */
         private const int OpAffinityKey = 1;

@@ -162,14 +162,14 @@ namespace Apache.Ignite.Core.Impl
 
                 var res = UU.TargetInStreamOutLong(_target, type, stream.SynchronizeOutput());
 
-                if (res != PlatformTarget.Error && inAction == null)
+                if (res != PlatformTargetAdapter.Error && inAction == null)
                     return default(TR);  // quick path for void operations
 
                 stream.SynchronizeInput();
 
                 stream.Seek(0, SeekOrigin.Begin);
 
-                if (res != PlatformTarget.Error)
+                if (res != PlatformTargetAdapter.Error)
                     return inAction != null ? inAction(stream, res) : default(TR);
 
                 throw readErrorAction(stream);
@@ -192,9 +192,9 @@ namespace Apache.Ignite.Core.Impl
 
                 var res = UU.TargetInStreamOutLong(_target, type, stream.SynchronizeOutput());
 
-                if (res != PlatformTarget.Error)
+                if (res != PlatformTargetAdapter.Error)
                 {
-                    return res == PlatformTarget.True;
+                    return res == PlatformTargetAdapter.True;
                 }
 
                 stream.SynchronizeInput();

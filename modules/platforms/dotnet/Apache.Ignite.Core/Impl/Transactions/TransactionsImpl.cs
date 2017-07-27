@@ -27,7 +27,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
     /// <summary>
     /// Transactions facade.
     /// </summary>
-    internal class TransactionsImpl : PlatformTarget, ITransactions
+    internal class TransactionsImpl : PlatformTargetAdapter, ITransactions
     {
         /** */
         private const int OpCacheConfigParameters = 1;

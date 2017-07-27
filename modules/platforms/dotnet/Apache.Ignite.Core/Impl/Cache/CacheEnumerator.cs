@@ -26,7 +26,7 @@ namespace Apache.Ignite.Core.Impl.Cache
     /// <summary>
     /// Real cache enumerator communicating with Java.
     /// </summary>
-    internal class CacheEnumerator<TK, TV> : PlatformDisposableTarget, IEnumerator<ICacheEntry<TK, TV>>
+    internal class CacheEnumerator<TK, TV> : PlatformDisposableTargetAdapter, IEnumerator<ICacheEntry<TK, TV>>
     {
         /** Operation: next value. */
         private const int OpNext = 1;

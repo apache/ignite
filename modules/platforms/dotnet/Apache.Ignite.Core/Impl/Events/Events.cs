@@ -34,7 +34,7 @@ namespace Apache.Ignite.Core.Impl.Events
     /// <summary>
     /// Ignite events.
     /// </summary>
-    internal sealed class Events : PlatformTarget, IEvents
+    internal sealed class Events : PlatformTargetAdapter, IEvents
     {
         /// <summary>
         /// Opcodes.

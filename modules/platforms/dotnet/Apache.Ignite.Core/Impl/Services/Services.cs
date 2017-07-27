@@ -30,7 +30,7 @@ namespace Apache.Ignite.Core.Impl.Services
     /// <summary>
     /// Services implementation.
     /// </summary>
-    internal sealed class Services : PlatformTarget, IServices
+    internal sealed class Services : PlatformTargetAdapter, IServices
     {
         /** */
         private const int OpDeploy = 1;

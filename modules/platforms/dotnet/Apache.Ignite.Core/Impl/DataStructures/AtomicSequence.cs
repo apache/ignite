@@ -23,7 +23,7 @@ namespace Apache.Ignite.Core.Impl.DataStructures
     /// <summary>
     /// Atomic long wrapper.
     /// </summary>
-    internal sealed class AtomicSequence: PlatformTarget, IAtomicSequence
+    internal sealed class AtomicSequence: PlatformTargetAdapter, IAtomicSequence
     {
         /** */
         private readonly string _name;

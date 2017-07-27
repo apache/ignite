@@ -44,7 +44,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
     /// <summary>
     /// Ignite projection implementation.
     /// </summary>
-    internal class ClusterGroupImpl : PlatformTarget, IClusterGroup
+    internal class ClusterGroupImpl : PlatformTargetAdapter, IClusterGroup
     {
         /** Attribute: platform. */
         private const string AttrPlatform = "org.apache.ignite.platform";

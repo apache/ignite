@@ -55,7 +55,7 @@ namespace Apache.Ignite.Core.Impl
     /// <summary>
     /// Native Ignite wrapper.
     /// </summary>
-    internal class Ignite : PlatformTarget, IIgnite, ICluster
+    internal class Ignite : PlatformTargetAdapter, IIgnite, ICluster
     {
         /// <summary>
         /// Operation codes for PlatformProcessorImpl calls.

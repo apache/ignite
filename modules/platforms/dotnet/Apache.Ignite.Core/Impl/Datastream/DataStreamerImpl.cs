@@ -43,7 +43,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
     /// <summary>
     /// Data streamer implementation.
     /// </summary>
-    internal class DataStreamerImpl<TK, TV> : PlatformDisposableTarget, IDataStreamer, IDataStreamer<TK, TV>
+    internal class DataStreamerImpl<TK, TV> : PlatformDisposableTargetAdapter, IDataStreamer, IDataStreamer<TK, TV>
     {
 
 #pragma warning disable 0420

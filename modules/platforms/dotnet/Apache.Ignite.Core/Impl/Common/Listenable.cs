@@ -20,7 +20,7 @@ namespace Apache.Ignite.Core.Impl.Common
     /// <summary>
     /// Platform listenable.
     /// </summary>
-    internal class Listenable : PlatformTarget
+    internal class Listenable : PlatformTargetAdapter
     {
         /** */
         private const int OpCancel = 1;
