@@ -19,7 +19,6 @@ namespace Apache.Ignite.Core.Impl.DataStructures
 {
     using System.Diagnostics;
     using Apache.Ignite.Core.DataStructures;
-    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
 
     /// <summary>
@@ -47,9 +46,8 @@ namespace Apache.Ignite.Core.Impl.DataStructures
         /// Initializes a new instance of the <see cref="AtomicLong"/> class.
         /// </summary>
         /// <param name="target">The target.</param>
-        /// <param name="marsh">The marshaller.</param>
         /// <param name="name">The name.</param>
-        public AtomicLong(IPlatformTargetInternal target, Marshaller marsh, string name) : base(target, marsh)
+        public AtomicLong(IPlatformTargetInternal target, string name) : base(target)
         {
             Debug.Assert(!string.IsNullOrEmpty(name));
 

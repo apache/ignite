@@ -45,8 +45,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// Initializes a new instance of the <see cref="BinaryProcessor"/> class.
         /// </summary>
         /// <param name="target">Target.</param>
-        /// <param name="marsh">Marshaller.</param>
-        public BinaryProcessor(IPlatformTargetInternal target, Marshaller marsh) : base(target, marsh)
+        public BinaryProcessor(IPlatformTargetInternal target) : base(target)
         {
             // No-op.
         }

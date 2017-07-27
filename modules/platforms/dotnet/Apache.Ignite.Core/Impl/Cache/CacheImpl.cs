@@ -20,7 +20,6 @@ namespace Apache.Ignite.Core.Impl.Cache
     using System;
     using System.Collections;
     using System.Collections.Generic;
-    using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Binary;
@@ -66,27 +65,23 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <summary>
         /// Constructor.
         /// </summary>
-        /// <param name="grid">Grid.</param>
         /// <param name="target">Target.</param>
-        /// <param name="marsh">Marshaller.</param>
         /// <param name="flagSkipStore">Skip store flag.</param>
         /// <param name="flagKeepBinary">Keep binary flag.</param>
         /// <param name="flagNoRetries">No-retries mode flag.</param>
         /// <param name="flagPartitionRecover">Partition recover mode flag.</param>
-        public CacheImpl(Ignite grid, IPlatformTargetInternal target, Marshaller marsh,
+        public CacheImpl(IPlatformTargetInternal target,
             bool flagSkipStore, bool flagKeepBinary, bool flagNoRetries, bool flagPartitionRecover)
-            : base(target, marsh)
+            : base(target)
         {
-            Debug.Assert(grid != null);
-
-            _ignite = grid;
+            _ignite = target.Marshaller.Ignite;
             _flagSkipStore = flagSkipStore;
             _flagKeepBinary = flagKeepBinary;
             _flagNoRetries = flagNoRetries;
             _flagPartitionRecover = flagPartitionRecover;
 
             _txManager = GetConfiguration().AtomicityMode == CacheAtomicityMode.Transactional
-                ? new CacheTransactionManager(grid.GetTransactions())
+                ? new CacheTransactionManager(_ignite.GetTransactions())
                 : null;
         }
 
@@ -171,7 +166,7 @@ namespace Apache.Ignite.Core.Impl.Cache
             if (_flagSkipStore)
                 return this;
 
-            return new CacheImpl<TK, TV>(_ignite, DoOutOpObject((int) CacheOp.WithSkipStore), Marshaller,
+            return new CacheImpl<TK, TV>(DoOutOpObject((int) CacheOp.WithSkipStore),
                 true, _flagKeepBinary, true, _flagPartitionRecover);
         }
 
@@ -195,7 +190,7 @@ namespace Apache.Ignite.Core.Impl.Cache
                 return result;
             }
 
-            return new CacheImpl<TK1, TV1>(_ignite, DoOutOpObject((int) CacheOp.WithKeepBinary), Marshaller,
+            return new CacheImpl<TK1, TV1>(DoOutOpObject((int) CacheOp.WithKeepBinary),
                 _flagSkipStore, true, _flagNoRetries, _flagPartitionRecover);
         }
 
@@ -206,7 +201,7 @@ namespace Apache.Ignite.Core.Impl.Cache
 
             var cache0 = DoOutOpObject((int)CacheOp.WithExpiryPolicy, w => ExpiryPolicySerializer.WritePolicy(w, plc));
 
-            return new CacheImpl<TK, TV>(_ignite, cache0, Marshaller, _flagSkipStore, _flagKeepBinary, 
+            return new CacheImpl<TK, TV>(cache0, _flagSkipStore, _flagKeepBinary, 
                 _flagNoRetries, _flagPartitionRecover);
         }
 
@@ -1010,7 +1005,7 @@ namespace Apache.Ignite.Core.Impl.Cache
             if (_flagNoRetries)
                 return this;
 
-            return new CacheImpl<TK, TV>(_ignite, DoOutOpObject((int) CacheOp.WithNoRetries), Marshaller,
+            return new CacheImpl<TK, TV>(DoOutOpObject((int) CacheOp.WithNoRetries),
                 _flagSkipStore, _flagKeepBinary, true, _flagPartitionRecover);
         }
 
@@ -1020,7 +1015,7 @@ namespace Apache.Ignite.Core.Impl.Cache
             if (_flagPartitionRecover)
                 return this;
 
-            return new CacheImpl<TK, TV>(_ignite, DoOutOpObject((int) CacheOp.WithPartitionRecover), Marshaller,
+            return new CacheImpl<TK, TV>(DoOutOpObject((int) CacheOp.WithPartitionRecover),
                 _flagSkipStore, _flagKeepBinary, _flagNoRetries, true);
         }
 

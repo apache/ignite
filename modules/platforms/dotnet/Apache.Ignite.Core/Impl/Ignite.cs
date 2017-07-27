@@ -140,7 +140,7 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="lifecycleHandlers">Lifecycle beans.</param>
         /// <param name="cbs">Callbacks.</param>
         public Ignite(IgniteConfiguration cfg, string name, IPlatformTargetInternal proc, Marshaller marsh,
-            IList<LifecycleHandlerHolder> lifecycleHandlers, UnmanagedCallbacks cbs) : base(proc, marsh)
+            IList<LifecycleHandlerHolder> lifecycleHandlers, UnmanagedCallbacks cbs) : base(proc)
         {
             Debug.Assert(cfg != null);
             Debug.Assert(proc != null);
@@ -157,17 +157,17 @@ namespace Apache.Ignite.Core.Impl
 
             marsh.Ignite = this;
 
-            _prj = new ClusterGroupImpl(Target.OutOpObject((int) Op.GetClusterGroup), this, null);
+            _prj = new ClusterGroupImpl(Target.OutOpObject((int) Op.GetClusterGroup), null);
 
             _binary = new Binary.Binary(marsh);
 
-            _binaryProc = new BinaryProcessor(DoOutOpObject((int) Op.GetBinaryProcessor), marsh);
+            _binaryProc = new BinaryProcessor(DoOutOpObject((int) Op.GetBinaryProcessor));
 
             cbs.Initialize(this);
 
             // Grid is not completely started here, can't initialize interop transactions right away.
             _transactions = new Lazy<TransactionsImpl>(
-                () => new TransactionsImpl(DoOutOpObject((int) Op.GetTransactions), marsh, GetLocalNode().Id));
+                () => new TransactionsImpl(DoOutOpObject((int) Op.GetTransactions), GetLocalNode().Id));
 
             // Set reconnected task to completed state for convenience.
             _clientReconnectTaskCompletionSource.SetResult(false);
@@ -517,7 +517,7 @@ namespace Apache.Ignite.Core.Impl
         /// </returns>
         public ICache<TK, TV> GetCache<TK, TV>(IPlatformTargetInternal nativeCache, bool keepBinary = false)
         {
-            return new CacheImpl<TK, TV>(this, nativeCache, _marsh, false, keepBinary, false, false);
+            return new CacheImpl<TK, TV>(nativeCache, false, keepBinary, false, false);
         }
 
         /** <inheritdoc /> */
@@ -593,7 +593,7 @@ namespace Apache.Ignite.Core.Impl
 
             var aff = DoOutOpObject((int) Op.GetAffinity, w => w.WriteString(cacheName));
             
-            return new CacheAffinityImpl(aff, _marsh, false, this);
+            return new CacheAffinityImpl(aff, false);
         }
 
         /** <inheritdoc /> */
@@ -635,7 +635,7 @@ namespace Apache.Ignite.Core.Impl
             if (nativeLong == null)
                 return null;
 
-            return new AtomicLong(nativeLong, Marshaller, name);
+            return new AtomicLong(nativeLong, name);
         }
 
         /** <inheritdoc /> */
@@ -653,7 +653,7 @@ namespace Apache.Ignite.Core.Impl
             if (nativeSeq == null)
                 return null;
 
-            return new AtomicSequence(nativeSeq, Marshaller, name);
+            return new AtomicSequence(nativeSeq, name);
         }
 
         /** <inheritdoc /> */
@@ -668,7 +668,7 @@ namespace Apache.Ignite.Core.Impl
                 w.WriteBoolean(create);
             });
 
-            return refTarget == null ? null : new AtomicReference<T>(refTarget, Marshaller, name);
+            return refTarget == null ? null : new AtomicReference<T>(refTarget, name);
         }
 
         /** <inheritdoc /> */

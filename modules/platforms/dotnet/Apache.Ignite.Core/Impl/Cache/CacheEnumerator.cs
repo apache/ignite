@@ -45,7 +45,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <param name="marsh">Marshaller.</param>
         /// <param name="keepBinary">Keep binary flag.</param>
         public CacheEnumerator(IPlatformTargetInternal target, Marshaller marsh, bool keepBinary) : 
-            base(target, marsh)
+            base(target)
         {
             _keepBinary = keepBinary;
         }

@@ -81,10 +81,8 @@ namespace Apache.Ignite.Core.Impl.Transactions
         /// Initializes a new instance of the <see cref="TransactionsImpl" /> class.
         /// </summary>
         /// <param name="target">Target.</param>
-        /// <param name="marsh">Marshaller.</param>
         /// <param name="localNodeId">Local node id.</param>
-        public TransactionsImpl(IPlatformTargetInternal target, Marshaller marsh,
-            Guid localNodeId) : base(target, marsh)
+        public TransactionsImpl(IPlatformTargetInternal target, Guid localNodeId) : base(target)
         {
             _localNodeId = localNodeId;
 

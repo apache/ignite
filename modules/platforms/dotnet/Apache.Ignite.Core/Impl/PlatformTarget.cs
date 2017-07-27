@@ -22,14 +22,12 @@ namespace Apache.Ignite.Core.Impl
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
-    using System.Threading;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Memory;
-    using Apache.Ignite.Core.Interop;
     using BinaryReader = Apache.Ignite.Core.Impl.Binary.BinaryReader;
     using BinaryWriter = Apache.Ignite.Core.Impl.Binary.BinaryWriter;
     using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
@@ -73,14 +71,12 @@ namespace Apache.Ignite.Core.Impl
         /// Constructor.
         /// </summary>
         /// <param name="target">Target.</param>
-        /// <param name="marsh">Marshaller.</param>
-        protected PlatformTarget(IPlatformTargetInternal target, Marshaller marsh)
+        protected PlatformTarget(IPlatformTargetInternal target)
         {
             Debug.Assert(target != null);
-            Debug.Assert(marsh != null);
 
             _target = target;
-            _marsh = marsh;
+            _marsh = target.Marshaller;
         }
 
         /// <summary>
@@ -605,7 +601,7 @@ namespace Apache.Ignite.Core.Impl
                 throw;
             }
 
-            fut.SetTarget(new Listenable(futTarget, _marsh));
+            fut.SetTarget(new Listenable(futTarget));
 
             return fut;
         }
@@ -663,8 +659,7 @@ namespace Apache.Ignite.Core.Impl
         /// Constructor.
         /// </summary>
         /// <param name="target">Target.</param>
-        /// <param name="marsh">Marshaller.</param>
-        protected PlatformDisposableTarget(IPlatformTargetInternal target, Marshaller marsh) : base(target, marsh)
+        protected PlatformDisposableTarget(IPlatformTargetInternal target) : base(target)
         {
             // No-op.
         }

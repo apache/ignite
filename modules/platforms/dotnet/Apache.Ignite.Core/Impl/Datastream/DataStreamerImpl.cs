@@ -140,7 +140,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
         /// <param name="cacheName">Cache name.</param>
         /// <param name="keepBinary">Binary flag.</param>
         public DataStreamerImpl(IPlatformTargetInternal target, Marshaller marsh, string cacheName, bool keepBinary)
-            : base(target, marsh)
+            : base(target)
         {
             _cacheName = cacheName;
             _keepBinary = keepBinary;

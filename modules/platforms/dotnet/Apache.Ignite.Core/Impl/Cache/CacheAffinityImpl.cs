@@ -19,7 +19,6 @@ namespace Apache.Ignite.Core.Impl.Cache
 {
     using System;
     using System.Collections.Generic;
-    using System.Diagnostics;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Impl.Binary;
@@ -86,17 +85,12 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// Initializes a new instance of the <see cref="CacheAffinityImpl" /> class.
         /// </summary>
         /// <param name="target">Target.</param>
-        /// <param name="marsh">Marshaller.</param>
         /// <param name="keepBinary">Keep binary flag.</param>
-        /// <param name="ignite">Grid.</param>
-        public CacheAffinityImpl(IPlatformTargetInternal target, Marshaller marsh, bool keepBinary, 
-            Ignite ignite) : base(target, marsh)
+        public CacheAffinityImpl(IPlatformTargetInternal target, bool keepBinary) : base(target)
         {
             _keepBinary = keepBinary;
 
-            Debug.Assert(ignite != null);
-            
-            _ignite = ignite;
+            _ignite = target.Marshaller.Ignite;
         }
 
         /** <inheritDoc /> */

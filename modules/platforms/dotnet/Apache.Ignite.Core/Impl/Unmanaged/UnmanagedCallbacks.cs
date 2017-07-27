@@ -1177,7 +1177,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 {
                     var baseFunc0 = new PlatformJniTarget(UU.Acquire(_ctx, baseFunc), _ignite.Marshaller);
 
-                    affBase.SetBaseFunction(new PlatformAffinityFunction(baseFunc0, _ignite.Marshaller));
+                    affBase.SetBaseFunction(new PlatformAffinityFunction(baseFunc0));
                 }
 
                 return _handleRegistry.Allocate(func);

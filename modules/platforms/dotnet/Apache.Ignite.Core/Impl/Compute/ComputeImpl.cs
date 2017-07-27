@@ -34,7 +34,6 @@ namespace Apache.Ignite.Core.Impl.Compute
     using Apache.Ignite.Core.Impl.Cluster;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Compute.Closure;
-    using Apache.Ignite.Core.Impl.Unmanaged;
 
     /// <summary>
     /// Compute implementation.
@@ -76,11 +75,10 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// Constructor.
         /// </summary>
         /// <param name="target">Target.</param>
-        /// <param name="marsh">Marshaller.</param>
         /// <param name="prj">Projection.</param>
         /// <param name="keepBinary">Binary flag.</param>
-        public ComputeImpl(IPlatformTargetInternal target, Marshaller marsh, ClusterGroupImpl prj, bool keepBinary)
-            : base(target, marsh)
+        public ComputeImpl(IPlatformTargetInternal target, ClusterGroupImpl prj, bool keepBinary)
+            : base(target)
         {
             _prj = prj;
 
@@ -194,7 +192,7 @@ namespace Apache.Ignite.Core.Impl.Compute
 
             var future = holder.Future;
 
-            future.SetTarget(new Listenable(futTarget, Marshaller));
+            future.SetTarget(new Listenable(futTarget));
 
             return future;
         }
@@ -551,7 +549,7 @@ namespace Apache.Ignite.Core.Impl.Compute
                             writeAction(writer);
                     });
 
-                    holder.Future.SetTarget(new Listenable(futTarget, Marshaller));
+                    holder.Future.SetTarget(new Listenable(futTarget));
                 }
                 catch (Exception e)
                 {

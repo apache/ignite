@@ -171,7 +171,7 @@ namespace Apache.Ignite.Core.Impl
                 throw;
             }
 
-            fut.SetTarget(new Listenable(new PlatformJniTarget(futTarget, _marsh), _marsh));
+            fut.SetTarget(new Listenable(new PlatformJniTarget(futTarget, _marsh)));
 
             return fut;
         }

@@ -24,7 +24,6 @@ namespace Apache.Ignite.Core.Impl.Services
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cluster;
-    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Services;
 
@@ -85,13 +84,12 @@ namespace Apache.Ignite.Core.Impl.Services
         /// Initializes a new instance of the <see cref="Services" /> class.
         /// </summary>
         /// <param name="target">Target.</param>
-        /// <param name="marsh">Marshaller.</param>
         /// <param name="clusterGroup">Cluster group.</param>
         /// <param name="keepBinary">Invoker binary flag.</param>
         /// <param name="srvKeepBinary">Server binary flag.</param>
-        public Services(IPlatformTargetInternal target, Marshaller marsh, IClusterGroup clusterGroup, 
+        public Services(IPlatformTargetInternal target, IClusterGroup clusterGroup, 
             bool keepBinary, bool srvKeepBinary)
-            : base(target, marsh)
+            : base(target)
         {
             Debug.Assert(clusterGroup  != null);
 
@@ -106,7 +104,7 @@ namespace Apache.Ignite.Core.Impl.Services
             if (_keepBinary)
                 return this;
 
-            return new Services(Target, Marshaller, _clusterGroup, true, _srvKeepBinary);
+            return new Services(Target, _clusterGroup, true, _srvKeepBinary);
         }
 
         /** <inheritDoc /> */
@@ -115,7 +113,7 @@ namespace Apache.Ignite.Core.Impl.Services
             if (_srvKeepBinary)
                 return this;
 
-            return new Services(DoOutOpObject(OpWithServerKeepBinary), Marshaller, _clusterGroup, _keepBinary, true);
+            return new Services(DoOutOpObject(OpWithServerKeepBinary), _clusterGroup, _keepBinary, true);
         }
 
         /** <inheritDoc /> */

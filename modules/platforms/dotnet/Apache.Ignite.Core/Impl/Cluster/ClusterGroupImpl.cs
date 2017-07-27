@@ -173,13 +173,12 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /// Constructor.
         /// </summary>
         /// <param name="target">Target.</param>
-        /// <param name="ignite">Grid.</param>
         /// <param name="pred">Predicate.</param>
         [SuppressMessage("Microsoft.Performance", "CA1805:DoNotInitializeUnnecessarily")]
-        public ClusterGroupImpl(IPlatformTargetInternal target, Ignite ignite, Func<IClusterNode, bool> pred)
-            : base(target, ignite.Marshaller)
+        public ClusterGroupImpl(IPlatformTargetInternal target, Func<IClusterNode, bool> pred)
+            : base(target)
         {
-            _ignite = ignite;
+            _ignite = target.Marshaller.Ignite;
             _pred = pred;
 
             _comp = new Lazy<ICompute>(() => CreateCompute());
@@ -205,7 +204,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /// </summary>
         private ICompute CreateCompute()
         {
-            return new Compute(new ComputeImpl(DoOutOpObject(OpGetCompute), Marshaller, this, false));
+            return new Compute(new ComputeImpl(DoOutOpObject(OpGetCompute), this, false));
         }
 
         /** <inheritDoc /> */
@@ -260,7 +259,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         {
             var newPred = _pred == null ? p : node => _pred(node) && p(node);
 
-            return new ClusterGroupImpl(Target, _ignite, newPred);
+            return new ClusterGroupImpl(Target, newPred);
         }
 
         /** <inheritDoc /> */
@@ -420,7 +419,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /// </summary>
         private IMessaging CreateMessaging()
         {
-            return new Messaging(DoOutOpObject(OpGetMessaging), Marshaller, this);
+            return new Messaging(DoOutOpObject(OpGetMessaging), this);
         }
 
         /** <inheritDoc /> */
@@ -434,7 +433,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /// </summary>
         private IEvents CreateEvents()
         {
-            return new Events(DoOutOpObject(OpGetEvents), Marshaller, this);
+            return new Events(DoOutOpObject(OpGetEvents), this);
         }
 
         /** <inheritDoc /> */
@@ -448,7 +447,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /// </summary>
         private IServices CreateServices()
         {
-            return new Services(DoOutOpObject(OpGetServices), Marshaller, this, false, false);
+            return new Services(DoOutOpObject(OpGetServices), this, false, false);
         }
 
         /// <summary>
@@ -661,7 +660,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /// <returns>New cluster group.</returns>
         private IClusterGroup GetClusterGroup(IPlatformTargetInternal prj)
         {
-            return new ClusterGroupImpl(prj, _ignite, _pred);
+            return new ClusterGroupImpl(prj, _pred);
         }
 
         /// <summary>

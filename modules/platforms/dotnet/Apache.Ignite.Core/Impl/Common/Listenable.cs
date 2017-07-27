@@ -17,8 +17,6 @@
 
 namespace Apache.Ignite.Core.Impl.Common
 {
-    using Apache.Ignite.Core.Impl.Binary;
-
     /// <summary>
     /// Platform listenable.
     /// </summary>
@@ -31,8 +29,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// Initializes a new instance of the <see cref="Listenable"/> class.
         /// </summary>
         /// <param name="target">Target.</param>
-        /// <param name="marsh">Marshaller.</param>
-        public Listenable(IPlatformTargetInternal target, Marshaller marsh) : base(target, marsh)
+        public Listenable(IPlatformTargetInternal target) : base(target)
         {
             // No-op.
         }

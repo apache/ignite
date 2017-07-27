@@ -64,15 +64,14 @@ namespace Apache.Ignite.Core.Impl.Events
 
         /** Cluster group. */
         private readonly IClusterGroup _clusterGroup;
-        
+
         /// <summary>
         /// Initializes a new instance of the <see cref="Events" /> class.
         /// </summary>
         /// <param name="target">Target.</param>
-        /// <param name="marsh">Marshaller.</param>
         /// <param name="clusterGroup">Cluster group.</param>
-        public Events(IPlatformTargetInternal target, Marshaller marsh, IClusterGroup clusterGroup) 
-            : base(target, marsh)
+        public Events(IPlatformTargetInternal target, IClusterGroup clusterGroup) 
+            : base(target)
         {
             Debug.Assert(clusterGroup != null);
 
