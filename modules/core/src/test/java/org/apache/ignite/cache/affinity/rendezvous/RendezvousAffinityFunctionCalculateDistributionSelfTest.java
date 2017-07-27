@@ -86,7 +86,7 @@ public class RendezvousAffinityFunctionCalculateDistributionSelfTest extends Abs
             "!!!!!!!!!!!! logger in affinitity class is" + aff.getLog().getClass());
 
         System.out.println("!!!!!!!!!!!! logger in test text is" + log.toString() +
-            "!!!!!!!!!!!! logger in test class is" + log.getClass());
+            "!!!!!!!!!! !! logger in test class is" + log.getClass());
 
         stopAllGrids();
     }
