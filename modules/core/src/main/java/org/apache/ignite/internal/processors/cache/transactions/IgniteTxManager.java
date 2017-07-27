@@ -2294,10 +2294,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         if (transactionMap(tx).putIfAbsent(tx.xidVersion(), tx) != null)
             throw new IgniteCheckedException("Thread already start a transaction.");
 
-        txTop.set(tx.topologyVersionSnapshot());
-
         tx.threadId(threadId);
-
     }
 
     /**

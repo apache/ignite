@@ -2867,9 +2867,11 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
         if (threadId() != Thread.currentThread().getId())
             throw new IgniteCheckedException("Only thread started transaction can suspend it.");
 
-        checkValid();
+        synchronized (this) {
+            checkValid();
 
-        cctx.tm().suspendTx(this);
+            cctx.tm().suspendTx(this);
+        }
     }
 
     /**
