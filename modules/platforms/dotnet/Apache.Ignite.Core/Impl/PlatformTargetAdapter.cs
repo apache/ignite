@@ -113,14 +113,7 @@ namespace Apache.Ignite.Core.Impl
         /// <returns></returns>
         protected long DoOutOp(int type, Action<BinaryWriter> action)
         {
-            return DoOutOp(type, stream =>
-            {
-                var writer = _marsh.StartMarshal(stream);
-
-                action(writer);
-
-                FinishMarshal(writer);
-            });
+            return DoOutOp(type, stream => WriteToStream(action, stream, _marsh));
         }
 
         /// <summary>
