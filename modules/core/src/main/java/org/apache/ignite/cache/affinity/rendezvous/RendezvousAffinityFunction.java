@@ -103,6 +103,10 @@ public class RendezvousAffinityFunction implements AffinityFunction, Serializabl
     @LoggerResource
     private transient IgniteLogger log;
 
+    public IgniteLogger getLog() {
+        return log;
+    }
+
     /**
      * Empty constructor with all defaults.
      */

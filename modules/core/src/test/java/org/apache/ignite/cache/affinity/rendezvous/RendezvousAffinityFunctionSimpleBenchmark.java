@@ -402,7 +402,7 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
 
         GridTestUtils.setFieldValue(aff1, "ignite", ignite);
 
-//        affinityDistribution(aff0, aff1);
+        affinityDistribution(aff0, aff1);
     }
 
     /**
