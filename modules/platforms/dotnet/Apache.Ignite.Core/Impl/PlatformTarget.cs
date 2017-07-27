@@ -131,7 +131,7 @@ namespace Apache.Ignite.Core.Impl
         /// <returns>Resulting object.</returns>
         protected IPlatformTargetInternal DoOutOpObject(int type, Action<BinaryWriter> action)
         {
-            return (IPlatformTargetInternal) _target.InStreamOutObject(type, w => action((BinaryWriter) w));
+            return _target.OutOpObject(type, stream => action(_marsh.StartMarshal(stream)));
         }
 
         /// <summary>
@@ -152,7 +152,7 @@ namespace Apache.Ignite.Core.Impl
         /// <returns>Resulting object.</returns>
         protected IPlatformTargetInternal DoOutOpObject(int type)
         {
-            return (IPlatformTargetInternal) _target.OutObject(type);
+            return _target.OutOpObject(type);
         }
 
         /// <summary>

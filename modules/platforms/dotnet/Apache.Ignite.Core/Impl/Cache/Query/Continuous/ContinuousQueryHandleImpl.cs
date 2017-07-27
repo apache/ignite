@@ -136,8 +136,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
                 });
 
                 // 4. Initial query.
-                // TODO: Cast
-                var nativeInitialQryCur = (IPlatformTargetInternal)_nativeQry.OutObject(0);
+                var nativeInitialQryCur = _nativeQry.OutOpObject(0);
                 _initialQueryCursor = nativeInitialQryCur == null
                     ? null
                     : new QueryCursor<TK, TV>(nativeInitialQryCur, _marsh, _keepBinary);
