@@ -28,7 +28,6 @@ namespace Apache.Ignite.Core.Impl.Common
     using Apache.Ignite.Core.Impl.Cache;
     using Apache.Ignite.Core.Impl.Cache.Query.Continuous;
     using Apache.Ignite.Core.Impl.Datastream;
-    using Apache.Ignite.Core.Impl.Unmanaged;
     using Apache.Ignite.Core.Messaging;
 
     /// <summary>
@@ -66,7 +65,7 @@ namespace Apache.Ignite.Core.Impl.Common
         private readonly Action<object> _computeJobCancel;
 
         /** */
-        private readonly Action<object, Ignite, IUnmanagedTarget, IBinaryStream, bool> _streamReceiver;
+        private readonly Action<object, Ignite, IPlatformTargetInternal, IBinaryStream, bool> _streamReceiver;
 
         /** */
         private readonly Func<object, object> _streamTransformerCtor;
@@ -163,7 +162,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// </summary>
         /// <param name="type">Type.</param>
         /// <returns>Precompiled invocator delegate.</returns>
-        public static Action<object, Ignite, IUnmanagedTarget, IBinaryStream, bool> GetStreamReceiver(Type type)
+        public static Action<object, Ignite, IPlatformTargetInternal, IBinaryStream, bool> GetStreamReceiver(Type type)
         {
             return Get(type)._streamReceiver;
         }
@@ -313,12 +312,12 @@ namespace Apache.Ignite.Core.Impl.Common
                             .MakeGenericMethod(iface.GetGenericArguments());
 
                     _streamReceiver = DelegateConverter
-                        .CompileFunc<Action<object, Ignite, IUnmanagedTarget, IBinaryStream, bool>>(
+                        .CompileFunc<Action<object, Ignite, IPlatformTargetInternal, IBinaryStream, bool>>(
                             typeof (StreamReceiverHolder),
                             method,
                             new[]
                             {
-                                iface, typeof (Ignite), typeof (IUnmanagedTarget), typeof (IBinaryStream),
+                                iface, typeof (Ignite), typeof (IPlatformTargetInternal), typeof (IBinaryStream),
                                 typeof (bool)
                             },
                             new[] {true, false, false, false, false, false});

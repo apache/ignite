@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,26 +15,22 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Interop
+namespace Apache.Ignite.Core.Impl
 {
     using System;
-    using System.Threading;
-    using System.Threading.Tasks;
-    using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Binary.IO;
+    using Apache.Ignite.Core.Interop;
 
     /// <summary>
-    /// Interface to interoperate with
-    /// org.apache.ignite.internal.processors.platform.PlatformTarget on Java side.
+    /// Extended platform target interface with methods that operate on internal entities (streams and targets).
     /// </summary>
-    public interface IPlatformTarget
+    internal interface IPlatformTargetInternal : IPlatformTarget, IDisposable
     {
         /// <summary>
-        /// Performs InLongOutLong operation.
+        /// Gets the marshaller.
         /// </summary>
-        /// <param name="type">Operation type code.</param>
-        /// <param name="val">Value.</param>
-        /// <returns>Result.</returns>
-        long InLongOutLong(int type, long val);
+        Marshaller Marshaller { get; }
 
         /// <summary>
         /// Performs InStreamOutLong operation.
@@ -42,7 +38,20 @@ namespace Apache.Ignite.Core.Interop
         /// <param name="type">Operation type code.</param>
         /// <param name="writeAction">Write action.</param>
         /// <returns>Result.</returns>
-        long InStreamOutLong(int type, Action<IBinaryRawWriter> writeAction);
+        long InStreamOutLong(int type, Action<IBinaryStream> writeAction);
+
+        /// <summary>
+        /// Performs InStreamOutLong operation with stream reuse.
+        /// </summary>
+        /// <param name="type">Operation type code.</param>
+        /// <param name="writeAction">Write action.</param>
+        /// <param name="readAction">Read action.</param>
+        /// <param name="readErrorAction">Error action.</param>
+        /// <returns>
+        /// Result.
+        /// </returns>
+        T InStreamOutLong<T>(int type, Action<IBinaryStream> writeAction, Func<IBinaryStream, long, T> readAction,
+            Func<IBinaryStream, Exception> readErrorAction);
 
         /// <summary>
         /// Performs InStreamOutStream operation.
@@ -52,7 +61,7 @@ namespace Apache.Ignite.Core.Interop
         /// <param name="writeAction">Write action.</param>
         /// <param name="readAction">Read action.</param>
         /// <returns>Result.</returns>
-        T InStreamOutStream<T>(int type, Action<IBinaryRawWriter> writeAction, Func<IBinaryRawReader, T> readAction);
+        T InStreamOutStream<T>(int type, Action<IBinaryStream> writeAction, Func<IBinaryStream, T> readAction);
 
         /// <summary>
         /// Performs InStreamOutObject operation.
@@ -60,7 +69,7 @@ namespace Apache.Ignite.Core.Interop
         /// <param name="type">Operation type code.</param>
         /// <param name="writeAction">Write action.</param>
         /// <returns>Result.</returns>
-        IPlatformTarget InStreamOutObject(int type, Action<IBinaryRawWriter> writeAction);
+        IPlatformTargetInternal InStreamOutObject(int type, Action<IBinaryStream> writeAction);
 
         /// <summary>
         /// Performs InObjectStreamOutObjectStream operation.
@@ -71,8 +80,8 @@ namespace Apache.Ignite.Core.Interop
         /// <param name="writeAction">Write action.</param>
         /// <param name="readAction">Read action.</param>
         /// <returns>Result.</returns>
-        T InObjectStreamOutObjectStream<T>(int type, IPlatformTarget arg, Action<IBinaryRawWriter> writeAction,
-            Func<IBinaryRawReader, IPlatformTarget, T> readAction);
+        T InObjectStreamOutObjectStream<T>(int type, Action<IBinaryStream> writeAction,
+            Func<IBinaryStream, IPlatformTargetInternal, T> readAction, IPlatformTargetInternal arg);
 
         /// <summary>
         /// Performs OutStream operation.
@@ -81,38 +90,13 @@ namespace Apache.Ignite.Core.Interop
         /// <param name="type">Operation type code.</param>
         /// <param name="readAction">Read action.</param>
         /// <returns>Result.</returns>
-        T OutStream<T>(int type, Func<IBinaryRawReader, T> readAction);
+        T OutStream<T>(int type, Func<IBinaryStream, T> readAction);
 
         /// <summary>
         /// Performs the OutObject operation.
         /// </summary>
         /// <param name="type">Operation type code.</param>
         /// <returns>Result.</returns>
-        IPlatformTarget OutObject(int type);
-
-        /// <summary>
-        /// Performs asynchronous operation.
-        /// </summary>
-        /// <typeparam name="T">Result type</typeparam>
-        /// <param name="type">Operation type code.</param>
-        /// <param name="writeAction">Write action (can be null).</param>
-        /// <param name="readAction">Read function (can be null).</param>
-        /// <returns>Task.</returns>
-        Task<T> DoOutOpAsync<T>(int type, Action<IBinaryRawWriter> writeAction,
-            Func<IBinaryRawReader, T> readAction);
-
-        /// <summary>
-        /// Performs asynchronous operation.
-        /// </summary>
-        /// <typeparam name="T">Result type</typeparam>
-        /// <param name="type">Operation type code.</param>
-        /// <param name="writeAction">Write action (can be null).</param>
-        /// <param name="readAction">Read function (can be null).</param>
-        /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>
-        /// Task.
-        /// </returns>
-        Task<T> DoOutOpAsync<T>(int type, Action<IBinaryRawWriter> writeAction,
-            Func<IBinaryRawReader, T> readAction, CancellationToken cancellationToken);
+        IPlatformTargetInternal OutObjectInternal(int type);
     }
 }
