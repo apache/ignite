@@ -663,24 +663,6 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
 
     /** {@inheritDoc} */
     @Override public final void txUnlock(IgniteInternalTx tx) throws GridCacheEntryRemovedException {
-        if(tx.isSystemInvalidate() && tx.storeWriteThrough()) {
-            synchronized (this) {
-                markObsolete0(tx.xidVersion(), false, null);
-
-                value(null);
-
-                //TODO: fix exception handling.
-                try {
-                    removeValue();
-                }
-                catch (IgniteCheckedException e) {
-                    e.printStackTrace();
-                }
-            }
-
-            onMarkedObsolete();
-        }
-
         removeLock(tx.xidVersion());
     }
 
