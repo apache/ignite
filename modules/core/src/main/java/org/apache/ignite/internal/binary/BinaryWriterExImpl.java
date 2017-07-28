@@ -30,6 +30,7 @@ import java.util.Date;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.binary.BinaryWriter;
@@ -238,7 +239,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         out.position(out.position() + GridBinaryMarshaller.DFLT_HDR_LEN);
 
         if (clsName != null)
-            doWriteString(clsName);
+            doWriteUtf8EncodedString(clsName);
     }
 
     /**
@@ -406,23 +407,54 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     }
 
     /**
+     * Writes string using UTF-8 encoding.
+     * {@link IgniteSystemProperties#IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2}
+     * can affect encoding process.
+     *
      * @param val String value.
      */
-    public void doWriteString(@Nullable String val) {
+    public void doWriteUtf8EncodedString(@Nullable String val) {
+        doWriteEncodedString(val, null);
+    }
+
+    /**
+     * Writes string using encoding currently configured.
+     *
+     * @param val String value.
+     */
+    public void doWriteEncodedString(@Nullable String val) {
+        doWriteEncodedString(val, ctx.binaryStringEncoding());
+    }
+
+    /**
+     * Writes string using certain encoding.
+     *
+     * @param val value to be written.
+     * @param enc encoding to use.
+     */
+    private void doWriteEncodedString(@Nullable String val, @Nullable BinaryStringEncoding enc) {
         if (val == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else {
             byte[] strArr;
 
-            if (BinaryUtils.USE_STR_SERIALIZATION_VER_2)
-                strArr = BinaryUtils.strToUtf8Bytes(val);
-            else
-                strArr = val.getBytes(UTF_8);
+            if (enc != null) {
+                strArr = val.getBytes(enc.charset());
 
-            out.unsafeEnsure(1 + 4);
-            out.unsafeWriteByte(GridBinaryMarshaller.STRING);
+                out.unsafeEnsure(1 + 1 + 4);
+                out.unsafeWriteByte(GridBinaryMarshaller.ENCODED_STRING);
+                out.unsafeWriteByte(enc.id());
+            } else {
+                if (BinaryUtils.USE_STR_SERIALIZATION_VER_2)
+                    strArr = BinaryUtils.strToUtf8Bytes(val);
+                else
+                    strArr = val.getBytes(UTF_8);
+
+                out.unsafeEnsure(1 + 4);
+                out.unsafeWriteByte(GridBinaryMarshaller.STRING);
+            }
+
             out.unsafeWriteInt(strArr.length);
-
             out.writeByteArray(strArr);
         }
     }
@@ -645,7 +677,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
             out.unsafeWriteInt(val.length);
 
             for (String str : val)
-                doWriteString(str);
+                doWriteEncodedString(str);
         }
     }
 
@@ -734,7 +766,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
             else {
                 out.unsafeWriteInt(GridBinaryMarshaller.UNREGISTERED_TYPE_ID);
 
-                doWriteString(val.getClass().getComponentType().getName());
+                doWriteUtf8EncodedString(val.getClass().getComponentType().getName());
             }
 
             out.writeInt(val.length);
@@ -805,7 +837,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
                 out.unsafeWriteInt(desc.typeId());
             else {
                 out.unsafeWriteInt(GridBinaryMarshaller.UNREGISTERED_TYPE_ID);
-                doWriteString(val.getDeclaringClass().getName());
+                doWriteUtf8EncodedString(val.getDeclaringClass().getName());
             }
 
             out.writeInt(val.ordinal());
@@ -833,7 +865,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
             out.unsafeWriteByte(GridBinaryMarshaller.BINARY_ENUM);
             out.unsafeWriteInt(typeId);
 
-            doWriteString(val.className());
+            doWriteUtf8EncodedString(val.className());
 
             out.writeInt(val.enumOrdinal());
         }
@@ -859,7 +891,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
             else {
                 out.unsafeWriteInt(GridBinaryMarshaller.UNREGISTERED_TYPE_ID);
 
-                doWriteString(val.getClass().getComponentType().getName());
+                doWriteUtf8EncodedString(val.getClass().getComponentType().getName());
             }
 
             out.writeInt(val.length);
@@ -888,7 +920,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
             else {
                 out.unsafeWriteInt(GridBinaryMarshaller.UNREGISTERED_TYPE_ID);
 
-                doWriteString(val.getName());
+                doWriteUtf8EncodedString(val.getName());
             }
         }
     }
@@ -913,7 +945,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
                 else {
                     out.writeInt(GridBinaryMarshaller.UNREGISTERED_TYPE_ID);
 
-                    doWriteString(intf.getName());
+                    doWriteUtf8EncodedString(intf.getName());
                 }
             }
 
@@ -1121,7 +1153,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      * @param val Value.
      */
     void writeStringField(@Nullable String val) {
-        doWriteString(val);
+        doWriteEncodedString(val);
     }
 
     /**
@@ -1411,7 +1443,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
     /** {@inheritDoc} */
     @Override public void writeString(@Nullable String val) throws BinaryObjectException {
-        doWriteString(val);
+        doWriteEncodedString(val);
     }
 
     /** {@inheritDoc} */

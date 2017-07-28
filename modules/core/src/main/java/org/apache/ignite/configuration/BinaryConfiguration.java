@@ -19,11 +19,14 @@ package org.apache.ignite.configuration;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryIdMapper;
 import org.apache.ignite.binary.BinaryNameMapper;
 import org.apache.ignite.binary.BinarySerializer;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
+import org.apache.ignite.internal.binary.BinaryStringEncoding;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Configuration object for Ignite Binary Objects.
@@ -32,6 +35,9 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 public class BinaryConfiguration {
     /** Default compact footer flag setting. */
     public static final boolean DFLT_COMPACT_FOOTER = true;
+
+    /** Default encoding for strings. */
+    public static final BinaryStringEncoding DFLT_ENCODING = BinaryStringEncoding.ENC_UTF_8;
 
     /** ID mapper. */
     private BinaryIdMapper idMapper;
@@ -47,6 +53,9 @@ public class BinaryConfiguration {
 
     /** Compact footer flag. */
     private boolean compactFooter = DFLT_COMPACT_FOOTER;
+
+    /** Encoding for strings. */
+    private BinaryStringEncoding encoding = DFLT_ENCODING;
 
     /**
      * Sets class names of binary objects explicitly.
@@ -174,6 +183,41 @@ public class BinaryConfiguration {
      */
     public BinaryConfiguration setCompactFooter(boolean compactFooter) {
         this.compactFooter = compactFooter;
+
+        return this;
+    }
+
+    /**
+     * @return encoding.
+     */
+    public BinaryStringEncoding getEncoding() {
+        return encoding;
+    }
+
+    /**
+     * Sets string encoding.
+     *
+     * @param encoding encoding.
+     * @return {@code this} for chaining.
+     */
+    public BinaryConfiguration setEncoding(@NotNull BinaryStringEncoding encoding) {
+        this.encoding = encoding;
+
+        return this;
+    }
+
+    /**
+     * Sets string encoding name.
+     *
+     * @param encodingName encoding name.
+     * @return {@code this} for chaining.
+     * @throws IgniteException if fails to find encoding name among supported encodings.
+     */
+    public BinaryConfiguration setEncodingName(String encodingName) {
+        this.encoding = BinaryStringEncoding.lookup(encodingName);
+
+        if (this.encoding == null)
+            throw new IgniteException("Failed to find encoding " + encodingName);
 
         return this;
     }

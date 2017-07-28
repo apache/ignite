@@ -238,6 +238,9 @@ public class BinarySerializedFieldComparator {
             case GridBinaryMarshaller.STRING:
                 return compareByteArrays(c1, c2, 1);
 
+            case GridBinaryMarshaller.ENCODED_STRING:
+                return compareByteArrays(c1, c2, 2);
+
             case GridBinaryMarshaller.DECIMAL:
                 return c1.readInt(1) == c2.readInt(1) && compareByteArrays(c1, c2, 5);
 

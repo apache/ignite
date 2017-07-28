@@ -44,12 +44,12 @@ class BinaryObjectArrayLazyValue extends BinaryAbstractLazyValue {
         int typeId = reader.readInt();
 
         if (typeId == GridBinaryMarshaller.UNREGISTERED_TYPE_ID) {
-            clsName = reader.readString();
+            clsName = reader.readUtf8EncodedString();
 
             Class cls;
 
             try {
-                cls = U.forName(reader.readString(), reader.binaryContext().configuration().getClassLoader());
+                cls = U.forName(reader.readUtf8EncodedString(), reader.binaryContext().configuration().getClassLoader());
             }
             catch (ClassNotFoundException e) {
                 throw new BinaryInvalidTypeException("Failed to load the class: " + clsName, e);

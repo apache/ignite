@@ -28,6 +28,7 @@ import java.lang.reflect.Modifier;
 import java.lang.reflect.Proxy;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.nio.charset.Charset;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.ArrayList;
@@ -437,9 +438,11 @@ public class BinaryUtils {
                 break;
 
             case GridBinaryMarshaller.STRING:
-                writer.doWriteString((String)val);
+                writer.doWriteEncodedString((String)val);
 
                 break;
+
+            // TODO? And what about class-to-flag mapping
 
             case GridBinaryMarshaller.UUID:
                 writer.doWriteUuid((UUID)val);
@@ -1075,6 +1078,7 @@ public class BinaryUtils {
             return BinaryWriteMode.DECIMAL;
         else if (cls == String.class)
             return BinaryWriteMode.STRING;
+        // TODO: IGNITE-5655, how to attach ENCODED_STRING as well?
         else if (cls == UUID.class)
             return BinaryWriteMode.UUID;
         else if (cls == Date.class)
@@ -1262,16 +1266,47 @@ public class BinaryUtils {
     }
 
     /**
+     * Reads UTF-8-encoded string from stream starting an current position.
+     * <p>
+     * Process can be affected by
+     * {@link IgniteSystemProperties#IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2} system property.
+     *
+     * @param in input stream.
+     * @return decoded string.
+     */
+    public static String doReadUtf8EncodedString(BinaryInputStream in) {
+        return doReadString(in, null);
+    }
+
+    /**
+     * Reads string from stream starting an current position. Encoding is assumed to be provided in the stream itself.
+     *
+     * @param in input stream.
      * @return Value.
      */
-    public static String doReadString(BinaryInputStream in) {
+    public static String doReadEncodedString(BinaryInputStream in) {
+        byte code = in.readByte();
+
+        BinaryStringEncoding enc = BinaryStringEncoding.lookup(code);
+
+        if (enc == null)
+            throw new BinaryObjectException("Unsupported string encoding [code=" + code + "]");
+
+        return doReadString(in, enc.charset());
+    }
+
+    /**
+     * Reads encoded string from stream starting an current position.
+     *
+     * @param in source stream.
+     * @param cs charset to use for decoding.
+     * @return decoded string.
+     */
+    private static String doReadString(BinaryInputStream in, @Nullable Charset cs) {
         if (!in.hasArray()) {
             byte[] arr = doReadByteArray(in);
 
-            if (USE_STR_SERIALIZATION_VER_2)
-                return utf8BytesToStr(arr, 0, arr.length);
-            else
-                return new String(arr, UTF_8);
+            return doReadString(arr, 0, arr.length, cs);
         }
 
         int strLen = in.readInt();
@@ -1279,18 +1314,29 @@ public class BinaryUtils {
         int pos = in.position();
 
         // String will copy necessary array part for us.
-        String res;
-
-        if (USE_STR_SERIALIZATION_VER_2) {
-            res = utf8BytesToStr(in.array(), pos, strLen);
-        }
-        else {
-            res = new String(in.array(), pos, strLen, UTF_8);
-        }
+        String res = doReadString(in.array(), pos, strLen, cs);
 
         in.position(pos + strLen);
 
         return res;
+    }
+
+    /**
+     * Reads encoded string from array of bytes starting at arbitrary offset.
+     *
+     * @param src source array.
+     * @param off offset from the beginning of source array.
+     * @param len length of encoded string in bytes.
+     * @param cs charset to use for decoding.
+     * @return decoded string.
+     */
+    private static String doReadString(byte[] src, int off, int len, Charset cs) {
+        if (cs != null)
+            return new String(src, off, len, cs);
+        if (USE_STR_SERIALIZATION_VER_2)
+            return utf8BytesToStr(src, off, len);
+        else
+            return new String(src, off, len, UTF_8);
     }
 
     /**
@@ -1361,7 +1407,8 @@ public class BinaryUtils {
      * @return Value.
      * @throws BinaryObjectException In case of error.
      */
-    public static String[] doReadStringArray(BinaryInputStream in) throws BinaryObjectException {
+    public static String[] doReadStringArray(BinaryInputStream in)
+        throws BinaryObjectException {
         int len = in.readInt();
 
         String[] arr = new String[len];
@@ -1371,12 +1418,12 @@ public class BinaryUtils {
 
             if (flag == GridBinaryMarshaller.NULL)
                 arr[i] = null;
-            else {
-                if (flag != GridBinaryMarshaller.STRING)
-                    throw new BinaryObjectException("Invalid flag value: " + flag);
-
-                arr[i] = doReadString(in);
-            }
+            else if (flag == GridBinaryMarshaller.STRING)
+                arr[i] = doReadUtf8EncodedString(in);
+            else if (flag == GridBinaryMarshaller.ENCODED_STRING) {
+                arr[i] = doReadEncodedString(in);
+            } else
+                throw new BinaryObjectException("Invalid flag value: " + flag);
         }
 
         return arr;
@@ -1592,7 +1639,7 @@ public class BinaryUtils {
         if (flag != GridBinaryMarshaller.STRING)
             throw new BinaryObjectException("Failed to read class name [position=" + (in.position() - 1) + ']');
 
-        return doReadString(in);
+        return doReadUtf8EncodedString(in);
     }
 
     /**
@@ -1879,7 +1926,10 @@ public class BinaryUtils {
                 return doReadDecimal(in);
 
             case GridBinaryMarshaller.STRING:
-                return doReadString(in);
+                return doReadUtf8EncodedString(in);
+
+            case GridBinaryMarshaller.ENCODED_STRING:
+                return doReadEncodedString(in);
 
             case GridBinaryMarshaller.UUID:
                 return doReadUuid(in);

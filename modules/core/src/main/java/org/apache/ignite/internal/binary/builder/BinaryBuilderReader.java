@@ -197,7 +197,7 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
      *
      * @return String.
      */
-    public String readString() {
+    public String readUtf8EncodedString() {
         byte flag = readByte();
 
         if (flag == GridBinaryMarshaller.NULL)
@@ -270,6 +270,13 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
 
             case GridBinaryMarshaller.STRING:
                 len = 4 + readStringLength();
+
+                break;
+
+            case GridBinaryMarshaller.ENCODED_STRING:
+                pos++; // skip encoding
+
+                len = 1 + 4 + readStringLength();
 
                 break;
 
@@ -432,6 +439,7 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
 
             case GridBinaryMarshaller.DECIMAL:
             case GridBinaryMarshaller.STRING:
+            case GridBinaryMarshaller.ENCODED_STRING:
             case GridBinaryMarshaller.UUID:
             case GridBinaryMarshaller.DATE:
             case GridBinaryMarshaller.TIMESTAMP:
@@ -586,6 +594,13 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
 
             case GridBinaryMarshaller.STRING:
                 plainLazyValLen = 4 + readStringLength();
+
+                break;
+
+            case GridBinaryMarshaller.ENCODED_STRING:
+                pos++; // skip encoding
+
+                plainLazyValLen = 1 + 4 + readStringLength();
 
                 break;
 

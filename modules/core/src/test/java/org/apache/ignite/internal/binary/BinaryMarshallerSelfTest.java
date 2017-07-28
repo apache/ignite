@@ -2147,6 +2147,49 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 //        );
     }
 
+    static class SimplerObject {
+        private String s;
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object other) {
+            if (this == other)
+                return true;
+
+            if (other == null || getClass() != other.getClass())
+                return false;
+
+            SimplerObject obj = (SimplerObject)other;
+
+            return GridTestUtils.deepEquals(this, obj);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(SimplerObject.class, this);
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testBinaryCopy2() throws Exception {
+        BinaryMarshaller marsh = binaryMarshaller(Collections.singletonList(
+            new BinaryTypeConfiguration(SimplerObject.class.getName())
+        ));
+
+        SimplerObject obj = new SimplerObject();
+        obj.s = "test";
+
+        final BinaryObject po = marshal(obj, marsh);
+
+        assertEquals(obj, po.deserialize());
+
+        BinaryObject copy = copy(po, null);
+
+        assertEquals(obj, copy.deserialize());
+
+    }
+
     /**
      * @throws Exception If failed.
      */
@@ -3680,6 +3723,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         bCfg.setIdMapper(mapper);
         bCfg.setSerializer(serializer);
         bCfg.setCompactFooter(compactFooter());
+        bCfg.setEncoding(BinaryStringEncoding.ENC_UTF_16BE);
 
         bCfg.setTypeConfigurations(cfgs);
 

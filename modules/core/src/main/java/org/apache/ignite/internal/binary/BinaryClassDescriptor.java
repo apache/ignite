@@ -591,7 +591,7 @@ public class BinaryClassDescriptor {
                 break;
 
             case STRING:
-                writer.doWriteString((String)obj);
+                writer.doWriteEncodedString((String)obj);
 
                 break;
 

@@ -24,6 +24,7 @@ import java.io.ObjectOutput;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.Date;
@@ -428,6 +429,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
                 val = new String(arr, fieldPos + 5, dataLen, UTF_8);
 
                 break;
+            // TODO ?
             }
 
             case GridBinaryMarshaller.DATE: {
@@ -575,6 +577,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
                 totalLen = dataLen + 5;
 
                 break;
+            // TODO ?
             }
 
             case GridBinaryMarshaller.TIMESTAMP:

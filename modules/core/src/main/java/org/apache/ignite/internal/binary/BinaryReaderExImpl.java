@@ -58,6 +58,7 @@ import static org.apache.ignite.internal.binary.GridBinaryMarshaller.DECIMAL_ARR
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.DFLT_HDR_LEN;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.DOUBLE;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.DOUBLE_ARR;
+import static org.apache.ignite.internal.binary.GridBinaryMarshaller.ENCODED_STRING;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.ENUM;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.ENUM_ARR;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.FLOAT;
@@ -1052,7 +1053,16 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
     /** {@inheritDoc} */
     @Override @Nullable public String readString() throws BinaryObjectException {
-        return checkFlagNoHandles(STRING) == Flag.NORMAL ? BinaryUtils.doReadString(in) : null;
+        byte flag = in.readByte();
+
+        if (flag == STRING)
+            return BinaryUtils.doReadUtf8EncodedString(in);
+        else if (flag == ENCODED_STRING)
+            return BinaryUtils.doReadEncodedString(in);
+        else
+            throw new BinaryObjectException("Unexpected field type [pos=" + BinaryUtils.positionForHandle(in) +
+                ", expected=" + fieldFlagNames(STRING, ENCODED_STRING) +
+                ", actual=" + fieldFlagName(flag) + ']');
     }
 
     /** {@inheritDoc} */
@@ -1689,6 +1699,27 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
         return typeName == null ? String.valueOf(flag) : typeName;
     }
 
+    /**
+     * Converts flags to comma-separated list of their string equivalents.
+     *
+     * @param flags flag values.
+     * @return comma-separated list of string flag representations.
+     */
+    private String fieldFlagNames(byte... flags) {
+        StringBuilder sb = new StringBuilder();
+
+        if (flags.length > 0) {
+            sb.append(fieldFlagName(flags[0]));
+
+            for (int i = 1; i < flags.length; i++) {
+                sb.append(",");
+                sb.append(fieldFlagName(flags[i]));
+            }
+        }
+
+        return sb.toString();
+    }
+
     /** {@inheritDoc} */
     @Override public BinaryRawReader rawReader() {
         if (!raw) {
@@ -1811,7 +1842,12 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
                 break;
 
             case STRING:
-                obj = BinaryUtils.doReadString(in);
+                obj = BinaryUtils.doReadUtf8EncodedString(in);
+
+                break;
+
+            case ENCODED_STRING:
+                obj = BinaryUtils.doReadEncodedString(in);
 
                 break;
 

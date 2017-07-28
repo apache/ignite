@@ -1387,6 +1387,15 @@ public class BinaryContext {
     }
 
     /**
+     * @return Binary string encoding.
+     */
+    @Nullable public BinaryStringEncoding binaryStringEncoding() {
+        BinaryConfiguration binCfg = igniteCfg.getBinaryConfiguration();
+
+        return binCfg != null ? binCfg.getEncoding() : null;
+    }
+
+    /**
      * Type descriptors.
      */
     private static class TypeDescriptors {
