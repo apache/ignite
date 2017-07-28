@@ -334,7 +334,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         testAffinitySimpleSequentialStart();
 
-        assertNull(((IgniteKernal) ignite(0)).context().cache().internalCache(CACHE_NAME1));
+        assertNull(((IgniteKernal)ignite(0)).context().cache().internalCache(CACHE_NAME1));
     }
 
     /**
@@ -373,7 +373,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
         if (primaryChanged)
             checkAffinity(3, topVer(5, 1), true);
 
-        assertNull(((IgniteKernal) ignite(1)).context().cache().internalCache(CACHE_NAME1));
+        assertNull(((IgniteKernal)ignite(1)).context().cache().internalCache(CACHE_NAME1));
     }
 
     /**
@@ -413,8 +413,8 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         checkAffinity(2, topVer(6, 0), true);
 
-        assertNull(((IgniteKernal) ignite(2)).context().cache().internalCache(CACHE_NAME1));
-        assertNotNull(((IgniteKernal) ignite(3)).context().cache().internalCache(CACHE_NAME1));
+        assertNull(((IgniteKernal)ignite(2)).context().cache().internalCache(CACHE_NAME1));
+        assertNotNull(((IgniteKernal)ignite(3)).context().cache().internalCache(CACHE_NAME1));
 
         assertNotNull(ignite(2).cache(CACHE_NAME1));
 
@@ -1180,7 +1180,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         stopNode(0, ord); // Triggers exchange completion from new coord.
 
-        checkAffinityStrict(cnt - 2, topVer(ord - 1, 0), true);
+        checkAffinity(cnt - 2, topVer(ord - 1, 0), true, true);
 
         checkAffinity(cnt - 2, topVer(ord, 0), true);
 
@@ -1234,45 +1234,6 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
         spi3.stopBlock(true);
 
         checkAffinity(2, topVer, false);
-    }
-
-    /** */
-    public void testCoordinatorLeaveBlockFinishOnClient() throws Exception {
-        Ignite ignite0 = startServer(0, 1);
-
-        startServer(1, 2);
-
-        Ignite ignite2 = startServer(2, 3);
-
-        Ignite ignite3 = startServer(3, 4);
-
-        Ignite ignite4 = startClient(4, 5);
-
-        TestRecordingCommunicationSpi spi0 =
-            (TestRecordingCommunicationSpi) ignite0.configuration().getCommunicationSpi();
-
-        // Prevent exchange completion.
-        spi0.blockMessages(GridDhtFinishExchangeMessage.class, ignite4.name());
-
-        stopNode(1, 6);
-
-        AffinityTopologyVersion topVer = topVer(6, 0);
-
-        IgniteInternalFuture<?> fut0 = affFuture(topVer, ignite0);
-        IgniteInternalFuture<?> fut2 = affFuture(topVer, ignite2);
-        IgniteInternalFuture<?> fut3 = affFuture(topVer, ignite3);
-        IgniteInternalFuture<?> fut4 = affFuture(topVer, ignite4);
-
-        U.sleep(1_000);
-
-        assertTrue(fut0.isDone());
-        assertTrue(fut2.isDone());
-        assertTrue(fut3.isDone());
-        assertFalse(fut4.isDone());
-
-        stopNode(0, 7);
-
-        checkAffinity(3, topVer(7, 0), true);
     }
 
     /**
@@ -2426,65 +2387,10 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
             if (order == null)
                 order = orderCntr.get();
             else
-                assertEquals(order, (Long) orderCntr.get());
+                assertEquals(order, (Long)orderCntr.get());
         }
 
         assertEquals(expNodes, nodes.size());
-    }
-
-    /**
-     * Compares assignments strictly for given version.
-     *
-     * @param expNodes Expected nodes number.
-     * @param topVer Topology version.
-     * @param expIdeal If {@code true} expect ideal affinity assignment.
-     * @throws Exception If failed.
-     * @return Affinity assignments.
-     */
-    @SuppressWarnings("unchecked")
-    private Map<Integer, List<List<ClusterNode>>> checkAffinityStrict(int expNodes,
-        AffinityTopologyVersion topVer,
-        boolean expIdeal) throws Exception {
-        List<Ignite> nodes = G.allGrids();
-
-        Map<Integer, List<List<ClusterNode>>> aff = new HashMap<>();
-
-        for (Ignite node : nodes) {
-            log.info("Check node: " + node.name());
-
-            IgniteKernal node0 = (IgniteKernal)node;
-
-            IgniteInternalFuture<?> fut = node0.context().cache().context().exchange().affinityReadyFuture(topVer);
-
-            if (fut != null)
-                fut.get();
-
-            for (GridCacheContext cctx : node0.context().cache().context().cacheContexts()) {
-                if (cctx.startTopologyVersion() != null && cctx.startTopologyVersion().compareTo(topVer) > 0)
-                    continue;
-
-                List<List<ClusterNode>> aff1 = aff.get(cctx.cacheId());
-                List<List<ClusterNode>> aff2 = cctx.affinity().assignments(topVer);
-
-                if (aff1 == null)
-                    aff.put(cctx.cacheId(), aff2);
-                else
-                    assertAffinity(aff1, aff2, node, cctx.name(), topVer);
-
-                if (expIdeal) {
-                    List<List<ClusterNode>> ideal = idealAssignment(topVer, cctx.cacheId());
-
-                    assertAffinity(ideal, aff2, node, cctx.name(), topVer);
-                }
-            }
-        }
-
-        assertEquals(expNodes, nodes.size());
-
-        if (!skipCheckOrder)
-            checkOrderCounters(expNodes, topVer);
-
-        return aff;
     }
 
     /**
@@ -2496,8 +2402,23 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings("unchecked")
     private Map<Integer, List<List<ClusterNode>>> checkAffinity(int expNodes,
+        AffinityTopologyVersion topVer,
+        boolean expIdeal) throws Exception {
+        return checkAffinity(expNodes, topVer, expIdeal, false);
+    }
+
+    /**
+     * @param expNodes Expected nodes number.
+     * @param topVer Topology version.
+     * @param expIdeal If {@code true} expect ideal affinity assignment.
+     * @param strict If {@code true} test only affinity for specified topology.
+     * @throws Exception If failed.
+     * @return Affinity assignments.
+     */
+    @SuppressWarnings("unchecked")
+    private Map<Integer, List<List<ClusterNode>>> checkAffinity(int expNodes,
                                                                AffinityTopologyVersion topVer,
-                                                               boolean expIdeal) throws Exception {
+                                                               boolean expIdeal, boolean strict) throws Exception {
         List<Ignite> nodes = G.allGrids();
 
         Map<Integer, List<List<ClusterNode>>> aff = new HashMap<>();
@@ -2529,35 +2450,37 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
                     assertAffinity(ideal, aff2, node, cctx.name(), topVer);
 
-                    Affinity<Object> cacheAff = node.affinity(cctx.name());
+                    if (!strict) {
+                        Affinity<Object> cacheAff = node.affinity(cctx.name());
 
-                    for (int i = 0; i < 10; i++) {
-                        int part = cacheAff.partition(i);
+                        for (int i = 0; i < 10; i++) {
+                            int part = cacheAff.partition(i);
 
-                        List<ClusterNode> partNodes = ideal.get(part);
+                            List<ClusterNode> partNodes = ideal.get(part);
 
-                        if (partNodes.isEmpty()) {
-                            try {
+                            if (partNodes.isEmpty()) {
+                                try {
+                                    ClusterNode primary = cacheAff.mapKeyToNode(i);
+
+                                    fail();
+                                }
+                                catch (IgniteException ignore) {
+                                    // No-op.
+                                }
+                            }
+                            else {
                                 ClusterNode primary = cacheAff.mapKeyToNode(i);
 
-                                fail();
-                            }
-                            catch (IgniteException ignore) {
-                                // No-op.
+                                assertEquals(primary, partNodes.get(0));
                             }
                         }
-                        else {
-                            ClusterNode primary = cacheAff.mapKeyToNode(i);
 
-                            assertEquals(primary, partNodes.get(0));
+                        for (int p = 0; p < ideal.size(); p++) {
+                            List<ClusterNode> exp = ideal.get(p);
+                            Collection<ClusterNode> partNodes = cacheAff.mapPartitionToPrimaryAndBackups(p);
+
+                            assertEqualsCollections(exp, partNodes);
                         }
-                    }
-
-                    for (int p = 0; p < ideal.size(); p++) {
-                        List<ClusterNode> exp = ideal.get(p);
-                        Collection<ClusterNode> partNodes = cacheAff.mapPartitionToPrimaryAndBackups(p);
-
-                        assertEqualsCollections(exp, partNodes);
                     }
                 }
             }
@@ -2608,8 +2531,6 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
         client = true;
 
         Ignite ignite = startGrid(idx);
-
-        log.info("Start client: " + ignite.name());
 
         assertTrue(ignite.configuration().isClientMode());
 

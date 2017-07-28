@@ -20,9 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
@@ -661,43 +659,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         if (log.isDebugEnabled())
             log.debug("Processing affinity assignment request [node=" + node + ", req=" + req + ']');
 
-        if (req.ready())
-            log.info("Processing affinity assignment request [node=" + node + ", req=" + req + ']');
-
         IgniteInternalFuture<AffinityTopologyVersion> fut = cctx.affinity().affinityReadyFuture(req.topologyVersion());
-
-//        if (req.ready()) {
-//            Map<Integer, List<UUID>> assignmentChange = fut.isDone() ? new HashMap<Integer, List<UUID>>() : null;
-//
-//            GridDhtAffinityAssignmentResponse res = new GridDhtAffinityAssignmentResponse(cctx.cacheId(),
-//                    topVer,
-//                    null,
-//                    true);
-//
-//            if (assignmentChange != null) {
-//                AffinityAssignment affAssignment = cctx.affinity().assignment(topVer);
-//
-//                List<List<ClusterNode>> assignment = affAssignment.assignment();
-//                List<List<ClusterNode>> idealAssignment = affAssignment.idealAssignment();
-//
-//                for (int p = 0; p < cctx.affinity().partitions(); p++) {
-//                    List<ClusterNode> nodes = assignment.get(p);
-//
-//                    if (!nodes.equals(idealAssignment.get(p)))
-//                        assignmentChange.put(p, F.nodeIdsCopy(nodes));
-//                }
-//            }
-//
-//            res.assignmentChange(assignmentChange);
-//
-//            try {
-//                cctx.io().send(node, res, AFFINITY_POOL);
-//            } catch (IgniteCheckedException e) {
-//                U.error(log, "Failed to send affinity assignment response to remote node [node=" + node + ']', e);
-//            }
-//
-//            return;
-//        }
 
         fut.listen(new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
             @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> fut) {
@@ -722,7 +684,8 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
                 try {
                     cctx.io().send(node, res, AFFINITY_POOL);
-                } catch (IgniteCheckedException e) {
+                }
+                catch (IgniteCheckedException e) {
                     U.error(log, "Failed to send affinity assignment response to remote node [node=" + node + ']', e);
                 }
             }

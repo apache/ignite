@@ -32,15 +32,8 @@ public class GridDhtAffinityAssignmentRequest extends GridCacheMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /**
-     * Topology version being queried.
-     */
+    /** Topology version being queried. */
     private AffinityTopologyVersion topVer;
-
-    /**
-     * Fetch only ready assignments.
-     */
-    private boolean ready;
 
     /**
      * Empty constructor.
@@ -51,23 +44,19 @@ public class GridDhtAffinityAssignmentRequest extends GridCacheMessage {
 
     /**
      * @param cacheId Cache ID.
-     * @param topVer  Topology version.
+     * @param topVer Topology version.
      */
     public GridDhtAffinityAssignmentRequest(int cacheId, @NotNull AffinityTopologyVersion topVer) {
         this.cacheId = cacheId;
         this.topVer = topVer;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override public boolean addDeploymentInfo() {
         return false;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override public boolean partitionExchangeMessage() {
         return true;
     }
@@ -79,37 +68,17 @@ public class GridDhtAffinityAssignmentRequest extends GridCacheMessage {
         return topVer;
     }
 
-    /**
-     * @return Fetch only ready assignments.
-     */
-    public boolean ready() {
-        return ready;
-    }
-
-    /**
-     * @param ready New fetch only ready assignments.
-     */
-    public void ready(boolean ready) {
-        this.ready = ready;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override public byte directType() {
         return 28;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 5;
+        return 4;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
@@ -130,20 +99,12 @@ public class GridDhtAffinityAssignmentRequest extends GridCacheMessage {
 
                 writer.incrementState();
 
-            case 4:
-                if (!writer.writeBoolean("ready", ready))
-                    return false;
-
-                writer.incrementState();
-
         }
 
         return true;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
@@ -162,22 +123,12 @@ public class GridDhtAffinityAssignmentRequest extends GridCacheMessage {
 
                 reader.incrementState();
 
-            case 4:
-                ready = reader.readBoolean("ready");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
         }
 
         return reader.afterMessageRead(GridDhtAffinityAssignmentRequest.class);
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridDhtAffinityAssignmentRequest.class, this, super.toString());
     }
