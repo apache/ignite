@@ -1124,7 +1124,8 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         Collection<GridCacheSqlMetadata> metas = cache.context().queries().sqlMetadata();
 
-        assertEquals(5, metas.size());
+        //Additional cache can be created in testIncrement or testDecrement for storing internal data structures
+        assertTrue(metas.size()==5 || metas.size()==6);
 
         String ret = content(F.asMap("cacheName", "", "cmd", GridRestCommand.CACHE_METADATA.key()));
 
@@ -1132,7 +1133,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         JsonNode arrResponse = jsonResponse(ret);
 
-        assertEquals(5, arrResponse.size());
+        assertEquals(F.size(metas), arrResponse.size());
 
         testMetadata(metas, arrResponse);
 
@@ -1171,7 +1172,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         JsonNode arrResponse = jsonResponse(ret);
 
-        assertEquals(6, arrResponse.size());
+        assertEquals(F.size(metas), arrResponse.size());
 
         testMetadata(metas, arrResponse);
 
