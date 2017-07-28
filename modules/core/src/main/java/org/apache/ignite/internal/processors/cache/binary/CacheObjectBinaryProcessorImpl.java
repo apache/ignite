@@ -78,6 +78,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.query.CacheQuery;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessorImpl;
@@ -138,6 +140,9 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     /** */
     @GridToStringExclude
     private IgniteBinary binaries;
+
+    /** */
+    private boolean restoreMode;
 
     /** Listener removes all registred binary schemas after the local client reconnected. */
     private final GridLocalEventListener clientDisconLsnr = new GridLocalEventListener() {
@@ -207,6 +212,9 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
                 }
 
                 @Override public BinaryType metadata(int typeId) throws BinaryObjectException {
+                    if (restoreMode)
+                        return metadataRecoverySafe(typeId);
+
                     if (metaDataCache == null)
                         U.awaitQuiet(startLatch);
 
@@ -440,6 +448,13 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
         }
         else
             return U.copyMemory(ptr, size);
+    }
+
+    /**
+     * @param restoreMode Restore mode flag.
+     */
+    @Override public void restoreMode(boolean restoreMode) {
+        this.restoreMode = restoreMode;
     }
 
     /** {@inheritDoc} */
@@ -686,6 +701,45 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     /** {@inheritDoc} */
     @Override public boolean isBinaryEnabled(CacheConfiguration<?, ?> ccfg) {
         return marsh instanceof BinaryMarshaller;
+    }
+
+    /**
+     * @param typeId Type ID.
+     * @return Binary type
+     * @throws BinaryObjectException If failed to read the binary metadata.
+     */
+    private BinaryType metadataRecoverySafe(int typeId) throws BinaryObjectException {
+        GridCacheContext metaCacheCtx = ctx.cache().context().cacheContext(CU.cacheId(CU.UTILITY_CACHE_NAME));
+
+        if (metaCacheCtx == null)
+            throw new BinaryObjectException("Missing metadata cache during recover for type ID: " + typeId);
+
+        try {
+            BinaryMetadataKey key = new BinaryMetadataKey(typeId);
+
+            KeyCacheObject keyObj = ctx.cacheObjects().toCacheKeyObject(
+                metaCacheCtx.cacheObjectContext(),
+                metaCacheCtx,
+                key,
+                false);
+
+            int partId = metaCacheCtx.affinity().partition(key);
+
+            GridDhtLocalPartition locPart = metaCacheCtx.topology()
+                .localPartition(partId, AffinityTopologyVersion.NONE, true);
+
+            CacheDataRow metaRow = metaCacheCtx.offheap().read(keyObj, locPart);
+
+            if (metaRow == null)
+                return null;
+
+            BinaryMetadata meta = metaRow.value().value(metaCacheCtx.cacheObjectContext(), true);
+
+            return meta != null ? meta.wrap(binaryCtx) : null;
+        }
+        catch (IgniteCheckedException e) {
+            throw new BinaryObjectException(e);
+        }
     }
 
     /**
