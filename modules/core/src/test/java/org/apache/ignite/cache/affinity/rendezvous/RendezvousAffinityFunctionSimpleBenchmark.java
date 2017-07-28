@@ -357,42 +357,6 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
     }
 
     /**
-     * @throws Exception If failed.
-     */
-    public void testDistributionCalculationEnabled() throws Exception {
-        checkDistributionCalculation(true);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testDistributionCalculationDisabled() throws Exception {
-        checkDistributionCalculation(false);
-    }
-
-    /**
-     *
-     * @param enabled Distribution calculation control.
-     */
-    private void checkDistributionCalculation(boolean enabled) throws Exception {
-        AffinityFunction aff = new RendezvousAffinityFunctionOld(true, 1024);
-
-        GridStringLogger logger = new GridStringLogger();
-
-        GridTestUtils.setFieldValue(aff, "log", logger);
-
-        GridTestUtils.setFieldValue(aff, "ignite", ignite);
-
-        System.out.println("!!!!!!!!!!!!!!!!!!    " + logger.toString());
-
-        List<ClusterNode> nodes = createBaseNodes(4);
-
-        assignPartitions(aff, nodes, null, 2, 0);
-
-        List<List<ClusterNode>> lst = assignPartitions(aff, nodes, null, 2, 1).get2();
-    }
-
-    /**
      * @throws IOException On error.
      */
     public void testDistribution() throws IOException {
