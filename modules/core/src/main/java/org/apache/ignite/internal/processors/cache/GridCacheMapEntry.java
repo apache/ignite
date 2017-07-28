@@ -2552,6 +2552,26 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 val = cctx.kernalContext().cacheObjects().prepareForCache(val, cctx);
 
+                long updateCntr = 0;
+
+                if (!preload)
+                    updateCntr = nextPartitionCounter(topVer, true, null);
+
+                if (walEnabled) {
+                    cctx.shared().wal().log(new DataRecord(new DataEntry(
+                            cctx.cacheId(),
+                            key,
+                            val,
+                            val == null ? GridCacheOperation.DELETE : GridCacheOperation.CREATE,
+                            null,
+                            ver,
+                            expireTime,
+                            partition(),
+                            updateCntr,
+                            cctx.group().storeCacheIdInDataPage()
+                    )));
+                }
+
                 if (val != null)
                     storeValue(val, expTime, ver, null);
 
@@ -2567,26 +2587,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 }
                 else if (deletedUnlocked())
                     deletedUnlocked(false);
-
-                long updateCntr = 0;
-
-                if (!preload)
-                    updateCntr = nextPartitionCounter(topVer, true, null);
-
-                if (walEnabled) {
-                    cctx.shared().wal().log(new DataRecord(new DataEntry(
-                        cctx.cacheId(),
-                        key,
-                        val,
-                        val == null ? GridCacheOperation.DELETE : GridCacheOperation.CREATE,
-                        null,
-                        ver,
-                        expireTime,
-                        partition(),
-                        updateCntr,
-                        cctx.group().storeCacheIdInDataPage()
-                    )));
-                }
 
                 drReplicate(drType, val, ver, topVer);
 
@@ -3176,8 +3176,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         @Nullable CacheDataRow oldRow) throws IgniteCheckedException {
         assert Thread.holdsLock(this);
         assert val != null : "null values in update for key: " + key;
-
-        cctx.offheap().invoke(cctx, key,  localPartition(), new UpdateClosure(this, val, ver, expireTime));
+        cctx.offheap().update(cctx, key, val, ver, expireTime, localPartition(), oldRow);
+        //cctx.offheap().invoke(cctx, key,  localPartition(), new UpdateClosure(this, val, ver, expireTime));
     }
 
     /**
