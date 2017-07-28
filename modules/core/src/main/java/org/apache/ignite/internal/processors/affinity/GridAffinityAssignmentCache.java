@@ -298,11 +298,7 @@ public class GridAffinityAssignmentCache {
 
         assert assignment != null;
 
-        String ignitePartDistribution = System.getProperty(IgniteSystemProperties.IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD);
-
-        if (Boolean.valueOf(ignitePartDistribution) || ignitePartDistribution == null) {
-            printDistribution(assignment, sorted, cacheOrGrpName, ctx.localNodeId().toString(), assignment.size());
-        }
+        printDistribution(assignment, sorted, cacheOrGrpName, ctx.localNodeId().toString(), assignment.size());
 
         idealAssignment = assignment;
 
@@ -323,21 +319,28 @@ public class GridAffinityAssignmentCache {
         Collection<ClusterNode> nodes, String cacheName, String localNodeID, int parts) {
         List<List<Integer>> nodesParts = freqDistribution(partitionsByNodes, nodes);
 
+        String ignitePartDistribution = System.getProperty(IgniteSystemProperties.IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD);
+
         if (nodesParts.size() != 0) {
-            log.info(" #### NODES COUNT:" + nodesParts.size());
 
             int nodeNum = 0;
 
             for (List<Integer> nodesPart : nodesParts) {
-                log.info("## Node " + nodeNum++ + ":");
 
                 int nr = 0;
 
                 for (int cnt : nodesPart) {
                     int percentage = (int)Math.round((double)cnt / parts * 100);
 
-                    log.info("cacheName=" + cacheName + ", " + (nr == 0 ? "Primary" : "Backup") + " node=" + localNodeID +
-                        ", partitions count=" + cnt + " percentage of parts count=" + percentage + "% ");
+                    if ( percentage >= Integer.valueOf(ignitePartDistribution) || ignitePartDistribution == null) {
+                        log.info("Partition map has been built (distribution is not even for caches) [cacheName="
+                            + cacheName + ", " + (nr == 0 ? "Primary" : "Backup") + " NodeId(local)=" + localNodeID +
+                            ", totalPartitionsCount=" + parts + " percentageOfTotalPartsCount=" + percentage + "%"
+                            + ", parts=" + cnt + "]");
+                    }
+                    else {
+                        log.info("Partition map has been built (distribution is even)");
+                    }
 
                     nr++;
                 }

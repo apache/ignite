@@ -23,7 +23,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.affinity.AbstractAffinityFunctionSelfTest;
 import org.apache.ignite.cache.affinity.AffinityFunction;
-
+import org.apache.ignite.testframework.GridTestUtils;
 
 /**
  * Tests for {@link RendezvousAffinityFunction}.
@@ -36,17 +36,17 @@ public class RendezvousAffinityFunctionCalculateDistributionSelfTest extends Abs
      * @throws Exception If failed.
      */
     public void testDistributionCalculationEnabled() throws Exception {
-        System.setProperty(IgniteSystemProperties.IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD, String.valueOf(true));
+        System.setProperty(IgniteSystemProperties.IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD, String.valueOf(10));
 
         ignite = startGrid();
 
         File file = new File(home() + "/work/log/ignite.log");
 
-        assertTrue(FileUtils.readFileToString(file).contains("cacheName=ignite-sys-cache, Primary node="
-            + ignite.configuration().getNodeId() + ", partitions count=100 percentage of parts count=100%"));
+        assertTrue(FileUtils.readFileToString(file).contains("Partition map has been built (distribution is not even for caches) [cacheName=ignite-sys-cache, PrimaryNodeId(local)="
+            + ignite.configuration().getNodeId() + ", totalPartitionsCount=100 percentageOfTotalPartsCount=100%, parts=100]"));
 
-        assertTrue(FileUtils.readFileToString(file).contains("cacheName=ignite-atomics-sys-cache, Primary node="
-            + ignite.configuration().getNodeId() + ", partitions count=1024 percentage of parts count=100%"));
+//        assertTrue(FileUtils.readFileToString(file).contains("Partition map has been built (distribution is not even for caches) [cacheName=ignite-atomics-sys-cache, PrimaryNodeId(local)="
+//            + ignite.configuration().getNodeId() + ", totalPartitionsCount=1024 percentageOfTotalPartsCount=100%, parts=1024]"));
 
         stopAllGrids();
     }
@@ -55,7 +55,7 @@ public class RendezvousAffinityFunctionCalculateDistributionSelfTest extends Abs
      * @throws Exception If failed.
      */
     public void testDistributionCalculationDisabled() throws Exception {
-        System.setProperty(IgniteSystemProperties.IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD, String.valueOf(false));
+        System.setProperty(IgniteSystemProperties.IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD, String.valueOf(10));
 
         ignite = startGrid();
 
@@ -75,6 +75,8 @@ public class RendezvousAffinityFunctionCalculateDistributionSelfTest extends Abs
      */
     @Override protected AffinityFunction affinityFunction() {
         AffinityFunction aff = new RendezvousAffinityFunction(true, 1024);
+
+        GridTestUtils.setFieldValue(aff, "log", log);
 
         return aff;
     }
