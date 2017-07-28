@@ -242,10 +242,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     private String dbUrl = "jdbc:h2:mem:";
 
     /** */
-    private final Set<H2ConnectionWrapper> conns =
-        Collections.newSetFromMap(new ConcurrentHashMap8<H2ConnectionWrapper, Boolean>());
-
-    /** */
     private GridMapQueryExecutor mapQryExec;
 
     /** */
@@ -279,7 +275,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     private final ConcurrentMap<QueryTable, GridH2Table> dataTables = new ConcurrentHashMap8<>();
 
     /** Connection and statement cache. */
-    private final ConcurrentMap<IgniteBiTuple<Thread, String>, H2ConnectionWrapper> connCache = new ConcurrentHashMap<>();
+    private final ConcurrentMap<H2ConnectionCacheKey, H2ConnectionWrapper> connCache = new ConcurrentHashMap<>();
 
     /** */
     private final GridBoundedConcurrentLinkedHashMap<H2TwoStepCachedQueryKey, H2TwoStepCachedQuery> twoStepCache =
@@ -361,7 +357,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     private H2ConnectionWrapper connectionForThread(@Nullable String schema) throws IgniteCheckedException {
         schema = U.firstNotNull(schema, DFLT_SCHEMA);
 
-        IgniteBiTuple<Thread, String> connKey = F.t(Thread.currentThread(), schema);
+        H2ConnectionCacheKey connKey = new H2ConnectionCacheKey(Thread.currentThread(), schema);
 
         H2ConnectionWrapper conn = connCache.get(connKey);
 
@@ -380,8 +376,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             }
 
             conn.closeCachedStatements();
-
-            conns.remove(conn);
         }
 
         Connection c;
@@ -414,8 +408,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
 
         H2ConnectionWrapper conn0 = new H2ConnectionWrapper(c, schema);
-
-        conns.add(conn0);
 
         H2ConnectionWrapper old = connCache.put(connKey, conn0);
 
@@ -504,13 +496,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     private void onSqlException(@Nullable String schema) {
         schema = U.firstNotNull(schema, DFLT_SCHEMA);
 
-        IgniteBiTuple<Thread, String> connKey = F.t(Thread.currentThread(), schema);
+        H2ConnectionCacheKey connKey = new H2ConnectionCacheKey(Thread.currentThread(), schema);
 
         H2ConnectionWrapper conn = connCache.get(connKey);
 
         if (conn != null) {
-            conns.remove(conn);
-
             connCache.remove(connKey);
 
             U.close(conn, log);
@@ -1718,13 +1708,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     private void cleanupConnectionCache() {
         long cur = U.currentTimeMillis();
 
-        for (Iterator<Map.Entry<IgniteBiTuple<Thread, String>, H2ConnectionWrapper>> it =
+        for (Iterator<Map.Entry<H2ConnectionCacheKey, H2ConnectionWrapper>> it =
             connCache.entrySet().iterator(); it.hasNext(); ) {
-            Map.Entry<IgniteBiTuple<Thread, String>, H2ConnectionWrapper> entry = it.next();
+            Map.Entry<H2ConnectionCacheKey, H2ConnectionWrapper> entry = it.next();
 
-            IgniteBiTuple<Thread, String> connKey = entry.getKey();
+            H2ConnectionCacheKey connKey = entry.getKey();
 
-            Thread t = connKey.getKey();
+            Thread t = connKey.thread();
 
             if (t.getState() == Thread.State.TERMINATED
                 || cur - entry.getValue().lastUsage() > CONNECTION_CACHE_THREAD_USAGE_TIMEOUT) {
@@ -1734,8 +1724,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 H2ConnectionWrapper conn = entry.getValue();
 
                 U.closeQuiet(conn);
-
-                conns.remove(conn);
             }
         }
     }
@@ -2074,10 +2062,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 schema.dropAll();
         }
 
-        for (H2ConnectionWrapper c : conns)
-            U.close(c, log);
+        cancelAllQueries();
 
-        conns.clear();
         schemas.clear();
         cacheName2schema.clear();
 
@@ -2165,10 +2151,15 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             }
 
             // Close connections for schema
-            for (Iterator<H2ConnectionWrapper> it = conns.iterator(); it.hasNext();) {
-                H2ConnectionWrapper conn = it.next();
+            for (Iterator<Map.Entry<H2ConnectionCacheKey, H2ConnectionWrapper>> it =
+                connCache.entrySet().iterator(); it.hasNext(); ) {
+                Map.Entry<H2ConnectionCacheKey, H2ConnectionWrapper> entry = it.next();
 
-                if (F.eq(schemaName, conn.schema())) {
+                H2ConnectionCacheKey connKey = entry.getKey();
+
+                H2ConnectionWrapper conn = entry.getValue();
+
+                if (F.eq(schemaName, connKey.schema())) {
                     it.remove();
 
                     U.close(conn, log);
@@ -2364,8 +2355,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** {@inheritDoc} */
     @Override public void cancelAllQueries() {
-        for (H2ConnectionWrapper conn : conns)
+        for (H2ConnectionWrapper conn : connCache.values())
             U.close(conn, log);
+
+        connCache.clear();
     }
 
     /**
