@@ -22,6 +22,9 @@ package org.apache.ignite.internal.managers.communication;
  * message processing by the communication manager.
  */
 public class GridIoPolicy {
+    /** */
+    public static final byte UNDEFINED = -1;
+
     /** Public execution pool. */
     public static final byte PUBLIC_POOL = 0;
 

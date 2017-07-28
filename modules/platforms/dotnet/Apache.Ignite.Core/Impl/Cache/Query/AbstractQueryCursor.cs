@@ -23,13 +23,11 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
-    using Apache.Ignite.Core.Impl.Unmanaged;
-    using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
 
     /// <summary>
     /// Abstract query cursor implementation.
     /// </summary>
-    internal abstract class AbstractQueryCursor<T> : PlatformDisposableTarget, IQueryCursor<T>, IEnumerator<T>
+    internal abstract class AbstractQueryCursor<T> : PlatformDisposableTargetAdapter, IQueryCursor<T>, IEnumerator<T>
     {
         /** */
         private const int OpGetAll = 1;
@@ -65,10 +63,8 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
         /// Constructor.
         /// </summary>
         /// <param name="target">Target.</param>
-        /// <param name="marsh">Marshaller.</param>
         /// <param name="keepBinary">Keep binary flag.</param>
-        protected AbstractQueryCursor(IUnmanagedTarget target, Marshaller marsh, bool keepBinary) : 
-            base(target, marsh)
+        protected AbstractQueryCursor(IPlatformTargetInternal target, bool keepBinary) : base(target)
         {
             _keepBinary = keepBinary;
         }
@@ -88,7 +84,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
                 throw new InvalidOperationException("Failed to get all entries because GetAll() " + 
                     "method has already been called.");
 
-            var res = DoInOp<IList<T>>(OpGetAll, ConvertGetAll);
+            var res = DoInOp(OpGetAll, ConvertGetAll);
 
             _getAllCalled = true;
 
@@ -216,7 +212,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
         /// </summary>
         private void RequestBatch()
         {
-            _batch = DoInOp<T[]>(OpGetBatch, ConvertGetBatch);
+            _batch = DoInOp(OpGetBatch, ConvertGetBatch);
 
             _batchPos = 0;
         }
