@@ -36,7 +36,6 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -2373,5 +2372,61 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     private interface ClIter<X> extends AutoCloseable, Iterator<X> {
         // No-op.
+    }
+
+    /**
+     * Key to lookup cached H2 connections and statements.
+     */
+    private final static class H2ConnectionCacheKey {
+        /** Thread. */
+        private final Thread thread;
+
+        /** Schema name. */
+        private final String schema;
+
+        /**
+         * Constructor.
+         *
+         * @param thread Thread.
+         * @param schema Schema name.
+         */
+        H2ConnectionCacheKey(Thread thread, String schema) {
+            assert thread != null;
+
+            this.thread = thread;
+            this.schema = schema;
+        }
+
+        /**
+         * @return Thread.
+         */
+        public Thread thread() {
+            return thread;
+        }
+
+        /**
+         * @return Schema name.
+         */
+        public String schema() {
+            return schema;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (!(o instanceof H2ConnectionCacheKey))
+                return false;
+
+            H2ConnectionCacheKey that = (H2ConnectionCacheKey)o;
+
+            return thread == that.thread() && F.eq(schema, that.schema());
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return 31 * thread.hashCode() + schema.hashCode();
+        }
     }
 }
