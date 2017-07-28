@@ -36,6 +36,7 @@ import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.AbstractQueuedSynchronizer;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
@@ -372,6 +373,10 @@ public final class GridCacheLockImpl implements GridCacheLockEx, IgniteChangeGlo
             return false;
         }
 
+        final ReentrantLock localLockForNode = new ReentrantLock();
+        final AtomicLong threadCount = new AtomicLong();
+        volatile boolean onGlobalLock = false;
+
         /**
          * Performs tryLock.
          *
@@ -404,8 +409,15 @@ public final class GridCacheLockImpl implements GridCacheLockEx, IgniteChangeGlo
             }
             // Check if lock is released or current owner failed.
             if (c == 0 || failed) {
-                if (compareAndSetGlobalState(0, acquires, current, fair)) {
+                threadCount.getAndIncrement();
 
+                localLockForNode.lock();
+
+                if (onGlobalLock)
+                    return true;
+
+                if (compareAndSetGlobalState(0, acquires, current, fair)) {
+                    onGlobalLock = true;
                     // Not used for synchronization (we use ThreadID), but updated anyway.
                     setExclusiveOwnerThread(current);
 
@@ -413,7 +425,7 @@ public final class GridCacheLockImpl implements GridCacheLockEx, IgniteChangeGlo
                         Thread.yield();
 
                     return true;
-                }
+                } else localLockForNode.unlock();
             }
             else if (isHeldExclusively()) {
                 int nextc = c + acquires;
@@ -469,8 +481,12 @@ public final class GridCacheLockImpl implements GridCacheLockEx, IgniteChangeGlo
 
             if (c == 0) {
                 free = true;
+                if (threadCount.decrementAndGet() == 0) {
+                    setGlobalState(0, processAwait(), processSignal());
+                    onGlobalLock = false;
+                }
 
-                setGlobalState(0, processAwait(), processSignal());
+                localLockForNode.unlock();
 
                 while (isHeldExclusively() && !interruptAll)
                     Thread.yield();
