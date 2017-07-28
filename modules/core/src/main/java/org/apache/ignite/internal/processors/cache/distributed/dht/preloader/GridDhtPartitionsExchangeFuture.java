@@ -1930,13 +1930,11 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      * @param nodeId Node ID.
      */
     private void sendFinishExchange(final UUID nodeId) {
-        assert isDone() && finishMsg != null;
+        // Exchange is completed on node stopping.
+        if (finishMsg == null)
+            return;
 
         exchLog.info("sendFinishExchange start [topVer=" + topologyVersion() + ']');
-
-//        if (log.isDebugEnabled())
-//            log.debug("Sending full partition map [nodeIds=" + F.viewReadOnly(nodes, F.node2id()) +
-//                ", exchId=" + exchId + ", msg=" + m + ']');
 
         try {
             cctx.io().send(nodeId, finishMsg, SYSTEM_POOL);
