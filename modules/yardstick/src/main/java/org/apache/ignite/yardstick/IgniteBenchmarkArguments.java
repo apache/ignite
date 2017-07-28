@@ -242,7 +242,7 @@ public class IgniteBenchmarkArguments {
 
     /** */
     @Parameter(names = {"-stpo", "--streamerParallelOps"}, description = "Data streamer max parallel ops")
-    private int streamerPerNodeParallelOps = IgniteDataStreamer.DFLT_MAX_PARALLEL_OPS;
+    private int streamerPerNodeParallelOps = 0;
 
     /**
      * @return {@code True} if need set {@link PersistentStoreConfiguration}.
