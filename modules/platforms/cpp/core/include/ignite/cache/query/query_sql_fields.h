@@ -139,7 +139,7 @@ namespace ignite
                         using std::swap;
 
                         swap(sql, other.sql);
-                        swap(sql, other.schema);
+                        swap(schema, other.schema);
                         swap(pageSize, other.pageSize);
                         swap(loc, other.loc);
                         swap(distributedJoins, other.distributedJoins);
@@ -271,6 +271,17 @@ namespace ignite
                 void AddArgument(const T& arg)
                 {
                     args.push_back(new impl::cache::query::QueryArgument<T>(arg));
+                }
+
+                /**
+                 * Add array of bytes as an argument.
+                 *
+                 * @param src Array pointer.
+                 * @param len Array length in bytes.
+                 */
+                void AddInt8ArrayArgument(const int8_t* src, int32_t len)
+                {
+                    args.push_back(new impl::cache::query::QueryInt8ArrayArgument(src, len));
                 }
 
                 /**
