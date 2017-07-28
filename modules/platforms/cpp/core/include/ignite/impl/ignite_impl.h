@@ -28,11 +28,6 @@
 #include <ignite/impl/cluster/cluster_group_impl.h>
 #include <ignite/impl/compute/compute_impl.h>
 
-using namespace ignite::impl::interop;
-using namespace ignite::common::concurrent;
-using namespace ignite::impl::binary;
-using namespace ignite::binary;
-
 namespace ignite 
 {
     namespace impl 
@@ -66,7 +61,6 @@ namespace ignite
              * Constructor used to create new instance.
              *
              * @param env Environment.
-             * @param javaRef Reference to java object.
              */
             IgniteImpl(SP_IgniteEnvironment env);
             

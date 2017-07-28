@@ -19,6 +19,10 @@
 
 using namespace ignite::common::concurrent;
 using namespace ignite::jni::java;
+using namespace ignite::impl::interop;
+using namespace ignite::impl::binary;
+
+using namespace ignite::binary;
 
 namespace ignite
 {    
