@@ -139,7 +139,7 @@ namespace ignite
                         using std::swap;
 
                         swap(sql, other.sql);
-                        swap(sql, other.schema);
+                        swap(schema, other.schema);
                         swap(pageSize, other.pageSize);
                         swap(loc, other.loc);
                         swap(distributedJoins, other.distributedJoins);
