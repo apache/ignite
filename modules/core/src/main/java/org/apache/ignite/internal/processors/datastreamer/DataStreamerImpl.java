@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.datastreamer;
 
+import java.lang.reflect.Array;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -62,6 +63,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
+import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
@@ -153,7 +155,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     private int bufSize = DFLT_PER_NODE_BUFFER_SIZE;
 
     /** */
-    private int parallelOps = DFLT_MAX_PARALLEL_OPS;
+    private int parallelOps;
 
     /** */
     private long timeout = DFLT_UNLIMIT_TIMEOUT;
@@ -828,6 +830,10 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
                         if (old != null)
                             buf = old;
+                        else if (log.isInfoEnabled())
+                            log.info("Created buffer for node [nodeId=" + nodeId +
+                                ", parallelOps=" + buf.perNodeParallelOps +
+                                ", stripes=" + buf.stripes.length + ']');
                     }
 
                     final Collection<DataStreamerEntry> entriesForNode = e.getValue();
@@ -1311,15 +1317,8 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         /** Active futures. */
         private final Collection<IgniteInternalFuture<Object>> locFuts;
 
-//        /** Buffered entries. */
-//        private List<DataStreamerEntry> entries;
         /** Buffered entries. */
-        private final ConcurrentMap<Integer, PerPartitionBuffer> entriesMap =
-            new ConcurrentHashMap8<>();
-
-//        /** */
-//        @GridToStringExclude
-//        private GridFutureAdapter<Object> curFut;
+        private final PerStripeBuffer[] stripes;
 
         /** Local node flag. */
         private final boolean isLocNode;
@@ -1333,16 +1332,17 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         /** */
         private final Semaphore sem;
 
-//        /** Batch topology. */
-//        private AffinityTopologyVersion batchTopVer;
+        /** */
+        private final int perNodeParallelOps;
 
         /** Closure to signal on task finish. */
         @GridToStringExclude
-        private final IgniteInClosure<IgniteInternalFuture<Object>> signalC = new IgniteInClosure<IgniteInternalFuture<Object>>() {
-            @Override public void apply(IgniteInternalFuture<Object> t) {
-                signalTaskFinished(t);
-            }
-        };
+        private final IgniteInClosure<IgniteInternalFuture<Object>> signalC =
+            new IgniteInClosure<IgniteInternalFuture<Object>>() {
+                @Override public void apply(IgniteInternalFuture<Object> t) {
+                    signalTaskFinished(t);
+                }
+            };
 
         /**
          * @param node Node.
@@ -1358,25 +1358,17 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
             // Cache local node flag.
             isLocNode = node.equals(ctx.discovery().localNode());
 
-//            entries = newEntries();
-//            curFut = new GridFutureAdapter<>();
-//            curFut.listen(signalC);
+            perNodeParallelOps = parallelOps != 0 ?
+                parallelOps :
+                node.metrics().getTotalCpus() * DFLT_PARALLEL_OPS_MULTIPLIER;
 
-            sem = new Semaphore(parallelOps);
+            sem = new Semaphore(perNodeParallelOps);
+
+            stripes = (PerStripeBuffer[])Array.newInstance(PerStripeBuffer.class, node.metrics().getTotalCpus());
+
+            for (int i = 0; i < stripes.length; i++)
+                stripes[i] = new PerStripeBuffer(i, signalC);
         }
-
-//        /**
-//         * @param remap Remapping flag.
-//         */
-//        private void renewBatch(boolean remap) {
-//            entries = newEntries();
-//            curFut = new GridFutureAdapter<>();
-//
-//            batchTopVer = null;
-//
-//            if (!remap)
-//                curFut.listen(signalC);
-//        }
 
         /**
          * @param newEntries Infos.
@@ -1401,15 +1393,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                 // Init buffer.
                 int part = entry.getKey().partition();
 
-                PerPartitionBuffer b = entriesMap.get(part);
-
-                if (b == null) {
-                    PerPartitionBuffer old =
-                        entriesMap.putIfAbsent(part, b = new PerPartitionBuffer(part, signalC));
-
-                    if (old != null)
-                        b = old;
-                }
+                PerStripeBuffer b = stripes[part % stripes.length];
 
                 synchronized (b) {
                     curFut0 = b.curFut;
@@ -1468,7 +1452,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         @Nullable IgniteInternalFuture<?> flush() throws IgniteInterruptedCheckedException {
             acquireRemapSemaphore();
 
-            for (PerPartitionBuffer b : entriesMap.values()) {
+            for (PerStripeBuffer b : stripes) {
                 AffinityTopologyVersion batchTopVer = null;
                 List<DataStreamerEntry> entries0 = null;
                 GridFutureAdapter<Object> curFut0 = null;
@@ -1729,11 +1713,11 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                     dep != null ? dep.classLoaderId() : null,
                     dep == null,
                     topVer,
-                    rcvr == ISOLATED_UPDATER ? partId : -1);
+                    rcvr == ISOLATED_UPDATER ? partId : GridIoMessage.STRIPE_DISABLED_PART);
 
                 try {
                     ctx.io().sendToGridTopic(node, TOPIC_DATASTREAM, req,
-                        partId == -1 ? plc : GridIoPolicy.SYSTEM_POOL);
+                        req.partition() == GridIoMessage.STRIPE_DISABLED_PART ? plc : GridIoPolicy.SYSTEM_POOL);
 
                     if (log.isDebugEnabled())
                         log.debug("Sent request to node [nodeId=" + node.id() + ", req=" + req + ']');
@@ -1774,7 +1758,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
             // Make sure to complete current future.
             GridFutureAdapter<Object> curFut0;
 
-            for (PerPartitionBuffer b : entriesMap.values()) {
+            for (PerStripeBuffer b : stripes) {
                 synchronized (b) {
                     curFut0 = b.curFut;
                 }
@@ -2107,7 +2091,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     /**
      *
      */
-    private class PerPartitionBuffer {
+    private class PerStripeBuffer {
         /** */
         private final int partId;
 
@@ -2127,7 +2111,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
          * @param partId Partition ID.
          * @param c Signal closure.
          */
-        public PerPartitionBuffer(
+        public PerStripeBuffer(
             int partId,
             IgniteInClosure<? super IgniteInternalFuture<Object>> c
         ) {
@@ -2156,7 +2140,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(PerPartitionBuffer.class, this, super.toString());
+            return S.toString(PerStripeBuffer.class, this, super.toString());
         }
     }
 }
