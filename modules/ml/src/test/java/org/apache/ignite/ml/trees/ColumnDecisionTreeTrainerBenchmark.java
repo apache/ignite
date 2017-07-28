@@ -41,6 +41,8 @@ import org.apache.ignite.ml.structures.LabeledVectorDouble;
 import org.apache.ignite.ml.trees.models.DecisionTreeModel;
 import org.apache.ignite.ml.trees.trainers.columnbased.ColumnDecisionTreeMatrixInput;
 import org.apache.ignite.ml.trees.trainers.columnbased.ColumnDecisionTreeTrainer;
+import org.apache.ignite.ml.trees.trainers.columnbased.contsplitcalcs.VarianceSplitCalculator;
+import org.apache.ignite.ml.trees.trainers.columnbased.regcalcs.RegionCalculators;
 import org.apache.ignite.stream.StreamTransformer;
 import org.apache.ignite.testframework.junits.IgniteTestResources;
 import org.junit.Ignore;
@@ -94,14 +96,16 @@ public class ColumnDecisionTreeTrainerBenchmark extends BaseDecisionTreeTest {
         testByGenStreamerLoad(ptsPerReg, catsInfo, gen, rnd);
     }
 
+    @Ignore
+    @Test
     public void testMNIST() throws IOException {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
         int ptsCnt = 20000;
-        int featCnt = 784;
+        int featCnt = 28 * 28;
 
-        Stream<DenseLocalOnHeapVector> trainingMnistStream = ReadMnistData.mnist("~/Downloads/train-images-idx3-ubyte", "~/Downloads/train-labels-idx1-ubyte", ptsCnt);
-        Stream<DenseLocalOnHeapVector> testMnistStream = ReadMnistData.mnist("~/Downloads/t10k-images.idx3-ubyte", "~/Downloads/t10k-labels.idx1-ubyte", ptsCnt / 10);
+        Stream<DenseLocalOnHeapVector> trainingMnistStream = ReadMnistData.mnist("/path/to/mnist/train-images-idx3-ubyte", "/path/to/mnist/train-labels-idx1-ubyte", ptsCnt);
+        Stream<DenseLocalOnHeapVector> testMnistStream = ReadMnistData.mnist("/path/to/mnist/t10k-images.idx3-ubyte", "/path/to/mnist/t10k-labels.idx1-ubyte", ptsCnt / 10);
 
         SparseDistributedMatrix m = new SparseDistributedMatrix(ptsCnt, featCnt + 1, StorageConstants.COLUMN_STORAGE_MODE, StorageConstants.RANDOM_ACCESS_MODE);
 
@@ -109,23 +113,13 @@ public class ColumnDecisionTreeTrainerBenchmark extends BaseDecisionTreeTest {
 
         loadVectorsIntoCache(sto.cache().getName(), sto.getUUID(), trainingMnistStream.iterator(), featCnt + 1);
 
-        IgniteFunction<DoubleStream, Double> regCalc = s -> {
-            PrimitiveIterator.OfDouble itr = s.iterator();
-            Map<Double, Integer> voc = new HashMap<>();
-            while (itr.hasNext())
-                voc.compute(itr.next(), (aDouble, integer) -> integer != null ? integer + 1 : 0);
-            return voc.entrySet().stream().max(Comparator.comparing(Map.Entry::getValue)).map(Map.Entry::getKey).orElse(0.0);
-        };
-
         ColumnDecisionTreeTrainer<VarianceSplitCalculator.VarianceData> trainer =
-            new ColumnDecisionTreeTrainer<>(9, new VarianceSplitCalculator(), SIMPLE_VARIANCE_CALCULATOR, regCalc);
+            new ColumnDecisionTreeTrainer<>(9, new VarianceSplitCalculator(), RegionCalculators.VARIANCE, RegionCalculators.MOST_COMMON);
 
         System.out.println(">>> Training started");
         long before = System.currentTimeMillis();
         DecisionTreeModel mdl = trainer.train(new ColumnDecisionTreeMatrixInput(m, new HashMap<>()));
         System.out.println(">>> Training finished in " + (System.currentTimeMillis() - before));
-
-
 
         IgniteTriFunction<Model<Vector, Double>, Stream<IgniteBiTuple<Vector, Double>>, Function<Double, Double>, Double> mse = Estimators.errorsPercentage();
         Double accuracy = mse.apply(mdl, testMnistStream.map(v -> new IgniteBiTuple<>(v.viewPart(0, featCnt), v.getX(featCnt))), Function.identity());

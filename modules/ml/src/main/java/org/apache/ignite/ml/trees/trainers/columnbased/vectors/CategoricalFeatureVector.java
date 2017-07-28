@@ -168,7 +168,6 @@ public class CategoricalFeatureVector
     /** */
     private SplitInfo<CategoricalRegionInfo> split(BitSet leftCats, int intervalIdx, Map<Integer, Integer> mapping,
         CategoricalRegionInfo interval) {
-        System.out.println("mapping:" + mapping);
         Map<Boolean, List<Integer>> leftRight = Arrays.stream(interval.vectors()).boxed().
             collect(Collectors.partitioningBy((bi) -> leftCats.get(mapping.get((int)samples.get(bi).getVal()))));
 
@@ -189,7 +188,6 @@ public class CategoricalFeatureVector
             leftCats);
 
         res.setInfoGain(interval.impurity() - (double)leftSize / totalSize * leftImpurity - (double)rightSize / totalSize * rightImpurity);
-        System.out.println("lsize: " + leftSize + "rsize: " + rightSize + " ig: " + res.infoGain() + " lcats: " + leftCats);
         return res;
     }
 

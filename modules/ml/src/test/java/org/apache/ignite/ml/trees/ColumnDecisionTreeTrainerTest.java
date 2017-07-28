@@ -36,6 +36,9 @@ import org.apache.ignite.ml.structures.LabeledVectorDouble;
 import org.apache.ignite.ml.trees.models.DecisionTreeModel;
 import org.apache.ignite.ml.trees.trainers.columnbased.ColumnDecisionTreeMatrixInput;
 import org.apache.ignite.ml.trees.trainers.columnbased.ColumnDecisionTreeTrainer;
+import org.apache.ignite.ml.trees.trainers.columnbased.contsplitcalcs.ContinuousSplitCalculators;
+import org.apache.ignite.ml.trees.trainers.columnbased.contsplitcalcs.VarianceSplitCalculator;
+import org.apache.ignite.ml.trees.trainers.columnbased.regcalcs.RegionCalculators;
 import org.junit.Test;
 
 /** Tests behaviour of ColumnDecisionTreeTrainer. */
@@ -57,7 +60,7 @@ public class ColumnDecisionTreeTrainerTest extends BaseDecisionTreeTest {
             split(1, 0, -10.0).
             split(0, 0, 0.0);
 
-        testByGen(totalPts, catsInfo, gen, rnd);
+        testByGen(totalPts, catsInfo, gen, RegionCalculators.MEAN, rnd);
     }
 
     @Test
@@ -77,7 +80,7 @@ public class ColumnDecisionTreeTrainerTest extends BaseDecisionTreeTest {
             split(1, 1, 2.0).
             split(3, 7, 50.0);
 
-        testByGen(totalPts, catsInfo, gen, rnd);
+        testByGen(totalPts, catsInfo, gen, RegionCalculators.MEAN, rnd);
     }
 
     @Test
@@ -95,14 +98,14 @@ public class ColumnDecisionTreeTrainerTest extends BaseDecisionTreeTest {
             featCnt, catsInfo, () -> new DenseLocalOnHeapVector(featCnt + 1), rnd).
             split(0, 5, new int[] {0, 2, 5});
 
-        testByGen(totalPts, catsInfo, gen, rnd);
+        testByGen(totalPts, catsInfo, gen, RegionCalculators.MEAN, rnd);
     }
 
     private void testByGen(int totalPts, HashMap<Integer, Integer> catsInfo,
-        SplitDataGenerator<DenseLocalOnHeapVector> gen, Random rnd) {
+        SplitDataGenerator<DenseLocalOnHeapVector> gen, IgniteFunction<DoubleStream, Double> regCalc, Random rnd) {
 
         List<IgniteBiTuple<Integer, DenseLocalOnHeapVector>> lst = gen.
-            points(totalPts, (i, rn) -> i + 1 /*+ rn.nextDouble() * (i / 100)*/).
+            points(totalPts, (i, rn) -> i + 1).
             collect(Collectors.toList());
 
         int featCnt = gen.featCnt();
@@ -112,8 +115,6 @@ public class ColumnDecisionTreeTrainerTest extends BaseDecisionTreeTest {
         System.out.println("Total pts: " + lst.size());
 
         SparseDistributedMatrix m = new SparseDistributedMatrix(totalPts, featCnt + 1, StorageConstants.COLUMN_STORAGE_MODE, StorageConstants.RANDOM_ACCESS_MODE);
-
-        IgniteFunction<DoubleStream, Double> regCalc = s -> s.average().orElse(0.0);
 
         Map<Integer, List<LabeledVectorDouble>> byRegion = new HashMap<>();
 
@@ -126,9 +127,7 @@ public class ColumnDecisionTreeTrainerTest extends BaseDecisionTreeTest {
         }
 
         ColumnDecisionTreeTrainer<VarianceSplitCalculator.VarianceData> trainer =
-            new ColumnDecisionTreeTrainer<>(3, new VarianceSplitCalculator(), SIMPLE_VARIANCE_CALCULATOR, regCalc);
-
-        Tracer.showAscii(m);
+            new ColumnDecisionTreeTrainer<>(3, ContinuousSplitCalculators.VARIANCE, SIMPLE_VARIANCE_CALCULATOR, regCalc);
 
         long before = System.currentTimeMillis();
         DecisionTreeModel mdl = trainer.train(new ColumnDecisionTreeMatrixInput(m, catsInfo));

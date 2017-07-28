@@ -15,12 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.trees;
+package org.apache.ignite.ml.trees.trainers.columnbased.contsplitcalcs;
 
 import java.util.Iterator;
 import java.util.PrimitiveIterator;
 import java.util.stream.DoubleStream;
 import java.util.stream.Stream;
+import org.apache.ignite.ml.trees.ContinuousRegionInfo;
+import org.apache.ignite.ml.trees.ContinuousSplitCalculator;
 import org.apache.ignite.ml.trees.trainers.columnbased.vectors.ContinuousSplitInfo;
 import org.apache.ignite.ml.trees.trainers.columnbased.vectors.SampleInfo;
 import org.apache.ignite.ml.trees.trainers.columnbased.vectors.SplitInfo;

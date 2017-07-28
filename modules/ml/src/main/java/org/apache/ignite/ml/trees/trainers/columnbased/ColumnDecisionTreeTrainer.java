@@ -287,7 +287,7 @@ public class ColumnDecisionTreeTrainer<D extends ContinuousRegionInfo> implement
             IndexAndSplitInfo best = splits.stream().max(Comparator.comparingDouble(o -> o.info.infoGain())).orElse(null);
 
             if (best != null && best.info.infoGain() > MIN_INFO_GAIN) {
-                System.out.println("Globally best: " + best.info + " time: " + total);
+                // System.out.println("Globally best: " + best.info + " time: " + total);
                 // Request bitset for split region.
                 SparseBitSet bs = cache.invoke(getCacheKey(best.featureIdx, input.affinityKey(best.featureIdx)), (entry, arguments) -> entry.getValue().calculateOwnershipBitSet(best.info));
 
@@ -304,8 +304,8 @@ public class ColumnDecisionTreeTrainer<D extends ContinuousRegionInfo> implement
 
                 if (d > curDepth) {
                     curDepth = d;
-                    System.out.println("Depth: " + curDepth);
-                    System.out.println("Cache size: " + cache.size(CachePeekMode.PRIMARY));
+//                    System.out.println("Depth: " + curDepth);
+//                    System.out.println("Cache size: " + cache.size(CachePeekMode.PRIMARY));
                 }
 
                 Map<Integer, Integer> catFeaturesInfo = input.catFeaturesInfo();
@@ -314,8 +314,10 @@ public class ColumnDecisionTreeTrainer<D extends ContinuousRegionInfo> implement
                 // Perform split on all feature vectors.
                 CacheUtils.update(cache.getName(),
                     (Cache.Entry<FeatureVectorKey, FeatureVector> e) -> {
+
                         FeatureVectorKey k = e.getKey();
                         FeatureVector v = e.getValue();
+
                         if ((!catFeaturesInfo.containsKey(k.rowKey.get1()) && !catFeaturesInfo.containsKey(best.featureIdx)))
                             v.performSplit(bs, ind, best.info.leftData(), best.info.rightData());
                         else
@@ -323,7 +325,7 @@ public class ColumnDecisionTreeTrainer<D extends ContinuousRegionInfo> implement
                     },
                     keysGen);
 
-                System.out.println("Update took " + (System.currentTimeMillis() - before));
+//                System.out.println("Update took " + (System.currentTimeMillis() - before));
             }
             else
                 break;
