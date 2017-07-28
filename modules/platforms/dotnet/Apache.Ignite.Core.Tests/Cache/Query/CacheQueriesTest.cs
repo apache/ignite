@@ -489,8 +489,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             // SQL query.
             err = Assert.Throws<IgniteException>(() => cache.Query(new SqlQuery(typeof(QueryPerson), "age < 50")));
 
-            Assert.AreEqual("Indexing is disabled for cache: nonindexed_cache. " +
-                "Use setIndexedTypes or setTypeMetadata methods on CacheConfiguration to enable.", err.Message);
+            Assert.AreEqual("Failed to find SQL table for type: QueryPerson", err.Message);
         }
 
         /// <summary>
