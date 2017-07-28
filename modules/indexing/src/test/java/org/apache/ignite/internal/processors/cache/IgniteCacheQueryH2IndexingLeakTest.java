@@ -51,7 +51,7 @@ public class IgniteCacheQueryH2IndexingLeakTest extends GridCommonAbstractTest {
     private static final int THREAD_COUNT = 10;
 
     /** Timeout */
-    private static final long STMT_CACHE_CLEANUP_TIMEOUT = 1000;
+    private static final long CONN_CACHE_CLEANUP_TIMEOUT = 1000;
 
     /** Orig cleanup period. */
     private static String origCacheCleanupPeriod;
@@ -98,8 +98,8 @@ public class IgniteCacheQueryH2IndexingLeakTest extends GridCommonAbstractTest {
         origCacheCleanupPeriod = System.getProperty(IGNITE_H2_INDEXING_CACHE_CLEANUP_PERIOD);
         origCacheThreadUsageTimeout = System.getProperty(IGNITE_H2_INDEXING_CACHE_THREAD_USAGE_TIMEOUT);
 
-        System.setProperty(IGNITE_H2_INDEXING_CACHE_CLEANUP_PERIOD, Long.toString(STMT_CACHE_CLEANUP_TIMEOUT));
-        System.setProperty(IGNITE_H2_INDEXING_CACHE_THREAD_USAGE_TIMEOUT, Long.toString(STMT_CACHE_CLEANUP_TIMEOUT));
+        System.setProperty(IGNITE_H2_INDEXING_CACHE_CLEANUP_PERIOD, Long.toString(CONN_CACHE_CLEANUP_TIMEOUT));
+        System.setProperty(IGNITE_H2_INDEXING_CACHE_THREAD_USAGE_TIMEOUT, Long.toString(CONN_CACHE_CLEANUP_TIMEOUT));
 
         startGrid(0);
     }
@@ -117,14 +117,14 @@ public class IgniteCacheQueryH2IndexingLeakTest extends GridCommonAbstractTest {
 
     /**
      * @param qryProcessor Query processor.
-     * @return size of statement cache.
+     * @return size of connection cache.
      */
-    private static int getStatementCacheSize(GridQueryProcessor qryProcessor) {
+    private static int getConnectionCacheSize(GridQueryProcessor qryProcessor) {
         IgniteH2Indexing h2Idx = GridTestUtils.getFieldValue(qryProcessor, GridQueryProcessor.class, "idx");
 
-        ConcurrentMap stmtCache = GridTestUtils.getFieldValue(h2Idx, IgniteH2Indexing.class, "stmtCache");
+        ConcurrentMap connCache = GridTestUtils.getFieldValue(h2Idx, IgniteH2Indexing.class, "connCache");
 
-        return stmtCache.size();
+        return connCache.size();
     }
 
     /**
@@ -154,12 +154,12 @@ public class IgniteCacheQueryH2IndexingLeakTest extends GridCommonAbstractTest {
             final GridQueryProcessor qryProc = grid(0).context().query();
 
             try {
-                // Wait for stmt cache entry is created for each thread.
+                // Wait for connection cache entry is created for each thread.
                 assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
                     @Override public boolean apply() {
-                        return getStatementCacheSize(qryProc) == THREAD_COUNT;
+                        return getConnectionCacheSize(qryProc) == THREAD_COUNT;
                     }
-                }, STMT_CACHE_CLEANUP_TIMEOUT));
+                }, CONN_CACHE_CLEANUP_TIMEOUT));
             }
             finally {
                 stop.set(true);
@@ -167,12 +167,12 @@ public class IgniteCacheQueryH2IndexingLeakTest extends GridCommonAbstractTest {
 
             fut.get();
 
-            // Wait for stmtCache is cleaned up because all user threads are terminated.
+            // Wait for connCache is cleaned up because all user threads are terminated.
             assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
                 @Override public boolean apply() {
-                    return getStatementCacheSize(qryProc) == 0;
+                    return getConnectionCacheSize(qryProc) == 0;
                 }
-            }, STMT_CACHE_CLEANUP_TIMEOUT * 2));
+            }, CONN_CACHE_CLEANUP_TIMEOUT * 2));
         }
     }
 
@@ -197,14 +197,14 @@ public class IgniteCacheQueryH2IndexingLeakTest extends GridCommonAbstractTest {
                     }
                 }, THREAD_COUNT);
 
-            Thread.sleep(STMT_CACHE_CLEANUP_TIMEOUT);
+            Thread.sleep(CONN_CACHE_CLEANUP_TIMEOUT);
 
-            // Wait for stmtCache is cleaned up because all user threads don't perform queries a lot of time.
+            // Wait for connCache is cleaned up because all user threads don't perform queries a lot of time.
             assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
                 @Override public boolean apply() {
-                    return getStatementCacheSize(grid(0).context().query()) == 0;
+                    return getConnectionCacheSize(grid(0).context().query()) == 0;
                 }
-            }, STMT_CACHE_CLEANUP_TIMEOUT * 2));
+            }, CONN_CACHE_CLEANUP_TIMEOUT * 2));
 
             latch.countDown();
 

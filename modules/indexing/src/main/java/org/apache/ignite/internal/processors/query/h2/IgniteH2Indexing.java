@@ -196,7 +196,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** Default DB options. */
-    private static final String DB_OPTIONS = ";LOCK_MODE=3;MULTI_THREADED=1;DB_CLOSE_ON_EXIT=FALSE" +
+    private static final String DB_OPTIONS = ";LOCK_MODE=3;MULTI_THREADED=1;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE" +
         ";DEFAULT_LOCK_TIMEOUT=10000;FUNCTIONS_IN_SCHEMA=true;OPTIMIZE_REUSE_RESULTS=0;QUERY_CACHE_SIZE=0" +
         ";RECOMPILE_ALWAYS=1;MAX_OPERATION_MEMORY=0;NESTED_JOINS=0;BATCH_JOINS=1" +
         ";ROW_FACTORY=\"" + GridH2RowFactory.class.getName() + "\"" +
@@ -1729,13 +1729,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             if (t.getState() == Thread.State.TERMINATED
                 || cur - entry.getValue().lastUsage() > CONNECTION_CACHE_THREAD_USAGE_TIMEOUT) {
 
+                it.remove();
+
                 H2ConnectionWrapper conn = entry.getValue();
 
                 U.closeQuiet(conn);
 
                 conns.remove(conn);
-
-                it.remove();
             }
         }
     }
