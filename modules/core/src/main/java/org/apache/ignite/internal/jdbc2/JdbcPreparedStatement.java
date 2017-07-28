@@ -39,6 +39,10 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
+import java.util.List;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * JDBC prepared statement implementation.
@@ -46,6 +50,9 @@ import java.util.Calendar;
 public class JdbcPreparedStatement extends JdbcStatement implements PreparedStatement {
     /** SQL query. */
     private final String sql;
+
+    /** Batch arguments. */
+    private List<List<Object>> batchArgs;
 
     /** H2's parsed statement to retrieve metadata from. */
     PreparedStatement nativeStatement;
@@ -66,7 +73,8 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
     @Override public void addBatch(String sql) throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Adding new SQL command to batch not supported for prepared statement.");
+        throw new SQLFeatureNotSupportedException("Adding new SQL command to batch not supported for prepared " +
+            "statement (use addBatch() to add new set of arguments)");
     }
 
     /** {@inheritDoc} */
@@ -185,7 +193,7 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
     @Override public void clearBatch() throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Batch statements are not supported yet.");
+        batchArgs = null;
     }
 
     /** {@inheritDoc} */
@@ -207,12 +215,33 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
     @Override public void addBatch() throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Batch statements are not supported yet.");
+        if (batchArgs == null)
+            batchArgs = new ArrayList<>();
+
+        batchArgs.add(new ArrayList<>(U.firstNotNull(args, Collections.emptyList())));
     }
 
     /** {@inheritDoc} */
     @Override public int[] executeBatch() throws SQLException {
-        throw new SQLFeatureNotSupportedException("Batch statements are not supported yet.");
+        ensureNotClosed();
+
+        rs = null;
+
+        updateCnt = -1;
+
+        if (batchArgs == null)
+            return U.EMPTY_INTS;
+
+        long[] res = doBatchUpdate(sql, F.flatCollections(batchArgs).toArray());
+
+        int[] intRes = new int[res.length];
+
+        for (int i = 0; i < res.length; i++)
+            intRes[i] = Long.valueOf(res[i]).intValue();
+
+        batchArgs = null;
+
+        return intRes;
     }
 
     /** {@inheritDoc} */

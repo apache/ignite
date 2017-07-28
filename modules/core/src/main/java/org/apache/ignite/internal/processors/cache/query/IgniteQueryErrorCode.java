@@ -76,6 +76,9 @@ public final class IgniteQueryErrorCode {
     /** Required column already exists. */
     public final static int COLUMN_ALREADY_EXISTS = 3009;
 
+    /** Invalid number of arguments passed. */
+    public final static int INVALID_PARAMS_NUMBER = 3010;
+
     /* 4xxx - cache related runtime errors */
 
     /** Attempt to INSERT a key that is already in cache. */

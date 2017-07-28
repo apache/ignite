@@ -1063,7 +1063,7 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
 
     /** {@inheritDoc} */
     @Override public boolean supportsBatchUpdates() throws SQLException {
-        return false;
+        return true;
     }
 
     /** {@inheritDoc} */

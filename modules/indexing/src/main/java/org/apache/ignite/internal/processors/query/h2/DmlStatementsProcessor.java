@@ -23,6 +23,7 @@ import java.sql.SQLException;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -67,7 +68,7 @@ import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlanBuilder;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
-import org.apache.ignite.internal.util.lang.IgniteSingletonIterator;
+import org.apache.ignite.internal.util.lang.IgniteCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -83,7 +84,6 @@ import org.h2.command.dml.Update;
 import org.h2.table.Column;
 import org.h2.util.DateTimeUtils;
 import org.h2.util.LocalDateTimeUtils;
-import org.h2.value.DataType;
 import org.h2.value.Value;
 import org.h2.value.ValueDate;
 import org.h2.value.ValueTime;
@@ -149,6 +149,7 @@ public class DmlStatementsProcessor {
      * @param schemaName Schema.
      * @param stmt JDBC statement.
      * @param fieldsQry Original query.
+     * @param args Arguments for this part of batch.
      * @param loc Query locality flag.
      * @param filters Cache name and key filter.
      * @param cancel Cancel.
@@ -156,7 +157,7 @@ public class DmlStatementsProcessor {
      * @throws IgniteCheckedException if failed.
      */
     private UpdateResult updateSqlFields(String schemaName, PreparedStatement stmt, SqlFieldsQuery fieldsQry,
-        boolean loc, IndexingQueryFilter filters, GridQueryCancel cancel) throws IgniteCheckedException {
+        Object[] args, boolean loc, IndexingQueryFilter filters, GridQueryCancel cancel) throws IgniteCheckedException {
         Object[] errKeys = null;
 
         long items = 0;
@@ -185,7 +186,7 @@ public class DmlStatementsProcessor {
             UpdateResult r;
 
             try {
-                r = executeUpdateStatement(schemaName, cctx, stmt, fieldsQry, loc, filters, cancel, errKeys);
+                r = executeUpdateStatement(schemaName, cctx, stmt, fieldsQry, args, loc, filters, cancel, errKeys);
             }
             finally {
                 cctx.operationContextPerCall(opCtx);
@@ -209,24 +210,95 @@ public class DmlStatementsProcessor {
     }
 
     /**
+     * @param schemaName Schema name.
+     * @param stmt Prepared statement.
+     * @param fieldsQry Initial query.
+     * @param loc Locality flag.
+     * @param filters Cache name and key filter.
+     * @param cancel Query cancel.
+     * @return Update results.
+     * @throws IgniteCheckedException if failed.
+     */
+    @SuppressWarnings("ConstantConditions")
+    private long[] batchUpdateSqlFields(String schemaName, PreparedStatement stmt, SqlFieldsQuery fieldsQry,
+        boolean loc, IndexingQueryFilter filters, GridQueryCancel cancel) throws IgniteCheckedException {
+        Object[] args = U.firstNotNull(fieldsQry.getArgs(), X.EMPTY_OBJECT_ARRAY);
+
+        int argsCnt = args.length;
+
+        int paramsCnt;
+
+        try {
+            paramsCnt = stmt.getParameterMetaData().getParameterCount();
+        }
+        catch (SQLException e) {
+            throw new IgniteSQLException(e);
+        }
+
+        int batchSize;
+
+        if (paramsCnt == 0)
+            batchSize = 1;
+        else if (argsCnt % paramsCnt != 0)
+            throw new IgniteSQLException("Invalid number of query arguments - " + paramsCnt + " expected, " +
+               (argsCnt % paramsCnt) + " given", IgniteQueryErrorCode.INVALID_PARAMS_NUMBER);
+        else
+            batchSize = argsCnt / paramsCnt;
+
+        boolean isBatch = (batchSize > 1);
+
+        long[] resCnt = new long[batchSize];
+
+        Object[] stepArgs = args;
+
+        if (isBatch) // No need to reallocate args sub array on each batch step
+            stepArgs = new Object[paramsCnt];
+
+        int pos = 0;
+
+        List<Object> errKeys = null;
+
+        for (int i = 0; i < batchSize; i++) {
+            if (isBatch)
+                System.arraycopy(args, pos, stepArgs, 0, paramsCnt);
+
+            UpdateResult res = updateSqlFields(schemaName, stmt, fieldsQry, stepArgs, loc, filters, cancel);
+
+            if (!F.isEmpty(res.errKeys)) {
+                if (!isBatch)
+                    errKeys = F.asList(res.errKeys);
+                else if (errKeys == null)
+                    errKeys = new ArrayList<>(F.asList(res.errKeys));
+                else
+                    errKeys.addAll(F.asList(res.errKeys));
+            }
+
+            resCnt[i] = res.cnt;
+
+            pos += paramsCnt;
+        }
+
+        if (!F.isEmpty(errKeys))
+            throw new IgniteSQLException("Failed to update or delete some keys: " + errKeys.toString(),
+                IgniteQueryErrorCode.CONCURRENT_UPDATE);
+
+        return resCnt;
+    }
+
+    /**
      * @param schemaName Schema.
      * @param stmt Prepared statement.
-     * @param fieldsQry Initial query
+     * @param fieldsQry Initial query.
      * @param cancel Query cancel.
-     * @return Update result wrapped into {@link GridQueryFieldsResult}
+     * @return Update result wrapped into {@link GridQueryFieldsResult}.
      * @throws IgniteCheckedException if failed.
      */
     @SuppressWarnings("unchecked")
     QueryCursorImpl<List<?>> updateSqlFieldsDistributed(String schemaName, PreparedStatement stmt,
         SqlFieldsQuery fieldsQry, GridQueryCancel cancel) throws IgniteCheckedException {
-        UpdateResult res = updateSqlFields(schemaName, stmt, fieldsQry, false, null, cancel);
+        long[] res = batchUpdateSqlFields(schemaName, stmt, fieldsQry, false, null, cancel);
 
-        QueryCursorImpl<List<?>> resCur = (QueryCursorImpl<List<?>>)new QueryCursorImpl(Collections.singletonList
-            (Collections.singletonList(res.cnt)), cancel, false);
-
-        resCur.fieldsMeta(UPDATE_RESULT_META);
-
-        return resCur;
+        return cursorForUpdateResult(res);
     }
 
     /**
@@ -237,17 +309,17 @@ public class DmlStatementsProcessor {
      * @param fieldsQry Fields query.
      * @param filters Cache name and key filter.
      * @param cancel Query cancel.
-     * @return Update result wrapped into {@link GridQueryFieldsResult}
+     * @return Update result wrapped into {@link GridQueryFieldsResult}.
      * @throws IgniteCheckedException if failed.
      */
     @SuppressWarnings("unchecked")
     GridQueryFieldsResult updateSqlFieldsLocal(String schemaName, PreparedStatement stmt,
         SqlFieldsQuery fieldsQry, IndexingQueryFilter filters, GridQueryCancel cancel)
         throws IgniteCheckedException {
-        UpdateResult res = updateSqlFields(schemaName, stmt, fieldsQry, true, filters, cancel);
+        long[] res = batchUpdateSqlFields(schemaName, stmt, fieldsQry, true, filters, cancel);
 
         return new GridQueryFieldsResultAdapter(UPDATE_RESULT_META,
-            new IgniteSingletonIterator(Collections.singletonList(res.cnt)));
+            new IgniteCloseableIteratorAdapter(Arrays.asList(res).iterator()));
     }
 
     /**
@@ -339,6 +411,8 @@ public class DmlStatementsProcessor {
      * @param cctx Cache context.
      * @param prepStmt Prepared statement for DML query.
      * @param fieldsQry Fields query.
+     * @param args Arguments for this part of batch.
+     * @param loc Locality flag.
      * @param filters Cache name and key filter.
      * @param failedKeys Keys to restrict UPDATE and DELETE operations with. Null or empty array means no restriction.
      * @return Pair [number of successfully processed items; keys that have failed to be processed]
@@ -346,7 +420,7 @@ public class DmlStatementsProcessor {
      */
     @SuppressWarnings({"ConstantConditions", "unchecked"})
     private UpdateResult executeUpdateStatement(String schemaName, final GridCacheContext cctx,
-        PreparedStatement prepStmt, SqlFieldsQuery fieldsQry, boolean loc, IndexingQueryFilter filters,
+        PreparedStatement prepStmt, SqlFieldsQuery fieldsQry, Object[] args, boolean loc, IndexingQueryFilter filters,
         GridQueryCancel cancel, Object[] failedKeys) throws IgniteCheckedException {
         int mainCacheId = CU.cacheId(cctx.name());
 
@@ -357,7 +431,7 @@ public class DmlStatementsProcessor {
         if (plan.fastUpdateArgs != null) {
             assert F.isEmpty(failedKeys) && errKeysPos == null;
 
-            return doFastUpdate(plan, fieldsQry.getArgs());
+            return doFastUpdate(plan, args);
         }
 
         assert !F.isEmpty(plan.selectQry);
@@ -368,7 +442,7 @@ public class DmlStatementsProcessor {
         // subquery and not some dummy stuff like "select 1, 2, 3;"
         if (!loc && !plan.isLocSubqry) {
             SqlFieldsQuery newFieldsQry = new SqlFieldsQuery(plan.selectQry, fieldsQry.isCollocated())
-                .setArgs(fieldsQry.getArgs())
+                .setArgs(args)
                 .setDistributedJoins(fieldsQry.isDistributedJoins())
                 .setEnforceJoinOrder(fieldsQry.isEnforceJoinOrder())
                 .setLocal(fieldsQry.isLocal())
@@ -380,7 +454,7 @@ public class DmlStatementsProcessor {
         }
         else {
             final GridQueryFieldsResult res = idx.queryLocalSqlFields(schemaName, plan.selectQry,
-                F.asList(fieldsQry.getArgs()), filters, fieldsQry.isEnforceJoinOrder(), fieldsQry.getTimeout(), cancel);
+                F.asList(args), filters, fieldsQry.isEnforceJoinOrder(), fieldsQry.getTimeout(), cancel);
 
             cur = new QueryCursorImpl<>(new Iterable<List<?>>() {
                 @Override public Iterator<List<?>> iterator() {
@@ -1120,6 +1194,37 @@ public class DmlStatementsProcessor {
      */
     static boolean isDmlStatement(Prepared stmt) {
         return stmt instanceof Merge || stmt instanceof Insert || stmt instanceof Update || stmt instanceof Delete;
+    }
+
+    /**
+     * Wrap result of DML operation (number of items affected) to Iterable suitable to be wrapped by cursor.
+     *
+     * @param itemsCntrs Update result to wrap; each array item corresponds to a result of a batch item.
+     * @return Resulting Iterable.
+     */
+    @SuppressWarnings("unchecked")
+    private static QueryCursorImpl<List<?>> cursorForUpdateResult(long[] itemsCntrs) {
+        assert !F.isEmpty(itemsCntrs);
+
+        if (itemsCntrs.length == 1) {
+            QueryCursorImpl<List<?>> res =
+                new QueryCursorImpl(Collections.singletonList(Collections.singletonList(itemsCntrs[0])), null, false);
+
+            res.fieldsMeta(UPDATE_RESULT_META);
+
+            return res;
+        }
+
+        List<List<Long>> resLst = new ArrayList<>(itemsCntrs.length);
+
+        for (long itemsCnt : itemsCntrs)
+            resLst.add(Collections.singletonList(itemsCnt));
+
+        QueryCursorImpl<List<?>> res = new QueryCursorImpl(resLst, null, false);
+
+        res.fieldsMeta(UPDATE_RESULT_META);
+
+        return res;
     }
 
     /** Update result - modifications count and keys to re-run query with, if needed. */
