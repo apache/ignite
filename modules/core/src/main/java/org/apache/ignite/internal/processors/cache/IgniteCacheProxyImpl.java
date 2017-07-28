@@ -113,6 +113,9 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
     @GridToStringInclude
     private volatile IgniteInternalCache<K, V> delegate;
 
+    /** Cached proxy wrapper. */
+    private volatile IgniteCacheProxy<K, V> cachedProxy;
+
     /** */
     @GridToStringExclude
     private CacheManager cacheMgr;
@@ -176,6 +179,17 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
     /** {@inheritDoc} */
     @Override public IgniteCacheProxy<K, V> cacheNoGate() {
         return new GatewayProtectedCacheProxy<>(this, new CacheOperationContext(), false);
+    }
+
+    /**
+     * @return Default cached proxy wrapper {@link GatewayProtectedCacheProxy}.
+     */
+    public IgniteCacheProxy<K, V> gatewayWrapper() {
+        if (cachedProxy != null)
+            return cachedProxy;
+
+        cachedProxy = new GatewayProtectedCacheProxy<>(this, new CacheOperationContext(), true);
+        return cachedProxy;
     }
 
     /** {@inheritDoc} */
