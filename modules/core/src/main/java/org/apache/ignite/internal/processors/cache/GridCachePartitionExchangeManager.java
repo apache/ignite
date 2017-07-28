@@ -1732,6 +1732,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         /** Busy flag used as performance optimization to stop current preloading. */
         private volatile boolean busy;
 
+        /** */
+        private boolean crd;
+
         /**
          * Constructor.
          */
@@ -1927,7 +1930,15 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                             lastInitializedFut = exchFut;
 
-                            exchFut.init();
+                            boolean newCrd = false;
+
+                            if (!crd) {
+                                List<ClusterNode> srvNodes = exchFut.discoCache().serverNodes();
+
+                                crd = newCrd = !srvNodes.isEmpty() && srvNodes.get(0).isLocal();
+                            }
+
+                            exchFut.init(newCrd);
 
                             int dumpCnt = 0;
 
