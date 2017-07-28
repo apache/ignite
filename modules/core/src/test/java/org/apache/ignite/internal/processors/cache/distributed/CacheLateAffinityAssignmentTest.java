@@ -1114,14 +1114,8 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
     private void doTestCoordLeaveBlockedFinishExchangeMessage(int cnt, int stopId, int... blockedIds) throws Exception {
         int ord = 1;
 
-        Ignite newCoord = null;
-
-        for (int i = 0; i < cnt; i++) {
-            Ignite ignite = startServer(ord - 1, ord++);
-
-            if (i == 1)
-                newCoord = ignite;
-        }
+        for (int i = 0; i < cnt; i++)
+            startServer(ord - 1, ord++);
 
         TestRecordingCommunicationSpi spi0 =
             (TestRecordingCommunicationSpi) grid(0).configuration().getCommunicationSpi();
