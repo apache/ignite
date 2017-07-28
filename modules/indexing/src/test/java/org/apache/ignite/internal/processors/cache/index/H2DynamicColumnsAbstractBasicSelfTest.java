@@ -11,6 +11,7 @@ import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.QuerySchema;
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -20,6 +21,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.h2.table.Column;
 import org.h2.value.DataType;
@@ -28,6 +30,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.concurrent.Callable;
 
 /**
  * Test to check dynamic columns related features.
@@ -106,8 +109,10 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends GridCommonAb
     /**
      * Test column addition to the end of the columns list.
      */
-    public void testSimpleAddColumn() {
+    public void testAddColumnSimple() {
         run("ALTER TABLE Person ADD COLUMN age int");
+
+        doSleep(500);
 
         QueryField c = c("AGE", Integer.class.getName());
 
@@ -121,6 +126,8 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends GridCommonAb
     public void testAddColumnBefore() {
         run("ALTER TABLE Person ADD COLUMN age int before id");
 
+        doSleep(500);
+
         QueryField c = c("AGE", Integer.class.getName());
 
         for (Ignite node : Ignition.allGrids())
@@ -133,12 +140,122 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends GridCommonAb
     public void testAddColumnAfter() {
         run("ALTER TABLE Person ADD COLUMN age int after id");
 
+        doSleep(500);
+
         QueryField c = c("AGE", Integer.class.getName());
 
         for (Ignite node : Ignition.allGrids())
             checkNodeState((IgniteEx)node, "PERSON", "ID", c);
     }
 
+    /**
+     * Test column addition to the end of the columns list.
+     */
+    public void testAddFewColumnsSimple() {
+        run("ALTER TABLE Person ADD COLUMN (age int, \"city\" varchar)");
+
+        doSleep(500);
+
+        for (Ignite node : Ignition.allGrids())
+            checkNodeState((IgniteEx)node, "PERSON", "NAME",
+                c("AGE", Integer.class.getName()),
+                c("city", String.class.getName()));
+    }
+
+    /**
+     * Test column addition before specified column.
+     */
+    public void testAddFewColumnsBefore() {
+        run("ALTER TABLE Person ADD COLUMN (age int, \"city\" varchar) before id");
+
+        doSleep(500);
+
+        for (Ignite node : Ignition.allGrids())
+            checkNodeState((IgniteEx)node, "PERSON", null,
+                c("AGE", Integer.class.getName()),
+                c("city", String.class.getName()));
+    }
+
+    /**
+     * Test column addition after specified column.
+     */
+    public void testAddFewColumnsAfter() {
+        run("ALTER TABLE Person ADD COLUMN (age int, \"city\" varchar) after id");
+
+        doSleep(500);
+
+        for (Ignite node : Ignition.allGrids())
+            checkNodeState((IgniteEx)node, "PERSON", "ID",
+                c("AGE", Integer.class.getName()),
+                c("city", String.class.getName()));
+    }
+
+    /**
+     * Test {@code IF EXISTS} handling.
+     */
+    public void testIfTableExists() {
+        run("ALTER TABLE if exists City ADD COLUMN population int after name");
+    }
+
+    /**
+     * Test {@code IF NOT EXISTS} handling.
+     */
+    public void testIfColumnNotExists() {
+        run("ALTER TABLE Person ADD COLUMN if not exists name varchar after id");
+    }
+
+    /**
+     * Test {@code IF NOT EXISTS} handling.
+     */
+    public void testDuplicateColumnName() {
+        assertThrows("ALTER TABLE Person ADD COLUMN name varchar after id",
+            "Column already exists [tblName=PERSON, colName=NAME]");
+    }
+
+    /**
+     * Test behavior in case of missing table.
+     */
+    public void testMissingTable() {
+        assertThrows("ALTER TABLE City ADD COLUMN name varchar after id", "Table doesn't exist: CITY");
+    }
+
+    /**
+     * Test missing "before" column..
+     */
+    public void testMissingBeforeColumn() {
+        assertThrows("ALTER TABLE Person ADD COLUMN city varchar before x",
+            "Column \"X\" not found");
+    }
+
+    /**
+     * Test missing "after" column..
+     */
+    public void testMissingAfterColumn() {
+        assertThrows("ALTER TABLE Person ADD COLUMN city varchar after x",
+            "Column \"X\" not found");
+    }
+
+    /**
+     * Run specified statement expected to throw {@code IgniteSqlException} with expected specified message.
+     * @param sql Statement.
+     * @param msg Expected message.
+     */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    private void assertThrows(final String sql, String msg) {
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                run(sql);
+
+                return null;
+            }
+        }, IgniteSQLException.class, msg);
+    }
+
+    /**
+     * @param idx Node index.
+     * @return Client configuration.
+     * @throws Exception if failed.
+     */
     private IgniteConfiguration clientConfiguration(int idx) throws Exception {
         return commonConfiguration(idx).setClientMode(true).setCacheConfiguration(
             new CacheConfiguration<>("idx").setIndexedTypes(Integer.class, Integer.class)
@@ -225,13 +342,10 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends GridCommonAb
                     if (F.eq(afterColName, e.getKey()))
                         break;
                 }
-
-                if (!it.hasNext())
-                    assertTrue("Column not found: " + afterColName, false);
             }
 
             for (QueryField col : cols) {
-                assertTrue(it.hasNext());
+                assertTrue("New column not found in query entity: " + col.name(), it.hasNext());
 
                 Map.Entry<String, String> e = it.next();
 
@@ -269,13 +383,10 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends GridCommonAb
                     if (F.eq(afterColName, e.getKey()))
                         break;
                 }
-
-                if (!it.hasNext())
-                    assertTrue("Column not found: " + afterColName, false);
             }
 
             for (QueryField col : cols) {
-                assertTrue(it.hasNext());
+                assertTrue("New column not found in type descriptor: " + col.name(), it.hasNext());
 
                 Map.Entry<String, Class<?>> e = it.next();
 
@@ -306,12 +417,11 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends GridCommonAb
                     if (F.eq(afterColName, c.getName()))
                         break;
                 }
-
-                if (!it.hasNext())
-                    assertTrue("Column not found: " + afterColName, false);
             }
 
             for (QueryField col : cols) {
+                assertTrue("New column not found in H2 table: " + col.name(), it.hasNext());
+
                 assertTrue(it.hasNext());
 
                 Column c = it.next();
@@ -322,6 +432,7 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends GridCommonAb
             }
         }
     }
+
 
     private static QueryField c(String name, String typeName) {
         return new QueryField(name, typeName);
