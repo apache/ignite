@@ -1881,7 +1881,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             if (expHead.previous() == null) {
                 FakeRecord frHead = (FakeRecord)expHead;
 
-                if (stop == frHead.stop)
+                if (!stop || frHead.stop) // Protects from CASing terminal FakeRecord(true) to FakeRecord(false)
                     return false;
             }
 
@@ -1889,6 +1889,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             checkEnvironment();
 
             if (!head.compareAndSet(expHead, new FakeRecord(new FileWALPointer(idx, (int)nextPosition(expHead), 0), stop)))
+                return false;
+
+            if (expHead.chainSize() == 0)
                 return false;
 
             // At this point we grabbed the piece of WAL chain.
