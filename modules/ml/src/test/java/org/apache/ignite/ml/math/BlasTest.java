@@ -164,13 +164,7 @@ public class BlasTest {
             {1.0, 2.0},
             {2.0, 4.0}}).times(alpha).plus(a);
 
-        Tracer.showAscii(exp);
-        System.out.println();
-
         Blas.syr(alpha, x, a);
-
-        Tracer.showAscii(a);
-        System.out.println();
 
         Assert.assertEquals(exp, a);
     }
@@ -207,14 +201,6 @@ public class BlasTest {
         Matrix exp = a.times(b);//.times(alpha).plus(c.times(beta));
 
         Blas.gemm(alpha, a, b, beta, c);
-
-        Tracer.showAscii(a);
-        System.out.println();
-        Tracer.showAscii(b);
-        System.out.println();
-        Tracer.showAscii(c);
-        System.out.println();
-        Tracer.showAscii(exp);
 
         Assert.assertTrue(Arrays.equals(exp.getStorage().data(), c.getStorage().data()));
     }

@@ -156,7 +156,7 @@ public class MatrixUtil {
         return res;
     }
 
-    /** TODO: IGNTIE-5723, rewrite in a more optimal way. */
+    /** TODO: IGNITE-5723, rewrite in a more optimal way. */
     public static DenseLocalOnHeapVector localCopyOf(Vector vec) {
         DenseLocalOnHeapVector res = new DenseLocalOnHeapVector(vec.size());
 
