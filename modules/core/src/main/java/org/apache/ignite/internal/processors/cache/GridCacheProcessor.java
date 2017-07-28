@@ -3215,8 +3215,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     public Collection<IgniteCacheProxy<?, ?>> jcaches() {
         return F.viewReadOnly(jCacheProxies.values(), new IgniteClosure<IgniteCacheProxyImpl<?, ?>, IgniteCacheProxy<?, ?>>() {
-            @Override public IgniteCacheProxy<?, ?> apply(IgniteCacheProxyImpl<?, ?> entry) {
-                return new GatewayProtectedCacheProxy<>(entry, new CacheOperationContext(), true);
+            @Override public IgniteCacheProxy<?, ?> apply(IgniteCacheProxyImpl<?, ?> proxy) {
+                return proxy.gatewayWrapper();
             }
         });
     }
@@ -3315,7 +3315,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (desc != null && !desc.cacheType().userCache())
             throw new IllegalStateException("Failed to get cache because it is a system cache: " + cacheName);
 
-        IgniteCacheProxy<?, ?> cache = jCacheProxies.get(cacheName);
+        IgniteCacheProxyImpl<?, ?> cache = jCacheProxies.get(cacheName);
 
         // Try to start cache, there is no guarantee that cache will be instantiated.
         if (cache == null) {
@@ -3324,9 +3324,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             cache = jCacheProxies.get(cacheName);
         }
 
-        return cache != null ?
-            new GatewayProtectedCacheProxy<>((IgniteCacheProxy<K, V>)cache, new CacheOperationContext(), true) :
-            null;
+        return cache != null ? (IgniteCacheProxy<K, V>) cache.gatewayWrapper() : null;
     }
 
     /**
@@ -3465,9 +3463,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     public Collection<IgniteCacheProxy<?, ?>> publicCaches() {
         Collection<IgniteCacheProxy<?, ?>> res = new ArrayList<>(jCacheProxies.size());
 
-        for (Map.Entry<String, IgniteCacheProxyImpl<?, ?>> entry : jCacheProxies.entrySet()) {
-            if (entry.getValue().context().userCache())
-                res.add(new GatewayProtectedCacheProxy(entry.getValue(), new CacheOperationContext(), true));
+        for (IgniteCacheProxyImpl<?, ?> proxy : jCacheProxies.values()) {
+            if (proxy.context().userCache())
+                res.add(proxy.gatewayWrapper());
         }
 
         return res;
