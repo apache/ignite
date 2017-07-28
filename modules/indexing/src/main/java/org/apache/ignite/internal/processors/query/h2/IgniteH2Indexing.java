@@ -1671,7 +1671,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override  public String schema(String cacheName) {
+    @Override public String schema(String cacheName) {
         String res = cacheName2schema.get(cacheName);
 
         if (res == null)
@@ -1692,7 +1692,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (s == null)
             return Collections.emptySet();
 
-        return s.tables();
+        List<H2TableDescriptor> tbls = new ArrayList<>();
+
+        for (H2TableDescriptor tbl : s.tables()) {
+            if (F.eq(tbl.cache().name(), cacheName))
+                tbls.add(tbl);
+        }
+
+        return tbls;
     }
 
     /** {@inheritDoc} */

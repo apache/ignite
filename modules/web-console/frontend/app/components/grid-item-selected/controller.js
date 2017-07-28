@@ -15,22 +15,24 @@
  * limitations under the License.
  */
 
-import angular from 'angular';
+export default class {
+    static $inject = ['$scope', 'uiGridConstants'];
 
-import templateUrl from 'views/settings/profile.tpl.pug';
+    constructor($scope, uiGridConstants) {
+        Object.assign(this, {$scope, uiGridConstants});
+    }
 
-angular
-.module('ignite-console.states.profile', [
-    'ui.router'
-])
-.config(['$stateProvider', function($stateProvider) {
-    // set up the states
-    $stateProvider.state('base.settings.profile', {
-        url: '/profile',
-        templateUrl,
-        permission: 'profile',
-        tfMetaTags: {
-            title: 'User profile'
+    $onChanges(changes) {
+        if (changes && 'gridApi' in changes && changes.gridApi.currentValue) {
+            this.applyValues();
+
+            this.gridApi.grid.registerDataChangeCallback(() => this.applyValues(), [this.uiGridConstants.dataChange.ROW]);
+            this.gridApi.selection.on.rowSelectionChanged(this.$scope, () => this.applyValues());
         }
-    });
-}]);
+    }
+
+    applyValues() {
+        this.selected = this.gridApi.selection.getSelectedRows().length;
+        this.count = this.gridApi.grid.rows.length;
+    }
+}

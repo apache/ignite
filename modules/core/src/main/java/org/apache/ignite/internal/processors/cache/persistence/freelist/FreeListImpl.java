@@ -406,18 +406,20 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
                     }
                 }
 
-                log.info("Bucket [b=" + b +
-                    ", size=" + size +
-                    ", stripes=" + (stripes != null ? stripes.length : 0) +
-                    ", stripesEmpty=" + empty + ']');
+                if (log.isInfoEnabled())
+                    log.info("Bucket [b=" + b +
+                        ", size=" + size +
+                        ", stripes=" + (stripes != null ? stripes.length : 0) +
+                        ", stripesEmpty=" + empty + ']');
             }
         }
 
         if (dataPages > 0) {
-            log.info("FreeList [name=" + name +
-                ", buckets=" + BUCKETS +
-                ", dataPages=" + dataPages +
-                ", reusePages=" + bucketsSize[REUSE_BUCKET].longValue() + "]");
+            if (log.isInfoEnabled())
+                log.info("FreeList [name=" + name +
+                    ", buckets=" + BUCKETS +
+                    ", dataPages=" + dataPages +
+                    ", reusePages=" + bucketsSize[REUSE_BUCKET].longValue() + "]");
         }
     }
 

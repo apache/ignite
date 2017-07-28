@@ -73,26 +73,12 @@ class ConnectionState {
 }
 
 export default class IgniteAgentManager {
-    static $inject = ['$rootScope', '$q', 'igniteSocketFactory', 'AgentModal', 'UserNotifications'];
+    static $inject = ['$rootScope', '$q', '$transitions', 'igniteSocketFactory', 'AgentModal', 'UserNotifications'];
 
-    constructor($root, $q, socketFactory, AgentModal, UserNotifications) {
-        this.$root = $root;
-        this.$q = $q;
-        this.socketFactory = socketFactory;
-
-        /**
-         * @type {AgentModal}
-         */
-        this.AgentModal = AgentModal;
-
-        /**
-         * @type {UserNotifications}
-         */
-        this.UserNotifications = UserNotifications;
+    constructor($root, $q, $transitions, socketFactory, AgentModal, UserNotifications) {
+        Object.assign(this, {$root, $q, $transitions, socketFactory, AgentModal, UserNotifications});
 
         this.promises = new Set();
-
-        $root.$on('$stateChangeSuccess', () => this.stopWatch());
 
         /**
          * Connection to backend.
@@ -282,13 +268,13 @@ export default class IgniteAgentManager {
             }
         });
 
+        self.$transitions.onExit({}, () => self.stopWatch());
+
         return self.awaitCluster();
     }
 
     stopWatch() {
         this.modalSubscription && this.modalSubscription.unsubscribe();
-
-        this.AgentModal.hide();
 
         this.promises.forEach((promise) => promise.reject('Agent watch stopped.'));
     }
