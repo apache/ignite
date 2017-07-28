@@ -19,34 +19,42 @@ package org.apache.ignite.internal.pagemem.wal.record.delta;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageMemory;
+import org.apache.ignite.internal.pagemem.wal.WALPointer;
+import org.apache.ignite.internal.pagemem.wal.record.WALReferenceAwareRecord;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
 
 /**
  * Insert fragment to data page record.
  */
-public class DataPageInsertFragmentRecord extends PageDeltaRecord {
+public class DataPageInsertFragmentRecord extends PageDeltaRecord implements WALReferenceAwareRecord {
     /** Link to the last entry fragment. */
     private final long lastLink;
 
+    /** Actual fragment data size. */
+    private final int payloadSize;
+
+    /** Reference to DataRecord. */
+    private WALPointer reference;
+
     /** Actual fragment data. */
-    private final byte[] payload;
+    private byte[] payload;
 
     /**
      * @param grpId Cache group ID.
      * @param pageId Page ID.
-     * @param payload Fragment payload.
+     * @param payloadSize Fragment payload.
      * @param lastLink Link to the last entry fragment.
      */
     public DataPageInsertFragmentRecord(
         final int grpId,
         final long pageId,
-        final byte[] payload,
+        final int payloadSize,
         final long lastLink
     ) {
         super(grpId, pageId);
 
         this.lastLink = lastLink;
-        this.payload = payload;
+        this.payloadSize = payloadSize;
     }
 
     /** {@inheritDoc} */
@@ -62,23 +70,29 @@ public class DataPageInsertFragmentRecord extends PageDeltaRecord {
     }
 
     /**
-     * @return Fragment payload size.
-     */
-    public int payloadSize() {
-        return payload.length;
-    }
-
-    /**
-     * @return Fragment payload.
-     */
-    public byte[] payload() {
-        return payload;
-    }
-
-    /**
      * @return Link to the last entry fragment.
      */
     public long lastLink() {
         return lastLink;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int payloadSize() {
+        return payloadSize;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void payload(byte[] payload) {
+        this.payload = payload;
+    }
+
+    /** {@inheritDoc} */
+    @Override public WALPointer reference() {
+        return reference;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void reference(WALPointer reference) {
+        this.reference = reference;
     }
 }

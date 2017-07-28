@@ -1023,7 +1023,7 @@ public class DataPageIO extends PageIO {
      * @param payloadSize Data length that should be written in a fragment.
      * @throws IgniteCheckedException If failed.
      */
-    private void writeFragmentData(
+    public static void writeFragmentData(
         final CacheDataRow row,
         final ByteBuffer buf,
         final int rowOff,
@@ -1050,7 +1050,7 @@ public class DataPageIO extends PageIO {
      * @return Actually written data.
      * @throws IgniteCheckedException If fail.
      */
-    private int writeFragment(
+    private static int writeFragment(
         final CacheDataRow row,
         final ByteBuffer buf,
         final int rowOff,
@@ -1130,7 +1130,7 @@ public class DataPageIO extends PageIO {
      * @param len Length.
      * @param prevLen previous length.
      */
-    private void writeVersionFragment(ByteBuffer buf, GridCacheVersion ver, int rowOff, int len, int prevLen) {
+    private static void writeVersionFragment(ByteBuffer buf, GridCacheVersion ver, int rowOff, int len, int prevLen) {
         int verSize = CacheVersionIO.size(ver, false);
 
         assert len <= verSize: len;
@@ -1158,7 +1158,7 @@ public class DataPageIO extends PageIO {
      * @param len Length.
      * @param prevLen previous length.
      */
-    private void writeExpireTimeFragment(ByteBuffer buf, long expireTime, int rowOff, int len, int prevLen) {
+    private static void writeExpireTimeFragment(ByteBuffer buf, long expireTime, int rowOff, int len, int prevLen) {
         int size = 8;
 
         if (size <= len)
@@ -1181,7 +1181,7 @@ public class DataPageIO extends PageIO {
      * @param len Length.
      * @param prevLen Prev length.
      */
-    private void writeCacheIdFragment(ByteBuffer buf, int cacheId, int rowOff, int len, int prevLen) {
+    private static void writeCacheIdFragment(ByteBuffer buf, int cacheId, int rowOff, int len, int prevLen) {
         if (cacheId == 0)
             return;
 

@@ -476,11 +476,41 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                     try {
                         Collection<IgniteTxEntry> entries = near() ? allEntries() : writeEntries();
 
-                        List<DataEntry> dataEntries = null;
-
                         batchStoreCommit(writeMap().values());
 
                         try {
+                            // Write created and modified entries to WAL
+                            List<DataEntry> dataEntries = null;
+
+                            for (IgniteTxEntry txEntry : entries) {
+                                GridCacheContext cacheCtx = txEntry.context();
+                                GridCacheOperation op = txEntry.op();
+                                CacheObject val = txEntry.value();
+
+                                if (!near() && cctx.wal() != null && op != NOOP && op != RELOAD && op != READ) {
+                                    if (dataEntries == null)
+                                        dataEntries = new ArrayList<>(entries.size());
+
+                                    dataEntries.add(
+                                            new DataEntry(
+                                                    cacheCtx.cacheId(),
+                                                    txEntry.key(),
+                                                    val,
+                                                    op,
+                                                    nearXidVersion(),
+                                                    writeVersion(),
+                                                    0,
+                                                    txEntry.key().partition(),
+                                                    txEntry.updateCounter(),
+                                                    cacheCtx.group().storeCacheIdInDataPage()
+                                            )
+                                    );
+                                }
+                            }
+
+                            if (dataEntries != null && !near() && cctx.wal() != null)
+                                cctx.wal().log(new DataRecord(dataEntries));
+
                             // Node that for near transactions we grab all entries.
                             for (IgniteTxEntry txEntry : entries) {
                                 GridCacheContext cacheCtx = txEntry.context();
@@ -555,25 +585,6 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                                 explicitVer = null;
 
                                             GridCacheVersion dhtVer = cached.isNear() ? writeVersion() : null;
-
-                                            if (!near() && cctx.wal() != null && op != NOOP && op != RELOAD && op != READ) {
-                                                if (dataEntries == null)
-                                                    dataEntries = new ArrayList<>(entries.size());
-
-                                                dataEntries.add(
-                                                    new DataEntry(
-                                                        cacheCtx.cacheId(),
-                                                        txEntry.key(),
-                                                        val,
-                                                        op,
-                                                        nearXidVersion(),
-                                                        writeVersion(),
-                                                        0,
-                                                        txEntry.key().partition(),
-                                                        txEntry.updateCounter()
-                                                    )
-                                                );
-                                            }
 
                                             if (op == CREATE || op == UPDATE) {
                                                 // Invalidate only for near nodes (backups cannot be invalidated).
@@ -740,9 +751,6 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                         throw (Error)ex;
                                 }
                             }
-
-                            if (!near() && cctx.wal() != null)
-                                cctx.wal().log(new DataRecord(dataEntries));
 
                             if (ptr != null)
                                 cctx.wal().fsync(ptr);

@@ -83,6 +83,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusInnerIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.CacheVersionIO;
@@ -93,7 +94,6 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.RecordSeriali
 import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentEofException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.PureJavaCrc32;
 import org.apache.ignite.internal.processors.cache.persistence.wal.record.HeaderRecord;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.util.typedef.F;
@@ -263,10 +263,9 @@ public class RecordV1Serializer implements RecordSerializer {
 
                 buf.putInt(diRec.groupId());
                 buf.putLong(diRec.pageId());
+                buf.putInt(diRec.payloadSize());
 
-                buf.putShort((short)diRec.payload().length);
-
-                buf.put(diRec.payload());
+                ((FileWALPointer) diRec.reference()).put(buf);
 
                 break;
 
@@ -276,10 +275,9 @@ public class RecordV1Serializer implements RecordSerializer {
                 buf.putInt(uRec.groupId());
                 buf.putLong(uRec.pageId());
                 buf.putInt(uRec.itemId());
+                buf.putInt(uRec.payloadSize());
 
-                buf.putShort((short)uRec.payload().length);
-
-                buf.put(uRec.payload());
+                ((FileWALPointer) uRec.reference()).put(buf);
 
                 break;
 
@@ -291,7 +289,8 @@ public class RecordV1Serializer implements RecordSerializer {
 
                 buf.putLong(difRec.lastLink());
                 buf.putInt(difRec.payloadSize());
-                buf.put(difRec.payload());
+
+                ((FileWALPointer) difRec.reference()).put(buf);
 
                 break;
 
@@ -819,15 +818,14 @@ public class RecordV1Serializer implements RecordSerializer {
                 cacheId = in.readInt();
                 pageId = in.readLong();
 
-                int size = in.readUnsignedShort();
+                int payloadSize = in.readInt();
 
-                in.ensure(size);
+                WALPointer pointer = FileWALPointer.read(in);
 
-                byte[] payload = new byte[size];
+                DataPageInsertRecord insertRecord = new DataPageInsertRecord(cacheId, pageId, payloadSize);
+                insertRecord.reference(pointer);
 
-                in.readFully(payload);
-
-                res = new DataPageInsertRecord(cacheId, pageId, payload);
+                res = insertRecord;
 
                 break;
             }
@@ -838,15 +836,14 @@ public class RecordV1Serializer implements RecordSerializer {
 
                 int itemId = in.readInt();
 
-                int size = in.readUnsignedShort();
+                int payloadSize = in.readInt();
 
-                in.ensure(size);
+                WALPointer pointer = FileWALPointer.read(in);
 
-                byte[] payload = new byte[size];
+                DataPageUpdateRecord updateRecord = new DataPageUpdateRecord(cacheId, pageId, itemId, payloadSize);
+                updateRecord.reference(pointer);
 
-                in.readFully(payload);
-
-                res = new DataPageUpdateRecord(cacheId, pageId, itemId, payload);
+                res = updateRecord;
 
                 break;
             }
@@ -855,14 +852,16 @@ public class RecordV1Serializer implements RecordSerializer {
                 cacheId = in.readInt();
                 pageId = in.readLong();
 
-                final long lastLink = in.readLong();
-                final int payloadSize = in.readInt();
+                long lastLink = in.readLong();
 
-                final byte[] payload = new byte[payloadSize];
+                int payloadSize = in.readInt();
 
-                in.readFully(payload);
+                WALPointer pointer = FileWALPointer.read(in);
 
-                res = new DataPageInsertFragmentRecord(cacheId, pageId, payload, lastLink);
+                DataPageInsertFragmentRecord fragmentRecord = new DataPageInsertFragmentRecord(cacheId, pageId, payloadSize, lastLink);
+                fragmentRecord.reference(pointer);
+
+                res = fragmentRecord;
 
                 break;
             }
@@ -1278,18 +1277,20 @@ public class RecordV1Serializer implements RecordSerializer {
             case DATA_PAGE_INSERT_RECORD:
                 DataPageInsertRecord diRec = (DataPageInsertRecord)record;
 
-                return commonFields + 4 + 8 + 2 + diRec.payload().length;
+                return commonFields + 4 + 8 + 4 +
+                        ((FileWALPointer) diRec.reference()).size();
 
             case DATA_PAGE_UPDATE_RECORD:
                 DataPageUpdateRecord uRec = (DataPageUpdateRecord)record;
 
-                return commonFields + 4 + 8 + 2 + 4 +
-                    uRec.payload().length;
+                return commonFields + 4 + 8 + 4 + 4 +
+                        ((FileWALPointer) uRec.reference()).size();
 
             case DATA_PAGE_INSERT_FRAGMENT_RECORD:
                 final DataPageInsertFragmentRecord difRec = (DataPageInsertFragmentRecord)record;
 
-                return commonFields + 4 + 8 + 8 + 4 + difRec.payloadSize();
+                return commonFields + 4 + 8 + 8 + 4 +
+                        ((FileWALPointer) difRec.reference()).size();
 
             case DATA_PAGE_REMOVE_RECORD:
                 return commonFields + 4 + 8 + 1;
@@ -1452,7 +1453,8 @@ public class RecordV1Serializer implements RecordSerializer {
             /*write ver*/CacheVersionIO.size(entry.writeVersion(), false) +
             /*part ID*/4 +
             /*expire Time*/8 +
-            /*part cnt*/8;
+            /*part cnt*/8 +
+            /*store cache id flag*/1;
     }
 
     /**
@@ -1502,6 +1504,7 @@ public class RecordV1Serializer implements RecordSerializer {
         buf.putInt(entry.partitionId());
         buf.putLong(entry.partitionCounter());
         buf.putLong(entry.expireTime());
+        buf.put(entry.storeCacheId() ? (byte) 1 : 0);
     }
 
     /**
@@ -1560,6 +1563,7 @@ public class RecordV1Serializer implements RecordSerializer {
         int partId = in.readInt();
         long partCntr = in.readLong();
         long expireTime = in.readLong();
+        boolean storeCacheId = in.readByte() == (byte) 1;
 
         GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
 
@@ -1578,7 +1582,8 @@ public class RecordV1Serializer implements RecordSerializer {
                 writeVer,
                 expireTime,
                 partId,
-                partCntr
+                partCntr,
+                storeCacheId
             );
         }
         else
@@ -1594,7 +1599,9 @@ public class RecordV1Serializer implements RecordSerializer {
                 writeVer,
                 expireTime,
                 partId,
-                partCntr);
+                partCntr,
+                storeCacheId
+            );
     }
 
     /**

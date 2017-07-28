@@ -22,7 +22,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
-import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageInsertFragmentRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageInsertRecord;
@@ -36,7 +35,6 @@ import org.apache.ignite.internal.processors.cache.persistence.MemoryPolicy;
 import org.apache.ignite.internal.processors.cache.persistence.evict.PageEvictionTracker;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.CacheVersionIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPagePayload;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseBag;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
@@ -108,6 +106,8 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
             evictionTracker.touchPage(pageId);
 
             if (updated && needWalDeltaRecord(pageId, page, walPlc)) {
+                wal.log(new DataPageUpdateRecord(grpId, pageId, itemId, rowSize));
+/*
                 // TODO This record must contain only a reference to a logical WAL record with the actual data.
                 byte[] payload = new byte[rowSize];
 
@@ -122,6 +122,7 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
                     pageId,
                     itemId,
                     payload));
+*/
             }
 
             return updated;
@@ -193,6 +194,8 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
             io.addRow(pageAddr, row, rowSize, pageSize());
 
             if (needWalDeltaRecord(pageId, page, null)) {
+                wal.log(new DataPageInsertRecord(grpId, pageId, rowSize));
+/*
                 // TODO IGNITE-5829 This record must contain only a reference to a logical WAL record with the actual data.
                 byte[] payload = new byte[rowSize];
 
@@ -206,6 +209,7 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
                     grpId,
                     pageId,
                     payload));
+*/
             }
 
             return rowSize;
@@ -239,6 +243,8 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
             assert payloadSize > 0 : payloadSize;
 
             if (needWalDeltaRecord(pageId, page, null)) {
+                wal.log(new DataPageInsertFragmentRecord(grpId, pageId, payloadSize, lastLink));
+/*
                 // TODO IGNITE-5829 This record must contain only a reference to a logical WAL record with the actual data.
                 byte[] payload = new byte[payloadSize];
 
@@ -247,6 +253,7 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
                 PageUtils.getBytes(pageAddr, data.offset(), payload, 0, payloadSize);
 
                 wal.log(new DataPageInsertFragmentRecord(grpId, pageId, payload, lastLink));
+*/
             }
 
             return written + payloadSize;

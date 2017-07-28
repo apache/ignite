@@ -19,28 +19,36 @@ package org.apache.ignite.internal.pagemem.wal.record.delta;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageMemory;
+import org.apache.ignite.internal.pagemem.wal.WALPointer;
+import org.apache.ignite.internal.pagemem.wal.record.WALReferenceAwareRecord;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
 
 /**
  * Insert into data page.
  */
-public class DataPageInsertRecord extends PageDeltaRecord {
-    /** */
+public class DataPageInsertRecord extends PageDeltaRecord implements WALReferenceAwareRecord {
+    /** Actual fragment data size. */
+    private final int payloadSize;
+
+    /** Reference to DataRecord. */
+    private WALPointer reference;
+
+    /** Actual fragment data. */
     private byte[] payload;
 
     /**
      * @param grpId Cache group ID.
      * @param pageId Page ID.
-     * @param payload Remainder of the record.
+     * @param payloadSize Remainder of the record.
      */
     public DataPageInsertRecord(
         int grpId,
         long pageId,
-        byte[] payload
+        int payloadSize
     ) {
         super(grpId, pageId);
 
-        this.payload = payload;
+        this.payloadSize = payloadSize;
     }
 
     /**
@@ -62,5 +70,25 @@ public class DataPageInsertRecord extends PageDeltaRecord {
     /** {@inheritDoc} */
     @Override public RecordType type() {
         return RecordType.DATA_PAGE_INSERT_RECORD;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int payloadSize() {
+        return payloadSize;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void payload(byte[] payload) {
+        this.payload = payload;
+    }
+
+    /** {@inheritDoc} */
+    @Override public WALPointer reference() {
+        return reference;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void reference(WALPointer reference) {
+        this.reference = reference;
     }
 }

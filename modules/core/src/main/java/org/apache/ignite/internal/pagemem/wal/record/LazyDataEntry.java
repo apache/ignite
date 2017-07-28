@@ -66,9 +66,10 @@ public class LazyDataEntry extends DataEntry {
         GridCacheVersion writeVer,
         long expireTime,
         int partId,
-        long partCnt
+        long partCnt,
+        boolean storeCacheId
     ) {
-        super(cacheId, null, null, op, nearXidVer, writeVer, expireTime, partId, partCnt);
+        super(cacheId, null, null, op, nearXidVer, writeVer, expireTime, partId, partCnt, storeCacheId);
 
         this.cctx = cctx;
         this.keyType = keyType;

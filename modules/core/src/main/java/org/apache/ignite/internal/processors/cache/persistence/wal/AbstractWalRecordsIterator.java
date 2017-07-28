@@ -26,10 +26,13 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
+import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
+import org.apache.ignite.internal.pagemem.wal.record.WALReferenceAwareRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.wal.link.DataRecordPayloadLinker;
 import org.apache.ignite.internal.processors.cache.persistence.wal.record.HeaderRecord;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -76,6 +79,9 @@ public abstract class AbstractWalRecordsIterator
 
     /** Utility buffer for reading records */
     private final ByteBufferExpander buf;
+
+    /** Class to link {@link DataRecord) entries payload to {@link WALReferenceAwareRecord} records. */
+    private final DataRecordPayloadLinker linker = new DataRecordPayloadLinker();
 
     /**
      * @param log Logger
@@ -200,6 +206,9 @@ public abstract class AbstractWalRecordsIterator
 
             ptr.length(rec.size());
 
+            // Link payload for records with reference to DataRecord.
+            linkPayload(rec, ptr);
+
             // cast using diamond operator here can break compile for 7
             return new IgniteBiTuple<>((WALPointer)ptr, rec);
         }
@@ -207,6 +216,39 @@ public abstract class AbstractWalRecordsIterator
             if (!(e instanceof SegmentEofException))
                 handleRecordException(e, ptr);
             return null;
+        }
+    }
+
+    /**
+     * Link byte[] payload from {@link DataRecord} entries to {@link WALReferenceAwareRecord} record.
+     *
+     * @param record WAL record.
+     * @param pointer WAL pointer.
+     * @throws IgniteCheckedException If unable to link payload to record.
+     */
+    private void linkPayload(WALRecord record, WALPointer pointer) throws IgniteCheckedException {
+        if (record instanceof DataRecord) {
+            // Re-initialize linker with new DataRecord.
+            linker.init((DataRecord) record, pointer);
+        }
+        else if (record instanceof WALReferenceAwareRecord) {
+            WALReferenceAwareRecord referenceRecord = (WALReferenceAwareRecord) record;
+
+            // We didn't see DataRecord first, try to find it outside the bounds of iterator.
+            if (linker.pointer() == null) {
+                WALIterator iterator = sharedCtx.wal().replay(referenceRecord.reference());
+                WALRecord dataRecord = iterator.next().getValue();
+
+                if (!(dataRecord instanceof DataRecord))
+                    throw new IgniteCheckedException("Reference to DataRecord is not valid.");
+
+                linker.init((DataRecord) dataRecord, pointer);
+            }
+
+            if (!linker.pointer().equals(referenceRecord.reference()))
+                throw new IgniteCheckedException("Reference to DataRecord is not valid.");
+
+            linker.linkPayload(referenceRecord);
         }
     }
 
