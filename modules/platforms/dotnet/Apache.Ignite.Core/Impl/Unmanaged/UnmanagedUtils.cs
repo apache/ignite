@@ -175,6 +175,13 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             JNI.TargetInStreamAsync(target.Context, target.Target, opType, memPtr);
         }
 
+        internal static IUnmanagedTarget TargetInStreamOutObjectAsync(IUnmanagedTarget target, int opType, long memPtr)
+        {
+            void* res = JNI.TargetInStreamOutObjectAsync(target.Context, target.Target, opType, memPtr);
+
+            return target.ChangeTarget(res);
+        }
+
         #endregion
 
         #region NATIVE METHODS: MISCELANNEOUS

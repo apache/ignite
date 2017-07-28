@@ -84,7 +84,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="vals">Values.</param>
         /// <param name="selector">A transform function to apply to each element.</param>
         /// <returns>The same writer for chaining.</returns>
-        private static void WriteCollection<T1, T2>(this BinaryWriter writer, ICollection<T1> vals, 
+        private static void WriteCollection<T1, T2>(this BinaryWriter writer, ICollection<T1> vals,
             Func<T1, T2> selector)
         {
             writer.WriteInt(vals.Count);
