@@ -21,6 +21,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -32,11 +33,13 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.util.Accountable;
+import org.apache.lucene.util.Accountables;
 
 /**
  * A memory-resident {@link Directory} implementation.
  */
-public class GridLuceneDirectory extends BaseDirectory {
+public class GridLuceneDirectory extends BaseDirectory implements Accountable {
     /** */
     protected final Map<String, GridLuceneFile> fileMap = new ConcurrentHashMap<>();
 
@@ -64,10 +67,7 @@ public class GridLuceneDirectory extends BaseDirectory {
         // and the code below is resilient to map changes during the array population.
         Set<String> fileNames = fileMap.keySet();
 
-        List<String> names = new ArrayList<>(fileNames.size());
-
-        for (String name : fileNames)
-            names.add(name);
+        List<String> names = new ArrayList<>(fileNames);
 
         return names.toArray(new String[names.size()]);
     }
@@ -82,6 +82,7 @@ public class GridLuceneDirectory extends BaseDirectory {
             throw new FileNotFoundException(source);
 
         fileMap.put(dest, file);
+
         fileMap.remove(source);
     }
 
@@ -101,19 +102,22 @@ public class GridLuceneDirectory extends BaseDirectory {
     @Override public void deleteFile(String name) throws IOException {
         ensureOpen();
 
-        doDeleteFile(name);
+        doDeleteFile(name, false);
     }
 
     /**
      * Deletes file.
      *
      * @param name File name.
+     * @param onClose If on close directory;
      * @throws IOException If failed.
      */
-    private void doDeleteFile(String name) throws IOException {
+    private void doDeleteFile(String name, boolean onClose) throws IOException {
         GridLuceneFile file = fileMap.remove(name);
 
         if (file != null) {
+            assert !onClose || file.refCnt.get() == 0 : "Possible memory leak, resource is not closed: "+ file.toString();
+
             file.delete();
 
             sizeInBytes.addAndGet(-file.getSizeInBytes());
@@ -128,15 +132,15 @@ public class GridLuceneDirectory extends BaseDirectory {
 
         GridLuceneFile file = newRAMFile();
 
-        GridLuceneFile existing = fileMap.remove(name);
+        file.lockRef();
+
+        GridLuceneFile existing = fileMap.put(name, file);
 
         if (existing != null) {
             sizeInBytes.addAndGet(-existing.getSizeInBytes());
 
             existing.delete();
         }
-
-        fileMap.put(name, file);
 
         return new GridLuceneOutputStream(file);
     }
@@ -165,6 +169,14 @@ public class GridLuceneDirectory extends BaseDirectory {
         if (file == null)
             throw new FileNotFoundException(name);
 
+        file.lockRef();
+
+        if (!fileMap.containsKey(name)) {
+            file.releaseRef();
+
+            throw new FileNotFoundException(name);
+        }
+
         return new GridLuceneInputStream(name, file);
     }
 
@@ -174,7 +186,7 @@ public class GridLuceneDirectory extends BaseDirectory {
 
         for (String fileName : fileMap.keySet()) {
             try {
-                doDeleteFile(fileName);
+                doDeleteFile(fileName, true);
             }
             catch (IOException e) {
                 throw new IllegalStateException(e);
@@ -182,6 +194,18 @@ public class GridLuceneDirectory extends BaseDirectory {
         }
 
         assert fileMap.isEmpty();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long ramBytesUsed() {
+        ensureOpen();
+
+        return sizeInBytes.get();
+    }
+
+    /** {@inheritDoc} */
+    @Override public synchronized Collection<Accountable> getChildResources() {
+        return Accountables.namedAccountables("file", new HashMap<>(fileMap));
     }
 
     /**
