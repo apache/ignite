@@ -88,6 +88,12 @@ const init = ([settings, apiSrv, agentsHnd, browsersHnd]) => {
     srv.on('error', _onError.bind(null, settings.server.port));
     srv.on('listening', _onListening.bind(null, srv.address()));
 
+    process.on('unhandledRejection', (error) => {
+        // Will print "unhandledRejection err is not defined"
+        console.log('unhandledRejection', error);
+    });
+
+
     apiSrv.attach(srv);
 
     agentsHnd.attach(srv, browsersHnd);
