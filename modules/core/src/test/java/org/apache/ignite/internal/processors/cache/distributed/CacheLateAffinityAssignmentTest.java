@@ -1046,7 +1046,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      * @throws Exception
      */
     public void testBlockedFinishMsg1() throws Exception {
-        doTestCoordLeaveBlockedFinishExchangeMessage(4, 3, 2);
+        doTestCoordLeaveBlockedFinishExchangeMessage(4, 3, false, 2);
     }
 
     /**
@@ -1054,7 +1054,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      * @throws Exception
      */
     public void testBlockedFinishMsg2() throws Exception {
-        doTestCoordLeaveBlockedFinishExchangeMessage(4, 3);
+        doTestCoordLeaveBlockedFinishExchangeMessage(4, 3, false);
     }
 
     /**
@@ -1062,7 +1062,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      * @throws Exception
      */
     public void testBlockedFinishMsg3() throws Exception {
-        doTestCoordLeaveBlockedFinishExchangeMessage(4, 3, 1);
+        doTestCoordLeaveBlockedFinishExchangeMessage(4, 3, false, 1);
     }
 
     /**
@@ -1070,7 +1070,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      * @throws Exception
      */
     public void testBlockedFinishMsg4() throws Exception {
-        doTestCoordLeaveBlockedFinishExchangeMessage(5, 3);
+        doTestCoordLeaveBlockedFinishExchangeMessage(5, 3, false);
     }
 
     /**
@@ -1078,7 +1078,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      * @throws Exception
      */
     public void testBlockedFinishMsg5() throws Exception {
-        doTestCoordLeaveBlockedFinishExchangeMessage(5, 3, 1);
+        doTestCoordLeaveBlockedFinishExchangeMessage(5, 3, false, 1);
     }
 
     /**
@@ -1086,7 +1086,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      * @throws Exception
      */
     public void testBlockedFinishMsg6() throws Exception {
-        doTestCoordLeaveBlockedFinishExchangeMessage(5, 3, 2);
+        doTestCoordLeaveBlockedFinishExchangeMessage(5, 3, false, 2);
     }
 
     /**
@@ -1094,7 +1094,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      * @throws Exception
      */
     public void testBlockedFinishMsg7() throws Exception {
-        doTestCoordLeaveBlockedFinishExchangeMessage(5, 3, 2, 4);
+        doTestCoordLeaveBlockedFinishExchangeMessage(5, 3, false, 2, 4);
     }
 
     /**
@@ -1102,20 +1102,40 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      * @throws Exception
      */
     public void testBlockedFinishMsg8() throws Exception {
-        doTestCoordLeaveBlockedFinishExchangeMessage(6, 3, 2, 4);
+        doTestCoordLeaveBlockedFinishExchangeMessage(6, 3, false, 2, 4);
     }
 
+    /**
+     *
+     * @throws Exception
+     */
+    public void testBlockedFinishMsg9() throws Exception {
+        doTestCoordLeaveBlockedFinishExchangeMessage(5, 1, false, 4);
+    }
+
+    /**
+     *
+     * @throws Exception
+     */
+    public void testBlockedFinishMsgForClient() throws Exception {
+        doTestCoordLeaveBlockedFinishExchangeMessage(5, 1, true, 4);
+    }
 
     /**
      * Coordinator leaves without sending all {@link GridDhtFinishExchangeMessage} messages, exchange must be completed.
      *
      * @throws Exception
      */
-    private void doTestCoordLeaveBlockedFinishExchangeMessage(int cnt, int stopId, int... blockedIds) throws Exception {
+    private void doTestCoordLeaveBlockedFinishExchangeMessage(int cnt, int stopId, boolean lastClient,
+        int... blockedIds) throws Exception {
         int ord = 1;
 
-        for (int i = 0; i < cnt; i++)
-            startServer(ord - 1, ord++);
+        for (int i = 0; i < cnt; i++) {
+            if (i == cnt - 1 && lastClient)
+                startClient(ord - 1, ord++);
+            else
+                startServer(ord - 1, ord++);
+        }
 
         TestRecordingCommunicationSpi spi0 =
             (TestRecordingCommunicationSpi) grid(0).configuration().getCommunicationSpi();
@@ -1214,6 +1234,45 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
         spi3.stopBlock(true);
 
         checkAffinity(2, topVer, false);
+    }
+
+    /** */
+    public void testCoordinatorLeaveBlockFinishOnClient() throws Exception {
+        Ignite ignite0 = startServer(0, 1);
+
+        startServer(1, 2);
+
+        Ignite ignite2 = startServer(2, 3);
+
+        Ignite ignite3 = startServer(3, 4);
+
+        Ignite ignite4 = startClient(4, 5);
+
+        TestRecordingCommunicationSpi spi0 =
+            (TestRecordingCommunicationSpi) ignite0.configuration().getCommunicationSpi();
+
+        // Prevent exchange completion.
+        spi0.blockMessages(GridDhtFinishExchangeMessage.class, ignite4.name());
+
+        stopNode(1, 6);
+
+        AffinityTopologyVersion topVer = topVer(6, 0);
+
+        IgniteInternalFuture<?> fut0 = affFuture(topVer, ignite0);
+        IgniteInternalFuture<?> fut2 = affFuture(topVer, ignite2);
+        IgniteInternalFuture<?> fut3 = affFuture(topVer, ignite3);
+        IgniteInternalFuture<?> fut4 = affFuture(topVer, ignite4);
+
+        U.sleep(1_000);
+
+        assertTrue(fut0.isDone());
+        assertTrue(fut2.isDone());
+        assertTrue(fut3.isDone());
+        assertFalse(fut4.isDone());
+
+        stopNode(0, 7);
+
+        checkAffinity(3, topVer(7, 0), true);
     }
 
     /**

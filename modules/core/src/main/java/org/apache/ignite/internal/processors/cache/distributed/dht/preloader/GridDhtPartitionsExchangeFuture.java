@@ -2178,8 +2178,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             return;
 
         try {
-            if (!isDone())
-                cctx.mvcc().removeExplicitNodeLocks(node.id(), topologyVersion());
+            cctx.mvcc().removeExplicitNodeLocks(node.id(), topologyVersion());
 
             onDiscoveryEvent(new IgniteRunnable() {
                 @Override public void run() {
