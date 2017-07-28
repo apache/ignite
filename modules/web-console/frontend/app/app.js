@@ -125,6 +125,7 @@ import pageConfigure from './components/page-configure';
 import pageConfigureBasic from './components/page-configure-basic';
 import pageConfigureAdvanced from './components/page-configure-advanced';
 import gridColumnSelector from './components/grid-column-selector';
+import gridItemSelected from './components/grid-item-selected';
 import bsSelectMenu from './components/bs-select-menu';
 import protectFromBsSelectRender from './components/protect-from-bs-select-render';
 
@@ -193,6 +194,7 @@ angular.module('ignite-console', [
     pageConfigureBasic.name,
     pageConfigureAdvanced.name,
     gridColumnSelector.name,
+    gridItemSelected.name,
     bsSelectMenu.name,
     protectFromBsSelectRender.name,
     AngularStrapTooltip.name,

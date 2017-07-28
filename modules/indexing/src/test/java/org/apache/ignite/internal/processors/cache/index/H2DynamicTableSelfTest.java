@@ -47,6 +47,7 @@ import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryTypeDescriptorImpl;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.processors.query.h2.H2TableDescriptor;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.ddl.DdlStatementsProcessor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
@@ -831,6 +832,37 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
                 return null;
             }
         }, IgniteSQLException.class, "DROP TABLE can only be executed on PUBLIC schema.");
+    }
+
+    /**
+     * Test that {@link IgniteH2Indexing#tables(String)} method
+     * only returns tables belonging to given cache.
+     *
+     * @throws Exception if failed.
+     */
+    public void testGetTablesForCache() throws Exception {
+        try {
+            execute("create table t1(id int primary key, name varchar)");
+            execute("create table t2(id int primary key, name varchar)");
+
+            IgniteH2Indexing h2Idx = (IgniteH2Indexing)grid(0).context().query().getIndexing();
+
+            String cacheName = cacheName("T1");
+
+            Collection<H2TableDescriptor> col = GridTestUtils.invoke(h2Idx, "tables", cacheName);
+
+            assertNotNull(col);
+
+            H2TableDescriptor[] tables = col.toArray(new H2TableDescriptor[col.size()]);
+
+            assertEquals(1, tables.length);
+
+            assertEquals(tables[0].table().getName(), "T1");
+        }
+        finally {
+            execute("drop table t1 if exists");
+            execute("drop table t2 if exists");
+        }
     }
 
     /**

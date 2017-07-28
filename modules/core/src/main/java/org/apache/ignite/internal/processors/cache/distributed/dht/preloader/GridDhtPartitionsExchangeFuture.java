@@ -442,13 +442,14 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             boolean crdNode = crd != null && crd.isLocal();
 
-            exchLog.info("Started exchange init [topVer=" + topVer +
-                ", crd=" + crdNode +
-                ", evt=" + discoEvt.type() +
-                ", node=" + discoEvt.node() +
-                ", evtNode=" + discoEvt.node() +
-                ", customEvt=" + (discoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT ? ((DiscoveryCustomEvent)discoEvt).customMessage() : null) +
-                ']');
+            if (exchLog.isInfoEnabled())
+                exchLog.info("Started exchange init [topVer=" + topVer +
+                    ", crd=" + crdNode +
+                    ", evt=" + discoEvt.type() +
+                    ", node=" + discoEvt.node() +
+                    ", evtNode=" + discoEvt.node() +
+                    ", customEvt=" + (discoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT ? ((DiscoveryCustomEvent)discoEvt).customMessage() : null) +
+                    ']');
 
             ExchangeType exchange;
 
@@ -967,8 +968,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             String futInfo = RELEASE_FUTURE_DUMP_THRESHOLD > 0 && waitTime > RELEASE_FUTURE_DUMP_THRESHOLD ?
                 partReleaseFut.toString() : "NA";
 
-            log.info("Finished waiting for partition release future [topVer=" + exchangeId().topologyVersion() +
-                ", waitTime=" + (waitEnd - waitStart) + "ms, futInfo=" + futInfo + "]");
+            if (log.isInfoEnabled())
+                log.info("Finished waiting for partition release future [topVer=" + exchangeId().topologyVersion() +
+                    ", waitTime=" + (waitEnd - waitStart) + "ms, futInfo=" + futInfo + "]");
         }
 
         IgniteInternalFuture<?> locksFut = cctx.mvcc().finishLocks(exchId.topologyVersion());
