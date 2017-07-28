@@ -414,9 +414,10 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     /**
      * Starts activity.
      *
+     * @param newCrd {@code True} if node become coordinator on this exchange.
      * @throws IgniteInterruptedCheckedException If interrupted.
      */
-    public void init() throws IgniteInterruptedCheckedException {
+    public void init(boolean newCrd) throws IgniteInterruptedCheckedException {
         if (isDone())
             return;
 
@@ -487,6 +488,13 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     }
                     else
                         initCachesOnLocalJoin();
+                }
+
+                if (newCrd) {
+                    IgniteInternalFuture<?> fut = cctx.affinity().initCoordinatorCaches(this);
+
+                    if (fut != null)
+                        fut.get();
                 }
 
                 exchange = CU.clientNode(discoEvt.eventNode()) ?
