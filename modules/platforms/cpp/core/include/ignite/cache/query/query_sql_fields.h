@@ -274,6 +274,17 @@ namespace ignite
                 }
 
                 /**
+                 * Add array of bytes as an argument.
+                 *
+                 * @param src Array pointer.
+                 * @param len Array length in bytes.
+                 */
+                void AddInt8ArrayArgument(const int8_t* src, int32_t len)
+                {
+                    args.push_back(new impl::cache::query::QueryInt8ArrayArgument(src, len));
+                }
+
+                /**
                  * Remove all added arguments.
                  */
                 void ClearArguments()
