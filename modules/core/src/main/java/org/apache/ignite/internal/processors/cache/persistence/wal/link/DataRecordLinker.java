@@ -3,10 +3,15 @@ package org.apache.ignite.internal.processors.cache.persistence.wal.link;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
+import org.apache.ignite.internal.pagemem.wal.record.LazyDataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.WALReferenceAwareRecord;
+import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
-import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeListImpl;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 
 /**
  * Base functionality to link {@link DataRecord} entries to {@link WALReferenceAwareRecord} records.
@@ -143,6 +148,95 @@ public class DataRecordLinker {
      * @return CacheDataRow.
      */
     public static CacheDataRow wrap(DataEntry entry) {
-        return new CacheDataRowAdapter(entry.key(), entry.value(), entry.writeVersion(), entry.expireTime(), entry.cacheId());
+        if (entry instanceof LazyDataEntry) {
+            LazyDataEntry lazyEntry = (LazyDataEntry) entry;
+
+            return new CacheDataRowAdapter(
+                    new KeyCacheObjectImpl(null, lazyEntry.rawKey(), entry.partitionId()),
+                    new CacheObjectImpl(null, lazyEntry.rawValue()),
+                    lazyEntry.writeVersion(),
+                    lazyEntry.expireTime(),
+                    lazyEntry.cacheId()
+            );
+        }
+
+        return new CacheDataRowAdapter(
+                entry.key(),
+                entry.value(),
+                entry.writeVersion(),
+                entry.expireTime(),
+                entry.cacheId()
+        );
+    }
+
+    /**
+     * CacheDataRow adapter can be created both from {@link DataEntry} and {@link LazyDataEntry}.
+     * Class is needed for calculating row size and extracting key/value {@code byte[]} payloads.
+     */
+    public static class CacheDataRowAdapter implements CacheDataRow {
+
+        private final KeyCacheObject key;
+        private final CacheObject value;
+        private final GridCacheVersion version;
+        private final long expireTime;
+        private final int cacheId;
+
+        public CacheDataRowAdapter(KeyCacheObject key, CacheObject value, GridCacheVersion version, long expireTime, int cacheId) {
+            this.key = key;
+            this.value = value;
+            this.version = version;
+            this.expireTime = expireTime;
+            this.cacheId = cacheId;
+        }
+
+        @Override
+        public KeyCacheObject key() {
+            return key;
+        }
+
+        @Override
+        public long link() {
+            return 0;
+        }
+
+        @Override
+        public int hash() {
+            return 0;
+        }
+
+        @Override
+        public int cacheId() {
+            return cacheId;
+        }
+
+        @Override
+        public CacheObject value() {
+            return value;
+        }
+
+        @Override
+        public GridCacheVersion version() {
+            return version;
+        }
+
+        @Override
+        public long expireTime() {
+            return expireTime;
+        }
+
+        @Override
+        public int partition() {
+            return 0;
+        }
+
+        @Override
+        public void link(long link) {
+
+        }
+
+        @Override
+        public void key(KeyCacheObject key) {
+
+        }
     }
 }
