@@ -887,7 +887,7 @@ export default class IgniteConfigurationGenerator {
             cfg.intProperty('peerClassLoadingMissedResourcesCacheSize')
                 .intProperty('peerClassLoadingThreadPoolSize')
                 .varArgProperty('p2pLocClsPathExcl', 'peerClassLoadingLocalClassPathExclude',
-                   cluster.peerClassLoadingLocalClassPathExclude);
+                    cluster.peerClassLoadingLocalClassPathExclude);
         }
 
         // Since ignite 2.0

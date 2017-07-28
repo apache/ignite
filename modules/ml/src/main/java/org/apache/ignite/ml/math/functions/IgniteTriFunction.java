@@ -15,18 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.ml.math.functions;
 
-import org.apache.ignite.configuration.IgniteConfiguration;
+import java.io.Serializable;
+import java.util.Objects;
+import java.util.function.Function;
 
-/**
- * Factory JTA integration test using REPLICATED cache.
- */
-public class GridReplicatedCacheJtaFactoryUseSyncSelfTest extends GridReplicatedCacheJtaFactorySelfTest {
-    /** {@inheritDoc} */
-    @Override protected void configureJta(IgniteConfiguration cfg) {
-        super.configureJta(cfg);
+/** Serializable TriFunction (A, B, C) -> R. */
+@FunctionalInterface
+public interface IgniteTriFunction<A,B,C,R> extends Serializable {
+    /** */
+    R apply(A a, B b, C c);
 
-        cfg.getTransactionConfiguration().setUseJtaSynchronization(true);
+    /** */
+    default <V> IgniteTriFunction<A, B, C, V> andThen(Function<? super R, ? extends V> after) {
+        Objects.requireNonNull(after);
+        return (A a, B b, C c) -> after.apply(apply(a, b, c));
     }
 }

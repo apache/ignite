@@ -103,6 +103,7 @@ import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
@@ -118,6 +119,7 @@ import org.apache.ignite.spi.indexing.IndexingSpi;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_QUIET;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_OBJECT_READ;
@@ -1015,7 +1017,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                         metrics.addGetTimeNanos(System.nanoTime() - start);
                     }
 
-                    if (readEvt) {
+                    if (readEvt && cctx.gridEvents().hasListener(EVT_CACHE_QUERY_OBJECT_READ)) {
                         cctx.gridEvents().record(new CacheQueryReadEvent<K, V>(
                             cctx.localNode(),
                             "SQL fields query result set row read.",
@@ -1135,6 +1137,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             boolean rmvIter = true;
 
+            GridCacheQueryAdapter<?> qry = qryInfo.query();
+
             try {
                 // Preparing query closures.
                 IgniteClosure<Cache.Entry<K, V>, Object> trans =
@@ -1144,8 +1148,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                 injectResources(trans);
                 injectResources(rdc);
-
-                GridCacheQueryAdapter<?> qry = qryInfo.query();
 
                 int pageSize = qry.pageSize();
 
@@ -1245,7 +1247,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     K key0 = null;
                     V val0 = null;
 
-                    if (readEvt) {
+                    if (readEvt && cctx.gridEvents().hasListener(EVT_CACHE_QUERY_OBJECT_READ)) {
                         key0 = (K)cctx.unwrapBinaryIfNeeded(key, qry.keepBinary());
                         val0 = (V)cctx.unwrapBinaryIfNeeded(val, qry.keepBinary());
 
@@ -1372,6 +1374,18 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 }
             }
             catch (Throwable e) {
+                if (X.hasCause(e, ClassNotFoundException.class) && !qry.keepBinary() && cctx.binaryMarshaller() &&
+                    !cctx.localNode().isClient() && !log.isQuiet()) {
+                    LT.warn(log, "Suggestion for the cause of ClassNotFoundException");
+                    LT.warn(log, "To disable, set -D" + IGNITE_QUIET + "=true");
+                    LT.warn(log, "  ^-- Ignite configured to use BinaryMarshaller but keepBinary is false for " +
+                        "request");
+                    LT.warn(log, "  ^-- Server node need to load definition of data classes. " +
+                        "It can be reason of ClassNotFoundException(consider IgniteCache.withKeepBinary to fix)");
+                    LT.warn(log, "Refer this page for detailed information: " +
+                        "https://apacheignite.readme.io/docs/binary-marshaller");
+                }
+
                 if (!X.hasCause(e, GridDhtUnreservedPartitionException.class))
                     U.error(log, "Failed to run query [qry=" + qryInfo + ", node=" + cctx.nodeId() + "]", e);
 
@@ -1471,7 +1485,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                         metrics.addGetTimeNanos(System.nanoTime() - start);
                     }
 
-                    if (readEvt) {
+                    if (readEvt && cctx.gridEvents().hasListener(EVT_CACHE_QUERY_OBJECT_READ)) {
                         cctx.gridEvents().record(new CacheQueryReadEvent<>(
                             cctx.localNode(),
                             "Scan query entry read.",

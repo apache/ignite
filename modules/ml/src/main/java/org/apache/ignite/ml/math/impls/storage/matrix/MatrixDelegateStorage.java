@@ -150,7 +150,7 @@ public class MatrixDelegateStorage implements MatrixStorage {
     }
 
     /** {@inheritDoc} */
-    @Override public double[][] data() {
+    @Override public double[] data() {
         return sto.data();
     }
 

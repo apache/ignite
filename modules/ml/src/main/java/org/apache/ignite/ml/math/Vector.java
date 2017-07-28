@@ -26,6 +26,7 @@ import org.apache.ignite.ml.math.exceptions.IndexException;
 import org.apache.ignite.ml.math.exceptions.UnsupportedOperationException;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteDoubleFunction;
+import org.apache.ignite.ml.math.functions.IgniteIntDoubleToDoubleBiFunction;
 
 /**
  * A vector interface.
@@ -496,4 +497,11 @@ public interface Vector extends MetaAttributes, Externalizable, StorageOpsMetric
      * @return Vector GUID.
      */
     public IgniteUuid guid();
+
+    /**
+     * Replace vector entry with value oldVal at i with result of computing f(i, oldVal).
+     * @param i Position.
+     * @param f Function used for replacing.
+     **/
+    public void compute(int i, IgniteIntDoubleToDoubleBiFunction f);
 }

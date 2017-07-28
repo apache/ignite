@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.internal.processors.cache.jta;
 
 import javax.transaction.Status;
 import javax.transaction.UserTransaction;
@@ -24,10 +24,16 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
+import org.apache.ignite.testframework.GridTestSafeThreadFactory;
 import org.apache.ignite.transactions.Transaction;
 import org.objectweb.jotm.Jotm;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
 import static org.apache.ignite.transactions.TransactionState.ACTIVE;
 
 /**
@@ -155,7 +161,7 @@ public abstract class AbstractCacheJtaSelfTest extends GridCacheAbstractSelfTest
             cache2.put("key2", 2);
 
             assertEquals(0, (int)cache1.get("key"));
-            assertEquals(0, (int)cache1.get("key"));
+            assertEquals(0, (int)cache2.get("key"));
             assertEquals(1, (int)cache1.get("key1"));
             assertEquals(2, (int)cache2.get("key2"));
 
@@ -179,5 +185,64 @@ public abstract class AbstractCacheJtaSelfTest extends GridCacheAbstractSelfTest
         assertEquals(0, (int)cache2.get("key"));
         assertEquals(1, (int)cache1.get("key1"));
         assertEquals(2, (int)cache2.get("key2"));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testAsyncOpAwait() throws Exception {
+        final IgniteCache<String, Integer> cache = jcache();
+
+        GridTestSafeThreadFactory factory = new GridTestSafeThreadFactory("JtaThread");
+
+        final CountDownLatch latch = new CountDownLatch(1);
+
+        Callable<Object> c = new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                assertNull(grid(0).transactions().tx());
+
+                UserTransaction jtaTx = jotm.getUserTransaction();
+
+                jtaTx.begin();
+
+                try {
+                    cache.put("key1", 1);
+
+                    cache.putAsync("key", 1);
+
+                    assertEquals(grid(0).transactions().tx().state(), ACTIVE);
+
+                    latch.countDown();
+
+                    info("Before JTA commit.");
+                }
+                finally {
+                    jtaTx.commit();
+                }
+
+                info("After JTA commit.");
+
+                assertEquals((Integer)1, cache.get("key"));
+
+                return null;
+            }
+        };
+
+        Thread task = factory.newThread(c);
+
+        try (Transaction tx = ignite(0).transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
+            cache.put("key", 0);
+
+            task.start();
+
+            latch.await();
+
+            while (task.getState() != Thread.State.WAITING)
+                factory.checkError();
+
+            info("Before cache TX commit.");
+
+            tx.commit();
+        }
     }
 }

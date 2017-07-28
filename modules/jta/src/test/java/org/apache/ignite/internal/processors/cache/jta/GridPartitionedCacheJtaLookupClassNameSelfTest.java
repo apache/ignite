@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.internal.processors.cache.jta;
 
 import java.util.concurrent.Callable;
 import javax.transaction.TransactionManager;
@@ -41,7 +41,7 @@ public class GridPartitionedCacheJtaLookupClassNameSelfTest extends AbstractCach
      *
      */
     @IgniteIgnore(value = "https://issues.apache.org/jira/browse/IGNITE-1094", forceFailure = true)
-    public void testUncompatibleTmLookup() {
+    public void testIncompatibleTmLookup() {
         final IgniteEx ignite = grid(0);
 
         final CacheConfiguration cacheCfg = new CacheConfiguration(DEFAULT_CACHE_NAME);

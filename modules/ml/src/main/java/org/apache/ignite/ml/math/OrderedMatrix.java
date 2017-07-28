@@ -15,18 +15,10 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.ml.math;
 
-import org.apache.ignite.configuration.IgniteConfiguration;
-
-/**
- * Factory JTA integration test using PARTITIONED cache.
- */
-public class GridPartitionedCacheJtaFactoryUseSyncSelfTest extends GridPartitionedCacheJtaFactorySelfTest {
-    /** {@inheritDoc} */
-    @Override protected void configureJta(IgniteConfiguration cfg) {
-        super.configureJta(cfg);
-
-        cfg.getTransactionConfiguration().setUseJtaSynchronization(true);
-    }
+/** Interface for matrix with particular order for storing entities. */
+public interface OrderedMatrix {
+    /** Get access mode. */
+    public int accessMode();
 }

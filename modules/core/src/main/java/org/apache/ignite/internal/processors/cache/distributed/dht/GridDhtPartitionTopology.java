@@ -130,6 +130,15 @@ public interface GridDhtPartitionTopology {
         throws GridDhtInvalidPartitionException;
 
     /**
+     * Unconditionally creates partition during restore of persisted partition state.
+     *
+     * @param p Partition ID.
+     * @return Partition.
+     * @throws IgniteCheckedException If failed.
+     */
+    public GridDhtLocalPartition forceCreatePartition(int p) throws IgniteCheckedException;
+
+    /**
      * @param topVer Topology version at the time of creation.
      * @param p Partition ID.
      * @param create If {@code true}, then partition will be created if it's not there.
@@ -234,16 +243,21 @@ public interface GridDhtPartitionTopology {
     public void onRemoved(GridDhtCacheEntry e);
 
     /**
-     * @param exchangeVer Exchange version.
+     * @param exchangeVer Topology version from exchange. Value should be greater than previously passed. Null value
+     *      means full map received is not related to exchange
      * @param partMap Update partition map.
      * @param cntrMap Partition update counters.
+     * @param partsToReload
+     * @param msgTopVer Topology version from incoming message. This value is not null only for case message is not
+     *      related to exchange. Value should be not less than previous 'Topology version from exchange'.
      * @return {@code True} if local state was changed.
      */
     public boolean update(
         @Nullable AffinityTopologyVersion exchangeVer,
         GridDhtPartitionFullMap partMap,
         @Nullable Map<Integer, T2<Long, Long>> cntrMap,
-        Set<Integer> partsToReload);
+        Set<Integer> partsToReload,
+        @Nullable AffinityTopologyVersion msgTopVer);
 
     /**
      * @param exchId Exchange ID.
@@ -331,6 +345,7 @@ public interface GridDhtPartitionTopology {
      * Callback on exchange done.
      *
      * @param assignment New affinity assignment.
+     * @param updateRebalanceVer {@code True} if need check rebalance state.
      */
-    public void onExchangeDone(AffinityAssignment assignment);
+    public void onExchangeDone(AffinityAssignment assignment, boolean updateRebalanceVer);
 }
