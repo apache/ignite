@@ -46,7 +46,6 @@ namespace ignite
              * Constructor used to create new instance.
              *
              * @param env Environment.
-             * @param javaRef Reference to java object.
              */
             IgniteImpl(SP_IgniteEnvironment env, jobject javaRef);
             
