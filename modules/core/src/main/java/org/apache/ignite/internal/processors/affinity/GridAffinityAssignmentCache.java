@@ -365,6 +365,10 @@ public class GridAffinityAssignmentCache {
         Collection<ClusterNode> nodes) {
         List<Map<ClusterNode, AtomicInteger>> nodeMaps = new ArrayList<>();
 
+        int [] result = new int[nodes.size()];
+
+        // один массив интов
+
         int backups = partitionsByNodes.get(0).size();
 
         for (int i = 0; i < backups; ++i) {
@@ -399,6 +403,8 @@ public class GridAffinityAssignmentCache {
                 byNodes.add(byBackups);
             }
         }
+//        result
+
         return byNodes;
     }
 

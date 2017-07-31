@@ -18,35 +18,80 @@
 package org.apache.ignite.cache.affinity.rendezvous;
 
 import java.io.File;
+import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.affinity.AbstractAffinityFunctionSelfTest;
 import org.apache.ignite.cache.affinity.AffinityFunction;
+import org.apache.ignite.cache.affinity.AffinityFunctionContext;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.affinity.GridAffinityFunctionContextImpl;
+import org.apache.ignite.testframework.GridTestNode;
 import org.apache.ignite.testframework.GridTestUtils;
 
 /**
  * Tests for {@link RendezvousAffinityFunction}.
  */
 public class RendezvousAffinityFunctionCalculateDistributionSelfTest extends AbstractAffinityFunctionSelfTest {
+    /** MAC prefix. */
+    private static final String MAC_PREF = "MAC";
+
+
     /** Ignite. */
     private static Ignite ignite;
+
+    /**
+     * @param nodesCnt Count of nodes to generate.
+     * @return Nodes list.
+     */
+    private List<ClusterNode> createBaseNodes(int nodesCnt) {
+        List<ClusterNode> nodes = new ArrayList<>(nodesCnt);
+
+        for (int i = 0; i < nodesCnt; i++) {
+            GridTestNode node = new GridTestNode(UUID.randomUUID());
+
+            // two neighbours nodes
+            node.setAttribute(IgniteNodeAttributes.ATTR_MACS, MAC_PREF + i / 2);
+
+            nodes.add(node);
+        }
+        return nodes;
+    }
 
     /**
      * @throws Exception If failed.
      */
     public void testDistributionCalculationEnabled() throws Exception {
-        System.setProperty(IgniteSystemProperties.IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD, String.valueOf(10));
-
-        ignite = startGrid();
+        System.setProperty(IgniteSystemProperties.IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD, String.valueOf(0));
 
         File file = new File(home() + "/work/log/ignite.log");
 
-        assertTrue(FileUtils.readFileToString(file).contains("Partition map has been built (distribution is not even for caches) [cacheName=ignite-sys-cache, PrimaryNodeId(local)="
+        new PrintWriter(file).close();
+
+        ignite = startGrids(4);
+
+        AffinityFunction aff = new RendezvousAffinityFunction(true, 1024);
+
+        AffinityFunctionContext ctx =
+            new GridAffinityFunctionContextImpl(new ArrayList<>(ignite.cluster().nodes()), null, null,
+                new AffinityTopologyVersion(1), 1);
+
+        aff.assignPartitions(ctx);
+
+        assertTrue(FileUtils.readFileToString(file).contains("Partition map has been built (distribution is not even for caches) [cacheName=ignite-sys-cache, Primary NodeId(local)="
             + ignite.configuration().getNodeId() + ", totalPartitionsCount=100 percentageOfTotalPartsCount=100%, parts=100]"));
 
-//        assertTrue(FileUtils.readFileToString(file).contains("Partition map has been built (distribution is not even for caches) [cacheName=ignite-atomics-sys-cache, PrimaryNodeId(local)="
-//            + ignite.configuration().getNodeId() + ", totalPartitionsCount=1024 percentageOfTotalPartsCount=100%, parts=1024]"));
+        assertTrue(FileUtils.readFileToString(file).contains("Partition map has been built (distribution is not even for caches) [cacheName=ignite-atomics-sys-cache, Primary NodeId(local)="
+            + ignite.configuration().getNodeId() + ", totalPartitionsCount=1024 percentageOfTotalPartsCount=100%, parts=1024]"));
+
+
 
         stopAllGrids();
     }
@@ -57,15 +102,17 @@ public class RendezvousAffinityFunctionCalculateDistributionSelfTest extends Abs
     public void testDistributionCalculationDisabled() throws Exception {
         System.setProperty(IgniteSystemProperties.IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD, String.valueOf(10));
 
-        ignite = startGrid();
-
         File file = new File(home() + "/work/log/ignite.log");
 
-        assertFalse(FileUtils.readFileToString(file).contains("cacheName=ignite-sys-cache, Primary node="
-            + ignite.configuration().getNodeId() + ", partitions count=100 percentage of parts count=100%"));
+        new PrintWriter(file).close();
 
-        assertFalse(FileUtils.readFileToString(file).contains("cacheName=ignite-atomics-sys-cache, Primary node="
-            + ignite.configuration().getNodeId() + ", partitions count=1024 percentage of parts count=100%"));
+        ignite = startGrid();
+
+        assertFalse(FileUtils.readFileToString(file).contains("Partition map has been built (distribution is not even for caches) [cacheName=ignite-sys-cache, Primary NodeId(local)="
+            + ignite.configuration().getNodeId() + ", totalPartitionsCount=100 percentageOfTotalPartsCount=100%, parts=100]"));
+
+        assertFalse(FileUtils.readFileToString(file).contains("Partition map has been built (distribution is not even for caches) [cacheName=ignite-atomics-sys-cache, Primary NodeId(local)="
+            + ignite.configuration().getNodeId() + ", totalPartitionsCount=1024 percentageOfTotalPartsCount=100%, parts=1024]"));
 
         stopAllGrids();
     }
