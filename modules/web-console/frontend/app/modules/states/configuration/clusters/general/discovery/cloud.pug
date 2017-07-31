@@ -16,119 +16,123 @@
 
 include /app/helpers/jade/mixins
 
--var discoveryKind = 'Cloud'
--var required = 'backupItem.discovery.kind == "' + discoveryKind + '"'
--var model = 'backupItem.discovery.Cloud'
--var regions = `${model}.regions`
--var zones = `${model}.zones`
--var formRegions = 'discoveryCloudRegions'
--var formZones = 'discoveryCloudZones'
+mixin discovery-cloud(modelAt='backupItem')
 
-div
-    .details-row
-        +text('Credential:', `${model}.credential`, '"credential"', 'false', 'Input cloud credential',
-            'Credential that is used during authentication on the cloud<br/>\
-            Depending on a cloud platform it can be a password or access key')
-    .details-row
-        +text('Path to credential:', `${model}.credentialPath`, '"credentialPath"', 'false', 'Input pathto credential',
-            'Path to a credential that is used during authentication on the cloud<br/>\
-            Access key or private key should be stored in a plain or PEM file without a passphrase')
-    .details-row
-        +text('Identity:', `${model}.identity`, '"' + discoveryKind + 'Identity"', required, 'Input identity',
-            'Identity that is used as a user name during a connection to the cloud<br/>\
-            Depending on a cloud platform it can be an email address, user name, etc')
-    .details-row
-        +text('Provider:', `${model}.provider`, '"' + discoveryKind + 'Provider"', required, 'Input provider', 'Cloud provider to use')
-    .details-row
-        -var form = formRegions;
-        +ignite-form-group(ng-model=`${regions}` ng-form=form)
-            -var uniqueTip = 'Such region already exists!'
+    -const model = `${modelAt}.discovery.Cloud`
+    -const discoveryKind = 'Cloud'
+    -const required = `${modelAt}.discovery.kind == "${discoveryKind}"`
+    -const regions = `${model}.regions`
+    -const zones = `${model}.zones`
+    -const formRegions = 'discoveryCloudRegions'
+    -const formZones = 'discoveryCloudZones'
 
-            ignite-form-field-label
-                | Regions
-            ignite-form-group-tooltip
-                | List of regions where VMs are located#[br]
-                | If the regions are not set then every region, that a cloud provider has, will be investigated. This could lead to significant performance degradation#[br]
-                | Note, that some cloud providers, like Google Compute Engine, doesn't have a notion of a region. For such providers regions are redundant
-            ignite-form-group-add(ng-click='group.add = [{}]')
-                | Add new region
+    div
+        .details-row
+            +text('Credential:', `${model}.credential`, '"credential"', 'false', 'Input cloud credential',
+                'Credential that is used during authentication on the cloud<br/>\
+                Depending on a cloud platform it can be a password or access key')
+        .details-row
+            +text('Path to credential:', `${model}.credentialPath`, '"credentialPath"', 'false', 'Input pathto credential',
+                'Path to a credential that is used during authentication on the cloud<br/>\
+                Access key or private key should be stored in a plain or PEM file without a passphrase')
+        .details-row
+            +text('Identity:', `${model}.identity`, '"' + discoveryKind + 'Identity"', required, 'Input identity',
+                'Identity that is used as a user name during a connection to the cloud<br/>\
+                Depending on a cloud platform it can be an email address, user name, etc')
+        .details-row
+            +text('Provider:', `${model}.provider`, '"' + discoveryKind + 'Provider"', required, 'Input provider', 'Cloud provider to use')
+        .pcb-flex-grid-break
+        .pcb-flex-grid-break
+        .details-row
+            -var form = formRegions;
+            +ignite-form-group(ng-model=`${regions}` ng-form=form)
+                -var uniqueTip = 'Such region already exists!'
 
-            .group-content(ng-if=`${regions}.length`)
-                -var model = 'field.model';
-                -var name = '"edit" + $index'
-                -var valid = `${form}[${name}].$valid`
-                -var save = `${regions}[$index] = ${model}`
+                ignite-form-field-label
+                    | Regions
+                ignite-form-group-tooltip
+                    | List of regions where VMs are located#[br]
+                    | If the regions are not set then every region, that a cloud provider has, will be investigated. This could lead to significant performance degradation#[br]
+                    | Note, that some cloud providers, like Google Compute Engine, doesn't have a notion of a region. For such providers regions are redundant
+                ignite-form-group-add(ng-click='group.add = [{}]')
+                    | Add new region
 
-                div(ng-repeat=`model in ${regions} track by $index`)
-                    label.col-xs-12.col-sm-12.col-md-12(ng-init='field = {}')
-                        .indexField
-                            | {{ $index+1 }})
-                        +table-remove-button(regions, 'Remove region')
-                        span(ng-hide='field.edit')
-                            a.labelFormField(ng-click=`field.edit = true; ${model} = model;`) {{ model }}
-                        span(ng-if='field.edit')
-                            +table-text-field(name, model, regions, valid, save, 'Region name', false)
+                .group-content(ng-if=`${regions}.length`)
+                    -var model = 'field.model';
+                    -var name = '"edit" + $index'
+                    -var valid = `${form}[${name}].$valid`
+                    -var save = `${regions}[$index] = ${model}`
+
+                    div(ng-repeat=`model in ${regions} track by $index`)
+                        label.col-xs-12.col-sm-12.col-md-12(ng-init='field = {}')
+                            .indexField
+                                | {{ $index+1 }})
+                            +table-remove-button(regions, 'Remove region')
+                            span(ng-hide='field.edit')
+                                a.labelFormField(ng-click=`field.edit = true; ${model} = model;`) {{ model }}
+                            span(ng-if='field.edit')
+                                +table-text-field(name, model, regions, valid, save, 'Region name', false)
+                                    +table-save-button(valid, save, false)
+                                    +unique-feedback(name, uniqueTip)
+
+                .group-content(ng-repeat='field in group.add')
+                    -var model = 'field.new';
+                    -var name = '"new"'
+                    -var valid = `${form}[${name}].$valid`
+                    -var save = `${regions}.push(${model})`
+
+                    div
+                        label.col-xs-12.col-sm-12.col-md-12
+                            +table-text-field(name, model, regions, valid, save, 'Region name', true)
                                 +table-save-button(valid, save, false)
                                 +unique-feedback(name, uniqueTip)
 
-            .group-content(ng-repeat='field in group.add')
-                -var model = 'field.new';
-                -var name = '"new"'
-                -var valid = `${form}[${name}].$valid`
-                -var save = `${regions}.push(${model})`
-
-                div
-                    label.col-xs-12.col-sm-12.col-md-12
-                        +table-text-field(name, model, regions, valid, save, 'Region name', true)
-                            +table-save-button(valid, save, false)
-                            +unique-feedback(name, uniqueTip)
-
-            .group-content-empty(ng-if=`!(${regions}.length) && !group.add.length`)
-                | Not defined
-    .details-row
-        -var form = formZones;
-        +ignite-form-group(ng-model=zones ng-form=form)
-            -var uniqueTip = 'Such zone already exists!'
-
-            ignite-form-field-label
-                | Zones
-            ignite-form-group-tooltip
-                | List of zones where VMs are located#[br]
-                | If the zones are not set then every zone from specified regions, will be taken into account#[br]
-                | Note, that some cloud providers, like Rackspace, doesn't have a notion of a zone. For such providers zones are redundant
-            ignite-form-group-add(ng-click='group.add = [{}]')
-                | Add new zone
-
+                .group-content-empty(ng-if=`!(${regions}.length) && !group.add.length`)
+                    | Not defined
+        .details-row
             -var form = formZones;
-            .group-content(ng-if=`${zones}.length`)
-                -var model = 'field.model';
-                -var name = '"edit" + $index'
-                -var valid = `${form}[${name}].$valid`
-                -var save = `${zones}[$index] = ${model}`
+            +ignite-form-group(ng-model=zones ng-form=form)
+                -var uniqueTip = 'Such zone already exists!'
 
-                div(ng-repeat=`model in ${zones} track by $index`)
-                    label.col-xs-12.col-sm-12.col-md-12(ng-init='field = {}')
-                        .indexField
-                            | {{ $index+1 }})
-                        +table-remove-button(zones, 'Remove zone')
-                        span(ng-hide='field.edit')
-                            a.labelFormField(ng-click=`field.edit = true; ${model} = model;`) {{ model }}
-                        span(ng-if='field.edit')
-                            +table-text-field(name, model, zones, valid, save, 'Zone name', false)
-                                +table-save-button(valid, save, false)
+                ignite-form-field-label
+                    | Zones
+                ignite-form-group-tooltip
+                    | List of zones where VMs are located#[br]
+                    | If the zones are not set then every zone from specified regions, will be taken into account#[br]
+                    | Note, that some cloud providers, like Rackspace, doesn't have a notion of a zone. For such providers zones are redundant
+                ignite-form-group-add(ng-click='group.add = [{}]')
+                    | Add new zone
+
+                -var form = formZones;
+                .group-content(ng-if=`${zones}.length`)
+                    -var model = 'field.model';
+                    -var name = '"edit" + $index'
+                    -var valid = `${form}[${name}].$valid`
+                    -var save = `${zones}[$index] = ${model}`
+
+                    div(ng-repeat=`model in ${zones} track by $index`)
+                        label.col-xs-12.col-sm-12.col-md-12(ng-init='field = {}')
+                            .indexField
+                                | {{ $index+1 }})
+                            +table-remove-button(zones, 'Remove zone')
+                            span(ng-hide='field.edit')
+                                a.labelFormField(ng-click=`field.edit = true; ${model} = model;`) {{ model }}
+                            span(ng-if='field.edit')
+                                +table-text-field(name, model, zones, valid, save, 'Zone name', false)
+                                    +table-save-button(valid, save, false)
+                                    +unique-feedback(name, uniqueTip)
+
+                .group-content(ng-repeat='field in group.add')
+                    -var model = 'field.new';
+                    -var name = '"new"'
+                    -var valid = `${form}[${name}].$valid`
+                    -var save = `${zones}.push(${model})`
+
+                    div
+                        label.col-xs-12.col-sm-12.col-md-12
+                            +table-text-field(name, model, zones, valid, save, 'Zone name', true)
+                                +table-save-button(valid, save, true)
                                 +unique-feedback(name, uniqueTip)
 
-            .group-content(ng-repeat='field in group.add')
-                -var model = 'field.new';
-                -var name = '"new"'
-                -var valid = `${form}[${name}].$valid`
-                -var save = `${zones}.push(${model})`
-
-                div
-                    label.col-xs-12.col-sm-12.col-md-12
-                        +table-text-field(name, model, zones, valid, save, 'Zone name', true)
-                            +table-save-button(valid, save, true)
-                            +unique-feedback(name, uniqueTip)
-
-            .group-content-empty(ng-if=`!(${zones}.length) && !group.add.length`)
-                | Not defined
+                .group-content-empty(ng-if=`!(${zones}.length) && !group.add.length`)
+                    | Not defined

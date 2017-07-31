@@ -134,7 +134,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void start(boolean activeOnStart) throws IgniteCheckedException {
+    @Override public void start() throws IgniteCheckedException {
         ctx.event().addLocalEventListener(lsnr, EVT_NODE_FAILED, EVT_NODE_LEFT, EVT_NODE_JOINED);
     }
 
@@ -471,7 +471,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
                     continue;
                 }
 
-                affMap.remove(cacheName, fut0);
+                affMap.remove(key, fut0);
 
                 fut0.onDone(new IgniteCheckedException("Failed to get affinity mapping from node: " + n, e));
 

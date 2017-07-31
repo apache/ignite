@@ -16,15 +16,15 @@
  */
 
 export default [
-    {name: 'Actions', visible: false, selectable: false},
-    {name: 'User', visible: true, selectable: false},
-    {name: 'Email', visible: true, selectable: true},
-    {name: 'Company', visible: true, selectable: true},
-    {name: 'Country', visible: true, selectable: true},
-    {name: 'Last login', visible: false, selectable: true},
-    {name: 'Last activity', visible: true, selectable: true},
-    {name: 'Configurations', visible: false, selectable: true},
-    {name: 'Total activities', visible: true, selectable: true},
-    {name: 'Configuration\'s activities', visible: false, selectable: true},
-    {name: 'Queries\' activities', visible: false, selectable: true}
+    {name: 'Actions', visible: false, enableHiding: false},
+    {name: 'User', visible: true, enableHiding: false},
+    {name: 'Email', visible: true, enableHiding: true},
+    {name: 'Company', visible: true, enableHiding: true},
+    {name: 'Country', visible: true, enableHiding: true},
+    {name: 'Last login', visible: false, enableHiding: true},
+    {name: 'Last activity', visible: true, enableHiding: true},
+    {name: 'Configurations', visible: false, enableHiding: true},
+    {name: 'Total activities', visible: true, enableHiding: true},
+    {name: 'Configuration\'s activities', visible: false, enableHiding: true},
+    {name: 'Queries\' activities', visible: false, enableHiding: true}
 ];

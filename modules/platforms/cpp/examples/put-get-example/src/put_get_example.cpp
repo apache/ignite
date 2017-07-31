@@ -85,9 +85,6 @@ int main()
 {
     IgniteConfiguration cfg;
 
-    cfg.jvmInitMem = 512;
-    cfg.jvmMaxMem = 512;
-
     cfg.springCfgPath = "platforms/cpp/examples/put-get-example/config/example-cache.xml";
 
     try
@@ -114,6 +111,8 @@ int main()
     catch (IgniteError& err)
     {
         std::cout << "An error occurred: " << err.GetText() << std::endl;
+
+        return err.GetCode();
     }
 
     std::cout << std::endl;

@@ -1833,7 +1833,7 @@ object visor extends VisorTag {
     @throws[ClusterGroupEmptyException]("In case of empty topology.")
     def cacheConfigurations(nid: UUID): JavaCollection[VisorCacheConfiguration] =
         executeOne(nid, classOf[VisorCacheConfigurationCollectorTask],
-            new VisorCacheConfigurationCollectorTaskArg(null.asInstanceOf[JavaCollection[IgniteUuid]])).values()
+            new VisorCacheConfigurationCollectorTaskArg(null.asInstanceOf[JavaCollection[String]])).values()
 
     /**
      * Asks user to select a node from the list.

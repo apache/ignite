@@ -35,6 +35,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.LockSupport;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -439,7 +440,8 @@ public class StripedExecutor implements ExecutorService {
                 poolName + "-stripe-" + idx,
                 this,
                 IgniteThread.GRP_IDX_UNASSIGNED,
-                idx);
+                idx,
+                GridIoPolicy.UNDEFINED);
 
             thread.start();
         }

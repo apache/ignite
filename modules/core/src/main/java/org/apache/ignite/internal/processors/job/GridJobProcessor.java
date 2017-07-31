@@ -55,6 +55,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTaskSessionImpl;
 import org.apache.ignite.internal.GridTaskSessionRequest;
 import org.apache.ignite.internal.SkipDaemon;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.collision.GridCollisionJobContextAdapter;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
@@ -235,7 +236,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void start(boolean activeOnStart) throws IgniteCheckedException {
+    @Override public void start() throws IgniteCheckedException {
         if (metricsUpdateFreq < -1)
             throw new IgniteCheckedException("Invalid value for 'metricsUpdateFrequency' configuration property " +
                 "(should be greater than or equals to -1): " + metricsUpdateFreq);
@@ -446,7 +447,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
         final Condition cond = lock.newCondition();
 
         GridMessageListener msgLsnr = new GridMessageListener() {
-            @Override public void onMessage(UUID nodeId, Object msg) {
+            @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
                 String err = null;
                 GridJobSiblingsResponse res = null;
 
@@ -1396,7 +1397,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
         }
         catch (IgniteCheckedException e) {
             // The only option here is to log, as we must assume that resending will fail too.
-            if (isDeadNode(node.id()))
+            if ((e instanceof ClusterTopologyCheckedException) || isDeadNode(node.id()))
                 // Avoid stack trace for left nodes.
                 U.error(log, "Failed to reply to sender node because it left grid [nodeId=" + node.id() +
                     ", jobId=" + req.getJobId() + ']');
@@ -1793,6 +1794,11 @@ public class GridJobProcessor extends GridProcessorAdapter {
                         return;
                     }
 
+                    if (!activeJobs.remove(worker.getJobId(), worker))
+                        cancelledJobs.remove(worker.getJobId(), worker);
+
+                    heldJobs.remove(worker.getJobId());
+
                     try {
                         handleCollisions();
                     }
@@ -1800,11 +1806,6 @@ public class GridJobProcessor extends GridProcessorAdapter {
                         rwLock.readUnlock();
                     }
                 }
-
-                if (!activeJobs.remove(worker.getJobId(), worker))
-                    cancelledJobs.remove(worker.getJobId(), worker);
-
-                heldJobs.remove(worker.getJobId());
             }
         }
     }
@@ -1855,7 +1856,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
      */
     private class JobSessionListener implements GridMessageListener {
         /** {@inheritDoc} */
-        @Override public void onMessage(UUID nodeId, Object msg) {
+        @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
             assert nodeId != null;
             assert msg != null;
 
@@ -1871,7 +1872,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
      */
     private class JobCancelListener implements GridMessageListener {
         /** {@inheritDoc} */
-        @Override public void onMessage(UUID nodeId, Object msg) {
+        @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
             assert nodeId != null;
             assert msg != null;
 
@@ -1889,7 +1890,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
      */
     private class JobExecutionListener implements GridMessageListener {
         /** {@inheritDoc} */
-        @Override public void onMessage(UUID nodeId, Object msg) {
+        @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
             assert nodeId != null;
             assert msg != null;
 

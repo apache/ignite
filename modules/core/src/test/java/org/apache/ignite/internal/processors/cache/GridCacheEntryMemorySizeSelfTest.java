@@ -151,6 +151,10 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
                 return true;
             }
 
+            @Override public boolean registerClassNameLocally(byte platformId, int typeId, String clsName) {
+                return true;
+            }
+
             @Override public Class getClass(int typeId, ClassLoader ldr) {
                 throw new UnsupportedOperationException();
             }

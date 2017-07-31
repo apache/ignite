@@ -396,7 +396,7 @@ public class GridCacheBinaryObjectMetadataExchangeMultinodeTest extends GridComm
         ioMgr.removeMessageListener(GridTopic.TOPIC_METADATA_REQ);
 
         ioMgr.addMessageListener(GridTopic.TOPIC_METADATA_REQ, new GridMessageListener() {
-            @Override public void onMessage(UUID nodeId, Object msg) {
+            @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
                 new Thread(new Runnable() {
                     @Override public void run() {
                         metadataReqsCounter.incrementAndGet();
@@ -416,9 +416,9 @@ public class GridCacheBinaryObjectMetadataExchangeMultinodeTest extends GridComm
         final GridMessageListener delegate = lsnrs[GridTopic.TOPIC_METADATA_REQ.ordinal()];
 
         GridMessageListener wrapper = new GridMessageListener() {
-            @Override public void onMessage(UUID nodeId, Object msg) {
+            @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
                 metadataReqsCounter.incrementAndGet();
-                delegate.onMessage(nodeId, msg);
+                delegate.onMessage(nodeId, msg, plc);
             }
         };
 

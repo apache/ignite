@@ -29,7 +29,7 @@ import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
-import org.apache.ignite.internal.processors.cache.database.MemoryMetricsImpl;
+import org.apache.ignite.internal.processors.cache.persistence.MemoryMetricsImpl;
 import org.apache.ignite.logger.java.JavaLogger;
 import org.h2.result.SortOrder;
 import org.h2.value.CompareMode;
@@ -167,6 +167,10 @@ public class InlineIndexHelperTest extends TestCase {
             assertTrue(ih.isValueFull(pageAddr, off));
 
             assertEquals("aaa", ih.get(pageAddr, off, 3 + 5).getString());
+
+            ih.put(pageAddr, off, ValueString.get("\u20acaaa"), 3 + 2);
+
+            assertNull(ih.get(pageAddr, off, 3 + 2));
         }
         finally {
             if (page != 0L)

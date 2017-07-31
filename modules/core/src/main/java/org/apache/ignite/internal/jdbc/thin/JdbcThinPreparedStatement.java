@@ -220,8 +220,6 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
      */
     private void executeWithArguments() throws SQLException {
         execute0(sql, args);
-
-        args = null;
     }
 
     /** {@inheritDoc} */

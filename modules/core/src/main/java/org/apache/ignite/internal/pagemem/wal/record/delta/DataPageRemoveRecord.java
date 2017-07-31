@@ -19,7 +19,7 @@ package org.apache.ignite.internal.pagemem.wal.record.delta;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.internal.processors.cache.database.tree.io.DataPageIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -30,12 +30,12 @@ public class DataPageRemoveRecord extends PageDeltaRecord {
     private int itemId;
 
     /**
-     * @param cacheId Cache ID.
+     * @param grpId Cache group ID.
      * @param pageId Page ID.
      * @param itemId Item ID.
      */
-    public DataPageRemoveRecord(int cacheId, long pageId, int itemId) {
-        super(cacheId, pageId);
+    public DataPageRemoveRecord(int grpId, long pageId, int itemId) {
+        super(grpId, pageId);
 
         this.itemId = itemId;
     }

@@ -76,7 +76,7 @@ public class SparseLocalOffHeapVectorStorage implements VectorStorage {
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        throw new UnsupportedOperationException(); // TODO: add externalization support.
+        throw new UnsupportedOperationException(); // TODO: IGNITE-5801, add externalization support.
     }
 
     /** {@inheritDoc} */
