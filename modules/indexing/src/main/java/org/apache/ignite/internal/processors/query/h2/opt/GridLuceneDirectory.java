@@ -27,7 +27,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.lucene.store.BaseDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
@@ -54,7 +56,7 @@ public class GridLuceneDirectory extends BaseDirectory implements Accountable {
      *
      * @param mem Memory.
      */
-    public GridLuceneDirectory(GridUnsafeMemory mem) {
+    GridLuceneDirectory(GridUnsafeMemory mem) {
         super(new GridLuceneLockFactory());
 
         this.mem = mem;
@@ -116,9 +118,10 @@ public class GridLuceneDirectory extends BaseDirectory implements Accountable {
         GridLuceneFile file = fileMap.remove(name);
 
         if (file != null) {
-            assert !onClose || file.refCnt.get() == 0 : "Possible memory leak, resource is not closed: "+ file.toString();
-
             file.delete();
+
+            // All files should be closed when Directory is closing.
+            assert !onClose || !file.hasRefs() : "Possible memory leak, resource is not closed: " + file.toString();
 
             sizeInBytes.addAndGet(-file.getSizeInBytes());
         }
@@ -132,6 +135,7 @@ public class GridLuceneDirectory extends BaseDirectory implements Accountable {
 
         GridLuceneFile file = newRAMFile();
 
+        // Lock for using in stream. Will be unlocked on stream closing.
         file.lockRef();
 
         GridLuceneFile existing = fileMap.put(name, file);
@@ -169,9 +173,11 @@ public class GridLuceneDirectory extends BaseDirectory implements Accountable {
         if (file == null)
             throw new FileNotFoundException(name);
 
+        // Lock for using in stream. Will be unlocked on stream closing.
         file.lockRef();
 
         if (!fileMap.containsKey(name)) {
+            // Unblock for deferred delete.
             file.releaseRef();
 
             throw new FileNotFoundException(name);
@@ -184,16 +190,24 @@ public class GridLuceneDirectory extends BaseDirectory implements Accountable {
     @Override public void close() {
         isOpen = false;
 
+        IgniteException errs = null;
+
         for (String fileName : fileMap.keySet()) {
             try {
                 doDeleteFile(fileName, true);
             }
             catch (IOException e) {
-                throw new IllegalStateException(e);
+                if (errs == null)
+                    errs = new IgniteException("Error closing index directory.");
+
+                errs.addSuppressed(e);
             }
         }
 
         assert fileMap.isEmpty();
+
+        if (errs != null && !F.isEmpty(errs.getSuppressed()))
+            throw errs;
     }
 
     /** {@inheritDoc} */

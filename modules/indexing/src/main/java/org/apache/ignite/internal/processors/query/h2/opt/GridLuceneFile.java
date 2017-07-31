@@ -43,10 +43,10 @@ public class GridLuceneFile implements Accountable {
     private volatile long sizeInBytes;
 
     /** */
-    AtomicLong refCnt = new AtomicLong();
+    private final AtomicLong refCnt = new AtomicLong();
 
     /** */
-    private AtomicBoolean deleted = new AtomicBoolean();
+    private final AtomicBoolean deleted = new AtomicBoolean();
 
     /**
      * File used as buffer, in no RAMDirectory
@@ -96,17 +96,30 @@ public class GridLuceneFile implements Accountable {
     /**
      * Increment ref counter.
      */
-    public void lockRef(){
+    void lockRef() {
         refCnt.incrementAndGet();
     }
 
     /**
      * Decrement ref counter.
      */
-    public void releaseRef(){
+    void releaseRef() {
         refCnt.decrementAndGet();
 
         deferredDelete();
+    }
+
+    /**
+     * Checks if there is file stream opened.
+     *
+     * @return {@code True} if file has external references.
+     */
+    boolean hasRefs() {
+        long refs = refCnt.get();
+
+        assert refs >= 0;
+
+        return refs != 0;
     }
 
     /**
@@ -148,8 +161,8 @@ public class GridLuceneFile implements Accountable {
     /**
      * Deferred delete.
      */
-    void deferredDelete() {
-        if(!deleted.get() || refCnt.get() > 0)
+    synchronized void deferredDelete() {
+        if (!deleted.get() || hasRefs())
             return;
 
         assert refCnt.get() == 0;

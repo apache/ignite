@@ -58,6 +58,7 @@ public class GridLuceneInputStream extends IndexInput implements Cloneable {
 
     /** */
     private boolean isClone;
+
     /**
      * Constructor.
      *
@@ -106,9 +107,9 @@ public class GridLuceneInputStream extends IndexInput implements Cloneable {
 
     /** {@inheritDoc} */
     @Override public IndexInput clone() {
-        GridLuceneInputStream clone = (GridLuceneInputStream) super.clone();
+        GridLuceneInputStream clone = (GridLuceneInputStream)super.clone();
 
-        if(closed)
+        if (closed)
             throw new AlreadyClosedException(toString());
 
         clone.isClone = true;
@@ -242,9 +243,10 @@ public class GridLuceneInputStream extends IndexInput implements Cloneable {
         private final long offset;
 
         /** */
-        public SlicedInputStream(String newResourceDescription, long offset, long length) throws IOException {
+        SlicedInputStream(String newResourceDescription, long offset, long length) throws IOException {
             super(newResourceDescription, GridLuceneInputStream.this.file, offset + length);
 
+            // Avoid parent resource closing together with this.
             super.isClone = true;
 
             this.offset = offset;
