@@ -1659,7 +1659,13 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
                     if (tx.isSystemInvalidate() && tx.storeWriteThrough()) {
                         synchronized (this) {
-                            entry.invalidate(tx.xidVersion());
+                            try {
+                                //TODO: fix exception handling.
+                                entry.invalidate(tx.xidVersion());
+                            }
+                            catch (IgniteCheckedException ignore) {
+                                // No-op.
+                            }
                         }
                     }
 
@@ -1667,8 +1673,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
                     break;
                 }
-                //TODO: fix exception handling.
-                catch (IgniteCheckedException | GridCacheEntryRemovedException ignored) {
+                catch (GridCacheEntryRemovedException ignored) {
                     if (log.isDebugEnabled())
                         log.debug("Got removed entry in TM unlockMultiple(..) method (will retry): " + txEntry);
 
