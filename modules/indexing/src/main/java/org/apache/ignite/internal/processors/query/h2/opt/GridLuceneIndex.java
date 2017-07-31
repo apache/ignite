@@ -111,7 +111,7 @@ public class GridLuceneIndex implements AutoCloseable {
         this.cacheName = cacheName;
         this.type = type;
 
-        dir = new GridLuceneDirectory(mem == null ? new GridUnsafeMemory(0) : mem);
+        dir = new GridLuceneDirectory(mem == null ? new GridUnsafeMemory(0) : mem, new GridLuceneLockFactory());
 
         try {
             writer = new IndexWriter(dir,

@@ -97,7 +97,7 @@ public class GridLuceneInputStream extends IndexInput implements Cloneable {
     }
 
     /** {@inheritDoc} */
-    @Override public void close() {
+    @Override public final void close() {
         if (!isClone) {
             closed = true;
 

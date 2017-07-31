@@ -35,6 +35,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.store.LockFactory;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Accountables;
 
@@ -55,9 +56,10 @@ public class GridLuceneDirectory extends BaseDirectory implements Accountable {
      * Constructs an empty {@link Directory}.
      *
      * @param mem Memory.
+     * @param lockFactory lock factory.
      */
-    GridLuceneDirectory(GridUnsafeMemory mem) {
-        super(new GridLuceneLockFactory());
+    public GridLuceneDirectory(GridUnsafeMemory mem, LockFactory lockFactory) {
+        super(lockFactory);
 
         this.mem = mem;
     }

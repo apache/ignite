@@ -95,7 +95,7 @@ public class GridLuceneOutputStream extends IndexOutput implements Accountable {
     }
 
     /** {@inheritDoc} */
-    @Override public void close() throws IOException {
+    @Override public final void close() throws IOException {
         flush();
 
         file.releaseRef();

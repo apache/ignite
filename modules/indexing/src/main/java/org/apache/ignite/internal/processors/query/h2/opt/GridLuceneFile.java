@@ -53,7 +53,7 @@ public class GridLuceneFile implements Accountable {
      *
      * @param dir Directory.
      */
-    GridLuceneFile(GridLuceneDirectory dir) {
+    public GridLuceneFile(GridLuceneDirectory dir) {
         this.dir = dir;
     }
 
@@ -96,14 +96,14 @@ public class GridLuceneFile implements Accountable {
     /**
      * Increment ref counter.
      */
-    void lockRef() {
+    final void lockRef() {
         refCnt.incrementAndGet();
     }
 
     /**
      * Decrement ref counter.
      */
-    void releaseRef() {
+    final void releaseRef() {
         refCnt.decrementAndGet();
 
         deferredDelete();
@@ -114,7 +114,7 @@ public class GridLuceneFile implements Accountable {
      *
      * @return {@code True} if file has external references.
      */
-    boolean hasRefs() {
+    protected final boolean hasRefs() {
         long refs = refCnt.get();
 
         assert refs >= 0;
@@ -128,14 +128,14 @@ public class GridLuceneFile implements Accountable {
      * @param idx Index.
      * @return Pointer.
      */
-    final synchronized long getBuffer(int idx) {
+    protected final synchronized long getBuffer(int idx) {
         return buffers.get(idx);
     }
 
     /**
      * @return Number of buffers.
      */
-    final synchronized int numBuffers() {
+    protected final synchronized int numBuffers() {
         return buffers.size();
     }
 
@@ -144,7 +144,7 @@ public class GridLuceneFile implements Accountable {
      *
      * @return allocated buffer.
      */
-    private long newBuffer() {
+    protected long newBuffer() {
         return dir.memory().allocate(BUFFER_SIZE);
     }
 
@@ -161,7 +161,7 @@ public class GridLuceneFile implements Accountable {
     /**
      * Deferred delete.
      */
-    synchronized void deferredDelete() {
+    protected final synchronized void deferredDelete() {
         if (!deleted.get() || hasRefs())
             return;
 
@@ -176,7 +176,7 @@ public class GridLuceneFile implements Accountable {
     /**
      * @return Size in bytes.
      */
-    long getSizeInBytes() {
+    public long getSizeInBytes() {
         return sizeInBytes;
     }
 
