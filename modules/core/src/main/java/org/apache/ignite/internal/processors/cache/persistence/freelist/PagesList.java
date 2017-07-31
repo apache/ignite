@@ -508,20 +508,25 @@ public abstract class PagesList extends DataStructure {
      * @throws IgniteCheckedException If failed.
      */
     private Stripe getPageForPut(int bucket) throws IgniteCheckedException {
-        Stripe[] tails = getBucket(bucket);
-
-        if (tails == null)
-            return addStripe(bucket, true);
-
         // Striped pool optimization
         int stripeIdx = IgniteThread.currentStripe();
 
         if (stripeIdx != -1) {
-            if (stripeIdx >= tails.length)
-                return addStripe(bucket, true);
+            Stripe[] tails = getBucket(bucket);
+
+            while (tails == null || stripeIdx >= tails.length) {
+                addStripe(bucket, true);
+
+                tails = getBucket(bucket);
+            }
 
             return tails[stripeIdx];
         }
+
+        Stripe[] tails = getBucket(bucket);
+
+        if (tails == null)
+            return addStripe(bucket, true);
 
         return randomTail(tails);
     }
@@ -932,7 +937,7 @@ public abstract class PagesList extends DataStructure {
 
         if (stripeIdx != -1) {
             if (stripeIdx >= len)
-                return addStripe(bucket, !isReuseBucket(bucket));
+                return null;
 
             Stripe stripe = tails[stripeIdx];
 
