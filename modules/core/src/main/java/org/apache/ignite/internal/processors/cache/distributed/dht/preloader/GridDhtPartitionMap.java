@@ -24,10 +24,10 @@ import java.io.ObjectOutput;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
+import org.apache.ignite.internal.util.GridPartitionStateMap;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -50,7 +50,7 @@ public class GridDhtPartitionMap implements Comparable<GridDhtPartitionMap>, Ext
     protected AffinityTopologyVersion top;
 
     /** */
-    protected Map<Integer, GridDhtPartitionState> map;
+    protected GridPartitionStateMap map;
 
     /** */
     private volatile int moving;
@@ -72,7 +72,7 @@ public class GridDhtPartitionMap implements Comparable<GridDhtPartitionMap>, Ext
     public GridDhtPartitionMap(UUID nodeId,
         long updateSeq,
         AffinityTopologyVersion top,
-        Map<Integer, GridDhtPartitionState> m,
+        GridPartitionStateMap m,
         boolean onlyActive) {
         assert nodeId != null;
         assert updateSeq > 0;
@@ -81,14 +81,7 @@ public class GridDhtPartitionMap implements Comparable<GridDhtPartitionMap>, Ext
         this.updateSeq = updateSeq;
         this.top = top;
 
-        map = U.newHashMap(m.size());
-
-        for (Map.Entry<Integer, GridDhtPartitionState> e : m.entrySet()) {
-            GridDhtPartitionState state = e.getValue();
-
-            if (!onlyActive || state.active())
-                put(e.getKey(), state);
-        }
+        map = new GridPartitionStateMap(m, onlyActive);
     }
 
     /**
@@ -101,7 +94,7 @@ public class GridDhtPartitionMap implements Comparable<GridDhtPartitionMap>, Ext
     private GridDhtPartitionMap(UUID nodeId,
         long updateSeq,
         AffinityTopologyVersion top,
-        Map<Integer, GridDhtPartitionState> map,
+        GridPartitionStateMap map,
         int moving) {
         this.nodeId = nodeId;
         this.updateSeq = updateSeq;
@@ -117,7 +110,7 @@ public class GridDhtPartitionMap implements Comparable<GridDhtPartitionMap>, Ext
         return new GridDhtPartitionMap(nodeId,
             updateSeq,
             top,
-            U.<Integer, GridDhtPartitionState>newHashMap(0),
+            new GridPartitionStateMap(0),
             0);
     }
 
@@ -184,7 +177,7 @@ public class GridDhtPartitionMap implements Comparable<GridDhtPartitionMap>, Ext
     /**
      * @return Underlying map.
      */
-    public Map<Integer, GridDhtPartitionState> map() {
+    public GridPartitionStateMap map() {
         return map;
     }
 
@@ -208,9 +201,13 @@ public class GridDhtPartitionMap implements Comparable<GridDhtPartitionMap>, Ext
      * @return Old update sequence value.
      */
     public long updateSequence(long updateSeq, AffinityTopologyVersion topVer) {
+        assert topVer.compareTo(top) >= 0 : "Invalid topology version [cur=" + top + ", new=" + topVer + "]";
+
         long old = this.updateSeq;
 
-        assert updateSeq >= old : "Invalid update sequence [cur=" + old + ", new=" + updateSeq + ']';
+        // Overwrite update sequence without checking in case of greater topology version
+        if (topVer.compareTo(top) == 0)
+            assert updateSeq >= old : "Invalid update sequence [cur=" + old + ", new=" + updateSeq + ']';
 
         this.updateSeq = updateSeq;
 
@@ -277,7 +274,7 @@ public class GridDhtPartitionMap implements Comparable<GridDhtPartitionMap>, Ext
 
         int size = in.readInt();
 
-        map = U.newHashMap(size);
+        map = new GridPartitionStateMap();
 
         for (int i = 0; i < size; i++) {
             int ordinal = in.readByte();
@@ -312,11 +309,11 @@ public class GridDhtPartitionMap implements Comparable<GridDhtPartitionMap>, Ext
      * @return Full string representation.
      */
     public String toFullString() {
-        return S.toString(GridDhtPartitionMap.class, this, "size", size(), "map", map.toString(), "top", top);
+        return S.toString(GridDhtPartitionMap.class, this, "top", top, "updateSeq", updateSeq, "size", size(), "map", map.toString());
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridDhtPartitionMap.class, this, "size", size());
+        return S.toString(GridDhtPartitionMap.class, this, "top", top, "updateSeq", updateSeq, "size", size());
     }
 }

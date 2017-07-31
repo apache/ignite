@@ -72,7 +72,7 @@ onmessage = function(e) {
     const cfg = generator.igniteConfiguration(cluster, targetVer.ignite, false);
     const clientCfg = generator.igniteConfiguration(cluster, targetVer.ignite, true);
     const clientNearCaches = _.filter(cluster.caches, (cache) =>
-        cache.mode === 'PARTITIONED' && _.get(cache, 'clientNearConfiguration.enabled'));
+        cache.cacheMode === 'PARTITIONED' && _.get(cache, 'clientNearConfiguration.enabled'));
 
     const secProps = properties.generate(cfg);
 

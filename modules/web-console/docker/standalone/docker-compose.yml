@@ -16,7 +16,7 @@
 #
 
 webconsole:
-  image: ignite/web-console-standalone
+  image: apacheignite/web-console-standalone
   ports:
     - 80:80
   restart: always

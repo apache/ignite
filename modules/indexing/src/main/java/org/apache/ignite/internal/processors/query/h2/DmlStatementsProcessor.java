@@ -20,6 +20,8 @@ package org.apache.ignite.internal.processors.query.h2;
 import java.lang.reflect.Array;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.sql.Time;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -79,8 +81,13 @@ import org.h2.command.dml.Insert;
 import org.h2.command.dml.Merge;
 import org.h2.command.dml.Update;
 import org.h2.table.Column;
+import org.h2.util.DateTimeUtils;
+import org.h2.util.LocalDateTimeUtils;
 import org.h2.value.DataType;
 import org.h2.value.Value;
+import org.h2.value.ValueDate;
+import org.h2.value.ValueTime;
+import org.h2.value.ValueTimestamp;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -711,6 +718,18 @@ public class DmlStatementsProcessor {
             return U.unmarshal(desc.context().marshaller(), (byte[]) val,
                 U.resolveClassLoader(desc.context().gridConfig()));
 
+        if (LocalDateTimeUtils.isJava8DateApiPresent()) {
+            if (val instanceof Timestamp && LocalDateTimeUtils.isLocalDateTime(expCls))
+                return LocalDateTimeUtils.valueToLocalDateTime(ValueTimestamp.get((Timestamp)val));
+
+            if (val instanceof Date && LocalDateTimeUtils.isLocalDate(expCls))
+                return LocalDateTimeUtils.valueToLocalDate(ValueDate.fromDateValue(
+                    DateTimeUtils.dateValueFromDate(((Date)val).getTime())));
+
+            if (val instanceof Time && LocalDateTimeUtils.isLocalTime(expCls))
+                return LocalDateTimeUtils.valueToLocalTime(ValueTime.get((Time)val));
+        }
+
         // We have to convert arrays of reference types manually - see https://issues.apache.org/jira/browse/IGNITE-4327
         // Still, we only can convert from Object[] to something more precise.
         if (type == Value.ARRAY && currCls != expCls) {
@@ -729,14 +748,7 @@ public class DmlStatementsProcessor {
             return newArr;
         }
 
-        int objType = DataType.getTypeFromClass(val.getClass());
-
-        if (objType == type)
-            return val;
-
-        Value h2Val = desc.wrap(val, objType);
-
-        return h2Val.convertTo(type).getObject();
+        return H2Utils.convert(val, desc, type);
     }
 
     /**

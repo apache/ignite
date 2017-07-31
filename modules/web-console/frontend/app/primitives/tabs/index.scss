@@ -52,7 +52,7 @@ ul.tabs {
             text-align: center;
             line-height: $height - 2*$offset-vertical;
 
-            &:hover {
+            &:hover, &:focus {
               text-decoration: none;
             }
 

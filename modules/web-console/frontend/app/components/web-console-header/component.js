@@ -21,7 +21,7 @@ import './style.scss';
 export default {
     template,
     controller: class {
-        static $inject = ['$rootScope', '$scope', '$state', 'IgniteBranding'];
+        static $inject = ['$rootScope', '$scope', '$state', 'IgniteBranding', 'UserNotifications'];
 
         static webAgentDownloadVisibleStates = [
             'base.configuration',
@@ -29,15 +29,19 @@ export default {
             'base.settings'
         ];
 
-        constructor($rootScope, $scope, $state, branding) {
-            Object.assign(this, {$rootScope, $scope, $state, branding});
+        constructor($rootScope, $scope, $state, branding, UserNotifications) {
+            Object.assign(this, {$rootScope, $scope, $state, branding, UserNotifications});
+        }
+
+        setWebAgentDownloadVisible() {
+            this.isWebAgentDownloadVisible =
+                this.constructor.webAgentDownloadVisibleStates.some((state) => this.$state.includes(state));
         }
 
         $onInit() {
-            this.$scope.$on('$stateChangeSuccess', () => {
-                this.isWebAgentDownloadVisible =
-                    this.constructor.webAgentDownloadVisibleStates.some((state) => this.$state.includes(state));
-            });
+            this.setWebAgentDownloadVisible();
+
+            this.$scope.$on('$stateChangeSuccess', () => this.setWebAgentDownloadVisible());
         }
     },
     transclude: {

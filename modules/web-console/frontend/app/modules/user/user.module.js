@@ -50,7 +50,7 @@ angular.module('ignite-console.user', [
 .service(...Auth)
 .service(...User)
 .provider('AclRoute', AclRouteProvider)
-.run(['$rootScope', 'AclService', ($root, AclService) => {
+.run(['$rootScope', '$transitions', 'AclService', 'User', 'IgniteActivitiesData', ($root, $transitions, AclService, User, Activities) => {
     AclService.setAbilities(aclData);
     AclService.attachRole('guest');
 
@@ -69,5 +69,33 @@ angular.module('ignite-console.user', [
             role = 'becomed';
 
         AclService.attachRole(role);
+    });
+
+    $transitions.onBefore({}, (t) => {
+        const $state = t.router.stateService;
+        const {name, permission} = t.to();
+
+        return User.read()
+            .catch(() => {
+                User.clean();
+
+                if (name !== 'signin')
+                    return $state.target('signin');
+
+                return true;
+            })
+            .then(() => {
+                if (_.isEmpty(permission))
+                    return true;
+
+                if (AclService.can(permission)) {
+                    Activities.post({action: $state.href(name, t.params('to'))});
+
+                    return true;
+                }
+
+                return $state.target(t.to().failState || '403');
+            });
+
     });
 }]);
