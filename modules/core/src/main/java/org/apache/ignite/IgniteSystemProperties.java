@@ -414,7 +414,7 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_CACHE_CLIENT = "IGNITE_CACHE_CLIENT";
 
     /**
-     * Property controlling distribution calculation flag.
+     * Property controlling distribution calculation.
      */
     public static final String IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD = "IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD";
 
