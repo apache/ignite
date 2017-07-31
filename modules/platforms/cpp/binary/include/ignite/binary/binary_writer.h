@@ -58,7 +58,7 @@ namespace ignite
              *
              * @param impl Implementation.
              */
-            BinaryWriter(ignite::impl::binary::BinaryWriterImpl* impl);
+            BinaryWriter(impl::binary::BinaryWriterImpl* impl);
 
             /**
              * Write 8-byte signed integer. Maps to "byte" type in Java.
@@ -337,7 +337,7 @@ namespace ignite
              * Start collection write.
              *
              * @param fieldName Field name.
-             * @param type Collection type.
+             * @param typ Collection type.
              * @return Collection writer.
              */
             template<typename T>

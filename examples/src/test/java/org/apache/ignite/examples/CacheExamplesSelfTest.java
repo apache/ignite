@@ -139,7 +139,7 @@ public class CacheExamplesSelfTest extends GridAbstractExamplesTest {
     /**
      * @throws Exception If failed.
      */
-    public void testCacheQUeryDdlExample() throws Exception {
+    public void testCacheQueryDdlExample() throws Exception {
         CacheQueryDdlExample.main(EMPTY_ARGS);
     }
 

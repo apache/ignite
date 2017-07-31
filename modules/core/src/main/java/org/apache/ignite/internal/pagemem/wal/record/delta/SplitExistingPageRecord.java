@@ -37,13 +37,13 @@ public class SplitExistingPageRecord extends PageDeltaRecord {
     private long fwdId;
 
     /**
-     * @param cacheId Cache ID.
+     * @param grpId Cache group ID.
      * @param pageId  Page ID.
      * @param mid Bisection index.
      * @param fwdId New forward page ID.
      */
-    public SplitExistingPageRecord(int cacheId, long pageId, int mid, long fwdId) {
-        super(cacheId, pageId);
+    public SplitExistingPageRecord(int grpId, long pageId, int mid, long fwdId) {
+        super(grpId, pageId);
 
         this.mid = mid;
         this.fwdId = fwdId;

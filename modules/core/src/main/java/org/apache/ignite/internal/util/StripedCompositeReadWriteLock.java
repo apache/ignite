@@ -67,8 +67,10 @@ public class StripedCompositeReadWriteLock implements ReadWriteLock {
     @NotNull @Override public Lock readLock() {
         int idx;
 
-        if (Thread.currentThread() instanceof IgniteThread) {
-            IgniteThread igniteThread = (IgniteThread)Thread.currentThread();
+        Thread curThread = Thread.currentThread();
+
+        if (curThread instanceof IgniteThread) {
+            IgniteThread igniteThread = (IgniteThread)curThread;
 
             idx = igniteThread.compositeRwLockIndex();
 

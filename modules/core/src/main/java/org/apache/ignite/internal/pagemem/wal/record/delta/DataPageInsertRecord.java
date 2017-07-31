@@ -29,16 +29,16 @@ public class DataPageInsertRecord extends PageDeltaRecord {
     private byte[] payload;
 
     /**
-     * @param cacheId Cache ID.
+     * @param grpId Cache group ID.
      * @param pageId Page ID.
      * @param payload Remainder of the record.
      */
     public DataPageInsertRecord(
-        int cacheId,
+        int grpId,
         long pageId,
         byte[] payload
     ) {
-        super(cacheId, pageId);
+        super(grpId, pageId);
 
         this.payload = payload;
     }

@@ -38,14 +38,14 @@ public class InnerReplaceRecord<L> extends PageDeltaRecord {
     private long rmvId;
 
     /**
-     * @param cacheId Cache ID.
+     * @param grpId Cache group ID.
      * @param pageId  Page ID.
      * @param dstIdx Destination index.
      * @param srcPageId Source page ID.
      * @param srcIdx Source index.
      */
-    public InnerReplaceRecord(int cacheId, long pageId, int dstIdx, long srcPageId, int srcIdx, long rmvId) {
-        super(cacheId, pageId);
+    public InnerReplaceRecord(int grpId, long pageId, int dstIdx, long srcPageId, int srcIdx, long rmvId) {
+        super(grpId, pageId);
 
         this.dstIdx = dstIdx;
         this.srcPageId = srcPageId;

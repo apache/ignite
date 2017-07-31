@@ -41,6 +41,11 @@ public class GridTimeoutProcessorSelfTest extends GridCommonAbstractTest {
     private GridTestKernalContext ctx;
 
     /** {@inheritDoc} */
+    @Override protected long getTestTimeout() {
+        return 60_000;
+    }
+
+    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         ctx = newContext();
 
@@ -84,7 +89,9 @@ public class GridTimeoutProcessorSelfTest extends GridCommonAbstractTest {
                 }
 
                 /** {@inheritDoc} */
-                @Override public long endTime() { return endTime; }
+                @Override public long endTime() {
+                    return endTime;
+                }
 
                 /** {@inheritDoc} */
                 @Override public void onTimeout() {
@@ -152,10 +159,14 @@ public class GridTimeoutProcessorSelfTest extends GridCommonAbstractTest {
                         private final long endTime = System.currentTimeMillis() + RAND.nextInt(1000) + 500;
 
                         /** {@inheritDoc} */
-                        @Override public IgniteUuid timeoutId() { return id; }
+                        @Override public IgniteUuid timeoutId() {
+                            return id;
+                        }
 
                         /** {@inheritDoc} */
-                        @Override public long endTime() { return endTime; }
+                        @Override public long endTime() {
+                            return endTime;
+                        }
 
                         /** {@inheritDoc} */
                         @Override public void onTimeout() {
@@ -307,9 +318,8 @@ public class GridTimeoutProcessorSelfTest extends GridCommonAbstractTest {
         assert timeObjs.size() == max;
 
         // Remove timeout objects so that they aren't able to times out (supposing the cycle takes less than 500 ms).
-        for (GridTimeoutObject obj : timeObjs) {
+        for (GridTimeoutObject obj : timeObjs)
             ctx.timeout().removeTimeoutObject(obj);
-        }
 
         Thread.sleep(1000);
 
@@ -350,7 +360,9 @@ public class GridTimeoutProcessorSelfTest extends GridCommonAbstractTest {
                         }
 
                         /** {@inheritDoc} */
-                        @Override public long endTime() { return endTime; }
+                        @Override public long endTime() {
+                            return endTime;
+                        }
 
                         /** {@inheritDoc} */
                         @Override public void onTimeout() {
@@ -370,9 +382,8 @@ public class GridTimeoutProcessorSelfTest extends GridCommonAbstractTest {
 
                 // Remove timeout objects so that they aren't able to times out
                 // (supposing the cycle takes less than 500 ms).
-                for (GridTimeoutObject obj : timeObjs) {
+                for (GridTimeoutObject obj : timeObjs)
                     ctx.timeout().removeTimeoutObject(obj);
-                }
             }
         }, threads, "timeout-test-worker");
 
@@ -381,6 +392,9 @@ public class GridTimeoutProcessorSelfTest extends GridCommonAbstractTest {
         assert callCnt.get() == 0;
     }
 
+    /**
+     * @throws Exception If test failed.
+     */
     public void testAddRemoveInterleaving() throws Exception {
         final AtomicInteger callCnt = new AtomicInteger(0);
 
@@ -430,9 +444,8 @@ public class GridTimeoutProcessorSelfTest extends GridCommonAbstractTest {
 
                 // Remove timeout objects so that they aren't able to times out
                 // (supposing the cycle takes less than 500 ms).
-                for (GridTimeoutObject obj : timeObjs) {
+                for (GridTimeoutObject obj : timeObjs)
                     ctx.timeout().removeTimeoutObject(obj);
-                }
             }
         }, 100, "timeout-test-worker");
 
@@ -516,10 +529,14 @@ public class GridTimeoutProcessorSelfTest extends GridCommonAbstractTest {
             private int cnt;
 
             /** {@inheritDoc} */
-            @Override public IgniteUuid timeoutId() { return id; }
+            @Override public IgniteUuid timeoutId() {
+                return id;
+            }
 
             /** {@inheritDoc} */
-            @Override public long endTime() { return endTime; }
+            @Override public long endTime() {
+                return endTime;
+            }
 
             /** {@inheritDoc} */
             @Override public void onTimeout() {
@@ -607,5 +624,32 @@ public class GridTimeoutProcessorSelfTest extends GridCommonAbstractTest {
         });
 
         assert latch.await(3000, MILLISECONDS);
+    }
+
+    /**
+     * Test that eaten {@link InterruptedException} will not hang on the closing of the grid.
+     *
+     * @throws Exception If test failed.
+     */
+    public void testCancelingWithClearedInterruptedFlag() throws Exception {
+        final CountDownLatch onTimeoutCalled = new CountDownLatch(1);
+
+        ctx.timeout().addTimeoutObject(new GridTimeoutObjectAdapter(10) {
+            /** {@inheritDoc} */
+            @Override public void onTimeout() {
+                try {
+                    onTimeoutCalled.countDown();
+
+                    // Wait for CacheProcessor has stopped and cause InterruptedException
+                    // which clears interrupted flag.
+                    Thread.sleep(Long.MAX_VALUE);
+                }
+                catch (InterruptedException ignore) {
+                    // No-op.
+                }
+            }
+        });
+
+        onTimeoutCalled.await();
     }
 }

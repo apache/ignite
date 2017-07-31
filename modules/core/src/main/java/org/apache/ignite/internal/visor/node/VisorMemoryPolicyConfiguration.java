@@ -131,32 +131,25 @@ public class VisorMemoryPolicyConfiguration extends VisorDataTransferObject {
     }
 
     /** {@inheritDoc} */
-    @Override public byte getProtocolVersion() {
-        return V2;
-    }
-
-    /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeString(out, name);
+        out.writeLong(initSize);
         out.writeLong(maxSize);
         U.writeString(out, swapFilePath);
         U.writeEnum(out, pageEvictionMode);
         out.writeDouble(evictionThreshold);
         out.writeInt(emptyPagesPoolSize);
-        out.writeLong(initSize);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
         name = U.readString(in);
+        initSize = in.readLong();
         maxSize = in.readLong();
         swapFilePath = U.readString(in);
         pageEvictionMode = DataPageEvictionMode.fromOrdinal(in.readByte());
         evictionThreshold = in.readDouble();
         emptyPagesPoolSize = in.readInt();
-
-        if (protoVer >= V2)
-            initSize = in.readLong();
     }
 
     /** {@inheritDoc} */

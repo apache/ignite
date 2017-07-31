@@ -2075,11 +2075,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
                 txtIdx.setName(idxEntry.getKey());
             }
             else {
-                Collection<String> grp = new ArrayList<>();
-
-                for (String fieldName : idx.fields())
-                    grp.add(idx.descending(fieldName) ? fieldName + " desc" : fieldName);
-
                 QueryIndex sortedIdx = new QueryIndex();
 
                 sortedIdx.setIndexType(idx.type());

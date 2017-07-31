@@ -166,7 +166,7 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> implements Ig
      * @return Collection of futures.
      */
     @SuppressWarnings("unchecked")
-    public synchronized final Collection<IgniteInternalFuture<T>> futures() {
+    public final synchronized Collection<IgniteInternalFuture<T>> futures() {
         if (futs == null)
             return Collections.emptyList();
 
@@ -249,7 +249,7 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> implements Ig
     /**
      * Clear futures.
      */
-    protected synchronized final void clear() {
+    protected final synchronized void clear() {
         futs = null;
     }
 
@@ -338,7 +338,7 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> implements Ig
     /**
      * @return {@code True} if has at least one future.
      */
-    protected synchronized final boolean hasFutures() {
+    protected final synchronized boolean hasFutures() {
         return futs != null;
     }
 

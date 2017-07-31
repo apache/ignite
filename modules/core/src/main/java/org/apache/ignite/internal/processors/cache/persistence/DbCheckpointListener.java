@@ -17,9 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.persistence;
 
-import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.processors.cache.persistence.partstate.PartitionAllocationMap;
 
 /**
  *
@@ -35,9 +34,9 @@ public interface DbCheckpointListener {
         public boolean nextSnapshot();
 
         /**
-         *
+         * @return Partition allocation statistic map
          */
-        public Map<T2<Integer, Integer>, T2<Integer, Integer>> partitionStatMap();
+        public PartitionAllocationMap partitionStatMap();
 
         /**
          * @param cacheOrGrpName Cache or group name.

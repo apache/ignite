@@ -38,10 +38,10 @@ export default ['IgniteCopyToClipboard', ['$window', 'IgniteMessages', ($window,
                 if (document.execCommand('copy'))
                     Messages.showInfo('Value copied to clipboard');
                 else
-                    window.prompt('Copy to clipboard: Ctrl+C, Enter', toCopy);  // eslint-disable-line no-alert
+                    window.prompt('Copy to clipboard: Ctrl+C, Enter', toCopy); // eslint-disable-line no-alert
             }
             catch (err) {
-                window.prompt('Copy to clipboard: Ctrl+C, Enter', toCopy);  // eslint-disable-line no-alert
+                window.prompt('Copy to clipboard: Ctrl+C, Enter', toCopy); // eslint-disable-line no-alert
             }
 
             textArea.remove();

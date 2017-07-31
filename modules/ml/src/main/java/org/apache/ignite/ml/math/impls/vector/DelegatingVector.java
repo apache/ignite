@@ -30,6 +30,7 @@ import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.VectorStorage;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteDoubleFunction;
+import org.apache.ignite.ml.math.functions.IgniteIntDoubleToDoubleBiFunction;
 
 /**
  * Convenient class that can be used to add decorations to an existing vector. Subclasses
@@ -364,6 +365,11 @@ public class DelegatingVector implements Vector {
     /** {@inheritDoc} */
     @Override public IgniteUuid guid() {
         return guid;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void compute(int i, IgniteIntDoubleToDoubleBiFunction f) {
+        dlg.compute(i, f);
     }
 
     /** {@inheritDoc} */

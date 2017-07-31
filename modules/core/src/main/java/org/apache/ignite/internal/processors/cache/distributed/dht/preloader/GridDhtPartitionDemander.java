@@ -189,7 +189,7 @@ public class GridDhtPartitionDemander {
     }
 
     /**
-     * Force Rebalance.
+     * @return Rebalance future.
      */
     IgniteInternalFuture<Boolean> forceRebalance() {
         GridTimeoutObject obj = lastTimeoutObj.getAndSet(null);
@@ -207,7 +207,7 @@ public class GridDhtPartitionDemander {
 
             exchFut.listen(new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
                 @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> t) {
-                    IgniteInternalFuture<Boolean> fut0 = ctx.exchange().forceRebalance(exchFut);
+                    IgniteInternalFuture<Boolean> fut0 = ctx.exchange().forceRebalance(exchFut.exchangeId());
 
                     fut0.listen(new IgniteInClosure<IgniteInternalFuture<Boolean>>() {
                         @Override public void apply(IgniteInternalFuture<Boolean> future) {
@@ -363,7 +363,7 @@ public class GridDhtPartitionDemander {
                 @Override public void onTimeout() {
                     exchFut.listen(new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
                         @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> f) {
-                            ctx.exchange().forceRebalance(exchFut);
+                            ctx.exchange().forceRebalance(exchFut.exchangeId());
                         }
                     });
                 }
@@ -640,7 +640,7 @@ public class GridDhtPartitionDemander {
 
                     assert part != null;
 
-                    boolean last = supply.last().contains(p);
+                    boolean last = supply.last().containsKey(p);
 
                     if (part.state() == MOVING) {
                         boolean reserved = part.reserve();
@@ -680,6 +680,9 @@ public class GridDhtPartitionDemander {
                             // If message was last for this partition,
                             // then we take ownership.
                             if (last) {
+                                if (supply.isClean(p))
+                                    part.updateCounter(supply.last().get(p));
+
                                 top.own(part);
 
                                 fut.partitionDone(id, p);
@@ -858,9 +861,9 @@ public class GridDhtPartitionDemander {
         /** Missed. */
         private final Map<UUID, Collection<Integer>> missed = new HashMap<>();
 
-        /** Exchange future. */
+        /** Exchange ID. */
         @GridToStringExclude
-        private final GridDhtPartitionsExchangeFuture exchFut;
+        private final GridDhtPartitionExchangeId exchId;
 
         /** Topology version. */
         private final AffinityTopologyVersion topVer;
@@ -881,7 +884,7 @@ public class GridDhtPartitionDemander {
             long updateSeq) {
             assert assigns != null;
 
-            exchFut = assigns.exchangeFuture();
+            exchId = assigns.exchangeId();
             topVer = assigns.topologyVersion();
 
             this.grp = grp;
@@ -895,7 +898,7 @@ public class GridDhtPartitionDemander {
          * Dummy future. Will be done by real one.
          */
         RebalanceFuture() {
-            this.exchFut = null;
+            this.exchId = null;
             this.topVer = null;
             this.ctx = null;
             this.grp = null;
@@ -1029,7 +1032,7 @@ public class GridDhtPartitionDemander {
                     return;
 
                 if (grp.eventRecordable(EVT_CACHE_REBALANCE_PART_LOADED))
-                    rebalanceEvent(p, EVT_CACHE_REBALANCE_PART_LOADED, exchFut.discoveryEvent());
+                    rebalanceEvent(p, EVT_CACHE_REBALANCE_PART_LOADED, exchId.discoveryEvent());
 
                 T2<Long, Collection<Integer>> t = remaining.get(nodeId);
 
@@ -1105,7 +1108,7 @@ public class GridDhtPartitionDemander {
 
                     onDone(false); //Finished but has missed partitions, will force dummy exchange
 
-                    ctx.exchange().forceDummyExchange(true, exchFut);
+                    ctx.exchange().forceReassign(exchId);
 
                     return;
                 }
@@ -1122,7 +1125,7 @@ public class GridDhtPartitionDemander {
          */
         private void sendRebalanceStartedEvent() {
             if (grp.eventRecordable(EVT_CACHE_REBALANCE_STARTED))
-                rebalanceEvent(EVT_CACHE_REBALANCE_STARTED, exchFut.discoveryEvent());
+                rebalanceEvent(EVT_CACHE_REBALANCE_STARTED, exchId.discoveryEvent());
         }
 
         /**
@@ -1130,7 +1133,7 @@ public class GridDhtPartitionDemander {
          */
         private void sendRebalanceFinishedEvent() {
             if (grp.eventRecordable(EVT_CACHE_REBALANCE_STOPPED))
-                rebalanceEvent(EVT_CACHE_REBALANCE_STOPPED, exchFut.discoveryEvent());
+                rebalanceEvent(EVT_CACHE_REBALANCE_STOPPED, exchId.discoveryEvent());
         }
 
         /** {@inheritDoc} */

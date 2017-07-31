@@ -446,7 +446,7 @@ public class EigenDecomposition implements Destroyable {
 
         // Store roots isolated by balanc and compute matrix norm
 
-        double norm = h.foldMap(Functions.PLUS, Functions.ABS, 0.0);
+        double norm = h.foldMap(Functions.PLUS, Functions.ABS, 0.0d);
 
         // Outer loop over eigenvalue index
 

@@ -126,7 +126,7 @@ module.exports.factory = function(_) {
          * Send event to agent.
          *
          * @param {String} event - Event name.
-         * @param {Array.<Object>?} args - Transmitted arguments.
+         * @param {Object?} args - Transmitted arguments.
          * @returns {Promise}
          */
         emitEvent(event, ...args) {
@@ -202,7 +202,7 @@ module.exports.factory = function(_) {
                 params[`p${idx + 1}`] = args[idx];
             });
 
-            return this.emitEvent('node:rest', {uri: 'ignite', demo, params, method: 'GET'})
+            return this.emitEvent('node:rest', {uri: 'ignite', demo, params})
                 .then(this.restResultParse);
         }
 
