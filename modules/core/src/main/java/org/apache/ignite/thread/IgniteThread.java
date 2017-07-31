@@ -149,6 +149,12 @@ public class IgniteThread extends Thread {
         this.compositeRwLockIdx = compositeRwLockIdx;
     }
 
+    public static int currentStripe() {
+        Thread thread = Thread.currentThread();
+
+        return thread.getClass() == IgniteThread.class ? ((IgniteThread)thread).stripe : -1;
+    }
+
     /**
      * Creates new thread name.
      *
