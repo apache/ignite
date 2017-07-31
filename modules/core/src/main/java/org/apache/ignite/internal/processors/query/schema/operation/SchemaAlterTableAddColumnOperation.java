@@ -17,12 +17,10 @@
 
 package org.apache.ignite.internal.processors.query.schema.operation;
 
+import java.util.List;
+import java.util.UUID;
 import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.util.typedef.internal.S;
-
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
 
 /**
  * Schema index drop operation.
@@ -44,7 +42,7 @@ public class SchemaAlterTableAddColumnOperation extends SchemaAbstractAlterTable
     private final String afterColName;
 
     /** Ignore operation if target table doesn't exist. */
-    private final boolean ifTableExists;
+    private final boolean ifTblExists;
 
     /** Ignore operation if column exists. */
     private final boolean ifNotExists;
@@ -58,11 +56,11 @@ public class SchemaAlterTableAddColumnOperation extends SchemaAbstractAlterTable
      * @param cols Columns to add.
      * @param beforeColName Column name before which new columns should be added.
      * @param afterColName Column name after which new columns should be added.
-     * @param ifTableExists Ignore operation if target table doesn't exist.
+     * @param ifTblExists Ignore operation if target table doesn't exist.
      * @param ifNotExists Ignore operation if column exists.
      */
     public SchemaAlterTableAddColumnOperation(UUID opId, String cacheName, String schemaName, String tblName,
-        List<QueryField> cols, String beforeColName, String afterColName, boolean ifTableExists, boolean ifNotExists) {
+        List<QueryField> cols, String beforeColName, String afterColName, boolean ifTblExists, boolean ifNotExists) {
         super(opId, cacheName, schemaName);
 
         this.tblName = tblName;
@@ -71,7 +69,7 @@ public class SchemaAlterTableAddColumnOperation extends SchemaAbstractAlterTable
         this.beforeColName = beforeColName;
         this.afterColName = afterColName;
 
-        this.ifTableExists = ifTableExists;
+        this.ifTblExists = ifTblExists;
         this.ifNotExists = ifNotExists;
     }
 
@@ -79,7 +77,7 @@ public class SchemaAlterTableAddColumnOperation extends SchemaAbstractAlterTable
      * @return Ignore operation if index doesn't exist.
      */
     public boolean ifTableExists() {
-        return ifTableExists;
+        return ifTblExists;
     }
 
     /**

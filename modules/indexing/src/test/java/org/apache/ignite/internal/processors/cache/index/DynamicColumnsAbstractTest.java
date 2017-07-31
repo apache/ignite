@@ -22,6 +22,8 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.Callable;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -51,32 +53,13 @@ import org.h2.value.DataType;
  */
 public abstract class DynamicColumnsAbstractTest extends GridCommonAbstractTest {
     /** SQL to create test table. */
-    private final static String CREATE_SQL = "CREATE TABLE Person (id int primary key, name varchar)";
+    protected final static String CREATE_SQL = "CREATE TABLE Person (id int primary key, name varchar)";
 
     /** SQL to drop test table. */
-    private final static String DROP_SQL = "DROP TABLE Person";
+    protected final static String DROP_SQL = "DROP TABLE Person";
 
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
-
-        run(CREATE_SQL);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
-        run(DROP_SQL);
-
-        super.afterTest();
-    }
-
-    /**
-     * @return Node index to run queries on.
-     */
-    protected abstract int nodeIndex();
 
     /**
      * Check that given columns have been added to all related structures on target node exactly where needed
@@ -214,6 +197,11 @@ public abstract class DynamicColumnsAbstractTest extends GridCommonAbstractTest 
         }
     }
 
+    static void checkNodesState(String tblName, String afterColName, QueryField... flds) {
+        for (Ignite node : Ignition.allGrids())
+            checkNodeState((IgniteEx)node, tblName, afterColName, flds);
+    }
+
     /**
      * @param name New column name.
      * @param typeName Class name for this new column's data type.
@@ -221,22 +209,6 @@ public abstract class DynamicColumnsAbstractTest extends GridCommonAbstractTest 
      */
     protected static QueryField c(String name, String typeName) {
         return new QueryField(name, typeName);
-    }
-
-    /**
-     * Run specified statement expected to throw {@code IgniteSqlException} with expected specified message.
-     * @param sql Statement.
-     * @param msg Expected message.
-     */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
-    protected void assertThrows(final String sql, String msg) {
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                run(sql);
-
-                return null;
-            }
-        }, IgniteSQLException.class, msg);
     }
 
     /**
@@ -291,8 +263,24 @@ public abstract class DynamicColumnsAbstractTest extends GridCommonAbstractTest 
      * Execute SQL command and ignore resulting dataset.
      * @param sql Statement.
      */
-    protected void run(String sql) {
-        grid(nodeIndex()).context().query()
+    protected void run(IgniteEx node, String sql) {
+        node.context().query()
             .querySqlFieldsNoCache(new SqlFieldsQuery(sql).setSchema(QueryUtils.DFLT_SCHEMA), true).getAll();
+    }
+
+    /**
+     * Run specified statement expected to throw {@code IgniteSqlException} with expected specified message.
+     * @param sql Statement.
+     * @param msg Expected message.
+     */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    protected void assertThrows(final IgniteEx node, final String sql, String msg) {
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                run(node, sql);
+
+                return null;
+            }
+        }, IgniteSQLException.class, msg);
     }
 }

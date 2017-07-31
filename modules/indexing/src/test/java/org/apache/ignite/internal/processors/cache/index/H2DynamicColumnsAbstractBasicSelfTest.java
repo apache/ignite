@@ -13,17 +13,17 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
     /**
      * Index of coordinator node.
      */
-    protected final static int SRV_CRD_IDX = 0;
+    final static int SRV_CRD_IDX = 0;
 
     /**
      * Index of non coordinator server node.
      */
-    protected final static int SRV_IDX = 1;
+    final static int SRV_IDX = 1;
 
     /**
      * Index of client.
      */
-    protected final static int CLI_IDX = 2;
+    final static int CLI_IDX = 2;
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -31,6 +31,8 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
 
         for (IgniteConfiguration cfg : configurations())
             Ignition.start(cfg);
+
+        run(CREATE_SQL);
     }
 
     /**
@@ -47,6 +49,8 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
+        run(DROP_SQL);
+
         stopAllGrids();
 
         super.afterTestsStopped();
@@ -179,5 +183,28 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
     public void testMissingAfterColumn() {
         assertThrows("ALTER TABLE Person ADD COLUMN city varchar after x",
             "Column \"X\" not found");
+    }
+
+    /**
+     * @return Node index to run queries on.
+     */
+    protected abstract int nodeIndex();
+
+    /**
+     * Run specified statement expected to throw {@code IgniteSqlException} with expected specified message.
+     * @param sql Statement.
+     * @param msg Expected message.
+     */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    protected void assertThrows(final String sql, String msg) {
+        assertThrows(grid(nodeIndex()), sql, msg);
+    }
+
+    /**
+     * Execute SQL command and ignore resulting dataset.
+     * @param sql Statement.
+     */
+    protected void run(String sql) {
+        run(grid(nodeIndex()), sql);
     }
 }

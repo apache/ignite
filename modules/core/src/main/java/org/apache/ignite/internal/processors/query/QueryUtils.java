@@ -597,24 +597,26 @@ public class QueryUtils {
         String beforeFldName, String afterFldName) throws IgniteCheckedException {
         assert F.isEmpty(beforeFldName) || F.isEmpty(afterFldName);
 
-        List<GridQueryProperty> props = new ArrayList<>(d.properties().size() + cols.size());
+        List<GridQueryProperty> props = new ArrayList<>(d.fields().size() + cols.size());
 
-        props.addAll(d.properties().values());
+        // We have to keep the order intact, so let's rely on "fields" - it's a LinkedHashMap.
+        for (String propName : d.fields().keySet())
+            props.add(d.property(propName));
 
         int pos = props.size();
 
         String name = null;
 
-        if (!F.isEmpty(beforeFldName) && d.properties().containsKey(beforeFldName))
+        if (!F.isEmpty(beforeFldName) && d.fields().containsKey(beforeFldName))
             name = beforeFldName;
 
-        if (!F.isEmpty(afterFldName) && d.properties().containsKey(afterFldName))
+        if (!F.isEmpty(afterFldName) && d.fields().containsKey(afterFldName))
             name = afterFldName;
 
         if (name != null) {
             int i = 0;
 
-            for (String fldName : d.properties().keySet()) {
+            for (String fldName : d.fields().keySet()) {
                 if (F.eq(name, fldName)) {
                     pos = i;
 
