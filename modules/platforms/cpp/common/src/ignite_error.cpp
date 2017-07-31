@@ -108,7 +108,7 @@ namespace ignite
 
                 if (jniCls0.compare("java.lang.NoClassDefFoundError") == 0)
                 {
-                    std::stringstream stream; 
+                    std::stringstream stream;
 
                     stream << "Java class is not found (did you set IGNITE_HOME environment variable?)";
 
@@ -158,8 +158,6 @@ namespace ignite
                     err = IgniteError(IGNITE_ERR_CACHE_WRITER, jniMsg);
                 else if (jniCls0.compare("javax.cache.processor.EntryProcessorException") == 0)
                     err = IgniteError(IGNITE_ERR_ENTRY_PROCESSOR, jniMsg);
-                else if (jniCls0.compare("org.apache.ignite.cache.CacheAtomicUpdateTimeoutException") == 0)
-                    err = IgniteError(IGNITE_ERR_CACHE_ATOMIC_UPDATE_TIMEOUT, jniMsg);
                 else if (jniCls0.compare("org.apache.ignite.cache.CachePartialUpdateException") == 0)
                     err = IgniteError(IGNITE_ERR_CACHE_PARTIAL_UPDATE, jniMsg);
                 else if (jniCls0.compare("org.apache.ignite.transactions.TransactionOptimisticException") == 0)
@@ -181,7 +179,7 @@ namespace ignite
                 else
                 {
                     std::stringstream stream;
-                    
+
                     stream << "Java exception occurred [cls=" << jniCls0;
 
                     if (jniMsg)
@@ -190,7 +188,7 @@ namespace ignite
                     stream << "]";
 
                     err = IgniteError(IGNITE_ERR_UNKNOWN, stream.str().c_str());
-                }                    
+                }
             }
             else
             {
