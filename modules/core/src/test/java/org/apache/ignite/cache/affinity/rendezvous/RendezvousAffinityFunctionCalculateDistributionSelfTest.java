@@ -69,29 +69,22 @@ public class RendezvousAffinityFunctionCalculateDistributionSelfTest extends Abs
      * @throws Exception If failed.
      */
     public void testDistributionCalculationEnabled() throws Exception {
-        System.setProperty(IgniteSystemProperties.IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD, String.valueOf(0));
+        System.setProperty(IgniteSystemProperties.IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD, String.valueOf(10));
 
         File file = new File(home() + "/work/log/ignite.log");
 
         new PrintWriter(file).close();
 
-        ignite = startGrids(4);
-
-        AffinityFunction aff = new RendezvousAffinityFunction(true, 1024);
+        ignite = startGrids(2);
 
         AffinityFunctionContext ctx =
             new GridAffinityFunctionContextImpl(new ArrayList<>(ignite.cluster().nodes()), null, null,
                 new AffinityTopologyVersion(1), 1);
 
-        aff.assignPartitions(ctx);
+        affinityFunction().assignPartitions(ctx);
 
-        assertTrue(FileUtils.readFileToString(file).contains("Partition map has been built (distribution is not even for caches) [cacheName=ignite-sys-cache, Primary NodeId(local)="
-            + ignite.configuration().getNodeId() + ", totalPartitionsCount=100 percentageOfTotalPartsCount=100%, parts=100]"));
-
-        assertTrue(FileUtils.readFileToString(file).contains("Partition map has been built (distribution is not even for caches) [cacheName=ignite-atomics-sys-cache, Primary NodeId(local)="
+        assertTrue(FileUtils.readFileToString(file).contains("Partition map has been built (distribution is not even for caches) [cacheName=ignite-atomics-sys-cache, Primary nodeId="
             + ignite.configuration().getNodeId() + ", totalPartitionsCount=1024 percentageOfTotalPartsCount=100%, parts=1024]"));
-
-
 
         stopAllGrids();
     }

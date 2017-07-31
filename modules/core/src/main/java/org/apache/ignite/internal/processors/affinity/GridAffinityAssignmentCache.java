@@ -298,7 +298,9 @@ public class GridAffinityAssignmentCache {
 
         assert assignment != null;
 
-        printDistribution(assignment, sorted, cacheOrGrpName, ctx.localNodeId().toString(), assignment.size());
+//        if (!cacheOrGrpName.equals("ignite-sys-cache"))
+//            printDistribution(assignment, sorted, cacheOrGrpName, ctx.localNodeId().toString(), assignment.size());
+            printDistributionArray(assignment, sorted, cacheOrGrpName, ctx.localNodeId().toString(), assignment.size());
 
         idealAssignment = assignment;
 
@@ -323,8 +325,6 @@ public class GridAffinityAssignmentCache {
 
         if (nodesParts.size() != 0) {
 
-            int nodeNum = 0;
-
             for (List<Integer> nodesPart : nodesParts) {
 
                 int nr = 0;
@@ -332,9 +332,9 @@ public class GridAffinityAssignmentCache {
                 for (int cnt : nodesPart) {
                     int percentage = (int)Math.round((double)cnt / parts * 100);
 
-                    if ( percentage >= Integer.valueOf(ignitePartDistribution) || ignitePartDistribution == null) {
+                    if (percentage >= Integer.valueOf(ignitePartDistribution) || ignitePartDistribution == null ) {
                         log.info("Partition map has been built (distribution is not even for caches) [cacheName="
-                            + cacheName + ", " + (nr == 0 ? "Primary" : "Backup") + " NodeId(local)=" + localNodeID +
+                            + cacheName + ", " + (nr == 0 ? "Primary" : "Backup") + " nodeId=" + localNodeID +
                             ", totalPartitionsCount=" + parts + " percentageOfTotalPartsCount=" + percentage + "%"
                             + ", parts=" + cnt + "]");
                     }
@@ -344,6 +344,43 @@ public class GridAffinityAssignmentCache {
 
                     nr++;
                 }
+            }
+        }
+    }
+
+    /**
+     * @param partitionsByNodes Affinity result.
+     * @param nodes Topology.
+     * @param cacheName
+     * @param localNodeID
+     * @param parts
+     */
+    private void printDistributionArray(List<List<ClusterNode>> partitionsByNodes,
+        Collection<ClusterNode> nodes, String cacheName, String localNodeID, int parts) {
+
+        int[] nodesParts = freqDistributionArray(partitionsByNodes, nodes);
+
+        String ignitePartDistribution = System.getProperty(IgniteSystemProperties.IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD);
+
+        if (nodesParts.length != 0) {
+
+            for (int i = 0; i < nodesParts.length; i++) {
+
+                int nr = 0;
+
+                int percentage = (int)Math.round((double)nodesParts[i] / parts * 100);
+
+                if (percentage >= Integer.valueOf(ignitePartDistribution) || ignitePartDistribution == null) {
+                    log.info("Partition map has been built (distribution is not even for caches) [cacheName="
+                        + cacheName + ", " + (nr == 0 ? "Primary" : "Backup") + " nodeId=" + localNodeID +
+                        ", totalPartitionsCount=" + parts + " percentageOfTotalPartsCount=" + percentage + "%"
+                        + ", parts=" + nodesParts[i] + "]");
+                }
+                else {
+                    log.info("Partition map has been built (distribution is even)");
+                }
+
+                nr++;
             }
         }
     }
@@ -365,9 +402,75 @@ public class GridAffinityAssignmentCache {
         Collection<ClusterNode> nodes) {
         List<Map<ClusterNode, AtomicInteger>> nodeMaps = new ArrayList<>();
 
-        int [] result = new int[nodes.size()];
+        int backups = partitionsByNodes.get(0).size();
 
-        // один массив интов
+        for (int i = 0; i < backups; ++i) {
+            Map<ClusterNode, AtomicInteger> nodeMap = new HashMap<>();
+
+            for (List<ClusterNode> partitionByNodes : partitionsByNodes) {
+                ClusterNode node = partitionByNodes.get(i);
+
+                if (node.isLocal()) {
+                    if (!nodeMap.containsKey(node))
+                        nodeMap.put(node, new AtomicInteger(1));
+                    else
+                        nodeMap.get(node).incrementAndGet();
+                }
+            }
+
+            nodeMaps.add(nodeMap);
+        }
+
+        List<List<Integer>> byNodes = new ArrayList<>(nodes.size());
+
+        int resultCount = 0;
+
+        for (ClusterNode node : nodes) {
+            if (node.isLocal()) {
+                List<Integer> byBackups = new ArrayList<>(backups);
+
+                for (int j = 0; j < backups; ++j) {
+                    if (nodeMaps.get(j).get(node) == null)
+                        byBackups.add(0);
+                    else
+                        byBackups.add(nodeMaps.get(j).get(node).get());
+
+                    resultCount++;
+                }
+
+                byNodes.add(byBackups);
+            }
+        }
+
+        int[] result = new int[resultCount];
+
+        int i = 0;
+
+        for (List<Integer> byNode : byNodes) {
+            for (Integer partsCount : byNode) {
+                result[i++] = partsCount;
+            }
+        }
+
+        return byNodes;
+    }
+
+    /**
+     * The array with count of partitions on node:
+     *
+     * element 0 - primary partitions counts
+     * element 1 - backup#0 partitions counts
+     * etc
+     *
+     * Rows correspond to the nodes.
+     *
+     * @param partitionsByNodes Affinity result.
+     * @param nodes Topology.
+     * @return Frequency distribution array with counts of partitions on node.
+     */
+    private int[] freqDistributionArray(List<List<ClusterNode>> partitionsByNodes,
+        Collection<ClusterNode> nodes) {
+        List<Map<ClusterNode, AtomicInteger>> nodeMaps = new ArrayList<>();
 
         int backups = partitionsByNodes.get(0).size();
 
@@ -389,6 +492,9 @@ public class GridAffinityAssignmentCache {
         }
 
         List<List<Integer>> byNodes = new ArrayList<>(nodes.size());
+
+        int resultCount = 0;
+
         for (ClusterNode node : nodes) {
             if (node.isLocal()) {
                 List<Integer> byBackups = new ArrayList<>(backups);
@@ -398,14 +504,25 @@ public class GridAffinityAssignmentCache {
                         byBackups.add(0);
                     else
                         byBackups.add(nodeMaps.get(j).get(node).get());
+
+                    resultCount++;
                 }
 
                 byNodes.add(byBackups);
             }
         }
-//        result
 
-        return byNodes;
+        int[] result = new int[resultCount];
+
+        int i = 0;
+
+        for (List<Integer> byNode : byNodes) {
+            for (Integer partsCount : byNode) {
+                result[i++] = partsCount;
+            }
+        }
+
+        return result;
     }
 
     /**
