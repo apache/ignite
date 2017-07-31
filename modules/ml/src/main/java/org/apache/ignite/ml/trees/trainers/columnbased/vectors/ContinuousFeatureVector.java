@@ -18,8 +18,9 @@
 package org.apache.ignite.ml.trees.trainers.columnbased.vectors;
 
 import com.zaxxer.sparsebits.SparseBitSet;
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.DoubleStream;
@@ -42,7 +43,7 @@ public class ContinuousFeatureVector<D extends ContinuousRegionInfo> implements
     private final ContinuousSplitCalculator<D> calc;
 
     /** Samples. */
-    private List<SampleInfo> samples;
+    private SampleInfo[] samples;
 
     /** Information about regions. */
     private final List<D> regions = new LinkedList<>();
@@ -56,16 +57,23 @@ public class ContinuousFeatureVector<D extends ContinuousRegionInfo> implements
      */
     public ContinuousFeatureVector(ContinuousSplitCalculator<D> splitCalc, Stream<IgniteBiTuple<Integer, Double>> data,
         int samplesCnt, double[] labels) {
-        samples = new ArrayList<>(samplesCnt);
+        samples = new SampleInfo[samplesCnt];
 
-        data.forEach(d ->
-            samples.add(new SampleInfo(labels[d.get1()], d.get2(), d.get1()))
-        );
+        int i = 0;
+        Iterator<IgniteBiTuple<Integer, Double>> itr = data.iterator();
+        while (itr.hasNext()) {
+            IgniteBiTuple<Integer, Double> d = itr.next();
+            samples[i] = new SampleInfo(labels[d.get1()], d.get2(), d.get1());
+            i++;
+        }
+//        data.forEach(d ->
+//            samples.add(new SampleInfo(labels[d.get1()], d.get2(), d.get1()))
+//        );
 
         this.calc = splitCalc;
 
-        samples.sort(Comparator.comparingDouble(SampleInfo::getVal));
-        regions.add(calc.calculateRegionInfo(samples.stream().mapToDouble(SampleInfo::getLabel), 0));
+        Arrays.sort(samples, Comparator.comparingDouble(SampleInfo::getVal));
+        regions.add(calc.calculateRegionInfo(Arrays.stream(samples).mapToDouble(SampleInfo::getLabel), 0));
     }
 
     /** {@inheritDoc} */
@@ -81,7 +89,8 @@ public class ContinuousFeatureVector<D extends ContinuousRegionInfo> implements
             int size = (r - l) + 1;
 
             double curImpurity = info.impurity();
-            SplitInfo<D> split = calc.splitRegion(samples.subList(l, r + 1).stream(), i, info);
+
+            SplitInfo<D> split = calc.splitRegion(Arrays.stream(samples, l, r + 1), i, info);
 
             if (split == null) {
                 i++;
@@ -111,7 +120,7 @@ public class ContinuousFeatureVector<D extends ContinuousRegionInfo> implements
         SparseBitSet res = new SparseBitSet();
 
         for (int i = l; i < s.rightData().left(); i++)
-            res.set(samples.get(i).getSampleInd());
+            res.set(samples[i].getSampleInd());
 
         return res;
     }
@@ -126,7 +135,7 @@ public class ContinuousFeatureVector<D extends ContinuousRegionInfo> implements
             int l = interval.left();
             int r = interval.right();
 
-            res[i] = regCalc.apply(samples.subList(l, r + 1).stream().mapToDouble(SampleInfo::getLabel));
+            res[i] = regCalc.apply(Arrays.stream(samples, l, r + 1).mapToDouble(SampleInfo::getLabel));
             i++;
         }
 
@@ -160,8 +169,8 @@ public class ContinuousFeatureVector<D extends ContinuousRegionInfo> implements
 
         // TODO: maybe we should optimize here: because we keep extra information for calculations in <D>, we are obliged
         // to do following calculations even though we already have impurity for each region calculated.
-        D ld = calc.calculateRegionInfo(samples.subList(l, l + newLSize).stream().mapToDouble(SampleInfo::getLabel), l);
-        D rd = calc.calculateRegionInfo(samples.subList(l + newLSize, r + 1).stream().mapToDouble(SampleInfo::getLabel), l + newLSize);
+        D ld = calc.calculateRegionInfo(Arrays.stream(samples, l, l + newLSize).mapToDouble(SampleInfo::getLabel), l);
+        D rd = calc.calculateRegionInfo(Arrays.stream(samples, l + newLSize, r + 1).mapToDouble(SampleInfo::getLabel), l + newLSize);
 
         regions.set(regionIdx, ld);
         regions.add(regionIdx + 1, rd);
@@ -171,25 +180,28 @@ public class ContinuousFeatureVector<D extends ContinuousRegionInfo> implements
 
     /** */
     private void sortByBitSet(int l, int r, SparseBitSet bs) {
-        List<SampleInfo> lList = new LinkedList<>();
-        List<SampleInfo> rList = new LinkedList<>();
+        int lSize = bs.cardinality();
+        int rSize = r - l + 1 - lSize;
 
-        samples.subList(l, r + 1).stream().forEach(fi -> {
-            if (bs.get(fi.getSampleInd()))
-                lList.add(fi);
-            else
-                rList.add(fi);
-        });
+        SampleInfo lList[] = new SampleInfo[lSize];
+        SampleInfo rList[] = new SampleInfo[rSize];
 
-        int i = 0;
-        for (SampleInfo sampleInfo : lList) {
-            samples.set(l + i, sampleInfo);
-            i++;
+        int lc = 0;
+        int rc = 0;
+
+        for (int i = l; i < r + 1; i++) {
+            SampleInfo fi = samples[i];
+
+            if (bs.get(fi.getSampleInd())) {
+                lList[lc] = fi;
+                lc++;
+            } else {
+                rList[rc] = fi;
+                rc++;
+            }
         }
 
-        for (SampleInfo sampleInfo : rList) {
-            samples.set(l + i, sampleInfo);
-            i++;
-        }
+        System.arraycopy(lList, 0, samples, l, lSize);
+        System.arraycopy(rList, 0, samples, l + lSize, rSize);
     }
 }

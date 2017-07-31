@@ -22,6 +22,7 @@ import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 
@@ -126,9 +127,11 @@ public class ColumnDecisionTreeCacheInput<K, V> implements ColumnDecisionTreeInp
 
     /** */
     private V get(K k) {
-        V res = cache().localPeek(k);
+        V res = cache().localPeek(k, CachePeekMode.PRIMARY);
+
         if (res == null)
             res = cache().get(k);
+        
         return res;
     }
 

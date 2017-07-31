@@ -287,7 +287,7 @@ public class ColumnDecisionTreeTrainer<D extends ContinuousRegionInfo> implement
             IndexAndSplitInfo best = splits.stream().max(Comparator.comparingDouble(o -> o.info.infoGain())).orElse(null);
 
             if (best != null && best.info.infoGain() > MIN_INFO_GAIN) {
-                // System.out.println("Globally best: " + best.info + " time: " + total);
+                 System.out.println("Globally best: " + best.info + " time: " + total);
                 // Request bitset for split region.
                 SparseBitSet bs = cache.invoke(getCacheKey(best.featureIdx, input.affinityKey(best.featureIdx)), (entry, arguments) -> entry.getValue().calculateOwnershipBitSet(best.info));
 
@@ -304,8 +304,8 @@ public class ColumnDecisionTreeTrainer<D extends ContinuousRegionInfo> implement
 
                 if (d > curDepth) {
                     curDepth = d;
-//                    System.out.println("Depth: " + curDepth);
-//                    System.out.println("Cache size: " + cache.size(CachePeekMode.PRIMARY));
+                    System.out.println("Depth: " + curDepth);
+                    System.out.println("Cache size: " + cache.size(CachePeekMode.PRIMARY));
                 }
 
                 Map<Integer, Integer> catFeaturesInfo = input.catFeaturesInfo();
@@ -325,7 +325,7 @@ public class ColumnDecisionTreeTrainer<D extends ContinuousRegionInfo> implement
                     },
                     keysGen);
 
-//                System.out.println("Update took " + (System.currentTimeMillis() - before));
+                System.out.println("Update took " + (System.currentTimeMillis() - before));
             }
             else
                 break;
@@ -366,6 +366,8 @@ public class ColumnDecisionTreeTrainer<D extends ContinuousRegionInfo> implement
 
         // Cache is partitioned.
         cfg.setCacheMode(CacheMode.PARTITIONED);
+
+        cfg.setBackups(0);
 
         cfg.setName(COLUMN_DECISION_TREE_TRAINER_CACHE_NAME);
 

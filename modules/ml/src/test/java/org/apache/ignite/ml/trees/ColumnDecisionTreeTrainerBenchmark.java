@@ -41,6 +41,7 @@ import org.apache.ignite.ml.structures.LabeledVectorDouble;
 import org.apache.ignite.ml.trees.models.DecisionTreeModel;
 import org.apache.ignite.ml.trees.trainers.columnbased.ColumnDecisionTreeMatrixInput;
 import org.apache.ignite.ml.trees.trainers.columnbased.ColumnDecisionTreeTrainer;
+import org.apache.ignite.ml.trees.trainers.columnbased.contsplitcalcs.ContinuousSplitCalculators;
 import org.apache.ignite.ml.trees.trainers.columnbased.contsplitcalcs.VarianceSplitCalculator;
 import org.apache.ignite.ml.trees.trainers.columnbased.regcalcs.RegionCalculators;
 import org.apache.ignite.stream.StreamTransformer;
@@ -76,7 +77,7 @@ public class ColumnDecisionTreeTrainerBenchmark extends BaseDecisionTreeTest {
      * This test is for manual run only.
      */
     @Ignore
-//    @Test
+    @Test
     public void destCacheMixed() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
         int ptsPerReg = 150;
@@ -104,8 +105,8 @@ public class ColumnDecisionTreeTrainerBenchmark extends BaseDecisionTreeTest {
         int ptsCnt = 20000;
         int featCnt = 28 * 28;
 
-        Stream<DenseLocalOnHeapVector> trainingMnistStream = ReadMnistData.mnist("/path/to/mnist/train-images-idx3-ubyte", "/path/to/mnist/train-labels-idx1-ubyte", ptsCnt);
-        Stream<DenseLocalOnHeapVector> testMnistStream = ReadMnistData.mnist("/path/to/mnist/t10k-images.idx3-ubyte", "/path/to/mnist/t10k-labels.idx1-ubyte", ptsCnt / 10);
+        Stream<DenseLocalOnHeapVector> trainingMnistStream = ReadMnistData.mnist("/home/enny/Downloads/train-images-idx3-ubyte", "/home/enny/Downloads/train-labels-idx1-ubyte", ptsCnt);
+        Stream<DenseLocalOnHeapVector> testMnistStream = ReadMnistData.mnist("/home/enny/Downloads/t10k-images.idx3-ubyte", "/home/enny/Downloads/t10k-labels.idx1-ubyte", ptsCnt / 10);
 
         SparseDistributedMatrix m = new SparseDistributedMatrix(ptsCnt, featCnt + 1, StorageConstants.COLUMN_STORAGE_MODE, StorageConstants.RANDOM_ACCESS_MODE);
 
@@ -114,7 +115,7 @@ public class ColumnDecisionTreeTrainerBenchmark extends BaseDecisionTreeTest {
         loadVectorsIntoCache(sto.cache().getName(), sto.getUUID(), trainingMnistStream.iterator(), featCnt + 1);
 
         ColumnDecisionTreeTrainer<VarianceSplitCalculator.VarianceData> trainer =
-            new ColumnDecisionTreeTrainer<>(9, new VarianceSplitCalculator(), RegionCalculators.VARIANCE, RegionCalculators.MOST_COMMON);
+            new ColumnDecisionTreeTrainer<>(10, ContinuousSplitCalculators.VARIANCE, RegionCalculators.VARIANCE, RegionCalculators.MOST_COMMON);
 
         System.out.println(">>> Training started");
         long before = System.currentTimeMillis();
@@ -153,7 +154,7 @@ public class ColumnDecisionTreeTrainerBenchmark extends BaseDecisionTreeTest {
         IgniteFunction<DoubleStream, Double> regCalc = s -> s.average().orElse(0.0);
 
         ColumnDecisionTreeTrainer<VarianceSplitCalculator.VarianceData> trainer =
-            new ColumnDecisionTreeTrainer<>(10, new VarianceSplitCalculator(), SIMPLE_VARIANCE_CALCULATOR, regCalc);
+            new ColumnDecisionTreeTrainer<>(10, new VarianceSplitCalculator(), RegionCalculators.VARIANCE, regCalc);
 
         System.out.println(">>> Training started");
         long before = System.currentTimeMillis();
@@ -190,10 +191,10 @@ public class ColumnDecisionTreeTrainerBenchmark extends BaseDecisionTreeTest {
 
         SparseDistributedMatrixStorage sto = (SparseDistributedMatrixStorage) m.getStorage();
         long before = System.currentTimeMillis();
-        System.out.println("Batch loading started...");
+        System.out.println(">>> Batch loading started...");
         loadVectorsIntoCache(sto.cache().getName(), sto.getUUID(), gen.
                 points(ptsPerReg, (i, rn) -> i).map(IgniteBiTuple::get2).iterator(), featCnt + 1);
-        System.out.println("Batch loading took " + (System.currentTimeMillis() - before) + " ms.");
+        System.out.println(">>> Batch loading took " + (System.currentTimeMillis() - before) + " ms.");
 
         for (IgniteBiTuple<Integer, DenseLocalOnHeapVector> bt : lst) {
             byRegion.putIfAbsent(bt.get1(), new LinkedList<>());
@@ -201,12 +202,12 @@ public class ColumnDecisionTreeTrainerBenchmark extends BaseDecisionTreeTest {
         }
 
         ColumnDecisionTreeTrainer<VarianceSplitCalculator.VarianceData> trainer =
-                new ColumnDecisionTreeTrainer<>(2, new VarianceSplitCalculator(), SIMPLE_VARIANCE_CALCULATOR, regCalc);
+                new ColumnDecisionTreeTrainer<>(2, new VarianceSplitCalculator(), RegionCalculators.VARIANCE, regCalc);
 
         before = System.currentTimeMillis();
         DecisionTreeModel mdl = trainer.train(new ColumnDecisionTreeMatrixInput(m, catsInfo));
 
-        System.out.println("Took time(ms) :" + (System.currentTimeMillis() - before));
+        System.out.println("Took time(ms): " + (System.currentTimeMillis() - before));
 
         byRegion.keySet().stream().forEach(k -> {
             LabeledVectorDouble sp = byRegion.get(k).get(0);

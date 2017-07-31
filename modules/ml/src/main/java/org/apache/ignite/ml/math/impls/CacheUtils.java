@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BinaryOperator;
 import java.util.function.Supplier;
 import javax.cache.Cache;
@@ -437,20 +438,25 @@ public class CacheUtils {
             Ignite ignite = Ignition.localIgnite();
             IgniteCache<K, V> cache = ignite.getOrCreateCache(cacheName);
 
-            // Use affinity in filter for scan query. Otherwise we accept consumer in each node which is wrong.
             Affinity<K> affinity = ignite.affinity(cacheName);
             ClusterNode locNode = ignite.cluster().localNode();
 
             Collection<K> ks = affinity.mapKeysToNodes(keysGen.get()).get(locNode);
+
             if (ks == null)
                 return;
-            Map<K, V> m = new HashMap<>();
-            for (K k : ks) {
+
+            Map<K, V> m = new ConcurrentHashMap<>();
+
+            ks.parallelStream().forEach(k -> {
                 V v = cache.localPeek(k);
                 fun.accept(new CacheEntryImpl<>(k, v));
                 m.put(k, v);
-            }
+            });
+
+            long before = System.currentTimeMillis();
             cache.putAll(m);
+            System.out.println("PutAll took: " + (System.currentTimeMillis() - before));
         });
     }
 
@@ -595,13 +601,14 @@ public class CacheUtils {
             A a = zeroValSupp.get();
 
             Collection<K> ks = affinity.mapKeysToNodes(keysGen.get()).get(localNode);
+
             if (ks == null)
                 return a;
+
             for (K k : ks) {
                 V v = cache.localPeek(k);
                 a = folder.apply(new CacheEntryImpl<>(k, v), a);
             }
-
             return a;
         });
         return totalRes.stream().reduce(defRes, accumulator);

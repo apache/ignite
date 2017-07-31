@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.math.functions;
 
+import java.util.Comparator;
 import java.util.List;
 import org.apache.ignite.lang.IgniteBiTuple;
 
@@ -74,6 +75,14 @@ public final class Functions {
 
     /** Function that returns {@code max(abs(a), abs(b))}. */
     public static final IgniteBiFunction<Double, Double, Double> MAX_ABS = (a, b) -> Math.max(Math.abs(a), Math.abs(b));
+
+    public static final <T> IgniteTriFunction<T, T, Comparator<T>, T> MAX_GENERIC() {
+        return (a, b, f) -> f.compare(a, b) == 1 ? a : b;
+    }
+
+    public static final <T> IgniteTriFunction<T, T, Comparator<T>, T> MIN_GENERIC() {
+        return (a, b, f) -> f.compare(a, b) == -1 ? a : b;
+    }
 
     /** Function that returns {@code min(abs(a), abs(b))}. */
     public static final IgniteBiFunction<Double, Double, Double> MIN_ABS = (a, b) -> Math.min(Math.abs(a), Math.abs(b));

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.trees.trainers.columnbased;
 
+import java.util.Arrays;
 import java.util.Map;
 import java.util.stream.IntStream;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -42,7 +43,9 @@ public class ColumnDecisionTreeMatrixInput extends ColumnDecisionTreeCacheInput<
             map -> IntStream.range(0, m.rowSize()).mapToObj(k -> new IgniteBiTuple<>(k, map.getOrDefault(k, 0.0))),
             mp -> {
                 double[] res = new double[m.rowSize()];
+
                 IntStream.range(0, m.rowSize()).forEach(k -> res[k] = mp.getOrDefault(k, 0.0));
+                Arrays.stream(res).forEach(a -> System.out.println("lb: " + a));
                 return res;
             },
             i -> new IgniteBiTuple<>(i, ((SparseDistributedMatrixStorage)m.getStorage()).getUUID()),

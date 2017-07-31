@@ -112,8 +112,6 @@ public class ColumnDecisionTreeTrainerTest extends BaseDecisionTreeTest {
 
         Collections.shuffle(lst, rnd);
 
-        System.out.println("Total pts: " + lst.size());
-
         SparseDistributedMatrix m = new SparseDistributedMatrix(totalPts, featCnt + 1, StorageConstants.COLUMN_STORAGE_MODE, StorageConstants.RANDOM_ACCESS_MODE);
 
         Map<Integer, List<LabeledVectorDouble>> byRegion = new HashMap<>();
@@ -127,17 +125,12 @@ public class ColumnDecisionTreeTrainerTest extends BaseDecisionTreeTest {
         }
 
         ColumnDecisionTreeTrainer<VarianceSplitCalculator.VarianceData> trainer =
-            new ColumnDecisionTreeTrainer<>(3, ContinuousSplitCalculators.VARIANCE, SIMPLE_VARIANCE_CALCULATOR, regCalc);
+            new ColumnDecisionTreeTrainer<>(3, ContinuousSplitCalculators.VARIANCE, RegionCalculators.VARIANCE, regCalc);
 
-        long before = System.currentTimeMillis();
         DecisionTreeModel mdl = trainer.train(new ColumnDecisionTreeMatrixInput(m, catsInfo));
-
-        System.out.println("Took time(ms) :" + (System.currentTimeMillis() - before));
 
         byRegion.keySet().stream().forEach(k -> {
             LabeledVectorDouble sp = byRegion.get(k).get(0);
-            Tracer.showAscii(sp.vector());
-            System.out.println("Prediction: " + mdl.predict(sp.vector()) + "label: " + sp.doubleLabel());
             assert mdl.predict(sp.vector()) == sp.doubleLabel();
         });
 
