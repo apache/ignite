@@ -127,6 +127,7 @@ import gridColumnSelector from './components/grid-column-selector';
 import gridItemSelected from './components/grid-item-selected';
 import bsSelectMenu from './components/bs-select-menu';
 import protectFromBsSelectRender from './components/protect-from-bs-select-render';
+import uiGridHovering from './components/ui-grid-hovering';
 
 // Inject external modules.
 import IgniteModules from 'IgniteModules/index';
@@ -195,6 +196,7 @@ angular.module('ignite-console', [
     gridColumnSelector.name,
     gridItemSelected.name,
     bsSelectMenu.name,
+    uiGridHovering.name,
     protectFromBsSelectRender.name,
     AngularStrapTooltip.name,
     AngularStrapSelect.name,
