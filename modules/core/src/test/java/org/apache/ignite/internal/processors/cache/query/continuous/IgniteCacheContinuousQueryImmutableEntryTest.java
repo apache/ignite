@@ -134,6 +134,7 @@ public class IgniteCacheContinuousQueryImmutableEntryTest extends GridCommonAbst
             new KeyCacheObjectImpl(1, new byte[] {0, 0, 0, 1}, 1),
             new CacheObjectImpl(2, new byte[] {0, 0, 0, 2}),
             new CacheObjectImpl(2, new byte[] {0, 0, 0, 3}),
+            null,
             true,
             1,
             1L,

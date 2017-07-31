@@ -634,6 +634,7 @@ public class GridMapQueryExecutor {
                                 qry.query(),
                                 null,
                                 null,
+                                null,
                                 params,
                                 node.id(),
                                 null));

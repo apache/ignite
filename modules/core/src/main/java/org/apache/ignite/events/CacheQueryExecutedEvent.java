@@ -23,7 +23,9 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.lang.IgniteClosure;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -85,6 +87,10 @@ public class CacheQueryExecutedEvent<K, V> extends EventAdapter {
     @GridToStringInclude
     private final CacheEntryEventSerializableFilter<K, V> contQryFilter;
 
+    /** Continuous query filter. */
+    @GridToStringInclude
+    private final IgniteBiClosure contQryTrans;
+
     /** Query arguments. */
     @GridToStringInclude
     private final Object[] args;
@@ -117,6 +123,7 @@ public class CacheQueryExecutedEvent<K, V> extends EventAdapter {
         @Nullable String clause,
         @Nullable IgniteBiPredicate<K, V> scanQryFilter,
         @Nullable CacheEntryEventSerializableFilter<K, V> contQryFilter,
+        @Nullable IgniteBiClosure contQryTrans,
         @Nullable Object[] args,
         @Nullable UUID subjId,
         @Nullable String taskName) {
@@ -130,6 +137,7 @@ public class CacheQueryExecutedEvent<K, V> extends EventAdapter {
         this.clause = clause;
         this.scanQryFilter = scanQryFilter;
         this.contQryFilter = contQryFilter;
+        this.contQryTrans = contQryTrans;
         this.args = args;
         this.subjId = subjId;
         this.taskName = taskName;
@@ -138,7 +146,7 @@ public class CacheQueryExecutedEvent<K, V> extends EventAdapter {
     /**
      * Gets query type.
      *
-     * @return Query type. Can be {@code "SQL"}, {@code "SQL_FIELDS"}, {@code "FULL_TEXT"}, {@code "SCAN"}, 
+     * @return Query type. Can be {@code "SQL"}, {@code "SQL_FIELDS"}, {@code "FULL_TEXT"}, {@code "SCAN"},
      * {@code "CONTINUOUS"} or {@code "SPI"}.
      */
     public String queryType() {
@@ -196,6 +204,17 @@ public class CacheQueryExecutedEvent<K, V> extends EventAdapter {
      */
     @Nullable public CacheEntryEventSerializableFilter<K, V> continuousQueryFilter() {
         return contQryFilter;
+    }
+
+    /**
+     * Gets continuous query transformer.
+     * <p>
+     * Applicable for {@code continuous} queries.
+     *
+     * @return Continuous query transformer.
+     */
+    @Nullable public IgniteBiClosure continuousQueryTransformer() {
+        return contQryTrans;
     }
 
     /**

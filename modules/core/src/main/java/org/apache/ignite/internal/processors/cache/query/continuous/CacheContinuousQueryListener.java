@@ -22,6 +22,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicAbstractUpdateFuture;
+import org.apache.ignite.lang.IgniteBiClosure;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -114,4 +115,6 @@ public interface CacheContinuousQueryListener<K, V> {
      * @return Whether to notify on existing entries.
      */
     public boolean notifyExisting();
+
+    public IgniteBiClosure transformer();
 }

@@ -17,35 +17,34 @@
 
 package org.apache.ignite.internal.processors.cache.query.continuous;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.Cache;
 import javax.cache.configuration.FactoryBuilder;
-
-import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
-import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cache.query.ContinuousQuery;
-import org.apache.ignite.cache.query.QueryCursor;
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.apache.ignite.transactions.Transaction;
-import org.jetbrains.annotations.NotNull;
-
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryListenerException;
 import javax.cache.event.CacheEntryUpdatedListener;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
-import java.io.Serializable;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.query.ContinuousQuery;
+import org.apache.ignite.cache.query.Query;
+import org.apache.ignite.cache.query.QueryCursor;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.typedef.CI2;
+import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.transactions.Transaction;
+import org.jetbrains.annotations.NotNull;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -58,8 +57,10 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Continuous queries execute in primary node tests.
  */
-public class CacheContinuousQueryExecuteInPrimaryTest extends GridCommonAbstractTest
-    implements Serializable {
+public class CacheContinuousQueryExecuteInPrimaryTest extends AbstractContinuousQueryTest {
+    @Override public boolean isContinuousWithTransformer() {
+        return false;
+    }
 
     /** Latch timeout. */
     protected static final long LATCH_TIMEOUT = 5000;
@@ -167,17 +168,15 @@ public class CacheContinuousQueryExecuteInPrimaryTest extends GridCommonAbstract
             final AtomicBoolean noOneListen = new AtomicBoolean(true);
 
             for (int i = 0; i < ITERATION_CNT; i++) {
-                ContinuousQuery<Integer, String> qry = new ContinuousQuery<>();
+                Query qry = createContinuousQuery();
 
-                qry.setLocalListener(new CacheEntryUpdatedListener<Integer, String>() {
-                    @Override public void onUpdated(
-                        Iterable<CacheEntryEvent<? extends Integer, ? extends String>> iterable)
-                        throws CacheEntryListenerException {
+                setLocalListener(qry, new CI2<Ignite, T2<Object, Object>>() {
+                    @Override public void apply(Ignite ignite, T2<Object, Object> objects) {
                         noOneListen.set(false);
                     }
                 });
 
-                qry.setRemoteFilterFactory(FactoryBuilder.factoryOf(
+                setRemoteFilterFactory(qry, FactoryBuilder.factoryOf(
                     new CacheEntryEventSerializableFilter<Integer, String>() {
                         @Override public boolean evaluate(
                             CacheEntryEvent<? extends Integer, ? extends String> cacheEntryEvent)
@@ -197,7 +196,7 @@ public class CacheContinuousQueryExecuteInPrimaryTest extends GridCommonAbstract
         }
     }
 
-    private void executeQuery(IgniteCache<Integer, String> cache, ContinuousQuery<Integer, String> qry,
+    private void executeQuery(IgniteCache<Integer, String> cache, Query qry,
         boolean isTransactional) {
         try (QueryCursor<Cache.Entry<Integer, String>> qryCursor = cache.query(qry)) {
             Transaction tx = null;
@@ -259,22 +258,19 @@ public class CacheContinuousQueryExecuteInPrimaryTest extends GridCommonAbstract
     public void doTestWithEventsEntries(CacheConfiguration<Integer, String> ccfg) throws Exception {
         try (IgniteCache<Integer, String> cache = grid(0).createCache(ccfg)) {
 
-            ContinuousQuery<Integer, String> qry = new ContinuousQuery<>();
+            Query qry = createContinuousQuery();
 
             final CountDownLatch latch = new CountDownLatch(16);
             final AtomicInteger cnt = new AtomicInteger(0);
 
-            qry.setLocalListener(new CacheEntryUpdatedListener<Integer, String>() {
-                @Override public void onUpdated(Iterable<CacheEntryEvent<? extends Integer, ? extends String>> iterable)
-                    throws CacheEntryListenerException {
-                    for (CacheEntryEvent<? extends Integer, ? extends String> e : iterable) {
-                        cnt.incrementAndGet();
-                        latch.countDown();
-                    }
+            setLocalListener(qry, new CI2<Ignite, T2<Object, Object>>() {
+                @Override public void apply(Ignite ignite, T2<Object, Object> objects) {
+                    cnt.incrementAndGet();
+                    latch.countDown();
                 }
             });
 
-            qry.setRemoteFilterFactory(FactoryBuilder.factoryOf(
+            setRemoteFilterFactory(qry, FactoryBuilder.factoryOf(
                 new CacheEntryEventSerializableFilter<Integer, String>() {
                     @Override public boolean evaluate(CacheEntryEvent<? extends Integer, ? extends String> e)
                         throws CacheEntryListenerException {

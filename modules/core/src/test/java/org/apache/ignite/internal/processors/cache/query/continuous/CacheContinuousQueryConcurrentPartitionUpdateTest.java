@@ -23,25 +23,23 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import javax.cache.event.CacheEntryEvent;
-import javax.cache.event.CacheEntryUpdatedListener;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.affinity.Affinity;
-import org.apache.ignite.cache.query.ContinuousQuery;
+import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
+import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -50,18 +48,22 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  *
  */
-public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommonAbstractTest {
+public class CacheContinuousQueryConcurrentPartitionUpdateTest extends AbstractContinuousQueryTest {
     /** */
     private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** */
     private boolean client;
 
+    @Override public boolean isContinuousWithTransformer() {
+        return false;
+    }
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        ((TcpDiscoverySpi) cfg.getDiscoverySpi()).setIpFinder(ipFinder);
+        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
         cfg.setClientMode(client);
 
@@ -114,6 +116,8 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
         client = true;
 
         Ignite client = startGrid(1);
+
+        awaitPartitionMapExchange();
 
         List<AtomicInteger> cntrs = new ArrayList<>();
         List<String> caches = new ArrayList<>();
@@ -194,7 +198,7 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
 
                         return evtCnt.get() >= THREADS * UPDATES;
                     }
-                }, 5000);
+                }, 20_000);
 
                 assertEquals(THREADS * UPDATES, evtCnt.get());
 
@@ -210,23 +214,22 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
     private T2<AtomicInteger, QueryCursor> startListener(IgniteCache<Object, Object> cache) {
         final AtomicInteger evtCnt = new AtomicInteger();
 
-        ContinuousQuery<Object, Object> qry = new ContinuousQuery<>();
+        Query qry = createContinuousQuery();
 
-        qry.setLocalListener(new CacheEntryUpdatedListener<Object, Object>() {
-            @Override public void onUpdated(Iterable<CacheEntryEvent<?, ?>> evts) {
-                for (CacheEntryEvent evt : evts) {
-                    assertNotNull(evt.getKey());
-                    assertNotNull(evt.getValue());
+        setLocalListener(qry, new CI2<Ignite, T2<Object, Object>>() {
+            @Override public void apply(Ignite ignite, T2<Object, Object> e) {
+                assertNotNull(e.getKey());
+                assertNotNull(e.getValue());
 
-                    if ((Integer)evt.getValue() >= 0)
-                        evtCnt.incrementAndGet();
-                }
+                if ((Integer)e.getValue() >= 0)
+                    evtCnt.incrementAndGet();
             }
         });
 
         QueryCursor cur = cache.query(qry);
 
         return new T2<>(evtCnt, cur);
+
     }
 
     /**
@@ -325,7 +328,7 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
 
             final AtomicBoolean stop = new AtomicBoolean();
 
-            List<T2<AtomicInteger, QueryCursor> > qrys = new ArrayList<>();
+            List<T2<AtomicInteger, QueryCursor>> qrys = new ArrayList<>();
 
             try {
                 IgniteInternalFuture fut = GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {
@@ -369,7 +372,7 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
                 }
             }, THREADS, "update");
 
-            for (T2<AtomicInteger, QueryCursor>  qry : qrys) {
+            for (T2<AtomicInteger, QueryCursor> qry : qrys) {
                 final AtomicInteger evtCnt = qry.get1();
 
                 GridTestUtils.waitForCondition(new GridAbsPredicate() {

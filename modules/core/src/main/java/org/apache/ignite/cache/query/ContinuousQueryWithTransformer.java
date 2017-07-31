@@ -21,17 +21,18 @@ import javax.cache.Cache;
 import javax.cache.configuration.Factory;
 import javax.cache.event.CacheEntryEventFilter;
 import javax.cache.event.CacheEntryUpdatedListener;
-import javax.cache.event.EventType;
+import javax.cache.event.CacheEntryListenerException;
+import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
+import javax.cache.event.EventType;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lang.IgniteAsyncCallback;
 
 /**
- * API for configuring continuous cache queries.
+ * API for configuring continuous cache queries with transformer.
  * <p>
  * Continuous queries allow to register a remote filter and a local listener
- * for cache updates. If an update event passes the filter, it will be sent to
+ * for cache updates. If an update event passes the filter, it will be transformed with transformer and sent to
  * the node that executed the query and local listener will be notified.
  * <p>
  * Additionally, you can execute initial query to get currently existing data.
@@ -98,16 +99,17 @@ import org.apache.ignite.lang.IgniteAsyncCallback;
  * <p>
  * {@link IgniteAsyncCallback} annotation is supported for {@link CacheEntryEventFilter}
  * (see {@link #setRemoteFilterFactory(Factory)}) and {@link CacheEntryUpdatedListener}
- * (see {@link #setLocalListener(CacheEntryUpdatedListener)}).
+ * (see {@link #setRemoteTransformerFactory(Factory)}) and {@link CacheEntryUpdatedListener}
+ * (see {@link #setLocalTransformedEventListener(TransformedEventListener)} and {@link TransformedEventListener}).
  * If filter and/or listener are annotated with {@link IgniteAsyncCallback} then annotated callback
  * is executed in async callback pool (see {@link IgniteConfiguration#getAsyncCallbackPoolSize()})
  * and notification order is kept the same as update order for given cache key.
  *
- * @see ContinuousQueryWithTransformer
+ * @see ContinuousQuery
  * @see IgniteAsyncCallback
  * @see IgniteConfiguration#getAsyncCallbackPoolSize()
  */
-public final class ContinuousQuery<K, V> extends Query<Cache.Entry<K, V>> {
+public final class ContinuousQueryWithTransformer<K, V, T> extends Query<Cache.Entry<K, V>> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -115,28 +117,28 @@ public final class ContinuousQuery<K, V> extends Query<Cache.Entry<K, V>> {
      * Default page size. Size of {@code 1} means that all entries
      * will be sent to master node immediately (buffering is disabled).
      */
-    public static final int DFLT_PAGE_SIZE = 1;
+    private static final int DFLT_PAGE_SIZE = 1;
 
     /** Maximum default time interval after which buffer will be flushed (if buffering is enabled). */
-    public static final long DFLT_TIME_INTERVAL = 0;
+    private static final long DFLT_TIME_INTERVAL = 0;
 
     /**
      * Default value for automatic unsubscription flag. Remote filters
      * will be unregistered by default if master node leaves topology.
      */
-    public static final boolean DFLT_AUTO_UNSUBSCRIBE = true;
+    private static final boolean DFLT_AUTO_UNSUBSCRIBE = true;
 
     /** Initial query. */
     private Query<Cache.Entry<K, V>> initQry;
 
-    /** Local listener. */
-    private CacheEntryUpdatedListener<K, V> locLsnr;
-
-    /** Remote filter. */
-    private CacheEntryEventSerializableFilter<K, V> rmtFilter;
-
     /** Remote filter factory. */
     private Factory<? extends CacheEntryEventFilter<K, V>> rmtFilterFactory;
+
+    /** Remote transformer factory. */
+    private Factory<? extends IgniteBiClosure<K, V, T>> rmtTransFactory;
+
+    /** Local listener of transformed event */
+    private TransformedEventListener<T> locTransEvtLsnr;
 
     /** Time interval. */
     private long timeInterval = DFLT_TIME_INTERVAL;
@@ -150,7 +152,7 @@ public final class ContinuousQuery<K, V> extends Query<Cache.Entry<K, V>> {
     /**
      * Creates new continuous query.
      */
-    public ContinuousQuery() {
+    public ContinuousQueryWithTransformer() {
         setPageSize(DFLT_PAGE_SIZE);
     }
 
@@ -164,7 +166,7 @@ public final class ContinuousQuery<K, V> extends Query<Cache.Entry<K, V>> {
      * @param initQry Initial query.
      * @return {@code this} for chaining.
      */
-    public ContinuousQuery<K, V> setInitialQuery(Query<Cache.Entry<K, V>> initQry) {
+    public ContinuousQueryWithTransformer<K, V, T> setInitialQuery(Query<Cache.Entry<K, V>> initQry) {
         this.initQry = initQry;
 
         return this;
@@ -177,75 +179,6 @@ public final class ContinuousQuery<K, V> extends Query<Cache.Entry<K, V>> {
      */
     public Query<Cache.Entry<K, V>> getInitialQuery() {
         return initQry;
-    }
-
-    /**
-     * Sets local callback. This callback is called only in local node when new updates are received.
-     * <p>
-     * The callback predicate accepts ID of the node from where updates are received and collection
-     * of received entries. Note that for removed entries value will be {@code null}.
-     * <p>
-     * If the predicate returns {@code false}, query execution will be cancelled.
-     * <p>
-     * <b>WARNING:</b> all operations that involve any kind of JVM-local or distributed locking (e.g.,
-     * synchronization or transactional cache operations), should be executed asynchronously without
-     * blocking the thread that called the callback. Otherwise, you can get deadlocks.
-     * <p>
-     * If local listener are annotated with {@link IgniteAsyncCallback} then it is executed in async callback pool
-     * (see {@link IgniteConfiguration#getAsyncCallbackPoolSize()}) that allow to perform a cache operations.
-     *
-     * @param locLsnr Local callback.
-     * @return {@code this} for chaining.
-     * @see IgniteAsyncCallback
-     * @see IgniteConfiguration#getAsyncCallbackPoolSize()
-     * @see ContinuousQueryWithTransformer#setLocalTransformedEventListener(ContinuousQueryWithTransformer.TransformedEventListener)
-     */
-    public ContinuousQuery<K, V> setLocalListener(CacheEntryUpdatedListener<K, V> locLsnr) {
-        this.locLsnr = locLsnr;
-
-        return this;
-    }
-
-    /**
-     * Gets local listener.
-     *
-     * @return Local listener.
-     */
-    public CacheEntryUpdatedListener<K, V> getLocalListener() {
-        return locLsnr;
-    }
-
-    /**
-     * Sets optional key-value filter. This filter is called before entry is sent to the master node.
-     * <p>
-     * <b>WARNING:</b> all operations that involve any kind of JVM-local or distributed locking
-     * (e.g., synchronization or transactional cache operations), should be executed asynchronously
-     * without blocking the thread that called the filter. Otherwise, you can get deadlocks.
-     * <p>
-     * If remote filter are annotated with {@link IgniteAsyncCallback} then it is executed in async callback
-     * pool (see {@link IgniteConfiguration#getAsyncCallbackPoolSize()}) that allow to perform a cache operations.
-     *
-     * @param rmtFilter Key-value filter.
-     * @return {@code this} for chaining.
-     *
-     * @deprecated Use {@link #setRemoteFilterFactory(Factory)} instead.
-     * @see IgniteAsyncCallback
-     * @see IgniteConfiguration#getAsyncCallbackPoolSize()
-     */
-    @Deprecated
-    public ContinuousQuery<K, V> setRemoteFilter(CacheEntryEventSerializableFilter<K, V> rmtFilter) {
-        this.rmtFilter = rmtFilter;
-
-        return this;
-    }
-
-    /**
-     * Gets remote filter.
-     *
-     * @return Remote filter.
-     */
-    public CacheEntryEventSerializableFilter<K, V> getRemoteFilter() {
-        return rmtFilter;
     }
 
     /**
@@ -264,7 +197,7 @@ public final class ContinuousQuery<K, V> extends Query<Cache.Entry<K, V>> {
      * @see IgniteAsyncCallback
      * @see IgniteConfiguration#getAsyncCallbackPoolSize()
      */
-    public ContinuousQuery<K, V> setRemoteFilterFactory(
+    public ContinuousQueryWithTransformer<K, V, T> setRemoteFilterFactory(
         Factory<? extends CacheEntryEventFilter<K, V>> rmtFilterFactory) {
         this.rmtFilterFactory = rmtFilterFactory;
 
@@ -293,7 +226,7 @@ public final class ContinuousQuery<K, V> extends Query<Cache.Entry<K, V>> {
      * @param timeInterval Time interval.
      * @return {@code this} for chaining.
      */
-    public ContinuousQuery<K, V> setTimeInterval(long timeInterval) {
+    public ContinuousQueryWithTransformer<K, V, T> setTimeInterval(long timeInterval) {
         if (timeInterval < 0)
             throw new IllegalArgumentException("Time interval can't be negative.");
 
@@ -324,7 +257,7 @@ public final class ContinuousQuery<K, V> extends Query<Cache.Entry<K, V>> {
      * @param autoUnsubscribe Automatic unsubscription flag.
      * @return {@code this} for chaining.
      */
-    public ContinuousQuery<K, V> setAutoUnsubscribe(boolean autoUnsubscribe) {
+    public ContinuousQueryWithTransformer<K, V, T> setAutoUnsubscribe(boolean autoUnsubscribe) {
         this.autoUnsubscribe = autoUnsubscribe;
 
         return this;
@@ -362,13 +295,67 @@ public final class ContinuousQuery<K, V> extends Query<Cache.Entry<K, V>> {
         return includeExpired;
     }
 
-    /** {@inheritDoc} */
-    @Override public ContinuousQuery<K, V> setPageSize(int pageSize) {
-        return (ContinuousQuery<K, V>)super.setPageSize(pageSize);
+    public ContinuousQueryWithTransformer<K, V, T> setRemoteTransformerFactory(
+        Factory<? extends IgniteBiClosure<K, V, T>> factory) {
+        this.rmtTransFactory = factory;
+        return this;
     }
 
-    /** {@inheritDoc} */
-    @Override public ContinuousQuery<K, V> setLocal(boolean loc) {
-        return (ContinuousQuery<K, V>)super.setLocal(loc);
+    /**
+     * Gets remote transformer factory
+     *
+     * @return Remote Transformer Factory
+     */
+    public Factory<? extends IgniteBiClosure<K, V, T>> getRemoteTransformerFactory() {
+        return rmtTransFactory;
+    }
+
+    /**
+     * Sets local callback. This callback is called only in local node when new updates are received.
+     * <p>
+     * The callback predicate accepts results of transformed by {@link #getRemoteFilterFactory()} events
+     * <p>
+     * <b>WARNING:</b> all operations that involve any kind of JVM-local or distributed locking (e.g.,
+     * synchronization or transactional cache operations), should be executed asynchronously without
+     * blocking the thread that called the callback. Otherwise, you can get deadlocks.
+     * <p>
+     * If local listener are annotated with {@link IgniteAsyncCallback} then it is executed in async callback pool
+     * (see {@link IgniteConfiguration#getAsyncCallbackPoolSize()}) that allow to perform a cache operations.
+     *
+     * @param locTransEvtLsnr Local callback.
+     * @return {@code this} for chaining.
+     *
+     * @see IgniteAsyncCallback
+     * @see IgniteConfiguration#getAsyncCallbackPoolSize()
+     * @see ContinuousQuery#setLocalListener(CacheEntryUpdatedListener)
+     */
+    public ContinuousQueryWithTransformer<K, V, T> setLocalTransformedEventListener(
+        TransformedEventListener<T> locTransEvtLsnr) {
+        this.locTransEvtLsnr = locTransEvtLsnr;
+        return this;
+    }
+
+    /**
+     * Gets local transformed event listener
+     *
+     * @return local transformed event listener
+     */
+    public TransformedEventListener<T> getLocalTransformedEventListener() {
+        return locTransEvtLsnr;
+    }
+
+    /**
+     * Interface for listener to implement
+     *
+     * @param <T> type of data produced by transformer {@link #getRemoteTransformerFactory()}
+     */
+    public interface TransformedEventListener<T> {
+        /**
+         * Called after one or more entries have been updated.
+         *
+         * @param events The entries just updated transformed with #rmtTrans or #rmtTransFactory
+         * @throws CacheEntryListenerException if there is problem executing the listener
+         */
+        void onUpdated(Iterable<? extends T> events) throws CacheEntryListenerException;
     }
 }

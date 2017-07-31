@@ -30,6 +30,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import javax.cache.configuration.Factory;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryEventFilter;
 import javax.cache.event.CacheEntryUpdatedListener;
@@ -39,6 +40,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
+import org.apache.ignite.cache.query.ContinuousQueryWithTransformer.TransformedEventListener;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.CacheQueryExecutedEvent;
 import org.apache.ignite.events.CacheQueryReadEvent;
@@ -48,10 +50,12 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheAffinityManager;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDeploymentManager;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicAbstractUpdateFuture;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
@@ -68,7 +72,9 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteAsyncCallback;
+import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -100,11 +106,23 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
     /** Local listener. */
     private transient CacheEntryUpdatedListener<K, V> locLsnr;
 
+    /** Local listener for transformed events. */
+    private transient TransformedEventListener locTransLsnr;
+
     /** Remote filter. */
     private CacheEntryEventSerializableFilter<K, V> rmtFilter;
 
     /** Deployable object for filter. */
     private CacheContinuousQueryDeployableObject rmtFilterDep;
+
+    /** Remote transformer. */
+    private Factory<? extends IgniteBiClosure> rmtTransFactory;
+
+    /** Deployable object for transformer. */
+    private CacheContinuousQueryDeployableObject rmtTransFactoryDep;
+
+    /** */
+    private transient IgniteBiClosure rmtTrans;
 
     /** Internal flag. */
     private boolean internal;
@@ -196,19 +214,24 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
     public CacheContinuousQueryHandler(
         String cacheName,
         Object topic,
-        CacheEntryUpdatedListener<K, V> locLsnr,
-        CacheEntryEventSerializableFilter<K, V> rmtFilter,
+        @Nullable CacheEntryUpdatedListener<K, V> locLsnr,
+        @Nullable TransformedEventListener locTransLsnr,
+        @Nullable CacheEntryEventSerializableFilter<K, V> rmtFilter,
+        @Nullable Factory<? extends IgniteBiClosure> rmtTransFactory,
         boolean oldValRequired,
         boolean sync,
         boolean ignoreExpired,
         boolean ignoreClsNotFound) {
         assert topic != null;
-        assert locLsnr != null;
+        assert locLsnr != null || locTransLsnr != null;
+        assert locTransLsnr == null || rmtTransFactory != null;
 
         this.cacheName = cacheName;
         this.topic = topic;
         this.locLsnr = locLsnr;
+        this.locTransLsnr = locTransLsnr;
         this.rmtFilter = rmtFilter;
+        this.rmtTransFactory = rmtTransFactory;
         this.oldValRequired = oldValRequired;
         this.sync = sync;
         this.ignoreExpired = ignoreExpired;
@@ -312,6 +335,12 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
             }
         }
 
+        if (locTransLsnr != null) {
+            ctx.resource().injectGeneric(locTransLsnr);
+
+            asyncCb = U.hasAnnotation(locTransLsnr, IgniteAsyncCallback.class);
+        }
+
         final CacheEntryEventFilter filter = getEventFilter();
 
         if (filter != null) {
@@ -328,6 +357,12 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                 if (!asyncCb)
                     asyncCb = U.hasAnnotation(filter, IgniteAsyncCallback.class);
             }
+        }
+
+        final IgniteBiClosure trans = getTransformer();
+
+        if (trans != null) {
+            ctx.resource().injectGeneric(trans);
         }
 
         entryBufs = new ConcurrentHashMap<>();
@@ -362,6 +397,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                         null,
                         filter instanceof CacheEntryEventSerializableFilter ?
                             (CacheEntryEventSerializableFilter)filter : null,
+                        getTransformer(),
                         null,
                         nodeId,
                         taskName()
@@ -373,7 +409,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                 return keepBinary;
             }
 
-            @Override public void onEntryUpdated(final CacheContinuousQueryEvent<K, V> evt,
+            @Override public void onEntryUpdated(CacheContinuousQueryEvent<K, V> evt,
                 boolean primary,
                 final boolean recordIgniteEvt,
                 GridDhtAtomicAbstractUpdateFuture fut) {
@@ -403,6 +439,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                 }
                 else {
                     final boolean notify = filter(evt);
+                    evt = transform(evt);
 
                     if (log.isDebugEnabled())
                         log.debug("Filter invoked for event [evt=" + evt + ", primary=" + primary
@@ -412,12 +449,14 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                         if (fut == null)
                             onEntryUpdate(evt, notify, loc, recordIgniteEvt);
                         else {
+                            final CacheContinuousQueryEvent<K, V> evt0 = evt;
+
                             fut.addContinuousQueryClosure(new CI1<Boolean>() {
                                 @Override public void apply(Boolean suc) {
                                     if (!suc)
-                                        evt.entry().markFiltered();
+                                        evt0.entry().markFiltered();
 
-                                    onEntryUpdate(evt, notify, loc, recordIgniteEvt);
+                                    onEntryUpdate(evt0, notify, loc, recordIgniteEvt);
                                 }
                             }, sync);
                         }
@@ -505,14 +544,22 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                         if (asyncCb) {
                             ctx.asyncCallbackPool().execute(new Runnable() {
                                 @Override public void run() {
-                                    locLsnr.onUpdated(evts);
+                                    if (locLsnr != null)
+                                        locLsnr.onUpdated(evts);
+
+                                    if (locTransLsnr != null)
+                                        locTransLsnr.onUpdated(unpackTransEvts(evts, cctx));
                                 }
                             }, part);
                         }
                         else
                             skipCtx.addProcessClosure(new Runnable() {
                                 @Override public void run() {
-                                    locLsnr.onUpdated(evts);
+                                    if (locLsnr != null)
+                                        locLsnr.onUpdated(evts);
+
+                                    if (locTransLsnr != null)
+                                        locTransLsnr.onUpdated(unpackTransEvts(evts, cctx));
                                 }
                             });
                     }
@@ -563,6 +610,13 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                 return notifyExisting;
             }
 
+            @Override public IgniteBiClosure transformer() {
+                if (rmtTransFactory == null)
+                    return null;
+
+                return rmtTransFactory.create();
+            }
+
             private String taskName() {
                 return ctx.security().enabled() ? ctx.task().resolveTaskName(taskHash) : null;
             }
@@ -576,11 +630,46 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         return mgr.registerListener(routineId, lsnr, internal);
     }
 
+    private CacheContinuousQueryEvent<K,V> transform(CacheContinuousQueryEvent<K, V> evt) {
+        IgniteBiClosure transformer = getTransformer();
+
+        if (evt.entry().isFiltered() || transformer == null)
+            return evt;
+
+        Object transVal = null;
+        try {
+            transVal = transformer.apply(evt.getKey(), evt.getValue());
+        } catch (Throwable ignored) {
+            // No-op.
+        }
+
+        CacheContinuousQueryEntry entry = new CacheContinuousQueryEntry(evt.entry().cacheId(),
+            evt.entry().eventType(),
+            evt.entry().key(),
+            null,
+            null,
+            transVal == null ? null : evt.context().toCacheObject(transVal),
+            evt.entry().isKeepBinary(),
+            evt.entry().partition(),
+            evt.entry().updateCounter(),
+            evt.entry().topologyVersion(),
+            evt.entry().flags());
+
+        return new CacheContinuousQueryEvent<>(evt.getSource(), evt.context(), entry);
+    }
+
     /**
      * @return Cache entry event filter.
      */
     public CacheEntryEventFilter getEventFilter() {
         return rmtFilter;
+    }
+
+    @Nullable public IgniteBiClosure getTransformer() {
+        if (rmtTrans == null && rmtTransFactory != null)
+            rmtTrans = rmtTransFactory.create();
+
+        return rmtTrans;
     }
 
     /**
@@ -747,8 +836,13 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
             }
         }
 
-        if (!entries0.isEmpty())
-            locLsnr.onUpdated(entries0);
+        if (!entries0.isEmpty()) {
+            if (locLsnr != null)
+                locLsnr.onUpdated(entries0);
+
+            if (locTransLsnr != null)
+                locTransLsnr.onUpdated(unpackTransEvts(entries0, cctx));
+        }
     }
 
     /**
@@ -794,6 +888,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         boolean notify = !entry.isFiltered();
 
         try {
+            //TODO: ставить trans value после фильтра!
             if (notify && getEventFilter() != null)
                 notify = getEventFilter().evaluate(evt);
         }
@@ -820,24 +915,37 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
             if (cctx == null)
                 return;
 
-            final CacheContinuousQueryEntry entry = evt.entry();
-
             if (loc) {
+                final CacheContinuousQueryEntry entry = evt.entry();
+
                 if (!locCache) {
                     Collection<CacheEntryEvent<? extends K, ? extends V>> evts = handleEvent(ctx, entry);
 
-                    if (!evts.isEmpty())
-                        locLsnr.onUpdated(evts);
+                    if (!evts.isEmpty()) {
+                        if (locLsnr != null)
+                            locLsnr.onUpdated(evts);
+
+                        if (locTransLsnr != null)
+                            locTransLsnr.onUpdated(unpackTransEvts(evts, cctx));
+                    }
 
                     if (!internal && !skipPrimaryCheck)
                         sendBackupAcknowledge(ackBuf.onAcknowledged(entry), routineId, ctx);
                 }
                 else {
-                    if (!entry.isFiltered())
-                        locLsnr.onUpdated(F.<CacheEntryEvent<? extends K, ? extends V>>asList(evt));
+                    if (!entry.isFiltered()) {
+                        if (locLsnr != null)
+                            locLsnr.onUpdated(F.<CacheEntryEvent<? extends K, ? extends V>>asList(evt));
+
+                        if (locTransLsnr != null) {
+                            locTransLsnr.onUpdated(unpackTransEvts(F.<CacheEntryEvent<? extends K, ? extends V>>asList(evt), cctx));
+                        }
+                    }
                 }
             }
             else {
+                CacheContinuousQueryEntry entry = evt.entry();
+
                 if (!entry.isFiltered())
                     prepareEntry(cctx, nodeId, entry);
 
@@ -1033,6 +1141,9 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
 
         if (rmtFilter != null && !U.isGrid(rmtFilter.getClass()))
             rmtFilterDep = new CacheContinuousQueryDeployableObject(rmtFilter, ctx);
+
+        if (rmtTransFactory != null && !U.isGrid(rmtTransFactory.getClass()))
+            rmtTransFactoryDep = new CacheContinuousQueryDeployableObject(rmtTransFactory, ctx);
     }
 
     /** {@inheritDoc} */
@@ -1043,6 +1154,9 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
 
         if (rmtFilterDep != null)
             rmtFilter = rmtFilterDep.unmarshal(nodeId, ctx);
+
+        if (rmtTransFactoryDep != null)
+            rmtTransFactory = rmtTransFactoryDep.unmarshal(nodeId, ctx);
     }
 
     /** {@inheritDoc} */
@@ -1135,6 +1249,16 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         else
             out.writeObject(rmtFilter);
 
+        boolean b1 = rmtTransFactoryDep != null;
+
+        out.writeBoolean(b1);
+
+        if (b1)
+            out.writeObject(rmtTransFactoryDep);
+        else
+            out.writeObject(rmtTransFactory);
+
+
         out.writeBoolean(internal);
         out.writeBoolean(notifyExisting);
         out.writeBoolean(oldValRequired);
@@ -1156,6 +1280,13 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
             rmtFilterDep = (CacheContinuousQueryDeployableObject)in.readObject();
         else
             rmtFilter = (CacheEntryEventSerializableFilter<K, V>)in.readObject();
+
+        boolean b1 = in.readBoolean();
+
+        if (b1)
+            rmtTransFactoryDep = (CacheContinuousQueryDeployableObject)in.readObject();
+        else
+            rmtTransFactory = (Factory<? extends IgniteBiClosure>)in.readObject();
 
         internal = in.readBoolean();
         notifyExisting = in.readBoolean();
@@ -1214,37 +1345,38 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         /** {@inheritDoc} */
         @Override public void run() {
             final boolean notify = filter(evt);
+            final CacheContinuousQueryEvent<K, V> evt0 = transform(evt);
 
             if (primary || skipPrimaryCheck) {
                 if (fut == null) {
-                    onEntryUpdate(evt, notify, nodeId.equals(ctx.localNodeId()), recordIgniteEvt);
+                    onEntryUpdate(evt0, notify, nodeId.equals(ctx.localNodeId()), recordIgniteEvt);
 
                     return;
                 }
 
                 if (fut.isDone()) {
                     if (fut.error() != null)
-                        evt.entry().markFiltered();
+                        evt0.entry().markFiltered();
 
-                    onEntryUpdate(evt, notify, nodeId.equals(ctx.localNodeId()), recordIgniteEvt);
+                    onEntryUpdate(evt0, notify, nodeId.equals(ctx.localNodeId()), recordIgniteEvt);
                 }
                 else {
                     fut.listen(new CI1<IgniteInternalFuture<?>>() {
                         @Override public void apply(IgniteInternalFuture<?> f) {
                             if (f.error() != null)
-                                evt.entry().markFiltered();
+                                evt0.entry().markFiltered();
 
                             ctx.asyncCallbackPool().execute(new Runnable() {
                                 @Override public void run() {
-                                    onEntryUpdate(evt, notify, nodeId.equals(ctx.localNodeId()), recordIgniteEvt);
+                                    onEntryUpdate(evt0, notify, nodeId.equals(ctx.localNodeId()), recordIgniteEvt);
                                 }
-                            }, evt.entry().partition());
+                            }, evt0.entry().partition());
                         }
                     });
                 }
             }
             else
-                handleBackupEntry(cacheContext(ctx), evt.entry());
+                handleBackupEntry(cacheContext(ctx), evt0.entry());
         }
 
         /** {@inheritDoc} */
@@ -1253,4 +1385,15 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         }
     }
 
+    private Collection<Object> unpackTransEvts(Collection evts, final GridCacheContext cctx) {
+        return F.transform((Collection<CacheContinuousQueryEvent>)evts,
+            new IgniteClosure<CacheContinuousQueryEvent, Object>() {
+                @Override public Object apply(CacheContinuousQueryEvent evt) {
+                     Object value = evt.entry().transformedValue().value(cctx.cacheObjectContext(), false);
+
+                    return cctx.unwrapBinaryIfNeeded(value, keepBinary);
+                }
+            }
+        );
+    }
 }

@@ -2133,6 +2133,7 @@ private IgniteInternalFuture<Object> rebuildIndexesFromHash(@Nullable final Stri
                 sqlQry,
                 null,
                 null,
+                null,
                 params,
                 null,
                 null));
