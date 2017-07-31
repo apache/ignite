@@ -83,7 +83,7 @@ public class CacheGroupDescriptor {
         this.rcvdFrom = rcvdFrom;
         this.startTopVer = startTopVer;
         this.deploymentId = deploymentId;
-        this.cacheCfg = cacheCfg;
+        this.cacheCfg = new CacheConfiguration<>(cacheCfg);
         this.caches = caches;
     }
 

@@ -283,6 +283,22 @@ class ClusterCachesInfo {
             CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "preloadBatchSize",
                 "Preload batch size", locAttr.rebalanceBatchSize(), rmtAttr.rebalanceBatchSize(), false);
 
+            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "rebalanceDelay",
+                "Rebalance delay", locAttr.rebalanceDelay(), rmtAttr.rebalanceDelay(), false);
+
+            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "rebalanceBatchesPrefetchCount",
+                "Rebalance batches prefetch count", locAttr.rebalanceBatchesPrefetchCount(),
+                rmtAttr.rebalanceBatchesPrefetchCount(), false);
+
+            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "rebalanceOrder",
+                "Rebalance order", locAttr.rebalanceOrder(), rmtAttr.rebalanceOrder(), false);
+
+            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "rebalanceThrottle",
+                "Rebalance throttle", locAttr.rebalanceThrottle(), rmtAttr.rebalanceThrottle(), false);
+
+            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "rebalanceTimeout",
+                "Rebalance timeout", locAttr.rebalanceTimeout(), rmtAttr.rebalanceTimeout(), false);
+
             CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "writeSynchronizationMode",
                 "Write synchronization mode", locAttr.writeSynchronization(), rmtAttr.writeSynchronization(),
                 true);
@@ -962,8 +978,6 @@ class ClusterCachesInfo {
             if (localCacheGrps.containsKey(grpDesc.groupId())) {
                 CacheGroupDescriptor locGrpCfg = localCacheGrps.get(grpDesc.groupId());
 
-                validateLocalSpecificConfigurations(locGrpCfg.config(), grpDesc.config());
-
                 grpDesc.mergeWith(locGrpCfg);
             }
 
@@ -1054,45 +1068,6 @@ class ClusterCachesInfo {
             initStartCachesForLocalJoin(false);
         else
             locJoinStartCaches = Collections.emptyList();
-    }
-
-    /**
-     * Inspects local configuration vs grid configuration
-     * and prints out warnings if there are any settings received from grid
-     * that were overwritten by local configuration settings.
-     *
-     * @param localGroupCfg Cache Group configuration on local node.
-     * @param gridGroupCfg Cache Group configuration received from grid.
-     */
-    private void validateLocalSpecificConfigurations(CacheConfiguration localGroupCfg, CacheConfiguration gridGroupCfg) {
-        CU.validateLocalAndGridCacheGroupAttributesMismatch(log, localGroupCfg, "rebalanceDelay", "Rebalance delay",
-            localGroupCfg.getRebalanceDelay(),
-            gridGroupCfg.getRebalanceDelay());
-
-        CU.validateLocalAndGridCacheGroupAttributesMismatch(log, localGroupCfg, "rebalanceBatchesPrefetchCount",
-            "Rebalance batches prefetch count",
-            localGroupCfg.getRebalanceBatchesPrefetchCount(),
-            gridGroupCfg.getRebalanceBatchesPrefetchCount());
-
-        CU.validateLocalAndGridCacheGroupAttributesMismatch(log, localGroupCfg, "rebalanceBatchSize",
-            "Rebalance batch size",
-            localGroupCfg.getRebalanceBatchSize(),
-            gridGroupCfg.getRebalanceBatchSize());
-
-        CU.validateLocalAndGridCacheGroupAttributesMismatch(log, localGroupCfg, "rebalanceOrder",
-            "Rebalance order",
-            localGroupCfg.getRebalanceOrder(),
-            gridGroupCfg.getRebalanceOrder());
-
-        CU.validateLocalAndGridCacheGroupAttributesMismatch(log, localGroupCfg, "rebalanceThrottle",
-            "Rebalance throttle",
-            localGroupCfg.getRebalanceThrottle(),
-            gridGroupCfg.getRebalanceThrottle());
-
-        CU.validateLocalAndGridCacheGroupAttributesMismatch(log, localGroupCfg, "rebalanceTimeout",
-            "Rebalance timeout",
-            localGroupCfg.getRebalanceTimeout(),
-            gridGroupCfg.getRebalanceTimeout());
     }
 
     /**
