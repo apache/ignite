@@ -1650,8 +1650,7 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                                     assert reconnector == null;
 
-                                    final Reconnector reconnector = new Reconnector(join, prevAddr);
-                                    this.reconnector = reconnector;
+                                    this.reconnector = new Reconnector(join, prevAddr);;
                                     reconnector.start();
                                 }
                             }
