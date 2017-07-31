@@ -409,8 +409,7 @@ public final class GridCacheLockState extends VolatileAtomicDataStructureValue i
         else
             nodes = null;
     }
-
-
+    
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridCacheLockState.class, this);
