@@ -83,8 +83,6 @@ public final class GridCacheLockImpl implements GridCacheLockEx, IgniteChangeGlo
     /** Reentrant lock key. */
     private GridCacheInternalKey key;
 
-    //private final Object mux = new Object();
-
     /** Reentrant lock projection. */
     private IgniteInternalCache<GridCacheInternalKey, GridCacheLockState> lockView;
 
@@ -98,7 +96,7 @@ public final class GridCacheLockImpl implements GridCacheLockEx, IgniteChangeGlo
     private final CountDownLatch initLatch = new CountDownLatch(1);
 
     /** Lock that provides non-overlapping processing of updates. */
-    private final Lock updateLock = new ReentrantLock();
+    private Lock updateLock = new ReentrantLock();
 
     /** Internal synchronization object. */
     private Sync sync;
@@ -126,10 +124,10 @@ public final class GridCacheLockImpl implements GridCacheLockEx, IgniteChangeGlo
         private static final long LOCK_FREE = 0;
 
         /** Map containing condition objects. */
-        private final Map<String, ConditionObject> conditionMap;
+        private Map<String, ConditionObject> conditionMap;
 
         /** List of condition signal calls on this node. */
-        private final Map<String, Integer> outgoingSignals;
+        private Map<String, Integer> outgoingSignals;
 
         /** Last condition waited on. */
         @Nullable
@@ -154,7 +152,16 @@ public final class GridCacheLockImpl implements GridCacheLockEx, IgniteChangeGlo
         private final boolean fair;
 
         /** Threads that are waiting on this lock. */
-        private final Set<Long> waitingThreads;
+        private Set<Long> waitingThreads;
+
+        /** */
+        final ReentrantLock localLock = new ReentrantLock();
+
+        /** */
+        final AtomicLong threadCount = new AtomicLong();
+
+        /** */
+        volatile boolean onGlobalLock = false;
 
         /**
          * @param state State.
@@ -372,10 +379,6 @@ public final class GridCacheLockImpl implements GridCacheLockEx, IgniteChangeGlo
             return false;
         }
 
-        final ReentrantLock localLockForNode = new ReentrantLock();
-        final AtomicLong threadCount = new AtomicLong();
-        volatile boolean onGlobalLock = false;
-
         /**
          * Performs tryLock.
          * @param acquires Number of permits to acquire.
@@ -409,7 +412,7 @@ public final class GridCacheLockImpl implements GridCacheLockEx, IgniteChangeGlo
             if (c == 0 || failed) {
                 threadCount.getAndIncrement();
 
-                localLockForNode.lock();
+                localLock.lock();
 
                 if (onGlobalLock)
                     return true;
@@ -423,7 +426,7 @@ public final class GridCacheLockImpl implements GridCacheLockEx, IgniteChangeGlo
                         Thread.yield();
 
                     return true;
-                } else localLockForNode.unlock();
+                } else localLock.unlock();
             }
             else if (isHeldExclusively()) {
                 int nextc = c + acquires;
@@ -484,7 +487,7 @@ public final class GridCacheLockImpl implements GridCacheLockEx, IgniteChangeGlo
                     onGlobalLock = false;
                 }
 
-                localLockForNode.unlock();
+                localLock.unlock();
 
                 while (isHeldExclusively() && !interruptAll)
                     Thread.yield();
@@ -499,6 +502,7 @@ public final class GridCacheLockImpl implements GridCacheLockEx, IgniteChangeGlo
         @Override protected final boolean isHeldExclusively() {
             // While we must in general read state before owner,
             // we don't need to do so to check if current thread is owner
+
             return currentOwnerThreadId == Thread.currentThread().getId() && thisNode.equals(currentOwnerNode);
         }
 
@@ -1074,7 +1078,6 @@ public final class GridCacheLockImpl implements GridCacheLockEx, IgniteChangeGlo
         this.name = name;
         this.key = key;
         this.lockView = lockView;
-
         this.ctx = lockView.context();
 
         log = ctx.logger(getClass());
@@ -1265,7 +1268,7 @@ public final class GridCacheLockImpl implements GridCacheLockEx, IgniteChangeGlo
     @Override public boolean tryLock(long timeout, TimeUnit unit) throws IgniteInterruptedException {
         ctx.kernalContext().gateway().readLock();
 
-        try {
+        try{
             initializeReentrantLock();
 
             boolean result = sync.tryAcquireNanos(1, unit.toNanos(timeout));
