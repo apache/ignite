@@ -113,6 +113,7 @@ import static org.apache.ignite.transactions.TransactionState.COMMITTING;
 import static org.apache.ignite.transactions.TransactionState.MARKED_ROLLBACK;
 import static org.apache.ignite.transactions.TransactionState.PREPARED;
 import static org.apache.ignite.transactions.TransactionState.PREPARING;
+import static org.apache.ignite.transactions.TransactionState.SUSPENDED;
 import static org.apache.ignite.transactions.TransactionState.UNKNOWN;
 import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.PER_SEGMENT_Q;
 
@@ -2237,6 +2238,81 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         Collection<? extends IgniteInternalFuture<?>> values = deadlockDetectFuts.values();
 
         return (Collection<IgniteInternalFuture<?>>)values;
+    }
+
+    /**
+     * Suspends transaction.
+     * Please don't use directly. Use tx.suspend() instead.
+     *
+     * @param tx Transaction to be suspended.
+     *
+     * @see #resumeTx(GridNearTxLocal)
+     * @see GridNearTxLocal#suspend()
+     * @see GridNearTxLocal#resume()
+     */
+    public void suspendTx(final GridNearTxLocal tx) throws IgniteCheckedException {
+        assert tx != null;
+        assert !tx.system();
+
+        if(!tx.state(SUSPENDED)) {
+            throw new IgniteCheckedException("Trying to suspendTx transaction with incorrect state "
+                + "[expected=" + ACTIVE + ", actual=" + tx.state() + ']');
+        }
+
+        clearThreadMap(tx);
+
+        transactionMap(tx).remove(tx.xidVersion(), tx);
+    }
+
+    /**
+     * Resume transaction in current thread.
+     * Please don't use directly. Use tx.resume() instead.
+     *
+     * @param tx Transaction to be resumed.
+     *
+     * @see #suspendTx(GridNearTxLocal)
+     * @see GridNearTxLocal#suspend()
+     * @see GridNearTxLocal#resume()
+     */
+    public void resumeTx(GridNearTxLocal tx) throws IgniteCheckedException {
+        assert tx != null;
+        assert !tx.system();
+        assert !threadMap.containsValue(tx);
+        assert !transactionMap(tx).containsValue(tx);
+        assert !haveSystemTxForThread(Thread.currentThread().getId());
+
+        if(!tx.state(ACTIVE)) {
+            throw new IgniteCheckedException("Trying to resumeTx transaction with incorrect state "
+                + "[expected=" + SUSPENDED + ", actual=" + tx.state() + ']');
+        }
+
+        long threadId = Thread.currentThread().getId();
+
+        if (threadMap.putIfAbsent(threadId, tx) != null)
+            throw new IgniteCheckedException("Thread already start a transaction.");
+
+        if (transactionMap(tx).putIfAbsent(tx.xidVersion(), tx) != null)
+            throw new IgniteCheckedException("Thread already start a transaction.");
+
+        tx.threadId(threadId);
+    }
+
+    /**
+     * @param threadId Thread id.
+     * @return True if thread have system transaction. False otherwise.
+     */
+    private boolean haveSystemTxForThread(long threadId) {
+        if (!sysThreadMap.isEmpty()) {
+            for (GridCacheContext cacheCtx : cctx.cache().context().cacheContexts()) {
+                if (!cacheCtx.systemTx())
+                    continue;
+
+                if (sysThreadMap.containsKey(new TxThreadKey(threadId, cacheCtx.cacheId())))
+                    return true;
+            }
+        }
+
+        return false;
     }
 
     /**
