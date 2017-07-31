@@ -19,7 +19,7 @@ package org.apache.ignite.internal.pagemem.wal.record.delta;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusMetaIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusMetaIO;
 
 /**
  *
@@ -30,13 +30,13 @@ public class MetaPageInitRootInlineRecord extends MetaPageInitRootRecord {
     private final int inlineSize;
 
     /**
-     * @param cacheId
+     * @param grpId Cache group ID.
      * @param pageId Meta page ID.
      * @param rootId
      * @param inlineSize Inline size.
      */
-    public MetaPageInitRootInlineRecord(int cacheId, long pageId, long rootId, int inlineSize) {
-        super(cacheId, pageId, rootId);
+    public MetaPageInitRootInlineRecord(int grpId, long pageId, long rootId, int inlineSize) {
+        super(grpId, pageId, rootId);
         this.inlineSize = inlineSize;
     }
 

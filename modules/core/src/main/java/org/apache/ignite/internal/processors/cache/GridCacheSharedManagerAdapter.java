@@ -27,11 +27,17 @@ import org.apache.ignite.lang.IgniteFuture;
  * Convenience adapter for cache managers.
  */
 public class GridCacheSharedManagerAdapter<K, V> implements GridCacheSharedManager<K, V> {
+    /** */
+    private static final String DIAGNOSTIC_LOG_CATEGORY = "org.apache.ignite.internal.diagnostic";
+
     /** Context. */
     protected GridCacheSharedContext<K, V> cctx;
 
     /** Logger. */
     protected IgniteLogger log;
+
+    /** Diagnostic logger. */
+    protected IgniteLogger diagnosticLog;
 
     /** Starting flag. */
     private final AtomicBoolean starting = new AtomicBoolean(false);
@@ -49,6 +55,8 @@ public class GridCacheSharedManagerAdapter<K, V> implements GridCacheSharedManag
         this.cctx = cctx;
 
         log = cctx.logger(getClass());
+
+        diagnosticLog = cctx.logger(DIAGNOSTIC_LOG_CATEGORY);
 
         start0();
 
@@ -104,14 +112,6 @@ public class GridCacheSharedManagerAdapter<K, V> implements GridCacheSharedManag
     }
 
     /** {@inheritDoc} */
-    @Override public final void onKernalStart(boolean reconnect) throws IgniteCheckedException {
-        onKernalStart0(reconnect);
-
-        if (!reconnect && log != null && log.isDebugEnabled())
-            log.debug(kernalStartInfo());
-    }
-
-    /** {@inheritDoc} */
     @Override public final void onKernalStop(boolean cancel) {
         if (!starting.get())
             // Ignoring attempt to stop manager that has never been started.
@@ -121,14 +121,6 @@ public class GridCacheSharedManagerAdapter<K, V> implements GridCacheSharedManag
 
         if (log != null && log.isDebugEnabled())
             log.debug(kernalStopInfo());
-    }
-
-    /**
-     * @param reconnect {@code True} if manager restarted after client reconnect.
-     * @throws IgniteCheckedException If failed.
-     */
-    protected void onKernalStart0(boolean reconnect) throws IgniteCheckedException {
-        // No-op.
     }
 
     /**

@@ -48,7 +48,7 @@ public class SqlConnectorConfiguration {
     /** Port. */
     private int port = DFLT_PORT;
 
-    /** Poart range. */
+    /** Port range. */
     private int portRange = DFLT_PORT_RANGE;
 
     /** Socket send buffer size. */

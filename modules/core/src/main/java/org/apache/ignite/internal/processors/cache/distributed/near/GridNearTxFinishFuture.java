@@ -327,7 +327,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
                         finishOnePhase(commit);
 
                     try {
-                        tx.tmFinish(commit);
+                        tx.tmFinish(commit, nodeStop);
                     }
                     catch (IgniteCheckedException e) {
                         U.error(log, "Failed to finish tx: " + tx, e);
@@ -338,7 +338,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
                 }
 
                 if (super.onDone(tx0, err)) {
-                    if (error() instanceof IgniteTxHeuristicCheckedException) {
+                    if (error() instanceof IgniteTxHeuristicCheckedException && !nodeStop) {
                         AffinityTopologyVersion topVer = tx.topologyVersion();
 
                         for (IgniteTxEntry e : tx.writeMap().values()) {
@@ -349,7 +349,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
                                     GridCacheEntryEx entry = cacheCtx.cache().peekEx(e.key());
 
                                     if (entry != null)
-                                        entry.invalidate(null, tx.xidVersion());
+                                        entry.invalidate(tx.xidVersion());
                                 }
                             }
                             catch (Throwable t) {
@@ -608,10 +608,19 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
      * @return {@code True} if need to send finish request for one phase commit transaction.
      */
     private boolean needFinishOnePhase(boolean commit) {
+        assert tx.onePhaseCommit();
+
         if (tx.mappings().empty())
             return false;
 
-        return tx.txState().hasNearCache(cctx) || !commit;
+        if (!commit)
+            return true;
+
+        GridDistributedTxMapping mapping = tx.mappings().singleMapping();
+
+        assert mapping != null;
+
+        return mapping.hasNearCacheEntries();
     }
 
     /**

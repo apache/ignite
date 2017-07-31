@@ -139,7 +139,7 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
         final CountDownLatch latch = new CountDownLatch(SAMPLE_CNT);
 
         mgr1.addMessageListener(topic, new GridMessageListener() {
-            @Override public void onMessage(UUID nodeId, Object msg) {
+            @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
                 try {
                     latch.countDown();
 
@@ -213,6 +213,16 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
          */
         public void add(TestMessage1 entry) {
             entries.add(entry);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int handlerId() {
+            return 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean cacheGroupMessage() {
+            return false;
         }
 
         /** {@inheritDoc} */
@@ -308,6 +318,16 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
         public void init(Message msg, String body) {
             this.msg = msg;
             this.body = body;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int handlerId() {
+            return 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean cacheGroupMessage() {
+            return false;
         }
 
         /** {@inheritDoc} */
@@ -431,6 +451,16 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
             this.id = id;
             this.msg = mes;
             this.body = body;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int handlerId() {
+            return 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean cacheGroupMessage() {
+            return false;
         }
 
         /** {@inheritDoc} */

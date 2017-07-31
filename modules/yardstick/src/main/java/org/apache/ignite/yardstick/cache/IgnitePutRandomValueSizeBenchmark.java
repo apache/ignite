@@ -26,6 +26,8 @@ import org.apache.ignite.IgniteCache;
 public class IgnitePutRandomValueSizeBenchmark extends IgniteCacheAbstractBenchmark<Integer, Object> {
     /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
+        IgniteCache<Integer, Object> cache = cacheForOperation();
+
         int key = nextRandom(args.range());
         int size = 64 + nextRandom(64);
 

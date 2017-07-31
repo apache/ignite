@@ -19,7 +19,7 @@ package org.apache.ignite.internal.pagemem.wal.record.delta;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -39,14 +39,14 @@ public class InitNewPageRecord extends PageDeltaRecord {
     protected long newPageId;
 
     /**
-     * @param cacheId Cache ID.
+     * @param grpId Cache group ID.
      * @param pageId  Page ID.
      * @param ioType IO type.
      * @param ioVer IO version.
      * @param newPageId New page ID.
      */
-    public InitNewPageRecord(int cacheId, long pageId, int ioType, int ioVer, long newPageId) {
-        super(cacheId, pageId);
+    public InitNewPageRecord(int grpId, long pageId, int ioType, int ioVer, long newPageId) {
+        super(grpId, pageId);
 
         this.ioType = ioType;
         this.ioVer = ioVer;

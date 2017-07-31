@@ -34,6 +34,7 @@ namespace Apache.Ignite.Core
     using Apache.Ignite.Core.Communication;
     using Apache.Ignite.Core.Communication.Tcp;
     using Apache.Ignite.Core.Compute;
+    using Apache.Ignite.Core.Configuration;
     using Apache.Ignite.Core.DataStructures.Configuration;
     using Apache.Ignite.Core.Deployment;
     using Apache.Ignite.Core.Discovery;
@@ -44,8 +45,10 @@ namespace Apache.Ignite.Core
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Lifecycle;
     using Apache.Ignite.Core.Log;
+    using Apache.Ignite.Core.PersistentStore;
     using Apache.Ignite.Core.Plugin;
     using Apache.Ignite.Core.Transactions;
+    using BinaryReader = Apache.Ignite.Core.Impl.Binary.BinaryReader;
     using BinaryWriter = Apache.Ignite.Core.Impl.Binary.BinaryWriter;
 
     /// <summary>
@@ -103,6 +106,21 @@ namespace Apache.Ignite.Core
         /// </summary>
         public static readonly TimeSpan DefaultClientFailureDetectionTimeout = TimeSpan.FromSeconds(30);
 
+        /// <summary>
+        /// Default thread pool size.
+        /// </summary>
+        public static readonly int DefaultThreadPoolSize = Math.Max(8, Environment.ProcessorCount);
+
+        /// <summary>
+        /// Default management thread pool size.
+        /// </summary>
+        public const int DefaultManagementThreadPoolSize = 4;
+
+        /// <summary>
+        /// Default timeout after which long query warning will be printed.
+        /// </summary>
+        public static readonly TimeSpan DefaultLongQueryWarningTimeout = TimeSpan.FromMilliseconds(3000);
+
         /** */
         private TimeSpan? _metricsExpireTime;
 
@@ -128,9 +146,6 @@ namespace Apache.Ignite.Core
         private bool? _isDaemon;
 
         /** */
-        private bool? _isLateAffinityAssignment;
-
-        /** */
         private bool? _clientMode;
 
         /** */
@@ -138,6 +153,39 @@ namespace Apache.Ignite.Core
 
         /** */
         private TimeSpan? _clientFailureDetectionTimeout;
+
+        /** */
+        private int? _publicThreadPoolSize;
+
+        /** */
+        private int? _stripedThreadPoolSize;
+
+        /** */
+        private int? _serviceThreadPoolSize;
+
+        /** */
+        private int? _systemThreadPoolSize;
+
+        /** */
+        private int? _asyncCallbackThreadPoolSize;
+
+        /** */
+        private int? _managementThreadPoolSize;
+
+        /** */
+        private int? _dataStreamerThreadPoolSize;
+
+        /** */
+        private int? _utilityCacheThreadPoolSize;
+
+        /** */
+        private int? _queryThreadPoolSize;
+
+        /** */
+        private TimeSpan? _longQueryWarningTimeout;
+
+        /** */
+        private bool? _isActiveOnStart;
 
         /// <summary>
         /// Default network retry count.
@@ -148,6 +196,11 @@ namespace Apache.Ignite.Core
         /// Default late affinity assignment mode.
         /// </summary>
         public const bool DefaultIsLateAffinityAssignment = true;
+
+        /// <summary>
+        /// Default value for <see cref="IsActiveOnStart"/> property.
+        /// </summary>
+        public const bool DefaultIsActiveOnStart = true;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="IgniteConfiguration"/> class.
@@ -187,7 +240,7 @@ namespace Apache.Ignite.Core
         /// </summary>
         /// <param name="binaryReader">The binary reader.</param>
         /// <param name="baseConfig">The base configuration.</param>
-        internal IgniteConfiguration(IBinaryRawReader binaryReader, IgniteConfiguration baseConfig)
+        internal IgniteConfiguration(BinaryReader binaryReader, IgniteConfiguration baseConfig)
         {
             Debug.Assert(binaryReader != null);
             Debug.Assert(baseConfig != null);
@@ -218,9 +271,21 @@ namespace Apache.Ignite.Core
             writer.WriteString(WorkDirectory);
             writer.WriteString(Localhost);
             writer.WriteBooleanNullable(_isDaemon);
-            writer.WriteBooleanNullable(_isLateAffinityAssignment);
             writer.WriteTimeSpanAsLongNullable(_failureDetectionTimeout);
             writer.WriteTimeSpanAsLongNullable(_clientFailureDetectionTimeout);
+            writer.WriteTimeSpanAsLongNullable(_longQueryWarningTimeout);
+            writer.WriteBooleanNullable(_isActiveOnStart);
+
+            // Thread pools
+            writer.WriteIntNullable(_publicThreadPoolSize);
+            writer.WriteIntNullable(_stripedThreadPoolSize);
+            writer.WriteIntNullable(_serviceThreadPoolSize);
+            writer.WriteIntNullable(_systemThreadPoolSize);
+            writer.WriteIntNullable(_asyncCallbackThreadPoolSize);
+            writer.WriteIntNullable(_managementThreadPoolSize);
+            writer.WriteIntNullable(_dataStreamerThreadPoolSize);
+            writer.WriteIntNullable(_utilityCacheThreadPoolSize);
+            writer.WriteIntNullable(_queryThreadPoolSize);
 
             // Cache config
             var caches = CacheConfiguration;
@@ -371,6 +436,28 @@ namespace Apache.Ignite.Core
                 writer.WriteBoolean(false);
             }
 
+            // SQL
+            if (SqlConnectorConfiguration != null)
+            {
+                writer.WriteBoolean(true);
+                SqlConnectorConfiguration.Write(writer);
+            }
+            else
+            {
+                writer.WriteBoolean(false);
+            }
+
+            // Persistence.
+            if (PersistentStoreConfiguration != null)
+            {
+                writer.WriteBoolean(true);
+                PersistentStoreConfiguration.Write(writer);
+            }
+            else
+            {
+                writer.WriteBoolean(false);
+            }
+
             // Plugins (should be last)
             if (PluginConfigurations != null)
             {
@@ -419,7 +506,7 @@ namespace Apache.Ignite.Core
         /// Reads data from specified reader into current instance.
         /// </summary>
         /// <param name="r">The binary reader.</param>
-        private void ReadCore(IBinaryRawReader r)
+        private void ReadCore(BinaryReader r)
         {
             // Simple properties
             _clientMode = r.ReadBooleanNullable();
@@ -434,9 +521,21 @@ namespace Apache.Ignite.Core
             WorkDirectory = r.ReadString();
             Localhost = r.ReadString();
             _isDaemon = r.ReadBooleanNullable();
-            _isLateAffinityAssignment = r.ReadBooleanNullable();
             _failureDetectionTimeout = r.ReadTimeSpanNullable();
             _clientFailureDetectionTimeout = r.ReadTimeSpanNullable();
+            _longQueryWarningTimeout = r.ReadTimeSpanNullable();
+            _isActiveOnStart = r.ReadBooleanNullable();
+
+            // Thread pools
+            _publicThreadPoolSize = r.ReadIntNullable();
+            _stripedThreadPoolSize = r.ReadIntNullable();
+            _serviceThreadPoolSize = r.ReadIntNullable();
+            _systemThreadPoolSize = r.ReadIntNullable();
+            _asyncCallbackThreadPoolSize = r.ReadIntNullable();
+            _managementThreadPoolSize = r.ReadIntNullable();
+            _dataStreamerThreadPoolSize = r.ReadIntNullable();
+            _utilityCacheThreadPoolSize = r.ReadIntNullable();
+            _queryThreadPoolSize = r.ReadIntNullable();
 
             // Cache config
             var cacheCfgCount = r.ReadInt();
@@ -509,13 +608,25 @@ namespace Apache.Ignite.Core
             {
                 MemoryConfiguration = new MemoryConfiguration(r);
             }
+
+            // SQL
+            if (r.ReadBoolean())
+            {
+                SqlConnectorConfiguration = new SqlConnectorConfiguration(r);
+            }
+
+            // Persistence.
+            if (r.ReadBoolean())
+            {
+                PersistentStoreConfiguration = new PersistentStoreConfiguration(r);
+            }
         }
 
         /// <summary>
         /// Reads data from specified reader into current instance.
         /// </summary>
         /// <param name="binaryReader">The binary reader.</param>
-        private void Read(IBinaryRawReader binaryReader)
+        private void Read(BinaryReader binaryReader)
         {
             ReadCore(binaryReader);
 
@@ -859,11 +970,15 @@ namespace Apache.Ignite.Core
         /// <para />
         /// If not provided, default value is <see cref="DefaultIsLateAffinityAssignment"/>.
         /// </summary>
+        [SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
+        [SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "value")]
         [DefaultValue(DefaultIsLateAffinityAssignment)]
+        [Obsolete("No longer supported, always true.")]
         public bool IsLateAffinityAssignment
         {
-            get { return _isLateAffinityAssignment ?? DefaultIsLateAffinityAssignment; }
-            set { _isLateAffinityAssignment = value; }
+            get { return DefaultIsLateAffinityAssignment; }
+            // ReSharper disable once ValueParameterNotUsed
+            set { /* No-op. */ }
         }
 
         /// <summary>
@@ -995,5 +1110,118 @@ namespace Apache.Ignite.Core
         /// Peer loading is enabled for <see cref="ICompute"/> functionality.
         /// </summary>
         public PeerAssemblyLoadingMode PeerAssemblyLoadingMode { get; set; }
+
+        /// <summary>
+        /// Gets or sets the size of the public thread pool, which processes compute jobs and user messages.
+        /// </summary>
+        public int PublicThreadPoolSize
+        {
+            get { return _publicThreadPoolSize ?? DefaultThreadPoolSize; }
+            set { _publicThreadPoolSize = value; }
+        }
+
+        /// <summary>
+        /// Gets or sets the size of the striped thread pool, which processes cache requests.
+        /// </summary>
+        public int StripedThreadPoolSize
+        {
+            get { return _stripedThreadPoolSize ?? DefaultThreadPoolSize; }
+            set { _stripedThreadPoolSize = value; }
+        }
+
+        /// <summary>
+        /// Gets or sets the size of the service thread pool, which processes Ignite services.
+        /// </summary>
+        public int ServiceThreadPoolSize
+        {
+            get { return _serviceThreadPoolSize ?? DefaultThreadPoolSize; }
+            set { _serviceThreadPoolSize = value; }
+        }
+
+        /// <summary>
+        /// Gets or sets the size of the system thread pool, which processes internal system messages.
+        /// </summary>
+        public int SystemThreadPoolSize
+        {
+            get { return _systemThreadPoolSize ?? DefaultThreadPoolSize; }
+            set { _systemThreadPoolSize = value; }
+        }
+
+        /// <summary>
+        /// Gets or sets the size of the asynchronous callback thread pool.
+        /// </summary>
+        public int AsyncCallbackThreadPoolSize
+        {
+            get { return _asyncCallbackThreadPoolSize ?? DefaultThreadPoolSize; }
+            set { _asyncCallbackThreadPoolSize = value; }
+        }
+
+        /// <summary>
+        /// Gets or sets the size of the management thread pool, which processes internal Ignite jobs.
+        /// </summary>
+        [DefaultValue(DefaultManagementThreadPoolSize)]
+        public int ManagementThreadPoolSize
+        {
+            get { return _managementThreadPoolSize ?? DefaultManagementThreadPoolSize; }
+            set { _managementThreadPoolSize = value; }
+        }
+
+        /// <summary>
+        /// Gets or sets the size of the data streamer thread pool.
+        /// </summary>
+        public int DataStreamerThreadPoolSize
+        {
+            get { return _dataStreamerThreadPoolSize ?? DefaultThreadPoolSize; }
+            set { _dataStreamerThreadPoolSize = value; }
+        }
+
+        /// <summary>
+        /// Gets or sets the size of the utility cache thread pool.
+        /// </summary>
+        public int UtilityCacheThreadPoolSize
+        {
+            get { return _utilityCacheThreadPoolSize ?? DefaultThreadPoolSize; }
+            set { _utilityCacheThreadPoolSize = value; }
+        }
+
+        /// <summary>
+        /// Gets or sets the size of the query thread pool.
+        /// </summary>
+        public int QueryThreadPoolSize
+        {
+            get { return _queryThreadPoolSize ?? DefaultThreadPoolSize; }
+            set { _queryThreadPoolSize = value; }
+        }
+
+        /// <summary>
+        /// Gets or sets the SQL connector configuration (for JDBC and ODBC).
+        /// </summary>
+        public SqlConnectorConfiguration SqlConnectorConfiguration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the timeout after which long query warning will be printed.
+        /// </summary>
+        [DefaultValue(typeof(TimeSpan), "00:00:03")]
+        public TimeSpan LongQueryWarningTimeout
+        {
+            get { return _longQueryWarningTimeout ?? DefaultLongQueryWarningTimeout; }
+            set { _longQueryWarningTimeout = value; }
+        }
+
+        /// <summary>
+        /// Gets or sets the persistent store configuration.
+        /// </summary>
+        public PersistentStoreConfiguration PersistentStoreConfiguration { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether grid should be active on start.
+        /// See also <see cref="IIgnite.IsActive"/> and <see cref="IIgnite.SetActive"/>.
+        /// </summary>
+        [DefaultValue(DefaultIsActiveOnStart)]
+        public bool IsActiveOnStart
+        {
+            get { return _isActiveOnStart ?? DefaultIsActiveOnStart; }
+            set { _isActiveOnStart = value; }
+        }
     }
 }

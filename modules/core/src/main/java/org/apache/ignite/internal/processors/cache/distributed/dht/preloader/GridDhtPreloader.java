@@ -23,30 +23,24 @@ import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
-import org.apache.ignite.events.Event;
+import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
-import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
-import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
-import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.GridCachePreloaderAdapter;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityAssignmentRequest;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityAssignmentResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtFuture;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
@@ -61,22 +55,15 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.GPC;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentLinkedDeque8;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_DATA_LOST;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_UNLOADED;
-import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
-import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
-import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
-import static org.apache.ignite.internal.managers.communication.GridIoPolicy.AFFINITY_POOL;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.EVICTED;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.MOVING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.RENTING;
-import static org.apache.ignite.internal.util.GridConcurrentFactory.newMap;
 
 /**
  * DHT cache preloader.
@@ -87,9 +74,6 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
     /** */
     private GridDhtPartitionTopology top;
-
-    /** Force key futures. */
-    private final ConcurrentMap<IgniteUuid, GridDhtForceKeysFuture<?, ?>> forceKeyFuts = newMap();
 
     /** Partition suppliers. */
     private GridDhtPartitionSupplier supplier;
@@ -113,47 +97,15 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     private final AtomicInteger partsEvictOwning = new AtomicInteger();
 
     /** */
-    private volatile boolean stopping;
-
-    /** */
     private boolean stopped;
 
-    /** Discovery listener. */
-    private final GridLocalEventListener discoLsnr = new GridLocalEventListener() {
-        @Override public void onEvent(Event evt) {
-            if (!enterBusy())
-                return;
-
-            DiscoveryEvent e = (DiscoveryEvent)evt;
-
-            try {
-                ClusterNode loc = cctx.localNode();
-
-                assert e.type() == EVT_NODE_JOINED || e.type() == EVT_NODE_LEFT || e.type() == EVT_NODE_FAILED;
-
-                final ClusterNode n = e.eventNode();
-
-                assert !loc.id().equals(n.id());
-
-                for (GridDhtForceKeysFuture<?, ?> f : forceKeyFuts.values())
-                    f.onDiscoveryEvent(e);
-
-                assert e.type() != EVT_NODE_JOINED || n.order() > loc.order() : "Node joined with smaller-than-local " +
-                    "order [newOrder=" + n.order() + ", locOrder=" + loc.order() + ']';
-            }
-            finally {
-                leaveBusy();
-            }
-        }
-    };
-
     /**
-     * @param cctx Cache context.
+     * @param grp Cache group.
      */
-    public GridDhtPreloader(GridCacheContext<?, ?> cctx) {
-        super(cctx);
+    public GridDhtPreloader(CacheGroupContext grp) {
+        super(grp);
 
-        top = cctx.dht().topology();
+        top = grp.topology();
 
         startFut = new GridFutureAdapter<>();
     }
@@ -163,37 +115,10 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         if (log.isDebugEnabled())
             log.debug("Starting DHT rebalancer...");
 
-        cctx.io().addHandler(cctx.cacheId(), GridDhtForceKeysRequest.class,
-            new MessageHandler<GridDhtForceKeysRequest>() {
-                @Override public void onMessage(ClusterNode node, GridDhtForceKeysRequest msg) {
-                    processForceKeysRequest(node, msg);
-                }
-            });
-
-        cctx.io().addHandler(cctx.cacheId(), GridDhtForceKeysResponse.class,
-            new MessageHandler<GridDhtForceKeysResponse>() {
-                @Override public void onMessage(ClusterNode node, GridDhtForceKeysResponse msg) {
-                    processForceKeyResponse(node, msg);
-                }
-            });
-
-        if (!cctx.kernalContext().clientNode()) {
-            cctx.io().addHandler(cctx.cacheId(), GridDhtAffinityAssignmentRequest.class,
-                new MessageHandler<GridDhtAffinityAssignmentRequest>() {
-                    @Override protected void onMessage(ClusterNode node, GridDhtAffinityAssignmentRequest msg) {
-                        processAffinityAssignmentRequest(node, msg);
-                    }
-                });
-        }
-
-        cctx.shared().affinity().onCacheCreated(cctx);
-
-        supplier = new GridDhtPartitionSupplier(cctx);
-        demander = new GridDhtPartitionDemander(cctx);
+        supplier = new GridDhtPartitionSupplier(grp);
+        demander = new GridDhtPartitionDemander(grp);
 
         demander.start();
-
-        cctx.events().addListener(discoLsnr, EVT_NODE_JOINED, EVT_NODE_LEFT, EVT_NODE_FAILED);
     }
 
     /** {@inheritDoc} */
@@ -212,10 +137,6 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         if (log.isDebugEnabled())
             log.debug("DHT rebalancer onKernalStop callback.");
 
-        stopping = true;
-
-        cctx.events().removeListener(discoLsnr);
-
         // Acquire write busy lock.
         busyLock.writeLock().lock();
 
@@ -226,11 +147,6 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
             if (demander != null)
                 demander.stop();
 
-            IgniteCheckedException err = stopError();
-
-            for (GridDhtForceKeysFuture fut : forceKeyFuts.values())
-                fut.onDone(err);
-
             top = null;
 
             stopped = true;
@@ -239,6 +155,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
             busyLock.writeLock().unlock();
         }
     }
+
     /**
      * @return Node stop exception.
      */
@@ -262,30 +179,31 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public GridDhtPreloaderAssignments assign(GridDhtPartitionsExchangeFuture exchFut) {
+    @Override public GridDhtPreloaderAssignments assign(GridDhtPartitionExchangeId exchId, GridDhtPartitionsExchangeFuture exchFut) {
         // No assignments for disabled preloader.
-        GridDhtPartitionTopology top = cctx.dht().topology();
+        GridDhtPartitionTopology top = grp.topology();
 
-        if (!cctx.rebalanceEnabled() || !cctx.shared().kernalContext().state().active())
-            return new GridDhtPreloaderAssignments(exchFut, top.topologyVersion());
+        if (!grp.rebalanceEnabled())
+            return new GridDhtPreloaderAssignments(exchId, top.topologyVersion());
 
-        int partCnt = cctx.affinity().partitions();
+        int partCnt = grp.affinity().partitions();
 
-        assert exchFut.forcePreload() || exchFut.dummyReassign() ||
-            exchFut.exchangeId().topologyVersion().equals(top.topologyVersion()) :
-            "Topology version mismatch [exchId=" + exchFut.exchangeId() +
-            ", cache=" + cctx.name() +
-            ", topVer=" + top.topologyVersion() + ']';
+        assert exchFut == null || exchFut.topologyVersion().equals(top.topologyVersion()) :
+            "Topology version mismatch [exchId=" + exchId +
+                ", grp=" + grp.name() +
+                ", topVer=" + top.topologyVersion() + ']';
 
-        GridDhtPreloaderAssignments assigns = new GridDhtPreloaderAssignments(exchFut, top.topologyVersion());
+        GridDhtPreloaderAssignments assigns = new GridDhtPreloaderAssignments(exchId, top.topologyVersion());
 
         AffinityTopologyVersion topVer = assigns.topologyVersion();
 
+        AffinityAssignment aff = grp.affinity().cachedAffinity(topVer);
+
         for (int p = 0; p < partCnt; p++) {
-            if (cctx.shared().exchange().hasPendingExchange()) {
+            if (ctx.exchange().hasPendingExchange()) {
                 if (log.isDebugEnabled())
                     log.debug("Skipping assignments creation, exchange worker has pending assignments: " +
-                        exchFut.exchangeId());
+                        exchId);
 
                 assigns.cancelled(true);
 
@@ -293,48 +211,110 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
             }
 
             // If partition belongs to local node.
-            if (cctx.affinity().partitionLocalNode(p, topVer)) {
-                GridDhtLocalPartition part = top.localPartition(p, topVer, true);
+            if (aff.get(p).contains(ctx.localNode())) {
+                GridDhtLocalPartition part = top.localPartition(p, topVer, true, true);
 
                 assert part != null;
                 assert part.id() == p;
 
-                if (part.state() != MOVING) {
-                    if (log.isDebugEnabled())
-                        log.debug("Skipping partition assignment (state is not MOVING): " + part);
+                ClusterNode histSupplier = null;
 
-                    continue; // For.
+                if (ctx.database().persistenceEnabled() && exchFut != null) {
+                    UUID nodeId = exchFut.partitionHistorySupplier(grp.groupId(), p);
+
+                    if (nodeId != null)
+                        histSupplier = ctx.discovery().node(nodeId);
                 }
 
-                Collection<ClusterNode> picked = pickedOwners(p, topVer);
+                if (histSupplier != null) {
+                    if (part.state() != MOVING) {
+                        if (log.isDebugEnabled())
+                            log.debug("Skipping partition assignment (state is not MOVING): " + part);
 
-                if (picked.isEmpty()) {
-                    top.own(part);
-
-                    if (cctx.events().isRecordable(EVT_CACHE_REBALANCE_PART_DATA_LOST)) {
-                        DiscoveryEvent discoEvt = exchFut.discoveryEvent();
-
-                        cctx.events().addPreloadEvent(p,
-                            EVT_CACHE_REBALANCE_PART_DATA_LOST, discoEvt.eventNode(),
-                            discoEvt.type(), discoEvt.timestamp());
+                        continue; // For.
                     }
 
-                    if (log.isDebugEnabled())
-                        log.debug("Owning partition as there are no other owners: " + part);
+                    assert ctx.database().persistenceEnabled();
+                    assert remoteOwners(p, topVer).contains(histSupplier) : remoteOwners(p, topVer);
+
+                    GridDhtPartitionDemandMessage msg = assigns.get(histSupplier);
+
+                    if (msg == null) {
+                        assigns.put(histSupplier, msg = new GridDhtPartitionDemandMessage(
+                            top.updateSequence(),
+                            exchId.topologyVersion(),
+                            grp.groupId()));
+                    }
+
+                    msg.addPartition(p, true);
                 }
                 else {
-                    ClusterNode n = F.rand(picked);
+                    if (ctx.database().persistenceEnabled()) {
+                        if (part.state() == RENTING || part.state() == EVICTED) {
+                            IgniteInternalFuture<?> rentFut = part.rent(false);
 
-                    GridDhtPartitionDemandMessage msg = assigns.get(n);
+                            while (true) {
+                                try {
+                                    rentFut.get(20, TimeUnit.SECONDS);
+
+                                    break;
+                                }
+                                catch (IgniteFutureTimeoutCheckedException ignore) {
+                                    // Continue.
+                                    U.warn(log, "Still waiting for partition eviction: " + part);
+
+                                    part.tryEvictAsync(false);
+                                }
+                                catch (IgniteCheckedException e) {
+                                    U.error(log, "Error while clearing outdated local partition", e);
+
+                                    break;
+                                }
+                            }
+
+                            part = top.localPartition(p, topVer, true);
+
+                            assert part != null;
+                        }
+                    }
+
+                    if (part.state() != MOVING) {
+                        if (log.isDebugEnabled())
+                            log.debug("Skipping partition assignment (state is not MOVING): " + part);
+
+                        continue; // For.
+                    }
+
+                    Collection<ClusterNode> picked = pickedOwners(p, topVer);
+
+                    if (picked.isEmpty()) {
+                        top.own(part);
+
+                        if (grp.eventRecordable(EVT_CACHE_REBALANCE_PART_DATA_LOST)) {
+                            grp.addRebalanceEvent(p,
+                                EVT_CACHE_REBALANCE_PART_DATA_LOST,
+                                exchId.eventNode(),
+                                exchId.event(),
+                                exchId.eventTimestamp());
+                        }
+
+                        if (log.isDebugEnabled())
+                            log.debug("Owning partition as there are no other owners: " + part);
+                    }
+                    else {
+                        ClusterNode n = F.rand(picked);
+
+                        GridDhtPartitionDemandMessage msg = assigns.get(n);
 
                     if (msg == null) {
                         assigns.put(n, msg = new GridDhtPartitionDemandMessage(
                             top.updateSequence(),
-                            exchFut.exchangeId().topologyVersion(),
-                            cctx.cacheId()));
+                            exchId.topologyVersion(),
+                            grp.groupId()));
                     }
 
-                    msg.addPartition(p);
+                        msg.addPartition(p, false);
+                    }
                 }
             }
         }
@@ -353,7 +333,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
      * @return Picked owners.
      */
     private Collection<ClusterNode> pickedOwners(int p, AffinityTopologyVersion topVer) {
-        Collection<ClusterNode> affNodes = cctx.affinity().nodesByPartition(p, topVer);
+        Collection<ClusterNode> affNodes = grp.affinity().cachedAffinity(topVer).get(p);
 
         int affCnt = affNodes.size();
 
@@ -379,11 +359,11 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
      * @return Nodes owning this partition.
      */
     private Collection<ClusterNode> remoteOwners(int p, AffinityTopologyVersion topVer) {
-        return F.view(cctx.dht().topology().owners(p, topVer), F.remoteNodes(cctx.nodeId()));
+        return F.view(grp.topology().owners(p, topVer), F.remoteNodes(ctx.localNodeId()));
     }
 
     /** {@inheritDoc} */
-    public void handleSupplyMessage(int idx, UUID id, final GridDhtPartitionSupplyMessage s) {
+    @Override public void handleSupplyMessage(int idx, UUID id, final GridDhtPartitionSupplyMessage s) {
         if (!enterBusy())
             return;
 
@@ -403,7 +383,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     }
 
     /** {@inheritDoc} */
-    public void handleDemandMessage(int idx, UUID id, GridDhtPartitionDemandMessage d) {
+    @Override public void handleDemandMessage(int idx, UUID id, GridDhtPartitionDemandMessage d) {
         if (!enterBusy())
             return;
 
@@ -418,10 +398,9 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     /** {@inheritDoc} */
     @Override public Runnable addAssignments(GridDhtPreloaderAssignments assignments,
         boolean forceRebalance,
-        Collection<String> caches,
         int cnt,
         Runnable next,
-        @Nullable GridFutureAdapter<Boolean> forcedRebFut) {
+        @Nullable GridCompoundFuture<Boolean, Boolean> forcedRebFut) {
         return demander.addAssignments(assignments, forceRebalance, cnt, next, forcedRebFut);
     }
 
@@ -434,12 +413,12 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> syncFuture() {
-        return cctx.kernalContext().clientNode() ? startFut : demander.syncFuture();
+        return ctx.kernalContext().clientNode() ? startFut : demander.syncFuture();
     }
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Boolean> rebalanceFuture() {
-        return cctx.kernalContext().clientNode() ? new GridFinishedFuture<>(true) : demander.rebalanceFuture();
+        return ctx.kernalContext().clientNode() ? new GridFinishedFuture<>(true) : demander.rebalanceFuture();
     }
 
     /**
@@ -466,171 +445,6 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     }
 
     /**
-     * @param node Node originated request.
-     * @param msg Force keys message.
-     */
-    private void processForceKeysRequest(final ClusterNode node, final GridDhtForceKeysRequest msg) {
-        IgniteInternalFuture<?> fut = cctx.mvcc().finishKeys(msg.keys(), msg.cacheId(), msg.topologyVersion());
-
-        if (fut.isDone())
-            processForceKeysRequest0(node, msg);
-        else
-            fut.listen(new CI1<IgniteInternalFuture<?>>() {
-                @Override public void apply(IgniteInternalFuture<?> t) {
-                    processForceKeysRequest0(node, msg);
-                }
-            });
-    }
-
-    /**
-     * @param node Node originated request.
-     * @param msg Force keys message.
-     */
-    private void processForceKeysRequest0(ClusterNode node, GridDhtForceKeysRequest msg) {
-        if (!enterBusy())
-            return;
-
-        try {
-            ClusterNode loc = cctx.localNode();
-
-            GridDhtForceKeysResponse res = new GridDhtForceKeysResponse(
-                cctx.cacheId(),
-                msg.futureId(),
-                msg.miniId(),
-                cctx.deploymentEnabled());
-
-            for (KeyCacheObject k : msg.keys()) {
-                int p = cctx.affinity().partition(k);
-
-                GridDhtLocalPartition locPart = top.localPartition(p, AffinityTopologyVersion.NONE, false);
-
-                // If this node is no longer an owner.
-                if (locPart == null && !top.owners(p).contains(loc)) {
-                    res.addMissed(k);
-
-                    continue;
-                }
-
-                GridCacheEntryEx entry = null;
-
-                while (true) {
-                    try {
-                        entry = cctx.dht().entryEx(k);
-
-                        entry.unswap();
-
-                        GridCacheEntryInfo info = entry.info();
-
-                        if (info == null) {
-                            assert entry.obsolete() : entry;
-
-                            continue;
-                        }
-
-                        if (!info.isNew())
-                            res.addInfo(info);
-
-                        cctx.evicts().touch(entry, msg.topologyVersion());
-
-                        break;
-                    }
-                    catch (GridCacheEntryRemovedException ignore) {
-                        if (log.isDebugEnabled())
-                            log.debug("Got removed entry: " + k);
-                    }
-                    catch (GridDhtInvalidPartitionException ignore) {
-                        if (log.isDebugEnabled())
-                            log.debug("Local node is no longer an owner: " + p);
-
-                        res.addMissed(k);
-
-                        break;
-                    }
-                }
-            }
-
-            if (log.isDebugEnabled())
-                log.debug("Sending force key response [node=" + node.id() + ", res=" + res + ']');
-
-            cctx.io().send(node, res, cctx.ioPolicy());
-        }
-        catch (ClusterTopologyCheckedException ignore) {
-            if (log.isDebugEnabled())
-                log.debug("Received force key request form failed node (will ignore) [nodeId=" + node.id() +
-                    ", req=" + msg + ']');
-        }
-        catch (IgniteCheckedException e) {
-            U.error(log, "Failed to reply to force key request [nodeId=" + node.id() + ", req=" + msg + ']', e);
-        }
-        finally {
-            leaveBusy();
-        }
-    }
-
-    /**
-     * @param node Node.
-     * @param msg Message.
-     */
-    private void processForceKeyResponse(ClusterNode node, GridDhtForceKeysResponse msg) {
-        if (!enterBusy())
-            return;
-
-        try {
-            GridDhtForceKeysFuture<?, ?> f = forceKeyFuts.get(msg.futureId());
-
-            if (f != null)
-                f.onResult(msg);
-            else if (log.isDebugEnabled())
-                log.debug("Receive force key response for unknown future (is it duplicate?) [nodeId=" + node.id() +
-                    ", res=" + msg + ']');
-        }
-        finally {
-            leaveBusy();
-        }
-    }
-
-    /**
-     * @param node Node.
-     * @param req Request.
-     */
-    private void processAffinityAssignmentRequest(final ClusterNode node,
-        final GridDhtAffinityAssignmentRequest req) {
-        final AffinityTopologyVersion topVer = req.topologyVersion();
-
-        if (log.isDebugEnabled())
-            log.debug("Processing affinity assignment request [node=" + node + ", req=" + req + ']');
-
-        cctx.affinity().affinityReadyFuture(req.topologyVersion()).listen(new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
-            @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> fut) {
-                if (log.isDebugEnabled())
-                    log.debug("Affinity is ready for topology version, will send response [topVer=" + topVer +
-                        ", node=" + node + ']');
-
-                AffinityAssignment assignment = cctx.affinity().assignment(topVer);
-
-                GridDhtAffinityAssignmentResponse res = new GridDhtAffinityAssignmentResponse(
-                    req.futureId(),
-                    cctx.cacheId(),
-                    topVer,
-                    assignment.assignment());
-
-                if (cctx.affinity().affinityCache().centralizedAffinityFunction()) {
-                    assert assignment.idealAssignment() != null;
-
-                    res.idealAffinityAssignment(assignment.idealAssignment());
-                }
-
-                try {
-                    cctx.io().send(node, res, AFFINITY_POOL);
-                }
-                catch (IgniteCheckedException e) {
-                    U.error(log, "Failed to send affinity assignment response to remote node [node=" + node + ']', e);
-                }
-            }
-        });
-    }
-
-    /**
      * Resends partitions on partition evict within configured timeout.
      *
      * @param part Evicted partition.
@@ -643,11 +457,11 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         try {
             top.onEvicted(part, updateSeq);
 
-            if (cctx.events().isRecordable(EVT_CACHE_REBALANCE_PART_UNLOADED))
-                cctx.events().addUnloadEvent(part.id());
+            if (grp.eventRecordable(EVT_CACHE_REBALANCE_PART_UNLOADED))
+                grp.addUnloadEvent(part.id());
 
             if (updateSeq)
-                cctx.shared().exchange().scheduleResendPartitions();
+                ctx.exchange().scheduleResendPartitions();
         }
         finally {
             leaveBusy();
@@ -656,7 +470,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
     /** {@inheritDoc} */
     @Override public boolean needForceKeys() {
-        if (cctx.rebalanceEnabled()) {
+        if (grp.rebalanceEnabled()) {
             IgniteInternalFuture<Boolean> rebalanceFut = rebalanceFuture();
 
             if (rebalanceFut.isDone() && Boolean.TRUE.equals(rebalanceFut.result()))
@@ -667,12 +481,13 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<Object> request(GridNearAtomicAbstractUpdateRequest req,
+    @Override public GridDhtFuture<Object> request(GridCacheContext cctx,
+        GridNearAtomicAbstractUpdateRequest req,
         AffinityTopologyVersion topVer) {
         if (!needForceKeys())
             return null;
 
-        return request0(req.keys(), topVer);
+        return request0(cctx, req.keys(), topVer);
     }
 
     /**
@@ -680,21 +495,27 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
      * @return Future for request.
      */
     @SuppressWarnings({"unchecked", "RedundantCast"})
-    @Override public GridDhtFuture<Object> request(Collection<KeyCacheObject> keys, AffinityTopologyVersion topVer) {
+    @Override public GridDhtFuture<Object> request(GridCacheContext cctx,
+        Collection<KeyCacheObject> keys,
+        AffinityTopologyVersion topVer) {
         if (!needForceKeys())
             return null;
 
-        return request0(keys, topVer);
+        return request0(cctx, keys, topVer);
     }
 
     /**
+     * @param cctx Cache context.
      * @param keys Keys to request.
      * @param topVer Topology version.
      * @return Future for request.
      */
     @SuppressWarnings({"unchecked", "RedundantCast"})
-    private GridDhtFuture<Object> request0(Collection<KeyCacheObject> keys, AffinityTopologyVersion topVer) {
-        final GridDhtForceKeysFuture<?, ?> fut = new GridDhtForceKeysFuture<>(cctx, topVer, keys, this);
+    private GridDhtFuture<Object> request0(GridCacheContext cctx, Collection<KeyCacheObject> keys, AffinityTopologyVersion topVer) {
+        if (cctx.isNear())
+            cctx = cctx.near().dht().context();
+
+        final GridDhtForceKeysFuture<?, ?> fut = new GridDhtForceKeysFuture<>(cctx, topVer, keys);
 
         IgniteInternalFuture<?> topReadyFut = cctx.affinity().affinityReadyFuturex(topVer);
 
@@ -704,7 +525,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
             if (topReadyFut == null)
                 startFut.listen(new CI1<IgniteInternalFuture<?>>() {
                     @Override public void apply(IgniteInternalFuture<?> syncFut) {
-                        cctx.kernalContext().closure().runLocalSafe(
+                        ctx.kernalContext().closure().runLocalSafe(
                             new GridPlainRunnable() {
                                 @Override public void run() {
                                     fut.init();
@@ -741,38 +562,11 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         demandLock.writeLock().lock();
 
         try {
-            cctx.deploy().unwind(cctx);
+            grp.unwindUndeploys();
         }
         finally {
             demandLock.writeLock().unlock();
         }
-    }
-
-    /**
-     * Adds future to future map.
-     *
-     * @param fut Future to add.
-     * @return {@code False} if node cache is stopping and future was completed with error.
-     */
-    boolean addFuture(GridDhtForceKeysFuture<?, ?> fut) {
-        forceKeyFuts.put(fut.futureId(), fut);
-
-        if (stopping) {
-            fut.onDone(stopError());
-
-            return false;
-        }
-
-        return true;
-    }
-
-    /**
-     * Removes future from future map.
-     *
-     * @param fut Future to remove.
-     */
-    void remoteFuture(GridDhtForceKeysFuture<?, ?> fut) {
-        forceKeyFuts.remove(fut.futureId(), fut);
     }
 
     /** {@inheritDoc} */
@@ -780,7 +574,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         partsToEvict.putIfAbsent(part.id(), part);
 
         if (partsEvictOwning.get() == 0 && partsEvictOwning.compareAndSet(0, 1)) {
-            cctx.closures().callLocalSafe(new GPC<Boolean>() {
+            ctx.kernalContext().closure().callLocalSafe(new GPC<Boolean>() {
                 @Override public Boolean call() {
                     boolean locked = true;
 
@@ -801,7 +595,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                                         partsToEvict.put(part.id(), part);
                                 }
                                 catch (Throwable ex) {
-                                    if (cctx.kernalContext().isStopping()) {
+                                    if (ctx.kernalContext().isStopping()) {
                                         LT.warn(log, ex, "Partition eviction failed (current node is stopping).",
                                             false,
                                             true);
@@ -836,44 +630,6 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
     /** {@inheritDoc} */
     @Override public void dumpDebugInfo() {
-        if (!forceKeyFuts.isEmpty()) {
-            U.warn(log, "Pending force key futures [cache=" + cctx.name() + "]:");
-
-            for (GridDhtForceKeysFuture fut : forceKeyFuts.values())
-                U.warn(log, ">>> " + fut);
-        }
-
         supplier.dumpDebugInfo();
-    }
-
-    /**
-     *
-     */
-    private abstract class MessageHandler<M> implements IgniteBiInClosure<UUID, M> {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** {@inheritDoc} */
-        @Override public void apply(UUID nodeId, M msg) {
-            ClusterNode node = cctx.node(nodeId);
-
-            if (node == null) {
-                if (log.isDebugEnabled())
-                    log.debug("Received message from failed node [node=" + nodeId + ", msg=" + msg + ']');
-
-                return;
-            }
-
-            if (log.isDebugEnabled())
-                log.debug("Received message from node [node=" + nodeId + ", msg=" + msg + ']');
-
-            onMessage(node, msg);
-        }
-
-        /**
-         * @param node Node.
-         * @param msg Message.
-         */
-        protected abstract void onMessage(ClusterNode node, M msg);
     }
 }

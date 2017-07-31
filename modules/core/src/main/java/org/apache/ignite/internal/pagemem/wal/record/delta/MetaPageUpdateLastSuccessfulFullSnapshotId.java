@@ -19,7 +19,7 @@ package org.apache.ignite.internal.pagemem.wal.record.delta;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.internal.processors.cache.database.tree.io.PageMetaIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageMetaIO;
 
 /**
  *
@@ -31,8 +31,8 @@ public class MetaPageUpdateLastSuccessfulFullSnapshotId extends PageDeltaRecord 
     /**
      * @param pageId Meta page ID.
      */
-    public MetaPageUpdateLastSuccessfulFullSnapshotId(int cacheId, long pageId, long lastSuccessfulFullSnapshotId) {
-        super(cacheId, pageId);
+    public MetaPageUpdateLastSuccessfulFullSnapshotId(int grpId, long pageId, long lastSuccessfulFullSnapshotId) {
+        super(grpId, pageId);
 
         this.lastSuccessfulFullSnapshotId = lastSuccessfulFullSnapshotId;
     }

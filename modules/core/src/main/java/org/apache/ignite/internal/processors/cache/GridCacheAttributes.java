@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.io.Externalizable;
 import java.io.Serializable;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -47,23 +46,19 @@ public class GridCacheAttributes implements Serializable {
     /** Cache configuration. */
     private CacheConfiguration ccfg;
 
-    /** SQL flag - whether the cache is created by an SQL command such as {@code CREATE TABLE}. */
-    private boolean sql;
-
     /**
      * @param cfg Cache configuration.
+     *
      */
-    public GridCacheAttributes(CacheConfiguration cfg, boolean sql) {
+    public GridCacheAttributes(CacheConfiguration cfg) {
         ccfg = cfg;
-
-        this.sql = sql;
     }
 
     /**
-     * Public no-arg constructor for {@link Externalizable}.
+     * @return Cache group name.
      */
-    public GridCacheAttributes() {
-        // No-op.
+    public String groupName() {
+        return ccfg.getGroupName();
     }
 
     /**
@@ -271,6 +266,13 @@ public class GridCacheAttributes implements Serializable {
     }
 
     /**
+     * @return Write coalescing flag.
+     */
+    public boolean writeBehindCoalescing() {
+        return ccfg.getWriteBehindCoalescing();
+    }
+
+    /**
      * @return Interceptor class name.
      */
     public String interceptorClassName() {
@@ -278,10 +280,17 @@ public class GridCacheAttributes implements Serializable {
     }
 
     /**
-     * @return SQL flag.
+     * @return Node filter class name.
      */
-    public boolean sql() {
-        return sql;
+    String nodeFilterClassName() {
+        return className(ccfg.getNodeFilter());
+    }
+
+    /**
+     * @return Topology validator class name.
+     */
+    String topologyValidatorClassName() {
+        return className(ccfg.getTopologyValidator());
     }
 
     /**

@@ -31,6 +31,9 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.cache.CacheException;
@@ -267,7 +270,7 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
                                     keys.add(keyCls);
                                 else
                                     throw new IgniteException("Class is unknown for the load test. Make sure you " +
-                                        "specified its full name [clsName=" + queryEntity.getKeyType() + ']');
+                                        "specified its full name [cache=" + cacheName + ", clsName=" + queryEntity.getKeyType() + ']');
                             }
 
                             if (queryEntity.getValueType() != null) {
@@ -277,7 +280,7 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
                                     values.add(valCls);
                                 else
                                     throw new IgniteException("Class is unknown for the load test. Make sure you " +
-                                        "specified its full name [clsName=" + queryEntity.getKeyType() + ']');
+                                        "specified its full name [cache=" + cacheName + ", clsName=" + queryEntity.getValueType() + ']');
 
                                 configureCacheSqlDescriptor(cacheName, queryEntity, valCls);
                             }
@@ -448,25 +451,36 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
 
         startPreloadLogging(args.preloadLogsInterval());
 
-        Thread[] threads = new Thread[availableCaches.size()];
+        ExecutorService executor = Executors.newFixedThreadPool(10);
 
-        for (int i = 0; i < availableCaches.size(); i++) {
-            final String cacheName = availableCaches.get(i).getName();
+        try {
+            List<Future<?>> futs = new ArrayList<>();
 
-            threads[i] = new Thread() {
-                @Override public void run() {
-                    try (IgniteDataStreamer<Object, Object> dataLdr = ignite().dataStreamer(cacheName)) {
-                        for (int i = 0; i < args.preloadAmount() && !isInterrupted(); i++)
-                            dataLdr.addData(createRandomKey(i, cacheName), createRandomValue(i, cacheName));
+            final Thread thread = Thread.currentThread();
+
+            for (int i = 0; i < availableCaches.size(); i++) {
+                final String cacheName = availableCaches.get(i).getName();
+
+                futs.add(executor.submit(new Runnable() {
+                    @Override public void run() {
+                        try (IgniteDataStreamer<Object, Object> dataLdr = ignite().dataStreamer(cacheName)) {
+                            for (int i = 0; i < args.preloadAmount(); i++) {
+                                if (i % 100 == 0 && thread.isInterrupted())
+                                    break;
+
+                                dataLdr.addData(createRandomKey(i, cacheName), createRandomValue(i, cacheName));
+                            }
+                        }
                     }
-                }
-            };
+                }));
+            }
 
-            threads[i].start();
+            for (Future<?> fut : futs)
+                fut.get();
         }
-
-        for (Thread thread : threads)
-            thread.join();
+        finally {
+            executor.shutdown();
+        }
 
         stopPreloadLogging();
     }

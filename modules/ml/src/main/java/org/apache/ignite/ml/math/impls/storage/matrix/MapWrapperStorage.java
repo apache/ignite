@@ -17,14 +17,13 @@
 
 package org.apache.ignite.ml.math.impls.storage.matrix;
 
-import org.apache.ignite.internal.util.GridArgumentCheck;
-import org.apache.ignite.ml.math.VectorStorage;
-
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Map;
 import java.util.Set;
+import org.apache.ignite.internal.util.GridArgumentCheck;
+import org.apache.ignite.ml.math.VectorStorage;
 
 /**
  * Storage for wrapping given map.
@@ -79,8 +78,9 @@ public class MapWrapperStorage implements VectorStorage {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        data = (Map<Integer, Double>) in.readObject();
+        data = (Map<Integer, Double>)in.readObject();
     }
 
     /** {@inheritDoc} */

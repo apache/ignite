@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.jdbc.thin;
 
-import org.apache.ignite.configuration.OdbcConfiguration;
 import org.apache.ignite.configuration.SqlConnectorConfiguration;
 
 import java.sql.Time;
@@ -61,6 +60,12 @@ public class JdbcThinUtils {
     /** Parameter: enforce join order flag. */
     public static final String PARAM_ENFORCE_JOIN_ORDER = "enforceJoinOrder";
 
+    /** Parameter: collocated flag. */
+    public static final String PARAM_COLLOCATED = "collocated";
+
+    /** Parameter: replicated only flag. */
+    public static final String PARAM_REPLICATED_ONLY = "replicatedOnly";
+
     /** Parameter: socket send buffer. */
     public static final String PARAM_SOCK_SND_BUF = "socketSendBuffer";
 
@@ -70,11 +75,20 @@ public class JdbcThinUtils {
     /** Parameter: TCP no-delay flag. */
     public static final String PARAM_TCP_NO_DELAY = "tcpNoDelay";
 
+    /** Parameter: Automatically close server cursor. */
+    public static final String PARAM_AUTO_CLOSE_SERVER_CURSOR = "autoCloseServerCursor";
+
     /** Distributed joins property name. */
     public static final String PROP_DISTRIBUTED_JOINS = PROP_PREFIX + PARAM_DISTRIBUTED_JOINS;
 
     /** Transactions allowed property name. */
     public static final String PROP_ENFORCE_JOIN_ORDER = PROP_PREFIX + PARAM_ENFORCE_JOIN_ORDER;
+
+    /** Collocated property name. */
+    public static final String PROP_COLLOCATED = PROP_PREFIX + PARAM_COLLOCATED;
+
+    /** Replicated only property name. */
+    public static final String PROP_REPLICATED_ONLY = PROP_PREFIX + PARAM_REPLICATED_ONLY;
 
     /** Socket send buffer property name. */
     public static final String PROP_SOCK_SND_BUF = PROP_PREFIX + PARAM_SOCK_SND_BUF;
@@ -84,6 +98,9 @@ public class JdbcThinUtils {
 
     /** TCP no delay property name. */
     public static final String PROP_TCP_NO_DELAY = PROP_PREFIX + PARAM_TCP_NO_DELAY;
+
+    /** Automatically close server cursor. */
+    public static final String PROP_AUTO_CLOSE_SERVER_CURSORS = PROP_PREFIX + PARAM_AUTO_CLOSE_SERVER_CURSOR;
 
     /** Default port. */
     public static final int DFLT_PORT = SqlConnectorConfiguration.DFLT_PORT;

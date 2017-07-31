@@ -65,12 +65,15 @@ class JdbcQueryCursor {
      * @return List of the rows.
      */
     List<List<Object>> fetchRows() {
-        List<List<Object>> items = new ArrayList<>();
+        int fetchSize = (maxRows > 0) ? (int)Math.min(pageSize, maxRows - fetched) : pageSize;
 
-        int fetchSize0 = (maxRows > 0) ? (int)Math.min(pageSize, maxRows - fetched) : pageSize;
+        List<List<Object>> items = new ArrayList<>(fetchSize);
 
-        for (; fetched < fetchSize0 && iter.hasNext(); ++fetched)
+        for (int i = 0; i < fetchSize && iter.hasNext(); i++) {
             items.add(iter.next());
+
+            fetched++;
+        }
 
         return items;
     }

@@ -17,31 +17,6 @@
 
 package org.apache.ignite.internal.processors.query;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.cache.QueryEntity;
-import org.apache.ignite.cache.QueryIndex;
-import org.apache.ignite.cache.QueryIndexType;
-import org.apache.ignite.cache.affinity.AffinityKeyMapper;
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.internal.processors.cache.CacheObjectContext;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.GridCacheDefaultAffinityKeyMapper;
-import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
-import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
-import org.apache.ignite.internal.processors.query.property.QueryBinaryProperty;
-import org.apache.ignite.internal.processors.query.property.QueryClassProperty;
-import org.apache.ignite.internal.processors.query.property.QueryFieldAccessor;
-import org.apache.ignite.internal.processors.query.property.QueryMethodsAccessor;
-import org.apache.ignite.internal.processors.query.property.QueryPropertyAccessor;
-import org.apache.ignite.internal.processors.query.property.QueryReadOnlyMethodsAccessor;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.A;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.jetbrains.annotations.Nullable;
-
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.sql.Time;
@@ -55,6 +30,33 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.binary.BinaryField;
+import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.cache.QueryIndexType;
+import org.apache.ignite.cache.affinity.AffinityKeyMapper;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.processors.cache.CacheDefaultBinaryAffinityKeyMapper;
+import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheDefaultAffinityKeyMapper;
+import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
+import org.apache.ignite.internal.processors.query.property.QueryBinaryProperty;
+import org.apache.ignite.internal.processors.query.property.QueryClassProperty;
+import org.apache.ignite.internal.processors.query.property.QueryFieldAccessor;
+import org.apache.ignite.internal.processors.query.property.QueryMethodsAccessor;
+import org.apache.ignite.internal.processors.query.property.QueryPropertyAccessor;
+import org.apache.ignite.internal.processors.query.property.QueryReadOnlyMethodsAccessor;
+import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_INDEXING_DISCOVERY_HISTORY_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
@@ -419,24 +421,38 @@ public class QueryUtils {
         QueryTypeIdKey typeId;
         QueryTypeIdKey altTypeId = null;
 
+        int valTypeId = ctx.cacheObjects().typeId(qryEntity.findValueType());
+
         if (valCls == null || (binaryEnabled && !keyOrValMustDeserialize)) {
             processBinaryMeta(ctx, qryEntity, desc);
 
-            typeId = new QueryTypeIdKey(cacheName, ctx.cacheObjects().typeId(qryEntity.findValueType()));
+            typeId = new QueryTypeIdKey(cacheName, valTypeId);
 
             if (valCls != null)
                 altTypeId = new QueryTypeIdKey(cacheName, valCls);
 
-            if (!cctx.customAffinityMapper() && qryEntity.findKeyType() != null) {
-                // Need to setup affinity key for distributed joins.
-                String affField = ctx.cacheObjects().affinityField(qryEntity.findKeyType());
+            String affField = null;
 
-                if (affField != null) {
-                    if (!escape)
-                        affField = normalizeObjectName(affField, false);
+            // Need to setup affinity key for distributed joins.
+            String keyType = qryEntity.getKeyType();
 
-                    desc.affinityKey(affField);
+            if (!cctx.customAffinityMapper() && keyType != null) {
+                if (coCtx != null) {
+                    CacheDefaultBinaryAffinityKeyMapper mapper =
+                        (CacheDefaultBinaryAffinityKeyMapper)coCtx.defaultAffMapper();
+
+                    BinaryField field = mapper.affinityKeyField(keyType);
+
+                    if (field != null)
+                        affField = field.name();
                 }
+            }
+
+            if (affField != null) {
+                if (!escape)
+                    affField = normalizeObjectName(affField, false);
+
+                desc.affinityKey(affField);
             }
         }
         else {
@@ -457,8 +473,10 @@ public class QueryUtils {
             }
 
             typeId = new QueryTypeIdKey(cacheName, valCls);
-            altTypeId = new QueryTypeIdKey(cacheName, ctx.cacheObjects().typeId(qryEntity.findValueType()));
+            altTypeId = new QueryTypeIdKey(cacheName, valTypeId);
         }
+
+        desc.typeId(valTypeId);
 
         return new QueryTypeCandidate(typeId, altTypeId, desc);
     }
@@ -1022,6 +1040,52 @@ public class QueryUtils {
     }
 
     /**
+     * Check given {@link CacheConfiguration} for conflicts in table and index names from any query entities
+     *     found in collection of {@link DynamicCacheDescriptor}s and belonging to the same schema.
+     *
+     * @param ccfg New cache configuration.
+     * @param descs Cache descriptors.
+     * @return Exception message describing found conflict or {@code null} if none found.
+     */
+    public static SchemaOperationException checkQueryEntityConflicts(CacheConfiguration<?, ?> ccfg,
+        Collection<DynamicCacheDescriptor> descs) {
+        String schema = QueryUtils.normalizeSchemaName(ccfg.getName(), ccfg.getSqlSchema());
+
+        Set<String> idxNames = new HashSet<>();
+
+        Set<String> tblNames = new HashSet<>();
+
+        for (DynamicCacheDescriptor desc : descs) {
+            if (F.eq(ccfg.getName(), desc.cacheName()))
+                continue;
+
+            String descSchema = QueryUtils.normalizeSchemaName(desc.cacheName(),
+                desc.cacheConfiguration().getSqlSchema());
+
+            if (!F.eq(schema, descSchema))
+                continue;
+
+            for (QueryEntity e : desc.schema().entities()) {
+                tblNames.add(e.getTableName());
+
+                for (QueryIndex idx : e.getIndexes())
+                    idxNames.add(idx.getName());
+            }
+        }
+
+        for (QueryEntity e : ccfg.getQueryEntities()) {
+            if (!tblNames.add(e.getTableName()))
+                return new SchemaOperationException(SchemaOperationException.CODE_TABLE_EXISTS, e.getTableName());
+
+            for (QueryIndex idx : e.getIndexes())
+                if (!idxNames.add(idx.getName()))
+                    return new SchemaOperationException(SchemaOperationException.CODE_INDEX_EXISTS, idx.getName());
+        }
+
+        return null;
+    }
+
+    /**
      * Validate query entity.
      *
      * @param entity Entity.
@@ -1066,6 +1130,38 @@ public class QueryUtils {
                         ", queryIdx=" + idx + ']');
             }
         }
+    }
+
+    /**
+     * Construct cache name for table.
+     *
+     * @param schemaName Schema name.
+     * @param tblName Table name.
+     * @return Cache name.
+     */
+    public static String createTableCacheName(String schemaName, String tblName) {
+        return "SQL_" + schemaName + "_" + tblName;
+    }
+
+    /**
+     * Construct value type name for table.
+     *
+     * @param schemaName Schema name.
+     * @param tblName Table name.
+     * @return Value type name.
+     */
+    public static String createTableValueTypeName(String schemaName, String tblName) {
+        return createTableCacheName(schemaName, tblName) + "_" + UUID.randomUUID().toString().replace("-", "_");
+    }
+
+    /**
+     * Construct key type name for table.
+     *
+     * @param valTypeName Value type name.
+     * @return Key type name.
+     */
+    public static String createTableKeyTypeName(String valTypeName) {
+        return valTypeName + "_KEY";
     }
 
     /**

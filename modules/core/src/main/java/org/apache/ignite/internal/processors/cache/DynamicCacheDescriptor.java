@@ -24,7 +24,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
-import org.apache.ignite.internal.processors.plugin.CachePluginManager;
 import org.apache.ignite.internal.processors.query.QuerySchema;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaFinishDiscoveryMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -56,9 +55,6 @@ public class DynamicCacheDescriptor {
 
     /** Template configuration flag. */
     private boolean template;
-
-    /** Cache plugin manager. */
-    private final CachePluginManager pluginMgr;
 
     /** */
     private boolean updatesAllowed = true;
@@ -93,10 +89,14 @@ public class DynamicCacheDescriptor {
     /** Current schema. */
     private QuerySchema schema;
 
+    /** */
+    private final CacheGroupDescriptor grpDesc;
+
     /**
      * @param ctx Context.
      * @param cacheCfg Cache configuration.
      * @param cacheType Cache type.
+     * @param grpDesc Group descriptor.
      * @param template {@code True} if this is template configuration.
      * @param rcvdFrom ID of node provided cache configuration
      * @param staticCfg {@code True} if cache statically configured.
@@ -108,6 +108,7 @@ public class DynamicCacheDescriptor {
     public DynamicCacheDescriptor(GridKernalContext ctx,
         CacheConfiguration cacheCfg,
         CacheType cacheType,
+        CacheGroupDescriptor grpDesc,
         boolean template,
         UUID rcvdFrom,
         boolean staticCfg,
@@ -115,6 +116,7 @@ public class DynamicCacheDescriptor {
         IgniteUuid deploymentId,
         QuerySchema schema) {
         assert cacheCfg != null;
+        assert grpDesc != null || template;
         assert schema != null;
 
         if (cacheCfg.getCacheMode() == CacheMode.REPLICATED && cacheCfg.getNearConfiguration() != null) {
@@ -125,19 +127,36 @@ public class DynamicCacheDescriptor {
 
         this.cacheCfg = cacheCfg;
         this.cacheType = cacheType;
+        this.grpDesc = grpDesc;
         this.template = template;
         this.rcvdFrom = rcvdFrom;
         this.staticCfg = staticCfg;
         this.sql = sql;
         this.deploymentId = deploymentId;
 
-        pluginMgr = new CachePluginManager(ctx, cacheCfg);
-
         cacheId = CU.cacheId(cacheCfg.getName());
 
         synchronized (schemaMux) {
             this.schema = schema.copy();
         }
+    }
+
+    /**
+     * @return Cache group ID.
+     */
+    public int groupId() {
+        assert grpDesc != null : this;
+
+        return grpDesc.groupId();
+    }
+
+    /**
+     * @return Cache group descriptor.
+     */
+    public CacheGroupDescriptor groupDescriptor() {
+        assert grpDesc != null : this;
+
+        return grpDesc;
     }
 
     /**
@@ -203,6 +222,7 @@ public class DynamicCacheDescriptor {
      *
      * @param proc Object processor.
      * @return Cache object context.
+     * @throws IgniteCheckedException If failed.
      */
     public CacheObjectContext cacheObjectContext(IgniteCacheObjectProcessor proc) throws IgniteCheckedException {
         if (objCtx == null) {
@@ -213,13 +233,6 @@ public class DynamicCacheDescriptor {
         }
 
         return objCtx;
-    }
-
-    /**
-     * @return Cache plugin manager.
-     */
-    public CachePluginManager pluginManager() {
-        return pluginMgr;
     }
 
     /**

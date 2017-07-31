@@ -32,6 +32,7 @@ import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.pagemem.wal.StorageException;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
@@ -660,6 +661,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                             txEntry.updateCounter())));
 
                                     if (op == CREATE || op == UPDATE) {
+                                        assert val != null : txEntry;
+
                                         GridCacheUpdateTxResult updRes = cached.innerSet(
                                             this,
                                             eventNodeId(),
@@ -826,11 +829,18 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                             throw ex;
                         }
                         else {
+                            boolean nodeStopping = X.hasCause(ex, NodeStoppingException.class);
+
                             IgniteCheckedException err = new IgniteTxHeuristicCheckedException("Failed to locally write to cache " +
                                 "(all transaction entries will be invalidated, however there was a window when " +
                                 "entries for this transaction were visible to others): " + this, ex);
 
-                            U.error(log, "Heuristic transaction failure.", err);
+                            if (nodeStopping) {
+                                U.warn(log, "Failed to commit transaction, node is stopping " +
+                                    "[tx=" + this + ", err=" + ex + ']');
+                            }
+                            else
+                                U.error(log, "Heuristic transaction failure.", err);
 
                             COMMIT_ERR_UPD.compareAndSet(this, null, err);
 
@@ -838,7 +848,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
                             try {
                                 // Courtesy to minimize damage.
-                                uncommit();
+                                uncommit(nodeStopping);
                             }
                             catch (Throwable ex1) {
                                 U.error(log, "Failed to uncommit transaction: " + this, ex1);
@@ -888,17 +898,20 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
      * Commits transaction to transaction manager. Used for one-phase commit transactions only.
      *
      * @param commit If {@code true} commits transaction, otherwise rollbacks.
+     * @param nodeStop If {@code true} tx is cancelled on node stop.
      * @throws IgniteCheckedException If failed.
      */
-    public void tmFinish(boolean commit) throws IgniteCheckedException {
+    public void tmFinish(boolean commit, boolean nodeStop) throws IgniteCheckedException {
         assert onePhaseCommit();
 
         if (DONE_FLAG_UPD.compareAndSet(this, 0, 1)) {
-            // Unlock all locks.
-            if (commit)
-                cctx.tm().commitTx(this);
-            else
-                cctx.tm().rollbackTx(this);
+            if (!nodeStop) {
+                // Unlock all locks.
+                if (commit)
+                    cctx.tm().commitTx(this);
+                else
+                    cctx.tm().rollbackTx(this);
+            }
 
             state(commit ? COMMITTED : ROLLED_BACK);
 
@@ -1277,7 +1290,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         long drExpireTime,
         @Nullable GridCacheVersion drVer,
         boolean skipStore,
-        boolean keepBinary
+        boolean keepBinary,
+        boolean addReader
     ) {
         assert invokeArgs == null || op == TRANSFORM;
 
@@ -1353,7 +1367,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 filter,
                 drVer,
                 skipStore,
-                keepBinary);
+                keepBinary,
+                addReader);
 
             txEntry.conflictExpireTime(drExpireTime);
 

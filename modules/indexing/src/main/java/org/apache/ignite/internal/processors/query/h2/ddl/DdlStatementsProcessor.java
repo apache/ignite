@@ -26,6 +26,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
@@ -85,7 +86,7 @@ public class DdlStatementsProcessor {
      * @param sql SQL.
      * @param stmt H2 statement to parse and execute.
      */
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "ThrowableResultOfMethodCallIgnored"})
     public FieldsQueryCursor<List<?>> runDdlStatement(String sql, PreparedStatement stmt)
         throws IgniteCheckedException {
         assert stmt instanceof JdbcPreparedStatement;
@@ -162,8 +163,21 @@ public class DdlStatementsProcessor {
                             cmd.tableName());
                 }
                 else {
-                    ctx.query().dynamicTableCreate(cmd.schemaName(), toQueryEntity(cmd), cmd.templateName(),
-                        cmd.atomicityMode(), cmd.backups(), cmd.ifNotExists());
+                    QueryEntity e = toQueryEntity(cmd);
+
+                    CacheConfiguration<?, ?> ccfg = new CacheConfiguration<>(cmd.tableName());
+
+                    ccfg.setQueryEntities(Collections.singleton(e));
+                    ccfg.setSqlSchema(cmd.schemaName());
+
+                    SchemaOperationException err =
+                        QueryUtils.checkQueryEntityConflicts(ccfg, ctx.cache().cacheDescriptors().values());
+
+                    if (err != null)
+                        throw err;
+
+                    ctx.query().dynamicTableCreate(cmd.schemaName(), e, cmd.templateName(), cmd.cacheGroup(),
+                        cmd.affinityKey(), cmd.atomicityMode(), cmd.backups(), cmd.ifNotExists());
                 }
             }
             else if (stmt0 instanceof GridSqlDropTable) {
@@ -174,6 +188,12 @@ public class DdlStatementsProcessor {
                         QueryUtils.DFLT_SCHEMA + " schema.");
 
                 GridH2Table tbl = idx.dataTable(cmd.schemaName(), cmd.tableName());
+
+                if (tbl == null && cmd.ifExists()) {
+                    ctx.cache().createMissingQueryCaches();
+
+                    tbl = idx.dataTable(cmd.schemaName(), cmd.tableName());
+                }
 
                 if (tbl == null) {
                     if (!cmd.ifExists())
@@ -274,9 +294,11 @@ public class DdlStatementsProcessor {
             res.addQueryField(e.getKey(), DataType.getTypeClassName(col.getType()), null);
         }
 
-        res.setKeyType(createTbl.tableName() + "Key");
+        String valTypeName = QueryUtils.createTableValueTypeName(createTbl.schemaName(), createTbl.tableName());
+        String keyTypeName = QueryUtils.createTableKeyTypeName(valTypeName);
 
-        res.setValueType(createTbl.tableName());
+        res.setValueType(valTypeName);
+        res.setKeyType(keyTypeName);
 
         res.setKeyFields(createTbl.primaryKeyColumns());
 

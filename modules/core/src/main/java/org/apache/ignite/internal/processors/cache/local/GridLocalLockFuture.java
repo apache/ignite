@@ -41,6 +41,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
 import org.apache.ignite.internal.processors.cache.transactions.TxDeadlock;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
+import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.transactions.TransactionDeadlockException;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -447,11 +448,6 @@ public final class GridLocalLockFuture<K, V> extends GridCacheFutureAdapter<Bool
     }
 
     /** {@inheritDoc} */
-    @Override public int hashCode() {
-        return futId.hashCode();
-    }
-
-    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridLocalLockFuture.class, this);
     }
@@ -501,7 +497,9 @@ public final class GridLocalLockFuture<K, V> extends GridCacheFutureAdapter<Bool
 
                             if (deadlock != null)
                                 ERR_UPD.compareAndSet(GridLocalLockFuture.this, null,
-                                    new TransactionDeadlockException(deadlock.toString(cctx.shared())));
+                                        new IgniteTxTimeoutCheckedException("Failed to acquire lock within provided timeout for " +
+                                                "transaction [timeout=" + tx.timeout() + ", tx=" + tx + ']',
+                                                new TransactionDeadlockException(deadlock.toString(cctx.shared()))));
                         }
                         catch (IgniteCheckedException e) {
                             U.warn(log, "Failed to detect deadlock.", e);

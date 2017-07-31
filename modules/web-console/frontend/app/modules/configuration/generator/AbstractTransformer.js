@@ -64,8 +64,8 @@ export default class AbstractTransformer {
     }
 
     // Generate atomics group.
-    static clusterAtomics(atomics) {
-        return this.toSection(this.generator.clusterAtomics(atomics));
+    static clusterAtomics(atomics, available) {
+        return this.toSection(this.generator.clusterAtomics(atomics, available));
     }
 
     // Generate binary group.
@@ -154,8 +154,18 @@ export default class AbstractTransformer {
     }
 
     // Generate ODBC group.
-    static clusterODBC(odbc) {
-        return this.toSection(this.generator.clusterODBC(odbc));
+    static clusterODBC(odbc, available) {
+        return this.toSection(this.generator.clusterODBC(odbc, available));
+    }
+
+    // Generate cluster persistence store group.
+    static clusterPersistence(persistence, available) {
+        return this.toSection(this.generator.clusterPersistence(persistence, available));
+    }
+
+    // Generate cluster query group.
+    static clusterQuery(cluster, available) {
+        return this.toSection(this.generator.clusterQuery(cluster, available));
     }
 
     // Generate cache node filter group.
@@ -294,8 +304,8 @@ export default class AbstractTransformer {
     }
 
     // Generate domain model for query group.
-    static domainModelQuery(domain) {
-        return this.toSection(this.generator.domainModelQuery(domain));
+    static domainModelQuery(domain, available) {
+        return this.toSection(this.generator.domainModelQuery(domain, available));
     }
 
     // Generate domain model for store group.

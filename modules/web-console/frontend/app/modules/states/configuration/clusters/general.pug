@@ -20,6 +20,16 @@ include /app/helpers/jade/mixins
 -var model = 'backupItem'
 -var modelDiscoveryKind = model + '.discovery.kind'
 
+include ./general/discovery/cloud
+include ./general/discovery/google
+include ./general/discovery/jdbc
+include ./general/discovery/multicast
+include ./general/discovery/s3
+include ./general/discovery/shared
+include ./general/discovery/vm
+include ./general/discovery/zookeeper
+include ./general/discovery/kubernetes
+
 .panel.panel-default(ng-form=form novalidate)
     .panel-heading(bs-collapse-toggle)
         ignite-form-panel-chevron
@@ -57,23 +67,23 @@ include /app/helpers/jade/mixins
                 .settings-row
                     .panel-details
                         div(ng-if=`${modelDiscoveryKind} === 'Cloud'`)
-                            include ./general/discovery/cloud
+                            +discovery-cloud()
                         div(ng-if=`${modelDiscoveryKind} === 'GoogleStorage'`)
-                            include ./general/discovery/google
+                            +discovery-google()
                         div(ng-if=`${modelDiscoveryKind} === 'Jdbc'`)
-                            include ./general/discovery/jdbc
+                            +discovery-jdbc()
                         div(ng-if=`${modelDiscoveryKind} === 'Multicast'`)
-                            include ./general/discovery/multicast
+                            +discovery-multicast()
                         div(ng-if=`${modelDiscoveryKind} === 'S3'`)
-                            include ./general/discovery/s3
+                            +discovery-s3()
                         div(ng-if=`${modelDiscoveryKind} === 'SharedFs'`)
-                            include ./general/discovery/shared
+                            +discovery-shared()
                         div(ng-if=`${modelDiscoveryKind} === 'Vm'`)
-                            include ./general/discovery/vm
+                            +discovery-vm()
                         div(ng-if=`${modelDiscoveryKind} === 'ZooKeeper'`)
-                            include ./general/discovery/zookeeper
+                            +discovery-zookeeper()
                         div(ng-if=`${modelDiscoveryKind} === 'Kubernetes'`)
-                            include ./general/discovery/kubernetes
+                            +discovery-kubernetes()
             .col-sm-6
                 -var model = 'backupItem'
                 +preview-xml-java(model, 'clusterCaches', 'caches')

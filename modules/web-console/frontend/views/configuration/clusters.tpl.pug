@@ -63,13 +63,20 @@ include /app/helpers/jade/mixins
 
                             include /app/modules/states/configuration/clusters/misc
                             include /app/modules/states/configuration/clusters/metrics
+
+                            //- Deprecated in ignite 2.1
                             include /app/modules/states/configuration/clusters/odbc
+
+                            //- Since ignite 2.1
+                            include /app/modules/states/configuration/clusters/persistence
+                            include /app/modules/states/configuration/clusters/sql-connector
+
                             include /app/modules/states/configuration/clusters/service
                             include /app/modules/states/configuration/clusters/ssl
 
                             //- Removed in ignite 2.0
                             include /app/modules/states/configuration/clusters/swap
-                                
+
                             include /app/modules/states/configuration/clusters/thread
                             include /app/modules/states/configuration/clusters/time
                             include /app/modules/states/configuration/clusters/transactions

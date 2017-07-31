@@ -122,8 +122,10 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.jar.JarFile;
 import java.util.logging.ConsoleHandler;
@@ -137,6 +139,7 @@ import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 import javax.management.DynamicMBean;
 import javax.management.JMException;
+import javax.management.MBeanRegistrationException;
 import javax.management.MBeanServer;
 import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
@@ -153,6 +156,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteDeploymentException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
@@ -187,8 +191,6 @@ import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
 import org.apache.ignite.internal.mxbean.IgniteStandardMXBean;
 import org.apache.ignite.internal.processors.cache.GridCacheAttributes;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersionEx;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
@@ -515,11 +517,14 @@ public abstract class IgniteUtils {
         }
     };
 
+    /** Ignite MBeans disabled flag. */
+    public static boolean IGNITE_MBEANS_DISABLED = IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_MBEANS_DISABLED);
+
     /** */
     private static final boolean assertionsEnabled;
 
     /*
-     *
+     * Initializes enterprise check.
      */
     static {
         boolean assertionsEnabled0 = true;
@@ -1121,7 +1126,7 @@ public abstract class IgniteUtils {
      */
     @Deprecated
     public static void dumpStack(String msg) {
-        new Exception(debugPrefix() + msg).printStackTrace(System.out);
+        new Exception(debugPrefix() + msg).printStackTrace(System.err);
     }
 
     /**
@@ -3008,10 +3013,9 @@ public abstract class IgniteUtils {
      * @param data An array of characters containing hexidecimal digits
      * @return A byte array containing binary data decoded from
      *         the supplied char array.
-     * @throws org.apache.ignite.IgniteCheckedException Thrown if an odd number or illegal of characters is supplied.
+     * @throws IgniteCheckedException Thrown if an odd number or illegal of characters is supplied.
      */
     public static byte[] decodeHex(char[] data) throws IgniteCheckedException {
-
         int len = data.length;
 
         if ((len & 0x01) != 0)
@@ -3102,21 +3106,6 @@ public abstract class IgniteUtils {
      */
     public static String format(long sysTime) {
         return LONG_DATE_FMT.format(new java.util.Date(sysTime));
-    }
-
-    /**
-     * Takes given collection, shuffles it and returns iterable instance.
-     *
-     * @param <T> Type of elements to create iterator for.
-     * @param col Collection to shuffle.
-     * @return Iterable instance over randomly shuffled collection.
-     */
-    public static <T> Iterable<T> randomIterable(Collection<T> col) {
-        List<T> list = new ArrayList<>(col);
-
-        Collections.shuffle(list);
-
-        return list;
     }
 
     /**
@@ -3391,18 +3380,18 @@ public abstract class IgniteUtils {
      * @throws IOException If error occurred.
      */
     public static String readFileToString(String fileName, String charset) throws IOException {
-        Reader input = new InputStreamReader(new FileInputStream(fileName), charset);
+        try (Reader input = new InputStreamReader(new FileInputStream(fileName), charset)) {
+            StringWriter output = new StringWriter();
 
-        StringWriter output = new StringWriter();
+            char[] buf = new char[4096];
 
-        char[] buf = new char[4096];
+            int n;
 
-        int n;
+            while ((n = input.read(buf)) != -1)
+                output.write(buf, 0, n);
 
-        while ((n = input.read(buf)) != -1)
-            output.write(buf, 0, n);
-
-        return output.toString();
+            return output.toString();
+        }
     }
 
     /**
@@ -3456,22 +3445,25 @@ public abstract class IgniteUtils {
         if (file.isDirectory()) {
             File[] files = file.listFiles();
 
-            if (files != null && files.length > 0)
-                for (File file1 : files)
+            if (files != null && files.length > 0) {
+                for (File file1 : files) {
                     if (file1.isDirectory())
                         res &= delete(file1);
-                    else if (file1.getName().endsWith("jar"))
+                    else if (file1.getName().endsWith("jar")) {
                         try {
                             // Why do we do this?
                             new JarFile(file1, false).close();
-
-                            res &= file1.delete();
                         }
                         catch (IOException ignore) {
                             // Ignore it here...
                         }
+
+                        res &= file1.delete();
+                    }
                     else
                         res &= file1.delete();
+                }
+            }
 
             res &= file.delete();
         }
@@ -3841,26 +3833,6 @@ public abstract class IgniteUtils {
                 for (Object v : vals)
                     if (F.eq(o, v))
                         return true;
-        }
-
-        return false;
-    }
-
-    /**
-     * Checks for containment of the value in the array.
-     * Both array cells and value may be {@code null}. Two {@code null}s are considered equal.
-     *
-     * @param arr Array of objects.
-     * @param c Collection to check.
-     * @return {@code true} if contains object, {@code false} otherwise.
-     */
-    public static boolean containsObjectArray(@Nullable Object[] arr, @Nullable Collection<Object> c) {
-        if (arr == null || arr.length == 0 || c == null || c.isEmpty())
-            return false;
-
-        for (Object o : arr) {
-            if (c.contains(o))
-                return true;
         }
 
         return false;
@@ -4519,10 +4491,12 @@ public abstract class IgniteUtils {
      * @param impl MBean implementation.
      * @param itf MBean interface.
      * @return JMX object name.
+     * @throws MBeanRegistrationException if MBeans are disabled.
      * @throws JMException If MBean creation failed.
      */
-    public static <T> ObjectName registerMBean(MBeanServer mbeanSrv, @Nullable String igniteInstanceName,
-        @Nullable String grp, String name, T impl, @Nullable Class<T> itf) throws JMException {
+    public static <T> ObjectName registerMBean(MBeanServer mbeanSrv, @Nullable String igniteInstanceName, @Nullable String grp,
+        String name, T impl, @Nullable Class<T> itf) throws JMException {if(IGNITE_MBEANS_DISABLED)
+            throw new MBeanRegistrationException(new IgniteIllegalStateException("No MBeans are allowed."));
         assert mbeanSrv != null;
         assert name != null;
         assert itf != null;
@@ -4543,10 +4517,15 @@ public abstract class IgniteUtils {
      * @param impl MBean implementation.
      * @param itf MBean interface.
      * @return JMX object name.
+     * @throws MBeanRegistrationException if MBeans are disabled.
      * @throws JMException If MBean creation failed.
+     * @throws IgniteException If MBean creation are not allowed.
      */
     public static <T> ObjectName registerMBean(MBeanServer mbeanSrv, ObjectName name, T impl, Class<T> itf)
         throws JMException {
+        if(IGNITE_MBEANS_DISABLED)
+            throw new MBeanRegistrationException(new IgniteIllegalStateException("MBeans are disabled."));
+
         assert mbeanSrv != null;
         assert name != null;
         assert itf != null;
@@ -4569,10 +4548,15 @@ public abstract class IgniteUtils {
      * @param impl MBean implementation.
      * @param itf MBean interface.
      * @return JMX object name.
+     * @throws MBeanRegistrationException if MBeans are disabled.
      * @throws JMException If MBean creation failed.
+     * @throws IgniteException If MBean creation are not allowed.
      */
     public static <T> ObjectName registerCacheMBean(MBeanServer mbeanSrv, @Nullable String igniteInstanceName,
         @Nullable String cacheName, String name, T impl, Class<T> itf) throws JMException {
+        if(IGNITE_MBEANS_DISABLED)
+            throw new MBeanRegistrationException(new IgniteIllegalStateException("MBeans are disabled."));
+
         assert mbeanSrv != null;
         assert name != null;
         assert itf != null;
@@ -8099,7 +8083,7 @@ public abstract class IgniteUtils {
      * @param paramTypes Parameter types.
      * @param params Parameters.
      * @return Field value.
-     * @throws IgniteCheckedException If static field with given name cannot be retreived.
+     * @throws IgniteCheckedException If static field with given name cannot be retrieved.
      */
     public static <T> T invoke(@Nullable Class<?> cls, @Nullable Object obj, String mtdName,
         Class[] paramTypes, Object... params) throws IgniteCheckedException {
@@ -8560,6 +8544,18 @@ public abstract class IgniteUtils {
      */
     public static int hash(Object key) {
         return hash(key.hashCode());
+    }
+
+    /**
+     * A primitive override of {@link #hash(Object)} to avoid unnecessary boxing.
+     *
+     * @param key Value to hash.
+     * @return Hash value.
+     */
+    public static int hash(long key) {
+        int val = (int)(key ^ (key >>> 32));
+
+        return hash(val);
     }
 
     /**
@@ -9135,6 +9131,32 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Checks if the given directory exists and attempts to create one if not.
+     *
+     * @param dir Directory to check.
+     * @param msg Directory name for the messages.
+     * @param log Optional logger to log a message that the directory has been resolved.
+     * @throws IgniteCheckedException If directory does not exist and failed to create it, or if a file with
+     *      the same name already exists.
+     */
+    public static void ensureDirectory(Path dir, String msg, IgniteLogger log) throws IgniteCheckedException {
+        if (!Files.exists(dir)) {
+            try {
+                Files.createDirectories(dir);
+            }
+            catch (IOException e) {
+                throw new IgniteCheckedException("Failed to create " + msg + ": " + dir.toAbsolutePath(), e);
+            }
+        }
+        else if (!Files.isDirectory(dir))
+            throw new IgniteCheckedException("Failed to initialize " + msg +
+                " (a file with the same name already exists): " + dir.toAbsolutePath());
+
+        if (log != null && log.isInfoEnabled())
+            log.info("Resolved " + msg + ": " + dir.toAbsolutePath());
+    }
+
+    /**
      * Creates {@code IgniteCheckedException} with the collection of suppressed exceptions.
      *
      * @param msg Message.
@@ -9224,185 +9246,6 @@ public abstract class IgniteUtils {
         }
 
         return youngest;
-    }
-
-    /**
-     * @param arr Array.
-     * @param off Offset.
-     * @param uid UUID.
-     * @return Offset.
-     */
-    public static long writeGridUuid(byte[] arr, long off, @Nullable IgniteUuid uid) {
-        GridUnsafe.putBoolean(arr, off++, uid != null);
-
-        if (uid != null) {
-            GridUnsafe.putLong(arr, off, uid.globalId().getMostSignificantBits());
-
-            off += 8;
-
-            GridUnsafe.putLong(arr, off, uid.globalId().getLeastSignificantBits());
-
-            off += 8;
-
-            GridUnsafe.putLong(arr, off, uid.localId());
-
-            off += 8;
-        }
-
-        return off;
-    }
-
-    /**
-     * @param arr Array.
-     * @param off Offset.
-     * @return UUID.
-     */
-    @Nullable public static IgniteUuid readGridUuid(byte[] arr, long off) {
-        if (GridUnsafe.getBoolean(arr, off++)) {
-            long most = GridUnsafe.getLong(arr, off);
-
-            off += 8;
-
-            long least = GridUnsafe.getLong(arr, off);
-
-            off += 8;
-
-            UUID globalId = new UUID(most, least);
-
-            long locId = GridUnsafe.getLong(arr, off);
-
-            return new IgniteUuid(globalId, locId);
-        }
-
-        return null;
-    }
-
-    /**
-     * @param ptr Offheap address.
-     * @return UUID.
-     */
-    @Nullable public static IgniteUuid readGridUuid(long ptr) {
-        if (GridUnsafe.getBoolean(null, ptr++)) {
-            long most = GridUnsafe.getLong(ptr);
-
-            ptr += 8;
-
-            long least = GridUnsafe.getLong(ptr);
-
-            ptr += 8;
-
-            UUID globalId = new UUID(most, least);
-
-            long locId = GridUnsafe.getLong(ptr);
-
-            return new IgniteUuid(globalId, locId);
-        }
-
-        return null;
-    }
-
-    /**
-     * @param arr Array.
-     * @param off Offset.
-     * @param ver Version.
-     * @return Offset.
-     */
-    public static long writeVersion(byte[] arr, long off, GridCacheVersion ver) {
-        boolean verEx = ver instanceof GridCacheVersionEx;
-
-        GridUnsafe.putBoolean(arr, off++, verEx);
-
-        if (verEx) {
-            GridCacheVersion drVer = ver.conflictVersion();
-
-            assert drVer != null;
-
-            GridUnsafe.putInt(arr, off, drVer.topologyVersion());
-
-            off += 4;
-
-            GridUnsafe.putInt(arr, off, drVer.nodeOrderAndDrIdRaw());
-
-            off += 4;
-
-            GridUnsafe.putLong(arr, off, drVer.order());
-
-            off += 8;
-        }
-
-        GridUnsafe.putInt(arr, off, ver.topologyVersion());
-
-        off += 4;
-
-        GridUnsafe.putInt(arr, off, ver.nodeOrderAndDrIdRaw());
-
-        off += 4;
-
-        GridUnsafe.putLong(arr, off, ver.order());
-
-        off += 8;
-
-        return off;
-    }
-
-    /**
-     * @param ptr Offheap address.
-     * @param verEx If {@code true} reads {@link GridCacheVersionEx} instance.
-     * @return Version.
-     */
-    public static GridCacheVersion readVersion(long ptr, boolean verEx) {
-        GridCacheVersion ver = new GridCacheVersion(GridUnsafe.getInt(ptr),
-            GridUnsafe.getInt(ptr + 4),
-            GridUnsafe.getLong(ptr + 8));
-
-        if (verEx) {
-            ptr += 16;
-
-            ver = new GridCacheVersionEx(GridUnsafe.getInt(ptr),
-                GridUnsafe.getInt(ptr + 4),
-                GridUnsafe.getLong(ptr + 8),
-                ver);
-        }
-
-        return ver;
-    }
-
-    /**
-     * @param arr Array.
-     * @param off Offset.
-     * @param verEx If {@code true} reads {@link GridCacheVersionEx} instance.
-     * @return Version.
-     */
-    public static GridCacheVersion readVersion(byte[] arr, long off, boolean verEx) {
-        int topVer = GridUnsafe.getInt(arr, off);
-
-        off += 4;
-
-        int nodeOrderDrId = GridUnsafe.getInt(arr, off);
-
-        off += 4;
-
-        long order = GridUnsafe.getLong(arr, off);
-
-        off += 8;
-
-        GridCacheVersion ver = new GridCacheVersion(topVer, nodeOrderDrId, order);
-
-        if (verEx) {
-            topVer = GridUnsafe.getInt(arr, off);
-
-            off += 4;
-
-            nodeOrderDrId = GridUnsafe.getInt(arr, off);
-
-            off += 4;
-
-            order = GridUnsafe.getLong(arr, off);
-
-            ver = new GridCacheVersionEx(topVer, nodeOrderDrId, order, ver);
-        }
-
-        return ver;
     }
 
     /**
@@ -9497,6 +9340,17 @@ public abstract class IgniteUtils {
             return new GridLeanMap<>(limit);
 
         return new HashMap<>(capacity(limit), 0.75f);
+    }
+
+    /**
+     * @param col non-null collection with one element
+     * @return a SingletonList containing the element in the original collection
+     */
+    public static <T> Collection<T> convertToSingletonList(Collection<T> col) {
+        if (col.size() != 1) {
+            throw new IllegalArgumentException("Unexpected collection size for singleton list, expecting 1 but was: " + col.size());
+        }
+        return Collections.singletonList(col.iterator().next());
     }
 
     /**
@@ -10152,5 +10006,206 @@ public abstract class IgniteUtils {
                 return start + c++;
             }
         };
+    }
+
+    /**
+     * @param x X.
+     */
+    public static int nearestPow2(int x) {
+        return nearestPow2(x, true);
+    }
+
+    /**
+     * @param x X.
+     * @param less Less.
+     */
+    public static int nearestPow2(int x, boolean less) {
+        assert x > 0 : "can not calculate for less zero";
+
+        long y = 1;
+
+        while (y < x){
+            if (y * 2 > Integer.MAX_VALUE)
+                return (int)y;
+
+            y *= 2;
+        }
+
+        if (less)
+            y /= 2;
+
+        return (int)y;
+    }
+
+    /**
+     * @param lock Lock.
+     */
+    public static ReentrantReadWriteLockTracer lockTracer(ReadWriteLock lock) {
+        return new ReentrantReadWriteLockTracer(lock);
+    }
+
+    /**
+     * @param lock Lock.
+     */
+    public static LockTracer lockTracer(Lock lock) {
+        return new LockTracer(lock);
+    }
+
+    /**
+     *
+     */
+    public static class ReentrantReadWriteLockTracer implements ReadWriteLock {
+        /** Read lock. */
+        private final LockTracer readLock;
+
+        /** Write lock. */
+        private final LockTracer writeLock;
+
+        /**
+         * @param delegate Delegate.
+         */
+        public ReentrantReadWriteLockTracer(ReadWriteLock delegate) {
+            readLock = new LockTracer(delegate.readLock());
+            writeLock = new LockTracer(delegate.writeLock());
+        }
+
+        /** {@inheritDoc} */
+        @NotNull @Override public Lock readLock() {
+            return readLock;
+        }
+
+        /** {@inheritDoc} */
+        @NotNull @Override public Lock writeLock() {
+            return writeLock;
+        }
+
+        /**
+         *
+         */
+        public LockTracer getReadLock() {
+            return readLock;
+        }
+
+        /**
+         *
+         */
+        public LockTracer getWriteLock() {
+            return writeLock;
+        }
+    }
+
+    /**
+     *
+     */
+    public static class LockTracer implements Lock {
+        /** Delegate. */
+        private final Lock delegate;
+
+        private final AtomicLong cnt = new AtomicLong();
+
+        /** Count. */
+        private final ConcurrentMap<String, AtomicLong> cntMap = new ConcurrentHashMap8<>();
+
+        /**
+         * @param delegate Delegate.
+         */
+        public LockTracer(Lock delegate) {
+            this.delegate = delegate;
+        }
+
+        /**
+         *
+         */
+        private void inc(){
+            cnt.incrementAndGet();
+
+            String name = Thread.currentThread().getName();
+
+            AtomicLong cnt = cntMap.get(name);
+
+            if (cnt == null) {
+                AtomicLong cnt0 = cntMap.putIfAbsent(name, cnt = new AtomicLong());
+
+                if (cnt0 != null)
+                    cnt = cnt0;
+            }
+
+            cnt.incrementAndGet();
+        }
+
+        /**
+         *
+         */
+        private void dec(){
+            cnt.decrementAndGet();
+
+            String name = Thread.currentThread().getName();
+
+            AtomicLong cnt = cntMap.get(name);
+
+            cnt.decrementAndGet();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void lock() {
+            delegate.lock();
+
+            inc();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void lockInterruptibly() throws InterruptedException {
+            delegate.lockInterruptibly();
+
+            inc();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean tryLock() {
+            if (delegate.tryLock()) {
+                inc();
+
+                return true;
+            }
+            else
+                return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean tryLock(long time, @NotNull TimeUnit unit) throws InterruptedException {
+            if (delegate.tryLock(time, unit)) {
+                inc();
+
+                return true;
+            }
+            else
+                return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void unlock() {
+            delegate.unlock();
+
+            dec();
+        }
+
+        /** {@inheritDoc} */
+        @NotNull @Override public Condition newCondition() {
+            return delegate.newCondition();
+        }
+
+        /**
+         *
+         */
+        public Map<String, AtomicLong> getLockUnlockCounters() {
+            return new HashMap<>(cntMap);
+        }
+
+        /**
+         *
+         */
+        public long getLockUnlockCounter() {
+            return cnt.get();
+        }
     }
 }

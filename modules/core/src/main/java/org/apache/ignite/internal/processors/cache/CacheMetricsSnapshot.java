@@ -95,6 +95,9 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
     /** Number of entries stored in off-heap memory. */
     private long offHeapEntriesCnt;
 
+    /** Number of entries stored in heap. */
+    private long heapEntriesCnt;
+
     /** Number of primary entries stored in off-heap memory. */
     private long offHeapPrimaryEntriesCnt;
 
@@ -185,6 +188,21 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
     /** Total count of entries in cache store internal buffer. */
     private int writeBehindBufSize;
 
+    /** Total partitions count. */
+    private int totalPartitionsCnt;
+
+    /** Rebalancing partitions count. */
+    private int rebalancingPartitionsCnt;
+
+    /** Keys to rebalance left. */
+    private long keysToRebalanceLeft;
+
+    /** Rebalancing keys rate. */
+    private long rebalancingKeysRate;
+
+    /** Get rebalancing bytes rate. */
+    private long rebalancingBytesRate;
+
     /** */
     private String keyType;
 
@@ -243,6 +261,7 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
         offHeapHits = m.getOffHeapHits();
         offHeapMisses = m.getOffHeapMisses();
         offHeapEntriesCnt = m.getOffHeapEntriesCount();
+        heapEntriesCnt = m.getHeapEntriesCount();
         offHeapPrimaryEntriesCnt = m.getOffHeapPrimaryEntriesCount();
         offHeapBackupEntriesCnt = m.getOffHeapBackupEntriesCount();
         offHeapAllocatedSize = m.getOffHeapAllocatedSize();
@@ -282,6 +301,12 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
         isManagementEnabled = m.isManagementEnabled();
         isReadThrough = m.isReadThrough();
         isWriteThrough = m.isWriteThrough();
+
+        totalPartitionsCnt = m.getTotalPartitionsCount();
+        rebalancingPartitionsCnt = m.getRebalancingPartitionsCount();
+        keysToRebalanceLeft = m.getKeysToRebalanceLeft();
+        rebalancingBytesRate = m.getRebalancingBytesRate();
+        rebalancingKeysRate = m.getRebalancingKeysRate();
     }
 
     /**
@@ -333,6 +358,7 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
             offHeapHits += e.getOffHeapHits();
             offHeapMisses += e.getOffHeapMisses();
             offHeapEntriesCnt += e.getOffHeapEntriesCount();
+            heapEntriesCnt += e.getHeapEntriesCount();
             offHeapPrimaryEntriesCnt += e.getOffHeapPrimaryEntriesCount();
             offHeapBackupEntriesCnt += e.getOffHeapBackupEntriesCount();
             offHeapAllocatedSize += e.getOffHeapAllocatedSize();
@@ -399,6 +425,12 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
                 writeBehindErrorRetryCnt += e.getWriteBehindErrorRetryCount();
             else
                 writeBehindErrorRetryCnt = -1;
+
+            totalPartitionsCnt += e.getTotalPartitionsCount();
+            rebalancingPartitionsCnt += e.getRebalancingPartitionsCount();
+            keysToRebalanceLeft += e.getKeysToRebalanceLeft();
+            rebalancingBytesRate += e.getRebalancingBytesRate();
+            rebalancingKeysRate += e.getRebalancingKeysRate();
         }
 
         int size = metrics.size();
@@ -549,6 +581,11 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
     }
 
     /** {@inheritDoc} */
+    @Override public long getHeapEntriesCount() {
+        return heapEntriesCnt;
+    }
+
+    /** {@inheritDoc} */
     @Override public long getOffHeapPrimaryEntriesCount() {
         return offHeapPrimaryEntriesCnt;
     }
@@ -651,6 +688,31 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
     /** {@inheritDoc} */
     @Override public int getTxDhtRolledbackVersionsSize() {
         return txDhtRolledbackVersionsSize;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getTotalPartitionsCount() {
+        return totalPartitionsCnt;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getRebalancingPartitionsCount() {
+        return rebalancingPartitionsCnt;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getKeysToRebalanceLeft() {
+        return keysToRebalanceLeft;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getRebalancingKeysRate() {
+        return rebalancingKeysRate;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getRebalancingBytesRate() {
+        return rebalancingBytesRate;
     }
 
     /** {@inheritDoc} */
@@ -762,6 +824,7 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
         out.writeLong(offHeapHits);
         out.writeLong(offHeapMisses);
         out.writeLong(offHeapEntriesCnt);
+        out.writeLong(heapEntriesCnt);
         out.writeLong(offHeapPrimaryEntriesCnt);
         out.writeLong(offHeapBackupEntriesCnt);
         out.writeLong(offHeapAllocatedSize);
@@ -784,6 +847,12 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
         out.writeInt(writeBehindTotalCriticalOverflowCnt);
         out.writeInt(writeBehindCriticalOverflowCnt);
         out.writeInt(writeBehindErrorRetryCnt);
+
+        out.writeInt(totalPartitionsCnt);
+        out.writeInt(rebalancingPartitionsCnt);
+        out.writeLong(keysToRebalanceLeft);
+        out.writeLong(rebalancingBytesRate);
+        out.writeLong(rebalancingKeysRate);
     }
 
     /** {@inheritDoc} */
@@ -810,6 +879,7 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
         offHeapHits = in.readLong();
         offHeapMisses = in.readLong();
         offHeapEntriesCnt = in.readLong();
+        heapEntriesCnt = in.readLong();
         offHeapPrimaryEntriesCnt = in.readLong();
         offHeapBackupEntriesCnt = in.readLong();
         offHeapAllocatedSize = in.readLong();
@@ -832,5 +902,11 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
         writeBehindTotalCriticalOverflowCnt = in.readInt();
         writeBehindCriticalOverflowCnt = in.readInt();
         writeBehindErrorRetryCnt = in.readInt();
+
+        totalPartitionsCnt = in.readInt();
+        rebalancingPartitionsCnt = in.readInt();
+        keysToRebalanceLeft = in.readLong();
+        rebalancingBytesRate = in.readLong();
+        rebalancingKeysRate = in.readLong();
     }
 }

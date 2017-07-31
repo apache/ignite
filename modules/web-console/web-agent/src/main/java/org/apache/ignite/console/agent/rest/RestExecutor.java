@@ -32,9 +32,13 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
-import org.apache.ignite.console.demo.*;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.console.demo.AgentClusterDemo;
 import org.apache.ignite.internal.processors.rest.protocols.http.jetty.GridJettyObjectMapper;
-import org.apache.log4j.Logger;
+import org.apache.ignite.internal.util.typedef.internal.LT;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.logger.slf4j.Slf4jLogger;
+import org.slf4j.LoggerFactory;
 
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_AUTH_FAILED;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_FAILED;
@@ -45,7 +49,7 @@ import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS
  */
 public class RestExecutor {
     /** */
-    private static final Logger log = Logger.getLogger(RestExecutor.class);
+    private static final IgniteLogger log = new Slf4jLogger(LoggerFactory.getLogger(RestExecutor.class));
 
     /** JSON object mapper. */
     private static final ObjectMapper mapper = new GridJettyObjectMapper();
@@ -86,20 +90,24 @@ public class RestExecutor {
 
     /** */
     private RestResult sendRequest(boolean demo, String path, Map<String, Object> params,
-        String mtd, Map<String, Object> headers, String body) throws IOException {
+        Map<String, Object> headers, String body) throws IOException {
         if (demo && AgentClusterDemo.getDemoUrl() == null) {
             try {
                 AgentClusterDemo.tryStart().await();
             }
             catch (InterruptedException ignore) {
-                throw new IllegalStateException("Failed to execute request because of embedded node for demo mode is not started yet.");
+                throw new IllegalStateException("Failed to send request because of embedded node for demo mode is not started yet.");
             }
         }
 
         String url = demo ? AgentClusterDemo.getDemoUrl() : nodeUrl;
 
-        HttpUrl.Builder urlBuilder = HttpUrl.parse(url)
-            .newBuilder();
+        HttpUrl httpUrl = HttpUrl.parse(url);
+
+        if (httpUrl == null)
+            throw new IllegalStateException("Failed to send request because of node URL is invalid: " + url);
+
+        HttpUrl.Builder urlBuilder = httpUrl.newBuilder();
 
         if (path != null)
             urlBuilder.addPathSegment(path);
@@ -112,36 +120,24 @@ public class RestExecutor {
                     reqBuilder.addHeader(entry.getKey(), entry.getValue().toString());
         }
 
-        if ("GET".equalsIgnoreCase(mtd)) {
+        if (body != null) {
+            MediaType contentType = MediaType.parse("text/plain");
+
+            reqBuilder.post(RequestBody.create(contentType, body));
+        }
+        else {
+            FormBody.Builder formBody = new FormBody.Builder();
+
             if (params != null) {
                 for (Map.Entry<String, Object> entry : params.entrySet()) {
                     if (entry.getValue() != null)
-                        urlBuilder.addQueryParameter(entry.getKey(), entry.getValue().toString());
+                        formBody.add(entry.getKey(), entry.getValue().toString());
                 }
             }
+
+            reqBuilder.post(formBody.build());
         }
-        else if ("POST".equalsIgnoreCase(mtd)) {
-            if (body != null) {
-                MediaType contentType = MediaType.parse("text/plain");
-
-                reqBuilder.post(RequestBody.create(contentType, body));
-            }
-            else {
-                FormBody.Builder formBody = new FormBody.Builder();
-
-                if (params != null) {
-                    for (Map.Entry<String, Object> entry : params.entrySet()) {
-                        if (entry.getValue() != null)
-                            formBody.add(entry.getKey(), entry.getValue().toString());
-                    }
-                }
-
-                reqBuilder.post(formBody.build());
-            }
-        }
-        else
-            throw new IllegalArgumentException("Unknown HTTP-method: " + mtd);
-
+        
         reqBuilder.url(urlBuilder.build());
 
         try (Response resp = httpClient.newCall(reqBuilder.build()).execute()) {
@@ -162,12 +158,17 @@ public class RestExecutor {
             }
 
             if (resp.code() == 401)
-                return RestResult.fail(STATUS_AUTH_FAILED, "Failed to authenticate in grid. Please check agent\'s login and password or node port.");
+                return RestResult.fail(STATUS_AUTH_FAILED, "Failed to authenticate in grid. " +
+                    "Please check agent\'s login and password or node port.");
 
             return RestResult.fail(STATUS_FAILED, "Failed connect to node and execute REST command.");
         }
-        catch (ConnectException ignore) {
-            throw new ConnectException("Failed connect to node and execute REST command [url=" + urlBuilder + "]");
+        catch (ConnectException ignored) {
+            LT.warn(log, "Failed connect to node and execute REST command. " +
+                "Please ensure that nodes have [ignite-rest-http] module in classpath " +
+                "(was copied from libs/optional to libs folder).");
+
+            throw new ConnectException("Failed connect to node and execute REST command [url=" + urlBuilder + ", parameters=" + params + "]");
         }
     }
 
@@ -175,20 +176,20 @@ public class RestExecutor {
      * @param demo Is demo node request.
      * @param path Path segment.
      * @param params Params.
-     * @param mtd Method.
      * @param headers Headers.
      * @param body Body.
      */
     public RestResult execute(boolean demo, String path, Map<String, Object> params,
-        String mtd, Map<String, Object> headers, String body) {
-        log.debug("Start execute REST command [method=" + mtd + ", uri=/" + (path == null ? "" : path) +
+        Map<String, Object> headers, String body) {
+        if (log.isDebugEnabled())
+            log.debug("Start execute REST command [uri=/" + (path == null ? "" : path) +
                 ", parameters=" + params + "]");
 
         try {
-            return sendRequest(demo, path, params, mtd, headers, body);
+            return sendRequest(demo, path, params, headers, body);
         }
         catch (Exception e) {
-            log.info("Failed to execute REST command [method=" + mtd + ", uri=/" + (path == null ? "" : path) +
+            U.error(log, "Failed to execute REST command [uri=/" + (path == null ? "" : path) +
                 ", parameters=" + params + "]", e);
 
             return RestResult.fail(404, e.getMessage());
@@ -205,6 +206,6 @@ public class RestExecutor {
         params.put("attr", true);
         params.put("mtr", full);
 
-        return sendRequest(demo, "ignite", params, "GET", null, null);
+        return sendRequest(demo, "ignite", params, null, null);
     }
 }

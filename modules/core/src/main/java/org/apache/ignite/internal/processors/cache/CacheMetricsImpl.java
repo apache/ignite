@@ -17,10 +17,15 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheMetrics;
+import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
+import org.apache.ignite.internal.processors.cache.ratemetrics.HitRateMetrics;
 import org.apache.ignite.internal.processors.cache.store.GridCacheWriteBehindStore;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -29,6 +34,14 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  * Adapter for cache metrics.
  */
 public class CacheMetricsImpl implements CacheMetrics {
+    /** Rebalance rate interval. */
+    private static final int REBALANCE_RATE_INTERVAL = IgniteSystemProperties.getInteger(
+        IgniteSystemProperties.IGNITE_REBALANCE_STATISTICS_TIME_INTERVAL, 60000);
+
+    /** Onheap peek modes. */
+    private static final CachePeekMode[] ONHEAP_PEEK_MODES = new CachePeekMode[] {
+        CachePeekMode.ONHEAP, CachePeekMode.PRIMARY, CachePeekMode.BACKUP, CachePeekMode.NEAR};
+
     /** */
     private static final long NANOS_IN_MICROSECOND = 1000L;
 
@@ -88,6 +101,21 @@ public class CacheMetricsImpl implements CacheMetrics {
 
     /** Number of off-heap misses. */
     private AtomicLong offHeapMisses = new AtomicLong();
+
+    /** Rebalanced keys count. */
+    private AtomicLong rebalancedKeys = new AtomicLong();
+
+    /** Total rebalanced bytes count. */
+    private AtomicLong totalRebalancedBytes = new AtomicLong();
+
+    /** Estimated rebalancing keys count. */
+    private AtomicLong estimatedRebalancingKeys = new AtomicLong();
+
+    /** Rebalancing rate in keys. */
+    private HitRateMetrics rebalancingKeysRate = new HitRateMetrics(REBALANCE_RATE_INTERVAL, 20);
+
+    /** Rebalancing rate in bytes. */
+    private HitRateMetrics rebalancingBytesRate = new HitRateMetrics(REBALANCE_RATE_INTERVAL, 20);
 
     /** Cache metrics. */
     @GridToStringExclude
@@ -193,9 +221,22 @@ public class CacheMetricsImpl implements CacheMetrics {
     }
 
     /** {@inheritDoc} */
+    @Override public long getHeapEntriesCount() {
+        try {
+            return cctx.cache().localSize(ONHEAP_PEEK_MODES);
+        }
+        catch (IgniteCheckedException ignored) {
+            return 0;
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public long getOffHeapPrimaryEntriesCount() {
         try {
-            return cctx.offheap().entriesCount(true, false, cctx.affinity().affinityTopologyVersion());
+            return cctx.offheap().cacheEntriesCount(cctx.cacheId(),
+                true,
+                false,
+                cctx.affinity().affinityTopologyVersion());
         }
         catch (IgniteCheckedException ignored) {
             return 0;
@@ -205,7 +246,10 @@ public class CacheMetricsImpl implements CacheMetrics {
     /** {@inheritDoc} */
     @Override public long getOffHeapBackupEntriesCount() {
         try {
-            return cctx.offheap().entriesCount(false, true, cctx.affinity().affinityTopologyVersion());
+            return cctx.offheap().cacheEntriesCount(cctx.cacheId(),
+                false,
+                true,
+                cctx.affinity().affinityTopologyVersion());
         }
         catch (IgniteCheckedException ignored) {
             return 0;
@@ -414,6 +458,8 @@ public class CacheMetricsImpl implements CacheMetrics {
         offHeapHits.set(0);
         offHeapMisses.set(0);
         offHeapEvicts.set(0);
+
+        clearRebalanceCounters();
 
         if (delegate != null)
             delegate.clear();
@@ -687,10 +733,104 @@ public class CacheMetricsImpl implements CacheMetrics {
         return ccfg != null && ccfg.isManagementEnabled();
     }
 
+    /** {@inheritDoc} */
+    public int getTotalPartitionsCount() {
+        int res = 0;
+
+        if (cctx.isLocal())
+            return res;
+
+        for (Map.Entry<Integer, GridDhtPartitionState> e : cctx.topology().localPartitionMap().entrySet()) {
+            if (e.getValue() == GridDhtPartitionState.OWNING || e.getValue() == GridDhtPartitionState.MOVING)
+                res++;
+        }
+
+        return res;
+    }
+
+    /** {@inheritDoc} */
+    public int getRebalancingPartitionsCount() {
+        int res = 0;
+
+        if (cctx.isLocal())
+            return res;
+
+        for (Map.Entry<Integer, GridDhtPartitionState> e : cctx.topology().localPartitionMap().entrySet()) {
+            if (e.getValue() == GridDhtPartitionState.MOVING)
+                res++;
+        }
+
+        return res;
+    }
+
+    /** {@inheritDoc} */
+    public long getKeysToRebalanceLeft() {
+        return Math.max(0, estimatedRebalancingKeys.get() - rebalancedKeys.get());
+    }
+
+    /** {@inheritDoc} */
+    public long getRebalancingKeysRate() {
+        return rebalancingKeysRate.getRate();
+    }
+
+    /** {@inheritDoc} */
+    public long getRebalancingBytesRate() {
+        return rebalancingBytesRate.getRate();
+    }
+
+    /**
+     * Clear rebalance counters.
+     */
+    public void clearRebalanceCounters() {
+        estimatedRebalancingKeys.set(0);
+
+        rebalancedKeys.set(0);
+
+        totalRebalancedBytes.set(0);
+
+        rebalancingBytesRate.clear();
+
+        rebalancingKeysRate.clear();
+    }
+
+    /**
+     * First rebalance supply message callback.
+     * @param keysCnt Estimated number of keys.
+     */
+    public void onRebalancingKeysCountEstimateReceived(long keysCnt) {
+        estimatedRebalancingKeys.addAndGet(keysCnt);
+    }
+
+    /**
+     * Rebalance entry store callback.
+     */
+    public void onRebalanceKeyReceived() {
+        rebalancedKeys.incrementAndGet();
+
+        rebalancingKeysRate.onHit();
+    }
+
+    /**
+     * Rebalance supply message callback.
+     *
+     * @param batchSize Batch size in bytes.
+     */
+    public void onRebalanceBatchReceived(long batchSize) {
+        totalRebalancedBytes.addAndGet(batchSize);
+
+        rebalancingBytesRate.onHits(batchSize);
+    }
+
+    /**
+     * @return Total number of allocated pages.
+     */
     public long getTotalAllocatedPages() {
         return 0;
     }
 
+    /**
+     * @return Total number of evicted pages.
+     */
     public long getTotalEvictedPages() {
         return 0;
     }
