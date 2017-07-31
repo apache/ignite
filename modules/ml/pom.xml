@@ -117,6 +117,7 @@
                     <groupId>com.github.fommil.netlib</groupId>
                     <artifactId>all</artifactId>
                     <version>${netlibjava.version}</version>
+                    <type>pom</type>
                 </dependency>
             </dependencies>
         </profile>

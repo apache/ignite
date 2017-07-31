@@ -124,6 +124,11 @@ public class BlockMatrixStorage extends CacheUtils implements MatrixStorage, Sto
     }
 
     /** {@inheritDoc} */
+    @Override public int storageMode() {
+        return UNKNOWN_STORAGE_MODE;
+    }
+
+    /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeInt(rows);
         out.writeInt(cols);

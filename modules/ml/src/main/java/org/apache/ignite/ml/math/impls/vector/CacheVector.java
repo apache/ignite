@@ -88,7 +88,7 @@ public class CacheVector<K, V> extends AbstractVector {
 
     /** {@inheritDoc} */
     @Override public Vector map(IgniteBiFunction<Double, Double, Double> fun, double y) {
-        // TODO: IGNTIE-5723, provide cache-optimized implementation.
+        // TODO: IGNITE-5723, provide cache-optimized implementation.
         return super.map(fun, y);
     }
 

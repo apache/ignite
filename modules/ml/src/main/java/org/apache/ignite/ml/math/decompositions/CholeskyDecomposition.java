@@ -253,7 +253,7 @@ public class CholeskyDecomposition implements Destroyable {
             throw new CardinalityException(b.rowSize(), m);
 
         final int nColB = b.columnSize();
-        final double[][] x = MatrixUtil.unflatten(b.getStorage().data(), b.columnSize());
+        final double[][] x = MatrixUtil.unflatten(b.getStorage().data(), b.columnSize(), b.getStorage().storageMode());
 
         // Solve LY = b
         for (int j = 0; j < m; j++) {
@@ -296,7 +296,7 @@ public class CholeskyDecomposition implements Destroyable {
     /** */
     private double[][] toDoubleArr(Matrix mtx) {
         if (mtx.isArrayBased())
-            return MatrixUtil.unflatten(mtx.getStorage().data(), mtx.columnSize());
+            return MatrixUtil.unflatten(mtx.getStorage().data(), mtx.columnSize(), mtx.getStorage().storageMode());
 
         double[][] res = new double[mtx.rowSize()][mtx.columnSize()];
 
