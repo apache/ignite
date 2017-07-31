@@ -231,10 +231,13 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
     @Override public void addBatch() throws SQLException {
         ensureNotClosed();
 
-        if (batch == null)
+        if (batch == null) {
             batch = new ArrayList<>();
 
-        batch.add(new JdbcQuery(sql, args.toArray(new Object[args.size()])));
+            batch.add(new JdbcQuery(sql, args.toArray(new Object[args.size()])));
+        }
+        else
+            batch.add(new JdbcQuery(null, args.toArray(new Object[args.size()])));
 
         args = null;
     }

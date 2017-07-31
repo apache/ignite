@@ -327,8 +327,13 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
         int updCnts[] = new int[req.queries().length];
 
         try {
+            String sql = null;
+
             for (JdbcQuery q : req.queries()) {
-                SqlFieldsQuery qry = new SqlFieldsQuery(q.sql());
+                if (q.sql() != null)
+                    sql = q.sql();
+
+                SqlFieldsQuery qry = new SqlFieldsQuery(sql);
 
                 qry.setArgs(q.args());
 
