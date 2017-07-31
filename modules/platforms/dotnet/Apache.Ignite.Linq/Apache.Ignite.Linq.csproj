@@ -72,6 +72,7 @@
     <Compile Include="Impl\SqlTypes.cs" />
     <Compile Include="Impl\ExpressionWalker.cs" />
     <Compile Include="Impl\JoinInnerSequenceParameterNotNullExpressionVisitor.cs" />
+    <Compile Include="IUpdateDescriptor.cs" />
     <Compile Include="Package-Info.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="QueryOptions.cs" />

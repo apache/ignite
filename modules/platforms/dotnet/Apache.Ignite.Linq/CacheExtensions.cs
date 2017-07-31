@@ -191,5 +191,22 @@ namespace Apache.Ignite.Linq
             return query.Provider.Execute<int>(Expression.Call(null, method, query.Expression,
                 Expression.Quote(predicate)));
         }
+
+        /// <summary>
+        /// Updates all rows that are matched by the specified query.
+        /// <para />
+        /// This method results in "UPDATE" distributed SQL query, performing bulk update 
+        /// (as opposed to fetching all rows locally).
+        /// </summary>
+        /// <typeparam name="TKey">Key type.</typeparam>
+        /// <typeparam name="TValue">Value type.</typeparam>
+        /// <param name="query">The query.</param>
+        /// <param name="updateDescription">The update description.</param>
+        /// <returns>Affected row count.</returns>
+        public static int UpdateAll<TKey, TValue>(this IQueryable<ICacheEntry<TKey, TValue>> query,
+            Expression<Func<IUpdateDescriptor<TValue>, IUpdateDescriptor<TValue>>> updateDescription)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

@@ -103,5 +103,27 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
             var ex = Assert.Throws<IgniteException>(() => qry.RemoveAll());
             Assert.AreEqual("Failed to parse query", ex.Message.Substring(0, 21));
         }
+
+        /// <summary>
+        /// Tests the UpdateAll extension.
+        /// </summary>
+        [Test]
+        public void TestUpdateAll()
+        {
+            // Use new cache to avoid touching static data.
+            var cache = Ignition.GetIgnite().CreateCache<int, Person>(new CacheConfiguration("deleteAllTest",
+                new QueryEntity(typeof(int), typeof(Person)))
+            {
+                SqlEscapeAll = GetSqlEscapeAll()
+            });
+
+            Enumerable.Range(1, 10).ToList().ForEach(x => cache.Put(x, new Person(x, x.ToString())));
+
+            var queryable = cache.AsCacheQueryable();
+
+            queryable.UpdateAll(d => d.Set(p => p.AliasTest, 1)
+                .Set(p => p.Age, p => p.Age + 1));
+
+        }
     }
 }
