@@ -218,7 +218,7 @@ public class OptimizedMarshaller extends AbstractNodeNameAwareMarshaller {
         OptimizedObjectInputStream objIn = null;
 
         try {
-            objIn = OptimizedObjectStreamRegistry.in();
+            objIn = OptimizedObjectStreamRegistry.in(useCache);
 
             objIn.context(clsMap, ctx, mapper, clsLdr != null ? clsLdr : dfltClsLdr, useCache);
 
@@ -248,7 +248,7 @@ public class OptimizedMarshaller extends AbstractNodeNameAwareMarshaller {
         OptimizedObjectInputStream objIn = null;
 
         try {
-            objIn = OptimizedObjectStreamRegistry.in();
+            objIn = OptimizedObjectStreamRegistry.in(true);
 
             objIn.context(clsMap, ctx, mapper, clsLdr != null ? clsLdr : dfltClsLdr, true);
 

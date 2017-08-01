@@ -925,7 +925,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testReadToArray() throws Exception {
-        OptimizedObjectInputStream in = OptimizedObjectStreamRegistry.in();
+        OptimizedObjectInputStream in = OptimizedObjectStreamRegistry.in(true);
 
         try {
             byte[] arr = new byte[50];
@@ -1066,7 +1066,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
 
             byte[] arr = out.out().array();
 
-            in = OptimizedObjectStreamRegistry.in();
+            in = OptimizedObjectStreamRegistry.in(true);
 
             in.context(clsMap, CTX, null, getClass().getClassLoader(), true);
 
