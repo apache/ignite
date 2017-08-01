@@ -113,6 +113,9 @@ public class SparseDistributedMatrixStorage extends CacheUtils implements Matrix
         // Cache is partitioned.
         cfg.setCacheMode(CacheMode.PARTITIONED);
 
+        // Otherwise we can get null from get after put.
+        cfg.setReadFromBackup(false);
+
         // Random cache name.
         cfg.setName(ML_CACHE_NAME);
 

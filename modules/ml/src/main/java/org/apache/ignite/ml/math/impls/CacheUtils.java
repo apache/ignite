@@ -448,11 +448,11 @@ public class CacheUtils {
 
             Map<K, V> m = new ConcurrentHashMap<>();
 
-            ks.parallelStream().forEach(k -> {
+            for (K k : ks) {
                 V v = cache.localPeek(k);
                 fun.accept(new CacheEntryImpl<>(k, v));
                 m.put(k, v);
-            });
+            }
 
             long before = System.currentTimeMillis();
             cache.putAll(m);

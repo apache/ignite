@@ -127,7 +127,7 @@ public class ColumnDecisionTreeCacheInput<K, V> implements ColumnDecisionTreeInp
 
     /** */
     private V get(K k) {
-        V res = cache().localPeek(k, CachePeekMode.PRIMARY);
+        V res = cache().localPeek(k);
 
         if (res == null)
             res = cache().get(k);

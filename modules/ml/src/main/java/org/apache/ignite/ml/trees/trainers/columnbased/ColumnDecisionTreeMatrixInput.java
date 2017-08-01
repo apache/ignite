@@ -38,6 +38,7 @@ public class ColumnDecisionTreeMatrixInput extends ColumnDecisionTreeCacheInput<
      * categories.
      */
     public ColumnDecisionTreeMatrixInput(SparseDistributedMatrix m, Map<Integer, Integer> catFeaturesInfo) {
+        // TODO: Separate labmdas.
         super(((SparseDistributedMatrixStorage)m.getStorage()).cache(),
             new IgniteBiTuple<>(m.columnSize() - 1, ((SparseDistributedMatrixStorage)m.getStorage()).getUUID()),
             map -> IntStream.range(0, m.rowSize()).mapToObj(k -> new IgniteBiTuple<>(k, map.getOrDefault(k, 0.0))),
