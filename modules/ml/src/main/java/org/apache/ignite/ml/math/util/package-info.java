@@ -15,18 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
-
-import org.apache.ignite.configuration.IgniteConfiguration;
-
 /**
- * Factory JTA integration test using PARTITIONED cache.
+ * <!-- Package description. -->
+ * Some math utils.
  */
-public class GridPartitionedCacheJtaFactoryUseSyncSelfTest extends GridPartitionedCacheJtaFactorySelfTest {
-    /** {@inheritDoc} */
-    @Override protected void configureJta(IgniteConfiguration cfg) {
-        super.configureJta(cfg);
-
-        cfg.getTransactionConfiguration().setUseJtaSynchronization(true);
-    }
-}
+package org.apache.ignite.ml.math.util;

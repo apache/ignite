@@ -64,7 +64,15 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         [TestFixtureTearDown]
         public void AfterTests()
         {
-            Ignition.StopAll(true);
+            try
+            {
+                // 3 stores are expected in HandleRegistry.
+                TestUtils.AssertHandleRegistryHasItems(Ignition.GetIgnite(), 3, 1000);
+            }
+            finally
+            {
+                Ignition.StopAll(true);
+            }
         }
 
         /// <summary>

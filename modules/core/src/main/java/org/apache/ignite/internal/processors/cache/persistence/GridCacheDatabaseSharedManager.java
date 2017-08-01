@@ -1229,7 +1229,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             if (Files.exists(dir.toPath()))
                 log.warning("Read checkpoint status: cpDir.exists() is false, Files.exists(cpDir) is true.");
 
-            log.info("Read checkpoint status: checkpoint directory is not found.");
+            if (log.isInfoEnabled())
+                log.info("Read checkpoint status: checkpoint directory is not found.");
 
             return new CheckpointStatus(0, startId, startPtr, endId, endPtr);
         }
@@ -1266,8 +1267,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         if (endFile != null)
             endPtr = readPointer(endFile, buf);
 
-        // TODO: remove excessive logging after GG-12116 fix.
-        log.info("Read checkpoint status: start marker = " + startFile + ", end marker = " + endFile);
+        if (log.isInfoEnabled())
+            log.info("Read checkpoint status [startMarker=" + startFile + ", endMarker=" + endFile + ']');
 
         return new CheckpointStatus(lastStartTs, startId, startPtr, endId, endPtr);
     }
@@ -1560,8 +1561,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                             T2<Integer, Long> fromWal = partStates.get(new T2<>(grpId, i));
 
-                            GridDhtLocalPartition part = grp.topology()
-                                .localPartition(i, AffinityTopologyVersion.NONE, true);
+                            GridDhtLocalPartition part = grp.topology().forceCreatePartition(i);
 
                             assert part != null;
 
@@ -1621,8 +1621,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * @param dataEntry Data entry to apply.
      */
     private void applyUpdate(GridCacheContext cacheCtx, DataEntry dataEntry) throws IgniteCheckedException {
-        GridDhtLocalPartition locPart = cacheCtx.topology()
-            .localPartition(dataEntry.partitionId(), AffinityTopologyVersion.NONE, true);
+        GridDhtLocalPartition locPart = cacheCtx.topology().forceCreatePartition(dataEntry.partitionId());
 
         switch (dataEntry.op()) {
             case CREATE:

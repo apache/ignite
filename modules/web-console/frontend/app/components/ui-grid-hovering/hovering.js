@@ -15,18 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
-
-import org.apache.ignite.cache.CacheMode;
-
-import static org.apache.ignite.cache.CacheMode.REPLICATED;
-
-/**
- * Lookup class name based JTA integration test using REPLICATED cache.
- */
-public class GridReplicatedCacheJtaLookupClassNameSelfTest extends GridPartitionedCacheJtaLookupClassNameSelfTest {
-    /** {@inheritDoc} */
-    @Override protected CacheMode cacheMode() {
-        return REPLICATED;
-    }
+export default function() {
+    return {
+        priority: 0,
+        require: '^uiGrid',
+        compile() {
+            return {
+                pre($scope, $element, attrs, uiGridCtrl) {
+                    uiGridCtrl.grid.options.enableHovering = true;
+                },
+                post() { }
+            };
+        }
+    };
 }

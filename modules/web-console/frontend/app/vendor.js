@@ -24,9 +24,12 @@ import 'angular-strap';
 import 'angular-strap/dist/angular-strap.tpl';
 import 'angular-socket-io';
 import 'angular-retina';
-import 'angular-ui-router';
+
+import '@uirouter/angularjs';
+import '@uirouter/angularjs/lib/legacy/stateEvents';
+
+import 'tf-metatags';
 import 'angular-translate';
-import 'ui-router-metatags/dist/ui-router-metatags';
 import 'angular-smart-table';
 import 'angular-ui-grid/ui-grid';
 import 'angular-drag-and-drop-lists';
@@ -49,6 +52,7 @@ import 'file-saver';
 import 'jszip';
 import 'nvd3';
 import 'lodash';
+
 import 'angular-gridster/dist/angular-gridster.min.css';
 import 'angular-tree-control/css/tree-control-attribute.css';
 import 'angular-tree-control/css/tree-control.css';

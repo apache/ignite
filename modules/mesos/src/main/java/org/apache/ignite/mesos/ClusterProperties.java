@@ -478,7 +478,9 @@ public class ClusterProperties {
             if (cfg != null) {
                 props = new Properties();
 
-                props.load(new FileInputStream(cfg));
+                try (FileInputStream in = new FileInputStream(cfg)) {
+                    props.load(in);
+                }
             }
 
             ClusterProperties prop = new ClusterProperties();

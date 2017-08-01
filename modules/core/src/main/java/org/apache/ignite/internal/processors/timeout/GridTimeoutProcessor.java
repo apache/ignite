@@ -37,7 +37,7 @@ import org.apache.ignite.thread.IgniteThread;
  */
 public class GridTimeoutProcessor extends GridProcessorAdapter {
     /** */
-    private final IgniteThread timeoutWorker;
+    private final TimeoutWorker timeoutWorker;
 
     /** Time-based sorted set for timeout objects. */
     private final GridConcurrentSkipListSet<GridTimeoutObject> timeoutObjs =
@@ -62,13 +62,12 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
     public GridTimeoutProcessor(GridKernalContext ctx) {
         super(ctx);
 
-        timeoutWorker = new IgniteThread(ctx.config().getIgniteInstanceName(), "grid-timeout-worker",
-            new TimeoutWorker());
+        timeoutWorker = new TimeoutWorker();
     }
 
     /** {@inheritDoc} */
     @Override public void start() {
-        timeoutWorker.start();
+        new IgniteThread(timeoutWorker).start();
 
         if (log.isDebugEnabled())
             log.debug("Timeout processor started.");
@@ -76,7 +75,7 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void stop(boolean cancel) throws IgniteCheckedException {
-        U.interrupt(timeoutWorker);
+        timeoutWorker.cancel();
         U.join(timeoutWorker);
 
         if (log.isDebugEnabled())
@@ -159,6 +158,13 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
                             timeoutObj.onTimeout();
                         }
                         catch (Throwable e) {
+                            if (isCancelled() && !(e instanceof Error)){
+                                if (log.isDebugEnabled())
+                                    log.debug("Error when executing timeout callback: " + timeoutObj);
+
+                                return;
+                            }
+
                             U.error(log, "Error when executing timeout callback: " + timeoutObj, e);
 
                             if (e instanceof Error)
@@ -170,7 +176,7 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
                 }
 
                 synchronized (mux) {
-                    while (true) {
+                    while (!isCancelled()) {
                         // Access of the first element must be inside of
                         // synchronization block, so we don't miss out
                         // on thread notification events sent from

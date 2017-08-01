@@ -233,6 +233,21 @@ public class CacheOperationContext implements Serializable {
     }
 
     /**
+     * @param dataCenterId Data center id.
+     * @return Operation context.
+     */
+    public CacheOperationContext setDataCenterId(byte dataCenterId) {
+        return new CacheOperationContext(
+                skipStore,
+                subjId,
+                keepBinary,
+                expiryPlc,
+                noRetries,
+                dataCenterId,
+                recovery);
+    }
+
+    /**
      * @param recovery Recovery flag.
      * @return New instance of CacheOperationContext with recovery flag.
      */

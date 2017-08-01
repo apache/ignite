@@ -42,6 +42,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheAtomicUpdateTimeoutException;
 import org.apache.ignite.cache.CachePartialUpdateException;
 import org.apache.ignite.cache.CacheServerNotFoundException;
@@ -106,6 +107,10 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.REA
 public class GridCacheUtils {
     /** Cheat cache ID for debugging and benchmarking purposes. */
     public static final int cheatCacheId;
+
+    /** Each cache operation removes this amount of entries with expired TTL. */
+    private static final int TTL_BATCH_SIZE = IgniteSystemProperties.getInteger(
+        IgniteSystemProperties.IGNITE_TTL_EXPIRE_BATCH_SIZE, 5);
 
     /*
      *
@@ -851,7 +856,7 @@ public class GridCacheUtils {
     public static void unwindEvicts(GridCacheContext ctx) {
         assert ctx != null;
 
-        ctx.ttl().expire();
+        ctx.ttl().expire(TTL_BATCH_SIZE);
     }
 
     /**

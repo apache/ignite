@@ -101,7 +101,7 @@ public class VectorFoldMapTest {
     private void operationVectorTest(BiFunction<Double, Double, Double> operation,
         BiFunction<Vector, Vector, Vector> vecOperation) {
         consumeSampleVectors((v, desc) -> {
-            // TODO find out if more elaborate testing scenario is needed or it's okay as is.
+            // TODO: IGNTIE-5723, find out if more elaborate testing scenario is needed or it's okay as is.
             final int size = v.size();
             final double[] ref = new double[size];
 
