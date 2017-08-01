@@ -1803,8 +1803,8 @@ BOOST_AUTO_TEST_CASE(TestParamsNum)
 
 BOOST_AUTO_TEST_CASE(TestExecuteAfterCursorClose)
 {
-    TestType in(1, 2, 3, 4, "5", 6.0f, 7.0, true, Guid(8, 9), BinaryUtils::MakeDateGmt(1987, 6, 5),
-        BinaryUtils::MakeTimestampGmt(1998, 12, 27, 1, 2, 3, 456));
+    TestType in(1, 2, 3, 4, "5", 6.0f, 7.0, true, Guid(8, 9), common::MakeDateGmt(1987, 6, 5),
+        common::MakeTimestampGmt(1998, 12, 27, 1, 2, 3, 456));
 
     cache1.Put(1, in);
 
