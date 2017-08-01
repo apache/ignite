@@ -20,7 +20,9 @@ package org.apache.ignite.internal.processors.cache;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.util.Collections;
 import javax.cache.CacheException;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -34,8 +36,10 @@ public class IgniteCacheP2pUnmarshallingQueryErrorTest extends IgniteCacheP2pUnm
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        if (cfg.getCacheConfiguration().length > 0)
-            cfg.getCacheConfiguration()[0].setIndexedTypes(TestKey.class, String.class);
+        if (cfg.getCacheConfiguration().length > 0) {
+            cfg.getCacheConfiguration()[0].setQueryEntities(
+                Collections.singleton(new QueryEntity(TestKey.class, String.class)));
+        }
 
         return cfg;
     }

@@ -143,9 +143,7 @@ public abstract class JdbcThinAbstractDmlStatementSelfTest extends JdbcThinAbstr
         cache.setCacheMode(PARTITIONED);
         cache.setBackups(1);
         cache.setWriteSynchronizationMode(FULL_SYNC);
-        cache.setIndexedTypes(
-            String.class, Person.class
-        );
+        cache.setQueryEntities(Collections.singleton(new QueryEntity(String.class, Person.class)));
 
         return cache;
     }

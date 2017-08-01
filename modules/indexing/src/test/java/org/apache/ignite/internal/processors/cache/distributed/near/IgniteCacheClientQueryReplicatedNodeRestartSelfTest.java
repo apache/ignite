@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
@@ -29,6 +30,7 @@ import java.util.concurrent.atomic.AtomicIntegerArray;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.affinity.AffinityKey;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -123,30 +125,22 @@ public class IgniteCacheClientQueryReplicatedNodeRestartSelfTest extends GridCom
 
             switch (name) {
                 case "co":
-                    cc.setIndexedTypes(
-                        Integer.class, Company.class
-                    );
+                    cc.setQueryEntities(Collections.singleton(new QueryEntity(Integer.class, Company.class)));
 
                     break;
 
                 case "pr":
-                    cc.setIndexedTypes(
-                        Integer.class, Product.class
-                    );
+                    cc.setQueryEntities(Collections.singleton(new QueryEntity(Integer.class, Product.class)));
 
                     break;
 
                 case "pe":
-                    cc.setIndexedTypes(
-                        Integer.class, Person.class
-                    );
+                    cc.setQueryEntities(Collections.singleton(new QueryEntity(Integer.class, Person.class)));
 
                     break;
 
                 case "pu":
-                    cc.setIndexedTypes(
-                        AffinityKey.class, Purchase.class
-                    );
+                    cc.setQueryEntities(Collections.singleton(new QueryEntity(AffinityKey.class, Purchase.class)));
 
                     break;
             }

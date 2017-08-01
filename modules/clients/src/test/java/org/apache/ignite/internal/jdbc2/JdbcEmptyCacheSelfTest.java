@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.jdbc2;
 
+import java.util.Collections;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
@@ -56,9 +58,7 @@ public class JdbcEmptyCacheSelfTest extends GridCommonAbstractTest {
         cache.setCacheMode(PARTITIONED);
         cache.setBackups(1);
         cache.setWriteSynchronizationMode(FULL_SYNC);
-        cache.setIndexedTypes(
-            Byte.class, Byte.class
-        );
+        cache.setQueryEntities(Collections.singleton(new QueryEntity(Byte.class, Byte.class)));
 
         cfg.setCacheConfiguration(cache);
 

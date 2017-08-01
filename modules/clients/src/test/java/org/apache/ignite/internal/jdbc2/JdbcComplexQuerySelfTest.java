@@ -21,7 +21,9 @@ import java.io.Serializable;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.Statement;
+import java.util.Collections;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.affinity.AffinityKey;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -85,7 +87,7 @@ public class JdbcComplexQuerySelfTest extends GridCommonAbstractTest {
         cache.setBackups(1);
         cache.setWriteSynchronizationMode(FULL_SYNC);
         cache.setAtomicityMode(TRANSACTIONAL);
-        cache.setIndexedTypes(clsK, clsV);
+        cache.setQueryEntities(Collections.singleton(new QueryEntity(clsK, clsV)));
 
         return cache;
     }

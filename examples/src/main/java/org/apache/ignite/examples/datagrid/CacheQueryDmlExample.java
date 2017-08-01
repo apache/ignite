@@ -17,9 +17,11 @@
 
 package org.apache.ignite.examples.datagrid;
 
+import java.util.Collections;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.examples.model.Organization;
@@ -49,10 +51,10 @@ public class CacheQueryDmlExample {
             print("Cache query DML example started.");
 
             CacheConfiguration<Long, Organization> orgCacheCfg = new CacheConfiguration<>(ORG_CACHE);
-            orgCacheCfg.setIndexedTypes(Long.class, Organization.class);
+            orgCacheCfg.setQueryEntities(Collections.singleton(new QueryEntity(Long.class, Organization.class)));
 
             CacheConfiguration<Long, Person> personCacheCfg = new CacheConfiguration<>(PERSON_CACHE);
-            personCacheCfg.setIndexedTypes(Long.class, Person.class);
+            personCacheCfg.setQueryEntities(Collections.singleton(new QueryEntity(Long.class, Person.class)));
 
             // Auto-close cache at the end of the example.
             try (

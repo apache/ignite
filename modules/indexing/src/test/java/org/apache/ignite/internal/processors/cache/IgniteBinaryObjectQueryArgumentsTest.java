@@ -168,7 +168,7 @@ public class IgniteBinaryObjectQueryArgumentsTest extends GridCommonAbstractTest
 
         cfg.setName(cacheName);
 
-        cfg.setIndexedTypes(key, val);
+        cfg.setQueryEntities(Collections.singleton(new QueryEntity(key, val)));
 
         return cfg;
     }

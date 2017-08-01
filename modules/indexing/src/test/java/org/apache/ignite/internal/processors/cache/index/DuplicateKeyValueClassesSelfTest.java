@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.index;
 
+import java.util.Arrays;
+import java.util.Collections;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -56,7 +59,8 @@ public class DuplicateKeyValueClassesSelfTest extends GridCommonAbstractTest {
     public void testDuplicateKeyClass() throws Exception {
         CacheConfiguration ccfg = new CacheConfiguration()
             .setName(CACHE_NAME)
-            .setIndexedTypes(UUID.class, Clazz1.class, UUID.class, Clazz2.class);
+            .setQueryEntities(Arrays.asList(new QueryEntity(UUID.class, Clazz1.class),
+                new QueryEntity(UUID.class, Clazz2.class)));
 
         grid(0).createCache(ccfg);
     }
@@ -69,7 +73,8 @@ public class DuplicateKeyValueClassesSelfTest extends GridCommonAbstractTest {
     public void testDuplicateValueClass() throws Exception {
         CacheConfiguration ccfg = new CacheConfiguration()
             .setName(CACHE_NAME)
-            .setIndexedTypes(UUID.class, Clazz1.class, String.class, Clazz1.class);
+            .setQueryEntities(Arrays.asList(new QueryEntity(UUID.class, Clazz1.class),
+                new QueryEntity(String.class, Clazz1.class)));
 
         grid(0).createCache(ccfg);
     }

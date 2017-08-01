@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.db.wal;
 
+import java.util.Collections;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.IgniteCache;
@@ -24,6 +25,7 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.BinaryConfiguration;
@@ -34,6 +36,7 @@ import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsMultiNodePutGetRestartTest;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -71,7 +74,7 @@ public class IgniteWalRecoverySeveralRestartsTest extends GridCommonAbstractTest
 
         ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
         ccfg.setRebalanceMode(CacheRebalanceMode.NONE);
-        ccfg.setIndexedTypes(Integer.class, IndexedObject.class);
+        ccfg.setQueryEntities(Collections.singleton(new QueryEntity(Integer.class, IndexedObject.class)));
         ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         ccfg.setAffinity(new RendezvousAffinityFunction(false, 64 * 4)); // 64 per node
         ccfg.setReadFromBackup(true);
@@ -192,7 +195,7 @@ public class IgniteWalRecoverySeveralRestartsTest extends GridCommonAbstractTest
             dynCacheCfg.setName("dyncache");
             dynCacheCfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
             dynCacheCfg.setRebalanceMode(CacheRebalanceMode.NONE);
-            dynCacheCfg.setIndexedTypes(Integer.class, IndexedObject.class);
+            dynCacheCfg.setQueryEntities(Collections.singleton(new QueryEntity(Integer.class, IndexedObject.class)));
             dynCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
             dynCacheCfg.setAffinity(new RendezvousAffinityFunction(false, 64 * 4)); // 64 per node
             dynCacheCfg.setReadFromBackup(true);
@@ -245,7 +248,7 @@ public class IgniteWalRecoverySeveralRestartsTest extends GridCommonAbstractTest
             dynCacheCfg.setName("dyncache");
             dynCacheCfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
             dynCacheCfg.setRebalanceMode(CacheRebalanceMode.NONE);
-            dynCacheCfg.setIndexedTypes(Integer.class, IndexedObject.class);
+            dynCacheCfg.setQueryEntities(Collections.singleton(new QueryEntity(Integer.class, IndexedObject.class)));
             dynCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
             dynCacheCfg.setAffinity(new RendezvousAffinityFunction(false, 64 * 4)); // 64 per node
             dynCacheCfg.setReadFromBackup(true);

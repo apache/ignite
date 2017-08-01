@@ -18,6 +18,7 @@
 package org.apache.ignite.examples.streaming;
 
 import java.io.Serializable;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -27,6 +28,7 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -73,7 +75,7 @@ public class StreamVisitorExample {
 
             // Index key and value for querying financial instruments.
             // Note that Instrument class has @QuerySqlField annotation for secondary field indexing.
-            instCfg.setIndexedTypes(String.class, Instrument.class);
+            instCfg.setQueryEntities(Collections.singleton(new QueryEntity(String.class, Instrument.class)));
 
             // Auto-close caches at the end of the example.
             try (

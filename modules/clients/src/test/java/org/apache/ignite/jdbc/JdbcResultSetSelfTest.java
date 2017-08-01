@@ -17,10 +17,12 @@
 
 package org.apache.ignite.jdbc;
 
+import java.util.Collections;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
@@ -77,9 +79,7 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
         cache.setCacheMode(PARTITIONED);
         cache.setBackups(1);
         cache.setWriteSynchronizationMode(FULL_SYNC);
-        cache.setIndexedTypes(
-            Integer.class, TestObject.class
-        );
+        cache.setQueryEntities(Collections.singleton(new QueryEntity(String.class, TestObject.class)));
 
         cfg.setCacheConfiguration(cache);
 

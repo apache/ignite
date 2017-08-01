@@ -18,12 +18,14 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.io.Serializable;
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
@@ -65,9 +67,7 @@ public class IgniteCacheSqlQueryMultiThreadedSelfTest extends GridCommonAbstract
         ccfg.setNearConfiguration(null);
         ccfg.setBackups(1);
         ccfg.setAtomicityMode(TRANSACTIONAL);
-        ccfg.setIndexedTypes(
-            Integer.class, Person.class
-        );
+        ccfg.setQueryEntities(Collections.singleton(new QueryEntity(Integer.class, Person.class)));
 
         c.setCacheConfiguration(ccfg);
 

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.examples.streaming;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import javax.cache.processor.MutableEntry;
@@ -24,6 +25,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.examples.ExampleNodeStartup;
@@ -56,7 +58,7 @@ public class StreamTransformerExample {
             CacheConfiguration<Integer, Long> cfg = new CacheConfiguration<>("randomNumbers");
 
             // Index key and value.
-            cfg.setIndexedTypes(Integer.class, Long.class);
+            cfg.setQueryEntities(Collections.singleton(new QueryEntity(Integer.class, Long.class)));
 
             // Auto-close cache at the end of the example.
             try (IgniteCache<Integer, Long> stmCache = ignite.getOrCreateCache(cfg)) {

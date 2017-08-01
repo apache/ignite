@@ -17,11 +17,13 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.Collections;
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.TouchedExpiryPolicy;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -77,7 +79,7 @@ public class CacheQueryFilterExpiredTest extends GridCommonAbstractTest {
         CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
         ccfg.setAtomicityMode(atomicityMode);
         ccfg.setEagerTtl(eagerTtl);
-        ccfg.setIndexedTypes(Integer.class, Integer.class);
+        ccfg.setQueryEntities(Collections.singleton(new QueryEntity(Integer.class, Integer.class)));
 
         final IgniteCache<Integer, Integer> cache = ignite.createCache(ccfg);
 

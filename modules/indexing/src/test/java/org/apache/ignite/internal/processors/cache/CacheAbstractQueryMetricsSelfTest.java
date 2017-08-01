@@ -19,8 +19,10 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -85,7 +87,7 @@ public abstract class CacheAbstractQueryMetricsSelfTest extends GridCommonAbstra
         cacheCfg1.setName("A");
         cacheCfg1.setCacheMode(cacheMode);
         cacheCfg1.setWriteSynchronizationMode(FULL_SYNC);
-        cacheCfg1.setIndexedTypes(Integer.class, String.class);
+        cacheCfg1.setQueryEntities(Collections.singleton(new QueryEntity(Integer.class, String.class)));
         cacheCfg1.setStatisticsEnabled(true);
 
         CacheConfiguration<Integer, String> cacheCfg2 = defaultCacheConfiguration();
@@ -93,7 +95,7 @@ public abstract class CacheAbstractQueryMetricsSelfTest extends GridCommonAbstra
         cacheCfg2.setName("B");
         cacheCfg2.setCacheMode(cacheMode);
         cacheCfg2.setWriteSynchronizationMode(FULL_SYNC);
-        cacheCfg2.setIndexedTypes(Integer.class, String.class);
+        cacheCfg2.setQueryEntities(Collections.singleton(new QueryEntity(Integer.class, String.class)));
         cacheCfg2.setStatisticsEnabled(true);
 
         cfg.setCacheConfiguration(cacheCfg1, cacheCfg2);

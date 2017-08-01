@@ -17,13 +17,16 @@
 
 package org.apache.ignite.internal.processors.sql;
 
+import java.util.Collections;
 import junit.framework.TestCase;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.SqlConnectorConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.processors.query.SqlSchemaSelfTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -179,7 +182,7 @@ public class SqlConnectorConfigurationValidationSelfTest extends GridCommonAbstr
         cfg.setDiscoverySpi(spi);
 
         CacheConfiguration ccfg = new CacheConfiguration(CACHE_NAME)
-            .setIndexedTypes(SqlConnectorKey.class, SqlConnectorValue.class);
+            .setQueryEntities(Collections.singleton(new QueryEntity(SqlConnectorKey.class, SqlConnectorValue.class)));
 
         cfg.setCacheConfiguration(ccfg);
 

@@ -18,12 +18,14 @@
 package org.apache.ignite.internal.processors.cache.persistence;
 
 import java.io.Serializable;
+import java.util.Collections;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -117,7 +119,7 @@ public class IgnitePdsDynamicCacheTest extends IgniteDbDynamicCacheSelfTest {
         ccfg2.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         ccfg2.setRebalanceMode(CacheRebalanceMode.NONE);
         ccfg2.setAffinity(new RendezvousAffinityFunction(false, 32));
-        ccfg2.setIndexedTypes(Integer.class, Value.class);
+        ccfg2.setQueryEntities(Collections.singleton(new QueryEntity(Integer.class, Value.class)));
 
         CacheConfiguration ccfg3 = new CacheConfiguration();
 

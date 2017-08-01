@@ -18,6 +18,7 @@
 package org.apache.ignite.examples.datagrid.starschema;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.ConcurrentModificationException;
 import java.util.HashMap;
 import java.util.Map;
@@ -28,6 +29,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -83,15 +85,15 @@ public class CacheStarSchemaExample {
 
             CacheConfiguration<Integer, FactPurchase> factCacheCfg = new CacheConfiguration<>(FACT_CACHE_NAME);
             factCacheCfg.setCacheMode(CacheMode.PARTITIONED);
-            factCacheCfg.setIndexedTypes(Integer.class, FactPurchase.class);
+            factCacheCfg.setQueryEntities(Collections.singleton(new QueryEntity(Integer.class, FactPurchase.class)));
 
             CacheConfiguration<Integer, DimStore> dimStoreCacheCfg = new CacheConfiguration<>(DIM_STORE_CACHE_NAME);
             dimStoreCacheCfg.setCacheMode(CacheMode.REPLICATED);
-            dimStoreCacheCfg.setIndexedTypes(Integer.class, DimStore.class);
+            dimStoreCacheCfg.setQueryEntities(Collections.singleton(new QueryEntity(Integer.class, DimStore.class)));
 
             CacheConfiguration<Integer, DimProduct> dimProdCacheCfg = new CacheConfiguration<>(DIM_PROD_CACHE_NAME);
             dimProdCacheCfg.setCacheMode(CacheMode.REPLICATED);
-            dimProdCacheCfg.setIndexedTypes(Integer.class, DimProduct.class);
+            dimProdCacheCfg.setQueryEntities(Collections.singleton(new QueryEntity(Integer.class, DimProduct.class)));
 
             // Auto-close cache at the end of the example.
             try (IgniteCache<Integer, FactPurchase> factCache = ignite.getOrCreateCache(factCacheCfg);

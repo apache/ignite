@@ -18,11 +18,13 @@
 package org.apache.ignite.internal.processors.cache.persistence.db;
 
 import java.io.Serializable;
+import java.util.Collections;
 import java.util.List;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
@@ -77,7 +79,7 @@ public class IgnitePdsPageEvictionTest extends GridCommonAbstractTest {
 
         ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         ccfg.setRebalanceMode(CacheRebalanceMode.NONE);
-        ccfg.setIndexedTypes(DbKey.class, DbValue.class);
+        ccfg.setQueryEntities(Collections.singleton(new QueryEntity(DbKey.class, DbValue.class)));
         ccfg.setAffinity(new RendezvousAffinityFunction(false, 32));
 
         cfg.setCacheConfiguration(ccfg);

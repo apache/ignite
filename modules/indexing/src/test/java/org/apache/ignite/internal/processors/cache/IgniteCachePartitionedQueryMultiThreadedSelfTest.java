@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.io.Externalizable;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -28,6 +29,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.TextQuery;
@@ -86,9 +88,7 @@ public class IgniteCachePartitionedQueryMultiThreadedSelfTest extends GridCommon
         cc.setBackups(0);
         cc.setRebalanceMode(CacheRebalanceMode.SYNC);
         cc.setAtomicityMode(TRANSACTIONAL);
-        cc.setIndexedTypes(
-            UUID.class, PersonObj.class
-        );
+        cc.setQueryEntities(Collections.singleton(new QueryEntity(UUID.class, PersonObj.class)));
 
         c.setCacheConfiguration(cc);
 

@@ -17,15 +17,18 @@
 
 package org.apache.ignite.internal.processors.query;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import java.util.UUID;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SpiQuery;
@@ -36,6 +39,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
+import org.apache.ignite.internal.processors.cache.index.DuplicateKeyValueClassesSelfTest;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.spi.IgniteSpiAdapter;
@@ -73,8 +77,8 @@ public class IgniteQueryDedicatedPoolTest extends GridCommonAbstractTest {
 
         CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
-        ccfg.setIndexedTypes(Integer.class, Integer.class);
-        ccfg.setIndexedTypes(Byte.class, Byte.class);
+        ccfg.setQueryEntities(Arrays.asList(new QueryEntity(Integer.class, Integer.class),
+            new QueryEntity(Byte.class, Byte.class)));
         ccfg.setSqlFunctionClasses(IgniteQueryDedicatedPoolTest.class);
         ccfg.setName(CACHE_NAME);
 

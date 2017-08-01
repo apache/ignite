@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import java.io.Serializable;
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.Callable;
@@ -27,6 +28,7 @@ import java.util.concurrent.atomic.AtomicIntegerArray;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.affinity.AffinityKey;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.QueryCancelledException;
@@ -115,16 +117,10 @@ public class IgniteCacheQueryNodeRestartSelfTest2 extends GridCommonAbstractTest
             cc.setRebalanceMode(SYNC);
             cc.setAffinity(new RendezvousAffinityFunction(false, 60));
 
-            if (name.equals("pe")) {
-                cc.setIndexedTypes(
-                    Integer.class, Person.class
-                );
-            }
-            else if (name.equals("pu")) {
-                cc.setIndexedTypes(
-                    AffinityKey.class, Purchase.class
-                );
-            }
+            if (name.equals("pe"))
+                cc.setQueryEntities(Collections.singleton(new QueryEntity(Integer.class, Person.class)));
+            else if (name.equals("pu"))
+                cc.setQueryEntities(Collections.singleton(new QueryEntity(AffinityKey.class, Purchase.class)));
 
             ccs[i++] = cc;
         }
@@ -139,16 +135,10 @@ public class IgniteCacheQueryNodeRestartSelfTest2 extends GridCommonAbstractTest
             cc.setRebalanceMode(SYNC);
             cc.setAffinity(new RendezvousAffinityFunction(false, 50));
 
-            if (name.equals("co")) {
-                cc.setIndexedTypes(
-                    Integer.class, Company.class
-                );
-            }
-            else if (name.equals("pr")) {
-                cc.setIndexedTypes(
-                    Integer.class, Product.class
-                );
-            }
+            if (name.equals("co"))
+                cc.setQueryEntities(Collections.singleton(new QueryEntity(Integer.class, Company.class)));
+            else if (name.equals("pr"))
+                cc.setQueryEntities(Collections.singleton(new QueryEntity(Integer.class, Product.class)));
 
             ccs[i++] = cc;
         }

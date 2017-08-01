@@ -18,9 +18,11 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.io.Serializable;
+import java.util.Collections;
 import java.util.List;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
@@ -89,7 +91,7 @@ public class SqlFieldsQuerySelfTest extends GridCommonAbstractTest {
         cacheConf.setCacheMode(CacheMode.PARTITIONED);
         cacheConf.setBackups(0);
 
-        cacheConf.setIndexedTypes(Integer.class, Person.class);
+        cacheConf.setQueryEntities(Collections.singleton(new QueryEntity(Integer.class, Person.class)));
 
         cacheConf.setName("person");
 

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.Callable;
@@ -27,6 +28,7 @@ import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -87,9 +89,7 @@ public class IgniteCacheQueryNodeRestartSelfTest extends GridCacheAbstractSelfTe
         cc.setAtomicityMode(TRANSACTIONAL);
         cc.setRebalanceMode(SYNC);
         cc.setAffinity(new RendezvousAffinityFunction(false, 15));
-        cc.setIndexedTypes(
-            Integer.class, Integer.class
-        );
+        cc.setQueryEntities(Collections.singleton(new QueryEntity(Integer.class, Integer.class)));
 
         c.setCacheConfiguration(cc);
 

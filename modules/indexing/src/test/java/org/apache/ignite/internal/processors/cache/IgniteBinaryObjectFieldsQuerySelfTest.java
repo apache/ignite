@@ -16,6 +16,7 @@
  */
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.Collections;
 import java.util.List;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
@@ -24,6 +25,7 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -95,8 +97,8 @@ public class IgniteBinaryObjectFieldsQuerySelfTest extends GridCommonAbstractTes
         cache.setCacheMode(cacheMode);
         cache.setAtomicityMode(atomicity);
 
-        cache.setIndexedTypes(extClassLoader.loadClass(PERSON_KEY_CLS_NAME),
-            extClassLoader.loadClass(getPersonClassName()));
+        cache.setQueryEntities(Collections.singleton(new QueryEntity(extClassLoader.loadClass(PERSON_KEY_CLS_NAME),
+            extClassLoader.loadClass(getPersonClassName()))));
 
         return cache;
     }

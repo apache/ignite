@@ -19,12 +19,14 @@ package org.apache.ignite.internal.processors.cache.persistence;
 
 import java.io.File;
 import java.io.Serializable;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
@@ -85,7 +87,7 @@ public class IgnitePdsMultiNodePutGetRestartTest extends GridCommonAbstractTest 
 
         CacheConfiguration ccfg = new CacheConfiguration();
 
-        ccfg.setIndexedTypes(Integer.class, DbValue.class);
+        ccfg.setQueryEntities(Collections.singleton(new QueryEntity(Integer.class, DbValue.class)));
 
         ccfg.setRebalanceMode(CacheRebalanceMode.NONE);
 

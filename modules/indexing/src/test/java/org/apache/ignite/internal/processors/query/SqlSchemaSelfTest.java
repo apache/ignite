@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal.processors.query;
 
+import java.util.Collections;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -89,7 +91,7 @@ public class SqlSchemaSelfTest extends GridCommonAbstractTest {
     public void testQueryWithoutCacheOnCacheSchema() throws Exception {
         node.createCache(new CacheConfiguration<PersonKey, Person>()
             .setName(CACHE_PERSON)
-            .setIndexedTypes(PersonKey.class, Person.class));
+            .setQueryEntities(Collections.singleton(new QueryEntity(PersonKey.class, Person.class))));
 
         GridQueryProcessor qryProc = node.context().query();
 
@@ -121,11 +123,12 @@ public class SqlSchemaSelfTest extends GridCommonAbstractTest {
     public void testSchemaChange() throws Exception {
         IgniteCache<PersonKey, Person> cache = node.createCache(new CacheConfiguration<PersonKey, Person>()
             .setName(CACHE_PERSON)
-            .setIndexedTypes(PersonKey.class, Person.class));
+            .setQueryEntities(Collections.singleton(new QueryEntity(PersonKey.class, Person.class))));
 
         node.createCache(new CacheConfiguration<PersonKey, Person>()
             .setName(CACHE_PERSON_2)
-            .setIndexedTypes(PersonKey.class, Person.class));
+            .setQueryEntities(Collections.singleton(new QueryEntity(PersonKey.class, Person.class))));
+
 
         cache.put(new PersonKey(1), new Person("Vasya", 2));
 
@@ -161,12 +164,12 @@ public class SqlSchemaSelfTest extends GridCommonAbstractTest {
     public void testSchemaChangeOnCacheWithPublicSchema() throws Exception {
         IgniteCache<PersonKey, Person> cache = node.createCache(new CacheConfiguration<PersonKey, Person>()
             .setName(CACHE_PERSON)
-            .setIndexedTypes(PersonKey.class, Person.class)
+            .setQueryEntities(Collections.singleton(new QueryEntity(PersonKey.class, Person.class)))
             .setSqlSchema(QueryUtils.DFLT_SCHEMA));
 
         node.createCache(new CacheConfiguration<PersonKey, Person>()
             .setName(CACHE_PERSON_2)
-            .setIndexedTypes(PersonKey.class, Person.class));
+            .setQueryEntities(Collections.singleton(new QueryEntity(PersonKey.class, Person.class))));
 
         cache.put(new PersonKey(1), new Person("Vasya", 2));
 
@@ -200,12 +203,12 @@ public class SqlSchemaSelfTest extends GridCommonAbstractTest {
 
         node.createCache(new CacheConfiguration<PersonKey, Person>()
             .setName(CACHE_PERSON)
-            .setIndexedTypes(PersonKey.class, Person.class)
+            .setQueryEntities(Collections.singleton(new QueryEntity(PersonKey.class, Person.class)))
             .setSqlSchema(QueryUtils.DFLT_SCHEMA));
 
         node.createCache(new CacheConfiguration<PersonKey, Person>()
             .setName(CACHE_PERSON_2)
-            .setIndexedTypes(PersonKey.class, Person.class)
+            .setQueryEntities(Collections.singleton(new QueryEntity(PersonKey.class, Person.class)))
             .setSqlSchema(QueryUtils.DFLT_SCHEMA));
     }
 

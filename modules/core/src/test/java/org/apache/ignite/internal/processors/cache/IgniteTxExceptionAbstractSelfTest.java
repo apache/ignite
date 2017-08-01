@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -29,6 +30,7 @@ import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -91,7 +93,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
         ccfg.setWriteThrough(false);
         ccfg.setLoadPreviousValue(true);
 
-        ccfg.setIndexedTypes(Integer.class, Integer.class);
+        ccfg.setQueryEntities(Collections.singleton(new QueryEntity(Integer.class, Integer.class)));
 
         return ccfg;
     }

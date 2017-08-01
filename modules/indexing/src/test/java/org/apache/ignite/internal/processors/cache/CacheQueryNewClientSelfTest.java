@@ -17,10 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.Collections;
 import java.util.List;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -60,9 +62,9 @@ public class CacheQueryNewClientSelfTest extends GridCommonAbstractTest {
             log.info("Iteration: " + iter);
 
             IgniteCache<Integer, Integer> cache1 = srv.createCache(new CacheConfiguration<Integer, Integer>().
-                setName("cache1").setIndexedTypes(Integer.class, Integer.class));
+                setName("cache1").setQueryEntities(Collections.singleton(new QueryEntity(Integer.class, Integer.class))));
             IgniteCache<Integer, Integer> cache2 = srv.createCache(new CacheConfiguration<Integer, Integer>().
-                setName("cache2").setIndexedTypes(Integer.class, Integer.class));
+                setName("cache2").setQueryEntities(Collections.singleton(new QueryEntity(Integer.class, Integer.class))));
 
             for (int i = 0; i < 10; i++) {
                 cache1.put(i, i);
@@ -92,9 +94,11 @@ public class CacheQueryNewClientSelfTest extends GridCommonAbstractTest {
         Ignite srv = startGrid("server");
 
         IgniteCache<Integer, Integer> cache1 = srv.createCache(new CacheConfiguration<Integer, Integer>().
-            setName("cache1").setSqlSchema("cache1_sql").setIndexedTypes(Integer.class, Integer.class));
+            setName("cache1").setSqlSchema("cache1_sql").
+            setQueryEntities(Collections.singleton(new QueryEntity(Integer.class, Integer.class))));
         IgniteCache<Integer, Integer> cache2 = srv.createCache(new CacheConfiguration<Integer, Integer>().
-            setName("cache2").setSqlSchema("cache2_sql").setIndexedTypes(Integer.class, Integer.class));
+            setName("cache2").setSqlSchema("cache2_sql").
+            setQueryEntities(Collections.singleton(new QueryEntity(Integer.class, Integer.class))));
 
         for (int i = 0; i < 10; i++) {
             cache1.put(i, i);

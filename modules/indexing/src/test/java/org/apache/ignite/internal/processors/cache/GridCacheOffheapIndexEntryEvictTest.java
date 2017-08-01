@@ -22,10 +22,12 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.locks.Lock;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -64,7 +66,7 @@ public class GridCacheOffheapIndexEntryEvictTest extends GridCommonAbstractTest 
         cacheCfg.setBackups(1);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
         cacheCfg.setEvictionPolicy(null);
-        cacheCfg.setIndexedTypes(Integer.class, TestValue.class);
+        cacheCfg.setQueryEntities(Collections.singleton(new QueryEntity(Integer.class, TestValue.class)));
         cacheCfg.setNearConfiguration(null);
 
         cfg.setCacheConfiguration(cacheCfg);

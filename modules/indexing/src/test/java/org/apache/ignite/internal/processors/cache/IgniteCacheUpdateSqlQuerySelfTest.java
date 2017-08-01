@@ -28,6 +28,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
@@ -57,7 +58,7 @@ public class IgniteCacheUpdateSqlQuerySelfTest extends IgniteCacheAbstractSqlDml
     private static CacheConfiguration createAllTypesCacheConfig() {
         CacheConfiguration ccfg = cacheConfig("L2AT", true, true);
 
-        ccfg.setIndexedTypes(Long.class, AllTypes.class);
+        ccfg.setQueryEntities(Collections.singleton(new QueryEntity(Long.class, AllTypes.class)));
 
         return ccfg;
     }

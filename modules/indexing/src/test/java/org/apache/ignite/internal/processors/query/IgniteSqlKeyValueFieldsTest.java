@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query;
 
+import java.util.Collections;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.QueryEntity;
@@ -183,11 +184,14 @@ public class IgniteSqlKeyValueFieldsTest  extends GridCommonAbstractTest {
             entity.setFields(fields);
 
             ccfg.setQueryEntities(Arrays.asList(entity));
+
             return ccfg;
         }
         else if (name.equals(CACHE_JOB)) {
             CacheConfiguration ccfg = new CacheConfiguration(CACHE_JOB);
-            ccfg.setIndexedTypes(Integer.class, Integer.class);
+
+            ccfg.setQueryEntities(Collections.singleton(new QueryEntity(Integer.class, Integer.class)));
+
             return ccfg;
         }
         return null;

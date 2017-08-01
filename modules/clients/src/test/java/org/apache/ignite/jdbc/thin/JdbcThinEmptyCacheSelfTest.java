@@ -21,6 +21,8 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.Statement;
+import java.util.Collections;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -56,9 +58,7 @@ public class JdbcThinEmptyCacheSelfTest extends JdbcThinAbstractSelfTest {
         cache.setCacheMode(PARTITIONED);
         cache.setBackups(1);
         cache.setWriteSynchronizationMode(FULL_SYNC);
-        cache.setIndexedTypes(
-            Byte.class, Byte.class
-        );
+        cache.setQueryEntities(Collections.singleton(new QueryEntity(Byte.class, Byte.class)));
 
         cfg.setCacheConfiguration(cache);
 

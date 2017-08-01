@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.ttl;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -32,6 +33,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.eviction.lru.LruEvictionPolicy;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
@@ -83,7 +85,7 @@ public abstract class CacheTtlAbstractSelfTest extends GridCommonAbstractTest {
 
         ccfg.setEvictionPolicy(plc);
         ccfg.setOnheapCacheEnabled(true);
-        ccfg.setIndexedTypes(Integer.class, Integer.class);
+        ccfg.setQueryEntities(Collections.singleton(new QueryEntity(Integer.class, Integer.class)));
         ccfg.setBackups(2);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
         ccfg.setRebalanceMode(SYNC);

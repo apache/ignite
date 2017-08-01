@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,6 +27,7 @@ import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteClientDisconnectedException;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -51,7 +53,7 @@ public class IgniteClientReconnectCacheQueriesFailoverTest extends IgniteClientR
 
         ccfg.setCacheMode(PARTITIONED);
         ccfg.setBackups(1);
-        ccfg.setIndexedTypes(Integer.class, Person.class);
+        ccfg.setQueryEntities(Collections.singleton(new QueryEntity(Integer.class, Person.class)));
 
         cfg.setCacheConfiguration(ccfg);
 

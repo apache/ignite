@@ -22,12 +22,14 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
@@ -64,7 +66,7 @@ public class IgniteCacheDistributedJoinTest extends GridCommonAbstractTest {
         ccfga.setAtomicityMode(CacheAtomicityMode.ATOMIC);
         ccfga.setBackups(1);
         ccfga.setCacheMode(CacheMode.PARTITIONED);
-        ccfga.setIndexedTypes(Integer.class, A.class);
+        ccfga.setQueryEntities(Collections.singleton(new QueryEntity(Integer.class, A.class)));
 
         CacheConfiguration<Integer, B> ccfgb = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
@@ -73,7 +75,7 @@ public class IgniteCacheDistributedJoinTest extends GridCommonAbstractTest {
         ccfgb.setAtomicityMode(CacheAtomicityMode.ATOMIC);
         ccfgb.setBackups(1);
         ccfgb.setCacheMode(CacheMode.PARTITIONED);
-        ccfgb.setIndexedTypes(Integer.class, B.class);
+        ccfgb.setQueryEntities(Collections.singleton(new QueryEntity(Integer.class, B.class)));
 
         CacheConfiguration<Integer, C> ccfgc = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
@@ -82,7 +84,7 @@ public class IgniteCacheDistributedJoinTest extends GridCommonAbstractTest {
         ccfgc.setAtomicityMode(CacheAtomicityMode.ATOMIC);
         ccfgc.setBackups(1);
         ccfgc.setCacheMode(CacheMode.PARTITIONED);
-        ccfgc.setIndexedTypes(Integer.class, C.class);
+        ccfgc.setQueryEntities(Collections.singleton(new QueryEntity(Integer.class, C.class)));
 
         cfg.setCacheConfiguration(ccfga, ccfgb, ccfgc);
 

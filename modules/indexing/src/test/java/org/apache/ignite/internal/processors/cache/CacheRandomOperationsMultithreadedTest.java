@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.io.Serializable;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -29,6 +30,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.eviction.EvictionPolicy;
 import org.apache.ignite.cache.eviction.lru.LruEvictionPolicy;
 import org.apache.ignite.cache.query.ScanQuery;
@@ -352,7 +354,7 @@ public class CacheRandomOperationsMultithreadedTest extends GridCommonAbstractTe
             ccfg.setBackups(1);
 
         if (indexing)
-            ccfg.setIndexedTypes(TestKey.class, TestData.class);
+            ccfg.setQueryEntities(Collections.singleton(new QueryEntity(TestKey.class, TestData.class)));
 
         return ccfg;
     }

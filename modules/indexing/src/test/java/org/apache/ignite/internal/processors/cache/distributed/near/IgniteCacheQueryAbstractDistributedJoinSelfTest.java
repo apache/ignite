@@ -18,8 +18,10 @@
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import java.io.Serializable;
+import java.util.Collections;
 import java.util.Random;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
@@ -116,30 +118,22 @@ public class IgniteCacheQueryAbstractDistributedJoinSelfTest extends GridCommonA
 
             switch (name) {
                 case "pe":
-                    cc.setIndexedTypes(
-                            Integer.class, Person.class
-                    );
+                    cc.setQueryEntities(Collections.singleton(new QueryEntity(Integer.class, Person.class)));
 
                     break;
 
                 case "pu":
-                    cc.setIndexedTypes(
-                            Integer.class, Purchase.class
-                    );
+                    cc.setQueryEntities(Collections.singleton(new QueryEntity(Integer.class, Purchase.class)));
 
                     break;
 
                 case "co":
-                    cc.setIndexedTypes(
-                            Integer.class, Company.class
-                    );
+                    cc.setQueryEntities(Collections.singleton(new QueryEntity(Integer.class, Company.class)));
 
                     break;
 
                 case "pr":
-                    cc.setIndexedTypes(
-                            Integer.class, Product.class
-                    );
+                    cc.setQueryEntities(Collections.singleton(new QueryEntity(Integer.class, Product.class)));
 
                     break;
             }

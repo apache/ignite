@@ -29,6 +29,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -103,7 +104,7 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
         cc.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cc.setRebalanceMode(SYNC);
         cc.setAtomicityMode(TRANSACTIONAL);
-        cc.setIndexedTypes(clsK, clsV);
+        cc.setQueryEntities(Collections.singleton(new QueryEntity(clsK, clsV)));
 
         if ((mode != CacheMode.PARTITIONED) && (mode != CacheMode.REPLICATED))
             throw new IllegalStateException("mode: " + mode);

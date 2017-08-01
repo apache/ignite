@@ -24,6 +24,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -32,6 +33,7 @@ import java.util.concurrent.Callable;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
@@ -110,7 +112,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
         cc.setRebalanceMode(SYNC);
         cc.setSqlSchema(sqlSchema);
         cc.setSqlFunctionClasses(GridQueryParsingTest.class);
-        cc.setIndexedTypes(clsK, clsV);
+        cc.setQueryEntities(Collections.singleton(new QueryEntity(clsK, clsV)));
 
         return cc;
     }

@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.Collections;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -62,7 +64,7 @@ public class IgniteDynamicCacheWithConfigStartSelfTest extends GridCommonAbstrac
     private CacheConfiguration cacheConfiguration() {
         CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(CACHE_NAME);
 
-        ccfg.setIndexedTypes(String.class, String.class);
+        ccfg.setQueryEntities(Collections.singleton(new QueryEntity(String.class, String.class)));
 
         return ccfg;
     }

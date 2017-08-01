@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query;
 
+import java.util.Collections;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheKeyConfiguration;
 import org.apache.ignite.cache.CacheMode;
@@ -385,7 +386,7 @@ public class IgniteSqlRoutingTest extends GridCommonAbstractTest {
 
         ccfg.setCacheMode(CacheMode.PARTITIONED);
 
-        ccfg.setIndexedTypes(UUID.class, UUID.class);
+        ccfg.setQueryEntities(Collections.singleton(new QueryEntity(UUID.class, UUID.class)));
 
         IgniteCache<UUID, UUID> cache = grid(NODE_CLIENT).createCache(ccfg);
 
@@ -425,7 +426,7 @@ public class IgniteSqlRoutingTest extends GridCommonAbstractTest {
 
         ccfg.setCacheMode(CacheMode.PARTITIONED);
 
-        ccfg.setIndexedTypes(Date.class, Date.class);
+        ccfg.setQueryEntities(Collections.singleton(new QueryEntity(Date.class, Date.class)));
 
         IgniteCache<Date, Date> cache = grid(NODE_CLIENT).createCache(ccfg);
 

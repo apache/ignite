@@ -16,12 +16,17 @@
  */
 package org.apache.ignite.internal.processors.query;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.UUID;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.cache.index.DuplicateKeyValueClassesSelfTest;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -103,7 +108,7 @@ public class IgniteSqlEntryCacheModeAgnosticTest extends GridCommonAbstractTest 
 
         cfg.setName(cacheName);
 
-        cfg.setIndexedTypes(Integer.class, String.class);
+        cfg.setQueryEntities(Collections.singleton(new QueryEntity(Integer.class, String.class)));
 
         return cfg;
     }

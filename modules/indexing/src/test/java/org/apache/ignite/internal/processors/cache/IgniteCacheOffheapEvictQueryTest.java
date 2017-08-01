@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.Collections;
 import java.util.Random;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
@@ -26,6 +27,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -68,9 +70,7 @@ public class IgniteCacheOffheapEvictQueryTest extends GridCommonAbstractTest {
         cacheCfg.setEvictionPolicy(null);
         cacheCfg.setNearConfiguration(null);
 
-        cacheCfg.setIndexedTypes(
-            Integer.class, Integer.class
-        );
+        cacheCfg.setQueryEntities(Collections.singleton(new QueryEntity(Integer.class, Integer.class)));
 
         cfg.setCacheConfiguration(cacheCfg);
 

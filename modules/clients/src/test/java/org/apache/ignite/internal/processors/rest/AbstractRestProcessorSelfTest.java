@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal.processors.rest;
 
+import java.util.Collections;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -89,7 +91,7 @@ abstract class AbstractRestProcessorSelfTest extends GridCommonAbstractTest {
         CacheConfiguration ccfg = defaultCacheConfiguration();
 
         ccfg.setStatisticsEnabled(true);
-        ccfg.setIndexedTypes(String.class, String.class);
+        ccfg.setQueryEntities(Collections.singleton(new QueryEntity(String.class, String.class)));
 
         cfg.setCacheConfiguration(ccfg);
 

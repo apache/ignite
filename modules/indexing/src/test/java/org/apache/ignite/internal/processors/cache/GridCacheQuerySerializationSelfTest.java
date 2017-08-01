@@ -17,11 +17,13 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.Collections;
 import java.util.List;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -77,7 +79,7 @@ public class GridCacheQuerySerializationSelfTest extends GridCommonAbstractTest 
         cacheCfg.setName(CACHE_NAME);
         cacheCfg.setCacheMode(CACHE_MODE);
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
-        cacheCfg.setIndexedTypes(Integer.class, GridCacheQueryTestValue.class);
+        cacheCfg.setQueryEntities(Collections.singleton(new QueryEntity(Integer.class, GridCacheQueryTestValue.class)));
 
         cfg.setCacheConfiguration(cacheCfg);
 

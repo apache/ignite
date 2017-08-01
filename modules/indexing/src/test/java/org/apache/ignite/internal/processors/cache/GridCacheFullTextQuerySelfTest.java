@@ -21,6 +21,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
@@ -31,6 +32,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryCursor;
@@ -84,7 +86,7 @@ public class GridCacheFullTextQuerySelfTest extends GridCommonAbstractTest {
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
             .setWriteSynchronizationMode(FULL_SYNC)
             .setBackups(0)
-            .setIndexedTypes(Integer.class, Person.class);
+            .setQueryEntities(Collections.singleton(new QueryEntity(Integer.class, Person.class)));
 
         cfg.setCacheConfiguration(cacheCfg);
 

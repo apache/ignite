@@ -20,8 +20,10 @@ package org.apache.ignite.internal.jdbc2;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
+import java.util.Collections;
 import java.util.Properties;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -59,9 +61,7 @@ public class JdbcLocalCachesSelfTest extends GridCommonAbstractTest {
         cache.setName(CACHE_NAME);
         cache.setCacheMode(LOCAL);
         cache.setWriteSynchronizationMode(FULL_SYNC);
-        cache.setIndexedTypes(
-            String.class, Integer.class
-        );
+        cache.setQueryEntities(Collections.singleton(new QueryEntity(String.class, Integer.class)));
 
         cfg.setCacheConfiguration(cache);
 

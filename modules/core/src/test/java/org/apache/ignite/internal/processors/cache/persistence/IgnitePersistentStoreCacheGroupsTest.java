@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence;
 
 import java.io.Serializable;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Random;
@@ -29,6 +30,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.BinaryConfiguration;
@@ -152,15 +154,15 @@ public class IgnitePersistentStoreCacheGroupsTest extends GridCommonAbstractTest
 
         // Several caches with the same indexed type (and index names).
         ccfgs1[0] = cacheConfiguration(GROUP1, "c1", PARTITIONED, ATOMIC, 1).
-            setIndexedTypes(Integer.class, Person.class);
+            setQueryEntities(Collections.singleton(new QueryEntity(Integer.class, Person.class)));
         ccfgs1[1] = cacheConfiguration(GROUP1, "c2", PARTITIONED, TRANSACTIONAL, 1).
-            setIndexedTypes(Integer.class, Person.class);
+            setQueryEntities(Collections.singleton(new QueryEntity(Integer.class, Person.class)));
         ccfgs1[2] = cacheConfiguration(GROUP2, "c3", PARTITIONED, ATOMIC, 1).
-            setIndexedTypes(Integer.class, Person.class);
+            setQueryEntities(Collections.singleton(new QueryEntity(Integer.class, Person.class)));
         ccfgs1[3] = cacheConfiguration(GROUP2, "c4", PARTITIONED, TRANSACTIONAL, 1).
-            setIndexedTypes(Integer.class, Person.class);
+            setQueryEntities(Collections.singleton(new QueryEntity(Integer.class, Person.class)));
         ccfgs1[4] = cacheConfiguration(null, "c5", PARTITIONED, ATOMIC, 1).
-            setIndexedTypes(Integer.class, Person.class);
+            setQueryEntities(Collections.singleton(new QueryEntity(Integer.class, Person.class)));
 
         String[] caches = {"c1", "c2", "c3", "c4", "c5"};
 
@@ -274,7 +276,7 @@ public class IgnitePersistentStoreCacheGroupsTest extends GridCommonAbstractTest
      */
     public void testCreateDropCache() throws Exception {
         ccfgs = new CacheConfiguration[]{cacheConfiguration(GROUP1, "c1", PARTITIONED, ATOMIC, 1)
-            .setIndexedTypes(Integer.class, Person.class)};
+            .setQueryEntities(Collections.singleton(new QueryEntity(Integer.class, Person.class)))};
 
         Ignite ignite = startGrid();
 
@@ -314,10 +316,10 @@ public class IgnitePersistentStoreCacheGroupsTest extends GridCommonAbstractTest
      */
     public void testCreateDropCache2() throws Exception {
         CacheConfiguration ccfg1 = cacheConfiguration(GROUP1, "c1", PARTITIONED, ATOMIC, 1)
-            .setIndexedTypes(Integer.class, Person.class);
+            .setQueryEntities(Collections.singleton(new QueryEntity(Integer.class, Person.class)));
 
         CacheConfiguration ccfg2 = cacheConfiguration(GROUP1, "c2", PARTITIONED, ATOMIC, 1)
-            .setIndexedTypes(Integer.class, Person.class);
+            .setQueryEntities(Collections.singleton(new QueryEntity(Integer.class, Person.class)));
 
         Ignite ignite = startGrid();
 

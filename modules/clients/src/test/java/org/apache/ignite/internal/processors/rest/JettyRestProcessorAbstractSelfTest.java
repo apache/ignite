@@ -31,6 +31,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.text.DateFormat;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Locale;
@@ -40,6 +41,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cluster.ClusterNode;
@@ -1158,7 +1160,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
     public void testMetadataRemote() throws Exception {
         CacheConfiguration<Integer, String> partialCacheCfg = new CacheConfiguration<>("partial");
 
-        partialCacheCfg.setIndexedTypes(Integer.class, String.class);
+        partialCacheCfg.setQueryEntities(Collections.singleton(new QueryEntity(Integer.class, String.class)));
         partialCacheCfg.setNodeFilter(new NodeIdFilter(grid(1).localNode().id()));
 
         IgniteCacheProxy<Integer, String> c = (IgniteCacheProxy<Integer, String>)grid(1).createCache(partialCacheCfg);
@@ -2003,7 +2005,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
     protected void initCache() {
         CacheConfiguration<Integer, Organization> orgCacheCfg = new CacheConfiguration<>("organization");
 
-        orgCacheCfg.setIndexedTypes(Integer.class, Organization.class);
+        orgCacheCfg.setQueryEntities(Collections.singleton(new QueryEntity(Integer.class, Organization.class)));
 
         IgniteCache<Integer, Organization> orgCache = ignite(0).getOrCreateCache(orgCacheCfg);
 
@@ -2017,7 +2019,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         CacheConfiguration<Integer, Person> personCacheCfg = new CacheConfiguration<>("person");
 
-        personCacheCfg.setIndexedTypes(Integer.class, Person.class);
+        personCacheCfg.setQueryEntities(Collections.singleton(new QueryEntity(Integer.class, Person.class)));
 
         IgniteCache<Integer, Person> personCache = grid(0).getOrCreateCache(personCacheCfg);
 

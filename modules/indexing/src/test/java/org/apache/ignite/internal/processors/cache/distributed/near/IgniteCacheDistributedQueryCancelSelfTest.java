@@ -18,11 +18,13 @@
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
@@ -67,7 +69,7 @@ public class IgniteCacheDistributedQueryCancelSelfTest extends GridCommonAbstrac
         spi.setIpFinder(IP_FINDER);
 
         CacheConfiguration<Integer, String> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
-        ccfg.setIndexedTypes(Integer.class, String.class);
+        ccfg.setQueryEntities(Collections.singleton(new QueryEntity(Integer.class, String.class)));
 
         cfg.setCacheConfiguration(ccfg);
 
@@ -143,7 +145,7 @@ public class IgniteCacheDistributedQueryCancelSelfTest extends GridCommonAbstrac
 
             CacheConfiguration<Integer, Integer> cfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
             cfg.setSqlFunctionClasses(Functions.class);
-            cfg.setIndexedTypes(Integer.class, Integer.class);
+            cfg.setQueryEntities(Collections.singleton(new QueryEntity(Integer.class, Integer.class)));
             cfg.setName("test");
 
             IgniteCache<Integer, Integer> cache = client.getOrCreateCache(cfg);

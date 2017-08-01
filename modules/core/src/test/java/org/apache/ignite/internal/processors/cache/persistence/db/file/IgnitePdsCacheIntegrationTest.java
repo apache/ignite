@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.db.file;
 
 import java.io.Serializable;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
 import org.apache.ignite.Ignite;
@@ -26,6 +27,7 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
@@ -85,7 +87,7 @@ public class IgnitePdsCacheIntegrationTest extends GridCommonAbstractTest {
 
         CacheConfiguration ccfg = new CacheConfiguration(CACHE_NAME);
 
-        ccfg.setIndexedTypes(Integer.class, DbValue.class);
+        ccfg.setQueryEntities(Collections.singleton(new QueryEntity(Integer.class, DbValue.class)));
 
         ccfg.setRebalanceMode(CacheRebalanceMode.NONE);
 

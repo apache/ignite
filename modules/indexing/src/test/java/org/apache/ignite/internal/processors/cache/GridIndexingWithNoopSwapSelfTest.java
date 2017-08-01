@@ -21,6 +21,7 @@ import java.util.Collections;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -70,9 +71,7 @@ public class GridIndexingWithNoopSwapSelfTest extends GridCommonAbstractTest {
         cc.setOnheapCacheEnabled(true);
         cc.setBackups(1);
         cc.setAtomicityMode(TRANSACTIONAL);
-        cc.setIndexedTypes(
-            Integer.class, ObjectValue.class
-        );
+        cc.setQueryEntities(Collections.singleton(new QueryEntity(Integer.class, ObjectValue.class)));
 
         c.setCacheConfiguration(cc);
 

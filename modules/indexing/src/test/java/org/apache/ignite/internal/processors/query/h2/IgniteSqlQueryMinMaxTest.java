@@ -17,8 +17,10 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
+import java.util.Collections;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
@@ -64,11 +66,11 @@ public class IgniteSqlQueryMinMaxTest extends GridCommonAbstractTest {
         spi.setIpFinder(IP_FINDER);
 
         CacheConfiguration<?, ?> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
-        ccfg.setIndexedTypes(Integer.class, Integer.class);
+        ccfg.setQueryEntities(Collections.singleton(new QueryEntity(Integer.class, Integer.class)));
         ccfg.setName(CACHE_NAME);
 
         CacheConfiguration<?, ?> ccfg2 = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
-        ccfg2.setIndexedTypes(Integer.class, ValueObj.class);
+        ccfg2.setQueryEntities(Collections.singleton(new QueryEntity(Integer.class, ValueObj.class)));
         ccfg2.setName(CACHE_NAME_2);
 
         cfg.setCacheConfiguration(ccfg, ccfg2);

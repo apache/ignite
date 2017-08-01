@@ -23,6 +23,7 @@ import java.util.List;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -61,7 +62,7 @@ public class CacheSqlQueryValueCopySelfTest extends GridCommonAbstractTest {
         CacheConfiguration<Integer, Value> cc = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         cc.setCopyOnRead(true);
-        cc.setIndexedTypes(Integer.class, Value.class);
+        cc.setQueryEntities(Collections.singleton(new QueryEntity(Integer.class, Value.class)));
         cc.setSqlFunctionClasses(TestSQLFunctions.class);
 
         cfg.setCacheConfiguration(cc);

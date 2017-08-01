@@ -35,6 +35,7 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.AffinityFunctionContext;
 import org.apache.ignite.cache.affinity.AffinityKeyMapped;
@@ -153,7 +154,7 @@ public abstract class IgniteCacheDistributedPartitionQueryAbstractSelfTest exten
         clientCfg.setRebalanceMode(SYNC);
         clientCfg.setBackups(2);
         clientCfg.setAffinity(AFFINITY);
-        clientCfg.setIndexedTypes(ClientKey.class, Client.class);
+        clientCfg.setQueryEntities(Collections.singleton(new QueryEntity(ClientKey.class, Client.class)));
 
         /** Deposits cache */
         CacheConfiguration<DepositKey, Deposit> depoCfg = new CacheConfiguration<>();
@@ -163,7 +164,7 @@ public abstract class IgniteCacheDistributedPartitionQueryAbstractSelfTest exten
         depoCfg.setRebalanceMode(SYNC);
         depoCfg.setBackups(2);
         depoCfg.setAffinity(AFFINITY);
-        depoCfg.setIndexedTypes(DepositKey.class, Deposit.class);
+        depoCfg.setQueryEntities(Collections.singleton(new QueryEntity(DepositKey.class, Deposit.class)));
 
         /** Regions cache. Uses default affinity. */
         CacheConfiguration<Integer, Region> regionCfg = new CacheConfiguration<>();
@@ -172,7 +173,7 @@ public abstract class IgniteCacheDistributedPartitionQueryAbstractSelfTest exten
         regionCfg.setAtomicityMode(TRANSACTIONAL);
         regionCfg.setRebalanceMode(SYNC);
         regionCfg.setCacheMode(CacheMode.REPLICATED);
-        regionCfg.setIndexedTypes(Integer.class, Region.class);
+        regionCfg.setQueryEntities(Collections.singleton(new QueryEntity(Integer.class, Region.class)));
 
         cfg.setCacheConfiguration(clientCfg, depoCfg, regionCfg);
 

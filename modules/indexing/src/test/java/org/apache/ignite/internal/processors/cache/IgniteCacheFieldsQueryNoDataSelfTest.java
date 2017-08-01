@@ -18,7 +18,9 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.Collection;
+import java.util.Collections;
 import javax.cache.Cache;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -46,9 +48,7 @@ public class IgniteCacheFieldsQueryNoDataSelfTest extends GridCommonAbstractTest
         cache.setCacheMode(PARTITIONED);
         cache.setBackups(1);
         cache.setWriteSynchronizationMode(FULL_SYNC);
-        cache.setIndexedTypes(
-            String.class, Integer.class
-        );
+        cache.setQueryEntities(Collections.singleton(new QueryEntity(String.class, Integer.class)));
 
         cfg.setCacheConfiguration(cache);
 

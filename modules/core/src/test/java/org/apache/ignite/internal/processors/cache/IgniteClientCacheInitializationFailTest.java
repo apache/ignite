@@ -33,6 +33,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -112,13 +113,13 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
         if (gridName.contains("server")) {
             CacheConfiguration<Integer, String> ccfg1 = new CacheConfiguration<>();
 
-            ccfg1.setIndexedTypes(Integer.class, String.class);
+            ccfg1.setQueryEntities(Collections.singleton(new QueryEntity(Integer.class, String.class)));
             ccfg1.setName(ATOMIC_CACHE_NAME);
             ccfg1.setAtomicityMode(CacheAtomicityMode.ATOMIC);
 
             CacheConfiguration<Integer, String> ccfg2 = new CacheConfiguration<>();
 
-            ccfg2.setIndexedTypes(Integer.class, String.class);
+            ccfg2.setQueryEntities(Collections.singleton(new QueryEntity(Integer.class, String.class)));
             ccfg2.setName(TX_CACHE_NAME);
             ccfg2.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
 

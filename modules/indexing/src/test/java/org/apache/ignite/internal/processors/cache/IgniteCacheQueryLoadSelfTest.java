@@ -19,12 +19,14 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.io.Serializable;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import javax.cache.Cache;
 import javax.cache.integration.CompletionListenerFuture;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
@@ -76,9 +78,7 @@ public class IgniteCacheQueryLoadSelfTest extends GridCommonAbstractTest {
         ccfg.setWriteThrough(true);
         ccfg.setLoadPreviousValue(true);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
-        ccfg.setIndexedTypes(
-            Integer.class, ValueObject.class
-        );
+        ccfg.setQueryEntities(Collections.singleton(new QueryEntity(Integer.class, ValueObject.class)));
 
         cfg.setCacheConfiguration(ccfg);
 

@@ -17,11 +17,13 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -61,7 +63,7 @@ public class GridCacheOffHeapSelfTest extends GridCommonAbstractTest {
 
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
         cacheCfg.setCacheMode(REPLICATED);
-        cacheCfg.setIndexedTypes(Integer.class, CacheValue.class);
+        cacheCfg.setQueryEntities(Collections.singleton(new QueryEntity(Integer.class, CacheValue.class)));
 
         cfg.setCacheConfiguration(cacheCfg);
 

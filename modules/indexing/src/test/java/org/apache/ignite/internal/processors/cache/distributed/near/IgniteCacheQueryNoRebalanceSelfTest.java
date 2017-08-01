@@ -17,9 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
+import java.util.Collections;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheRebalanceMode;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -51,7 +53,7 @@ public class IgniteCacheQueryNoRebalanceSelfTest extends GridCommonAbstractTest 
 
         CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
         ccfg.setBackups(0);
-        ccfg.setIndexedTypes(Integer.class, Integer.class);
+        ccfg.setQueryEntities(Collections.singleton(new QueryEntity(Integer.class, Integer.class)));
         ccfg.setRebalanceMode(CacheRebalanceMode.NONE);
 
         cfg.setCacheConfiguration(ccfg);

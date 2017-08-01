@@ -18,8 +18,10 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.io.Serializable;
+import java.util.Collections;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.eviction.lru.LruEvictionPolicy;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
@@ -53,7 +55,7 @@ public class CacheQueryEvictDataLostTest extends GridCommonAbstractTest {
         ccfg.setName("cache-1");
         ccfg.setEvictionPolicy(new LruEvictionPolicy(10));
         ccfg.setOnheapCacheEnabled(true);
-        ccfg.setIndexedTypes(Integer.class, TestData.class);
+        ccfg.setQueryEntities(Collections.singleton(new QueryEntity(Integer.class, TestData.class)));
 
         cfg.setCacheConfiguration(ccfg);
 

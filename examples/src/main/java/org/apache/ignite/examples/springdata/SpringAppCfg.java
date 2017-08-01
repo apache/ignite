@@ -17,8 +17,10 @@
 
 package org.apache.ignite.examples.springdata;
 
+import java.util.Collections;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.examples.model.Person;
@@ -60,7 +62,7 @@ public class SpringAppCfg {
         CacheConfiguration ccfg = new CacheConfiguration("PersonCache");
 
         // Setting SQL schema for the cache.
-        ccfg.setIndexedTypes(Long.class, Person.class);
+        ccfg.setQueryEntities(Collections.singleton(new QueryEntity(Long.class, Person.class)));
 
         cfg.setCacheConfiguration(ccfg);
 

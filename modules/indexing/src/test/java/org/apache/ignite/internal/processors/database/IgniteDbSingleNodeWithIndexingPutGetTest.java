@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.database;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -27,6 +28,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -193,7 +195,7 @@ public class IgniteDbSingleNodeWithIndexingPutGetTest extends IgniteDbSingleNode
         CacheConfiguration ccfg = new CacheConfiguration("abc");
 
         if (indexingEnabled())
-            ccfg.setIndexedTypes(Integer.class, Abc.class);
+            ccfg.setQueryEntities(Collections.singleton(new QueryEntity(Integer.class, Abc.class)));
 
         ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
         ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
@@ -204,6 +206,9 @@ public class IgniteDbSingleNodeWithIndexingPutGetTest extends IgniteDbSingleNode
         return cfg;
     }
 
+    /**
+     *
+     */
     static class Abc {
         /** */
         @QuerySqlField

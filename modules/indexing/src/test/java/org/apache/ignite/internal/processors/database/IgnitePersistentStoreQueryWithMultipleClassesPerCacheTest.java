@@ -18,17 +18,20 @@
 package org.apache.ignite.internal.processors.database;
 
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.index.DuplicateKeyValueClassesSelfTest;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -77,10 +80,8 @@ public class IgnitePersistentStoreQueryWithMultipleClassesPerCacheTest extends G
 
         cfg.setAtomicityMode(CacheAtomicityMode.ATOMIC);
 
-        cfg.setIndexedTypes(
-                Integer.class, Country.class,
-                Integer.class, Person.class
-        );
+        cfg.setQueryEntities(Arrays.asList(new QueryEntity(Integer.class, Country.class),
+            new QueryEntity(Integer.class, Person.class)));
 
         return cfg;
     }

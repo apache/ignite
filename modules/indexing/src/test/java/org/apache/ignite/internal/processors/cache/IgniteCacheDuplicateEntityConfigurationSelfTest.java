@@ -17,6 +17,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
@@ -65,7 +66,7 @@ public class IgniteCacheDuplicateEntityConfigurationSelfTest extends GridCommonA
 
         CacheConfiguration ccfg = new CacheConfiguration(cacheName);
 
-        ccfg.setIndexedTypes(Integer.class, Person.class);
+        ccfg.setQueryEntities(Collections.singleton(new QueryEntity(Integer.class, Person.class)));
 
         QueryEntity entity = new QueryEntity();
 
@@ -109,7 +110,7 @@ public class IgniteCacheDuplicateEntityConfigurationSelfTest extends GridCommonA
 
         ccfg.setQueryEntities(Arrays.asList(entity));
 
-        ccfg.setIndexedTypes(Integer.class, Person.class);
+        ccfg.setQueryEntities(Collections.singleton(new QueryEntity(Integer.class, Person.class)));
 
         try {
             ignite(0).getOrCreateCache(ccfg);

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.io.Serializable;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Set;
@@ -28,6 +29,7 @@ import javax.cache.expiry.ModifiedExpiryPolicy;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -65,7 +67,7 @@ public class CacheOperationsWithExpirationTest extends GridCommonAbstractTest {
         ccfg.setStatisticsEnabled(true);
 
         if (idx)
-            ccfg.setIndexedTypes(String.class, TestIndexedType.class);
+            ccfg.setQueryEntities(Collections.singleton(new QueryEntity(String.class, TestIndexedType.class)));
 
         return ccfg;
     }

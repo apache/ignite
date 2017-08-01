@@ -17,6 +17,7 @@
 
 package org.apache.ignite.examples.datagrid;
 
+import java.util.Collections;
 import java.util.List;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
@@ -24,6 +25,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.affinity.AffinityKey;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
@@ -88,18 +90,18 @@ public class CacheQueryExample {
             CacheConfiguration<Long, Organization> orgCacheCfg = new CacheConfiguration<>(ORG_CACHE);
 
             orgCacheCfg.setCacheMode(CacheMode.PARTITIONED); // Default.
-            orgCacheCfg.setIndexedTypes(Long.class, Organization.class);
+            orgCacheCfg.setQueryEntities(Collections.singleton(new QueryEntity(Long.class, Organization.class)));
 
             CacheConfiguration<AffinityKey<Long>, Person> colPersonCacheCfg =
                 new CacheConfiguration<>(COLLOCATED_PERSON_CACHE);
 
             colPersonCacheCfg.setCacheMode(CacheMode.PARTITIONED); // Default.
-            colPersonCacheCfg.setIndexedTypes(AffinityKey.class, Person.class);
+            colPersonCacheCfg.setQueryEntities(Collections.singleton(new QueryEntity(AffinityKey.class, Person.class)));
 
             CacheConfiguration<Long, Person> personCacheCfg = new CacheConfiguration<>(PERSON_CACHE);
 
             personCacheCfg.setCacheMode(CacheMode.PARTITIONED); // Default.
-            personCacheCfg.setIndexedTypes(Long.class, Person.class);
+            personCacheCfg.setQueryEntities(Collections.singleton(new QueryEntity(Long.class, Person.class)));
 
             try {
                 // Create caches.

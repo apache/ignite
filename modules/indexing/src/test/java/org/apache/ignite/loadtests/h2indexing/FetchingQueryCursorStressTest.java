@@ -19,6 +19,7 @@ package org.apache.ignite.loadtests.h2indexing;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -30,6 +31,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -157,7 +159,7 @@ public class FetchingQueryCursorStressTest {
         CacheConfiguration ccfg = new CacheConfiguration();
 
         ccfg.setName(CACHE_NAME);
-        ccfg.setIndexedTypes(Integer.class, Person.class);
+        ccfg.setQueryEntities(Collections.singleton(new QueryEntity(Integer.class, Person.class)));
         cfg.setMarshaller(new BinaryMarshaller());
 
         cfg.setCacheConfiguration(ccfg);

@@ -20,6 +20,8 @@ package org.apache.ignite.jdbc;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.Statement;
+import java.util.Collections;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -57,9 +59,7 @@ public class JdbcEmptyCacheSelfTest extends GridCommonAbstractTest {
         cache.setCacheMode(PARTITIONED);
         cache.setBackups(1);
         cache.setWriteSynchronizationMode(FULL_SYNC);
-        cache.setIndexedTypes(
-            Byte.class, Byte.class
-        );
+        cache.setQueryEntities(Collections.singleton(new QueryEntity(Byte.class, Byte.class)));
 
         cfg.setCacheConfiguration(cache);
 

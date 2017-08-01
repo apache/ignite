@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.Properties;
 import org.apache.ignite.IgniteJdbcDriver;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -67,9 +68,7 @@ public class JdbcStreamingSelfTest extends GridCommonAbstractTest {
         cache.setCacheMode(PARTITIONED);
         cache.setBackups(1);
         cache.setWriteSynchronizationMode(FULL_SYNC);
-        cache.setIndexedTypes(
-            Integer.class, Integer.class
-        );
+        cache.setQueryEntities(Collections.singleton(new QueryEntity(Integer.class, Integer.class)));
 
         cfg.setCacheConfiguration(cache);
         cfg.setLocalHost("127.0.0.1");

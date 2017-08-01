@@ -18,11 +18,13 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.io.Serializable;
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.affinity.AffinityUuid;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
@@ -80,9 +82,7 @@ public class IgniteCacheCollocatedQuerySelfTest extends GridCommonAbstractTest {
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cacheCfg.setBackups(1);
-        cacheCfg.setIndexedTypes(
-            AffinityUuid.class, Purchase.class
-        );
+        cacheCfg.setQueryEntities(Collections.singleton(new QueryEntity(AffinityUuid.class, Purchase.class)));
 
         cfg.setCacheConfiguration(cacheCfg);
 

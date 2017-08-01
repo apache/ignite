@@ -17,10 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.Collections;
 import java.util.List;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -55,9 +57,7 @@ public class IgniteCacheLargeResultSelfTest extends GridCommonAbstractTest {
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cacheCfg.setBackups(1);
-        cacheCfg.setIndexedTypes(
-            Integer.class, Integer.class
-        );
+        cacheCfg.setQueryEntities(Collections.singleton(new QueryEntity(Integer.class, Integer.class)));
 
         cfg.setCacheConfiguration(cacheCfg);
 

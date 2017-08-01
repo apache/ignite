@@ -19,8 +19,10 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryDetailMetrics;
 import org.apache.ignite.cache.query.ScanQuery;
@@ -30,6 +32,7 @@ import org.apache.ignite.cache.query.TextQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsMultiNodePutGetRestartTest;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -83,7 +86,7 @@ public abstract class CacheAbstractQueryDetailMetricsSelfTest extends GridCommon
         ccfg.setName(cacheName);
         ccfg.setCacheMode(cacheMode);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
-        ccfg.setIndexedTypes(Integer.class, String.class);
+        ccfg.setQueryEntities(Collections.singleton(new QueryEntity(Integer.class, String.class)));
         ccfg.setStatisticsEnabled(true);
         ccfg.setQueryDetailMetricsSize(QRY_DETAIL_METRICS_SIZE);
 
