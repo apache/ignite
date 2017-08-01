@@ -632,7 +632,7 @@ public class BinaryContext {
             return desc;
         else
             if (!useCache)
-                return createNewClassDescriptor(cls);
+                return createNoneCacheClassDescriptor(cls);
 
         if (desc == null)
             desc = registerClassDescriptor(cls, deserialize);
@@ -719,7 +719,7 @@ public class BinaryContext {
                 desc = descByCls.get(cls);
 
                 if (desc == null)
-                    return createNewClassDescriptor(cls);
+                    return createNoneCacheClassDescriptor(cls);
             }
 
         }
@@ -754,7 +754,7 @@ public class BinaryContext {
      * @param cls Class.
      * @return Binary class descriptor.
      */
-    @NotNull private BinaryClassDescriptor createNewClassDescriptor(Class cls) {
+    @NotNull private BinaryClassDescriptor createNoneCacheClassDescriptor(Class cls) {
         String clsName = cls.getName();
 
         BinaryInternalMapper mapper = userTypeMapper(clsName);
@@ -776,7 +776,8 @@ public class BinaryContext {
             mapper,
             serializer,
             true,
-            true
+            true,
+            false
         );
     }
 

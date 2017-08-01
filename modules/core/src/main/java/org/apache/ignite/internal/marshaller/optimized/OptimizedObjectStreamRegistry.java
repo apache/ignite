@@ -84,16 +84,17 @@ class OptimizedObjectStreamRegistry {
             }
         }
         else
-            return holder().acquireOut();
+            return holder(true).acquireOut();
     }
 
     /**
      * Gets input stream.
      *
      * @return Object input stream.
+     * @param useCache True if useing class cache, false otherwise.
      * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException If thread is interrupted while trying to take holder from pool.
      */
-    static OptimizedObjectInputStream in() throws IgniteInterruptedCheckedException {
+    static OptimizedObjectInputStream in(boolean useCache) throws IgniteInterruptedCheckedException {
         if (inPool != null) {
             try {
                 return inPool.take();
@@ -104,7 +105,7 @@ class OptimizedObjectStreamRegistry {
             }
         }
         else
-            return holder().acquireIn();
+            return holder(useCache).acquireIn();
     }
 
     /**
@@ -154,9 +155,13 @@ class OptimizedObjectStreamRegistry {
      * Gets holder from pool or thread local.
      *
      * @return Stream holder.
+     * @param useCache True if using class cache, false otherwise.
      * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException If thread is interrupted while trying to take holder from pool.
      */
-    private static StreamHolder holder() throws IgniteInterruptedCheckedException {
+    private static StreamHolder holder(boolean useCache) throws IgniteInterruptedCheckedException {
+        if (!useCache)
+            return new StreamHolder();
+
         StreamHolder holder = holders.get();
 
         if (holder == null)

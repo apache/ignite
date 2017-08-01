@@ -48,6 +48,7 @@ import java.lang.management.OperatingSystemMXBean;
 import java.lang.management.RuntimeMXBean;
 import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
+import java.lang.ref.WeakReference;
 import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -8455,8 +8456,8 @@ public abstract class IgniteUtils {
         return forName(clsName, ldr, true);
     }
 
-    private static Map<ClassLoader, ConcurrentMap<String, Class>> weakCache =
-        Collections.synchronizedMap(new WeakHashMap<ClassLoader, ConcurrentMap<String, Class>>());
+    private static Map<ClassLoader, ConcurrentMap<String, WeakReference<Class>>> weakCache =
+        Collections.synchronizedMap(new WeakHashMap<ClassLoader, ConcurrentMap<String, WeakReference<Class>>>());
 
     /**
      * Gets class for provided name. Accepts primitive types names.
@@ -8487,23 +8488,10 @@ public abstract class IgniteUtils {
         else
             ldr = gridClassLoader;
 
-        cls = loadClassFromCache(clsName, ldr, classCache);
-
-        return cls;
-    }
-
-    /**
-     * @param clsName Class name.
-     * @param ldr Loader.
-     */
-    private static Class<?> loadClassFromCache(String clsName, @Nullable ClassLoader ldr,
-        Map<ClassLoader, ConcurrentMap<String, Class>> cache) throws ClassNotFoundException {
-        Class<?> cls;
-
-        ConcurrentMap<String, Class> ldrMap = cache.get(ldr);
+        ConcurrentMap<String, Class> ldrMap = classCache.get(ldr);
 
         if (ldrMap == null) {
-            ConcurrentMap<String, Class> old = cache.putIfAbsent(ldr, ldrMap = new ConcurrentHashMap8<>());
+            ConcurrentMap<String, Class> old = classCache.putIfAbsent(ldr, ldrMap = new ConcurrentHashMap8<>());
 
             if (old != null)
                 ldrMap = old;
@@ -8516,6 +8504,36 @@ public abstract class IgniteUtils {
 
             if (old != null)
                 cls = old;
+        }
+
+        return cls;
+    }
+
+    /**
+     * @param clsName Class name.
+     * @param ldr Loader.
+     */
+    private static Class<?> loadClassFromCache(String clsName, @Nullable ClassLoader ldr,
+        Map<ClassLoader, ConcurrentMap<String, WeakReference<Class>>> cache) throws ClassNotFoundException {
+        Class<?> cls;
+
+        ConcurrentMap<String, WeakReference<Class>> ldrMap = cache.get(ldr);
+
+        if (ldrMap == null) {
+            ConcurrentMap<String, WeakReference<Class>> old = cache.putIfAbsent(ldr, ldrMap = new ConcurrentHashMap8<>());
+
+            if (old != null)
+                ldrMap = old;
+        }
+
+        WeakReference<Class> clsRef = ldrMap.get(clsName);
+
+        cls = clsRef != null ? clsRef.get() : null;
+
+        if (cls == null) {
+            cls = Class.forName(clsName, true, ldr);
+
+            ldrMap.putIfAbsent(clsName, new WeakReference<>(cls));
         }
         return cls;
     }
