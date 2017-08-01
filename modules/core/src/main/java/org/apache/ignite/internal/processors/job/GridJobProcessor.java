@@ -1769,6 +1769,11 @@ public class GridJobProcessor extends GridProcessorAdapter {
                 maxFinishedJobsTime.setIfGreater(execTime);
 
                 if (jobAlwaysActivate) {
+                    if (!activeJobs.remove(worker.getJobId(), worker))
+                        cancelledJobs.remove(worker.getJobId(), worker);
+
+                    heldJobs.remove(worker.getJobId());
+                    
                     if (metricsUpdateFreq > -1L)
                         updateJobMetrics();
                 }
