@@ -76,6 +76,9 @@ public enum BinaryWriteMode {
     STRING(GridBinaryMarshaller.STRING),
 
     /** */
+    ENCODED_STRING(GridBinaryMarshaller.ENCODED_STRING),
+
+    /** */
     UUID(GridBinaryMarshaller.UUID),
 
     /** */

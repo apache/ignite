@@ -184,7 +184,7 @@ public class BinaryClassDescriptor {
             if (cls == BinaryEnumObjectImpl.class)
                 mode = BinaryWriteMode.BINARY_ENUM;
             else
-                mode = serializer != null ? BinaryWriteMode.BINARY : BinaryUtils.mode(cls);
+                mode = serializer != null ? BinaryWriteMode.BINARY : BinaryUtils.mode(cls, ctx);
         }
 
         if (useOptMarshaller && userType && !U.isIgnite(cls) && !U.isJdk(cls) && !QueryUtils.isGeometryClass(cls)) {
@@ -216,6 +216,7 @@ public class BinaryClassDescriptor {
             case BOOLEAN:
             case DECIMAL:
             case STRING:
+            case ENCODED_STRING:
             case UUID:
             case DATE:
             case TIMESTAMP:
@@ -311,7 +312,7 @@ public class BinaryClassDescriptor {
                             if (!ids.add(fieldId))
                                 throw new BinaryObjectException("Duplicate field ID: " + name);
 
-                            BinaryFieldAccessor fieldInfo = BinaryFieldAccessor.create(f, fieldId);
+                            BinaryFieldAccessor fieldInfo = BinaryFieldAccessor.create(f, fieldId, ctx);
 
                             fields0.put(name, fieldInfo);
 

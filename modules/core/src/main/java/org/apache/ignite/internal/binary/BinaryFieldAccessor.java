@@ -49,10 +49,11 @@ public abstract class BinaryFieldAccessor {
      *
      * @param field Field.
      * @param id FIeld ID.
+     * @param ctx Binary context
      * @return Accessor.
      */
-    public static BinaryFieldAccessor create(Field field, int id) {
-        BinaryWriteMode mode = BinaryUtils.mode(field.getType());
+    public static BinaryFieldAccessor create(Field field, int id, BinaryContext ctx) {
+        BinaryWriteMode mode = BinaryUtils.mode(field.getType(), ctx);
 
         switch (mode) {
             case P_BYTE:
@@ -481,7 +482,7 @@ public abstract class BinaryFieldAccessor {
                 throw new BinaryObjectException("Failed to get value for field: " + field, e);
             }
 
-            switch (mode(val)) {
+            switch (mode(val, writer.context())) {
                 case BYTE:
                     writer.writeByteField((Byte) val);
 
@@ -528,6 +529,7 @@ public abstract class BinaryFieldAccessor {
                     break;
 
                 case STRING:
+                case ENCODED_STRING:
                     writer.writeStringField((String)val);
 
                     break;
@@ -744,6 +746,7 @@ public abstract class BinaryFieldAccessor {
                     break;
 
                 case STRING:
+                case ENCODED_STRING:
                     val = reader.readString(id);
 
                     break;
@@ -893,11 +896,12 @@ public abstract class BinaryFieldAccessor {
 
         /**
          * @param val Val to get write mode for.
+         * @param ctx Binary context
          * @return Write mode.
          */
-        protected BinaryWriteMode mode(Object val) {
+        protected BinaryWriteMode mode(Object val, BinaryContext ctx) {
             return dynamic ?
-                val == null ? BinaryWriteMode.OBJECT : BinaryUtils.mode(val.getClass()) :
+                val == null ? BinaryWriteMode.OBJECT : BinaryUtils.mode(val.getClass(), ctx) :
                 mode;
         }
     }

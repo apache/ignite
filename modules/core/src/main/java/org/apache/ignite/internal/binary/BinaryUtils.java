@@ -162,6 +162,7 @@ public class BinaryUtils {
         PLAIN_CLASS_TO_FLAG.put(Character.class, GridBinaryMarshaller.CHAR);
         PLAIN_CLASS_TO_FLAG.put(Boolean.class, GridBinaryMarshaller.BOOLEAN);
         PLAIN_CLASS_TO_FLAG.put(BigDecimal.class, GridBinaryMarshaller.DECIMAL);
+        // FIXME: so what?
         PLAIN_CLASS_TO_FLAG.put(String.class, GridBinaryMarshaller.STRING);
         PLAIN_CLASS_TO_FLAG.put(UUID.class, GridBinaryMarshaller.UUID);
         PLAIN_CLASS_TO_FLAG.put(Date.class, GridBinaryMarshaller.DATE);
@@ -197,7 +198,7 @@ public class BinaryUtils {
 
         for (byte b : new byte[] {
             GridBinaryMarshaller.BYTE, GridBinaryMarshaller.SHORT, GridBinaryMarshaller.INT, GridBinaryMarshaller.LONG, GridBinaryMarshaller.FLOAT, GridBinaryMarshaller.DOUBLE,
-            GridBinaryMarshaller.CHAR, GridBinaryMarshaller.BOOLEAN, GridBinaryMarshaller.DECIMAL, GridBinaryMarshaller.STRING, GridBinaryMarshaller.UUID, GridBinaryMarshaller.DATE, GridBinaryMarshaller.TIMESTAMP, GridBinaryMarshaller.TIME,
+            GridBinaryMarshaller.CHAR, GridBinaryMarshaller.BOOLEAN, GridBinaryMarshaller.DECIMAL, GridBinaryMarshaller.STRING, GridBinaryMarshaller.ENCODED_STRING, GridBinaryMarshaller.UUID, GridBinaryMarshaller.DATE, GridBinaryMarshaller.TIMESTAMP, GridBinaryMarshaller.TIME,
             GridBinaryMarshaller.BYTE_ARR, GridBinaryMarshaller.SHORT_ARR, GridBinaryMarshaller.INT_ARR, GridBinaryMarshaller.LONG_ARR, GridBinaryMarshaller.FLOAT_ARR, GridBinaryMarshaller.DOUBLE_ARR, GridBinaryMarshaller.TIME_ARR,
             GridBinaryMarshaller.CHAR_ARR, GridBinaryMarshaller.BOOLEAN_ARR, GridBinaryMarshaller.DECIMAL_ARR, GridBinaryMarshaller.STRING_ARR, GridBinaryMarshaller.UUID_ARR, GridBinaryMarshaller.DATE_ARR, GridBinaryMarshaller.TIMESTAMP_ARR,
             GridBinaryMarshaller.ENUM, GridBinaryMarshaller.ENUM_ARR, GridBinaryMarshaller.NULL}) {
@@ -1031,10 +1032,11 @@ public class BinaryUtils {
 
     /**
      * @param cls Class.
+     * @param ctx Binary context.
      * @return Mode.
      */
     @SuppressWarnings("IfMayBeConditional")
-    public static BinaryWriteMode mode(Class<?> cls) {
+    public static BinaryWriteMode mode(Class<?> cls, BinaryContext ctx) {
         assert cls != null;
 
         // Primitives.
@@ -1077,8 +1079,7 @@ public class BinaryUtils {
         else if (cls == BigDecimal.class)
             return BinaryWriteMode.DECIMAL;
         else if (cls == String.class)
-            return BinaryWriteMode.STRING;
-        // TODO: IGNITE-5655, how to attach ENCODED_STRING as well?
+            return ctx.binaryStringEncoding() != null ? BinaryWriteMode.ENCODED_STRING : BinaryWriteMode.STRING;
         else if (cls == UUID.class)
             return BinaryWriteMode.UUID;
         else if (cls == Date.class)
