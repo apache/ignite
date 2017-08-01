@@ -55,8 +55,8 @@ public class TestMultiVersionMode extends GridCommonAbstractTest {
     public void testJoinMultiVersionTopology() throws Exception {
         try {
             startGrid(0);
-
-            startGrid("testMultiVersion", "2.0.0", null, new ConfigurationPostProcessor());
+            
+            startGrid("testMultiVersion", "2.1.0", null);
         }
         finally {
             stopAllGrids();

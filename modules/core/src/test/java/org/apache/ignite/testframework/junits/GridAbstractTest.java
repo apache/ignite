@@ -874,14 +874,13 @@ public abstract class GridAbstractTest extends TestCase {
      *
      * @param igniteInstanceName Instance name.
      * @param ver Ignite version.
-     * @param cfg Ignite configuration.
      * @param clos IgniteClosure.
      * @return Started grid.
      * @throws Exception If failed
      */
-    protected Ignite startGrid(String igniteInstanceName, String ver, IgniteConfiguration cfg,
+    protected Ignite startGrid(String igniteInstanceName, String ver,
         IgniteInClosure<IgniteConfiguration> clos) throws Exception {
-        return startGrid(igniteInstanceName, ver, cfg, true, null, clos);
+        return startGrid(igniteInstanceName, ver, null, clos, null, true);
     }
 
     /**
@@ -891,15 +890,35 @@ public abstract class GridAbstractTest extends TestCase {
      * if it isn't exists there, it will be downloaded and stored via Maven.
      *
      * @param igniteInstanceName Instance name.
-     * @param cfg Ignite configuration.
      * @param ver Ignite version.
+     * @param cfg Ignite configuration.
+     * @param clos IgniteClosure.
+     * @return Started grid.
+     * @throws Exception If failed
+     */
+    protected Ignite startGrid(String igniteInstanceName, String ver, IgniteConfiguration cfg,
+        IgniteInClosure<IgniteConfiguration> clos) throws Exception {
+        return startGrid(igniteInstanceName, ver, cfg, clos, null, true);
+    }
+
+    /**
+     * Starts new grid of given version and name in separate JVM.
+     *
+     * Uses an ignite-core artifact in the Maven local repository,
+     * if it isn't exists there, it will be downloaded and stored via Maven.
+     *
+     * @param igniteInstanceName Instance name.
+     * @param ver Ignite version.
+     * @param cfg Ignite configuration.
+     * @param clos IgniteClosure for post-configuration.
+     * @param jvmArgs Additional JVM arguments.
      * @param resetDiscovery Reset DiscoverySpi.
      * @return Started grid.
      * @throws Exception If failed.
      */
     protected Ignite startGrid(String igniteInstanceName, String ver, IgniteConfiguration cfg,
-        boolean resetDiscovery, Collection<String> jvmArgs,
-        IgniteInClosure<IgniteConfiguration> clos) throws Exception {
+        IgniteInClosure<IgniteConfiguration> clos, Collection<String> jvmArgs,
+        boolean resetDiscovery) throws Exception {
 
         assert !isFirstGrid(igniteInstanceName);
 

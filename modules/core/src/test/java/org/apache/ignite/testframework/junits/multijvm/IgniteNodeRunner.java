@@ -75,7 +75,7 @@ public class IgniteNodeRunner {
 
         X.println("Starting Ignite Node... Args=" + Arrays.toString(args));
 
-        IgniteConfiguration cfg = null;
+        IgniteConfiguration cfg;
 
         if (args.length > 1)
             cfg = readCfgFromFileAndDeleteFile(args[0], args[1]);
