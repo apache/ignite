@@ -366,7 +366,8 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
     }
 
     /** {@inheritDoc} */
-    @Nullable@Override public CacheDataRow read(KeyCacheObject key, GridDhtLocalPartition locPart) throws IgniteCheckedException {
+    @Nullable @Override public CacheDataRow read(KeyCacheObject key,
+        GridDhtLocalPartition locPart) throws IgniteCheckedException {
         return dataStore(locPart).find(key);
     }
 
@@ -813,18 +814,21 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         int amount
     ) throws IgniteCheckedException {
         if (hasPendingEntries && pendingEntries != null) {
+            GridCacheVersion obsoleteVer = null;
+
+            long now = U.currentTimeMillis();
+
+            GridCursor<PendingRow> cur = pendingEntries.find(START_PENDING_ROW, new PendingRow(now, 0));
+
+            if (!cur.next())
+                return false;
+
+            int cleared = 0;
+
             cctx.shared().database().checkpointReadLock();
 
             try {
-                GridCacheVersion obsoleteVer = null;
-
-                long now = U.currentTimeMillis();
-
-                GridCursor<PendingRow> cur = pendingEntries.find(START_PENDING_ROW, new PendingRow(now, 0));
-
-                int cleared = 0;
-
-                while (cur.next()) {
+                do {
                     PendingRow row = cur.get();
 
                     if (amount != -1 && cleared > amount)
@@ -841,6 +845,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
 
                     cleared++;
                 }
+                while (cur.next());
             }
             finally {
                 cctx.shared().database().checkpointReadUnlock();
