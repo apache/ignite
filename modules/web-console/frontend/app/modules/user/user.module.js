@@ -35,7 +35,7 @@ angular.module('ignite-console.user', [
 
                 const stateName = $injector.get('$uiRouterGlobals').current.name;
 
-                if (stateName !== 'signin')
+                if (!_.includes(['', 'signin'], stateName))
                     $injector.get('$state').go('signin');
             }
 
