@@ -20,6 +20,7 @@ package org.apache.ignite.thread;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.NotNull;
 
@@ -36,6 +37,9 @@ public class IgniteThreadFactory implements ThreadFactory {
 
     /** Index generator for threads. */
     private final AtomicInteger idxGen = new AtomicInteger();
+
+    /** */
+    private final boolean useStripeIdx;
 
     /**
      * Constructs new thread factory for given grid. All threads will belong
@@ -55,13 +59,27 @@ public class IgniteThreadFactory implements ThreadFactory {
      * @param threadName Thread name.
      */
     public IgniteThreadFactory(String igniteInstanceName, String threadName) {
+        this(igniteInstanceName, threadName, false);
+    }
+
+    /**
+     * Constructs new thread factory for given grid. All threads will belong
+     * to the same default thread group.
+     *
+     * @param igniteInstanceName Ignite instance name.
+     * @param threadName Thread name.
+     * @param useStripeIdx {@code True} if thread idx should be used as a stripe idx.
+     */
+    public IgniteThreadFactory(String igniteInstanceName, String threadName, boolean useStripeIdx) {
         this.igniteInstanceName = igniteInstanceName;
         this.threadName = threadName;
+        this.useStripeIdx = useStripeIdx;
     }
 
     /** {@inheritDoc} */
     @Override public Thread newThread(@NotNull Runnable r) {
-        return new IgniteThread(igniteInstanceName, threadName, r, idxGen.incrementAndGet(), -1);
+        int idx = idxGen.incrementAndGet();
+        return new IgniteThread(igniteInstanceName, threadName, r, idx, useStripeIdx ? idx : -1);
     }
 
     /** {@inheritDoc} */
