@@ -220,11 +220,11 @@ object visor extends VisorTag {
 
     /** Internal thread pool. */
     @volatile var pool: ExecutorService = new IgniteThreadPoolExecutor(
-        100,
-        100,
-        0,
-        new LinkedBlockingDeque[Runnable],
-        new IgniteThreadFactory(null, null)
+        Runtime.getRuntime().availableProcessors(),
+        Runtime.getRuntime().availableProcessors(),
+        0L,
+        new LinkedBlockingQueue[Runnable](),
+        new IgniteThreadFactory("visorInstance", "visor")
     )
 
     /** Configuration file path, if any. */
@@ -2178,11 +2178,11 @@ object visor extends VisorTag {
                 }
 
                 pool = new IgniteThreadPoolExecutor(
-                    100,
-                    100,
-                    0,
-                    new LinkedBlockingDeque[Runnable],
-                    new IgniteThreadFactory(null, null)
+                    Runtime.getRuntime().availableProcessors(),
+                    Runtime.getRuntime().availableProcessors(),
+                    0L,
+                    new LinkedBlockingQueue[Runnable](),
+                    new IgniteThreadFactory("visorInstance", "visor")
                 )
             }
 
