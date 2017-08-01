@@ -148,6 +148,7 @@ public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testDeadlocksPartitioned() throws Exception {
+        fail("IGNITE-5865");
         for (CacheWriteSynchronizationMode syncMode : CacheWriteSynchronizationMode.values()) {
             doTestDeadlocks(createCache(PARTITIONED, syncMode, false), NO_OP_TRANSFORMER);
             doTestDeadlocks(createCache(PARTITIONED, syncMode, false), WRAPPING_TRANSFORMER);
@@ -158,6 +159,7 @@ public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testDeadlocksPartitionedNear() throws Exception {
+        fail("IGNITE-5865");
         for (CacheWriteSynchronizationMode syncMode : CacheWriteSynchronizationMode.values()) {
             doTestDeadlocks(createCache(PARTITIONED, syncMode, true), NO_OP_TRANSFORMER);
             doTestDeadlocks(createCache(PARTITIONED, syncMode, true), WRAPPING_TRANSFORMER);
