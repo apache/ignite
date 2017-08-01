@@ -1716,8 +1716,8 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                     rcvr == ISOLATED_UPDATER ? partId : GridIoMessage.STRIPE_DISABLED_PART);
 
                 try {
-                    ctx.io().sendToGridTopic(node, TOPIC_DATASTREAM, req,
-                        req.partition() == GridIoMessage.STRIPE_DISABLED_PART ? plc : GridIoPolicy.SYSTEM_POOL);
+                    ctx.io().sendToGridTopic(node, TOPIC_DATASTREAM, req, plc); // TODO
+//                        req.partition() == GridIoMessage.STRIPE_DISABLED_PART ? plc : GridIoPolicy.SYSTEM_POOL);
 
                     if (log.isDebugEnabled())
                         log.debug("Sent request to node [nodeId=" + node.id() + ", req=" + req + ']');
