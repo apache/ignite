@@ -2185,14 +2185,24 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 registerGroup(grpDesc);
 
             for (DynamicCacheDescriptor cacheDesc : caches.values())
-                registeredCaches.put(cacheDesc.cacheId(), cacheDesc);
+                registerCache(cacheDesc);
+        }
+
+
+        /**
+         * @param desc Description.
+         */
+        private DynamicCacheDescriptor registerCache(DynamicCacheDescriptor desc) {
+            saveCacheConfiguration(desc.cacheConfiguration());
+
+            return registeredCaches.put(desc.cacheId(), desc);
         }
 
         /**
          * @param grpDesc Group description.
          */
         private CacheGroupDescriptor registerGroup(CacheGroupDescriptor grpDesc) {
-            saveCacheConfiguration(grpDesc);
+            saveCacheConfiguration(grpDesc.config());
 
             return registeredGrps.put(grpDesc.groupId(), grpDesc);
         }
@@ -2227,7 +2237,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                     registerGroup(grpDesc);
 
                 if (!registeredCaches.containsKey(desc.cacheId()))
-                    registeredCaches.put(desc.cacheId(), desc);
+                    registerCache(desc);
             }
         }
 
@@ -2251,7 +2261,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 registeredCaches.remove(req.descriptor().cacheId());
 
             for (ExchangeActions.CacheActionData req : exchActions.cacheStartRequests())
-                registeredCaches.put(req.descriptor().cacheId(), req.descriptor());
+                registerCache(req.descriptor());
         }
 
         /**
@@ -2273,17 +2283,17 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     }
 
     /**
-     * @param grpDesc Group description.
+     * @param cfg cache configuration
      */
-    private void saveCacheConfiguration(CacheGroupDescriptor grpDesc) {
+    private void saveCacheConfiguration(CacheConfiguration<?, ?> cfg) {
         if (cctx.pageStore() != null && cctx.database().persistenceEnabled() && !cctx.kernalContext().clientNode()) {
             try {
                 cctx.pageStore().storeCacheData(
-                    new StoredCacheData(grpDesc.config())
+                    new StoredCacheData(cfg)
                 );
             }
             catch (IgniteCheckedException e) {
-                U.error(log(), "Error while saving cache configuration on disk, group = " + grpDesc, e);
+                U.error(log(), "Error while saving cache configuration on disk, cfg = " + cfg, e);
             }
         }
     }

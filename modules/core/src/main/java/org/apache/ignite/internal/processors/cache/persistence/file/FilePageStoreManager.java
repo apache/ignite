@@ -210,7 +210,6 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     @Override public void storeCacheData(
         StoredCacheData cacheData
     ) throws IgniteCheckedException {
-
         File cacheWorkDir = cacheWorkDirectory(cacheData.config());
         File file;
 
