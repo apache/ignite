@@ -36,6 +36,7 @@ import org.apache.ignite.internal.processors.cache.query.QueryTable;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryField;
+import org.apache.ignite.internal.processors.query.h2.H2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.database.H2RowFactory;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
@@ -75,7 +76,7 @@ public class GridH2Table extends TableBase {
     private final GridCacheContext cctx;
 
     /** */
-    private final GridH2RowDescriptor desc;
+    private final H2RowDescriptor desc;
 
     /** */
     private volatile ArrayList<Index> idxs;
@@ -131,7 +132,7 @@ public class GridH2Table extends TableBase {
      * @param idxsFactory Indexes factory.
      * @param cctx Cache context.
      */
-    public GridH2Table(CreateTableData createTblData, @Nullable GridH2RowDescriptor desc, H2RowFactory rowFactory,
+    public GridH2Table(CreateTableData createTblData, @Nullable H2RowDescriptor desc, H2RowFactory rowFactory,
         GridH2SystemIndexFactory idxsFactory, GridCacheContext cctx) {
         super(createTblData);
 
@@ -1190,6 +1191,8 @@ public class GridH2Table extends TableBase {
             }
 
             setColumns(newCols);
+
+            desc.refreshMetadataFromTypeDescriptor();
         }
         finally {
             unlock(true);

@@ -1267,10 +1267,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 else {
                     assert op instanceof SchemaAlterTableAddColumnOperation;
 
-                    SchemaAlterTableAddColumnOperation opAddCol = (SchemaAlterTableAddColumnOperation)op;
-
-                    QueryUtils.processDynamicAddColumn(ctx, type, opAddCol.columns(),
-                        opAddCol.beforeColumnName(), opAddCol.afterColumnName());
+                    // No-op - all processing is done at "local" stage
+                    // as we must update both table and type descriptor atomically.
                 }
             }
             catch (IgniteCheckedException e) {
@@ -1318,6 +1316,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param cancelTok Cancel token.
      * @throws SchemaOperationException If failed.
      */
+    @SuppressWarnings("StatementWithEmptyBody")
     public void processSchemaOperationLocal(SchemaAbstractOperation op, QueryTypeDescriptorImpl type, IgniteUuid depId,
         SchemaIndexOperationCancellationToken cancelTok) throws SchemaOperationException {
         if (log.isDebugEnabled())
@@ -1349,8 +1348,12 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             else if (op instanceof SchemaAlterTableAddColumnOperation) {
                 SchemaAlterTableAddColumnOperation op0 = (SchemaAlterTableAddColumnOperation)op;
 
-                idx.dynamicAddColumn(op0.schemaName(), op0.tableName(), op0.columns(), op0.beforeColumnName(),
-                    op0.afterColumnName(), op0.ifTableExists(), op0.ifNotExists());
+                QueryUtils.processDynamicAddColumn(ctx, type, op0.columns(),
+                    op0.beforeColumnName(), op0.afterColumnName());
+
+                idx.dynamicAddColumn(op0.schemaName(), op0.tableName(), op0.columns(),
+                    op0.beforeColumnName(), op0.afterColumnName(), op0.ifTableExists(),
+                    op0.ifNotExists());
             }
             else
                 throw new SchemaOperationException("Unsupported operation: " + op);
