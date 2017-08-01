@@ -50,6 +50,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
+import org.apache.ignite.IgniteSystemProperties;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_AFFINITY_HISTORY_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
@@ -282,25 +283,23 @@ public class GridAffinityAssignmentCache {
 
         List<List<ClusterNode>> assignment;
 
-        GridAffinityFunctionContextImpl afCtxt = new GridAffinityFunctionContextImpl(sorted, prevAssignment,
-            discoEvt, topVer, backups);
-
         if (prevAssignment != null && discoEvt != null) {
             boolean affNode = CU.affinityNode(discoEvt.eventNode(), nodeFilter);
 
             if (!affNode)
                 assignment = prevAssignment;
             else
-                assignment = aff.assignPartitions(afCtxt);
+                assignment = aff.assignPartitions(new GridAffinityFunctionContextImpl(sorted, prevAssignment,
+                    discoEvt, topVer, backups));
         }
         else
-            assignment = aff.assignPartitions(afCtxt);
+            assignment = aff.assignPartitions(new GridAffinityFunctionContextImpl(sorted, prevAssignment, discoEvt,
+                topVer, backups));
 
         assert assignment != null;
 
-        List<List<Integer>> dist = freqDistribution(assignment, sorted);
-
-        printDistribution(dist, cacheOrGrpName, ctx.localNodeId().toString(), assignment.size());
+        if (!cacheOrGrpName.equals("ignite-sys-cache"))
+            printDistribution(assignment, sorted, cacheOrGrpName, ctx.localNodeId().toString());
 
         idealAssignment = assignment;
 
@@ -311,48 +310,57 @@ public class GridAffinityAssignmentCache {
     }
 
     /**
-     * @param nodesParts Frequency distribution.
+     * @param partitionsByNodes Affinity result.
+     * @param nodes Topology.
      * @param cacheName
      * @param localNodeID
-     * @param parts
      */
-    private void printDistribution(Collection<List<Integer>> nodesParts, String cacheName, String localNodeID, int parts) {
-        if (nodesParts.size() != 0) {
-            log.info(" #### NODES COUNT:" + nodesParts.size());
+    private void printDistribution(List<List<ClusterNode>> partitionsByNodes,
+        Collection<ClusterNode> nodes, String cacheName, String localNodeID) {
 
-            int nodeNum = 0;
+        int[] nodesParts = freqDistribution(partitionsByNodes, nodes);
 
-            for (List<Integer> nodesPart : nodesParts) {
-                log.info("## Node " + nodeNum++ + ":");
+        String ignitePartDistribution = System.getProperty(IgniteSystemProperties.IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD);
+
+        if (nodesParts.length != 0) {
+
+            for (int i = 0; i < nodesParts.length; i++) {
 
                 int nr = 0;
 
-                for (int cnt : nodesPart) {
-                    int percentage = (int)Math.round((double)cnt / parts * 100);
+                if (nodesParts[i] != partitionsByNodes.size()) {
+                    int percentage = (int)Math.round((double)nodesParts[i] / partitionsByNodes.size() * 100);
 
-                    log.info("cacheName=" + cacheName + ", " + (nr == 0 ? "Primary" : "Backup") + " node=" + localNodeID +
-                        ", partitions count=" + cnt + " percentage of parts count=" + percentage + "% ");
-
-                    nr++;
+                    if (percentage >= Integer.valueOf(ignitePartDistribution) || ignitePartDistribution == null) {
+                        log.info("Partition map has been built (distribution is not even for caches) [cacheName="
+                            + cacheName + ", " + (nr == 0 ? "Primary" : "Backup") + " nodeId=" + localNodeID +
+                            ", totalPartitionsCount=" + partitionsByNodes.size() + " percentageOfTotalPartsCount=" + percentage + "%"
+                            + ", parts=" + nodesParts[i] + "]");
+                    }
+                    else {
+                        log.info("Partition map has been built (distribution is even)");
+                    }
                 }
+
+                nr++;
             }
         }
     }
 
     /**
-     * The table with count of partitions on node:
+     * The array with count of partitions on node:
      *
-     * column 0 - primary partitions counts
-     * column 1 - backup#0 partitions counts
+     * element 0 - primary partitions counts
+     * element 1 - backup#0 partitions counts
      * etc
      *
      * Rows correspond to the nodes.
      *
      * @param partitionsByNodes Affinity result.
      * @param nodes Topology.
-     * @return Frequency distribution: counts of partitions on node.
+     * @return Frequency distribution array with counts of partitions on node.
      */
-    private static List<List<Integer>> freqDistribution(List<List<ClusterNode>> partitionsByNodes,
+    private int[] freqDistribution(List<List<ClusterNode>> partitionsByNodes,
         Collection<ClusterNode> nodes) {
         List<Map<ClusterNode, AtomicInteger>> nodeMaps = new ArrayList<>();
 
@@ -376,6 +384,9 @@ public class GridAffinityAssignmentCache {
         }
 
         List<List<Integer>> byNodes = new ArrayList<>(nodes.size());
+
+        int resultCount = 0;
+
         for (ClusterNode node : nodes) {
             if (node.isLocal()) {
                 List<Integer> byBackups = new ArrayList<>(backups);
@@ -385,12 +396,25 @@ public class GridAffinityAssignmentCache {
                         byBackups.add(0);
                     else
                         byBackups.add(nodeMaps.get(j).get(node).get());
+
+                    resultCount++;
                 }
 
                 byNodes.add(byBackups);
             }
         }
-        return byNodes;
+
+        int[] result = new int[resultCount];
+
+        int i = 0;
+
+        for (List<Integer> byNode : byNodes) {
+            for (Integer partsCount : byNode) {
+                result[i++] = partsCount;
+            }
+        }
+
+        return result;
     }
 
     /**

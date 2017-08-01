@@ -18,25 +18,14 @@
 package org.apache.ignite.cache.affinity.rendezvous;
 
 import java.io.Externalizable;
-import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.io.PrintStream;
 import java.io.Serializable;
-import java.nio.file.FileSystems;
-import java.nio.file.Files;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -47,15 +36,11 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.EventType;
-import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityFunctionContextImpl;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -66,6 +51,18 @@ import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.testframework.GridTestNode;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+
+import java.io.IOException;
+import java.io.PrintStream;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -352,25 +349,14 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
     }
 
     /**
-     * @throws Exception If failed.
-     */
-    public void testImprovedLog() throws Exception {
-        AffinityFunction aff = initializeAffinityFunction(false, 1024, true, log, null);
-
-        List<ClusterNode> nodes = createBaseNodes(4);
-
-        assignPartitions(aff, nodes, null, 2, 0);
-
-        List<List<ClusterNode>> lst = assignPartitions(aff, nodes, null, 2, 1).get2();
-    }
-
-    /**
      * @throws IOException On error.
      */
     public void testDistribution() throws IOException {
-        AffinityFunction aff0 = initializeAffinityFunction(false, 1024, true, log, null);
+        AffinityFunction aff0 = new RendezvousAffinityFunction(true, 1024);
 
-        AffinityFunction aff1 = initializeAffinityFunction(true, 1024, true, log, ignite);
+        AffinityFunction aff1 = new RendezvousAffinityFunctionOld(true, 1024);
+
+        GridTestUtils.setFieldValue(aff1, "ignite", ignite);
 
         affinityDistribution(aff0, aff1);
     }
@@ -419,11 +405,11 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
     public void testAffinityBenchmarkAdd() {
         mode = TopologyModificationMode.ADD;
 
-        AffinityFunction aff0 = initializeAffinityFunction(true, 1024, true, log, ignite);
+        AffinityFunction aff0 = new RendezvousAffinityFunctionOld(true, 1024);
 
-        AffinityFunction aff1 = initializeAffinityFunction(false, 1024, true, log, null);
+        GridTestUtils.setFieldValue(aff0, "ignite", ignite);
 
-        affinityBenchmark(aff0, aff1);
+        affinityBenchmark(aff0, new RendezvousAffinityFunction(true, 1024));
     }
 
     /**
@@ -432,11 +418,11 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
     public void testAffinityBenchmarkChangeLast() {
         mode = TopologyModificationMode.CHANGE_LAST_NODE;
 
-        AffinityFunction aff0 = initializeAffinityFunction(true, 1024, true, log, ignite);
+        AffinityFunction aff0 = new RendezvousAffinityFunctionOld(true, 1024);
 
-        AffinityFunction aff1 = initializeAffinityFunction(false, 1024, true, log, null);
+        GridTestUtils.setFieldValue(aff0, "ignite", ignite);
 
-        affinityBenchmark(aff0, aff1);
+        affinityBenchmark(aff0, new RendezvousAffinityFunction(true, 1024));
     }
 
     /**
@@ -494,56 +480,6 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
     }
 
     /**
-     * @param isOld Is affinity function RendezvousAffinityFunctionOld.
-     * @param parts Total number of partitions.
-     * @param exclNeighbors {@code True} if nodes residing on the same host may not act as backups of each other.
-     * @param log Logger instance.
-     * @param ignite Ignite instance.
-     */
-    private AffinityFunction initializeAffinityFunction(boolean isOld, int parts, boolean exclNeighbors,
-        IgniteLogger log, Ignite ignite) {
-        AffinityFunction aff;
-
-        if (isOld) {
-            aff = new RendezvousAffinityFunctionOld(exclNeighbors, parts);
-        }
-        else {
-            aff = new RendezvousAffinityFunction(exclNeighbors, parts);
-        }
-
-        if (log != null) {
-            GridTestUtils.setFieldValue(aff, "log", log);
-        }
-
-        if (isOld && ignite != null) {
-            GridTestUtils.setFieldValue(aff, "ignite", ignite);
-        }
-
-        return aff;
-    }
-
-    /**
-     * @return Ignite Logger.
-     */
-    private IgniteLogger initializeIgniteLogger() {
-        List<Ignite> all = G.allGrids();
-
-        IgniteKernal ignite1 = (IgniteKernal)Collections.min(all, new Comparator<Ignite>() {
-            @Override public int compare(Ignite n1, Ignite n2) {
-                return Long.compare(n1.cluster().localNode().order(), n2.cluster().localNode().order());
-            }
-        });
-
-        GridKernalContext ctx = ignite1.context();
-
-        GridCacheSharedContext cctx = ctx.cache().context();
-
-        IgniteLogger log = cctx.logger(getClass());
-
-        return log;
-    }
-
-    /**
      *
      * @param affOld Old affinity.
      * @param affNew New affinity/
@@ -577,11 +513,9 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
 
         final int backups = 2;
 
-
+        AffinityFunction aff0 = new RendezvousAffinityFunction(true, 256);
         // TODO choose another affinity function to compare.
-        AffinityFunction aff0 = initializeAffinityFunction(false, 256, true, log, null);
-
-        AffinityFunction aff1 = initializeAffinityFunction(false, 256, true, log, null);
+        AffinityFunction aff1 = new RendezvousAffinityFunction(true, 256);
 
         for (int nodesCnt : nodesCnts) {
             List<ClusterNode> nodes0 = createBaseNodes(nodesCnt);
