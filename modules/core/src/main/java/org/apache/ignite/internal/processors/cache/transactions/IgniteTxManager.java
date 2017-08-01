@@ -38,6 +38,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
@@ -1681,7 +1682,15 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
                     if (tx.isSystemInvalidate() && tx.storeUsed()) {
                         synchronized (this) {
-                            entry.invalidate(tx.xidVersion(), tx.xidVersion());
+                            try {
+                                entry.invalidate(tx.xidVersion(), tx.xidVersion());
+                            }
+                            catch (NodeStoppingException ignore) {
+                                // Ignore.
+                            }
+                            catch (IgniteCheckedException e) {
+                                throw new IgniteException("Unexpected error occurs while invalidating entry.", e);
+                            }
                         }
                     }
 
@@ -1689,8 +1698,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
                     break;
                 }
-                //TODO: fix exception handling
-                catch (IgniteCheckedException | GridCacheEntryRemovedException ignored) {
+                catch (GridCacheEntryRemovedException ignored) {
                     if (log.isDebugEnabled())
                         log.debug("Got removed entry in TM unlockMultiple(..) method (will retry): " + txEntry);
 
