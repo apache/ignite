@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -124,7 +125,11 @@ public class MavenUtils {
      * @throws InterruptedException In case of an error.
      */
     private static void downloadArtifact(String artifact) throws IOException, InterruptedException {
+        X.println("Download an artifact: " + artifact);
+
         exec("mvn dependency:get -Dartifact=" + artifact);
+
+        X.println("The artifact was downloaded");
     }
 
     /**
@@ -144,7 +149,7 @@ public class MavenUtils {
 
         Process p = pb.start();
 
-        assert p.waitFor() == 0 : "Command=" + cmd + " couldn't executed: "
+        assert p.waitFor() == 0 : "Command=" + cmd + " couldn't be executed: "
             + CharStreams.toString(new InputStreamReader(p.getInputStream(), Charsets.UTF_8));
 
         return p;

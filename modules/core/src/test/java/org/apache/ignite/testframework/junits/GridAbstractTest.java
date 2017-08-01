@@ -32,7 +32,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -45,7 +44,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.configuration.Factory;
 import javax.cache.configuration.FactoryBuilder;
 import junit.framework.TestCase;
-import org.apache.commons.io.FileUtils;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -53,6 +51,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.MavenUtils;
 import org.apache.ignite.binary.BinaryBasicNameMapper;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.BinaryConfiguration;
@@ -868,9 +867,10 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
-     * Download Ignite's jar-artifact of given version
-     * from the maven repository.
-     * Uses the downloaded artifact to start new grid in separate JVM.
+     * Starts new grid of given version and name in separate JVM.
+     *
+     * Uses an ignite-core artifact in the Maven local repository,
+     * if it isn't exists there, it will be downloaded and stored via Maven.
      *
      * @param igniteInstanceName Instance name.
      * @param ver Ignite version.
@@ -879,45 +879,29 @@ public abstract class GridAbstractTest extends TestCase {
      * @return Started grid.
      * @throws Exception If failed
      */
-    protected Ignite startGrid(String igniteInstanceName, String ver, IgniteConfiguration cfg, IgniteInClosure<IgniteConfiguration> clos) throws Exception {
+    protected Ignite startGrid(String igniteInstanceName, String ver, IgniteConfiguration cfg,
+        IgniteInClosure<IgniteConfiguration> clos) throws Exception {
         return startGrid(igniteInstanceName, ver, cfg, true, null, clos);
     }
 
-    /** */
-    private static final String MVN_JAR_LINK_TEMPLATE = "http://central.maven.org/maven2/org/apache/ignite/ignite-core/%VERSION%/ignite-core-%VERSION%.jar";
-
-    /** */
-    private static final Map<String, File> ARTIFACTS_STORE = new HashMap<>();
-
     /**
-     * Download Ignite's jar-artifact of given version
-     * from the maven repository.
-     * Uses the downloaded artifact to start new grid in separate JVM.
+     * Starts new grid of given version and name in separate JVM.
+     *
+     * Uses an ignite-core artifact in the Maven local repository,
+     * if it isn't exists there, it will be downloaded and stored via Maven.
      *
      * @param igniteInstanceName Instance name.
      * @param cfg Ignite configuration.
      * @param ver Ignite version.
-     * @param resetDiscovery resetDiscovery
+     * @param resetDiscovery Reset DiscoverySpi.
      * @return Started grid.
-     * @throws Exception If failed
+     * @throws Exception If failed.
      */
     protected Ignite startGrid(String igniteInstanceName, String ver, IgniteConfiguration cfg,
-        boolean resetDiscovery, Collection<String> jvmArgs, IgniteInClosure<IgniteConfiguration> clos) throws Exception {
+        boolean resetDiscovery, Collection<String> jvmArgs,
+        IgniteInClosure<IgniteConfiguration> clos) throws Exception {
 
         assert !isFirstGrid(igniteInstanceName);
-
-        // TODO: work with Maven's repositories
-        File artifact = ARTIFACTS_STORE.get(ver);
-
-        if (artifact == null) {
-            String link = MVN_JAR_LINK_TEMPLATE.replaceAll("%VERSION%", ver);
-
-            artifact = new File(System.getProperty("java.io.tmpdir") + File.separator + link.substring(link.lastIndexOf("/")));
-
-            FileUtils.copyURLToFile(new URL(link), artifact);
-
-            ARTIFACTS_STORE.put(ver, artifact);
-        }
 
         if (cfg == null)
             cfg = optimize(getConfiguration(igniteInstanceName));
@@ -930,8 +914,6 @@ public abstract class GridAbstractTest extends TestCase {
             if (arg.startsWith("-Xmx") || arg.startsWith("-Xms"))
                 filteredJvmArgs.add(arg);
         }
-
-        // TODO: additional JVM args
 
         String classPath = System.getProperty("java.class.path");
 
@@ -946,10 +928,20 @@ public abstract class GridAbstractTest extends TestCase {
             pathBuilder.append(path).append(File.pathSeparator);
         }
 
-        pathBuilder.append(artifact.getPath()).append(File.pathSeparator);
+        String pathToArtifact = MavenUtils.getPathToIgniteCoreArtifact(ver);
+
+        pathBuilder.append(pathToArtifact).append(File.pathSeparator);
 
         filteredJvmArgs.add("-cp");
         filteredJvmArgs.add(pathBuilder.toString());
+
+        if (jvmArgs != null) {
+            for (String arg : jvmArgs) {
+                if (!arg.startsWith("-Xmx") && !arg.startsWith("-Xms")
+                    && !arg.startsWith("-cp") && !arg.startsWith("-classpath"))
+                    filteredJvmArgs.add(arg);
+            }
+        }
 
         return new IgniteProcessProxy(cfg, log, grid(0), resetDiscovery, filteredJvmArgs, clos);
     }
