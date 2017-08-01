@@ -19,6 +19,7 @@ package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.distributed.CachePartitionStateTest;
+import org.apache.ignite.internal.processors.cache.distributed.GridCachePartitionEvictionDuringReadThroughSelfTest;
 
 /**
  * Test suite.
@@ -32,6 +33,8 @@ public class IgniteCacheTestSuite6 extends TestSuite {
         TestSuite suite = new TestSuite("IgniteCache Test Suite part 6");
 
         suite.addTestSuite(CachePartitionStateTest.class);
+
+        suite.addTestSuite(GridCachePartitionEvictionDuringReadThroughSelfTest.class);
 
         return suite;
     }
