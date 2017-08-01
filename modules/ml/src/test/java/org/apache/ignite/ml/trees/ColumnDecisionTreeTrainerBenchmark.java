@@ -53,14 +53,11 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.DoubleStream;
 
+/**
+ * Various benchmarks for hand runs.
+ */
 public class ColumnDecisionTreeTrainerBenchmark extends BaseDecisionTreeTest {
-//    private static Function<Vector, Double> f1 = v -> {
-//        return v.get(0);
-//    };
-
-    private static Function<Vector, Double> f1 = v -> {
-        return v.get(0) * v.get(0) + 2 * Math.sin(v.get(1)) + v.get(2);
-    };
+    private static Function<Vector, Double> f1 = v -> v.get(0) * v.get(0) + 2 * Math.sin(v.get(1)) + v.get(2);
 
     @Override protected long getTestTimeout() {
         return 6000000;
@@ -154,7 +151,7 @@ public class ColumnDecisionTreeTrainerBenchmark extends BaseDecisionTreeTest {
         IgniteFunction<DoubleStream, Double> regCalc = s -> s.average().orElse(0.0);
 
         ColumnDecisionTreeTrainer<VarianceSplitCalculator.VarianceData> trainer =
-            new ColumnDecisionTreeTrainer<>(10, new VarianceSplitCalculator(), RegionCalculators.VARIANCE, regCalc);
+            new ColumnDecisionTreeTrainer<>(11, new VarianceSplitCalculator(), RegionCalculators.VARIANCE, regCalc);
 
         System.out.println(">>> Training started");
         long before = System.currentTimeMillis();

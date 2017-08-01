@@ -252,7 +252,7 @@ public class ColumnDecisionTreeTrainer<D extends ContinuousRegionInfo> implement
 
         int curDepth = 0;
 
-        // TODO: currently if the best split makes tree deeper than max depth process will be terminated, but actually we should
+        // TODO: IGNITE-5893 Currently if the best split makes tree deeper than max depth process will be terminated, but actually we should
         // only stop when *any* improving split makes tree deeper than max depth. Can be fixed if we will store which
         // regions cannot be split more and split only those that can.
         IgniteSupplier<Set<FeatureVectorKey>> keysGen = () -> IntStream.range(0, size).mapToObj(i -> getCacheKey(i, input.affinityKey(i))).collect(Collectors.toSet());
@@ -287,7 +287,7 @@ public class ColumnDecisionTreeTrainer<D extends ContinuousRegionInfo> implement
             IndexAndSplitInfo best = splits.stream().max(Comparator.comparingDouble(o -> o.info.infoGain())).orElse(null);
 
             if (best != null && best.info.infoGain() > MIN_INFO_GAIN) {
-                 System.out.println("Globally best: " + best.info + " time: " + total);
+                System.out.println("Globally best: " + best.info + " time: " + total);
                 // Request bitset for split region.
                 SparseBitSet bs = cache.invoke(getCacheKey(best.featureIdx, input.affinityKey(best.featureIdx)), (entry, arguments) -> entry.getValue().calculateOwnershipBitSet(best.info));
 
@@ -295,7 +295,6 @@ public class ColumnDecisionTreeTrainer<D extends ContinuousRegionInfo> implement
                 int ind = best.info.regionIndex();
                 SplitNode sn = best.info.createSplitNode(best.featureIdx);
 
-                // TODO: Optimize: three linear operations can be compressed into one linear operation and 2 constant time.
                 TreeTip tipToSplit = tips.get(ind);
                 tipToSplit.leafSetter.accept(sn);
                 tipToSplit.leafSetter = sn::setLeft;

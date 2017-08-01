@@ -26,7 +26,11 @@ import org.apache.ignite.ml.trees.ContinuousSplitCalculator;
 import org.apache.ignite.ml.trees.trainers.columnbased.vectors.SampleInfo;
 import org.apache.ignite.ml.trees.trainers.columnbased.vectors.SplitInfo;
 
+/**
+ * Stub for calculation of Gini impurity. See IGNITE-5894.
+ */
 public class GiniSplitCalculator implements ContinuousSplitCalculator<GiniSplitCalculator.GiniData> {
+    /** {@inheritDoc} */
     @Override public GiniData calculateRegionInfo(DoubleStream s, int l) {
         Double2IntOpenHashMap m = new Double2IntOpenHashMap();
 
@@ -39,12 +43,14 @@ public class GiniSplitCalculator implements ContinuousSplitCalculator<GiniSplitC
         return new GiniData(stat.getSum(), l, l + (int)stat.getCount(), m);
     }
 
+    /** {@inheritDoc} */
     @Override public SplitInfo<GiniData> splitRegion(Stream<SampleInfo> s, int regionIdx,
         GiniData data) {
-        // TODO: Implement
+        // TODO: IGNITE-5894 Implement
         throw new UnsupportedOperationException();
     }
 
+    /** Data used for gini impurity calculations. */
     public class GiniData extends ContinuousRegionInfo {
         private Double2IntOpenHashMap m;
 

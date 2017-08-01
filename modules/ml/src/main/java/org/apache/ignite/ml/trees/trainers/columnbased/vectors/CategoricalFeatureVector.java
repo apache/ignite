@@ -136,7 +136,7 @@ public class CategoricalFeatureVector
         intervals.set(regionIdx, new CategoricalRegionInfo(leftData.impurity(), leftVecs, leftCats));
 
         // Add new interval next to the left interval
-        // TODO: check how it will work with sparse data.
+        // TODO: IGNITE-5892 Check how it will work with sparse data.
         bs.flip(0, samples.size());
         int[] rightVecs = filterVecs(toSplit.vectors(), bs);
         BitSet rightCats = calculateCats(rightVecs);

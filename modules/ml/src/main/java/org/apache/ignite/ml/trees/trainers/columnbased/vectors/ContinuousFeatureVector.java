@@ -66,9 +66,6 @@ public class ContinuousFeatureVector<D extends ContinuousRegionInfo> implements
             samples[i] = new SampleInfo(labels[d.get1()], d.get2(), d.get1());
             i++;
         }
-//        data.forEach(d ->
-//            samples.add(new SampleInfo(labels[d.get1()], d.get2(), d.get1()))
-//        );
 
         this.calc = splitCalc;
 
@@ -167,8 +164,6 @@ public class ContinuousFeatureVector<D extends ContinuousRegionInfo> implements
 
         int newLSize = bs.cardinality();
 
-        // TODO: maybe we should optimize here: because we keep extra information for calculations in <D>, we are obliged
-        // to do following calculations even though we already have impurity for each region calculated.
         D ld = calc.calculateRegionInfo(Arrays.stream(samples, l, l + newLSize).mapToDouble(SampleInfo::getLabel), l);
         D rd = calc.calculateRegionInfo(Arrays.stream(samples, l + newLSize, r + 1).mapToDouble(SampleInfo::getLabel), l + newLSize);
 
