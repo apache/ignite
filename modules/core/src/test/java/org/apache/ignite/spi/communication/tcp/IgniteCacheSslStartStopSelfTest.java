@@ -32,7 +32,6 @@ public class IgniteCacheSslStartStopSelfTest extends IgniteCachePutRetryAbstract
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        fail("https://issues.apache.org/jira/browse/IGNITE-1924");
         cfg.setSslContextFactory(GridTestUtils.sslFactory());
 
         return cfg;

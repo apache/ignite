@@ -19,7 +19,6 @@ package org.apache.ignite.cache.hibernate;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.hibernate.cache.CacheException;
 import org.hibernate.cache.spi.GeneralDataRegion;
 import org.hibernate.cache.spi.QueryResultsRegion;
@@ -38,7 +37,7 @@ public class HibernateGeneralDataRegion extends HibernateRegion implements Gener
      * @param cache Region cache.
      */
     public HibernateGeneralDataRegion(HibernateRegionFactory factory, String name,
-        Ignite ignite, IgniteInternalCache<Object, Object> cache) {
+        Ignite ignite, HibernateCacheProxy cache) {
         super(factory, name, ignite, cache);
     }
 
