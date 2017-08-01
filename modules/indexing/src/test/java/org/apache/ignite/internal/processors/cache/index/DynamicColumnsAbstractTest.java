@@ -53,7 +53,7 @@ import org.h2.value.DataType;
  */
 public abstract class DynamicColumnsAbstractTest extends GridCommonAbstractTest {
     /** SQL to create test table. */
-    protected final static String CREATE_SQL = "CREATE TABLE Person (id int primary key, name varchar)";
+    protected final static String CREATE_SQL = "CREATE TABLE IF NOT EXISTS Person (id int primary key, name varchar)";
 
     /** SQL to drop test table. */
     protected final static String DROP_SQL = "DROP TABLE Person";
@@ -263,8 +263,8 @@ public abstract class DynamicColumnsAbstractTest extends GridCommonAbstractTest 
      * Execute SQL command and ignore resulting dataset.
      * @param sql Statement.
      */
-    protected void run(IgniteEx node, String sql) {
-        node.context().query()
+    protected void run(Ignite node, String sql) {
+        ((IgniteEx)node).context().query()
             .querySqlFieldsNoCache(new SqlFieldsQuery(sql).setSchema(QueryUtils.DFLT_SCHEMA), true).getAll();
     }
 
@@ -274,7 +274,7 @@ public abstract class DynamicColumnsAbstractTest extends GridCommonAbstractTest 
      * @param msg Expected message.
      */
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
-    protected void assertThrows(final IgniteEx node, final String sql, String msg) {
+    protected void assertThrows(final Ignite node, final String sql, String msg) {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
                 run(node, sql);
