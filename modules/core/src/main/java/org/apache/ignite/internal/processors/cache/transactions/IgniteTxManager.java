@@ -31,12 +31,14 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
@@ -1660,11 +1662,13 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                     if (tx.isSystemInvalidate() && tx.storeWriteThrough()) {
                         synchronized (this) {
                             try {
-                                //TODO: fix exception handling.
                                 entry.invalidate(tx.xidVersion());
                             }
-                            catch (IgniteCheckedException ignore) {
-                                // No-op.
+                            catch (NodeStoppingException ignore) {
+                                // Ignore.
+                            }
+                            catch (IgniteCheckedException e) {
+                                throw new IgniteException("Unexpected error occurs while invalidating entry.", e);
                             }
                         }
                     }
