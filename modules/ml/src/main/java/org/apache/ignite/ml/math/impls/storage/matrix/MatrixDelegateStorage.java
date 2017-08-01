@@ -27,7 +27,7 @@ import org.apache.ignite.ml.math.MatrixStorage;
  */
 public class MatrixDelegateStorage implements MatrixStorage {
     /** Parent matrix storage. */
-    private MatrixStorage sto;
+    private MatrixStorage dlg;
 
     /** Row offset in the parent matrix. */
     private int rowOff;
@@ -47,20 +47,20 @@ public class MatrixDelegateStorage implements MatrixStorage {
     }
 
     /**
-     * @param sto Backing parent storage.
+     * @param dlg Backing parent storage.
      * @param rowOff Row offset to parent matrix.
      * @param colOff Column offset to parent matrix.
      * @param rows Amount of rows in the view.
      * @param cols Amount of columns in the view.
      */
-    public MatrixDelegateStorage(MatrixStorage sto, int rowOff, int colOff, int rows, int cols) {
-        assert sto != null;
+    public MatrixDelegateStorage(MatrixStorage dlg, int rowOff, int colOff, int rows, int cols) {
+        assert dlg != null;
         assert rowOff >= 0;
         assert colOff >= 0;
         assert rows > 0;
         assert cols > 0;
 
-        this.sto = sto;
+        this.dlg = dlg;
 
         this.rowOff = rowOff;
         this.colOff = colOff;
@@ -73,7 +73,7 @@ public class MatrixDelegateStorage implements MatrixStorage {
      *
      */
     public MatrixStorage delegate() {
-        return sto;
+        return dlg;
     }
 
     /**
@@ -106,12 +106,12 @@ public class MatrixDelegateStorage implements MatrixStorage {
 
     /** {@inheritDoc} */
     @Override public double get(int x, int y) {
-        return sto.get(rowOff + x, colOff + y);
+        return dlg.get(rowOff + x, colOff + y);
     }
 
     /** {@inheritDoc} */
     @Override public void set(int x, int y, double v) {
-        sto.set(rowOff + x, colOff + y, v);
+        dlg.set(rowOff + x, colOff + y, v);
     }
 
     /** {@inheritDoc} */
@@ -125,38 +125,43 @@ public class MatrixDelegateStorage implements MatrixStorage {
     }
 
     /** {@inheritDoc} */
+    @Override public int storageMode() {
+        return dlg.storageMode();
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean isArrayBased() {
-        return sto.isArrayBased() && rowOff == 0 && colOff == 0;
+        return dlg.isArrayBased() && rowOff == 0 && colOff == 0;
     }
 
     /** {@inheritDoc} */
     @Override public boolean isSequentialAccess() {
-        return sto.isSequentialAccess();
+        return dlg.isSequentialAccess();
     }
 
     /** {@inheritDoc} */
     @Override public boolean isDense() {
-        return sto.isDense();
+        return dlg.isDense();
     }
 
     /** {@inheritDoc} */
     @Override public boolean isRandomAccess() {
-        return sto.isRandomAccess();
+        return dlg.isRandomAccess();
     }
 
     /** {@inheritDoc} */
     @Override public boolean isDistributed() {
-        return sto.isDistributed();
+        return dlg.isDistributed();
     }
 
     /** {@inheritDoc} */
     @Override public double[] data() {
-        return sto.data();
+        return dlg.data();
     }
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeObject(sto);
+        out.writeObject(dlg);
 
         out.writeInt(rowOff);
         out.writeInt(colOff);
@@ -167,7 +172,7 @@ public class MatrixDelegateStorage implements MatrixStorage {
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        sto = (MatrixStorage)in.readObject();
+        dlg = (MatrixStorage)in.readObject();
 
         rowOff = in.readInt();
         colOff = in.readInt();
@@ -184,7 +189,7 @@ public class MatrixDelegateStorage implements MatrixStorage {
         res = res * 37 + cols;
         res = res * 37 + rowOff;
         res = res * 37 + colOff;
-        res = res * 37 + sto.hashCode();
+        res = res * 37 + dlg.hashCode();
 
         return res;
     }
@@ -200,6 +205,6 @@ public class MatrixDelegateStorage implements MatrixStorage {
         MatrixDelegateStorage that = (MatrixDelegateStorage)o;
 
         return rows == that.rows && cols == that.cols && rowOff == that.rowOff && colOff == that.colOff &&
-            (sto != null ? sto.equals(that.sto) : that.sto == null);
+            (dlg != null ? dlg.equals(that.dlg) : that.dlg == null);
     }
 }
