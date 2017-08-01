@@ -17,6 +17,9 @@
 
 package org.apache.ignite.testframework.junits.multijvm;
 
+import com.thoughtworks.xstream.XStream;
+import com.thoughtworks.xstream.mapper.CannotResolveClassException;
+import com.thoughtworks.xstream.mapper.MapperWrapper;
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.File;
@@ -28,7 +31,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
-import com.thoughtworks.xstream.XStream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.Ignition;
@@ -38,6 +40,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheAbstractFullApiSelfT
 import org.apache.ignite.internal.util.GridJavaProcess;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.junits.IgniteTestResources;
@@ -56,6 +59,9 @@ public class IgniteNodeRunner {
         File.separator + "igniteConfiguration.tmp_";
 
     /** */
+    private static final String IGNITE_CONFIGURATION_CLOSURE_POSTFIX = "_closure";
+
+    /** */
     private static volatile Ignite ignite;
 
     /**
@@ -69,7 +75,12 @@ public class IgniteNodeRunner {
 
         X.println("Starting Ignite Node... Args=" + Arrays.toString(args));
 
-        IgniteConfiguration cfg = readCfgFromFileAndDeleteFile(args[0]);
+        IgniteConfiguration cfg = null;
+
+        if (args.length > 1)
+            cfg = readCfgFromFileAndDeleteFile(args[0], args[1]);
+        else
+            cfg = readCfgFromFileAndDeleteFile(args[0]);
 
         ignite = Ignition.start(cfg);
     }
@@ -135,18 +146,69 @@ public class IgniteNodeRunner {
     }
 
     /**
+     * Stores {@link IgniteInClosure} to file as xml.
+     *
+     * @param clos IgniteClosure.
+     * @param cfgFileName A name of file where the configuration was stored.
+     * @return A name of file where the given closure was stored.
+     * @throws IOException If failed.
+     */
+    public static String storeToFile(IgniteInClosure clos, String cfgFileName) throws IOException {
+        String fileName = cfgFileName + IGNITE_CONFIGURATION_CLOSURE_POSTFIX;
+
+        try (OutputStream out = new BufferedOutputStream(new FileOutputStream(fileName))) {
+            // TODO: serialize anonymous classes in proper way
+            new XStream().toXML(clos, out);
+        }
+
+        return fileName;
+    }
+
+    /**
+     * Reads configuration and closure from given files names,
+     * applies the closure to the configuration
+     * and delete the files after.
+     *
+     * @param cfgFileName Configuration file name.
+     * @param closFileName Closure file name.
+     * @return Read and prepared configuration.
+     * @throws IOException If failed.
+     * @throws IgniteCheckedException On error.
+     * @see #storeToFile(IgniteConfiguration, boolean)
+     * @see #storeToFile(IgniteInClosure, String)
+     */
+    @SuppressWarnings("unchecked")
+    private static IgniteConfiguration readCfgFromFileAndDeleteFile(String cfgFileName, String closFileName)
+        throws IOException, IgniteCheckedException {
+
+        IgniteConfiguration cfg = readCfgFromFileAndDeleteFile(cfgFileName);
+
+        try (BufferedReader closReader = new BufferedReader(new FileReader(closFileName))) {
+            IgniteInClosure clos = (IgniteInClosure)createXStreamer().fromXML(closReader);
+
+            clos.apply(cfg);
+        }
+        finally {
+            new File(closFileName).delete();
+        }
+
+        return cfg;
+    }
+
+    /**
      * Reads configuration from given file and delete the file after.
      *
      * @param fileName File name.
      * @return Readed configuration.
      * @throws IOException If failed.
-     * @see #storeToFile(IgniteConfiguration, boolean)
      * @throws IgniteCheckedException On error.
+     * @see #storeToFile(IgniteConfiguration, boolean)
      */
     private static IgniteConfiguration readCfgFromFileAndDeleteFile(String fileName)
         throws IOException, IgniteCheckedException {
-        try(BufferedReader cfgReader = new BufferedReader(new FileReader(fileName))) {
-            IgniteConfiguration cfg = (IgniteConfiguration)new XStream().fromXML(cfgReader);
+        try (BufferedReader cfgReader = new BufferedReader(new FileReader(fileName))) {
+
+            IgniteConfiguration cfg = (IgniteConfiguration)createXStreamer().fromXML(cfgReader);
 
             if (cfg.getMarshaller() == null) {
                 Marshaller marsh = IgniteTestResources.getMarshaller();
@@ -203,5 +265,35 @@ public class IgniteNodeRunner {
         }
 
         return res;
+    }
+
+    /**
+     * Creates an instance of {@link XStream} and configure it to ignore {@link CannotResolveClassException},
+     * and to ignore unknown elements during deserialization.
+     * It needs for deserialization of configuration classes on nodes with different build versions.
+     *
+     * @return Configured {@link XStream}.
+     */
+    private static XStream createXStreamer() {
+        XStream xStream = new XStream() {
+            @Override protected MapperWrapper wrapMapper(MapperWrapper next) {
+                return new MapperWrapper(next) {
+                    @Override public Class realClass(String elementName) {
+                        try {
+                            return super.realClass(elementName);
+                        }
+                        catch (CannotResolveClassException ignored) {
+                            // in case of addition to configurations  a field with a new type of class
+                            // and can't be deserialized because a definition is absent in classpath
+                            return null;
+                        }
+                    }
+                };
+            }
+        };
+
+        xStream.ignoreUnknownElements(); // to avoid UnknownFieldException in MultiVersion mode
+
+        return xStream;
     }
 }

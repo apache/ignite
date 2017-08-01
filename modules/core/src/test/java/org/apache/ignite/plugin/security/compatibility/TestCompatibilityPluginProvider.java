@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.plugin.compatibility;
+package org.apache.ignite.plugin.security.compatibility;
 
 import java.io.Serializable;
 import java.util.UUID;
@@ -25,7 +25,6 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.processors.nodevalidation.DiscoveryNodeValidationProcessor;
-import org.apache.ignite.internal.processors.nodevalidation.NoNodeValidationProcessor;
 import org.apache.ignite.plugin.CachePluginContext;
 import org.apache.ignite.plugin.CachePluginProvider;
 import org.apache.ignite.plugin.ExtensionRegistry;

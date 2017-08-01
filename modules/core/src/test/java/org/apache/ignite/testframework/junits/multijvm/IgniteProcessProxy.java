@@ -40,10 +40,10 @@ import org.apache.ignite.IgniteEvents;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.IgniteIllegalStateException;
+import org.apache.ignite.IgniteLock;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteMessaging;
 import org.apache.ignite.IgniteQueue;
-import org.apache.ignite.IgniteLock;
 import org.apache.ignite.IgniteScheduler;
 import org.apache.ignite.IgniteSemaphore;
 import org.apache.ignite.IgniteServices;
@@ -78,6 +78,7 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteCallable;
+import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
@@ -135,28 +136,51 @@ public class IgniteProcessProxy implements IgniteEx {
      */
     public IgniteProcessProxy(IgniteConfiguration cfg, IgniteLogger log, Ignite locJvmGrid, boolean resetDiscovery)
         throws Exception {
+        this(cfg, log, locJvmGrid, resetDiscovery, null, null);
+    }
+
+    /**
+     * @param cfg Configuration.
+     * @param log Logger.
+     * @param locJvmGrid Local JVM grid.
+     * @param resetDiscovery Reset DiscoverySpi at the configuration.
+     * @param jvmArgs JVM Arguments.
+     * @param clos IgniteClosure.
+     * @throws Exception On error.
+     */
+    public IgniteProcessProxy(IgniteConfiguration cfg, IgniteLogger log, Ignite locJvmGrid, boolean resetDiscovery,
+        Collection<String> jvmArgs, IgniteInClosure<IgniteConfiguration> clos) throws Exception {
         this.cfg = cfg;
         this.locJvmGrid = locJvmGrid;
         this.log = log.getLogger("jvm-" + id.toString().substring(0, id.toString().indexOf('-')));
 
         String cfgFileName = IgniteNodeRunner.storeToFile(cfg.setNodeId(id), resetDiscovery);
 
-        Collection<String> filteredJvmArgs = new ArrayList<>();
+        String closFileName = null;
 
-        filteredJvmArgs.add("-ea");
+        if (clos != null)
+            closFileName = IgniteNodeRunner.storeToFile(clos, cfgFileName);
 
-        Marshaller marsh = cfg.getMarshaller();
+        Collection<String> filteredJvmArgs = jvmArgs;
 
-        if (marsh != null)
-            filteredJvmArgs.add("-D" + IgniteTestResources.MARSH_CLASS_NAME + "=" + marsh.getClass().getName());
-        else
-            filteredJvmArgs.add("-D" + IgniteTestResources.MARSH_CLASS_NAME + "=" + BinaryMarshaller.class.getName());
+        if (filteredJvmArgs == null) {
+            filteredJvmArgs = new ArrayList<>();
 
-        for (String arg : U.jvmArgs()) {
-            if (arg.startsWith("-Xmx") || arg.startsWith("-Xms") ||
-                arg.startsWith("-cp") || arg.startsWith("-classpath") ||
-                (marsh != null && arg.startsWith("-D" + IgniteTestResources.MARSH_CLASS_NAME)))
-                filteredJvmArgs.add(arg);
+            filteredJvmArgs.add("-ea");
+
+            Marshaller marsh = cfg.getMarshaller();
+
+            if (marsh != null)
+                filteredJvmArgs.add("-D" + IgniteTestResources.MARSH_CLASS_NAME + "=" + marsh.getClass().getName());
+            else
+                filteredJvmArgs.add("-D" + IgniteTestResources.MARSH_CLASS_NAME + "=" + BinaryMarshaller.class.getName());
+
+            for (String arg : U.jvmArgs()) {
+                if (arg.startsWith("-Xmx") || arg.startsWith("-Xms") ||
+                    arg.startsWith("-cp") || arg.startsWith("-classpath") ||
+                    (marsh != null && arg.startsWith("-D" + IgniteTestResources.MARSH_CLASS_NAME)))
+                    filteredJvmArgs.add(arg);
+            }
         }
 
         final CountDownLatch rmtNodeStartedLatch = new CountDownLatch(1);
@@ -164,9 +188,14 @@ public class IgniteProcessProxy implements IgniteEx {
         if (locJvmGrid != null)
             locJvmGrid.events().localListen(new NodeStartedListener(id, rmtNodeStartedLatch), EventType.EVT_NODE_JOINED);
 
+        String params = cfgFileName;
+
+        if (closFileName != null)
+            params += " " + closFileName;
+
         proc = GridJavaProcess.exec(
             IgniteNodeRunner.class.getCanonicalName(),
-            cfgFileName, // Params.
+            params,
             this.log,
             // Optional closure to be called each time wrapped process prints line to system.out or system.err.
             new IgniteInClosure<String>() {
