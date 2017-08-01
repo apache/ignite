@@ -73,9 +73,13 @@ import java.nio.channels.FileLock;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.charset.Charset;
+import java.nio.file.DirectoryStream;
+import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.security.AccessController;
 import java.security.KeyManagementException;
 import java.security.MessageDigest;
@@ -9987,6 +9991,67 @@ public abstract class IgniteUtils {
         catch (Exception e) {
             throw new IgniteCheckedException(e);
         }
+    }
+
+    /**
+     * Return count of regular file in the directory (including in sub-directories)
+     *
+     * @param dir path to directory
+     * @return count of regular file
+     * @throws IOException sometimes
+     */
+    public static int fileCount(Path dir) throws IOException {
+        int cnt = 0;
+
+        try (DirectoryStream<Path> ds = Files.newDirectoryStream(dir)){
+            for (Path d : ds) {
+                if (Files.isDirectory(d))
+                    cnt += fileCount(d);
+
+                else if (Files.isRegularFile(d))
+                    cnt++;
+            }
+        }
+
+        return cnt;
+    }
+
+    /**
+     * Will calculate the size of a directory.
+     *
+     * If there is concurrent activity in the directory, than returned value may be wrong.
+     */
+    public static long dirSize(Path path) throws IgniteCheckedException {
+        final AtomicLong s = new AtomicLong(0);
+
+        try {
+            Files.walkFileTree(path, new SimpleFileVisitor<Path>() {
+                @Override public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
+                    s.addAndGet(attrs.size());
+
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override public FileVisitResult visitFileFailed(Path file, IOException exc) {
+                    U.error(null, "file skipped - " + file, exc);
+
+                    // Skip directory or file
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override public FileVisitResult postVisitDirectory(Path dir, IOException exc) {
+                    if (exc != null)
+                        U.error(null, "error during size calculation of directory - " + dir, exc);
+
+                    // Ignoring
+                    return FileVisitResult.CONTINUE;
+                }
+            });
+        } catch (IOException e) {
+            throw new IgniteCheckedException("walkFileTree will not throw IOException if the FileVisitor does not");
+        }
+
+        return s.get();
     }
 
     /**
