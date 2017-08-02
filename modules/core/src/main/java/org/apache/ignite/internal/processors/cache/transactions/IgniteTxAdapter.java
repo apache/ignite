@@ -97,6 +97,7 @@ import static org.apache.ignite.transactions.TransactionState.PREPARED;
 import static org.apache.ignite.transactions.TransactionState.PREPARING;
 import static org.apache.ignite.transactions.TransactionState.ROLLED_BACK;
 import static org.apache.ignite.transactions.TransactionState.ROLLING_BACK;
+import static org.apache.ignite.transactions.TransactionState.SUSPENDED;
 
 /**
  * Managed transaction adapter.
@@ -412,27 +413,36 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
     /**
      * Uncommits transaction by invalidating all of its entries. Courtesy to minimize inconsistency.
+     *
+     * @param nodeStopping {@code True} if tx was cancelled during node stop.
      */
     @SuppressWarnings({"CatchGenericClass"})
-    protected void uncommit() {
-        for (IgniteTxEntry e : writeMap().values()) {
-            try {
-                GridCacheEntryEx Entry = e.cached();
+    protected void uncommit(boolean nodeStopping) {
+        try {
+            if (!nodeStopping) {
+                for (IgniteTxEntry e : writeMap().values()) {
+                    try {
+                        GridCacheEntryEx entry = e.cached();
 
-                if (e.op() != NOOP)
-                    Entry.invalidate(null, xidVer);
-            }
-            catch (Throwable t) {
-                U.error(log, "Failed to invalidate transaction entries while reverting a commit.", t);
+                        if (e.op() != NOOP)
+                            entry.invalidate(xidVer);
+                    }
+                    catch (Throwable t) {
+                        U.error(log, "Failed to invalidate transaction entries while reverting a commit.", t);
 
-                if (t instanceof Error)
-                    throw (Error)t;
+                        if (t instanceof Error)
+                            throw (Error)t;
 
-                break;
+                        break;
+                    }
+                }
+
+                cctx.tm().uncommitTx(this);
             }
         }
-
-        cctx.tm().uncommitTx(this);
+        catch (Exception ex) {
+            U.error(log, "Failed to do uncommit.", ex);
+        }
     }
 
     /** {@inheritDoc} */
@@ -929,11 +939,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                 fut = finFut;
 
                 if (fut == null) {
-                    fut = new GridFutureAdapter<IgniteInternalTx>() {
-                        @Override public String toString() {
-                            return S.toString(GridFutureAdapter.class, this, "tx", IgniteTxAdapter.this);
-                        }
-                    };
+                    fut = new TxFinishFuture(this);
 
                     finFut = fut;
                 }
@@ -972,10 +978,10 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
             switch (state) {
                 case ACTIVE: {
-                    valid = false;
+                    valid = prev == SUSPENDED;
 
                     break;
-                } // Active is initial state and cannot be transitioned to.
+                }
                 case PREPARING: {
                     valid = prev == ACTIVE;
 
@@ -1020,15 +1026,20 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                 }
 
                 case MARKED_ROLLBACK: {
-                    valid = prev == ACTIVE || prev == PREPARING || prev == PREPARED;
+                    valid = prev == ACTIVE || prev == PREPARING || prev == PREPARED || prev == SUSPENDED;
 
                     break;
                 }
 
                 case ROLLING_BACK: {
-                    valid =
-                        prev == ACTIVE || prev == MARKED_ROLLBACK || prev == PREPARING ||
-                            prev == PREPARED || (prev == COMMITTING && local() && !dht());
+                    valid = prev == ACTIVE || prev == MARKED_ROLLBACK || prev == PREPARING ||
+                        prev == PREPARED || prev == SUSPENDED || (prev == COMMITTING && local() && !dht());
+
+                    break;
+                }
+
+                case SUSPENDED: {
+                    valid = prev == ACTIVE;
 
                     break;
                 }
@@ -1059,7 +1070,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
         if (valid) {
             // Seal transactions maps.
-            if (state != ACTIVE)
+            if (state != ACTIVE && state != SUSPENDED)
                 seal();
         }
 
@@ -2276,6 +2287,44 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(TxShadow.class, this);
+        }
+    }
+
+    /**
+     *
+     */
+    private static class TxFinishFuture extends GridFutureAdapter<IgniteInternalTx> {
+        /** */
+        @GridToStringInclude
+        private IgniteTxAdapter tx;
+
+        /** */
+        private volatile long completionTime;
+
+        /**
+         * @param tx Transaction being awaited.
+         */
+        private TxFinishFuture(IgniteTxAdapter tx) {
+            this.tx = tx;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean onDone(@Nullable IgniteInternalTx res, @Nullable Throwable err) {
+            completionTime = U.currentTimeMillis();
+
+            return super.onDone(res, err);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            long ct = completionTime;
+
+            if (ct == 0)
+                ct = U.currentTimeMillis();
+
+            long duration = ct - tx.startTime();
+
+            return S.toString(TxFinishFuture.class, this, "duration", duration);
         }
     }
 }

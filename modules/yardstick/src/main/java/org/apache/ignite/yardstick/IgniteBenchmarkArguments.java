@@ -18,8 +18,10 @@
 package org.apache.ignite.yardstick;
 
 import com.beust.jcommander.Parameter;
+import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.MemoryConfiguration;
+import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -27,6 +29,7 @@ import org.apache.ignite.transactions.TransactionIsolation;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.apache.ignite.yardstick.cache.IgniteStreamerBenchmark;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -178,6 +181,14 @@ public class IgniteBenchmarkArguments {
     private boolean keysPerThread;
 
     /** */
+    @Parameter(names = {"-pc", "--partitionedCachesNumber"}, description = "Number of partitioned caches")
+    private int partitionedCachesNumber = 1;
+
+    /** */
+    @Parameter(names = {"-rc", "--replicatedCachesNumber"}, description = "Number of replicated caches")
+    private int replicatedCachesNumber = 1;
+
+    /** */
     @Parameter(names = {"-ac", "--additionalCachesNumber"}, description = "Number of additional caches")
     private int additionalCachesNum;
 
@@ -198,12 +209,55 @@ public class IgniteBenchmarkArguments {
     private int pageSize = MemoryConfiguration.DFLT_PAGE_SIZE;
 
     /** */
+    @Parameter(names = {"-sl", "--stringLength"}, description = "Test string length")
+    private int stringLength = 500;
+
+    /** */
+    @Parameter(names = {"-wt", "--warningTime"}, description = "Warning time interval for printing log")
+    private long warningTime = 500;
+
+    /** */
+    @Parameter(names = {"-prb", "--printRollBacks"}, description = "Print rollBacks")
+    private boolean printRollBacks;
+
+    /** */
+    @Parameter(names = {"-prt", "--partitions"}, description = "Number of cache partitions")
+    private int partitions = 10;
+
+    /** */
     @Parameter(names = {"-cg", "--cacheGrp"}, description = "Cache group for caches")
     private String cacheGrp;
 
     /** */
     @Parameter(names = {"-cc", "--cachesCnt"}, description = "Number of caches to create")
     private int cachesCnt = 1;
+
+    /** */
+    @Parameter(names = {"-pds", "--persistentStore"}, description = "Persistent store flag")
+    private boolean persistentStoreEnabled;
+
+    /** */
+    @Parameter(names = {"-stcp", "--streamerCachesPrefix"}, description = "Cache name prefix for streamer benchmark")
+    private String streamerCachesPrefix = "streamer";
+
+    /** */
+    @Parameter(names = {"-stci", "--streamerCachesIndex"}, description = "First cache index for streamer benchmark")
+    private int streamerCacheIndex;
+
+    /** */
+    @Parameter(names = {"-stcc", "--streamerConcCaches"}, description = "Number of concurrently loaded caches for streamer benchmark")
+    private int streamerConcurrentCaches = 1;
+
+    /** */
+    @Parameter(names = {"-stbs", "--streamerBufSize"}, description = "Data streamer buffer size")
+    private int streamerBufSize = IgniteDataStreamer.DFLT_PER_NODE_BUFFER_SIZE;
+
+    /**
+     * @return {@code True} if need set {@link PersistentStoreConfiguration}.
+     */
+    public boolean persistentStoreEnabled() {
+        return persistentStoreEnabled;
+    }
 
     /**
      * @return List of enabled load test operations.
@@ -465,6 +519,48 @@ public class IgniteBenchmarkArguments {
     }
 
     /**
+     * @return Test string length.
+     */
+    public int getStringLength() {
+        return stringLength;
+    }
+
+    /**
+     * @return Warning time interval.
+     */
+    public long getWarningTime() {
+        return warningTime;
+    }
+
+    /**
+     * @return Flag for printing rollbacks.
+     */
+    public boolean printRollBacks() {
+        return printRollBacks;
+    }
+
+    /**
+     * @return Number of partitioned caches.
+     */
+    public int partitionedCachesNumber() {
+        return partitionedCachesNumber;
+    }
+
+    /**
+     * @return Number of replicated caches.
+     */
+    public int replicatedCachesNumber() {
+        return replicatedCachesNumber;
+    }
+
+    /**
+     * @return Number of cache partitions.
+     */
+    public int partitions() {
+        return partitions;
+    }
+
+    /**
      * @return Number of additional caches.
      */
     public int additionalCachesNumber() {
@@ -505,6 +601,34 @@ public class IgniteBenchmarkArguments {
     public String description() {
         return "-nn=" + nodes + "-b=" + backups + "-sm=" + syncMode + "-cl=" + clientOnly + "-nc=" + nearCacheFlag +
             "-txc=" + txConcurrency + "-rd=" + restartDelay + "-rs=" + restartSleep;
+    }
+
+    /**
+     * @return Cache name prefix for caches to be used in {@link IgniteStreamerBenchmark}.
+     */
+    public String streamerCachesPrefix() {
+        return streamerCachesPrefix;
+    }
+
+    /**
+     * @return First cache index for {@link IgniteStreamerBenchmark}.
+     */
+    public int streamerCacheIndex() {
+        return streamerCacheIndex;
+    }
+
+    /**
+     * @return Number of concurrently loaded caches for {@link IgniteStreamerBenchmark}.
+     */
+    public int streamerConcurrentCaches() {
+        return streamerConcurrentCaches;
+    }
+
+    /**
+     * @return Streamer buffer size {@link IgniteStreamerBenchmark} (see {@link IgniteDataStreamer#perNodeBufferSize()}.
+     */
+    public int streamerBufferSize() {
+        return streamerBufSize;
     }
 
     /** {@inheritDoc} */

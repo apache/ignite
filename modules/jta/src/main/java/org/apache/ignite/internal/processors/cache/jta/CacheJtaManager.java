@@ -28,9 +28,10 @@ import org.apache.ignite.cache.jta.CacheTmLookup;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.transactions.TransactionState.SUSPENDED;
 
 /**
  * Implementation of {@link CacheJtaManagerAdapter}.
@@ -147,7 +148,7 @@ public class CacheJtaManager extends CacheJtaManagerAdapter {
         if (jtaTm != null) {
             CacheJtaResource rsrc = this.rsrc.get();
 
-            if (rsrc == null || rsrc.isFinished()) {
+            if (rsrc == null || rsrc.isFinished() || rsrc.cacheTx().state() == SUSPENDED) {
                 try {
                     Transaction jtaTx = jtaTm.getTransaction();
 

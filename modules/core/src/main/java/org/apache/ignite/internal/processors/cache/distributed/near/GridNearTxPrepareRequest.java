@@ -26,7 +26,6 @@ import java.util.UUID;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxPrepareRequest;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -407,13 +406,13 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
         StringBuilder flags = new StringBuilder();
 
         if (near())
-            flags.append("near");
+            flags.append("[near]");
         if (firstClientRequest())
-            flags.append("clientReq");
+            flags.append("[firstClientReq]");
         if (implicitSingle())
-            flags.append("single");
+            flags.append("[implicitSingle]");
         if (explicitLock())
-            flags.append("explicitLock");
+            flags.append("[explicitLock]");
 
         return S.toString(GridNearTxPrepareRequest.class, this,
             "flags", flags.toString(),

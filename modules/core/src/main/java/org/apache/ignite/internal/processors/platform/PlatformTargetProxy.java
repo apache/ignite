@@ -105,6 +105,17 @@ public interface PlatformTargetProxy {
     void inStreamAsync(int type, long memPtr) throws Exception;
 
     /**
+     * Asynchronous operation accepting memory stream and returning PlatformListenableTarget.
+     * Supports cancellable async operations.
+     *
+     * @param type Operation type.
+     * @param memPtr Memory pointer.
+     * @return Result.
+     * @throws Exception If case of failure.
+     */
+    Object inStreamOutObjectAsync(int type, long memPtr) throws Exception;
+
+    /**
      * Returns the underlying target.
      *
      * @return Underlying target.

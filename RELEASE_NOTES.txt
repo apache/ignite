@@ -1,6 +1,39 @@
 Apache Ignite Release Notes
 ===========================
 
+Apache Ignite In-Memory Data Fabric 2.1
+---------------------------------------
+Ignite:
+* Persistent cache store
+* Added IgniteFuture.listenAsync() and IgniteFuture.chainAsync() mehtods
+* Deprecated IgniteConfiguration.marshaller
+* Updated Lucene dependency to version 5.5.2
+* Machine learning: implemented K-means clusterization algorithm optimized for distributed storages
+* SQL: CREATE TABLE and DROP TABLE commands support
+* SQL: New thin JDBC driver
+* SQL: Improved performance of certain queries, when affinity node can be calculated in advance
+* SQL: Fixed return type of AVG() function
+* SQL: BLOB type support added to thick JDBC driver
+* SQL: Improved LocalDate, LocalTime and LocalDateTime support for Java 8
+* SQL: Added FieldsQueryCursor interface to get fields metadata for SqlFieldsQuery
+* ODBC: Implemented DML statement batching
+* Massive performance and stability improvements
+
+Ignite.NET:
+* Automatic remote assembly loading
+* NuGet-based standalone node deployment
+* Added conditional data removeal via LINQ DeleteAll
+* Added TimestampAttribute to control DateTime serialization mode
+* Added local collections joins support to LINQ.
+
+Ignite CPP:
+* Added Compute::Call and Compute::Broadcast methods
+
+Web Console:
+* Implemented support for UNIQUE indexes for key fields on import model from RDBMS
+* Added option to show full stack trace on Queries screen
+* Added PK alias generation on Models screen.
+
 Apache Ignite In-Memory Data Fabric 2.0
 ---------------------------------------
 Ignite:

@@ -18,14 +18,12 @@
 package org.apache.ignite.ml.clustering;
 
 import java.util.List;
-
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.ml.math.DistanceMeasure;
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.exceptions.ConvergenceException;
 import org.apache.ignite.ml.math.exceptions.MathIllegalArgumentException;
-import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 
 /**
  * This class is partly based on the corresponding class from Apache Common Math lib.

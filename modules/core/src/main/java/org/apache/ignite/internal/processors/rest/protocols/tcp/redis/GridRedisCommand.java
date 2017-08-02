@@ -70,7 +70,11 @@ public enum GridRedisCommand {
 
     // Server commands.
     /** DBSIZE. */
-    DBSIZE("DBSIZE");
+    DBSIZE("DBSIZE"),
+    /** FLUSHDB. */
+    FLUSHDB("FLUSHDB"),
+    /** FLUSHALL. */
+    FLUSHALL("FLUSHALL");
 
     /** String for command. */
     private final String cmd;

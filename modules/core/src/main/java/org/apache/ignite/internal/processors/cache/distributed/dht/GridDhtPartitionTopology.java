@@ -130,6 +130,27 @@ public interface GridDhtPartitionTopology {
         throws GridDhtInvalidPartitionException;
 
     /**
+     * Unconditionally creates partition during restore of persisted partition state.
+     *
+     * @param p Partition ID.
+     * @return Partition.
+     * @throws IgniteCheckedException If failed.
+     */
+    public GridDhtLocalPartition forceCreatePartition(int p) throws IgniteCheckedException;
+
+    /**
+     * @param topVer Topology version at the time of creation.
+     * @param p Partition ID.
+     * @param create If {@code true}, then partition will be created if it's not there.
+     * @return Local partition.
+     * @throws GridDhtInvalidPartitionException If partition is evicted or absent and
+     *      does not belong to this node.
+     */
+    @Nullable public GridDhtLocalPartition localPartition(int p, AffinityTopologyVersion topVer, boolean create,
+        boolean showRenting)
+        throws GridDhtInvalidPartitionException;
+
+    /**
      * @param parts Partitions to release (should be reserved before).
      */
     public void releasePartitions(int... parts);
@@ -182,7 +203,9 @@ public interface GridDhtPartitionTopology {
      * @param p Partition ID.
      * @param affAssignment Assignments.
      * @param affNodes Node assigned for given partition by affinity.
-     * @return Collection of all nodes responsible for this partition with primary node being first.
+     * @return Collection of all nodes responsible for this partition with primary node being first. The first N
+     *      elements of this collection (with N being 1 + backups) are actual DHT affinity nodes, other nodes
+     *      are current additional owners of the partition after topology change.
      */
     @Nullable public List<ClusterNode> nodes(int p, AffinityAssignment affAssignment, List<ClusterNode> affNodes);
 
@@ -222,15 +245,21 @@ public interface GridDhtPartitionTopology {
     public void onRemoved(GridDhtCacheEntry e);
 
     /**
-     * @param exchangeVer Exchange version.
+     * @param exchangeVer Topology version from exchange. Value should be greater than previously passed. Null value
+     *      means full map received is not related to exchange
      * @param partMap Update partition map.
      * @param cntrMap Partition update counters.
+     * @param partsToReload
+     * @param msgTopVer Topology version from incoming message. This value is not null only for case message is not
+     *      related to exchange. Value should be not less than previous 'Topology version from exchange'.
      * @return {@code True} if local state was changed.
      */
     public boolean update(
         @Nullable AffinityTopologyVersion exchangeVer,
         GridDhtPartitionFullMap partMap,
-        @Nullable Map<Integer, T2<Long, Long>> cntrMap);
+        @Nullable Map<Integer, T2<Long, Long>> cntrMap,
+        Set<Integer> partsToReload,
+        @Nullable AffinityTopologyVersion msgTopVer);
 
     /**
      * @param exchId Exchange ID.
@@ -265,11 +294,6 @@ public interface GridDhtPartitionTopology {
      * @return Collection of lost partitions, if any.
      */
     public Collection<Integer> lostPartitions();
-
-    /**
-     *
-     */
-    public void checkEvictions();
 
     /**
      * @param skipZeros If {@code true} then filters out zero counters.
@@ -311,9 +335,19 @@ public interface GridDhtPartitionTopology {
     /**
      * Make nodes from provided set owners for a given partition.
      * State of all current owners that aren't contained in the set will be reset to MOVING.
+     *
      * @param p Partition ID.
      * @param updateSeq If should increment sequence when updated.
      * @param owners Set of new owners.
+     * @return Set of node IDs that should reload partitions.
      */
-    public void setOwners(int p, Set<UUID> owners, boolean updateSeq);
+    public Set<UUID> setOwners(int p, Set<UUID> owners, boolean haveHistory, boolean updateSeq);
+
+    /**
+     * Callback on exchange done.
+     *
+     * @param assignment New affinity assignment.
+     * @param updateRebalanceVer {@code True} if need check rebalance state.
+     */
+    public void onExchangeDone(AffinityAssignment assignment, boolean updateRebalanceVer);
 }

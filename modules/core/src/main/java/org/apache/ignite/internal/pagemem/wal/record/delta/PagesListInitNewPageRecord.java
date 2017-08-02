@@ -19,8 +19,8 @@ package org.apache.ignite.internal.pagemem.wal.record.delta;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.internal.processors.cache.database.freelist.io.PagesListNodeIO;
-import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
+import org.apache.ignite.internal.processors.cache.persistence.freelist.io.PagesListNodeIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -38,13 +38,13 @@ public class PagesListInitNewPageRecord extends InitNewPageRecord {
     private final long addDataPageId;
 
     /**
-     * @param cacheId Cache ID.
+     * @param grpId Cache group ID.
      * @param pageId Page ID.
      * @param prevPageId Previous page ID.
      * @param addDataPageId Optional page ID to add.
      */
     public PagesListInitNewPageRecord(
-        int cacheId,
+        int grpId,
         long pageId,
         int ioType,
         int ioVer,
@@ -52,7 +52,7 @@ public class PagesListInitNewPageRecord extends InitNewPageRecord {
         long prevPageId,
         long addDataPageId
     ) {
-        super(cacheId, pageId, ioType, ioVer, newPageId);
+        super(grpId, pageId, ioType, ioVer, newPageId);
 
         this.prevPageId = prevPageId;
         this.addDataPageId = addDataPageId;

@@ -101,6 +101,8 @@ import org.apache.ignite.testframework.config.GridTestProperties;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static org.springframework.util.FileSystemUtils.deleteRecursively;
+
 /**
  * Utility class for tests.
  */
@@ -412,6 +414,32 @@ public final class GridTestUtils {
 
         try {
             call.call();
+        }
+        catch (Throwable e) {
+            if (!X.hasCause(e, cls))
+                fail("Exception is neither of a specified class, nor has a cause of the specified class: " + cls, e);
+
+            return e;
+        }
+
+        throw new AssertionError("Exception has not been thrown.");
+    }
+
+    /**
+     * Checks whether closure throws exception, which is itself of a specified
+     * class, or has a cause of the specified class.
+     *
+     * @param call Closure.
+     * @param p Parameter passed to closure.
+     * @param cls Expected class.
+     * @return Thrown throwable.
+     */
+    public static <P> Throwable assertThrowsWithCause(IgniteInClosure<P> call, P p, Class<? extends Throwable> cls) {
+        assert call != null;
+        assert cls != null;
+
+        try {
+            call.apply(p);
         }
         catch (Throwable e) {
             if (!X.hasCause(e, cls))
@@ -1875,5 +1903,12 @@ public final class GridTestUtils {
             b.append(ALPHABETH.charAt(rnd.nextInt(ALPHABETH.length())));
 
         return b.toString();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public static void deleteDbFiles() throws Exception {
+        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
     }
 }

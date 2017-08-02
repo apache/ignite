@@ -260,7 +260,7 @@ namespace ignite
                     stream->WriteInt32(len);
 
                     for (int i = 0; i < len; i++)
-                        WriteTopObject(val[i]);
+                        WriteTopObject0(val[i]);
                 }
                 else
                 {
@@ -323,7 +323,7 @@ namespace ignite
                     stream->WriteInt32(len);
 
                     for (int i = 0; i < len; i++)
-                        WriteTopObject(val[i]);
+                        WriteTopObject0(val[i]);
                 }
                 else
                     stream->WriteInt8(IGNITE_HDR_NULL);
@@ -384,7 +384,7 @@ namespace ignite
                     stream->WriteInt32(len);
 
                     for (int i = 0; i < len; i++)
-                        WriteTopObject(val[i]);
+                        WriteTopObject0(val[i]);
                 }
                 else
                     stream->WriteInt8(IGNITE_HDR_NULL);
@@ -445,7 +445,7 @@ namespace ignite
                     stream->WriteInt32(len);
 
                     for (int i = 0; i < len; i++)
-                        WriteTopObject(val[i]);
+                        WriteTopObject0(val[i]);
                 }
                 else
                     stream->WriteInt8(IGNITE_HDR_NULL);
@@ -526,7 +526,7 @@ namespace ignite
                 CheckRawMode(true);
                 CheckSingleMode(true);
 
-                stream->WriteInt8(IGNITE_HDR_NULL);
+                WriteNull0();
             }
 
             void BinaryWriterImpl::WriteNull(const char* fieldName)
@@ -535,6 +535,11 @@ namespace ignite
                 CheckSingleMode(true);
 
                 WriteFieldId(fieldName, IGNITE_TYPE_OBJECT);
+                WriteNull0();
+            }
+
+            void BinaryWriterImpl::WriteNull0()
+            {
                 stream->WriteInt8(IGNITE_HDR_NULL);
             }
 
@@ -683,79 +688,79 @@ namespace ignite
             }
 
             template <>
-            void BinaryWriterImpl::WriteTopObject<int8_t>(const int8_t& obj)
+            void BinaryWriterImpl::WriteTopObject0<int8_t>(const int8_t& obj)
             {
                 WriteTopObject0<int8_t>(obj, BinaryUtils::WriteInt8, IGNITE_TYPE_BYTE);
             }
 
             template <>
-            void BinaryWriterImpl::WriteTopObject<bool>(const bool& obj)
+            void BinaryWriterImpl::WriteTopObject0<bool>(const bool& obj)
             {
                 WriteTopObject0<bool>(obj, BinaryUtils::WriteBool, IGNITE_TYPE_BOOL);
             }
 
             template <>
-            void BinaryWriterImpl::WriteTopObject<int16_t>(const int16_t& obj)
+            void BinaryWriterImpl::WriteTopObject0<int16_t>(const int16_t& obj)
             {
                 WriteTopObject0<int16_t>(obj, BinaryUtils::WriteInt16, IGNITE_TYPE_SHORT);
             }
 
             template <>
-            void BinaryWriterImpl::WriteTopObject<uint16_t>(const uint16_t& obj)
+            void BinaryWriterImpl::WriteTopObject0<uint16_t>(const uint16_t& obj)
             {
                 WriteTopObject0<uint16_t>(obj, BinaryUtils::WriteUInt16, IGNITE_TYPE_CHAR);
             }
 
             template <>
-            void BinaryWriterImpl::WriteTopObject<int32_t>(const int32_t& obj)
+            void BinaryWriterImpl::WriteTopObject0<int32_t>(const int32_t& obj)
             {
                 WriteTopObject0<int32_t>(obj, BinaryUtils::WriteInt32, IGNITE_TYPE_INT);
             }
 
             template <>
-            void BinaryWriterImpl::WriteTopObject<int64_t>(const int64_t& obj)
+            void BinaryWriterImpl::WriteTopObject0<int64_t>(const int64_t& obj)
             {
                 WriteTopObject0<int64_t>(obj, BinaryUtils::WriteInt64, IGNITE_TYPE_LONG);
             }
 
             template <>
-            void BinaryWriterImpl::WriteTopObject<float>(const float& obj)
+            void BinaryWriterImpl::WriteTopObject0<float>(const float& obj)
             {
                 WriteTopObject0<float>(obj, BinaryUtils::WriteFloat, IGNITE_TYPE_FLOAT);
             }
 
             template <>
-            void BinaryWriterImpl::WriteTopObject<double>(const double& obj)
+            void BinaryWriterImpl::WriteTopObject0<double>(const double& obj)
             {
                 WriteTopObject0<double>(obj, BinaryUtils::WriteDouble, IGNITE_TYPE_DOUBLE);
             }
 
             template <>
-            void BinaryWriterImpl::WriteTopObject<Guid>(const Guid& obj)
+            void BinaryWriterImpl::WriteTopObject0<Guid>(const Guid& obj)
             {
                 WriteTopObject0<Guid>(obj, BinaryUtils::WriteGuid, IGNITE_TYPE_UUID);
             }
 
             template <>
-            void BinaryWriterImpl::WriteTopObject<Date>(const Date& obj)
+            void BinaryWriterImpl::WriteTopObject0<Date>(const Date& obj)
             {
                 WriteTopObject0<Date>(obj, BinaryUtils::WriteDate, IGNITE_TYPE_DATE);
             }
 
             template <>
-            void BinaryWriterImpl::WriteTopObject<Timestamp>(const Timestamp& obj)
+            void BinaryWriterImpl::WriteTopObject0<Timestamp>(const Timestamp& obj)
             {
                 WriteTopObject0<Timestamp>(obj, BinaryUtils::WriteTimestamp, IGNITE_TYPE_TIMESTAMP);
             }
 
             template <>
-            void BinaryWriterImpl::WriteTopObject<Time>(const Time& obj)
+            void BinaryWriterImpl::WriteTopObject0<Time>(const Time& obj)
             {
                 WriteTopObject0<Time>(obj, BinaryUtils::WriteTime, IGNITE_TYPE_TIME);
             }
 
             template<>
-            void BinaryWriterImpl::WriteTopObject(const std::string& obj)
+            void BinaryWriterImpl::WriteTopObject0(const std::string& obj)
             {
                 const char* obj0 = obj.c_str();
 

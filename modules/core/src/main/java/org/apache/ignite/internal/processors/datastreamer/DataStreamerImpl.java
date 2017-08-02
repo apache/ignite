@@ -319,7 +319,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         topic = TOPIC_DATASTREAM.topic(IgniteUuid.fromUuid(ctx.localNodeId()));
 
         ctx.io().addMessageListener(topic, new GridMessageListener() {
-            @Override public void onMessage(UUID nodeId, Object msg) {
+            @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
                 assert msg instanceof DataStreamerResponse;
 
                 DataStreamerResponse res = (DataStreamerResponse)msg;
@@ -1709,6 +1709,11 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                     if (log.isDebugEnabled())
                         log.debug("Sent request to node [nodeId=" + node.id() + ", req=" + req + ']');
                 }
+                catch (ClusterTopologyCheckedException e) {
+                    GridFutureAdapter<Object> fut0 = ((GridFutureAdapter<Object>)fut);
+
+                    fut0.onDone(e);
+                }
                 catch (IgniteCheckedException e) {
                     GridFutureAdapter<Object> fut0 = ((GridFutureAdapter<Object>)fut);
 
@@ -1777,10 +1782,16 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                 try {
                     GridPeerDeployAware jobPda0 = jobPda;
 
-                    err = new IgniteCheckedException("DataStreamer request failed [node=" + nodeId + "]",
-                        (Throwable)U.unmarshal(ctx,
-                            errBytes,
-                            U.resolveClassLoader(jobPda0 != null ? jobPda0.classLoader() : null, ctx.config())));
+                    final Throwable cause = U.unmarshal(
+                        ctx,
+                        errBytes,
+                        U.resolveClassLoader(jobPda0 != null ? jobPda0.classLoader() : null, ctx.config()));
+
+                    final String msg = "DataStreamer request failed [node=" + nodeId + "]";
+
+                    err = cause instanceof ClusterTopologyCheckedException ?
+                        new ClusterTopologyCheckedException(msg, cause) :
+                        new IgniteCheckedException(msg, cause);
                 }
                 catch (IgniteCheckedException e) {
                     f.onDone(null, new IgniteCheckedException("Failed to unmarshal response.", e));

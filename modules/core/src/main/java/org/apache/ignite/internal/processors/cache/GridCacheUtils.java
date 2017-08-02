@@ -42,6 +42,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheAtomicUpdateTimeoutException;
 import org.apache.ignite.cache.CachePartialUpdateException;
 import org.apache.ignite.cache.CacheServerNotFoundException;
@@ -107,6 +108,10 @@ public class GridCacheUtils {
     /** Cheat cache ID for debugging and benchmarking purposes. */
     public static final int cheatCacheId;
 
+    /** Each cache operation removes this amount of entries with expired TTL. */
+    private static final int TTL_BATCH_SIZE = IgniteSystemProperties.getInteger(
+        IgniteSystemProperties.IGNITE_TTL_EXPIRE_BATCH_SIZE, 5);
+
     /*
      *
      */
@@ -144,9 +149,6 @@ public class GridCacheUtils {
 
     /** System cache name. */
     public static final String UTILITY_CACHE_NAME = "ignite-sys-cache";
-
-    /** Atomics system cache name. */
-    public static final String ATOMICS_CACHE_NAME = "ignite-atomics-sys-cache";
 
     /** */
     public static final String CONTINUOUS_QRY_LOG_CATEGORY = "org.apache.ignite.continuous.query";
@@ -854,7 +856,7 @@ public class GridCacheUtils {
     public static void unwindEvicts(GridCacheContext ctx) {
         assert ctx != null;
 
-        ctx.ttl().expire();
+        ctx.ttl().expire(TTL_BATCH_SIZE);
     }
 
     /**
@@ -1093,19 +1095,10 @@ public class GridCacheUtils {
 
     /**
      * @param cacheName Cache name.
-     * @return {@code True} if this is atomics system cache.
-     */
-    public static boolean isAtomicsCache(String cacheName) {
-        return ATOMICS_CACHE_NAME.equals(cacheName);
-    }
-
-    /**
-     * @param cacheName Cache name.
      * @return {@code True} if system cache.
      */
     public static boolean isSystemCache(String cacheName) {
-        return isUtilityCache(cacheName) || isHadoopSystemCache(cacheName) ||
-            isAtomicsCache(cacheName);
+        return isUtilityCache(cacheName) || isHadoopSystemCache(cacheName);
     }
 
     /**

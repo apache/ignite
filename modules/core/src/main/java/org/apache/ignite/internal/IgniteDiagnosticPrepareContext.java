@@ -41,6 +41,7 @@ import static org.apache.ignite.internal.IgniteDiagnosticMessage.TxInfoClosure;
 import static org.apache.ignite.internal.IgniteDiagnosticMessage.dumpCommunicationInfo;
 import static org.apache.ignite.internal.IgniteDiagnosticMessage.dumpExchangeInfo;
 import static org.apache.ignite.internal.IgniteDiagnosticMessage.dumpNodeBasicInfo;
+import static org.apache.ignite.internal.IgniteDiagnosticMessage.dumpPendingCacheMessages;
 
 /**
  * Groups diagnostic closures by node/closure type.
@@ -145,7 +146,8 @@ public class IgniteDiagnosticPrepareContext {
             @Override public void apply(IgniteInternalFuture<String> fut) {
                 synchronized (IgniteDiagnosticPrepareContext.class) {
                     try {
-                        log.info(fut.get());
+                        if (log.isInfoEnabled())
+                            log.info(fut.get());
                     }
                     catch (Exception e) {
                         U.error(log, "Failed to dump diagnostic info: " + e, e);
@@ -192,6 +194,8 @@ public class IgniteDiagnosticPrepareContext {
                 dumpExchangeInfo(sb, ctx);
 
                 sb.append(U.nl());
+
+                dumpPendingCacheMessages(sb, ctx);
 
                 sb.append(commInfo.get(10_000));
 

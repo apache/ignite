@@ -47,7 +47,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntryFactory;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader;
 import org.apache.ignite.internal.processors.cache.extras.GridCacheObsoleteEntryExtras;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -131,7 +131,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
     /** Eviction history. */
     @GridToStringExclude
-    private volatile Map<KeyCacheObject, GridCacheVersion> evictHist = new HashMap<>();
+    private final Map<KeyCacheObject, GridCacheVersion> evictHist = new HashMap<>();
 
     /** Lock. */
     @GridToStringExclude
@@ -157,16 +157,12 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     @GridToStringExclude
     private final CacheDataStore store;
 
-    /** Partition updates. */
-    @GridToStringExclude
-    private final ConcurrentNavigableMap<Long, Boolean> updates = new ConcurrentSkipListMap<>();
-
-    /** Last applied update. */
-    private final AtomicLong lastApplied = new AtomicLong(0);
-
     /** Set if failed to move partition to RENTING state due to reservations, to be checked when
      * reservation is released. */
     private volatile boolean shouldBeRenting;
+
+    /** Set if partition must be re-created and preloaded after eviction. */
+    private boolean reload;
 
     /**
      * @param ctx Context.
@@ -346,44 +342,6 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     }
 
     /**
-     * @return Last applied update.
-     */
-    public long lastAppliedUpdate() {
-        return lastApplied.get();
-    }
-
-    /**
-     * @param cntr Received counter.
-     */
-    public void onUpdateReceived(long cntr) {
-        boolean changed = updates.putIfAbsent(cntr, true) == null;
-
-        if (!changed)
-            return;
-
-        while (true) {
-            Map.Entry<Long, Boolean> entry = updates.firstEntry();
-
-            if (entry == null)
-                return;
-
-            long first = entry.getKey();
-
-            long cntr0 = lastApplied.get();
-
-            if (first <= cntr0)
-                updates.remove(first);
-            else if (first == cntr0 + 1)
-                if (lastApplied.compareAndSet(cntr0, first))
-                    updates.remove(first);
-                else
-                    break;
-            else
-                break;
-        }
-    }
-
-    /**
      * @return If partition is moving or owning or renting.
      */
     public boolean valid() {
@@ -402,12 +360,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
         removeEntry(entry);
 
         // Attempt to evict.
-        try {
-            tryEvict();
-        }
-        catch (NodeStoppingException ignore) {
-            // No-op.
-        }
+        tryEvictAsync(false);
     }
 
     /**
@@ -517,17 +470,11 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
         if (state() != MOVING)
             return false;
 
-        Map<KeyCacheObject, GridCacheVersion> evictHist0 = evictHist;
+        GridCacheVersion ver0 = evictHist.get(key);
 
-        if (evictHist0 != null) {
-            GridCacheVersion ver0 = evictHist0.get(key);
-
-            // Permit preloading if version in history
-            // is missing or less than passed in.
-            return ver0 == null || ver0.isLess(ver);
-        }
-
-        return false;
+        // Permit preloading if version in history
+        // is missing or less than passed in.
+        return ver0 == null || ver0.isLess(ver);
     }
 
     /**
@@ -599,7 +546,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * @param stateToRestore State to restore.
      */
     public void restoreState(GridDhtPartitionState stateToRestore) {
-        state.set(setPartState(state.get(), stateToRestore));
+        state.set(setPartState(state.get(),stateToRestore));
     }
 
     /**
@@ -649,7 +596,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
                     log.debug("Owned partition: " + this);
 
                 // No need to keep history any more.
-                evictHist = null;
+                evictHist.clear();
 
                 return true;
             }
@@ -693,7 +640,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
                     log.debug("Marked partition as LOST: " + this);
 
                 // No need to keep history any more.
-                evictHist = null;
+                evictHist.clear();
 
                 return true;
             }
@@ -701,10 +648,24 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     }
 
     /**
+     * @return {@code True} if partition should be re-created after it is cleared.
+     */
+    public boolean reload() {
+        return reload;
+    }
+
+    /**
+     * @param value {@code reload} flag value.
+     */
+    public void reload(boolean value) {
+        reload = value;
+    }
+
+    /**
      * @param updateSeq Update sequence.
      * @return Future to signal that this node is no longer an owner or backup.
      */
-    IgniteInternalFuture<?> rent(boolean updateSeq) {
+    public IgniteInternalFuture<?> rent(boolean updateSeq) {
         long state = this.state.get();
 
         GridDhtPartitionState partState = getPartState(state);
@@ -731,9 +692,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     /**
      * @param updateSeq Update sequence.
      */
-    void tryEvictAsync(boolean updateSeq) {
-        assert ctx.kernalContext().state().active();
-
+     public void tryEvictAsync(boolean updateSeq) {
         long state = this.state.get();
 
         GridDhtPartitionState partState = getPartState(state);
@@ -868,9 +827,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      */
     private void destroyCacheDataStore() {
         try {
-            CacheDataStore store = dataStore();
-
-            grp.offheap().destroyCacheDataStore(id, store);
+            grp.offheap().destroyCacheDataStore(dataStore());
         }
         catch (IgniteCheckedException e) {
             log.error("Unable to destroy cache data store on partition eviction [id=" + id + "]", e);
@@ -881,12 +838,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      *
      */
     void onUnlock() {
-        try {
-            tryEvict();
-        }
-        catch (NodeStoppingException ignore) {
-            // No-op.
-        }
+        tryEvictAsync(false);
     }
 
     /**
@@ -999,7 +951,11 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
                             true,
                             false);
 
-                        if (cached instanceof GridDhtCacheEntry && ((GridDhtCacheEntry)cached).clearInternal(clearVer, extras)) {
+                        ctx.database().checkpointReadLock();
+
+                        try {if (cached instanceof GridDhtCacheEntry && ((GridDhtCacheEntry)cached).clearInternal(clearVer, extras)) {
+                            removeEntry(cached);
+
                             if (rec) {
                                 hld.cctx.events().addEvent(cached.partition(),
                                     cached.key(),
@@ -1014,8 +970,11 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
                                     null,
                                     null,
                                     null,
-                                    false);
+                                    false);}
                             }
+                        }
+                        finally {
+                            ctx.database().checkpointReadUnlock();
                         }
                     }
                     catch (GridDhtInvalidPartitionException e) {

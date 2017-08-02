@@ -37,10 +37,11 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheStoreCollectionTes
 import org.apache.ignite.internal.processors.cache.PartitionsExchangeOnDiscoveryHistoryOverflowTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheLateAffinityAssignmentNodeJoinValidationTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheLateAffinityAssignmentTest;
-import org.apache.ignite.internal.processors.cache.distributed.IgniteActiveOnStartNodeJoinValidationSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.GridCachePartitionEvictionDuringReadThroughSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheGroupsPartitionLossPolicySelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCachePartitionLossPolicySelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheTxIteratorSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.NotMappedPartitionInTxTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.IgniteCacheAtomicProtocolTest;
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.CacheManualRebalancingTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.IgniteCacheSyncRebalanceModeSelfTest;
@@ -66,7 +67,6 @@ public class IgniteCacheTestSuite5 extends TestSuite {
 
         suite.addTestSuite(CacheLateAffinityAssignmentTest.class);
         suite.addTestSuite(CacheLateAffinityAssignmentNodeJoinValidationTest.class);
-        suite.addTestSuite(IgniteActiveOnStartNodeJoinValidationSelfTest.class);
         suite.addTestSuite(EntryVersionConsistencyReadThroughTest.class);
         suite.addTestSuite(IgniteCacheSyncRebalanceModeSelfTest.class);
 
@@ -93,6 +93,9 @@ public class IgniteCacheTestSuite5 extends TestSuite {
         suite.addTestSuite(PartitionsExchangeOnDiscoveryHistoryOverflowTest.class);
 
         suite.addTestSuite(GridCachePartitionExchangeManagerHistSizeTest.class);
+
+        suite.addTestSuite(GridCachePartitionEvictionDuringReadThroughSelfTest.class);
+        suite.addTestSuite(NotMappedPartitionInTxTest.class);
 
         return suite;
     }

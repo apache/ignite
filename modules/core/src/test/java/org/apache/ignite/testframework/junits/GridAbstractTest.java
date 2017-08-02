@@ -537,6 +537,7 @@ public abstract class GridAbstractTest extends TestCase {
     protected void beforeTestsStarted() throws Exception {
         // Will clean and re-create marshaller directory from scratch.
         U.resolveWorkDirectory(U.defaultWorkDirectory(), "marshaller", true);
+        U.resolveWorkDirectory(U.defaultWorkDirectory(), "binary_meta", true);
     }
 
     /**
@@ -691,12 +692,16 @@ public abstract class GridAbstractTest extends TestCase {
      * @throws Exception If failed.
      */
     protected Ignite startGridsMultiThreaded(int cnt) throws Exception {
-        if (cnt == 1)
-            return startGrids(1);
+        assert cnt > 0 : "Number of grids must be a positive number";
 
-        Ignite ignite = startGridsMultiThreaded(0, cnt);
+        Ignite ignite = startGrids(1);
 
-        checkTopology(cnt);
+        if (cnt > 1) {
+            startGridsMultiThreaded(1, cnt - 1);
+
+            if (checkTopology())
+                checkTopology(cnt);
+        }
 
         return ignite;
     }
@@ -761,7 +766,8 @@ public abstract class GridAbstractTest extends TestCase {
                 Thread.sleep(1000);
         }
 
-        throw new Exception("Failed to wait for proper topology: " + cnt);
+        throw new Exception("Failed to wait for proper topology [expCnt=" + cnt +
+            ", actualTopology=" + grid(0).cluster().nodes() + ']');
     }
 
     /** */
@@ -778,6 +784,17 @@ public abstract class GridAbstractTest extends TestCase {
      */
     protected IgniteEx startGrid(int idx) throws Exception {
         return (IgniteEx)startGrid(getTestIgniteInstanceName(idx));
+    }
+
+    /**
+     * Starts new grid with given configuration.
+     *
+     * @param cfg Ignite configuration.
+     * @return Started grid.
+     * @throws Exception If anything failed.
+     */
+    protected IgniteEx startGrid(IgniteConfiguration cfg) throws Exception {
+        return (IgniteEx)startGrid(cfg.getIgniteInstanceName(), cfg, null);
     }
 
     /**
@@ -1710,7 +1727,8 @@ public abstract class GridAbstractTest extends TestCase {
      * @return {@code True} if the name of the grid indicates that it was the first started (on this JVM).
      */
     protected boolean isFirstGrid(String igniteInstanceName) {
-        return "0".equals(igniteInstanceName.substring(getTestIgniteInstanceName().length()));
+        return igniteInstanceName != null && igniteInstanceName.startsWith(getTestIgniteInstanceName()) &&
+            "0".equals(igniteInstanceName.substring(getTestIgniteInstanceName().length()));
     }
 
     /**
@@ -2084,13 +2102,13 @@ public abstract class GridAbstractTest extends TestCase {
         for (Ignite g : G.allGrids()) {
             final GridKernalContext ctx = ((IgniteKernal)g).context();
 
-            if (ctx.isStopping())
+            if (ctx.isStopping() || !g.active())
                 continue;
 
             AffinityTopologyVersion topVer = ctx.discovery().topologyVersionEx();
             AffinityTopologyVersion exchVer = ctx.cache().context().exchange().readyAffinityVersion();
 
-            if (! topVer.equals(exchVer)) {
+            if (!topVer.equals(exchVer)) {
                 info("Topology version mismatch [node="  + g.name() +
                     ", exchVer=" + exchVer +
                     ", topVer=" + topVer + ']');

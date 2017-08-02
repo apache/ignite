@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.rest.protocols.tcp.redis;
 
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import org.junit.Assert;
@@ -422,24 +421,6 @@ public class RedisProtocolStringSelfTest extends RedisCommonAbstractTest {
         try (Jedis jedis = pool.getResource()) {
             Assert.assertFalse(jedis.exists("nonExistingDelKey"));
             Assert.assertEquals(2, (long)jedis.exists("existsKey1", "existsKey2"));
-        }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testDbSize() throws Exception {
-        try (Jedis jedis = pool.getResource()) {
-            Assert.assertEquals(0, (long)jedis.dbSize());
-
-            jcache().putAll(new HashMap<Integer, Integer>() {
-                {
-                    for (int i = 0; i < 100; i++)
-                        put(i, i);
-                }
-            });
-
-            Assert.assertEquals(100, (long)jedis.dbSize());
         }
     }
 }
