@@ -32,6 +32,9 @@ import org.apache.ignite.internal.processors.odbc.SqlListenerNioListener;
 import org.apache.ignite.internal.processors.odbc.SqlListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.SqlListenerRequest;
 import org.apache.ignite.internal.processors.odbc.SqlListenerResponse;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBatchExecuteRequest;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBatchExecuteResult;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQuery;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryCloseRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteResult;
@@ -286,6 +289,18 @@ public class JdbcThinTcpIo {
      */
     public void queryClose(long qryId) throws IOException, IgniteCheckedException {
         sendRequest(new JdbcQueryCloseRequest(qryId), QUERY_CLOSE_MSG_SIZE);
+    }
+
+    /**
+     * @param schema Schema.
+     * @param batch Batch queries.
+     * @return Result.
+     * @throws IOException On error.
+     * @throws IgniteCheckedException On error.
+     */
+    public JdbcBatchExecuteResult batchExecute(String schema, List<JdbcQuery> batch)
+        throws IOException, IgniteCheckedException {
+        return sendRequest(new JdbcBatchExecuteRequest(schema, batch), QUERY_EXEC_MSG_INIT_CAP * batch.size());
     }
 
     /**
