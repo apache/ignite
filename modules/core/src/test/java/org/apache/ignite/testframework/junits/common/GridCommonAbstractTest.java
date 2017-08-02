@@ -503,8 +503,12 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     protected final Ignite startGridsMultiThreaded(int cnt, boolean awaitPartMapExchange) throws Exception {
         Ignite g = super.startGridsMultiThreaded(cnt);
 
-        if (awaitPartMapExchange)
+        if (awaitPartMapExchange) {
+            if (!g.active())
+                g.active(true);
+
             awaitPartitionMapExchange();
+        }
 
         return g;
     }
@@ -520,7 +524,8 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     /**
      * @param waitEvicts If {@code true} will wait for evictions finished.
      * @param waitNode2PartUpdate If {@code true} will wait for nodes node2part info update finished.
-     * @param nodes Optional nodes.
+     * @param nodes Optional nodes. If {@code null} method will wait for all nodes, for non null collection nodes will
+     *      be filtered
      * @throws InterruptedException If interrupted.
      */
     @SuppressWarnings("BusyWait")
@@ -542,7 +547,8 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     /**
      * @param waitEvicts If {@code true} will wait for evictions finished.
      * @param waitNode2PartUpdate If {@code true} will wait for nodes node2part info update finished.
-     * @param nodes Optional nodes.
+     * @param nodes Optional nodes. If {@code null} method will wait for all nodes, for non null collection nodes will
+     *      be filtered
      * @param printPartState If {@code true} will print partition state if evictions not happened.
      * @throws InterruptedException If interrupted.
      */

@@ -48,7 +48,15 @@ public interface MatrixStorage extends Externalizable, StorageOpsMetrics, Destro
     public int rowSize();
 
     /**
-     * Gets underlying array if {@link StorageOpsMetrics#isArrayBased()} returns {@code true}.
+     * @return Matrix elements storage mode.
+     *
+     * @see StorageConstants
+     */
+    public int storageMode();
+
+    /**
+     * Gets underlying data, if {@link StorageOpsMetrics#isArrayBased()} returns {@code false} this method return
+     * copy of data. The data must be adapted for {@link Blas}.
      *
      * @see StorageOpsMetrics#isArrayBased()
      */

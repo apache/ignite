@@ -59,7 +59,7 @@ public interface IgniteTxState {
     /**
      * @param cctx Awaits for previous async operations on active caches to be completed.
      */
-    public void awaitLastFut(GridCacheSharedContext cctx);
+    public void awaitLastFuture(GridCacheSharedContext cctx);
 
     /**
      * @param cctx Context.

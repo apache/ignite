@@ -130,12 +130,19 @@ class Paragraph {
             while (_.nonNil(cause)) {
                 if (_.nonEmpty(cause.className) &&
                     _.includes(['SQLException', 'JdbcSQLException', 'QueryCancelledException'], JavaTypes.shortClassName(cause.className))) {
-                    this.error.message = cause.message;
+                    this.error.message = cause.message || cause.className;
 
                     break;
                 }
 
                 cause = cause.cause;
+            }
+
+            if (_.isEmpty(this.error.message) && _.nonEmpty(err.className)) {
+                this.error.message = 'Internal cluster error';
+
+                if (_.nonEmpty(err.className))
+                    this.error.message += ': ' + err.className;
             }
         };
     }
@@ -1761,7 +1768,7 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
                     if (_.nonNil(item)) {
                         const clsName = _.isEmpty(item.className) ? '' : '[' + JavaTypes.shortClassName(item.className) + '] ';
 
-                        scope.content.push((scope.content.length > 0 ? tab : '') + clsName + item.message);
+                        scope.content.push((scope.content.length > 0 ? tab : '') + clsName + (item.message || ''));
 
                         addToTrace(item.cause);
 

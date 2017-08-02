@@ -15,18 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+export default class {
+    static $inject = ['$scope', 'uiGridConstants'];
 
-import org.apache.ignite.configuration.IgniteConfiguration;
+    constructor($scope, uiGridConstants) {
+        Object.assign(this, {$scope, uiGridConstants});
+    }
 
-/**
- * Factory JTA integration test using REPLICATED cache.
- */
-public class GridReplicatedCacheJtaFactoryUseSyncSelfTest extends GridReplicatedCacheJtaFactorySelfTest {
-    /** {@inheritDoc} */
-    @Override protected void configureJta(IgniteConfiguration cfg) {
-        super.configureJta(cfg);
+    $onChanges(changes) {
+        if (changes && 'gridApi' in changes && changes.gridApi.currentValue) {
+            this.applyValues();
 
-        cfg.getTransactionConfiguration().setUseJtaSynchronization(true);
+            this.gridApi.grid.registerDataChangeCallback(() => this.applyValues(), [this.uiGridConstants.dataChange.ROW]);
+            this.gridApi.selection.on.rowSelectionChanged(this.$scope, () => this.applyValues());
+        }
+    }
+
+    applyValues() {
+        this.selected = this.gridApi.selection.getSelectedRows().length;
+        this.count = this.gridApi.grid.rows.length;
     }
 }

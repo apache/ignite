@@ -61,6 +61,7 @@ import org.apache.ignite.internal.processors.rest.handlers.GridRestCommandHandle
 import org.apache.ignite.internal.processors.rest.request.GridRestCacheRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
 import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.lang.IgniteClosure2X;
 import org.apache.ignite.internal.util.typedef.CX1;
@@ -79,6 +80,7 @@ import static org.apache.ignite.internal.processors.rest.GridRestCommand.ATOMIC_
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_ADD;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_APPEND;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_CAS;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_CLEAR;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_CONTAINS_KEY;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_CONTAINS_KEYS;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_GET;
@@ -127,6 +129,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         CACHE_REPLACE_VALUE,
         CACHE_GET_AND_REMOVE,
         CACHE_REMOVE_ALL,
+        CACHE_CLEAR,
         CACHE_REPLACE,
         CACHE_CAS,
         CACHE_APPEND,
@@ -541,6 +544,44 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
 
                     fut = executeCommand(req.destinationId(), req.clientId(), cacheName, skipStore, key,
                         new RemoveAllCommand(keys));
+
+                    break;
+                }
+
+                case CACHE_CLEAR: {
+                    Map<Object, Object> map = req0.values();
+
+                    // HashSet wrapping for correct serialization
+                    Set<Object> cacheNames = map == null ?
+                        new HashSet<Object>(ctx.cache().publicCaches()) : new HashSet<>(map.keySet());
+
+                    GridCompoundFuture compFut = new GridCompoundFuture();
+
+                    for (Object cName : cacheNames)
+                        compFut.add(executeCommand(req.destinationId(), req.clientId(), (String)cName, skipStore, key,
+                            new RemoveAllCommand(null)));
+
+                    compFut.markInitialized();
+
+                    fut = compFut.chain(new CX1<GridCompoundFuture<GridCacheRestResponse, ?>, GridRestResponse>() {
+                        @Override public GridRestResponse applyx(
+                            GridCompoundFuture<GridCacheRestResponse, ?> cf) throws IgniteCheckedException {
+                            boolean success = true;
+
+                            for (IgniteInternalFuture<GridCacheRestResponse> f : cf.futures())
+                                if ((Boolean)f.get().getResponse() != true)
+                                    success = false;
+
+                            GridCacheRestResponse resp = new GridCacheRestResponse();
+
+                            if (success)
+                                resp.setResponse(true);
+                            else
+                                resp.setResponse(false);
+
+                            return resp;
+                        }
+                    });
 
                     break;
                 }
