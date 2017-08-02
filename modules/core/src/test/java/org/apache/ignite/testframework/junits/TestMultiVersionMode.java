@@ -18,8 +18,11 @@
 package org.apache.ignite.testframework.junits;
 
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.events.Event;
+import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.lang.IgniteInClosure;
-import org.apache.ignite.plugin.security.compatibility.TestCompatibilityPluginProvider;
+import org.apache.ignite.plugin.compatibility.TestCompatibilityPluginProvider;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /** */
@@ -45,18 +48,13 @@ public class TestMultiVersionMode extends GridCommonAbstractTest {
 
         TestCompatibilityPluginProvider.disable();
     }
-
-    /** {@inheritDoc} */
-    @Override protected boolean isMultiJvm() {
-        return true;
-    }
-
+    
     /** */
     public void testJoinMultiVersionTopology() throws Exception {
         try {
             startGrid(0);
-            
-            startGrid("testMultiVersion", "2.1.0", null);
+
+            startGrid("testMultiVersion", "2.1.0", new ConfigurationPostProcessor());
         }
         finally {
             stopAllGrids();
@@ -66,7 +64,12 @@ public class TestMultiVersionMode extends GridCommonAbstractTest {
     /** */
     private static class ConfigurationPostProcessor implements IgniteInClosure<IgniteConfiguration> {
         @Override public void apply(IgniteConfiguration cfg) {
-            cfg.setLateAffinityAssignment(true);
+            GridTestUtils.setFieldValue(cfg.getCommunicationSpi(), "discoLsnr", new TestDiscoveryListener());
         }
+    }
+
+    /** Discovery listener. */
+    private static class TestDiscoveryListener implements GridLocalEventListener {
+        @Override public void onEvent(Event evt) {}
     }
 }
