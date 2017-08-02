@@ -1510,7 +1510,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
             try {
                 List<ClusterNode> dhtNodes = dht.topology().nodes(cached.partition(), tx.topologyVersion());
 
-                assert dhtNodes.size() > 0 && dhtNodes.get(0).id().equals(cctx.localNodeId()) : dhtNodes;
+                assert !dhtNodes.isEmpty() && dhtNodes.get(0).id().equals(cctx.localNodeId()) : dhtNodes;
 
                 if (log.isDebugEnabled())
                     log.debug("Mapping entry to DHT nodes [nodes=" + U.toShortString(dhtNodes) +
@@ -1531,7 +1531,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
 
                         ClusterNode readerNode = cctx.discovery().node(readerId);
 
-                        if (readerNode == null || dhtNodes.contains(readerNode))
+                        if (readerNode == null || canSkipNearReader(dht, readerNode, dhtNodes))
                             continue;
 
                         if (log.isDebugEnabled())
@@ -1551,6 +1551,27 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 entry.cached(cached);
             }
         }
+    }
+
+    /**
+     * This method checks if we should skip mapping of an entry update to the near reader. We can skip the update
+     * if the reader is a primary or a backup. If the reader is a partition owner, but not a primary or a backup,
+     * we cannot skip the reader update and must attempt to update a near entry anyway.
+     *
+     * @param dhtCache DHT cache to check mapping.
+     * @param readerNode Reader node.
+     * @param dhtNodes Current DHT nodes (primary + backups first and other DHT nodes afterwards).
+     * @return {@code true} if reader is either a primary or a backup.
+     */
+    private boolean canSkipNearReader(GridDhtCacheAdapter<?, ?> dhtCache, ClusterNode readerNode, List<ClusterNode> dhtNodes) {
+        int limit = Math.min(dhtCache.configuration().getBackups() + 1, dhtNodes.size());
+
+        for (int i = 0; i < limit; i++) {
+            if (dhtNodes.get(i).id().equals(readerNode.id()))
+                return true;
+        }
+
+        return false;
     }
 
     /**

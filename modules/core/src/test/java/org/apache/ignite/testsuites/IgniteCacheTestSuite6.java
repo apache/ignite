@@ -20,7 +20,9 @@ package org.apache.ignite.testsuites;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.distributed.CachePartitionStateTest;
 import org.apache.ignite.internal.processors.cache.distributed.GridCachePartitionEvictionDuringReadThroughSelfTest;
-
+import org.apache.ignite.internal.processors.cache.distributed.IgniteOptimisticTxSuspendResumeMultiServerTest;
+import org.apache.ignite.internal.processors.cache.distributed.IgniteOptimisticTxSuspendResumeTest;
+import org.apache.ignite.internal.processors.cache.distributed.IgnitePessimisticTxSuspendResumeTest;
 /**
  * Test suite.
  */
@@ -35,6 +37,9 @@ public class IgniteCacheTestSuite6 extends TestSuite {
         suite.addTestSuite(CachePartitionStateTest.class);
 
         suite.addTestSuite(GridCachePartitionEvictionDuringReadThroughSelfTest.class);
+        suite.addTestSuite(IgniteOptimisticTxSuspendResumeTest.class);
+        suite.addTestSuite(IgniteOptimisticTxSuspendResumeMultiServerTest.class);
+        suite.addTestSuite(IgnitePessimisticTxSuspendResumeTest.class);
 
         return suite;
     }

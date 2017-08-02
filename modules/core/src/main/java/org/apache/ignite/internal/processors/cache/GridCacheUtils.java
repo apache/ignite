@@ -992,6 +992,7 @@ public class GridCacheUtils {
             }
         }
     }
+
     /**
      * @param cfg1 Existing configuration.
      * @param cfg2 Cache configuration to start.
