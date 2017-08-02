@@ -207,6 +207,19 @@
         </repository>
     </repositories>
 
+    <distributionManagement>
+        <repository>
+            <id>gridgain.staging</id>
+            <name>GridGain Release Repository</name>
+            <url>http://www.gridgainsystems.com/nexus/service/local/staging/deploy/maven2</url>
+        </repository>
+        <snapshotRepository>
+            <id>gridgain.staging</id>
+            <name>GridGain Release Repository</name>
+            <url>http://www.gridgainsystems.com/nexus/service/local/staging/deploy/maven2</url>
+        </snapshotRepository>
+    </distributionManagement>
+
     <dependencyManagement>
         <dependencies>
             <dependency>
