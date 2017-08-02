@@ -22,7 +22,7 @@ import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.processors.odbc.SqlListenerUtils;
 
 /**
- * JDBC sql query with parameters.
+ * JDBC SQL query with parameters.
  */
 public class JdbcQuery implements JdbcRawBinarylizable {
     /** Query SQL. */
@@ -35,6 +35,7 @@ public class JdbcQuery implements JdbcRawBinarylizable {
      * Default constructor is used for serialization.
      */
     public JdbcQuery() {
+        // No-op.
     }
 
     /**
@@ -64,9 +65,11 @@ public class JdbcQuery implements JdbcRawBinarylizable {
     @Override public void writeBinary(BinaryWriterExImpl writer) {
         writer.writeString(sql);
 
-        writer.writeInt(args == null ? 0 : args.length);
+        if (args == null || args.length == 0)
+            writer.writeInt(0);
+        else {
+            writer.writeInt(args.length);
 
-        if (args != null) {
             for (Object arg : args)
                 SqlListenerUtils.writeObject(writer, arg, false);
         }
