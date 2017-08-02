@@ -34,11 +34,11 @@ public class CounterSkipContext {
 
     /**
      * @param part Partition.
-     * @param primary Flag of primary node.
+     * @param backup Flag of backup node.
      * @param cntr Filtered counter.
      * @param topVer Topology version.
      */
-    CounterSkipContext(int part, boolean primary, long cntr, AffinityTopologyVersion topVer) {
+    CounterSkipContext(int part, boolean backup, long cntr, AffinityTopologyVersion topVer) {
         entry = new CacheContinuousQueryEntry(0,
             null,
             null,
@@ -46,7 +46,7 @@ public class CounterSkipContext {
             null,
             false,
             part,
-            primary,
+            backup,
             cntr,
             topVer,
             (byte)0);

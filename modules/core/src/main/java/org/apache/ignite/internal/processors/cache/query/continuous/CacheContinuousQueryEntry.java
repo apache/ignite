@@ -28,7 +28,6 @@ import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -52,9 +51,6 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
 
     /** */
     private static final byte KEEP_BINARY = 0b0100;
-
-    /** */
-    private static final byte PRIMARY_NODE = 0b1000;
 
     /** */
     private static final EventType[] EVT_TYPE_VALS = EventType.values();
@@ -129,7 +125,7 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
      * @param oldVal Old value.
      * @param keepBinary Keep binary flag.
      * @param part Partition.
-     * @param primary Flag of primary node.
+     * @param backup Flag of backup node.
      * @param updateCntr Update partition counter.
      * @param topVer Topology version if applicable.
      * @param flags Flags.
@@ -142,7 +138,7 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
         @Nullable CacheObject oldVal,
         boolean keepBinary,
         int part,
-        boolean primary,
+        boolean backup,
         long updateCntr,
         @Nullable AffinityTopologyVersion topVer,
         byte flags) {
@@ -159,8 +155,8 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
         if (keepBinary)
             this.flags |= KEEP_BINARY;
 
-        if (primary)
-            this.flags |= PRIMARY_NODE;
+        if (backup)
+            this.flags |= BACKUP_ENTRY;
     }
 
     /**
@@ -259,7 +255,7 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
             null,
             false,
             part,
-            isPrimary(),
+            isBackup(),
             updateCntr,
             topVer,
             flags);
@@ -284,13 +280,6 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
      */
     boolean isKeepBinary() {
         return (flags & KEEP_BINARY) != 0;
-    }
-
-    /**
-     * @return {@code True} if entry sent by primary node.
-     */
-    boolean isPrimary() {
-        return (flags & PRIMARY_NODE) != 0;
     }
 
     /**

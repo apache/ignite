@@ -91,6 +91,12 @@ public class CacheContinuousQueryIsPrimaryFlagTest extends GridCommonAbstractTes
     /** */
     private CacheMode cacheMode;
 
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        client = false;
+    }
+
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
@@ -159,9 +165,8 @@ public class CacheContinuousQueryIsPrimaryFlagTest extends GridCommonAbstractTes
         Iterable<CacheEntryEvent<?, ?>> it = ((IgniteKernal)grid("server")).internalCache(UTILITY_CACHE_NAME).context()
             .continuousQueries().existingEntries(false, null);
 
-        for (CacheEntryEvent<?, ?> e : it) {
+        for (CacheEntryEvent<?, ?> e : it)
             assertTrue(e.unwrap(CacheQueryEntryEvent.class).isPrimary());
-        }
 
         IgniteCache<Object, Object> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
@@ -176,9 +181,9 @@ public class CacheContinuousQueryIsPrimaryFlagTest extends GridCommonAbstractTes
 
             U.await(lsnr.latch, 5000L, TimeUnit.MILLISECONDS);
 
-            assertEquals(KEYS, lsnr.updEvts.size());
+            assertEquals(KEYS, lsnr.evtsFromListener.size());
 
-            for (CacheQueryEntryEvent evt : lsnr.updEvts)
+            for (CacheQueryEntryEvent evt : lsnr.evtsFromListener)
                 assertTrue(evt.isPrimary());
         }
         finally {
@@ -270,6 +275,8 @@ public class CacheContinuousQueryIsPrimaryFlagTest extends GridCommonAbstractTes
         }, 5000L);
 
         assertTrue(lsnr.isBackup.get());
+
+        assertEquals(1 /** Primary node. */, lsnr.evtsFromListener.size());
 
         cur.close();
     }
@@ -367,14 +374,14 @@ public class CacheContinuousQueryIsPrimaryFlagTest extends GridCommonAbstractTes
 
         boolean check = GridTestUtils.waitForCondition(new PAX() {
             @Override public boolean applyx() throws IgniteCheckedException {
-                return expEvts.size() == lsnr.evts.size();
+                return expEvts.size() == lsnr.evtsFromListener.size();
             }
         }, 5000L);
 
         if (!check) {
             Set<Integer> keys0 = new HashSet<>(keys);
 
-            keys0.removeAll(lsnr.evts.keySet());
+            keys0.removeAll(lsnr.evtsFromListener.keySet());
 
             log.info("Missed events for keys: " + keys0);
 
@@ -384,15 +391,15 @@ public class CacheContinuousQueryIsPrimaryFlagTest extends GridCommonAbstractTes
         final CacheConfiguration ccfg = qryClientCache.getConfiguration(CacheConfiguration.class);
 
         if (ccfg.getCacheMode() == REPLICATED)
-            assertEquals(keys.size() * SRV_NODES, lsnr.evtsFlags.size());
+            assertEquals(keys.size() * SRV_NODES, lsnr.evtsFromFilter.size());
         else
-            assertEquals(keys.size() * (this.backups + 1 /** primary node */), lsnr.evtsFlags.size());
+            assertEquals(keys.size() * (this.backups + 1 /** primary node */), lsnr.evtsFromFilter.size());
 
-        checkFlags(keys.size(), lsnr.evtsFlags, SRV_NODES, ccfg);
+        checkFlags(expEvts, lsnr.evtsFromFilter, SRV_NODES, ccfg);
 
         expEvts.clear();
-        lsnr.evtsFlags.clear();
-        lsnr.evts.clear();
+        lsnr.evtsFromFilter.clear();
+        lsnr.evtsFromListener.clear();
 
         cur.close();
     }
@@ -400,7 +407,7 @@ public class CacheContinuousQueryIsPrimaryFlagTest extends GridCommonAbstractTes
     /**
      *
      */
-    private void checkFlags(int size,
+    private void checkFlags(List<T2<Object, Object>> expEvts,
         GridConcurrentHashSet<CacheQueryEntryEvent> evtsFlags,
         int nodes,
         CacheConfiguration ccfg) {
@@ -408,18 +415,18 @@ public class CacheContinuousQueryIsPrimaryFlagTest extends GridCommonAbstractTes
         int primary = 0;
 
         for (CacheQueryEntryEvent evt : evtsFlags) {
-            if (evt.isPrimary())
+            if (evt.isPrimary() && expEvts.contains(new T2(evt.getKey(), evt.getValue())))
                 primary++;
-            else if (evt.isBackup())
+            else if (evt.isBackup() && expEvts.contains(new T2(evt.getKey(), evt.getValue())))
                 backup++;
         }
 
-        assertEquals(size, primary);
+        assertEquals(expEvts.size(), primary);
 
         if (ccfg.getCacheMode() == REPLICATED)
-            assertEquals(size * (nodes - 1 /** primary node */), backup);
+            assertEquals(expEvts.size() * (nodes - 1 /** primary node */), backup);
         else
-            assertEquals(size * this.backups, backup);
+            assertEquals(expEvts.size() * this.backups, backup);
     }
 
     /**
@@ -436,17 +443,17 @@ public class CacheContinuousQueryIsPrimaryFlagTest extends GridCommonAbstractTes
     public static class CacheEventListenerForFlags implements CacheEntryUpdatedListener<Object, Object>,
         CacheEntryEventSerializableFilter<Object, Object> {
         /** Events. */
-        private final ConcurrentHashMap<Object, CacheEntryEvent<?, ?>> evts = new ConcurrentHashMap<>();
+        private final ConcurrentHashMap<Object, CacheEntryEvent<?, ?>> evtsFromListener = new ConcurrentHashMap<>();
 
         /** Filtred events. */
-        private final static GridConcurrentHashSet<CacheQueryEntryEvent> evtsFlags = new GridConcurrentHashSet<>();
+        private final static GridConcurrentHashSet<CacheQueryEntryEvent> evtsFromFilter = new GridConcurrentHashSet<>();
 
         /** Flag backup node. */
         private volatile AtomicBoolean isBackup = new AtomicBoolean(false);
 
         /** {@inheritDoc} */
         @Override public boolean evaluate(CacheEntryEvent<?, ?> e) throws CacheEntryListenerException {
-            evtsFlags.add(e.unwrap(CacheQueryEntryEvent.class));
+            evtsFromFilter.add(e.unwrap(CacheQueryEntryEvent.class));
 
             return true;
         }
@@ -458,7 +465,7 @@ public class CacheContinuousQueryIsPrimaryFlagTest extends GridCommonAbstractTes
 
                 isBackup.set(e.unwrap(CacheQueryEntryEvent.class).isBackup());
 
-                assertNull(this.evts.put(key, e));
+                assertNull(this.evtsFromListener.put(key, e));
             }
         }
     }
@@ -468,7 +475,7 @@ public class CacheContinuousQueryIsPrimaryFlagTest extends GridCommonAbstractTes
      */
     public static class CacheEventListenerForInitialQuery implements CacheEntryUpdatedListener<Object, Object> {
         /** Updated events. */
-        private final GridConcurrentHashSet<CacheQueryEntryEvent> updEvts = new GridConcurrentHashSet<>();
+        private final GridConcurrentHashSet<CacheQueryEntryEvent> evtsFromListener = new GridConcurrentHashSet<>();
 
         /** Latch. */
         private final CountDownLatch latch = new CountDownLatch(10);
@@ -478,7 +485,7 @@ public class CacheContinuousQueryIsPrimaryFlagTest extends GridCommonAbstractTes
             for (CacheEntryEvent<?, ?> e : evts) {
                 latch.countDown();
 
-                updEvts.add(e.unwrap(CacheQueryEntryEvent.class));
+                evtsFromListener.add(e.unwrap(CacheQueryEntryEvent.class));
             }
         }
     }

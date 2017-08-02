@@ -357,7 +357,7 @@ public class CacheContinuousQueryEventBuffer {
                             e.oldValue(),
                             e.isKeepBinary(),
                             e.partition(),
-                            e.isPrimary(),
+                            e.isBackup(),
                             e.updateCounter(),
                             e.topologyVersion(),
                             e.flags());
@@ -403,7 +403,7 @@ public class CacheContinuousQueryEventBuffer {
                 null,
                 false,
                 part,
-                false,
+                true,
                 cntr,
                 topVer,
                 (byte)0);
