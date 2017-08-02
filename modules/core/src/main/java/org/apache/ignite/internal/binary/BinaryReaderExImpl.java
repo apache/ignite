@@ -1059,6 +1059,8 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
             return BinaryUtils.doReadUtf8EncodedString(in);
         else if (flag == ENCODED_STRING)
             return BinaryUtils.doReadEncodedString(in);
+        else if (flag == NULL)
+            return null;
         else
             throw new BinaryObjectException("Unexpected field type [pos=" + BinaryUtils.positionForHandle(in) +
                 ", expected=" + fieldFlagNames(STRING, ENCODED_STRING) +

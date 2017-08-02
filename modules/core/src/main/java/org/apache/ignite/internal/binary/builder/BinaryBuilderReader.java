@@ -276,7 +276,7 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
             case GridBinaryMarshaller.ENCODED_STRING:
                 pos++; // skip encoding
 
-                len = 1 + 4 + readStringLength();
+                len = 4 + readStringLength();
 
                 break;
 
@@ -602,6 +602,8 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
 
                 plainLazyValLen = 1 + 4 + readStringLength();
 
+                pos--; // nasty hack to preserve correct positioning
+
                 break;
 
             case GridBinaryMarshaller.UUID:
@@ -765,6 +767,10 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
                         pos += 8 + 8;
                     else if (flag == GridBinaryMarshaller.STRING)
                         pos += 4 + readStringLength();
+                    else if (flag == GridBinaryMarshaller.ENCODED_STRING) {
+                        pos += 1; // encoding
+                        pos += 4 + readStringLength();
+                    }
                     else if (flag == GridBinaryMarshaller.DECIMAL) {
                         pos += 4; // scale value
                         pos += 4 + readLength();
