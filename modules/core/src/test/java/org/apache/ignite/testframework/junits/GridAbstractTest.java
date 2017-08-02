@@ -919,7 +919,6 @@ public abstract class GridAbstractTest extends TestCase {
     protected Ignite startGrid(String igniteInstanceName, String ver, IgniteConfiguration cfg,
         IgniteInClosure<IgniteConfiguration> clos, Collection<String> jvmArgs,
         boolean resetDiscovery) throws Exception {
-
         assert !isFirstGrid(igniteInstanceName);
 
         if (cfg == null)
@@ -940,11 +939,11 @@ public abstract class GridAbstractTest extends TestCase {
 
         StringBuilder pathBuilder = new StringBuilder();
 
-        for (String path : paths) {
-            if (path.contains("ignite\\modules\\core\\target\\classes"))
-                continue;
+        String corePathTemplate = "ignite.modules.core.target.classes".replace(".", File.separator);
 
-            pathBuilder.append(path).append(File.pathSeparator);
+        for (String path : paths) {
+            if (!path.contains(corePathTemplate))
+                pathBuilder.append(path).append(File.pathSeparator);
         }
 
         String pathToArtifact = MavenUtils.getPathToIgniteCoreArtifact(ver);

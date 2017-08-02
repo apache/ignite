@@ -59,9 +59,6 @@ public class IgniteNodeRunner {
         File.separator + "igniteConfiguration.tmp_";
 
     /** */
-    private static final String IGNITE_CONFIGURATION_CLOSURE_POSTFIX = "_closure";
-
-    /** */
     private static volatile Ignite ignite;
 
     /**
@@ -75,10 +72,13 @@ public class IgniteNodeRunner {
 
         X.println("Starting Ignite Node... Args=" + Arrays.toString(args));
 
+        if (args.length < 1)
+            throw new IllegalArgumentException("At least one argument expected: [path/to/cfg/file] [path/to/closure/file](optional)");
+
         IgniteConfiguration cfg;
 
         if (args.length > 1)
-            cfg = readCfgFromFileAndDeleteFile(args[0], args[1]);
+            cfg = readCfgAndClosureFromFilesAndDelete(args[0], args[1]);
         else
             cfg = readCfgFromFileAndDeleteFile(args[0]);
 
@@ -148,26 +148,20 @@ public class IgniteNodeRunner {
     /**
      * Stores {@link IgniteInClosure} to file as xml.
      *
-     * @param clos IgniteClosure.
-     * @param cfgFileName A name of file where the configuration was stored.
-     * @return A name of file where the given closure was stored.
-     * @throws IOException If failed.
+     * @param clos IgniteInClosure.
+     * @param fileName A name of file where the closure was stored.
+     * @throws IOException In case of an error.
      */
-    public static String storeToFile(IgniteInClosure clos, String cfgFileName) throws IOException {
-        String fileName = cfgFileName + IGNITE_CONFIGURATION_CLOSURE_POSTFIX;
-
+    public static void storeToFile(IgniteInClosure clos, String fileName) throws IOException {
         try (OutputStream out = new BufferedOutputStream(new FileOutputStream(fileName))) {
             // TODO: serialize anonymous classes in proper way
             new XStream().toXML(clos, out);
         }
-
-        return fileName;
     }
 
     /**
      * Reads configuration and closure from given files names,
-     * applies the closure to the configuration
-     * and delete the files after.
+     * applies the closure to the configuration and delete the files after.
      *
      * @param cfgFileName Configuration file name.
      * @param closFileName Closure file name.
@@ -178,9 +172,8 @@ public class IgniteNodeRunner {
      * @see #storeToFile(IgniteInClosure, String)
      */
     @SuppressWarnings("unchecked")
-    private static IgniteConfiguration readCfgFromFileAndDeleteFile(String cfgFileName, String closFileName)
+    private static IgniteConfiguration readCfgAndClosureFromFilesAndDelete(String cfgFileName, String closFileName)
         throws IOException, IgniteCheckedException {
-
         IgniteConfiguration cfg = readCfgFromFileAndDeleteFile(cfgFileName);
 
         try (BufferedReader closReader = new BufferedReader(new FileReader(closFileName))) {

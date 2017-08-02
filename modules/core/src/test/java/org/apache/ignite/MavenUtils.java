@@ -125,7 +125,7 @@ public class MavenUtils {
      * @throws InterruptedException In case of an error.
      */
     private static void downloadArtifact(String artifact) throws IOException, InterruptedException {
-        X.println("Download an artifact: " + artifact);
+        X.println("Downloading artifact... Identifier: " + artifact);
 
         exec("mvn dependency:get -Dartifact=" + artifact);
 
@@ -143,13 +143,16 @@ public class MavenUtils {
     private static Process exec(String cmd) throws IOException, InterruptedException {
         ProcessBuilder pb = new ProcessBuilder();
         pb.redirectErrorStream(true);
+
         pb.command(U.isWindows() ?
             new String[] {"cmd", "/c", cmd} :
             new String[] {cmd});
 
         Process p = pb.start();
 
-        assert p.waitFor() == 0 : "Command=" + cmd + " couldn't be executed: "
+        int exitCode = p.waitFor();
+
+        assert exitCode == 0 : "Command=" + cmd + " couldn't be executed: "
             + CharStreams.toString(new InputStreamReader(p.getInputStream(), Charsets.UTF_8));
 
         return p;

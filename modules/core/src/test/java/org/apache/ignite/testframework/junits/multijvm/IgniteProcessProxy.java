@@ -78,7 +78,6 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteCallable;
-import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
@@ -154,12 +153,19 @@ public class IgniteProcessProxy implements IgniteEx {
         this.locJvmGrid = locJvmGrid;
         this.log = log.getLogger("jvm-" + id.toString().substring(0, id.toString().indexOf('-')));
 
+        String params;
+
         String cfgFileName = IgniteNodeRunner.storeToFile(cfg.setNodeId(id), resetDiscovery);
 
-        String closFileName = null;
+        params = cfgFileName;
 
-        if (clos != null)
-            closFileName = IgniteNodeRunner.storeToFile(clos, cfgFileName);
+        if (clos != null) {
+            String closFileName = cfgFileName + "_closure";
+
+            IgniteNodeRunner.storeToFile(clos, closFileName);
+
+            params += " " + closFileName;
+        }
 
         Collection<String> filteredJvmArgs = jvmArgs;
 
@@ -187,11 +193,6 @@ public class IgniteProcessProxy implements IgniteEx {
 
         if (locJvmGrid != null)
             locJvmGrid.events().localListen(new NodeStartedListener(id, rmtNodeStartedLatch), EventType.EVT_NODE_JOINED);
-
-        String params = cfgFileName;
-
-        if (closFileName != null)
-            params += " " + closFileName;
 
         proc = GridJavaProcess.exec(
             IgniteNodeRunner.class.getCanonicalName(),
