@@ -34,6 +34,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.affinity.AffinityCentralizedFunction;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
@@ -49,8 +50,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
-import org.apache.ignite.IgniteSystemProperties;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_AFFINITY_HISTORY_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
@@ -298,8 +297,7 @@ public class GridAffinityAssignmentCache {
 
         assert assignment != null;
 
-        if (!cacheOrGrpName.equals("ignite-sys-cache"))
-            printDistribution(assignment, sorted, cacheOrGrpName, ctx.localNodeId().toString());
+        printDistribution(assignment, sorted, cacheOrGrpName, ctx.localNodeId().toString());
 
         idealAssignment = assignment;
 
@@ -309,7 +307,10 @@ public class GridAffinityAssignmentCache {
         return assignment;
     }
 
+    //TODO Overview
     /**
+     * Overview
+     *
      * @param partitionsByNodes Affinity result.
      * @param nodes Topology.
      * @param cacheName
@@ -317,10 +318,22 @@ public class GridAffinityAssignmentCache {
      */
     private void printDistribution(List<List<ClusterNode>> partitionsByNodes,
         Collection<ClusterNode> nodes, String cacheName, String localNodeID) {
+        String ignitePartDistribution = System.getProperty(IgniteSystemProperties.IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD);
+
+        if (ignitePartDistribution == null)
+            return;
+
+        System.out.println("====" + partitionsByNodes.size());
+        for (List<ClusterNode> clusterNodeList : partitionsByNodes) {
+            System.out.println("====");
+            for (ClusterNode node : clusterNodeList) {
+                System.out.println(node.id());
+            }
+        }
+
+        log.info("Partition map has been built (distribution is even)");
 
         int[] nodesParts = freqDistribution(partitionsByNodes, nodes);
-
-        String ignitePartDistribution = System.getProperty(IgniteSystemProperties.IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD);
 
         if (nodesParts.length != 0) {
 
@@ -357,7 +370,7 @@ public class GridAffinityAssignmentCache {
      * Rows correspond to the nodes.
      *
      * @param partitionsByNodes Affinity result.
-     * @param nodes Topology.
+     * @param nodes All nodes for current topology.
      * @return Frequency distribution array with counts of partitions on node.
      */
     private int[] freqDistribution(List<List<ClusterNode>> partitionsByNodes,
