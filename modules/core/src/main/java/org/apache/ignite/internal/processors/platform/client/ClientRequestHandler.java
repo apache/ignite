@@ -42,9 +42,7 @@ public class ClientRequestHandler implements SqlListenerRequestHandler {
 
     /** {@inheritDoc} */
     @Override public SqlListenerResponse handle(SqlListenerRequest req) {
-        ClientRequest req0 = (ClientRequest)req;
-
-        return req0.process(ctx);
+        return ((ClientRequest)req).process(ctx);
     }
 
     /** {@inheritDoc} */

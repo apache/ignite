@@ -35,6 +35,7 @@ class ClientRequest extends SqlListenerRequest {
      */
     ClientRequest(BinaryRawReader reader) {
         requestId = reader.readInt();
+        reader.readByte();  //  Flags: Compression, etc.
     }
 
     /**

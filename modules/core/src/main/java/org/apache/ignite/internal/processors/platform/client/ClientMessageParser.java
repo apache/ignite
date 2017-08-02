@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.platform.client;
 
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
@@ -60,8 +61,6 @@ public class ClientMessageParser implements SqlListenerMessageParser {
 
         short opCode = reader.readShort();
 
-        reader.readByte();  //  Flags: Compression, etc.
-
         switch (opCode) {
             case OP_CACHE_GET: {
                 return new ClientGetRequest(reader);
@@ -75,7 +74,9 @@ public class ClientMessageParser implements SqlListenerMessageParser {
     @Override public byte[] encode(SqlListenerResponse resp) {
         BinaryHeapOutputStream outStream = new BinaryHeapOutputStream(32);
 
-        ((ClientResponse)resp).encode(marsh.writer(outStream));
+        BinaryRawWriter writer = marsh.writer(outStream);
+
+        ((ClientResponse)resp).encode(writer);
 
         return outStream.array();
     }
