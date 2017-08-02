@@ -36,7 +36,7 @@ namespace Apache.Ignite.Core.Tests.Client
         /// Tests the socket handshake connection.
         /// </summary>
         [Test]
-        public void TestHandshake()
+        public void TestCacheGet()
         {
             var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
