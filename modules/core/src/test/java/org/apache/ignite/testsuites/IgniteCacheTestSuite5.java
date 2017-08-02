@@ -94,7 +94,6 @@ public class IgniteCacheTestSuite5 extends TestSuite {
 
         suite.addTestSuite(GridCachePartitionExchangeManagerHistSizeTest.class);
 
-        suite.addTestSuite(GridCachePartitionEvictionDuringReadThroughSelfTest.class);
         suite.addTestSuite(NotMappedPartitionInTxTest.class);
 
         return suite;
