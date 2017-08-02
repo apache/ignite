@@ -44,5 +44,6 @@ class ClientResponse extends SqlListenerResponse {
      */
     public void encode(BinaryRawWriter writer) {
         writer.writeInt(requestId);
+        writer.writeByte((byte)0);  // Flags (compression, etc);
     }
 }

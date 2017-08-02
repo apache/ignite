@@ -61,8 +61,9 @@ namespace Apache.Ignite.Core.Tests.Client
                 // Cache get.
                 SendRequest(sock, stream =>
                 {
-                    stream.WriteByte(0); // Flags
                     stream.WriteShort(1);  // OP_GET
+                    stream.WriteByte(0); // Flags (compression, etc)
+                    stream.WriteInt(1);  // Request id.
                     var cacheId = BinaryUtils.GetStringHashCode(cache.Name);
                     stream.WriteInt(cacheId);
                     stream.WriteByte(0);  // Flags (withSkipStore, etc)
@@ -70,18 +71,20 @@ namespace Apache.Ignite.Core.Tests.Client
                     var writer = marsh.StartMarshal(stream);
 
                     writer.WriteObject(1);  // Key
-                }, 1);
+                });
 
-                var msg = ReceiveMessage(sock, 1);
+                var msg = ReceiveMessage(sock);
                 
                 using (var stream = new BinaryHeapStream(msg))
                 {
                     var reader = marsh.StartUnmarshal(stream);
 
+                    int requestId = reader.ReadInt();
+                    Assert.AreEqual(1, requestId);
+
                     reader.ReadByte(); // Flags
 
                     var res = reader.ReadObject<string>();
-
                     Assert.AreEqual(cache[1], res);
                 }
             }
@@ -119,22 +122,14 @@ namespace Apache.Ignite.Core.Tests.Client
         /// <summary>
         /// Receives the message.
         /// </summary>
-        private static byte[] ReceiveMessage(Socket sock, int? requestId = null)
+        private static byte[] ReceiveMessage(Socket sock)
         {
-            var buf = new byte[requestId == null ? 4 : 8];
+            var buf = new byte[4];
             sock.Receive(buf);
 
             using (var stream = new BinaryHeapStream(buf))
             {
                 var size = stream.ReadInt();
-
-                if (requestId != null)
-                {
-                    var id = stream.ReadInt();
-                    Assert.AreEqual(requestId, id);
-                    size -= 4;
-                }
-
                 buf = new byte[size];
                 sock.Receive(buf);
                 return buf;
@@ -144,16 +139,11 @@ namespace Apache.Ignite.Core.Tests.Client
         /// <summary>
         /// Sends the request.
         /// </summary>
-        private static int SendRequest(Socket sock, Action<BinaryHeapStream> writeAction, int? requestId = null)
+        private static int SendRequest(Socket sock, Action<BinaryHeapStream> writeAction)
         {
             using (var stream = new BinaryHeapStream(128))
             {
                 stream.WriteInt(0);  // Reserve message size.
-
-                if (requestId != null)
-                {
-                    stream.WriteInt(requestId.Value);
-                }
 
                 writeAction(stream);
 
