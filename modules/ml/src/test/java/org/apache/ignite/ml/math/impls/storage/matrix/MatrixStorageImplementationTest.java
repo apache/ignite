@@ -28,7 +28,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * Unit tests for {@link MatrixStorage} implementations.
  *
- * TODO: add attribute tests.
+ * TODO: IGNITE-5723, add attribute tests.
  */
 public class MatrixStorageImplementationTest extends ExternalizeTest<MatrixStorage> {
     /**

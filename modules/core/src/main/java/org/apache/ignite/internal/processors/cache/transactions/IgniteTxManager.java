@@ -863,7 +863,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
                     GridNearCacheEntry e = near.peekExx(entry.key());
 
-                    if (e != null && e.markObsoleteIfEmpty(tx.xidVersion()))
+                    if (e != null && e.markObsoleteIfEmpty(null))
                         near.removeEntry(e);
                 }
             }
@@ -1191,6 +1191,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
             throw new IgniteCheckedException("Missing commit version (consider increasing " +
                 IGNITE_MAX_COMPLETED_TX_COUNT + " system property) [ver=" + tx.xidVersion() +
+                ", committed0=" + committed0 +
                 ", tx=" + tx.getClass().getSimpleName() + ']');
         }
 
@@ -2422,7 +2423,12 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                     log.debug("Optimistic failure while committing prepared transaction (will rollback): " +
                         tx);
 
-                tx.rollbackAsync();
+                try {
+                    tx.rollbackAsync();
+                }
+                catch (Throwable e) {
+                    U.error(log, "Failed to automatically rollback transaction: " + tx, e);
+                }
             }
             catch (IgniteCheckedException e) {
                 U.error(log, "Failed to commit transaction during failover: " + tx, e);
