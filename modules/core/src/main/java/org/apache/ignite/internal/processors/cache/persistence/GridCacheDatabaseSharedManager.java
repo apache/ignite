@@ -1626,7 +1626,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         switch (dataEntry.op()) {
             case CREATE:
             case UPDATE:
-                log.warning("Update " + reference);
                 cacheCtx.offheap().update(
                     cacheCtx,
                     dataEntry.key(),

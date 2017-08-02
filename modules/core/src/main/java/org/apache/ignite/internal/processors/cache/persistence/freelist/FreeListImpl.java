@@ -107,24 +107,8 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
 
             if (updated && needWalDeltaRecord(pageId, page, walPlc)) {
                 assert row.reference() != null;
-                System.out.println("Delta = " + row.reference());
+
                 wal.log(new DataPageUpdateRecord(grpId, pageId, itemId, rowSize, row.reference()));
-/*
-                // TODO This record must contain only a reference to a logical WAL record with the actual data.
-                byte[] payload = new byte[rowSize];
-
-                DataPagePayload data = io.readPayload(pageAddr, itemId, pageSize());
-
-                assert data.payloadSize() == rowSize;
-
-                PageUtils.getBytes(pageAddr, data.offset(), payload, 0, rowSize);
-
-                wal.log(new DataPageUpdateRecord(
-                    cacheId,
-                    pageId,
-                    itemId,
-                    payload));
-*/
             }
 
             return updated;
@@ -197,23 +181,8 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
 
             if (needWalDeltaRecord(pageId, page, null)) {
                 assert row.reference() != null;
-                System.out.println("Delta = " + row.reference());
+
                 wal.log(new DataPageInsertRecord(grpId, pageId, rowSize, row.reference()));
-/*
-                // TODO IGNITE-5829 This record must contain only a reference to a logical WAL record with the actual data.
-                byte[] payload = new byte[rowSize];
-
-                DataPagePayload data = io.readPayload(pageAddr, PageIdUtils.itemId(row.link()), pageSize());
-
-                assert data.payloadSize() == rowSize;
-
-                PageUtils.getBytes(pageAddr, data.offset(), payload, 0, rowSize);
-
-                wal.log(new DataPageInsertRecord(
-                    grpId,
-                    pageId,
-                    payload));
-*/
             }
 
             return rowSize;
@@ -248,18 +217,8 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
 
             if (needWalDeltaRecord(pageId, page, null)) {
                 assert row.reference() != null;
-                System.out.println("Delta = " + row.reference());
+
                 wal.log(new DataPageInsertFragmentRecord(grpId, pageId, payloadSize, lastLink, row.reference()));
-/*
-                // TODO IGNITE-5829 This record must contain only a reference to a logical WAL record with the actual data.
-                byte[] payload = new byte[payloadSize];
-
-                DataPagePayload data = io.readPayload(pageAddr, PageIdUtils.itemId(row.link()), pageSize());
-
-                PageUtils.getBytes(pageAddr, data.offset(), payload, 0, payloadSize);
-
-                wal.log(new DataPageInsertFragmentRecord(grpId, pageId, payload, lastLink));
-*/
             }
 
             return written + payloadSize;
