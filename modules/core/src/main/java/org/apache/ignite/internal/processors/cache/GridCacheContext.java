@@ -1813,7 +1813,8 @@ public class GridCacheContext<K, V> implements Externalizable {
     public void validateKeyAndValue(KeyCacheObject key, CacheObject val) throws IgniteCheckedException {
         try {
             ctx.query().validateKeyAndValue(cacheName, key, val);
-        } catch (RuntimeException e) {
+        }
+        catch (RuntimeException e) {
             throw U.cast(e);
         }
     }

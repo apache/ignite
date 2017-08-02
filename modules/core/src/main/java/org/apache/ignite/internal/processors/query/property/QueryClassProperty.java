@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.property;
 
-import java.sql.SQLException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
@@ -88,7 +87,7 @@ public class QueryClassProperty implements GridQueryProperty {
     /** {@inheritDoc} */
     @Override public void setValue(Object key, Object val, Object propVal) throws IgniteCheckedException {
         if (notNull && propVal == null)
-            throw new IgniteSQLException("Null value is not allowed for field '" + name() + "'",
+            throw new IgniteSQLException("Null value is not allowed for field: " + name(),
                 IgniteQueryErrorCode.NULL_VALUE);
 
         Object x = unwrap(this.key ? key : val);
@@ -152,7 +151,7 @@ public class QueryClassProperty implements GridQueryProperty {
     /** {@inheritDoc} */
     @Override public void validate(Object key, Object val) throws IgniteCheckedException {
         if (value(key, val) == null)
-            throw new IgniteSQLException("Null value is not allowed for field '" + name() + "'",
+            throw new IgniteSQLException("Null value is not allowed for field: " + name(),
                 IgniteQueryErrorCode.NULL_VALUE);
     }
 }

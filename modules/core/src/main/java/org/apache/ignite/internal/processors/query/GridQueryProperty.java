@@ -77,7 +77,7 @@ public interface GridQueryProperty {
      *
      * @param key Key.
      * @param val Value.
-     * @throws IgniteCheckedException, if error happens.
+     * @throws IgniteCheckedException If validation failed.
      */
     public void validate(Object key, Object val) throws IgniteCheckedException;
 }

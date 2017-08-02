@@ -671,7 +671,7 @@ public class QueryUtils {
      * @return Binary property.
      */
     public static QueryBinaryProperty buildBinaryProperty(GridKernalContext ctx, String pathStr, Class<?> resType,
-                                     Map<String, String> aliases, @Nullable Boolean isKeyField, boolean notNull) throws IgniteCheckedException {
+        Map<String, String> aliases, @Nullable Boolean isKeyField, boolean notNull) throws IgniteCheckedException {
         String[] path = pathStr.split("\\.");
 
         QueryBinaryProperty res = null;
