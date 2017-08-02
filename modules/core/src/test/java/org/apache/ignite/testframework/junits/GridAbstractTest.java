@@ -698,7 +698,9 @@ public abstract class GridAbstractTest extends TestCase {
 
         if (cnt > 1) {
             startGridsMultiThreaded(1, cnt - 1);
-            checkTopology(cnt);
+
+            if (checkTopology())
+                checkTopology(cnt);
         }
 
         return ignite;
@@ -764,7 +766,8 @@ public abstract class GridAbstractTest extends TestCase {
                 Thread.sleep(1000);
         }
 
-        throw new Exception("Failed to wait for proper topology: " + cnt);
+        throw new Exception("Failed to wait for proper topology [expCnt=" + cnt +
+            ", actualTopology=" + grid(0).cluster().nodes() + ']');
     }
 
     /** */

@@ -34,9 +34,8 @@ angular
         .state('demo.resume', {
             url: '/resume',
             permission: 'demo',
-            controller: ['$state', ($state) => {
-                $state.go('base.configuration.tabs.advanced.clusters');
-            }],
+            redirectTo: 'base.configuration.tabs',
+            unsaved: true,
             tfMetaTags: {
                 title: 'Demo resume'
             }
@@ -44,15 +43,18 @@ angular
         .state('demo.reset', {
             url: '/reset',
             permission: 'demo',
-            controller: ['$state', '$http', 'IgniteMessages', ($state, $http, Messages) => {
-                $http.post('/api/v1/demo/reset')
-                    .then(() => $state.go('base.configuration.tabs.advanced.clusters'))
-                    .catch((res) => {
-                        $state.go('base.configuration.tabs.advanced.clusters');
+            redirectTo: (trans) => {
+                const $http = trans.injector().get('$http');
 
-                        Messages.showError(res);
+                return $http.post('/api/v1/demo/reset')
+                    .then(() => 'base.configuration.tabs')
+                    .catch((err) => {
+                        trans.injector().get('IgniteMessages').showError(err);
+
+                        return 'base.configuration.tabs';
                     });
-            }],
+            },
+            unsaved: true,
             tfMetaTags: {
                 title: 'Demo reset'
             }

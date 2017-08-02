@@ -78,7 +78,8 @@ igniteConsoleCfg.config(['$selectProvider', ($selectProvider) => {
         noneText: 'Clear All',
         template: '<bs-select-menu></bs-select-menu>',
         iconCheckmark: 'fa fa-check',
-        caretHtml: ''
+        caretHtml: '',
+        animation: ''
     });
 }]);
 
