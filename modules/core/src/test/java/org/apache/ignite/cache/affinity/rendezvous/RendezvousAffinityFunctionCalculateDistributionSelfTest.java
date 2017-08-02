@@ -25,7 +25,6 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.affinity.AffinityFunctionContext;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -50,10 +49,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  * Tests for {@link RendezvousAffinityFunction}.
  */
 public class RendezvousAffinityFunctionCalculateDistributionSelfTest extends GridCommonAbstractTest {
-    @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
-    }
-
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
@@ -62,7 +57,7 @@ public class RendezvousAffinityFunctionCalculateDistributionSelfTest extends Gri
     }
 
     /** */
-    private int backups = 3;
+    private int backups = 2;
 
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
@@ -104,33 +99,28 @@ public class RendezvousAffinityFunctionCalculateDistributionSelfTest extends Gri
     public void testDistributionCalculationOkMessage() throws Exception {
         System.setProperty(IgniteSystemProperties.IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD, String.valueOf(10));
 
-        File file = new File(home() + "/work/log/ignite.log");
-
-        new PrintWriter(file).close();
-
-        Ignite ignite = startGridsMultiThreaded(2);
+        Ignite ignite = startGrids(3);
 
         awaitPartitionMapExchange();
 
-        ignite.getOrCreateCache(DEFAULT_CACHE_NAME);
+        final GridStringLogger log = new GridStringLogger(false, this.log);
 
-        Affinity<Object> aff = ignite.affinity(DEFAULT_CACHE_NAME);
+        GridCacheProcessor proc = ((IgniteKernal)ignite).context().cache();
 
-        AffinityFunctionContext ctx =
-            new GridAffinityFunctionContextImpl(new ArrayList<>(ignite.cluster().nodes()), null, null,
-                new AffinityTopologyVersion(2), backups);
+        for (GridCacheContext cctx : proc.context().cacheContexts()) {
+            GridAffinityAssignmentCache aff = GridTestUtils.getFieldValue(cctx.affinity(), "aff");
 
-//        affinityFunction().assignPartitions(ctx);
+            GridTestUtils.setFieldValue(aff, "log", log);
+        }
 
-//        assertTrue(FileUtils.readFileToString(file).contains("Partition map has been built (distribution is not even for caches) [cacheName=ignite-atomics-sys-cache, Primary nodeId="
-//            + grid(1).configuration().getNodeId() + ", totalPartitionsCount=1024 percentageOfTotalPartsCount=51%, parts=524]"));
-//
-//        assertTrue(FileUtils.readFileToString(file).contains("Partition map has been built (distribution is not even for caches) [cacheName=ignite-atomics-sys-cache, Primary nodeId="
-//            + grid(0).configuration().getNodeId() + ", totalPartitionsCount=1024 percentageOfTotalPartsCount=49%, parts=500]"));
+        // fillcache affinity
+
+        startGrid(3);
 
         String res = log.toString();
 
-        assertTrue(res.contains("/* PUBLIC.RANGE_INDEX */"));
+        assertTrue(res.contains("Partition map has been built (distribution is even)"));
+        //TODO проверка второго типа сообщений
     }
 
     /**
