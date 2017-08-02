@@ -1166,9 +1166,9 @@
                                 <configuration>
                                     <failOnError>false</failOnError>
                                     <target>
-                                        <move todir="${basedir}/../module-temp" preservelastmodified="true">
-                                            <fileset dir="${basedir}"/>
-                                            <include name="**/*.jar"/>
+                                        <move todir="${basedir}/../module-temp/target" preservelastmodified="true">
+                                            <fileset dir="${basedir}/target"/>
+                                            <include name="**/*.*"/>
                                         </move>
 
                                     </target>
@@ -1183,9 +1183,9 @@
                                 <configuration>
                                     <failOnError>false</failOnError>
                                     <target>
-                                        <move todir="${basedir}">
-                                            <fileset dir="${basedir}/../module-temp" preservelastmodified="true"/>
-                                            <include name="**/*.jar"/>
+                                        <move todir="${basedir}/target">
+                                            <fileset dir="${basedir}/../module-temp/target" preservelastmodified="true"/>
+                                            <include name="**/*.*"/>
                                         </move>
                                         <delete dir="${basedir}/../module-temp"/>
                                     </target>
