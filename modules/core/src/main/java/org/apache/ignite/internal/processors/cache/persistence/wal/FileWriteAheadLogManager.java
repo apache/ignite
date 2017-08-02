@@ -55,16 +55,13 @@ import org.apache.ignite.internal.pagemem.wal.StorageException;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
-import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
-import org.apache.ignite.internal.pagemem.wal.record.WALReferenceAwareRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.PersistenceMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
-import org.apache.ignite.internal.processors.cache.persistence.wal.link.DataRecordWALReferenceLinker;
 import org.apache.ignite.internal.processors.cache.persistence.wal.record.HeaderRecord;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
@@ -215,14 +212,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      * Should be cancelled at shutdown
      */
     @Nullable private volatile GridTimeoutObject nextAutoArchiveTimeoutObj;
-
-    /** Class to link {@link DataRecord} entries WAL reference with {@link WALReferenceAwareRecord} records. */
-    private final ThreadLocal<DataRecordWALReferenceLinker> linker = new ThreadLocal<DataRecordWALReferenceLinker>() {
-        @Override
-        protected DataRecordWALReferenceLinker initialValue() {
-            return new DataRecordWALReferenceLinker();
-        }
-    };
 
     /**
      * @param ctx Kernal context.
@@ -494,12 +483,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         if (currWrHandle == null)
             return null;
 
-        // Link physical record with DataRecord entry.
-        if (record instanceof WALReferenceAwareRecord) {
-            WALReferenceAwareRecord referenceRecord = (WALReferenceAwareRecord) record;
-            linker.get().linkReference(referenceRecord);
-        }
-
         // Need to calculate record size first.
         record.size(serializer.size(record));
 
@@ -525,12 +508,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             if (isStopping())
                 throw new IgniteCheckedException("Stopping.");
-        }
-
-        // Re-initialize linker with new DataRecord.
-        if (record instanceof DataRecord) {
-            DataRecord dataRecord = (DataRecord) record;
-            linker.get().init(dataRecord, result);
         }
 
         return result;

@@ -106,7 +106,9 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
             evictionTracker.touchPage(pageId);
 
             if (updated && needWalDeltaRecord(pageId, page, walPlc)) {
-                wal.log(new DataPageUpdateRecord(grpId, pageId, itemId, rowSize));
+                assert row.reference() != null;
+                System.out.println("Delta = " + row.reference());
+                wal.log(new DataPageUpdateRecord(grpId, pageId, itemId, rowSize, row.reference()));
 /*
                 // TODO This record must contain only a reference to a logical WAL record with the actual data.
                 byte[] payload = new byte[rowSize];
@@ -194,7 +196,9 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
             io.addRow(pageAddr, row, rowSize, pageSize());
 
             if (needWalDeltaRecord(pageId, page, null)) {
-                wal.log(new DataPageInsertRecord(grpId, pageId, rowSize));
+                assert row.reference() != null;
+                System.out.println("Delta = " + row.reference());
+                wal.log(new DataPageInsertRecord(grpId, pageId, rowSize, row.reference()));
 /*
                 // TODO IGNITE-5829 This record must contain only a reference to a logical WAL record with the actual data.
                 byte[] payload = new byte[rowSize];
@@ -243,7 +247,9 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
             assert payloadSize > 0 : payloadSize;
 
             if (needWalDeltaRecord(pageId, page, null)) {
-                wal.log(new DataPageInsertFragmentRecord(grpId, pageId, payloadSize, lastLink));
+                assert row.reference() != null;
+                System.out.println("Delta = " + row.reference());
+                wal.log(new DataPageInsertFragmentRecord(grpId, pageId, payloadSize, lastLink, row.reference()));
 /*
                 // TODO IGNITE-5829 This record must contain only a reference to a logical WAL record with the actual data.
                 byte[] payload = new byte[payloadSize];

@@ -20,12 +20,13 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.Map;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.RootPage;
 import org.apache.ignite.internal.processors.cache.persistence.RowStore;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.IgniteTree;
@@ -180,7 +181,8 @@ public interface IgniteCacheOffheapManager {
         GridCacheVersion ver,
         long expireTime,
         GridDhtLocalPartition part,
-        @Nullable CacheDataRow oldRow
+        @Nullable CacheDataRow oldRow,
+        WALPointer reference
     ) throws IgniteCheckedException;
 
     /**
@@ -432,7 +434,8 @@ public interface IgniteCacheOffheapManager {
             CacheObject val,
             GridCacheVersion ver,
             long expireTime,
-            @Nullable CacheDataRow oldRow) throws IgniteCheckedException;
+            @Nullable CacheDataRow oldRow,
+            @Nullable WALPointer reference) throws IgniteCheckedException;
 
         /**
          * @param cctx Cache context.
@@ -449,7 +452,8 @@ public interface IgniteCacheOffheapManager {
             CacheObject val,
             GridCacheVersion ver,
             long expireTime,
-            @Nullable CacheDataRow oldRow) throws IgniteCheckedException;
+            @Nullable CacheDataRow oldRow,
+            WALPointer reference) throws IgniteCheckedException;
 
         /**
          * @param cctx Cache context.

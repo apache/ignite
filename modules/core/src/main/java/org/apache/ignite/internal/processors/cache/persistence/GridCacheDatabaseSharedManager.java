@@ -56,9 +56,6 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import javax.management.InstanceNotFoundException;
-import javax.management.JMException;
-import javax.management.MBeanRegistrationException;
 import javax.management.ObjectName;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -1482,6 +1479,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             while (it.hasNextX()) {
                 IgniteBiTuple<WALPointer, WALRecord> next = it.nextX();
 
+                WALPointer reference = next.get1();
                 WALRecord rec = next.get2();
 
                 switch (rec.type()) {
@@ -1493,7 +1491,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                             GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
 
-                            applyUpdate(cacheCtx, dataEntry);
+                            applyUpdate(cacheCtx, dataEntry, reference);
 
                             applied++;
                         }
@@ -1619,14 +1617,16 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /**
      * @param cacheCtx Cache context to apply an update.
      * @param dataEntry Data entry to apply.
+     * @param reference WAL reference to DataRecord.
      */
-    private void applyUpdate(GridCacheContext cacheCtx, DataEntry dataEntry) throws IgniteCheckedException {
+    private void applyUpdate(GridCacheContext cacheCtx, DataEntry dataEntry, WALPointer reference) throws IgniteCheckedException {
         GridDhtLocalPartition locPart = cacheCtx.topology()
             .localPartition(dataEntry.partitionId(), AffinityTopologyVersion.NONE, true);
 
         switch (dataEntry.op()) {
             case CREATE:
             case UPDATE:
+                log.warning("Update " + reference);
                 cacheCtx.offheap().update(
                     cacheCtx,
                     dataEntry.key(),
@@ -1634,7 +1634,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     dataEntry.writeVersion(),
                     0L,
                     locPart,
-                    null);
+                    null,
+                    reference);
 
                 if (dataEntry.partitionCounter() != 0)
                     cacheCtx.offheap().onPartitionInitialCounterUpdated(dataEntry.partitionId(), dataEntry.partitionCounter());

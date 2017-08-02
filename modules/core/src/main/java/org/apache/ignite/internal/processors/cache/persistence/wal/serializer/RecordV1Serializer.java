@@ -820,12 +820,9 @@ public class RecordV1Serializer implements RecordSerializer {
 
                 int payloadSize = in.readInt();
 
-                WALPointer pointer = FileWALPointer.read(in);
+                WALPointer reference = FileWALPointer.read(in);
 
-                DataPageInsertRecord insertRecord = new DataPageInsertRecord(cacheId, pageId, payloadSize);
-                insertRecord.reference(pointer);
-
-                res = insertRecord;
+                res = new DataPageInsertRecord(cacheId, pageId, payloadSize, reference);
 
                 break;
             }
@@ -838,12 +835,9 @@ public class RecordV1Serializer implements RecordSerializer {
 
                 int payloadSize = in.readInt();
 
-                WALPointer pointer = FileWALPointer.read(in);
+                WALPointer reference = FileWALPointer.read(in);
 
-                DataPageUpdateRecord updateRecord = new DataPageUpdateRecord(cacheId, pageId, itemId, payloadSize);
-                updateRecord.reference(pointer);
-
-                res = updateRecord;
+                res = new DataPageUpdateRecord(cacheId, pageId, itemId, payloadSize, reference);
 
                 break;
             }
@@ -856,12 +850,9 @@ public class RecordV1Serializer implements RecordSerializer {
 
                 int payloadSize = in.readInt();
 
-                WALPointer pointer = FileWALPointer.read(in);
+                WALPointer reference = FileWALPointer.read(in);
 
-                DataPageInsertFragmentRecord fragmentRecord = new DataPageInsertFragmentRecord(cacheId, pageId, payloadSize, lastLink);
-                fragmentRecord.reference(pointer);
-
-                res = fragmentRecord;
+                res = new DataPageInsertFragmentRecord(cacheId, pageId, payloadSize, lastLink, reference);
 
                 break;
             }

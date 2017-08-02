@@ -754,6 +754,11 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
 
         /** {@inheritDoc} */
+        @Override public WALPointer reference() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
         @Override public CacheObject value() {
             return entry.value();
         }
@@ -1198,11 +1203,12 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             CacheObject val,
             GridCacheVersion ver,
             long expireTime,
-            @Nullable CacheDataRow oldRow
+            @Nullable CacheDataRow oldRow,
+            @Nullable WALPointer reference
         ) throws IgniteCheckedException {
             CacheDataStore delegate = init0(false);
 
-            delegate.update(cctx, key, val, ver, expireTime, oldRow);
+            delegate.update(cctx, key, val, ver, expireTime, oldRow, reference);
         }
 
         /** {@inheritDoc} */
@@ -1219,10 +1225,11 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             CacheObject val,
             GridCacheVersion ver,
             long expireTime,
-            @Nullable CacheDataRow oldRow) throws IgniteCheckedException {
+            @Nullable CacheDataRow oldRow,
+            @Nullable WALPointer reference) throws IgniteCheckedException {
             CacheDataStore delegate = init0(false);
 
-            return delegate.createRow(cctx, key, val, ver, expireTime, oldRow);
+            return delegate.createRow(cctx, key, val, ver, expireTime, oldRow, reference);
         }
 
         /** {@inheritDoc} */

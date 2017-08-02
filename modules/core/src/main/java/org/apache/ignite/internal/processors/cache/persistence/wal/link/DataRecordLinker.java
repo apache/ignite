@@ -1,6 +1,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.wal.link;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.LazyDataEntry;
@@ -237,6 +238,11 @@ public class DataRecordLinker {
         @Override
         public void key(KeyCacheObject key) {
 
+        }
+
+        @Override
+        public WALPointer reference() {
+            return null;
         }
     }
 }

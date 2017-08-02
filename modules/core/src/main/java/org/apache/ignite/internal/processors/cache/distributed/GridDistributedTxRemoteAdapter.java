@@ -508,8 +508,10 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                 }
                             }
 
+                            WALPointer reference = null;
+
                             if (dataEntries != null && !near() && cctx.wal() != null)
-                                cctx.wal().log(new DataRecord(dataEntries));
+                                reference = cctx.wal().log(new DataRecord(dataEntries));
 
                             // Node that for near transactions we grab all entries.
                             for (IgniteTxEntry txEntry : entries) {
@@ -629,7 +631,8 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                                         CU.subjectId(this, cctx),
                                                         resolveTaskName(),
                                                         dhtVer,
-                                                        txEntry.updateCounter());
+                                                        txEntry.updateCounter(),
+                                                        reference);
 
                                                     // Keep near entry up to date.
                                                     if (nearCached != null) {

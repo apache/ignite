@@ -22,6 +22,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageUtils;
+import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
@@ -538,6 +539,11 @@ public class CacheDataRowAdapter implements CacheDataRow {
         assert key != null;
 
         this.key = key;
+    }
+
+    @Override
+    public WALPointer reference() {
+        return null;
     }
 
     /** {@inheritDoc} */

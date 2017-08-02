@@ -29,6 +29,7 @@ import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALReferenceAwareRecord;
+import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
@@ -220,7 +221,7 @@ public abstract class AbstractWalRecordsIterator
     }
 
     /**
-     * Link byte[] payload from {@link DataRecord} entries to {@link WALReferenceAwareRecord} record.
+     * Link {@code byte[]} payload from {@link DataRecord} entries to {@link WALReferenceAwareRecord} record.
      *
      * @param record WAL record.
      * @param pointer WAL pointer.
@@ -228,8 +229,13 @@ public abstract class AbstractWalRecordsIterator
      */
     private void linkPayload(WALRecord record, WALPointer pointer) throws IgniteCheckedException {
         if (record instanceof DataRecord) {
-            // Re-initialize linker with new DataRecord.
-            linker.init((DataRecord) record, pointer);
+            DataRecord dataRecord = (DataRecord) record;
+
+            // Re-initialize linker with new DataRecord in case of CREATE or UPDATE operations.
+            if (dataRecord.operation() == GridCacheOperation.CREATE
+                    || dataRecord.operation() == GridCacheOperation.UPDATE) {
+                linker.init(dataRecord, pointer);
+            }
         }
         else if (record instanceof WALReferenceAwareRecord) {
             WALReferenceAwareRecord referenceRecord = (WALReferenceAwareRecord) record;

@@ -30,7 +30,7 @@ public class DataPageInsertRecord extends PageDeltaRecord implements WALReferenc
     /** Actual fragment data size. */
     private final int payloadSize;
 
-    /** Reference to DataRecord. */
+    /** WAL reference to DataRecord. */
     private WALPointer reference;
 
     /** Actual fragment data. */
@@ -44,11 +44,13 @@ public class DataPageInsertRecord extends PageDeltaRecord implements WALReferenc
     public DataPageInsertRecord(
         int grpId,
         long pageId,
-        int payloadSize
+        int payloadSize,
+        WALPointer reference
     ) {
         super(grpId, pageId);
 
         this.payloadSize = payloadSize;
+        this.reference = reference;
     }
 
     /**
@@ -85,10 +87,5 @@ public class DataPageInsertRecord extends PageDeltaRecord implements WALReferenc
     /** {@inheritDoc} */
     @Override public WALPointer reference() {
         return reference;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void reference(WALPointer reference) {
-        this.reference = reference;
     }
 }

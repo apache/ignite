@@ -54,7 +54,7 @@ public class DataRecordPayloadLinker {
         delegateLinker.link(record);
 
         // Initialize byte buffer for entry payload.
-        ByteBuffer payloadBuffer = ByteBuffer.allocate(record.payloadSize());
+        ByteBuffer payloadBuffer = ByteBuffer.allocateDirect(record.payloadSize());
 
         // Write data entry payload to buffer.
         DataPageIO.writeFragmentData(entries[indexBeforeLink], payloadBuffer, offsetBeforeLink, record.payloadSize());
