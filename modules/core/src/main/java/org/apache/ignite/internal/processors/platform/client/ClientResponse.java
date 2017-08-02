@@ -17,23 +17,36 @@
 
 package org.apache.ignite.internal.processors.platform.client;
 
-import org.apache.ignite.internal.processors.odbc.SqlListenerMessageParser;
-import org.apache.ignite.internal.processors.odbc.SqlListenerRequest;
 import org.apache.ignite.internal.processors.odbc.SqlListenerResponse;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Thin platform client message parser.
+ * Thin client response.
  */
-public class PlatformMessageParser implements SqlListenerMessageParser {
-    /** {@inheritDoc} */
-    @Override public SqlListenerRequest decode(byte[] msg) {
-        assert msg != null;
+public class ClientResponse extends SqlListenerResponse {
+    /** Response data. */
+    private final byte[] data;
 
-        return new PlatformRequest(msg);
+    /**
+     * Constructs failed rest response.
+     *
+     * @param status Response status.
+     * @param err    Error, {@code null} if success is {@code true}.
+     */
+    ClientResponse(int status, @Nullable String err, byte[] data) {
+        super(status, err);
+
+        assert data != null;
+
+        this.data = data;
     }
 
-    /** {@inheritDoc} */
-    @Override public byte[] encode(SqlListenerResponse resp) {
-        return ((PlatformResponse)resp).getData();
+    /**
+     * Gets the data.
+     *
+     * @return Response data.
+     */
+    public byte[] getData() {
+        return data;
     }
 }

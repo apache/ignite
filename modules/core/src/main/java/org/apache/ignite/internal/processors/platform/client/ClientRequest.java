@@ -20,9 +20,9 @@ package org.apache.ignite.internal.processors.platform.client;
 import org.apache.ignite.internal.processors.odbc.SqlListenerRequest;
 
 /**
- * Platform client request.
+ * Thin client request.
  */
-public class PlatformRequest extends SqlListenerRequest {
+public class ClientRequest extends SqlListenerRequest {
     /** */
     private final byte[] data;
 
@@ -31,7 +31,7 @@ public class PlatformRequest extends SqlListenerRequest {
      *
      * @param data Request raw data.
      */
-    PlatformRequest(byte[] data) {
+    ClientRequest(byte[] data) {
         assert data != null;
 
         this.data = data;

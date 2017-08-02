@@ -32,8 +32,8 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMessageParser;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequestHandler;
 import org.apache.ignite.internal.processors.odbc.odbc.OdbcMessageParser;
 import org.apache.ignite.internal.processors.odbc.odbc.OdbcRequestHandler;
-import org.apache.ignite.internal.processors.platform.client.PlatformMessageParser;
-import org.apache.ignite.internal.processors.platform.client.PlatformRequestHandler;
+import org.apache.ignite.internal.processors.platform.client.ClientMessageParser;
+import org.apache.ignite.internal.processors.platform.client.ClientRequestHandler;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.nio.GridNioServerListenerAdapter;
 import org.apache.ignite.internal.util.nio.GridNioSession;
@@ -50,8 +50,8 @@ public class SqlListenerNioListener extends GridNioServerListenerAdapter<byte[]>
     /** JDBC driver handshake code. */
     public static final byte JDBC_CLIENT = 1;
 
-    /** Platform thin client handshake code. */
-    public static final byte PLATFORM_CLIENT = 2;
+    /** Thin client handshake code. */
+    public static final byte THIN_CLIENT = 2;
 
     /** Current version. */
     private static final SqlListenerProtocolVersion CURRENT_VER = SqlListenerProtocolVersion.create(2, 1, 0);
@@ -268,9 +268,9 @@ public class SqlListenerNioListener extends GridNioServerListenerAdapter<byte[]>
 
             return new SqlListenerConnectionContext(handler, parser);
         }
-        else if (clientType == PLATFORM_CLIENT) {
-            PlatformMessageParser parser = new PlatformMessageParser();
-            PlatformRequestHandler handler = new PlatformRequestHandler(ctx);
+        else if (clientType == THIN_CLIENT) {
+            ClientMessageParser parser = new ClientMessageParser();
+            ClientRequestHandler handler = new ClientRequestHandler(ctx);
 
             return new SqlListenerConnectionContext(handler, parser);
         }

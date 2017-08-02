@@ -34,9 +34,9 @@ import org.apache.ignite.internal.processors.odbc.SqlListenerRequestHandler;
 import org.apache.ignite.internal.processors.odbc.SqlListenerResponse;
 
 /**
- * Platform thin client request handler.
+ * Thin client request handler.
  */
-public class PlatformRequestHandler implements SqlListenerRequestHandler {
+public class ClientRequestHandler implements SqlListenerRequestHandler {
     /** */
     private static final short OP_CACHE_GET = 1;
 
@@ -54,7 +54,7 @@ public class PlatformRequestHandler implements SqlListenerRequestHandler {
      *
      * @param ctx Kernal context.
      */
-    public PlatformRequestHandler(GridKernalContext ctx) {
+    public ClientRequestHandler(GridKernalContext ctx) {
         assert ctx != null;
 
         this.ctx = ctx;
@@ -67,7 +67,7 @@ public class PlatformRequestHandler implements SqlListenerRequestHandler {
 
     /** {@inheritDoc} */
     @Override public SqlListenerResponse handle(SqlListenerRequest req) {
-        PlatformRequest req0 = (PlatformRequest)req;
+        ClientRequest req0 = (ClientRequest)req;
 
         BinaryInputStream inStream = new BinaryHeapInputStream(req0.getData());
         BinaryRawReaderEx reader = marsh.reader(inStream);
@@ -81,7 +81,7 @@ public class PlatformRequestHandler implements SqlListenerRequestHandler {
 
         processCommand(reader, writer);
 
-        return new PlatformResponse(SqlListenerResponse.STATUS_SUCCESS, null, outStream.array());
+        return new ClientResponse(SqlListenerResponse.STATUS_SUCCESS, null, outStream.array());
     }
 
     /**
