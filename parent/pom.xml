@@ -1166,10 +1166,9 @@
                                 <configuration>
                                     <failOnError>false</failOnError>
                                     <target>
-                                        <move todir="${basedir}/../module-temp/target" preservelastmodified="true">
+                                        <copy todir="${basedir}/../module-temp/${basedir}/target" preservelastmodified="true">
                                             <fileset dir="${basedir}/target"/>
-                                        </move>
-
+                                        </copy>
                                     </target>
                                 </configuration>
                             </execution>
@@ -1183,7 +1182,7 @@
                                     <failOnError>false</failOnError>
                                     <target>
                                         <move todir="${basedir}/target">
-                                            <fileset dir="${basedir}/../module-temp/target" preservelastmodified="true"/>
+                                            <fileset dir="${basedir}/../module-temp/${basedir}/target" preservelastmodified="true"/>
                                         </move>
                                         <delete dir="${basedir}/../module-temp"/>
                                     </target>
