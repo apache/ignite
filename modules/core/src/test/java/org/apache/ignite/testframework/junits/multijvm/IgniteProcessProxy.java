@@ -143,7 +143,7 @@ public class IgniteProcessProxy implements IgniteEx {
      * @param log Logger.
      * @param locJvmGrid Local JVM grid.
      * @param resetDiscovery Reset DiscoverySpi at the configuration.
-     * @param clos IgniteClosure for post configuration.
+     * @param clos IgniteInClosure for post configuration.
      * @throws Exception On error.
      * @see #filteredJvmArgs()
      */

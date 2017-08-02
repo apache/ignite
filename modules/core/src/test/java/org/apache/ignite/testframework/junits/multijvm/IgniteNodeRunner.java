@@ -22,11 +22,15 @@ import com.thoughtworks.xstream.mapper.CannotResolveClassException;
 import com.thoughtworks.xstream.mapper.MapperWrapper;
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -73,7 +77,7 @@ public class IgniteNodeRunner {
         X.println("Starting Ignite Node... Args=" + Arrays.toString(args));
 
         if (args.length < 1)
-            throw new IllegalArgumentException("At least one argument expected: [path/to/cfg/file] [path/to/closure/file](optional)");
+            throw new IllegalArgumentException("At least one argument expected: [path/to/cfg/file] [optional/path/to/closure/file]");
 
         IgniteConfiguration cfg;
 
@@ -153,9 +157,8 @@ public class IgniteNodeRunner {
      * @throws IOException In case of an error.
      */
     public static void storeToFile(IgniteInClosure clos, String fileName) throws IOException {
-        try (OutputStream out = new BufferedOutputStream(new FileOutputStream(fileName))) {
-            // TODO: serialize anonymous classes in proper way
-            new XStream().toXML(clos, out);
+        try (BufferedWriter writer = Files.newBufferedWriter(Paths.get(fileName), StandardCharsets.UTF_8)) {
+            new XStream().toXML(clos, writer);
         }
     }
 
@@ -176,7 +179,7 @@ public class IgniteNodeRunner {
         throws IOException, IgniteCheckedException {
         IgniteConfiguration cfg = readCfgFromFileAndDeleteFile(cfgFileName);
 
-        try (BufferedReader closReader = new BufferedReader(new FileReader(closFileName))) {
+        try (BufferedReader closReader = Files.newBufferedReader(Paths.get(closFileName), StandardCharsets.UTF_8)) {
             IgniteInClosure clos = (IgniteInClosure)createXStreamer().fromXML(closReader);
 
             clos.apply(cfg);
@@ -199,8 +202,7 @@ public class IgniteNodeRunner {
      */
     private static IgniteConfiguration readCfgFromFileAndDeleteFile(String fileName)
         throws IOException, IgniteCheckedException {
-        try (BufferedReader cfgReader = new BufferedReader(new FileReader(fileName))) {
-
+        try(BufferedReader cfgReader = new BufferedReader(new FileReader(fileName))) {
             IgniteConfiguration cfg = (IgniteConfiguration)createXStreamer().fromXML(cfgReader);
 
             if (cfg.getMarshaller() == null) {

@@ -39,7 +39,7 @@ public class MavenUtils {
     private static String locRepPath = null;
 
     /**
-     * Gets path to the artifact with given version
+     * Gets a path to an artifact with given version
      * and groupId=org.apache.ignite and artifactId=ignite-core.
      *
      * At first, artifact is looked for in the Maven local repository,
@@ -55,7 +55,7 @@ public class MavenUtils {
     }
 
     /**
-     * Gets path to an artifact with given identifier.
+     * Gets a path to an artifact with given identifier.
      *
      * At first, artifact is looked for in the Maven local repository,
      * if it isn't exists there, it will be downloaded and stored via Maven.
@@ -157,15 +157,15 @@ public class MavenUtils {
         });
 
         try {
-            int exitCode = fut.get(5, TimeUnit.MINUTES);
+            int exitVal = fut.get(5, TimeUnit.MINUTES);
 
-            if (exitCode != 0)
-                throw new Exception("Unexpected exit code");
+            if (exitVal != 0)
+                throw new Exception(String.format("Abnormal exit value of %s for pid %s", exitVal, U.jvmPid()));
         }
         catch (Exception e) {
             p.destroy();
 
-            X.printerrln("Command=" + cmd + " couldn't be executed: "
+            X.printerrln("Command='" + cmd + "' couldn't be executed: "
                 + CharStreams.toString(new InputStreamReader(p.getInputStream(), Charsets.UTF_8)), e);
 
             throw e;

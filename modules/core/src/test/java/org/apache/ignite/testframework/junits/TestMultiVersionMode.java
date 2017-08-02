@@ -48,13 +48,13 @@ public class TestMultiVersionMode extends GridCommonAbstractTest {
 
         TestCompatibilityPluginProvider.disable();
     }
-    
+
     /** */
     public void testJoinMultiVersionTopology() throws Exception {
         try {
             startGrid(0);
 
-            startGrid("testMultiVersion", "2.1.0", new ConfigurationPostProcessor());
+            startGrid("testMultiVersion", "2.1.0", new PostConfigurationClosure());
         }
         finally {
             stopAllGrids();
@@ -62,14 +62,16 @@ public class TestMultiVersionMode extends GridCommonAbstractTest {
     }
 
     /** */
-    private static class ConfigurationPostProcessor implements IgniteInClosure<IgniteConfiguration> {
+    private static class PostConfigurationClosure implements IgniteInClosure<IgniteConfiguration> {
         @Override public void apply(IgniteConfiguration cfg) {
-            GridTestUtils.setFieldValue(cfg.getCommunicationSpi(), "discoLsnr", new TestDiscoveryListener());
+            GridTestUtils.setFieldValue(
+                cfg.getCommunicationSpi(),
+                "discoLsnr",
+                new GridLocalEventListener() {
+                    @Override public void onEvent(Event evt) {
+                    }
+                }
+            );
         }
-    }
-
-    /** Discovery listener. */
-    private static class TestDiscoveryListener implements GridLocalEventListener {
-        @Override public void onEvent(Event evt) {}
     }
 }

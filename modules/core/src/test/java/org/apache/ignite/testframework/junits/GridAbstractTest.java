@@ -874,7 +874,7 @@ public abstract class GridAbstractTest extends TestCase {
      *
      * @param igniteInstanceName Instance name.
      * @param ver Ignite version.
-     * @param clos IgniteClosure.
+     * @param clos IgniteInClosure for post-configuration.
      * @return Started grid.
      * @throws Exception If failed.
      */
@@ -892,7 +892,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @param igniteInstanceName Instance name.
      * @param ver Ignite version.
      * @param cfg Ignite configuration.
-     * @param clos IgniteClosure.
+     * @param clos IgniteInClosure for post-configuration.
      * @return Started grid.
      * @throws Exception If failed.
      */
@@ -910,9 +910,9 @@ public abstract class GridAbstractTest extends TestCase {
      * @param igniteInstanceName Instance name.
      * @param ver Ignite version.
      * @param cfg Ignite configuration.
-     * @param clos IgniteClosure for post-configuration.
+     * @param clos IgniteInClosure for post-configuration.
      * @param jvmArgs Additional JVM arguments.
-     * @param resetDiscovery Reset DiscoverySpi.
+     * @param resetDiscovery Reset DiscoverySpi at the configuration.
      * @return Started grid.
      * @throws Exception If failed.
      */
