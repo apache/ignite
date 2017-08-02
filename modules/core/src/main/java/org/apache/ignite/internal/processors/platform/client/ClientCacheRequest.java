@@ -48,6 +48,7 @@ class ClientCacheRequest extends ClientRequest {
      */
     protected IgniteCache getCache(GridKernalContext ctx) {
         String cacheName = ctx.cache().context().cacheContext(cacheId).cache().name();
+
         return ctx.grid().cache(cacheName).withKeepBinary();
     }
 }

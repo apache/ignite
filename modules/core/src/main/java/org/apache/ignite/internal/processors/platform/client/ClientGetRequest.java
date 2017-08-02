@@ -41,6 +41,8 @@ class ClientGetRequest extends ClientCacheRequest {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public ClientResponse process(GridKernalContext ctx) {
-        return new ClientGetResponse(getRequestId(), getCache(ctx).get(key));
+        Object val = getCache(ctx).get(key);
+
+        return new ClientGetResponse(getRequestId(), val);
     }
 }
