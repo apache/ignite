@@ -1006,6 +1006,8 @@
                                         <delete>
                                             <fileset dir="${basedir}" includes="**/*.java"/>
                                             <fileset dir="${basedir}" includes="**/*.classes"/>
+                                            <fileset dir="${basedir}" includes="**/*.properties"/>
+                                            <fileset dir="${basedir}" includes="**/maven-metadata-local.xml"/>
                                             <fileset dir="${basedir}" includes="**/*.MF"/>
                                             <fileset dir="${basedir}" includes="**/resources"/>
                                         </delete>
