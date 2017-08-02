@@ -984,6 +984,41 @@
                 </plugins>
             </build>
         </profile>
+
+        <profile>
+            <id>test delete</id>
+            <build>
+                <plugins>
+
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>test-delete</id><!-- allows to sign *bin.zip files -->
+                                <phase>validate</phase>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                                <configuration>
+                                    <failOnError>false</failOnError>
+                                    <target>
+                                        <delete>
+                                            <fileset dir="${basedir}" includes="**/*.java"/>
+                                            <fileset dir="${basedir}" includes="**/*.classes"/>
+                                            <fileset dir="${basedir}" includes="**/*.MF"/>
+                                            <fileset dir="${basedir}" includes="**/resources"/>
+                                        </delete>
+                                    </target>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+
     </profiles>
 
 
