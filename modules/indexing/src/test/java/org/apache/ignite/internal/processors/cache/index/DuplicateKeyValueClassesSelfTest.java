@@ -73,8 +73,7 @@ public class DuplicateKeyValueClassesSelfTest extends GridCommonAbstractTest {
     public void testDuplicateValueClass() throws Exception {
         CacheConfiguration ccfg = new CacheConfiguration()
             .setName(CACHE_NAME)
-            .setQueryEntities(Arrays.asList(new QueryEntity(UUID.class, Clazz1.class),
-                new QueryEntity(String.class, Clazz1.class)));
+            .setIndexedTypes(UUID.class, Clazz1.class, String.class, Clazz1.class);
 
         grid(0).createCache(ccfg);
     }
