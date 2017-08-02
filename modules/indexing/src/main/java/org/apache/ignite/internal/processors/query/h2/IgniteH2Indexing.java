@@ -724,10 +724,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 return;
         }
 
-        if (!ctx.cache().cacheDescriptor(desc.cache().name()).sql())
-            throw new IgniteSQLException("ALTER TABLE may only be executed on tables " +
-                "created with CREATE TABLE: " + desc.fullTableName());
-
         desc.table().addColumns(cols, beforeColName, afterColName, ifColNotExists);
     }
 

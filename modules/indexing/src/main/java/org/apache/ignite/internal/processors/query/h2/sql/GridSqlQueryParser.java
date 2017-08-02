@@ -911,41 +911,8 @@ public class GridSqlQueryParser {
 
         LinkedHashMap<String, GridSqlColumn> cols = new LinkedHashMap<>(data.columns.size());
 
-        for (Column col : data.columns) {
-            if (col.isAutoIncrement())
-                throw new IgniteSQLException("AUTO_INCREMENT columns are not supported [colName=" + col.getName() + ']',
-                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
-
-            if (!col.isNullable())
-                throw new IgniteSQLException("Non nullable columns are forbidden [colName=" + col.getName() + ']',
-                    IgniteQueryErrorCode.PARSING);
-
-            if (COLUMN_IS_COMPUTED.get(col))
-                throw new IgniteSQLException("Computed columns are not supported [colName=" + col.getName() + ']',
-                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
-
-            if (col.getDefaultExpression() != null)
-                throw new IgniteSQLException("DEFAULT expressions are not supported [colName=" + col.getName() + ']',
-                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
-
-            if (col.getSequence() != null)
-                throw new IgniteSQLException("SEQUENCE columns are not supported [colName=" + col.getName() + ']',
-                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
-
-            if (col.getSelectivity() != Constants.SELECTIVITY_DEFAULT)
-                throw new IgniteSQLException("SELECTIVITY column attr is not supported [colName=" + col.getName() + ']',
-                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
-
-            if (COLUMN_CHECK_CONSTRAINT.get(col) != null)
-                throw new IgniteSQLException("Column CHECK constraints are not supported [colName=" + col.getName() +
-                    ']', IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
-
-            GridSqlColumn gridCol = new GridSqlColumn(col, null, col.getName());
-
-            gridCol.resultType(GridSqlType.fromColumn(col));
-
-            cols.put(col.getName(), gridCol);
-        }
+        for (Column col : data.columns)
+            cols.put(col.getName(), parseColumn(col));
 
         if (cols.containsKey(QueryUtils.KEY_FIELD_NAME.toUpperCase()) ||
             cols.containsKey(QueryUtils.VAL_FIELD_NAME.toUpperCase()))
@@ -1049,6 +1016,47 @@ public class GridSqlQueryParser {
     }
 
     /**
+     * Turn H2 column to grid column and check requested features.
+     * @param col H2 column.
+     * @return Grid column.
+     */
+    private static GridSqlColumn parseColumn(Column col) {
+        if (col.isAutoIncrement())
+            throw new IgniteSQLException("AUTO_INCREMENT columns are not supported [colName=" + col.getName() + ']',
+                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
+        if (!col.isNullable())
+            throw new IgniteSQLException("Non nullable columns are forbidden [colName=" + col.getName() + ']',
+                IgniteQueryErrorCode.PARSING);
+
+        if (COLUMN_IS_COMPUTED.get(col))
+            throw new IgniteSQLException("Computed columns are not supported [colName=" + col.getName() + ']',
+                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
+        if (col.getDefaultExpression() != null)
+            throw new IgniteSQLException("DEFAULT expressions are not supported [colName=" + col.getName() + ']',
+                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
+        if (col.getSequence() != null)
+            throw new IgniteSQLException("SEQUENCE columns are not supported [colName=" + col.getName() + ']',
+                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
+        if (col.getSelectivity() != Constants.SELECTIVITY_DEFAULT)
+            throw new IgniteSQLException("SELECTIVITY column attr is not supported [colName=" + col.getName() + ']',
+                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
+        if (COLUMN_CHECK_CONSTRAINT.get(col) != null)
+            throw new IgniteSQLException("Column CHECK constraints are not supported [colName=" + col.getName() +
+                ']', IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
+        GridSqlColumn gridCol = new GridSqlColumn(col, null, col.getName());
+
+        gridCol.resultType(GridSqlType.fromColumn(col));
+
+        return gridCol;
+    }
+
+    /**
      * Parse {@code ALTER TABLE ... ADD COLUMN} statement.
      * @param addCol H2 statement.
      * @see <a href="http://www.h2database.com/html/grammar.html#alter_table_add"></a>
@@ -1062,11 +1070,8 @@ public class GridSqlQueryParser {
 
         GridSqlColumn[] gridNewCols = new GridSqlColumn[h2NewCols.size()];
 
-        for (int i = 0; i < h2NewCols.size(); i++) {
-            Column h2Col = h2NewCols.get(i);
-
-            gridNewCols[i] = new GridSqlColumn(h2Col, null, h2Col.getName());
-        }
+        for (int i = 0; i < h2NewCols.size(); i++)
+            gridNewCols[i] = parseColumn(h2NewCols.get(i));
 
         res.columns(gridNewCols);
 

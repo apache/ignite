@@ -20,9 +20,11 @@ package org.apache.ignite.internal.processors.cache.index;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -260,12 +262,24 @@ public abstract class DynamicColumnsAbstractTest extends GridCommonAbstractTest 
     }
 
     /**
-     * Execute SQL command and ignore resulting dataset.
+     * Execute SQL command and return resulting dataset.
+     * @param node Node to run query from.
      * @param sql Statement.
+     * @return result.
      */
-    protected void run(Ignite node, String sql) {
-        ((IgniteEx)node).context().query()
+    protected List<List<?>> run(Ignite node, String sql) {
+        return ((IgniteEx)node).context().query()
             .querySqlFieldsNoCache(new SqlFieldsQuery(sql).setSchema(QueryUtils.DFLT_SCHEMA), true).getAll();
+    }
+
+    /**
+     * Execute SQL command and return resulting dataset.
+     * @param cache Cache to initiate query from.
+     * @param sql Statement.
+     * @return result.
+     */
+    protected List<List<?>> run(IgniteCache<?, ?> cache, String sql) {
+        return cache.query(new SqlFieldsQuery(sql).setSchema(QueryUtils.DFLT_SCHEMA)).getAll();
     }
 
     /**

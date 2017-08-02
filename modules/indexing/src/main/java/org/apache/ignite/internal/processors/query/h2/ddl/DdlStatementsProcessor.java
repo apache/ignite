@@ -228,36 +228,23 @@ public class DdlStatementsProcessor {
                             cmd.tableName());
                 }
                 else {
-                    if (!ctx.cache().cacheDescriptor(tbl.cacheName()).sql())
-                        throw new SchemaOperationException("ALTER TABLE may only be executed on tables " +
-                            "created with CREATE TABLE: " + tbl.getName());
+                    List<QueryField> cols = new ArrayList<>(cmd.columns().length);
 
-                    List<QueryField> cols = null;
-
-                    if (cmd.columns().length > 1) {
-                        cols = new ArrayList<>(cmd.columns().length);
-
-                        for (GridSqlColumn col : cmd.columns()) {
-                            if (tbl.doesColumnExist(col.columnName())) {
+                    for (GridSqlColumn col : cmd.columns()) {
+                        if (tbl.doesColumnExist(col.columnName())) {
+                            if ((!cmd.ifNotExists() || cmd.columns().length != 1)) {
                                 throw new SchemaOperationException("Column already exists [tblName=" + tbl.getName() +
                                     ", colName=" + col.columnName() + ']');
                             }
+                            else {
+                                cols = null;
 
-                            cols.add(new QueryField(col.columnName(),
-                                DataType.getTypeClassName(col.column().getType())));
-                        }
-                    }
-                    else {
-                        if (tbl.doesColumnExist(cmd.columns()[0].columnName())) {
-                            if (!cmd.ifNotExists()) {
-                                throw new SchemaOperationException("Column already exists [tblName=" + tbl.getName() +
-                                    ", colName=" + cmd.columns()[0].columnName() + ']');
+                                break;
                             }
                         }
-                        else {
-                            cols = Collections.singletonList(new QueryField(cmd.columns()[0].columnName(),
-                                DataType.getTypeClassName(cmd.columns()[0].column().getType())));
-                        }
+
+                        cols.add(new QueryField(col.columnName(),
+                            DataType.getTypeClassName(col.column().getType())));
                     }
 
                     if (cols != null) {

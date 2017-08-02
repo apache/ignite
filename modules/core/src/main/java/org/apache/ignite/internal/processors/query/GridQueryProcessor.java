@@ -2154,14 +2154,14 @@ private IgniteInternalFuture<Object> rebuildIndexesFromHash(@Nullable final Stri
      * @param cols Columns to add.
      * @param beforeColName Column name before which new columns should be added.
      * @param afterColName Column name after which new columns should be added.
-     * @param ifTableExists Ignore operation if target table doesn't exist.
+     * @param ifTblExists Ignore operation if target table doesn't exist.
      * @param ifNotExists Ignore operation if column exists.
      */
     public IgniteInternalFuture<?> dynamicColumnAdd(String cacheName, String schemaName, String tblName, List<QueryField> cols,
-        String beforeColName, String afterColName, boolean ifTableExists, boolean ifNotExists) {
+        String beforeColName, String afterColName, boolean ifTblExists, boolean ifNotExists) {
 
         SchemaAlterTableAddColumnOperation op = new SchemaAlterTableAddColumnOperation(UUID.randomUUID(), cacheName,
-            schemaName, tblName, cols, beforeColName, afterColName, ifTableExists, ifNotExists);
+            schemaName, tblName, cols, beforeColName, afterColName, ifTblExists, ifNotExists);
 
         return startIndexOperationDistributed(op);
     }
