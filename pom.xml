@@ -938,55 +938,7 @@
 
 
         <profile>
-            <id>testnils</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-gpg-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <goals>
-                                    <goal>sign</goal>
-                                </goals>
-                                <configuration>
-                                    <ascDirectory>${basedir}</ascDirectory>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-
-                    <plugin>
-                        <artifactId>maven-jar-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>default-jar</id>
-                                <configuration>
-                                    <skipIfEmpty>true</skipIfEmpty>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-
-                    <plugin>
-                        <artifactId>maven-install-plugin</artifactId>
-                        <version>2.5.2</version>
-                        <executions>
-                            <execution>
-                                <id>test-install</id>
-                                <phase>initialize</phase>
-                                <goals>
-                                    <goal>install</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-
-        <profile>
-            <id>test-delete</id>
+            <id>test-copy</id>
             <build>
                 <plugins>
 
@@ -995,23 +947,23 @@
                         <artifactId>maven-antrun-plugin</artifactId>
                         <executions>
                             <execution>
-                                <id>test-delete</id><!-- allows to sign *bin.zip files -->
+                                <id>test-copy-forward</id>
                                 <phase>validate</phase>
                                 <goals>
                                     <goal>run</goal>
                                 </goals>
                                 <configuration>
-                                    <failOnError>false</failOnError>
-                                    <target>
-                                        <delete>
-                                            <fileset dir="${basedir}" includes="**/*.java"/>
-                                            <fileset dir="${basedir}" includes="**/*.classes"/>
-                                            <fileset dir="${basedir}" includes="**/*.properties"/>
-                                            <fileset dir="${basedir}" includes="**/maven-metadata-local.xml"/>
-                                            <fileset dir="${basedir}" includes="**/*.MF"/>
-                                            <fileset dir="${basedir}" includes="**/resources"/>
-                                        </delete>
-                                    </target>
+                                    <skip>true</skip>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>test-copy-back</id>
+                                <phase>pre-integration-test</phase>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                                <configuration>
+                                    <skip>true</skip>
                                 </configuration>
                             </execution>
                         </executions>
@@ -1019,8 +971,6 @@
                 </plugins>
             </build>
         </profile>
-
-
     </profiles>
 
 
