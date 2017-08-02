@@ -406,13 +406,13 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
         StringBuilder flags = new StringBuilder();
 
         if (near())
-            flags.append("near");
+            flags.append("[near]");
         if (firstClientRequest())
-            flags.append("clientReq");
+            flags.append("[firstClientReq]");
         if (implicitSingle())
-            flags.append("single");
+            flags.append("[implicitSingle]");
         if (explicitLock())
-            flags.append("explicitLock");
+            flags.append("[explicitLock]");
 
         return S.toString(GridNearTxPrepareRequest.class, this,
             "flags", flags.toString(),

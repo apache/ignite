@@ -34,6 +34,7 @@ angular
     .state('password.reset', {
         url: '/reset?{token}',
         templateUrl,
+        unsaved: true,
         tfMetaTags: {
             title: 'Reset password'
         }
@@ -41,6 +42,7 @@ angular
     .state('password.send', {
         url: '/send',
         templateUrl,
+        unsaved: true,
         tfMetaTags: {
             title: 'Password Send'
         }

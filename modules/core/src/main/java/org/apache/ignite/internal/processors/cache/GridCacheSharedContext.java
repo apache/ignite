@@ -944,6 +944,30 @@ public class GridCacheSharedContext<K, V> {
     }
 
     /**
+     * Suspends transaction. It could be resume later. Supported only for optimistic transactions.
+     *
+     * @param tx Transaction to suspend.
+     * @throws IgniteCheckedException If suspension failed.
+     */
+    public void suspendTx(GridNearTxLocal tx) throws IgniteCheckedException {
+        tx.txState().awaitLastFuture(this);
+
+        tx.suspend();
+    }
+
+    /**
+     * Resume transaction if it was previously suspended.
+     *
+     * @param tx Transaction to resume.
+     * @throws IgniteCheckedException If resume failed.
+     */
+    public void resumeTx(GridNearTxLocal tx) throws IgniteCheckedException {
+        tx.txState().awaitLastFuture(this);
+
+        tx.resume();
+    }
+
+    /**
      * @return Store session listeners.
      */
     @Nullable public Collection<CacheStoreSessionListener> storeSessionListeners() {
