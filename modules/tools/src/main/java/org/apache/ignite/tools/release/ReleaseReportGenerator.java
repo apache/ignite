@@ -173,7 +173,7 @@ public class ReleaseReportGenerator {
                 searchReport += "<li>" + summary;
 
                 if (search.getBoolean("showlink"))
-                    searchReport += "<a href=\"https://issues.apache.org/jira/browse/" + issue.getJSONObject("fields").getString("summary").split(" ")[0].replace("[", "").replace("]", "") + "\"> [#" + issue.getJSONObject("fields").getString("summary").split(" ")[0].replace("[", "").replace("]", "") + "]</a>\n";
+                    searchReport += "<a href=\"" + srv.getString("baseUrl") + issue.getJSONObject("fields").getString("summary").split(" ")[0].replace("[", "").replace("]", "") + "\"> [#" + issue.getJSONObject("fields").getString("summary").split(" ")[0].replace("[", "").replace("]", "") + "]</a>\n";
                 else
                     searchReport +=  " <span>[#" + issue.getString("key") + "]</span>";
 

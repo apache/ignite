@@ -201,7 +201,7 @@ public class IgniteBenchmarkArguments {
         return allowedLoadTestOps;
     }
 
-    /**
+    /**P
      * @return If {@code true} when need to print partition statistics.
      */
     public boolean printPartitionStatistics() {
