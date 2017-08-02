@@ -146,6 +146,7 @@ import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.GridDiscoveryData;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.JoiningNodeDiscoveryData;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CACHE_REMOVED_ENTRIES_TTL;
@@ -193,7 +194,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     private final Map<String, GridCacheAdapter> stoppedCaches = new ConcurrentHashMap<>();
 
     /** Map of proxies. */
-    private final ConcurrentHashMap<String, IgniteCacheProxy<?, ?>> jCacheProxies;
+    private final ConcurrentHashMap<String, IgniteCacheProxyImpl<?, ?>> jCacheProxies;
 
     /** Caches stop sequence. */
     private final Deque<String> stopSeq;
@@ -947,7 +948,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     public void blockGateways() {
         for (IgniteCacheProxy<?, ?> proxy : jCacheProxies.values())
-            proxy.gate().onStopped();
+            proxy.context().gate().onStopped();
     }
 
     /** {@inheritDoc} */
@@ -1046,7 +1047,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         sharedCtx.onDisconnected(reconnectFut);
 
-        cachesInfo.onDisconnect();
+        cachesInfo.onDisconnected();
     }
 
     /**
@@ -1733,7 +1734,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /**
      * @return Caches to be started when this node starts.
      */
-    public List<T2<DynamicCacheDescriptor, NearCacheConfiguration>> cachesToStartOnLocalJoin() {
+    @NotNull public List<T2<DynamicCacheDescriptor, NearCacheConfiguration>> cachesToStartOnLocalJoin() {
         return cachesInfo.cachesToStartOnLocalJoin();
     }
 
@@ -1771,22 +1772,20 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         throws IgniteCheckedException {
         List<DynamicCacheDescriptor> started = cachesInfo.cachesReceivedFromJoin(nodeId);
 
-        if (started != null) {
-            for (DynamicCacheDescriptor desc : started) {
-                IgnitePredicate<ClusterNode> filter = desc.groupDescriptor().config().getNodeFilter();
+        for (DynamicCacheDescriptor desc : started) {
+            IgnitePredicate<ClusterNode> filter = desc.groupDescriptor().config().getNodeFilter();
 
-                if (CU.affinityNode(ctx.discovery().localNode(), filter)) {
-                    prepareCacheStart(
-                        desc.cacheConfiguration(),
-                        desc,
-                        null,
-                        exchTopVer
-                    );
-                }
+            if (CU.affinityNode(ctx.discovery().localNode(), filter)) {
+                prepareCacheStart(
+                    desc.cacheConfiguration(),
+                    desc,
+                    null,
+                    exchTopVer
+                );
             }
         }
 
-        return started != null ? started : Collections.<DynamicCacheDescriptor>emptyList();
+        return started;
     }
 
     /**
@@ -1806,7 +1805,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         CacheConfiguration ccfg = new CacheConfiguration(startCfg);
 
-        IgniteCacheProxy<?, ?> proxy = jCacheProxies.get(ccfg.getName());
+        IgniteCacheProxyImpl<?, ?> proxy = jCacheProxies.get(ccfg.getName());
 
         boolean proxyRestart = proxy != null && proxy.isRestarting() && !caches.containsKey(ccfg.getName());
 
@@ -1945,14 +1944,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     void blockGateway(String cacheName, boolean stop, boolean restart) {
         // Break the proxy before exchange future is done.
-        IgniteCacheProxy<?, ?> proxy = jCacheProxies.get(cacheName);
+        IgniteCacheProxyImpl<?, ?> proxy = jCacheProxies.get(cacheName);
 
         if (proxy != null) {
             if (stop) {
                 if (restart)
                     proxy.restart();
 
-                proxy.gate().stopped();
+                proxy.context().gate().stopped();
             }
             else
                 proxy.closeProxy();
@@ -1966,7 +1965,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     private void stopGateway(DynamicCacheChangeRequest req) {
         assert req.stop() : req;
 
-        IgniteCacheProxy<?, ?> proxy;
+        IgniteCacheProxyImpl<?, ?> proxy;
 
         // Break the proxy before exchange future is done.
         if (req.restart()) {
@@ -1979,7 +1978,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             proxy = jCacheProxies.remove(req.cacheName());
 
         if (proxy != null)
-            proxy.gate().onStopped();
+            proxy.context().gate().onStopped();
     }
 
     /**
@@ -2015,7 +2014,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             if (cacheCtx.startTopologyVersion().equals(startTopVer) ) {
                 if (!jCacheProxies.containsKey(cacheCtx.name()))
-                    jCacheProxies.putIfAbsent(cacheCtx.name(), new IgniteCacheProxy(cache.context(), cache, null, false));
+                    jCacheProxies.putIfAbsent(cacheCtx.name(), new IgniteCacheProxyImpl(cache.context(), cache, false));
 
                 if (cacheCtx.preloader() != null)
                     cacheCtx.preloader().onInitialExchangeComplete(err);
@@ -2080,7 +2079,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             assert cache != null : cctx.name();
 
-            jCacheProxies.put(cctx.name(), new IgniteCacheProxy(cache.context(), cache, null, false));
+            jCacheProxies.put(cctx.name(), new IgniteCacheProxyImpl(cache.context(), cache, false));
         }
         else {
             jCacheProxies.remove(cctx.name());
@@ -2130,6 +2129,18 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
 
             for (ExchangeActions.CacheActionData action : exchActions.cacheStopRequests()) {
+                CacheGroupContext gctx = cacheGrps.get(action.descriptor().groupId());
+
+                // Cancel all operations blocking gateway
+                if (gctx != null) {
+                    final String msg = "Failed to wait for topology update, cache group is stopping.";
+
+                    // If snapshot operation in progress we must throw CacheStoppedException
+                    // for correct cache proxy restart. For more details see
+                    // IgniteCacheProxy.cacheException()
+                    gctx.affinity().cancelFutures(new CacheStoppedException(msg));
+                }
+
                 stopGateway(action.request());
 
                 sharedCtx.database().checkpointReadLock();
@@ -2765,7 +2776,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         IgniteCacheProxy<?, ?> proxy = jCacheProxies.get(cacheName);
 
-        if (proxy == null || proxy.proxyClosed())
+        if (proxy == null || proxy.isProxyClosed())
             return new GridFinishedFuture<>(); // No-op.
 
         checkEmptyTransactions();
@@ -3203,7 +3214,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return All configured cache instances.
      */
     public Collection<IgniteCacheProxy<?, ?>> jcaches() {
-        return jCacheProxies.values();
+        return F.viewReadOnly(jCacheProxies.values(), new IgniteClosure<IgniteCacheProxyImpl<?, ?>, IgniteCacheProxy<?, ?>>() {
+            @Override public IgniteCacheProxy<?, ?> apply(IgniteCacheProxyImpl<?, ?> entry) {
+                return new GatewayProtectedCacheProxy<>(entry, new CacheOperationContext(), true);
+            }
+        });
     }
 
     /**
@@ -3227,7 +3242,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 GridCacheAdapter<?, ?> cacheAdapter = caches.get(name);
 
                 if (cacheAdapter != null)
-                    proxy = new IgniteCacheProxy(cacheAdapter.context(), cacheAdapter, null, false);
+                    proxy = new IgniteCacheProxyImpl(cacheAdapter.context(), cacheAdapter, false);
             }
 
             assert proxy != null : name;
@@ -3302,13 +3317,16 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         IgniteCacheProxy<?, ?> cache = jCacheProxies.get(cacheName);
 
+        // Try to start cache, there is no guarantee that cache will be instantiated.
         if (cache == null) {
             dynamicStartCache(null, cacheName, null, false, failIfNotStarted, checkThreadTx).get();
 
             cache = jCacheProxies.get(cacheName);
         }
 
-        return (IgniteCacheProxy<K, V>)cache;
+        return cache != null ?
+            new GatewayProtectedCacheProxy<>((IgniteCacheProxy<K, V>)cache, new CacheOperationContext(), true) :
+            null;
     }
 
     /**
@@ -3425,7 +3443,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     public <K, V> IgniteCacheProxy<K, V> jcache(String name) {
         assert name != null;
 
-        IgniteCacheProxy<K, V> cache = (IgniteCacheProxy<K, V>)jCacheProxies.get(name);
+        IgniteCacheProxy<K, V> cache = (IgniteCacheProxy<K, V>) jCacheProxies.get(name);
 
         if (cache == null)
             throw new IllegalArgumentException("Cache is not configured: " + name);
@@ -3447,9 +3465,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     public Collection<IgniteCacheProxy<?, ?>> publicCaches() {
         Collection<IgniteCacheProxy<?, ?>> res = new ArrayList<>(jCacheProxies.size());
 
-        for (Map.Entry<String, IgniteCacheProxy<?, ?>> entry : jCacheProxies.entrySet()) {
+        for (Map.Entry<String, IgniteCacheProxyImpl<?, ?>> entry : jCacheProxies.entrySet()) {
             if (entry.getValue().context().userCache())
-                res.add(entry.getValue());
+                res.add(new GatewayProtectedCacheProxy(entry.getValue(), new CacheOperationContext(), true));
         }
 
         return res;

@@ -29,6 +29,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
@@ -610,6 +611,14 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
         List<ClusterNode> nodes = cacheCtx.isLocal() ?
             cacheCtx.affinity().nodesByKey(entry.key(), topVer) :
             cacheCtx.topology().nodes(cacheCtx.affinity().partition(entry.key()), topVer);
+
+        if (F.isEmpty(nodes)) {
+            onDone(new ClusterTopologyServerNotFoundException("Failed to map keys to nodes " +
+                "(partition is not mapped to any node) [key=" + entry.key() +
+                ", partition=" + cacheCtx.affinity().partition(entry.key()) + ", topVer=" + topVer + ']'));
+
+            return;
+        }
 
         txMapping.addMapping(nodes);
 
