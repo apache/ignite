@@ -348,8 +348,8 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
                     .querySqlFieldsNoCache(qry, true);
 
                 if (qryCur.isQuery())
-                    throw new IgniteCheckedException("Batch query is not DML / DDL query: [qry='" + q.sql()
-                        + "', args=" + Arrays.toString(q.args()) + ']');
+                    throw new IgniteCheckedException("Query produced result set [qry=" + q.sql() + ", args=" +
+                        Arrays.toString(q.args()) + ']');
 
                 List<List<?>> items = qryCur.getAll();
 
