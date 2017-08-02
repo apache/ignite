@@ -32,6 +32,8 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMessageParser;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequestHandler;
 import org.apache.ignite.internal.processors.odbc.odbc.OdbcMessageParser;
 import org.apache.ignite.internal.processors.odbc.odbc.OdbcRequestHandler;
+import org.apache.ignite.internal.processors.platform.client.PlatformMessageParser;
+import org.apache.ignite.internal.processors.platform.client.PlatformRequestHandler;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.nio.GridNioServerListenerAdapter;
 import org.apache.ignite.internal.util.nio.GridNioSession;
@@ -42,11 +44,14 @@ import org.jetbrains.annotations.Nullable;
  * SQL message listener.
  */
 public class SqlListenerNioListener extends GridNioServerListenerAdapter<byte[]> {
-    /** The value corresponds to ODBC driver of the parser field of the handshake request. */
+    /** ODBC driver handshake code. */
     public static final byte ODBC_CLIENT = 0;
 
-    /** The value corresponds to JDBC driver of the parser field of the handshake request. */
+    /** JDBC driver handshake code. */
     public static final byte JDBC_CLIENT = 1;
+
+    /** Platform thin client handshake code. */
+    public static final byte PLATFORM_CLIENT = 2;
 
     /** Current version. */
     private static final SqlListenerProtocolVersion CURRENT_VER = SqlListenerProtocolVersion.create(2, 1, 0);
@@ -260,6 +265,12 @@ public class SqlListenerNioListener extends GridNioServerListenerAdapter<byte[]>
                 enforceJoinOrder, collocated, replicatedOnly, autoCloseCursors);
 
             SqlListenerMessageParser parser = new JdbcMessageParser(ctx);
+
+            return new SqlListenerConnectionContext(handler, parser);
+        }
+        else if (clientType == PLATFORM_CLIENT) {
+            PlatformMessageParser parser = new PlatformMessageParser();
+            PlatformRequestHandler handler = new PlatformRequestHandler(ctx);
 
             return new SqlListenerConnectionContext(handler, parser);
         }
