@@ -20,10 +20,14 @@ package org.apache.ignite;
 import com.google.common.base.Charsets;
 import com.google.common.io.CharStreams;
 import java.io.File;
-import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -43,11 +47,10 @@ public class MavenUtils {
      *
      * @param ver Version of ignite-core artifact.
      * @return Path to the artifact.
-     * @throws IOException In case of an error.
-     * @throws InterruptedException In case of an error.
+     * @throws Exception In case of an error.
      * @see #getPathToArtifact(String)
      */
-    public static String getPathToIgniteCoreArtifact(String ver) throws IOException, InterruptedException {
+    public static String getPathToIgniteCoreArtifact(String ver) throws Exception {
         return getPathToArtifact("org.apache.ignite:ignite-core:" + ver);
     }
 
@@ -59,10 +62,9 @@ public class MavenUtils {
      *
      * @param artifact Artifact identifier, must match pattern [groupId:artifactId:version].
      * @return Path to the artifact.
-     * @throws IOException In case of an error.
-     * @throws InterruptedException In case of an error.
+     * @throws Exception In case of an error.
      */
-    public static String getPathToArtifact(String artifact) throws IOException, InterruptedException {
+    public static String getPathToArtifact(String artifact) throws Exception {
         String[] names = artifact.split(":");
 
         assert names.length == 3;
@@ -88,10 +90,9 @@ public class MavenUtils {
      * Gets a path to the Maven local repository.
      *
      * @return Path to the Maven local repository.
-     * @throws IOException In case of an error.
-     * @throws InterruptedException In case of an error.
+     * @throws Exception In case of an error.
      */
-    public static String getMavenLocalRepositoryPath() throws IOException, InterruptedException {
+    public static String getMavenLocalRepositoryPath() throws Exception {
         if (locRepPath == null)
             locRepPath = defineMavenLocalRepositoryPath();
 
@@ -102,10 +103,9 @@ public class MavenUtils {
      * Defines a path to the Maven local repository.
      *
      * @return Path to the Maven local repository.
-     * @throws IOException In case of an error.
-     * @throws InterruptedException In case of an error.
+     * @throws Exception In case of an error.
      */
-    private static String defineMavenLocalRepositoryPath() throws IOException, InterruptedException {
+    private static String defineMavenLocalRepositoryPath() throws Exception {
         Process p = exec("mvn help:effective-settings");
 
         String output = CharStreams.toString(new InputStreamReader(p.getInputStream(), Charsets.UTF_8));
@@ -121,15 +121,14 @@ public class MavenUtils {
      * Downloads and stores in local repository an artifact with given identifier.
      *
      * @param artifact Artifact identifier, must match pattern [groupId:artifactId:version].
-     * @throws IOException In case of an error.
-     * @throws InterruptedException In case of an error.
+     * @throws Exception In case of an error.
      */
-    private static void downloadArtifact(String artifact) throws IOException, InterruptedException {
+    private static void downloadArtifact(String artifact) throws Exception {
         X.println("Downloading artifact... Identifier: " + artifact);
 
         exec("mvn dependency:get -Dartifact=" + artifact);
 
-        X.println("The artifact was downloaded");
+        X.println("Download is finished");
     }
 
     /**
@@ -137,10 +136,9 @@ public class MavenUtils {
      *
      * @param cmd Command to execute.
      * @return Process of executed command.
-     * @throws IOException In case of an error.
-     * @throws InterruptedException In case of an error.
+     * @throws Exception In case of an error.
      */
-    private static Process exec(String cmd) throws IOException, InterruptedException {
+    private static Process exec(String cmd) throws Exception {
         ProcessBuilder pb = new ProcessBuilder();
         pb.redirectErrorStream(true);
 
@@ -148,12 +146,30 @@ public class MavenUtils {
             new String[] {"cmd", "/c", cmd} :
             new String[] {cmd});
 
-        Process p = pb.start();
+        final Process p = pb.start();
 
-        int exitCode = p.waitFor();
+        ExecutorService executor = Executors.newSingleThreadExecutor();
 
-        assert exitCode == 0 : "Command=" + cmd + " couldn't be executed: "
-            + CharStreams.toString(new InputStreamReader(p.getInputStream(), Charsets.UTF_8));
+        Future<Integer> fut = executor.submit(new Callable<Integer>() {
+            @Override public Integer call() throws Exception {
+                return p.waitFor();
+            }
+        });
+
+        try {
+            int exitCode = fut.get(5, TimeUnit.MINUTES);
+
+            if (exitCode != 0)
+                throw new Exception("Unexpected exit code");
+        }
+        catch (Exception e) {
+            p.destroy();
+
+            X.printerrln("Command=" + cmd + " couldn't be executed: "
+                + CharStreams.toString(new InputStreamReader(p.getInputStream(), Charsets.UTF_8)), e);
+
+            throw e;
+        }
 
         return p;
     }
