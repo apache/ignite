@@ -867,7 +867,7 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
-     * Starts new grid of given version and name in separate JVM.
+     * Starts new grid of given version and name <b>in separate JVM</b>.
      *
      * Uses an ignite-core artifact in the Maven local repository,
      * if it isn't exists there, it will be downloaded and stored via Maven.
@@ -876,7 +876,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @param ver Ignite version.
      * @param clos IgniteClosure.
      * @return Started grid.
-     * @throws Exception If failed
+     * @throws Exception If failed.
      */
     protected Ignite startGrid(String igniteInstanceName, String ver,
         IgniteInClosure<IgniteConfiguration> clos) throws Exception {
@@ -884,7 +884,7 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
-     * Starts new grid of given version and name in separate JVM.
+     * Starts new grid of given version and name <b>in separate JVM</b>.
      *
      * Uses an ignite-core artifact in the Maven local repository,
      * if it isn't exists there, it will be downloaded and stored via Maven.
@@ -894,7 +894,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @param cfg Ignite configuration.
      * @param clos IgniteClosure.
      * @return Started grid.
-     * @throws Exception If failed
+     * @throws Exception If failed.
      */
     protected Ignite startGrid(String igniteInstanceName, String ver, IgniteConfiguration cfg,
         IgniteInClosure<IgniteConfiguration> clos) throws Exception {
@@ -902,7 +902,7 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
-     * Starts new grid of given version and name in separate JVM.
+     * Starts new grid of given version and name <b>in separate JVM</b>.
      *
      * Uses an ignite-core artifact in the Maven local repository,
      * if it isn't exists there, it will be downloaded and stored via Maven.
@@ -916,52 +916,57 @@ public abstract class GridAbstractTest extends TestCase {
      * @return Started grid.
      * @throws Exception If failed.
      */
-    protected Ignite startGrid(String igniteInstanceName, String ver, IgniteConfiguration cfg,
-        IgniteInClosure<IgniteConfiguration> clos, Collection<String> jvmArgs,
+    protected Ignite startGrid(String igniteInstanceName, final String ver, IgniteConfiguration cfg,
+        IgniteInClosure<IgniteConfiguration> clos, final Collection<String> jvmArgs,
         boolean resetDiscovery) throws Exception {
         assert !isFirstGrid(igniteInstanceName);
 
         if (cfg == null)
             cfg = optimize(getConfiguration(igniteInstanceName));
 
-        Collection<String> filteredJvmArgs = new ArrayList<>();
+        final String pathToArtifact = MavenUtils.getPathToIgniteCoreArtifact(ver);
 
-        filteredJvmArgs.add("-ea");
+        return new IgniteProcessProxy(cfg, log, grid(0), resetDiscovery, clos) {
+            @Override protected Collection<String> filteredJvmArgs() {
+                Collection<String> filteredJvmArgs = new ArrayList<>();
 
-        for (String arg : U.jvmArgs()) {
-            if (arg.startsWith("-Xmx") || arg.startsWith("-Xms"))
-                filteredJvmArgs.add(arg);
-        }
+                filteredJvmArgs.add("-ea");
 
-        String classPath = System.getProperty("java.class.path");
+                for (String arg : U.jvmArgs()) {
+                    if (arg.startsWith("-Xmx") || arg.startsWith("-Xms"))
+                        filteredJvmArgs.add(arg);
+                }
 
-        String[] paths = classPath.split(File.pathSeparator);
+                String classPath = System.getProperty("java.class.path");
 
-        StringBuilder pathBuilder = new StringBuilder();
+                String[] paths = classPath.split(File.pathSeparator);
 
-        String corePathTemplate = "ignite.modules.core.target.classes".replace(".", File.separator);
+                StringBuilder pathBuilder = new StringBuilder();
 
-        for (String path : paths) {
-            if (!path.contains(corePathTemplate))
-                pathBuilder.append(path).append(File.pathSeparator);
-        }
+                String corePathTemplate = "ignite.modules.core.target.classes".replace(".", File.separator);
 
-        String pathToArtifact = MavenUtils.getPathToIgniteCoreArtifact(ver);
+                for (String path : paths) {
+                    if (!path.contains(corePathTemplate))
+                        pathBuilder.append(path).append(File.pathSeparator);
+                }
 
-        pathBuilder.append(pathToArtifact).append(File.pathSeparator);
+                pathBuilder.append(pathToArtifact).append(File.pathSeparator);
 
-        filteredJvmArgs.add("-cp");
-        filteredJvmArgs.add(pathBuilder.toString());
+                filteredJvmArgs.add("-cp");
+                filteredJvmArgs.add(pathBuilder.toString());
 
-        if (jvmArgs != null) {
-            for (String arg : jvmArgs) {
-                if (!arg.startsWith("-Xmx") && !arg.startsWith("-Xms")
-                    && !arg.startsWith("-cp") && !arg.startsWith("-classpath"))
-                    filteredJvmArgs.add(arg);
+                // additional JVM arguments
+                if (jvmArgs != null) {
+                    for (String arg : jvmArgs) {
+                        if (!arg.startsWith("-Xmx") && !arg.startsWith("-Xms")
+                            && !arg.startsWith("-cp") && !arg.startsWith("-classpath"))
+                            filteredJvmArgs.add(arg);
+                    }
+                }
+
+                return filteredJvmArgs;
             }
-        }
-
-        return new IgniteProcessProxy(cfg, log, grid(0), resetDiscovery, filteredJvmArgs, clos);
+        };
     }
 
     /**

@@ -135,7 +135,7 @@ public class IgniteProcessProxy implements IgniteEx {
      */
     public IgniteProcessProxy(IgniteConfiguration cfg, IgniteLogger log, Ignite locJvmGrid, boolean resetDiscovery)
         throws Exception {
-        this(cfg, log, locJvmGrid, resetDiscovery, null, null);
+        this(cfg, log, locJvmGrid, resetDiscovery, null);
     }
 
     /**
@@ -143,12 +143,12 @@ public class IgniteProcessProxy implements IgniteEx {
      * @param log Logger.
      * @param locJvmGrid Local JVM grid.
      * @param resetDiscovery Reset DiscoverySpi at the configuration.
-     * @param jvmArgs JVM Arguments.
-     * @param clos IgniteClosure.
+     * @param clos IgniteClosure for post configuration.
      * @throws Exception On error.
+     * @see #filteredJvmArgs()
      */
     public IgniteProcessProxy(IgniteConfiguration cfg, IgniteLogger log, Ignite locJvmGrid, boolean resetDiscovery,
-        Collection<String> jvmArgs, IgniteInClosure<IgniteConfiguration> clos) throws Exception {
+        IgniteInClosure<IgniteConfiguration> clos) throws Exception {
         this.cfg = cfg;
         this.locJvmGrid = locJvmGrid;
         this.log = log.getLogger("jvm-" + id.toString().substring(0, id.toString().indexOf('-')));
@@ -167,27 +167,7 @@ public class IgniteProcessProxy implements IgniteEx {
             params += " " + closFileName;
         }
 
-        Collection<String> filteredJvmArgs = jvmArgs;
-
-        if (filteredJvmArgs == null) {
-            filteredJvmArgs = new ArrayList<>();
-
-            filteredJvmArgs.add("-ea");
-
-            Marshaller marsh = cfg.getMarshaller();
-
-            if (marsh != null)
-                filteredJvmArgs.add("-D" + IgniteTestResources.MARSH_CLASS_NAME + "=" + marsh.getClass().getName());
-            else
-                filteredJvmArgs.add("-D" + IgniteTestResources.MARSH_CLASS_NAME + "=" + BinaryMarshaller.class.getName());
-
-            for (String arg : U.jvmArgs()) {
-                if (arg.startsWith("-Xmx") || arg.startsWith("-Xms") ||
-                    arg.startsWith("-cp") || arg.startsWith("-classpath") ||
-                    (marsh != null && arg.startsWith("-D" + IgniteTestResources.MARSH_CLASS_NAME)))
-                    filteredJvmArgs.add(arg);
-            }
-        }
+        Collection<String> filteredJvmArgs = filteredJvmArgs();
 
         final CountDownLatch rmtNodeStartedLatch = new CountDownLatch(1);
 
@@ -221,6 +201,33 @@ public class IgniteProcessProxy implements IgniteEx {
             throw new IllegalStateException("There was found instance assotiated with " + cfg.getIgniteInstanceName() +
                 ", instance= " + prevVal + ". New started node was stopped.");
         }
+    }
+
+    /**
+     * Creates list of JVM arguments to be used to start new Ignite process.
+     *
+     * @return JVM arguments.
+     */
+    protected Collection<String> filteredJvmArgs() {
+        Collection<String> filteredJvmArgs = new ArrayList<>();
+
+        filteredJvmArgs.add("-ea");
+
+        Marshaller marsh = cfg.getMarshaller();
+
+        if (marsh != null)
+            filteredJvmArgs.add("-D" + IgniteTestResources.MARSH_CLASS_NAME + "=" + marsh.getClass().getName());
+        else
+            filteredJvmArgs.add("-D" + IgniteTestResources.MARSH_CLASS_NAME + "=" + BinaryMarshaller.class.getName());
+
+        for (String arg : U.jvmArgs()) {
+            if (arg.startsWith("-Xmx") || arg.startsWith("-Xms") ||
+                arg.startsWith("-cp") || arg.startsWith("-classpath") ||
+                (marsh != null && arg.startsWith("-D" + IgniteTestResources.MARSH_CLASS_NAME)))
+                filteredJvmArgs.add(arg);
+        }
+
+        return filteredJvmArgs;
     }
 
     /**
