@@ -1181,9 +1181,9 @@
                                 <configuration>
                                     <failOnError>false</failOnError>
                                     <target>
-                                        <move todir="${basedir}/target">
+                                        <copy todir="${basedir}/target">
                                             <fileset dir="${basedir}/../module-temp/${basedir}/target" preservelastmodified="true"/>
-                                        </move>
+                                        </copy>
                                         <delete dir="${basedir}/../module-temp"/>
                                     </target>
                                 </configuration>
