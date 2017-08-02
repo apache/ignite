@@ -986,7 +986,7 @@
         </profile>
 
         <profile>
-            <id>test delete</id>
+            <id>test-delete</id>
             <build>
                 <plugins>
 
