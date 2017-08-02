@@ -31,7 +31,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.Set;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
@@ -413,6 +415,49 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
 
             assert meta.getParameterType(2) == Types.INTEGER;
             assert meta.isNullable(2) == ParameterMetaData.parameterNullableUnknown;
+        }
+        catch (Exception e) {
+            log.error("Unexpected exception", e);
+
+            fail();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testSchemasMetadata() throws Exception {
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            ResultSet rs = conn.getMetaData().getSchemas();
+
+            Set<String> expectedSchemas = new HashSet<>(Arrays.asList("PUBLIC", "PERS", "ORG"));
+
+            Set<String> schemas = new HashSet<>();
+
+            while (rs.next()) {
+                schemas.add(rs.getString(1));
+
+                assert rs.getString(2) == null;
+            }
+
+            assert expectedSchemas.equals(schemas) : "Unexpected schemas: " + schemas +
+                ". Expected schemas: " + expectedSchemas;
+        }
+        catch (Exception e) {
+            log.error("Unexpected exception", e);
+
+            fail();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testEmptySchemasMetadata() throws Exception {
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            ResultSet rs = conn.getMetaData().getSchemas(null, "qqq");
+
+            assert !rs.next() : " Empty result set is expected";
         }
         catch (Exception e) {
             log.error("Unexpected exception", e);

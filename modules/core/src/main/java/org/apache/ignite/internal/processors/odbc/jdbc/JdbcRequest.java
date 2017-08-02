@@ -54,6 +54,9 @@ public class JdbcRequest extends SqlListenerRequest implements JdbcRawBinaryliza
     /** Get primary keys metadata request. */
     static final byte META_PRIMARY_KEYS = 10;
 
+    /** Get schemas metadata request. */
+    static final byte META_SCHEMAS = 11;
+
     /** Request type. */
     private byte type;
 
@@ -134,6 +137,11 @@ public class JdbcRequest extends SqlListenerRequest implements JdbcRawBinaryliza
 
             case META_PRIMARY_KEYS:
                 req = new JdbcMetaPrimaryKeysRequest();
+
+                break;
+
+            case META_SCHEMAS:
+                req = new JdbcMetaSchemasRequest();
 
                 break;
 

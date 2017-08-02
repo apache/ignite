@@ -40,6 +40,8 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaParamsRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaParamsResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaPrimaryKeysRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaPrimaryKeysResult;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaSchemasRequest;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaSchemasResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaTablesRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaTablesResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryCloseRequest;
@@ -65,8 +67,11 @@ public class JdbcThinTcpIo {
     /** Initial output stream capacity for handshake. */
     private static final int HANDSHAKE_MSG_SIZE = 13;
 
-    /** Initial output for query message. */
+    /** Initial output size for messages with unknown size. */
     private static final int DYNAMIC_SIZE_MSG_CAP = 1024;
+
+    /** Initial output size for short messages with unknown size. */
+    private static final int DYNAMIC_SIZE_MSG_CAP_256 = 256;
 
     /** Initial output for query fetch message. */
     private static final int QUERY_FETCH_MSG_SIZE = 13;
@@ -360,6 +365,16 @@ public class JdbcThinTcpIo {
      */
     public JdbcMetaPrimaryKeysResult primaryKeysMeta(String schema, String tbl) throws IOException, IgniteCheckedException {
         return sendRequest(new JdbcMetaPrimaryKeysRequest(schema, tbl), DYNAMIC_SIZE_MSG_CAP);
+    }
+
+    /**
+     * @param schemaPtrn Schema.
+     * @return Result.
+     * @throws IOException On error.
+     * @throws IgniteCheckedException On error.
+     */
+    public JdbcMetaSchemasResult schemasMeta(String schemaPtrn) throws IOException, IgniteCheckedException {
+        return sendRequest(new JdbcMetaSchemasRequest(schemaPtrn), DYNAMIC_SIZE_MSG_CAP_256);
     }
 
     /**

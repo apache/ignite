@@ -46,6 +46,7 @@ import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.META_C
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.META_INDEXES;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.META_PARAMS;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.META_PRIMARY_KEYS;
+import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.META_SCHEMAS;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.META_TABLES;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.QRY_CLOSE;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.QRY_EXEC;
@@ -156,6 +157,9 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
 
                 case META_PRIMARY_KEYS:
                     return getPrimaryKeys((JdbcMetaPrimaryKeysRequest)req);
+
+                case META_SCHEMAS:
+                    return getSchemas((JdbcMetaSchemasRequest)req);
             }
 
             return new JdbcResponse(SqlListenerResponse.STATUS_FAILED, "Unsupported JDBC request [req=" + req + ']');
@@ -345,7 +349,7 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
 
             String realSchema = req.schema();
 
-            for (String cacheName : ctx.cache().cacheNames())
+            for (String cacheName : ctx.cache().publicCacheNames())
             {
                 if (!matches(cacheName, realSchema))
                     continue;
@@ -563,6 +567,33 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
             }
 
             return new JdbcResponse(new JdbcMetaPrimaryKeysResult(meta));
+        }
+        catch (Exception e) {
+            U.error(log, "Failed to get parameters metadata [reqId=" + req.requestId() + ", req=" + req + ']', e);
+
+            return new JdbcResponse(SqlListenerResponse.STATUS_FAILED, e.toString());
+        }
+    }
+
+    /**
+     * @param req Request.
+     * @return Response.
+     */
+    private SqlListenerResponse getSchemas(JdbcMetaSchemasRequest req) {
+        try {
+            String schemaPtrn = req.schema();
+
+            List<String> schemas = new ArrayList<>();
+
+            if (matches(QueryUtils.DFLT_SCHEMA, schemaPtrn))
+                schemas.add(QueryUtils.DFLT_SCHEMA);
+
+            for (String cacheName : ctx.cache().publicCacheNames()) {
+                if (matches(cacheName, schemaPtrn))
+                    schemas.add(cacheName);
+            }
+
+            return new JdbcResponse(new JdbcMetaSchemasResult(schemas));
         }
         catch (Exception e) {
             U.error(log, "Failed to get parameters metadata [reqId=" + req.requestId() + ", req=" + req + ']', e);

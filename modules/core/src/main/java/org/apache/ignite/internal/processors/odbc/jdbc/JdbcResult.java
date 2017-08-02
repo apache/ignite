@@ -50,6 +50,9 @@ public class JdbcResult implements JdbcRawBinarylizable {
     /** Primary keys metadata result. */
     static final byte META_PRIMARY_KEYS = 10;
 
+    /** Primary keys metadata result. */
+    static final byte META_SCHEMAS = 11;
+
     /** Success status. */
     private byte type;
 
@@ -120,6 +123,11 @@ public class JdbcResult implements JdbcRawBinarylizable {
 
             case META_PRIMARY_KEYS:
                 res = new JdbcMetaPrimaryKeysResult();
+
+                break;
+
+            case META_SCHEMAS:
+                res = new JdbcMetaSchemasResult();
 
                 break;
 

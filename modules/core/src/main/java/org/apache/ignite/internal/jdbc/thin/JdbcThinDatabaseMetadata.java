@@ -35,6 +35,7 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcIndexMeta;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaColumnsResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaIndexesResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaPrimaryKeysResult;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaSchemasResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaTablesResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcPrimaryKeyMeta;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcTableMeta;
@@ -1185,21 +1186,36 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
 
     /** {@inheritDoc} */
     @Override public ResultSet getSchemas(String catalog, String schemaPtrn) throws SQLException {
-        // TODO: impl
-//        List<List<Object>> rows = new ArrayList<>(meta.size());
-//
-//        for (String schema : meta.keySet())
-//            if (matches(schema, schemaPtrn))
-//                rows.add(Arrays.<Object>asList(schema, (String)null));
-//
-//        return new JdbcThinResultSet(
-//            conn.createStatement0(),
-//            Collections.<String>emptyList(),
-//            Arrays.asList("TABLE_SCHEM", "TABLE_CATALOG"),
-//            Arrays.<String>asList(String.class.getName(), String.class.getName()),
-//            rows
-//        );
-        return emptyResultSet();
+        try {
+            if (conn.isClosed())
+                throw new SQLException("Connection is closed.");
+
+            JdbcMetaSchemasResult res = conn.io().schemasMeta(schemaPtrn);
+
+            List<List<Object>> rows = new LinkedList<>();
+
+            for (String schema : res.schemas()) {
+                List<Object> row = new ArrayList<>(2);
+
+                row.add(upperCase(schema));
+                row.add(null);
+
+                rows.add(row);
+            }
+
+            return new JdbcThinResultSet(rows, Arrays.asList(
+                new JdbcColumnMeta(null, null, "TABLE_SCHEM", String.class),
+                new JdbcColumnMeta(null, null, "TABLE_CATALOG", String.class)
+            ));
+        }
+        catch (IOException e) {
+            conn.close();
+
+            throw new SQLException("Failed to query Ignite.", e);
+        }
+        catch (IgniteCheckedException e) {
+            throw new SQLException("Failed to query Ignite.", e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -1221,18 +1237,14 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
     @Override public ResultSet getFunctions(String catalog, String schemaPtrn,
         String functionNamePtrn) throws SQLException {
 
-        // TODO: impl
-//        return new JdbcThinResultSet(
-//            conn.createStatement0(),
-//            Collections.<String>emptyList(),
-//            Arrays.asList("FUNCTION_CAT", "FUNCTION_SCHEM", "FUNCTION_NAME",
-//                "REMARKS", "FUNCTION_TYPE", "SPECIFIC_NAME"),
-//            Arrays.<String>asList(String.class.getName(), String.class.getName(), String.class.getName(),
-//                String.class.getName(), Short.class.getName(), String.class.getName()),
-//            Collections.<List<Object>>emptyList()
-//        );
-
-        return emptyResultSet();
+        return new JdbcThinResultSet(Collections.<List<Object>>emptyList(), Arrays.asList(
+            new JdbcColumnMeta(null, null, "FUNCTION_CAT", String.class),
+            new JdbcColumnMeta(null, null, "FUNCTION_SCHEM", String.class),
+            new JdbcColumnMeta(null, null, "FUNCTION_NAME", String.class),
+            new JdbcColumnMeta(null, null, "REMARKS", String.class),
+            new JdbcColumnMeta(null, null, "FUNCTION_TYPE", String.class),
+            new JdbcColumnMeta(null, null, "SPECIFIC_NAME", String.class)
+        ));
     }
 
     /** {@inheritDoc} */
@@ -1282,17 +1294,5 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
     /** {@inheritDoc} */
     @Override public boolean generatedKeyAlwaysReturned() throws SQLException {
         return false;
-    }
-
-    /**
-     * Checks whether string matches SQL pattern.
-     *
-     * @param str String.
-     * @param ptrn Pattern.
-     * @return Whether string matches pattern.
-     */
-    private boolean matches(String str, String ptrn) {
-        return str != null && (ptrn == null ||
-            str.toUpperCase().matches(ptrn.toUpperCase().replace("%", ".*").replace("_", ".")));
     }
 }
