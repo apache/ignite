@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
+import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
@@ -178,5 +179,10 @@ public abstract class GridH2Row implements GridSearchRowPointer, CacheDataRow, R
     /** {@inheritDoc} */
     @Override public int cacheId() {
         return 0;
+    }
+
+    @Override
+    public WALPointer reference() {
+        return null;
     }
 }
