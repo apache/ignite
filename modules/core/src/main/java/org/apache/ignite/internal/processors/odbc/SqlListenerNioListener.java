@@ -269,7 +269,7 @@ public class SqlListenerNioListener extends GridNioServerListenerAdapter<byte[]>
             return new SqlListenerConnectionContext(handler, parser);
         }
         else if (clientType == THIN_CLIENT) {
-            ClientMessageParser parser = new ClientMessageParser();
+            ClientMessageParser parser = new ClientMessageParser(ctx);
             ClientRequestHandler handler = new ClientRequestHandler(ctx);
 
             return new SqlListenerConnectionContext(handler, parser);

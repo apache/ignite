@@ -17,32 +17,30 @@
 
 package org.apache.ignite.internal.processors.platform.client;
 
-import org.apache.ignite.binary.BinaryRawWriter;
-import org.apache.ignite.internal.processors.odbc.SqlListenerResponse;
-import org.jetbrains.annotations.Nullable;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 
 /**
- * Thin client response.
+ * Cache get request.
  */
-class ClientResponse extends SqlListenerResponse {
-    /** Request id. */
-    private final int requestId;
+class ClientGetRequest extends ClientCacheRequest {
+    /** */
+    private final Object key;
 
     /**
      * Ctor.
      *
-     * @param requestId Request id.
+     * @param reader Reader.
      */
-    ClientResponse(int requestId) {
-        super(STATUS_SUCCESS, null);
+    ClientGetRequest(BinaryRawReaderEx reader) {
+        super(reader);
 
-        this.requestId = requestId;
+        key = reader.readObjectDetached();
     }
 
-    /**
-     * Encodes the response data.
-     */
-    public void encode(BinaryRawWriter writer) {
-        writer.writeInt(requestId);
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    @Override public ClientResponse process(GridKernalContext ctx) {
+        return new ClientGetResponse(getRequestId(), getCache(ctx).get(key));
     }
 }

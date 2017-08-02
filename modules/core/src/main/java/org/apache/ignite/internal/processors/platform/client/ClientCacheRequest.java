@@ -17,32 +17,37 @@
 
 package org.apache.ignite.internal.processors.platform.client;
 
-import org.apache.ignite.binary.BinaryRawWriter;
-import org.apache.ignite.internal.processors.odbc.SqlListenerResponse;
-import org.jetbrains.annotations.Nullable;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.binary.BinaryRawReader;
+import org.apache.ignite.internal.GridKernalContext;
 
 /**
- * Thin client response.
+ * Cache get request.
  */
-class ClientResponse extends SqlListenerResponse {
-    /** Request id. */
-    private final int requestId;
+class ClientCacheRequest extends ClientRequest {
+    /** */
+    private final int cacheId;
 
     /**
      * Ctor.
      *
-     * @param requestId Request id.
+     * @param reader Reader.
      */
-    ClientResponse(int requestId) {
-        super(STATUS_SUCCESS, null);
+    ClientCacheRequest(BinaryRawReader reader) {
+        super(reader);
 
-        this.requestId = requestId;
+        cacheId = reader.readInt();
+        reader.readByte();  // Flags (skipStore, etc);
     }
 
     /**
-     * Encodes the response data.
+     * Gets the cache for current cache id.
+     *
+     * @param ctx Kernal context.
+     * @return Cache.
      */
-    public void encode(BinaryRawWriter writer) {
-        writer.writeInt(requestId);
+    protected IgniteCache getCache(GridKernalContext ctx) {
+        String cacheName = ctx.cache().context().cacheContext(cacheId).cache().name();
+        return ctx.grid().cache(cacheName).withKeepBinary();
     }
 }

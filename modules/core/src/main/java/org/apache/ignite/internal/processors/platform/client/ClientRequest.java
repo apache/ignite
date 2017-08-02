@@ -17,32 +17,41 @@
 
 package org.apache.ignite.internal.processors.platform.client;
 
+import org.apache.ignite.binary.BinaryRawReader;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.odbc.SqlListenerRequest;
 
 /**
  * Thin client request.
  */
-public class ClientRequest extends SqlListenerRequest {
-    /** */
-    private final byte[] data;
+class ClientRequest extends SqlListenerRequest {
+    /** Request id. */
+    private final int requestId;
 
     /**
      * Ctor.
      *
-     * @param data Request raw data.
+     * @param reader Reader.
      */
-    ClientRequest(byte[] data) {
-        assert data != null;
-
-        this.data = data;
+    ClientRequest(BinaryRawReader reader) {
+        requestId = reader.readInt();
     }
 
     /**
-     * Gets the request data.
+     * Gets the request id.
      *
      * @return Data.
      */
-    public byte[] getData() {
-        return data;
+    public int getRequestId() {
+        return requestId;
+    }
+
+    /**
+     * Processes the request.
+     *
+     * @return Response.
+     */
+    public ClientResponse process(GridKernalContext ctx) {
+        return new ClientResponse(requestId);
     }
 }
