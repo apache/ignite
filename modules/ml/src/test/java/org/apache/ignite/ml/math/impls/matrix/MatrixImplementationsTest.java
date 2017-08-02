@@ -287,6 +287,9 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
             if (ignore(m.getClass()))
                 return;
 
+            if (m instanceof DenseLocalOffHeapMatrix)
+                return; //TODO: IGNITE-5535, waiting offheap support.
+
             double[][] data = fillAndReturn(m);
 
             double[] arr = fillArray(m.columnSize());

@@ -163,6 +163,11 @@ public class MatrixVectorStorage implements VectorStorage {
     }
 
     /** {@inheritDoc} */
+    @Override public double[] data() {
+        return parent.getStorage().data();
+    }
+
+    /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeObject(parent);
         out.writeInt(row);
