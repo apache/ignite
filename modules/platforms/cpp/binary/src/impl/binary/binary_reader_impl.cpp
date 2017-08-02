@@ -721,9 +721,6 @@ namespace ignite
 
             bool BinaryReaderImpl::SkipIfNull()
             {
-                CheckRawMode(true);
-                CheckSingleMode(true);
-
                 InteropStreamPositionGuard<InteropInputStream> positionGuard(*stream);
 
                 int8_t hdr = stream->ReadInt8();
@@ -746,70 +743,70 @@ namespace ignite
             }
 
             template <>
-            int8_t BinaryReaderImpl::ReadTopObject<int8_t>()
+            void BinaryReaderImpl::ReadTopObject0<int8_t>(int8_t& res)
             {
-                return ReadTopObject0<int8_t>(IGNITE_TYPE_BYTE, BinaryUtils::ReadInt8);
+                res = ReadTopObject0<int8_t>(IGNITE_TYPE_BYTE, BinaryUtils::ReadInt8);
             }
 
             template <>
-            bool BinaryReaderImpl::ReadTopObject<bool>()
+            void BinaryReaderImpl::ReadTopObject0<bool>(bool& res)
             {
-                return ReadTopObject0<bool>(IGNITE_TYPE_BOOL, BinaryUtils::ReadBool);
+                res = ReadTopObject0<bool>(IGNITE_TYPE_BOOL, BinaryUtils::ReadBool);
             }
 
             template <>
-            int16_t BinaryReaderImpl::ReadTopObject<int16_t>()
+            void BinaryReaderImpl::ReadTopObject0<int16_t>(int16_t& res)
             {
-                return ReadTopObject0<int16_t>(IGNITE_TYPE_SHORT, BinaryUtils::ReadInt16);
+                res = ReadTopObject0<int16_t>(IGNITE_TYPE_SHORT, BinaryUtils::ReadInt16);
             }
 
             template <>
-            uint16_t BinaryReaderImpl::ReadTopObject<uint16_t>()
+            void BinaryReaderImpl::ReadTopObject0<uint16_t>(uint16_t& res)
             {
-                return ReadTopObject0<uint16_t>(IGNITE_TYPE_CHAR, BinaryUtils::ReadUInt16);
+                res = ReadTopObject0<uint16_t>(IGNITE_TYPE_CHAR, BinaryUtils::ReadUInt16);
             }
 
             template <>
-            int32_t BinaryReaderImpl::ReadTopObject<int32_t>()
+            void BinaryReaderImpl::ReadTopObject0<int32_t>(int32_t& res)
             {
-                return ReadTopObject0<int32_t>(IGNITE_TYPE_INT, BinaryUtils::ReadInt32);
+                res = ReadTopObject0<int32_t>(IGNITE_TYPE_INT, BinaryUtils::ReadInt32);
             }
 
             template <>
-            int64_t BinaryReaderImpl::ReadTopObject<int64_t>()
+            void BinaryReaderImpl::ReadTopObject0<int64_t>(int64_t& res)
             {
-                return ReadTopObject0<int64_t>(IGNITE_TYPE_LONG, BinaryUtils::ReadInt64);
+                res = ReadTopObject0<int64_t>(IGNITE_TYPE_LONG, BinaryUtils::ReadInt64);
             }
 
             template <>
-            float BinaryReaderImpl::ReadTopObject<float>()
+            void BinaryReaderImpl::ReadTopObject0<float>(float& res)
             {
-                return ReadTopObject0<float>(IGNITE_TYPE_FLOAT, BinaryUtils::ReadFloat);
+                res = ReadTopObject0<float>(IGNITE_TYPE_FLOAT, BinaryUtils::ReadFloat);
             }
 
             template <>
-            double BinaryReaderImpl::ReadTopObject<double>()
+            void BinaryReaderImpl::ReadTopObject0<double>(double& res)
             {
-                return ReadTopObject0<double>(IGNITE_TYPE_DOUBLE, BinaryUtils::ReadDouble);
+                res = ReadTopObject0<double>(IGNITE_TYPE_DOUBLE, BinaryUtils::ReadDouble);
             }
 
             template <>
-            Guid BinaryReaderImpl::ReadTopObject<Guid>()
+            void BinaryReaderImpl::ReadTopObject0<Guid>(Guid& res)
             {
-                return ReadTopObject0<Guid>(IGNITE_TYPE_UUID, BinaryUtils::ReadGuid);
+                res = ReadTopObject0<Guid>(IGNITE_TYPE_UUID, BinaryUtils::ReadGuid);
             }
 
             template <>
-            Date BinaryReaderImpl::ReadTopObject<Date>()
+            void BinaryReaderImpl::ReadTopObject0<Date>(Date& res)
             {
                 int8_t typeId = stream->ReadInt8();
 
                 if (typeId == IGNITE_TYPE_DATE)
-                    return BinaryUtils::ReadDate(stream);
+                    res = BinaryUtils::ReadDate(stream);
                 else if (typeId == IGNITE_TYPE_TIMESTAMP)
-                    return Date(BinaryUtils::ReadTimestamp(stream).GetMilliseconds());
+                    res = Date(BinaryUtils::ReadTimestamp(stream).GetMilliseconds());
                 else if (typeId == IGNITE_HDR_NULL)
-                    return BinaryUtils::GetDefaultValue<Date>();
+                    res = BinaryUtils::GetDefaultValue<Date>();
                 else {
                     int32_t pos = stream->Position() - 1;
 
@@ -819,19 +816,19 @@ namespace ignite
             }
 
             template <>
-            Timestamp BinaryReaderImpl::ReadTopObject<Timestamp>()
+            void BinaryReaderImpl::ReadTopObject0<Timestamp>(Timestamp& res)
             {
-                return ReadTopObject0<Timestamp>(IGNITE_TYPE_TIMESTAMP, BinaryUtils::ReadTimestamp);
+                res = ReadTopObject0<Timestamp>(IGNITE_TYPE_TIMESTAMP, BinaryUtils::ReadTimestamp);
             }
 
             template<>
-            Time BinaryReaderImpl::ReadTopObject<Time>()
+            void BinaryReaderImpl::ReadTopObject0<Time>(Time& res)
             {
-                return ReadTopObject0<Time>(IGNITE_TYPE_TIME, BinaryUtils::ReadTime);
+                res = ReadTopObject0<Time>(IGNITE_TYPE_TIME, BinaryUtils::ReadTime);
             }
 
             template<>
-            std::string BinaryReaderImpl::ReadTopObject<std::string>()
+            void BinaryReaderImpl::ReadTopObject0<std::string>(std::string& res)
             {
                 int8_t typeId = stream->ReadInt8();
 
@@ -839,19 +836,15 @@ namespace ignite
                 {
                     int32_t realLen = stream->ReadInt32();
 
-                    std::string res;
-
                     if (realLen > 0)
                     {
                         res.resize(realLen, 0);
 
                         stream->ReadInt8Array(reinterpret_cast<int8_t*>(&res[0]), realLen);
                     }
-
-                    return res;
                 }
                 else if (typeId == IGNITE_HDR_NULL)
-                    return std::string();
+                    res.clear();
                 else
                 {
                     int32_t pos = stream->Position() - 1;

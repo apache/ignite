@@ -1785,6 +1785,11 @@ public class GridJobProcessor extends GridProcessorAdapter {
                 if (jobAlwaysActivate) {
                     if (metricsUpdateFreq > -1L)
                         updateJobMetrics();
+
+                    if (!activeJobs.remove(worker.getJobId(), worker))
+                        cancelledJobs.remove(worker.getJobId(), worker);
+
+                    heldJobs.remove(worker.getJobId());
                 }
                 else {
                     if (!rwLock.tryReadLock()) {

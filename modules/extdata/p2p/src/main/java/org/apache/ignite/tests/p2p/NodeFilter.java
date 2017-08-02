@@ -15,18 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.tests.p2p;
 
-import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.lang.IgnitePredicate;
 
 /**
- * Factory JTA integration test using PARTITIONED cache.
+ *
  */
-public class GridPartitionedCacheJtaFactoryUseSyncSelfTest extends GridPartitionedCacheJtaFactorySelfTest {
-    /** {@inheritDoc} */
-    @Override protected void configureJta(IgniteConfiguration cfg) {
-        super.configureJta(cfg);
-
-        cfg.getTransactionConfiguration().setUseJtaSynchronization(true);
+public class NodeFilter implements IgnitePredicate<ClusterNode> {
+    @Override public boolean apply(ClusterNode node) {
+        return true;
     }
 }

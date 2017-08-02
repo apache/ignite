@@ -239,7 +239,7 @@ namespace Apache.Ignite.Core
                 // 3. Create startup object which will guide us through the rest of the process.
                 _startup = new Startup(cfg, cbs);
 
-                IUnmanagedTarget interopProc = null;
+                PlatformJniTarget interopProc = null;
 
                 try
                 {
@@ -249,7 +249,7 @@ namespace Apache.Ignite.Core
 
                     // 5. At this point start routine is finished. We expect STARTUP object to have all necessary data.
                     var node = _startup.Ignite;
-                    interopProc = node.InteropProcessor;
+                    interopProc = (PlatformJniTarget)node.InteropProcessor;
 
                     var javaLogger = log as JavaLogger;
                     if (javaLogger != null)
@@ -279,7 +279,7 @@ namespace Apache.Ignite.Core
 
                     // 2. Stop Ignite node if it was started.
                     if (interopProc != null)
-                        UU.IgnitionStop(interopProc.Context, gridName, true);
+                        UU.IgnitionStop(interopProc.Target.Context, gridName, true);
 
                     // 3. Throw error further (use startup error if exists because it is more precise).
                     if (_startup.Error != null)
@@ -466,7 +466,8 @@ namespace Apache.Ignite.Core
                 if (Nodes.ContainsKey(new NodeKey(name)))
                     throw new IgniteException("Ignite with the same name already started: " + name);
 
-                _startup.Ignite = new Ignite(_startup.Configuration, _startup.Name, interopProc, _startup.Marshaller, 
+                _startup.Ignite = new Ignite(_startup.Configuration, _startup.Name,
+                    new PlatformJniTarget(interopProc, _startup.Marshaller), _startup.Marshaller,
                     _startup.LifecycleHandlers, _startup.Callbacks);
             }
             catch (Exception e)

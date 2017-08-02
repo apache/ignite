@@ -135,14 +135,6 @@ public class SparseDistributedMatrixStorage extends CacheUtils implements Matrix
         return acsMode;
     }
 
-    /**
-     *
-     *
-     */
-    public int storageMode() {
-        return stoMode;
-    }
-
     /** {@inheritDoc} */
     @Override public double get(int x, int y) {
         if (stoMode == ROW_STORAGE_MODE)
@@ -226,6 +218,11 @@ public class SparseDistributedMatrixStorage extends CacheUtils implements Matrix
     /** {@inheritDoc} */
     @Override public int rowSize() {
         return rows;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int storageMode() {
+        return stoMode;
     }
 
     /** {@inheritDoc} */

@@ -29,12 +29,10 @@ import org.apache.ignite.internal.util.lang.{GridFunc => F}
 import org.apache.ignite.internal.util.typedef._
 import org.apache.ignite.internal.util.{GridConfigurationFinder, IgniteUtils => U}
 import org.apache.ignite.lang._
-import org.apache.ignite.thread.IgniteThreadPoolExecutor
+import org.apache.ignite.thread.{IgniteThreadFactory, IgniteThreadPoolExecutor}
 import org.apache.ignite.visor.commands.common.VisorTextTable
-
 import jline.console.ConsoleReader
 import org.jetbrains.annotations.Nullable
-
 import java.io._
 import java.lang.{Boolean => JavaBoolean}
 import java.net._
@@ -221,7 +219,13 @@ object visor extends VisorTag {
     @volatile private var logStarted = false
 
     /** Internal thread pool. */
-    @volatile var pool: ExecutorService = new IgniteThreadPoolExecutor()
+    @volatile var pool: ExecutorService = new IgniteThreadPoolExecutor(
+        Runtime.getRuntime().availableProcessors(),
+        Runtime.getRuntime().availableProcessors(),
+        0L,
+        new LinkedBlockingQueue[Runnable](),
+        new IgniteThreadFactory("visorInstance", "visor")
+    )
 
     /** Configuration file path, if any. */
     @volatile var cfgPath: String = _
@@ -2173,7 +2177,13 @@ object visor extends VisorTag {
                         Thread.currentThread.interrupt()
                 }
 
-                pool = new IgniteThreadPoolExecutor()
+                pool = new IgniteThreadPoolExecutor(
+                    Runtime.getRuntime().availableProcessors(),
+                    Runtime.getRuntime().availableProcessors(),
+                    0L,
+                    new LinkedBlockingQueue[Runnable](),
+                    new IgniteThreadFactory("visorInstance", "visor")
+                )
             }
 
             // Call all close callbacks.

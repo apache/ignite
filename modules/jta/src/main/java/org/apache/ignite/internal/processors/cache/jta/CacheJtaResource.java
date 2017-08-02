@@ -56,6 +56,9 @@ final class CacheJtaResource implements XAResource, Synchronization {
     /** */
     private Xid xid;
 
+    /** */
+    private final GridKernalContext ctx;
+
     /**
      * @param cacheTx Cache jta.
      * @param ctx Kernal context.
@@ -65,6 +68,7 @@ final class CacheJtaResource implements XAResource, Synchronization {
         assert ctx != null;
 
         this.cacheTx = cacheTx;
+        this.ctx = ctx;
 
         if (log == null)
             log = U.logger(ctx, logRef, CacheJtaResource.class);
@@ -100,7 +104,7 @@ final class CacheJtaResource implements XAResource, Synchronization {
             log.debug("XA resource rollback(...) [xid=" + xid + "]");
 
         try {
-            cacheTx.rollback();
+            ctx.cache().context().rollbackTxAsync(cacheTx).get();
         }
         catch (IgniteCheckedException e) {
             throwException("Failed to rollback cache transaction: " + e.getMessage(), e);
@@ -118,7 +122,7 @@ final class CacheJtaResource implements XAResource, Synchronization {
             throw new XAException("Cache transaction is not in active state.");
 
         try {
-            cacheTx.prepare();
+            cacheTx.prepare(true);
         }
         catch (IgniteCheckedException e) {
             throwException("Failed to prepare cache transaction.", e);
@@ -146,7 +150,7 @@ final class CacheJtaResource implements XAResource, Synchronization {
             log.debug("XA resource commit(...) [xid=" + xid + ", onePhase=" + onePhase + "]");
 
         try {
-            cacheTx.commit();
+            ctx.cache().context().commitTxAsync(cacheTx).get();
         }
         catch (IgniteCheckedException e) {
             throwException("Failed to commit cache transaction: " + e.getMessage(), e);
@@ -161,9 +165,7 @@ final class CacheJtaResource implements XAResource, Synchronization {
             log.debug("XA resource forget(...) [xid=" + xid + "]");
 
         try {
-            cacheTx.invalidate(true);
-
-            cacheTx.commit();
+            ctx.cache().context().rollbackTxAsync(cacheTx).get();
         }
         catch (IgniteCheckedException e) {
             throwException("Failed to forget cache transaction: " + e.getMessage(), e);
@@ -246,7 +248,7 @@ final class CacheJtaResource implements XAResource, Synchronization {
             throw new CacheException("Cache transaction is not in active state.");
 
         try {
-            cacheTx.prepare();
+            cacheTx.prepare(true);
         }
         catch (IgniteCheckedException e) {
             throw new CacheException("Failed to prepare cache transaction.", e);
@@ -261,7 +263,7 @@ final class CacheJtaResource implements XAResource, Synchronization {
                     log.debug("Synchronization.afterCompletion(STATUS_COMMITTED) [xid=" + cacheTx.xid() + "]");
 
                 try {
-                    cacheTx.commit();
+                    ctx.cache().context().commitTxAsync(cacheTx).get();
                 }
                 catch (IgniteCheckedException e) {
                     throw new CacheException("Failed to commit cache transaction.", e);
@@ -274,7 +276,7 @@ final class CacheJtaResource implements XAResource, Synchronization {
                     log.debug("Synchronization.afterCompletion(STATUS_ROLLEDBACK) [xid=" + cacheTx.xid() + "]");
 
                 try {
-                    cacheTx.rollback();
+                    ctx.cache().context().rollbackTxAsync(cacheTx).get();
                 }
                 catch (IgniteCheckedException e) {
                     throw new CacheException("Failed to rollback cache transaction.", e);

@@ -27,6 +27,7 @@ import java.util.Random;
 import java.util.Spliterator;
 import java.util.function.Consumer;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.ml.math.Blas;
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.MatrixStorage;
 import org.apache.ignite.ml.math.Vector;
@@ -522,11 +523,9 @@ public abstract class AbstractMatrix implements Matrix {
         if (cols != vec.size())
             throw new CardinalityException(cols, vec.size());
 
-        if (sto.isArrayBased() && vec.getStorage().isArrayBased())
-            System.arraycopy(vec.getStorage().data(), 0, sto.data(), cols * row, cols);
-        else
-            for (int y = 0; y < cols; y++)
-                storageSet(row, y, vec.getX(y));
+        // TODO: IGNITE-5777, use Blas for this.
+        for (int y = 0; y < cols; y++)
+            storageSet(row, y, vec.getX(y));
 
         return this;
     }
@@ -702,12 +701,9 @@ public abstract class AbstractMatrix implements Matrix {
 
         if (cols != data.length)
             throw new CardinalityException(cols, data.length);
-
-        if (sto.isArrayBased())
-            System.arraycopy(data, 0, sto.data(), row * cols, cols);
-        else
-            for (int y = 0; y < cols; y++)
-                setX(row, y, data[y]);
+        // TODO: IGNITE-5777, use Blas for this.
+        for (int y = 0; y < cols; y++)
+            setX(row, y, data[y]);
 
         return this;
     }
@@ -735,15 +731,6 @@ public abstract class AbstractMatrix implements Matrix {
     }
 
     /** {@inheritDoc} */
-    @Override public Matrix times(double x) {
-        Matrix cp = copy();
-
-        cp.map(Functions.mult(x));
-
-        return cp;
-    }
-
-    /** {@inheritDoc} */
     @Override public double maxAbsRowSumNorm() {
         double max = 0.0;
 
@@ -761,6 +748,15 @@ public abstract class AbstractMatrix implements Matrix {
         }
 
         return max;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Matrix times(double x) {
+        Matrix cp = copy();
+
+        cp.map(Functions.mult(x));
+
+        return cp;
     }
 
     /** {@inheritDoc} */
@@ -787,21 +783,9 @@ public abstract class AbstractMatrix implements Matrix {
         if (cols != mtx.rowSize())
             throw new CardinalityException(cols, mtx.rowSize());
 
-        int rows = rowSize();
+        Matrix res = like(rowSize(), mtx.columnSize());
 
-        int mtxCols = mtx.columnSize();
-
-        Matrix res = like(rows, mtxCols);
-
-        for (int x = 0; x < rows; x++)
-            for (int y = 0; y < mtxCols; y++) {
-                double sum = 0.0;
-
-                for (int k = 0; k < cols; k++)
-                    sum += getX(x, k) * mtx.getX(k, y);
-
-                res.setX(x, y, sum);
-            }
+        Blas.gemm(1, this, mtx, 0, res);
 
         return res;
     }
