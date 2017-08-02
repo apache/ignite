@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.odbc.jdbc;
 
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
@@ -34,7 +36,7 @@ public class JdbcBatchExecuteRequest extends JdbcRequest {
 
     /** Sql query. */
     @GridToStringInclude(sensitive = true)
-    private JdbcQuery[] queries;
+    private List<JdbcQuery> queries;
 
     /**
      */
@@ -46,7 +48,7 @@ public class JdbcBatchExecuteRequest extends JdbcRequest {
      * @param schema Schema.
      * @param queries Queries.
      */
-    public JdbcBatchExecuteRequest(String schema, JdbcQuery[] queries) {
+    public JdbcBatchExecuteRequest(String schema, List<JdbcQuery> queries) {
         super(BATCH_EXEC);
 
         assert !F.isEmpty(queries);
@@ -65,7 +67,7 @@ public class JdbcBatchExecuteRequest extends JdbcRequest {
     /**
      * @return Sql query arguments.
      */
-    public JdbcQuery[] queries() {
+    public List<JdbcQuery> queries() {
         return queries;
     }
 
@@ -74,7 +76,7 @@ public class JdbcBatchExecuteRequest extends JdbcRequest {
         super.writeBinary(writer);
 
         writer.writeString(schema);
-        writer.writeInt(queries.length);
+        writer.writeInt(queries.size());
 
         for (JdbcQuery q : queries)
             q.writeBinary(writer);
@@ -88,12 +90,14 @@ public class JdbcBatchExecuteRequest extends JdbcRequest {
 
         int n = reader.readInt();
 
-        queries = new JdbcQuery[n];
+        queries = new ArrayList<>(n);
 
         for (int i = 0; i < n; ++i) {
-            queries[i] = new JdbcQuery();
+            JdbcQuery qry = new JdbcQuery();
 
-            queries[i].readBinary(reader);
+            qry.readBinary(reader);
+
+            queries.add(qry);
         }
     }
 

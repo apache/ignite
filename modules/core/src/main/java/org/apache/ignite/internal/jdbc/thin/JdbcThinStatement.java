@@ -108,8 +108,6 @@ public class JdbcThinStatement implements Statement {
             rs = null;
         }
 
-        clearBatch();
-
         alreadyRead = false;
 
         if (sql == null || sql.isEmpty())

@@ -324,7 +324,7 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
             schemaName = QueryUtils.DFLT_SCHEMA;
 
         int successQueries = 0;
-        int updCnts[] = new int[req.queries().length];
+        int updCnts[] = new int[req.queries().size()];
 
         try {
             String sql = null;

@@ -70,9 +70,6 @@ public class JdbcThinTcpIo {
     /** Initial output for query close message. */
     private static final int QUERY_CLOSE_MSG_SIZE = 9;
 
-    /** Initial output for batch message. */
-    private static final int QUERY_BATCH_EXEC_MSG_INIT_CAP = 1024 * 64;
-
     /** Host. */
     private final String host;
 
@@ -303,8 +300,7 @@ public class JdbcThinTcpIo {
      */
     public JdbcBatchExecuteResult batchExecute(String schema, List<JdbcQuery> batch)
         throws IOException, IgniteCheckedException {
-        return sendRequest(new JdbcBatchExecuteRequest(schema, batch.toArray(new JdbcQuery[batch.size()])),
-            QUERY_BATCH_EXEC_MSG_INIT_CAP);
+        return sendRequest(new JdbcBatchExecuteRequest(schema, batch), QUERY_EXEC_MSG_INIT_CAP * batch.size());
     }
 
     /**
