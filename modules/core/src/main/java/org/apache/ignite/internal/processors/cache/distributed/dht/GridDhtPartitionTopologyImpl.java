@@ -380,9 +380,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                     }
                 }
             }
-
-            if (node2part != null && node2part.valid())
-                checkEvictions(updateSeq, aff);
         }
 
         updateRebalanceVersion(aff);
@@ -624,7 +621,12 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 }
             }
 
-            updateRebalanceVersion(grp.affinity().assignments(topVer));
+            List<List<ClusterNode>> aff = grp.affinity().assignments(topVer);
+
+            updateRebalanceVersion(aff);
+
+            if (node2part != null && node2part.valid())
+                changed |= checkEvictions(updateSeq, aff);
 
             consistencyCheck();
         }
@@ -747,8 +749,9 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                         "[part=" + p + ", topVer=" + topVer + ", this.topVer=" + this.topVer + ']');
             }
             else if (loc != null && state == RENTING && !showRenting)
-                throw new GridDhtInvalidPartitionException(p, "Adding entry to partition that is concurrently evicted " +
-                    "[part=" + p + ", shouldBeMoving=" + loc.reload() + "]");
+                throw new GridDhtInvalidPartitionException(p, "Adding entry to partition that is concurrently " +
+                    "evicted [part=" + p + ", shouldBeMoving=" + loc.reload() + ", belongs=" + belongs +
+                    ", topVer=" + topVer + ", curTopVer=" + this.topVer + "]");
 
             if (loc == null) {
                 if (!belongs)
@@ -1312,7 +1315,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             if (!affVer.equals(AffinityTopologyVersion.NONE) && affVer.compareTo(topVer) >= 0) {
                 List<List<ClusterNode>> aff = grp.affinity().assignments(topVer);
 
-                changed |= checkEvictions(updateSeq, aff);
+                if (exchangeVer == null)
+                    changed |= checkEvictions(updateSeq, aff);
 
                 updateRebalanceVersion(aff);
             }
@@ -1501,7 +1505,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             if (!affVer.equals(AffinityTopologyVersion.NONE) && affVer.compareTo(topVer) >= 0) {
                 List<List<ClusterNode>> aff = grp.affinity().assignments(topVer);
 
-                changed |= checkEvictions(updateSeq, aff);
+                if (exchId == null)
+                    changed |= checkEvictions(updateSeq, aff);
 
                 updateRebalanceVersion(aff);
             }
