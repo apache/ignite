@@ -1381,7 +1381,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (ccfg == null) {
             if (QueryUtils.TEMPLATE_PARTITIONED.equalsIgnoreCase(templateName))
                 ccfg = new CacheConfiguration<>().setCacheMode(CacheMode.PARTITIONED);
-            else if (QueryUtils.TEMPLATE_REPLICÄTED.equalsIgnoreCase(templateName))
+            else if (QueryUtils.TEMPLATE_REPLICATED.equalsIgnoreCase(templateName))
                 ccfg = new CacheConfiguration<>().setCacheMode(CacheMode.REPLICATED);
             else
                 throw new SchemaOperationException(SchemaOperationException.CODE_CACHE_NOT_FOUND, templateName);
