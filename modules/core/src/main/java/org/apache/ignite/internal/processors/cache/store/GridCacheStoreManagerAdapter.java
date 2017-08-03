@@ -854,7 +854,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
         sesHolder.set(ses);
 
         try {
-            if (sesLsnrs != null && !ses.started(this)) {
+            if (sesLsnrs != null && !ses.started(store)) {
                 for (CacheStoreSessionListener lsnr : sesLsnrs)
                     lsnr.onSessionStart(locSes);
             }
@@ -918,11 +918,8 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
         private Object attach;
 
         /** */
-        private final Set<CacheStoreManager> started =
-            new GridSetWrapper<>(new IdentityHashMap<CacheStoreManager, Object>());
-
-        /** */
-        private final Set<CacheStore> ended = new GridSetWrapper<>(new IdentityHashMap<CacheStore, Object>());
+        private final Set<CacheStore> started =
+            new GridSetWrapper<>(new IdentityHashMap<CacheStore, Object>());
 
         /**
          * @param tx Current transaction.
@@ -985,8 +982,8 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
         /**
          * @return If session is started.
          */
-        private boolean started(CacheStoreManager mgr) {
-            return !started.add(mgr);
+        private boolean started(CacheStore store) {
+            return !started.add(store);
         }
 
         /**
@@ -994,7 +991,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
          * @return Whether session already ended on this store instance.
          */
         private boolean ended(CacheStore store) {
-            return !ended.add(store);
+            return !started.remove(store);
         }
 
         /** {@inheritDoc} */
