@@ -6146,11 +6146,14 @@ class ServerImpl extends TcpDiscoveryImpl {
                     Collection<TcpDiscoveryAbstractMessage> pending = msgHist.messages(msg.lastMessageId(), node);
 
                     if (pending != null) {
-                        msg.pendingMessages(pending);
-                        msg.success(true);
-                        msg.verify(getLocalNodeId());
+                        TcpDiscoveryClientReconnectMessage res = new TcpDiscoveryClientReconnectMessage(
+                            msg.creatorNodeId(), msg.routerNodeId(), msg.lastMessageId());
 
-                        wrk.addMessage(msg);
+                        res.success(true);
+                        res.pendingMessages(pending);
+                        res.verify(getLocalNodeId());
+
+                        wrk.addMessage(res);
 
                         msgWorker.addMessage(msg);
 
