@@ -52,7 +52,10 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
+import org.apache.ignite.internal.processors.cache.CacheInvokeEntry;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
+import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
+import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlMetadata;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
@@ -83,6 +86,7 @@ import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_C
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_CLEAR;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_CONTAINS_KEY;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_CONTAINS_KEYS;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_EXPIRE;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_GET;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_GET_ALL;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_GET_AND_PUT;
@@ -136,6 +140,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         CACHE_PREPEND,
         CACHE_METRICS,
         CACHE_SIZE,
+        CACHE_EXPIRE,
         CACHE_METADATA
     );
 
@@ -630,6 +635,12 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
 
                 case CACHE_SIZE: {
                     fut = executeCommand(req.destinationId(), req.clientId(), cacheName, key, new SizeCommand());
+
+                    break;
+                }
+
+                case CACHE_EXPIRE: {
+                    fut = executeCommand(req.destinationId(), req.clientId(), cacheName, key, new ExpireCommand(key, ttl));
 
                     break;
                 }
@@ -1619,6 +1630,61 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         /** {@inheritDoc} */
         @Override public IgniteInternalFuture<?> applyx(IgniteInternalCache<Object, Object> c, GridKernalContext ctx) {
             return c.sizeAsync(new CachePeekMode[] {CachePeekMode.PRIMARY});
+        }
+    }
+
+    /** Expire on key. */
+    private static class ExpireCommand extends CacheCommand {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
+        private final Object key;
+
+        /** */
+        private final Long ttl;
+
+        /**
+         * @param key Key.
+         * @param ttl TTL.
+         */
+        ExpireCommand(Object key, Long ttl) {
+            this.key = key;
+            this.ttl = ttl;
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgniteInternalFuture<?> applyx(final IgniteInternalCache<Object, Object> c,
+            GridKernalContext ctx) {
+            assert c != null;
+            assert key != null;
+
+            return ctx.closure().callLocalSafe((Callable<Object>)() -> {
+                EntryProcessorResult<Boolean> res = c.invoke(key, (entry, objects) -> {
+                    Object val = entry.getValue();
+
+                    GridCacheEntryEx ex = ((CacheInvokeEntry)entry).entry();
+
+                    if (val == null || ttl == null)
+                        return false;
+
+                    try {
+                        ex.updateTtl(ex.version(), ttl);
+                    }
+                    catch (GridCacheEntryRemovedException e) {
+                        throw new EntryProcessorException(e.getCause());
+                    }
+
+                    return true;
+                });
+
+                try {
+                    return res.get();
+                }
+                catch (EntryProcessorException e) {
+                    throw new IgniteCheckedException(e.getCause());
+                }
+            }, false);
         }
     }
 }
