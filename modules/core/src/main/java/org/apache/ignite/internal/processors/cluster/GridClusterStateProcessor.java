@@ -497,14 +497,14 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
     private void sendComputeChangeGlobalState(boolean activate, final GridFutureAdapter<Void> resFut) {
         AffinityTopologyVersion topVer = ctx.discovery().topologyVersionEx();
 
-        IgniteCompute comp = ((ClusterGroupAdapter)ctx.cluster().get().forServers()).compute();
-
         if (log.isInfoEnabled()) {
             log.info("Sending " + prettyStr(activate) + " request from node [id=" + ctx.localNodeId() +
                 ", topVer=" + topVer +
                 ", client=" + ctx.clientNode() +
                 ", daemon" + ctx.isDaemon() + "]");
         }
+
+        IgniteCompute comp = ((ClusterGroupAdapter)ctx.cluster().get().forServers()).compute();
 
         IgniteFuture<Void> fut = comp.runAsync(new ChangeGlobalStateComputeRequest(activate));
 
@@ -528,6 +528,14 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
      *  @return Cluster state, {@code True} if cluster active, {@code False} if inactive.
      */
     private boolean sendComputeCheckGlobalState() {
+        AffinityTopologyVersion topVer = ctx.discovery().topologyVersionEx();
+
+        if (log.isInfoEnabled()) {
+            log.info("Sending check cluster state request from node [id=" + ctx.localNodeId() +
+                ", topVer=" + topVer +
+                ", client=" + ctx.clientNode() +
+                ", daemon" + ctx.isDaemon() + "]");
+        }
         IgniteCompute comp = ((ClusterGroupAdapter)ctx.cluster().get().forServers()).compute();
 
         return comp.call(new IgniteCallable<Boolean>() {
