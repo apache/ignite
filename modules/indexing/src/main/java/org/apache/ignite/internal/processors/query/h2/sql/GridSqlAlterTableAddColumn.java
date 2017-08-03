@@ -36,40 +36,6 @@ public class GridSqlAlterTableAddColumn extends GridSqlStatement {
     /** Quietly abort this command if target table does not exist. */
     private boolean ifTblExists;
 
-    /** Name of the column before which given columns must be added. */
-    private String beforeColName;
-
-    /** Name of the column after which given columns must be added. */
-    private String afterColName;
-
-    /**
-     * @return Name of the column after which given columns must be added.
-     */
-    public String afterColumnName() {
-        return afterColName;
-    }
-
-    /**
-     * @param afterColName  Name of the column after which given columns must be added.
-     */
-    public void afterColumnName(String afterColName) {
-        this.afterColName = afterColName;
-    }
-
-    /**
-     * @return Name of the column before which given columns must be added.
-     */
-    public String beforeColumnName() {
-        return beforeColName;
-    }
-
-    /**
-     * @param beforeColName Name of the column before which given columns must be added.
-     */
-    public void beforeColumnName(String beforeColName) {
-        this.beforeColName = beforeColName;
-    }
-
     /**
      * @return Columns to add.
      */

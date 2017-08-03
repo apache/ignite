@@ -35,12 +35,6 @@ public class SchemaAlterTableAddColumnOperation extends SchemaAbstractAlterTable
     /** Columns to add. */
     private final List<QueryField> cols;
 
-    /** Column name before which new columns should be added. */
-    private final String beforeColName;
-
-    /** Column name after which new columns should be added. */
-    private final String afterColName;
-
     /** Ignore operation if target table doesn't exist. */
     private final boolean ifTblExists;
 
@@ -49,26 +43,19 @@ public class SchemaAlterTableAddColumnOperation extends SchemaAbstractAlterTable
 
     /**
      * Constructor.
-     *
-     * @param opId Operation id.
+     *  @param opId Operation id.
      * @param schemaName Schema name.
      * @param tblName Target table name.
      * @param cols Columns to add.
-     * @param beforeColName Column name before which new columns should be added.
-     * @param afterColName Column name after which new columns should be added.
      * @param ifTblExists Ignore operation if target table doesn't exist.
      * @param ifNotExists Ignore operation if column exists.
      */
     public SchemaAlterTableAddColumnOperation(UUID opId, String cacheName, String schemaName, String tblName,
-        List<QueryField> cols, String beforeColName, String afterColName, boolean ifTblExists, boolean ifNotExists) {
+                                              List<QueryField> cols, boolean ifTblExists, boolean ifNotExists) {
         super(opId, cacheName, schemaName);
 
         this.tblName = tblName;
         this.cols = cols;
-
-        this.beforeColName = beforeColName;
-        this.afterColName = afterColName;
-
         this.ifTblExists = ifTblExists;
         this.ifNotExists = ifNotExists;
     }
@@ -78,20 +65,6 @@ public class SchemaAlterTableAddColumnOperation extends SchemaAbstractAlterTable
      */
     public boolean ifTableExists() {
         return ifTblExists;
-    }
-
-    /**
-     * @return Name of the column after which new columns must be added.
-     */
-    public String afterColumnName() {
-        return afterColName;
-    }
-
-    /**
-     * @return Name of the column before which new columns must be added.
-     */
-    public String beforeColumnName() {
-        return beforeColName;
     }
 
     /**

@@ -589,58 +589,21 @@ public class QueryUtils {
      * @param ctx Kernal context.
      * @param d Type descriptor to update.
      * @param cols Columns to add.
-     * @param beforeFldName Property name before which new fields must be added.
-     * @param afterFldName Property name after which new fields must be added.
      * @throws IgniteCheckedException If failed to update type descriptor.
      */
-    static void processDynamicAddColumn(GridKernalContext ctx, QueryTypeDescriptorImpl d, List<QueryField> cols,
-        String beforeFldName, String afterFldName) throws IgniteCheckedException {
-        assert F.isEmpty(beforeFldName) || F.isEmpty(afterFldName);
-
-        List<GridQueryProperty> props = new ArrayList<>(d.fields().size() + cols.size());
-
-        // We have to keep the order intact, so let's rely on "fields" - it's a LinkedHashMap.
-        for (String propName : d.fields().keySet())
-            props.add(d.property(propName));
-
-        int pos = props.size();
-
-        String name = null;
-
-        if (!F.isEmpty(beforeFldName) && d.fields().containsKey(beforeFldName))
-            name = beforeFldName;
-
-        if (!F.isEmpty(afterFldName) && d.fields().containsKey(afterFldName))
-            name = afterFldName;
-
-        if (name != null) {
-            int i = 0;
-
-            for (String fldName : d.fields().keySet()) {
-                if (F.eq(name, fldName)) {
-                    pos = i;
-
-                    break;
-                }
-                else
-                    ++i;
-            }
-
-            if (!F.isEmpty(afterFldName))
-                ++pos;
-        }
+    static void processDynamicAddColumn(GridKernalContext ctx, QueryTypeDescriptorImpl d, List<QueryField> cols)
+        throws IgniteCheckedException {
+        List<GridQueryProperty> props = new ArrayList<>(cols.size());
 
         for (QueryField fld : cols) {
             try {
-                props.add(pos++, new QueryBinaryProperty(ctx, fld.name(), null, Class.forName(fld.typeName()),
+                props.add(new QueryBinaryProperty(ctx, fld.name(), null, Class.forName(fld.typeName()),
                     false, null));
             }
             catch (ClassNotFoundException e) {
                 throw new SchemaOperationException("Class not found for new property: " + fld.typeName());
             }
         }
-
-        d.clearFieldsAndProperties();
 
         for (GridQueryProperty p : props)
             d.addProperty(p, true);

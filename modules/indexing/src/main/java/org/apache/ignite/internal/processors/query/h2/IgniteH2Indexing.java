@@ -709,8 +709,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** {@inheritDoc} */
     @Override public void dynamicAddColumn(String schemaName, String tblName, List<QueryField> cols,
-        String beforeColName, String afterColName, boolean ifTblExists, boolean ifColNotExists)
-        throws IgniteCheckedException {
+        boolean ifTblExists, boolean ifColNotExists) throws IgniteCheckedException {
         // Locate table.
         H2Schema schema = schemas.get(schemaName);
 
@@ -724,7 +723,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 return;
         }
 
-        desc.table().addColumns(cols, beforeColName, afterColName, ifColNotExists);
+        desc.table().addColumns(cols, ifColNotExists);
     }
 
     /**

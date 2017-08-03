@@ -813,10 +813,6 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
 
         res.columns(cols);
 
-        res.beforeColumnName(beforeColName);
-
-        res.afterColumnName(afterColName);
-
         return res;
     }
 
@@ -827,8 +823,6 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
         GridSqlAlterTableAddColumn actual) {
         assertEqualsIgnoreCase(exp.schemaName(), actual.schemaName());
         assertEqualsIgnoreCase(exp.tableName(), actual.tableName());
-        assertEquals(exp.beforeColumnName(), actual.beforeColumnName());
-        assertEquals(exp.afterColumnName(), actual.afterColumnName());
         assertEquals(exp.columns().length, actual.columns().length);
 
         for (int i = 0; i < exp.columns().length; i++) {

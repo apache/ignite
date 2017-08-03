@@ -162,9 +162,7 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
         // Test migration between normal servers.
         CountDownLatch idxLatch = blockIndexing(srv1Id);
 
-        IgniteInternalFuture<?> colFut1 = queryProcessor(cli)
-            .dynamicColumnAdd(CACHE_NAME, QueryUtils.DFLT_SCHEMA, TBL_NAME,
-                Collections.singletonList(c("age", Integer.class.getName())), null, null, false, false);
+        IgniteInternalFuture<?> colFut1 = addCols(cli, c("age", Integer.class.getName()));
 
         U.await(idxLatch);
 
@@ -175,14 +173,12 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
 
         colFut1.get();
 
-        checkNodesState(TBL_NAME, "NAME", c("age", Integer.class.getName()));
+        checkNodesState(TBL_NAME, c("age", Integer.class.getName()));
 
         // Test migration from normal server to non-affinity server.
         idxLatch = blockIndexing(srv2Id);
 
-        IgniteInternalFuture<?> colFut2 = queryProcessor(cli)
-            .dynamicColumnAdd(CACHE_NAME, QueryUtils.DFLT_SCHEMA,
-                TBL_NAME, Collections.singletonList(c("city", String.class.getName())), null, "NAME", false, false);
+        IgniteInternalFuture<?> colFut2 = addCols(cli, c("city", String.class.getName()));
 
         idxLatch.countDown();
 
@@ -193,7 +189,7 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
 
         colFut2.get();
 
-        checkNodesState(TBL_NAME, "NAME", c("city", String.class.getName()));
+        checkNodesState(TBL_NAME, c("city", String.class.getName()));
     }
 
     /**
@@ -202,7 +198,8 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
      * @throws Exception If failed.
      */
     public void testOperationChaining() throws Exception {
-        CountDownLatch finishLatch = new CountDownLatch(7);
+        // 7 nodes * 2 columns = 14 latch countdowns.
+        CountDownLatch finishLatch = new CountDownLatch(14);
 
         Ignite srv1 = ignitionStart(serverConfiguration(1), finishLatch);
 
@@ -219,9 +216,9 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
         QueryField c1 = c("age", Integer.class.getName());
         QueryField c2 = c("city", String.class.getName());
 
-        IgniteInternalFuture<?> colFut1 = addCols(srv1, null, "ID", c1);
+        IgniteInternalFuture<?> colFut1 = addCols(srv1, c1);
 
-        IgniteInternalFuture<?> colFut2 = addCols(srv1, null, null, c2);
+        IgniteInternalFuture<?> colFut2 = addCols(srv1, c2);
 
         U.await(idxLatch);
 
@@ -240,8 +237,7 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
 
         U.await(finishLatch);
 
-        checkNodesState(TBL_NAME, "ID", c1);
-        checkNodesState(TBL_NAME, "NAME", c2);
+        checkNodesState(TBL_NAME, c1, c2);
     }
 
     /**
@@ -262,7 +258,7 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
 
         QueryField c = c("age", Integer.class.getName());
 
-        IgniteInternalFuture<?> idxFut = addCols(srv1, null, null, c);
+        IgniteInternalFuture<?> idxFut = addCols(srv1, c);
 
         U.await(idxLatch);
 
@@ -278,7 +274,7 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
 
         U.await(finishLatch);
 
-        checkNodesState(TBL_NAME, "NAME", c);
+        checkNodesState(TBL_NAME, c);
     }
 
     /**
@@ -327,7 +323,7 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
         // Let some to arrive.
         Thread.sleep(500L);
 
-        addCols(srv1, "ID", null, c("v", Integer.class.getName())).get();
+        addCols(srv1, c("v", Integer.class.getName())).get();
 
         // Stop updates once index is ready.
         stopped.set(true);
@@ -337,7 +333,7 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
         finishLatch.await();
 
         // Make sure new column is there.
-        checkNodesState(TBL_NAME, null, c("v", Integer.class.getName()));
+        checkNodesState(TBL_NAME, c("v", Integer.class.getName()));
 
         run(srv1, "update person set \"v\" = case when mod(id, 2) <> 0 then substring(name, 7, length(name) - 6) " +
             "else null end");
@@ -435,7 +431,7 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
 
         QueryField c = c("salary", Float.class.getName());
 
-        final IgniteInternalFuture<?> idxFut = addCols(srv1, "NAME", null, c);
+        final IgniteInternalFuture<?> idxFut = addCols(srv1, c);
 
         U.await(idxLatch1);
         U.await(idxLatch2);
@@ -453,7 +449,7 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
         // Validate index state.
         idxFut.get();
 
-        checkNodesState(TBL_NAME, "ID", c);
+        checkNodesState(TBL_NAME, c);
     }
 
     /**
@@ -493,7 +489,7 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
 
         QueryField c = c("city", String.class.getName());
 
-        final IgniteInternalFuture<?> idxFut = addCols(srv1, null, "NAME", c);
+        final IgniteInternalFuture<?> idxFut = addCols(srv1, c);
 
         idxLatch.await();
 
@@ -542,7 +538,7 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
                 while (!stopped.get()) {
                     Ignite node = grid(ThreadLocalRandom.current().nextInt(1, 5));
 
-                    IgniteInternalFuture fut = addCols(node, null, null, c("newCol" + dynColCnt.getAndIncrement(),
+                    IgniteInternalFuture fut = addCols(node, c("newCol" + dynColCnt.getAndIncrement(),
                         Integer.class.getName()));
 
                     try {
@@ -632,11 +628,11 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
         // Check index create.
         reconnectClientNode(srv, cli, restartCache, new RunnableX() {
             @Override public void run() throws Exception {
-                addCols(srv, null, null, cols).get();
+                addCols(srv, cols).get();
             }
         });
 
-        checkNodeState((IgniteEx)cli, TBL_NAME, "NAME", cols);
+        checkNodeState((IgniteEx)cli, TBL_NAME, cols);
 
         // TODO add also column add-drop-add check combined with node restart.
     }
@@ -985,18 +981,23 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
     private static class BlockingIndexing extends IgniteH2Indexing {
         /** {@inheritDoc} */
         @Override public void dynamicAddColumn(String schemaName, String tblName, List<QueryField> cols,
-            String beforeColName, String afterColName, boolean ifTblExists, boolean ifColNotExists)
+            boolean ifTblExists, boolean ifColNotExists)
             throws IgniteCheckedException {
             awaitIndexing(ctx.localNodeId());
 
-            super.dynamicAddColumn(schemaName, tblName, cols, beforeColName, afterColName, ifTblExists, ifColNotExists);
+            super.dynamicAddColumn(schemaName, tblName, cols, ifTblExists, ifColNotExists);
         }
     }
 
-    private static IgniteInternalFuture<?> addCols(Ignite node, String beforeColName, String afterColName,
-        QueryField... flds) {
-        return queryProcessor(node).dynamicColumnAdd(CACHE_NAME, QueryUtils.DFLT_SCHEMA, TBL_NAME, Arrays.asList(flds),
-            beforeColName, afterColName, false, false);
+    /**
+     *
+     * @param node Target node.
+     * @param flds Columns to add.
+     * @return DDL operation future.
+     */
+    private static IgniteInternalFuture<?> addCols(Ignite node, QueryField... flds) {
+        return ((IgniteEx)node).context().query().dynamicColumnAdd(CACHE_NAME, QueryUtils.DFLT_SCHEMA, TBL_NAME,
+            Arrays.asList(flds), false, false);
     }
 
     /**
@@ -1013,6 +1014,11 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
         return node.getOrCreateCache(new CacheConfiguration<>("idx").setIndexedTypes(Integer.class, Integer.class));
     }
 
+    /**
+     * Spoof blocking indexing class and start new node.
+     * @param cfg Node configuration.
+     * @return New node.
+     */
     private static Ignite ignitionStart(IgniteConfiguration cfg) {
         return ignitionStart(cfg, null);
     }
@@ -1020,6 +1026,7 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
     /**
      * Spoof blocking indexing class and start new node.
      * @param cfg Node configuration.
+     * @param latch Latch to await for ultimate completion of DDL operations.
      * @return New node.
      */
     private static Ignite ignitionStart(IgniteConfiguration cfg, final CountDownLatch latch) {
@@ -1041,16 +1048,12 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
         return node;
     }
 
-    private static GridQueryProcessor queryProcessor(Ignite node) {
-        return ((IgniteEx)node).context().query();
-    }
-
     /**
-     *
-     * @param nodeIdx
-     * @param filtered
-     * @return
-     * @throws Exception
+     * Create server configuration.
+     * @param nodeIdx Node index.
+     * @param filtered Whether this node should not be treated as affinity node.
+     * @return Configuration.
+     * @throws Exception if failed.
      */
     private IgniteConfiguration serverConfiguration(int nodeIdx, boolean filtered) throws Exception {
         IgniteConfiguration cfg = serverConfiguration(nodeIdx);
@@ -1064,12 +1067,13 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
     /**
      * Runnable which can throw checked exceptions.
      */
-    protected interface RunnableX {
+    interface RunnableX {
         /**
          * Do run.
          *
          * @throws Exception If failed.
          */
+        @SuppressWarnings("UnnecessaryInterfaceModifier")
         public void run() throws Exception;
     }
 

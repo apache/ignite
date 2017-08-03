@@ -38,8 +38,6 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
 
         for (IgniteConfiguration cfg : configurations())
             Ignition.start(cfg);
-
-        run(CREATE_SQL);
     }
 
     /**
@@ -56,11 +54,23 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        run(DROP_SQL);
-
         stopAllGrids();
 
         super.afterTestsStopped();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        run(CREATE_SQL);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        run(DROP_SQL);
+
+        super.afterTest();
     }
 
     /**
@@ -74,35 +84,7 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
         QueryField c = c("AGE", Integer.class.getName());
 
         for (Ignite node : Ignition.allGrids())
-            checkNodeState((IgniteEx)node, "PERSON", "NAME", c);
-    }
-
-    /**
-     * Test column addition before specified column.
-     */
-    public void testAddColumnBefore() {
-        run("ALTER TABLE Person ADD COLUMN age int before id");
-
-        doSleep(500);
-
-        QueryField c = c("AGE", Integer.class.getName());
-
-        for (Ignite node : Ignition.allGrids())
-            checkNodeState((IgniteEx)node, "PERSON", null, c);
-    }
-
-    /**
-     * Test column addition after specified column.
-     */
-    public void testAddColumnAfter() {
-        run("ALTER TABLE Person ADD COLUMN age int after id");
-
-        doSleep(500);
-
-        QueryField c = c("AGE", Integer.class.getName());
-
-        for (Ignite node : Ignition.allGrids())
-            checkNodeState((IgniteEx)node, "PERSON", "ID", c);
+            checkNodeState((IgniteEx)node, "PERSON", c);
     }
 
     /**
@@ -114,35 +96,7 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
         doSleep(500);
 
         for (Ignite node : Ignition.allGrids())
-            checkNodeState((IgniteEx)node, "PERSON", "NAME",
-                c("AGE", Integer.class.getName()),
-                c("city", String.class.getName()));
-    }
-
-    /**
-     * Test column addition before specified column.
-     */
-    public void testAddFewColumnsBefore() {
-        run("ALTER TABLE Person ADD COLUMN (age int, \"city\" varchar) before id");
-
-        doSleep(500);
-
-        for (Ignite node : Ignition.allGrids())
-            checkNodeState((IgniteEx)node, "PERSON", null,
-                c("AGE", Integer.class.getName()),
-                c("city", String.class.getName()));
-    }
-
-    /**
-     * Test column addition after specified column.
-     */
-    public void testAddFewColumnsAfter() {
-        run("ALTER TABLE Person ADD COLUMN (age int, \"city\" varchar) after id");
-
-        doSleep(500);
-
-        for (Ignite node : Ignition.allGrids())
-            checkNodeState((IgniteEx)node, "PERSON", "ID",
+            checkNodeState((IgniteEx)node, "PERSON",
                 c("AGE", Integer.class.getName()),
                 c("city", String.class.getName()));
     }
@@ -151,21 +105,21 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
      * Test {@code IF EXISTS} handling.
      */
     public void testIfTableExists() {
-        run("ALTER TABLE if exists City ADD COLUMN population int after name");
+        run("ALTER TABLE if exists City ADD COLUMN population int");
     }
 
     /**
      * Test {@code IF NOT EXISTS} handling.
      */
     public void testIfColumnNotExists() {
-        run("ALTER TABLE Person ADD COLUMN if not exists name varchar after id");
+        run("ALTER TABLE Person ADD COLUMN if not exists name varchar");
     }
 
     /**
      * Test {@code IF NOT EXISTS} handling.
      */
     public void testDuplicateColumnName() {
-        assertThrows("ALTER TABLE Person ADD COLUMN name varchar after id",
+        assertThrows("ALTER TABLE Person ADD COLUMN name varchar",
             "Column already exists [tblName=PERSON, colName=NAME]");
     }
 
@@ -173,23 +127,7 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
      * Test behavior in case of missing table.
      */
     public void testMissingTable() {
-        assertThrows("ALTER TABLE City ADD COLUMN name varchar after id", "Table doesn't exist: CITY");
-    }
-
-    /**
-     * Test missing "before" column..
-     */
-    public void testMissingBeforeColumn() {
-        assertThrows("ALTER TABLE Person ADD COLUMN city varchar before x",
-            "Column \"X\" not found");
-    }
-
-    /**
-     * Test missing "after" column..
-     */
-    public void testMissingAfterColumn() {
-        assertThrows("ALTER TABLE Person ADD COLUMN city varchar after x",
-            "Column \"X\" not found");
+        assertThrows("ALTER TABLE City ADD COLUMN name varchar", "Table doesn't exist: CITY");
     }
 
     /** */

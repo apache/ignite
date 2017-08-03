@@ -286,7 +286,7 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
 
         /** {@inheritDoc} */
         @Override public void dynamicAddColumn(String schemaName, String tblName, List<QueryField> cols,
-            String beforeColName, String afterColName, boolean ifTblExists, boolean ifColNotExists)
+                                               boolean ifTblExists, boolean ifColNotExists)
             throws IgniteCheckedException {
             // No-op.
         }

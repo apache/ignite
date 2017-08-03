@@ -779,8 +779,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                                         assert typeDesc != null;
 
-                                        QueryUtils.processDynamicAddColumn(ctx, typeDesc, opAddCol.columns(),
-                                            opAddCol.beforeColumnName(), opAddCol.afterColumnName());
+                                        QueryUtils.processDynamicAddColumn(ctx, typeDesc, opAddCol.columns());
                                     }
                                     else
                                         assert false;
@@ -1348,11 +1347,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             else if (op instanceof SchemaAlterTableAddColumnOperation) {
                 SchemaAlterTableAddColumnOperation op0 = (SchemaAlterTableAddColumnOperation)op;
 
-                QueryUtils.processDynamicAddColumn(ctx, type, op0.columns(),
-                    op0.beforeColumnName(), op0.afterColumnName());
+                QueryUtils.processDynamicAddColumn(ctx, type, op0.columns());
 
-                idx.dynamicAddColumn(op0.schemaName(), op0.tableName(), op0.columns(),
-                    op0.beforeColumnName(), op0.afterColumnName(), op0.ifTableExists(),
+                idx.dynamicAddColumn(op0.schemaName(), op0.tableName(), op0.columns(), op0.ifTableExists(),
                     op0.ifNotExists());
             }
             else
@@ -2152,16 +2149,14 @@ private IgniteInternalFuture<Object> rebuildIndexesFromHash(@Nullable final Stri
      * @param schemaName Schema name.
      * @param tblName Target table name.
      * @param cols Columns to add.
-     * @param beforeColName Column name before which new columns should be added.
-     * @param afterColName Column name after which new columns should be added.
      * @param ifTblExists Ignore operation if target table doesn't exist.
      * @param ifNotExists Ignore operation if column exists.
      */
-    public IgniteInternalFuture<?> dynamicColumnAdd(String cacheName, String schemaName, String tblName, List<QueryField> cols,
-        String beforeColName, String afterColName, boolean ifTblExists, boolean ifNotExists) {
+    public IgniteInternalFuture<?> dynamicColumnAdd(String cacheName, String schemaName, String tblName,
+        List<QueryField> cols, boolean ifTblExists, boolean ifNotExists) {
 
         SchemaAlterTableAddColumnOperation op = new SchemaAlterTableAddColumnOperation(UUID.randomUUID(), cacheName,
-            schemaName, tblName, cols, beforeColName, afterColName, ifTblExists, ifNotExists);
+            schemaName, tblName, cols, ifTblExists, ifNotExists);
 
         return startIndexOperationDistributed(op);
     }

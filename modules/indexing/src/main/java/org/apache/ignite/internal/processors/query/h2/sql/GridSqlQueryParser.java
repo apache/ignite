@@ -1064,6 +1064,10 @@ public class GridSqlQueryParser {
     private GridSqlStatement parseAddColumn(AlterTableAlterColumn addCol) {
         assert addCol.getType() == CommandInterface.ALTER_TABLE_ADD_COLUMN;
 
+        if (ALTER_COLUMN_BEFORE_COL.get(addCol) != null || ALTER_COLUMN_AFTER_COL.get(addCol) != null)
+            throw new IgniteSQLException("ALTER TABLE ADD COLUMN BEFORE/AFTER is not supported",
+                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
         GridSqlAlterTableAddColumn res = new GridSqlAlterTableAddColumn();
 
         ArrayList<Column> h2NewCols = ALTER_COLUMN_NEW_COLS.get(addCol);
@@ -1085,10 +1089,6 @@ public class GridSqlQueryParser {
         res.schemaName(schema.getName());
 
         res.tableName(ALTER_COLUMN_TBL_NAME.get(addCol));
-
-        res.beforeColumnName(ALTER_COLUMN_BEFORE_COL.get(addCol));
-
-        res.afterColumnName(ALTER_COLUMN_AFTER_COL.get(addCol));
 
         return res;
     }

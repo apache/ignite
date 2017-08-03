@@ -40,6 +40,8 @@ import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.QuerySchema;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2AbstractKeyValueRow;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -55,10 +57,10 @@ import org.h2.value.DataType;
  */
 public abstract class DynamicColumnsAbstractTest extends GridCommonAbstractTest {
     /** SQL to create test table. */
-    protected final static String CREATE_SQL = "CREATE TABLE IF NOT EXISTS Person (id int primary key, name varchar)";
+    final static String CREATE_SQL = "CREATE TABLE IF NOT EXISTS Person (id int primary key, name varchar)";
 
     /** SQL to drop test table. */
-    protected final static String DROP_SQL = "DROP TABLE Person";
+    final static String DROP_SQL = "DROP TABLE Person";
 
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -68,11 +70,9 @@ public abstract class DynamicColumnsAbstractTest extends GridCommonAbstractTest 
      *    (namely, schema in cache descriptor, type descriptor on started cache, and H2 state on started cache).
      * @param node Target node.
      * @param tblName Table name to check.
-     * @param afterColName Column after which new columns must be added, or {@code null} if they should be
-     *     in the beginning of columns list.
      * @param cols Columns whose presence must be checked.
      */
-    static void checkNodeState(IgniteEx node, String tblName, String afterColName, QueryField... cols) {
+    static void checkNodeState(IgniteEx node, String tblName, QueryField... cols) {
         String cacheName = QueryUtils.createTableCacheName(QueryUtils.DFLT_SCHEMA, tblName);
 
         // Schema state check - should pass regardless of cache state.
@@ -101,14 +101,8 @@ public abstract class DynamicColumnsAbstractTest extends GridCommonAbstractTest 
 
             Iterator<Map.Entry<String, String>> it = entity.getFields().entrySet().iterator();
 
-            if (!F.isEmpty(afterColName)) {
-                while (it.hasNext()) {
-                    Map.Entry<String, String> e = it.next();
-
-                    if (F.eq(afterColName, e.getKey()))
-                        break;
-                }
-            }
+            for (int i = entity.getFields().size() - cols.length; i > 0 && it.hasNext(); i--)
+                it.next();
 
             for (QueryField col : cols) {
                 assertTrue("New column not found in query entity: " + col.name(), it.hasNext());
@@ -142,14 +136,8 @@ public abstract class DynamicColumnsAbstractTest extends GridCommonAbstractTest 
 
             Iterator<Map.Entry<String, Class<?>>> it = desc.fields().entrySet().iterator();
 
-            if (!F.isEmpty(afterColName)) {
-                while (it.hasNext()) {
-                    Map.Entry<String, Class<?>> e = it.next();
-
-                    if (F.eq(afterColName, e.getKey()))
-                        break;
-                }
-            }
+            for (int i = desc.fields().size() - cols.length; i > 0 && it.hasNext(); i--)
+                it.next();
 
             for (QueryField col : cols) {
                 assertTrue("New column not found in type descriptor: " + col.name(), it.hasNext());
@@ -162,8 +150,6 @@ public abstract class DynamicColumnsAbstractTest extends GridCommonAbstractTest 
             }
         }
 
-
-
         // H2 table state check.
         {
             GridH2Table tbl = ((IgniteH2Indexing)node.context().query().getIndexing()).dataTable(QueryUtils.DFLT_SCHEMA,
@@ -171,37 +157,50 @@ public abstract class DynamicColumnsAbstractTest extends GridCommonAbstractTest 
 
             assertNotNull("Table not found", tbl);
 
-            Iterator<Column> it = Arrays.asList(tbl.getColumns()).iterator();
+            Iterator<Column> colIt = Arrays.asList(tbl.getColumns()).iterator();
 
-            for (int i = 0; i < 3; i++)
-                it.next();
+            GridH2RowDescriptor rowDesc = tbl.rowDescriptor();
 
-            if (!F.isEmpty(afterColName)) {
-                while (it.hasNext()) {
-                    Column c = it.next();
+            int i = 0;
 
-                    if (F.eq(afterColName, c.getName()))
-                        break;
-                }
-            }
+            for (; i < tbl.getColumns().length - cols.length && colIt.hasNext(); i++)
+                colIt.next();
 
             for (QueryField col : cols) {
-                assertTrue("New column not found in H2 table: " + col.name(), it.hasNext());
+                assertTrue("New column not found in H2 table: " + col.name(), colIt.hasNext());
 
-                assertTrue(it.hasNext());
+                assertTrue(colIt.hasNext());
 
-                Column c = it.next();
+                Column c = colIt.next();
 
                 assertEquals(col.name(), c.getName());
 
                 assertEquals(col.typeName(), DataType.getTypeClassName(c.getType()));
+
+                assertFalse(rowDesc.isKeyValueOrVersionColumn(i));
+
+                try {
+                    assertEquals(DataType.getTypeFromClass(Class.forName(col.typeName())),
+                        rowDesc.fieldType(i - GridH2AbstractKeyValueRow.DEFAULT_COLUMNS_COUNT));
+                }
+                catch (ClassNotFoundException e) {
+                    throw new AssertionError(e);
+                }
+
+                i++;
             }
         }
     }
 
-    static void checkNodesState(String tblName, String afterColName, QueryField... flds) {
+    /**
+     * Check that given columns have been added to all related structures on all started nodes (namely, schema
+     *     in cache descriptor, type descriptor on started cache, and H2 state on started cache).
+     * @param tblName Table name to check.
+     * @param cols Columns whose presence must be checked.
+     */
+    static void checkNodesState(String tblName, QueryField... cols) {
         for (Ignite node : Ignition.allGrids())
-            checkNodeState((IgniteEx)node, tblName, afterColName, flds);
+            checkNodeState((IgniteEx)node, tblName, cols);
     }
 
     /**

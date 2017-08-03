@@ -170,16 +170,14 @@ public interface GridQueryIndexing {
      * @param schemaName Schema name.
      * @param tblName Table name.
      * @param cols Columns to add.
-     * @param beforeColName Column name before which new columns must be added.
-     * @param afterColName Column name after which new columns must be added.
      * @param ifTblExists Ignore operation if target table does not exist (instead of throwing an error).
      * @param ifColNotExists Ignore operation if column already exists (instead of throwing an error) - is honored only
      *     for single column case.
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
-    public void dynamicAddColumn(String schemaName, String tblName, List<QueryField> cols, String beforeColName,
-        String afterColName, boolean ifTblExists, boolean ifColNotExists) throws IgniteCheckedException;
+    public void dynamicAddColumn(String schemaName, String tblName, List<QueryField> cols,
+                                 boolean ifTblExists, boolean ifColNotExists) throws IgniteCheckedException;
 
     /**
      * Registers cache.

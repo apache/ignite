@@ -17,6 +17,11 @@
 
 package org.apache.ignite.internal.processors.query;
 
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedList;
+import java.util.List;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaFinishDiscoveryMessage;
@@ -26,15 +31,6 @@ import org.apache.ignite.internal.processors.query.schema.operation.SchemaIndexC
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaIndexDropOperation;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
-
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
 
 /**
  * Dynamic cache schema.
@@ -154,8 +150,6 @@ public class QuerySchema implements Serializable {
 
                 SchemaAlterTableAddColumnOperation op0 = (SchemaAlterTableAddColumnOperation)op;
 
-                assert F.isEmpty(op0.beforeColumnName()) || F.isEmpty(op0.afterColumnName());
-
                 QueryEntity target = null;
 
                 for (QueryEntity entity : entities()) {
@@ -169,59 +163,8 @@ public class QuerySchema implements Serializable {
                 if (target == null)
                     return;
 
-                Map<String, String> flds = new LinkedHashMap<>(target.getFields());
-
-                int pos = flds.size();
-
-                String name = null;
-
-                if (!F.isEmpty(op0.beforeColumnName()) && flds.containsKey(op0.beforeColumnName()))
-                    name = op0.beforeColumnName();
-
-                if (!F.isEmpty(op0.afterColumnName()) && flds.containsKey(op0.afterColumnName()))
-                    name = op0.afterColumnName();
-
-                if (name != null) {
-                    int i = 0;
-
-                    for (String fldName : flds.keySet()) {
-                        if (F.eq(name, fldName)) {
-                            pos = i;
-
-                            break;
-                        }
-                        else
-                            ++i;
-                    }
-
-                    if (!F.isEmpty(op0.afterColumnName()))
-                        ++pos;
-                }
-
-                Iterator<Map.Entry<String, String>> it = flds.entrySet().iterator();
-
-                target.getFields().clear();
-
-                int i = 0;
-
-                for (; i < pos; i++) {
-                    assert it.hasNext();
-
-                    Map.Entry<String, String> e = it.next();
-
-                    target.getFields().put(e.getKey(), e.getValue());
-                }
-
                 for (QueryField fld : op0.columns())
                     target.getFields().put(fld.name(), fld.typeName());
-
-                for (; i < flds.size(); i++) {
-                    assert it.hasNext();
-
-                    Map.Entry<String, String> e = it.next();
-
-                    target.getFields().put(e.getKey(), e.getValue());
-                }
             }
         }
     }

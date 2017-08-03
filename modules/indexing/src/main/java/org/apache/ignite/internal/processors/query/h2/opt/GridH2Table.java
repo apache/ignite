@@ -1128,11 +1128,9 @@ public class GridH2Table extends TableBase {
     /**
      * Add new columns to this table.
      * @param cols Columns to add.
-     * @param beforeColName Column name before which new columns must be added.
-     * @param afterColName Column name after which new columns must be added.
      * @param ifNotExists Ignore this command if {@code cols} has size of 1 and column with given name already exists.
      */
-    public void addColumns(List<QueryField> cols, String beforeColName, String afterColName, boolean ifNotExists) {
+    public void addColumns(List<QueryField> cols, boolean ifNotExists) {
         assert !ifNotExists || cols.size() == 1;
 
         lock(true);
@@ -1140,43 +1138,16 @@ public class GridH2Table extends TableBase {
         try {
             int pos = columns.length;
 
-            Column splitCol = null;
-
-            boolean before = false;
-
-            if (!F.isEmpty(beforeColName)) {
-                splitCol = getColumn(beforeColName);
-
-                before = true;
-            }
-            else if (!F.isEmpty(afterColName))
-                splitCol = getColumn(afterColName);
-
-            if (splitCol != null) {
-                for (int i = 0; i < columns.length; i++)
-                    if (columns[i] == splitCol) {
-                        pos = i;
-
-                        break;
-                    }
-
-                assert pos < columns.length;
-
-                if (!before)
-                    ++pos;
-            }
-
             Column[] newCols = new Column[columns.length + cols.size()];
 
             // First, let's copy existing columns to new array
-            System.arraycopy(columns, 0, newCols, 0, pos);
-            System.arraycopy(columns, pos, newCols, pos + cols.size(), columns.length - pos);
+            System.arraycopy(columns, 0, newCols, 0, columns.length);
 
             // And now, let's add new columns
             for (QueryField col : cols) {
                 if (doesColumnExist(col.name())) {
                     if (ifNotExists && cols.size() == 1)
-                        break;
+                        return;
                     else
                         throw new IgniteSQLException("Column already exists [tblName=" + getName() +
                             ", colName=" + col.name() + ']');

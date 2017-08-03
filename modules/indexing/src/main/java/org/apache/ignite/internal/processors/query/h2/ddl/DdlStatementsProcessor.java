@@ -251,9 +251,7 @@ public class DdlStatementsProcessor {
                         assert tbl.rowDescriptor() != null;
 
                         fut = ctx.query().dynamicColumnAdd(tbl.cacheName(), cmd.schemaName(),
-                            tbl.rowDescriptor().type().tableName(),
-                            cols, cmd.beforeColumnName(), cmd.afterColumnName(), cmd.ifTableExists(),
-                            cmd.ifNotExists());
+                            tbl.rowDescriptor().type().tableName(), cols, cmd.ifTableExists(), cmd.ifNotExists());
                     }
                 }
             }
