@@ -17,20 +17,26 @@
 
 import angular from 'angular';
 
-import templateUrl from 'views/settings/profile.tpl.pug';
+export default function() {
+    return {
+        priority: -200,
+        compile($el) {
+            let newNgClass = '';
 
-angular
-.module('ignite-console.states.profile', [
-    'ui.router'
-])
-.config(['$stateProvider', function($stateProvider) {
-    // set up the states
-    $stateProvider.state('base.settings.profile', {
-        url: '/profile',
-        templateUrl,
-        permission: 'profile',
-        tfMetaTags: {
-            title: 'User profile'
+            const rowRepeatDiv = angular.element($el.children().children()[0]);
+            const existingNgClass = rowRepeatDiv.attr('ng-class');
+
+            if (existingNgClass)
+                newNgClass = existingNgClass.slice(0, -1) + ', "ui-grid-row-hovered": row.isHovered }';
+            else
+                newNgClass = '{ "ui-grid-row-hovered": row.isHovered }';
+
+            rowRepeatDiv.attr('ng-class', newNgClass);
+
+            return {
+                pre() { },
+                post() { }
+            };
         }
-    });
-}]);
+    };
+}

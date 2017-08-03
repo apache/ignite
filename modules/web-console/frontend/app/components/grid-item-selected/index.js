@@ -17,20 +17,8 @@
 
 import angular from 'angular';
 
-import templateUrl from 'views/settings/profile.tpl.pug';
+import component from './component';
 
-angular
-.module('ignite-console.states.profile', [
-    'ui.router'
-])
-.config(['$stateProvider', function($stateProvider) {
-    // set up the states
-    $stateProvider.state('base.settings.profile', {
-        url: '/profile',
-        templateUrl,
-        permission: 'profile',
-        tfMetaTags: {
-            title: 'User profile'
-        }
-    });
-}]);
+export default angular
+    .module('ignite-console.grid-item-selected', [])
+    .component('gridItemSelected', component);

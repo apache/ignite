@@ -17,20 +17,14 @@
 
 import angular from 'angular';
 
-import templateUrl from 'views/settings/profile.tpl.pug';
+import uiGridCell from './cell';
+import uiGridHovering from './hovering';
+import uiGridViewport from './viewport';
 
-angular
-.module('ignite-console.states.profile', [
-    'ui.router'
-])
-.config(['$stateProvider', function($stateProvider) {
-    // set up the states
-    $stateProvider.state('base.settings.profile', {
-        url: '/profile',
-        templateUrl,
-        permission: 'profile',
-        tfMetaTags: {
-            title: 'User profile'
-        }
-    });
-}]);
+import './style.scss';
+
+export default angular
+    .module('ignite-console.ui-grid-hovering', [])
+    .directive('uiGridCell', uiGridCell)
+    .directive('uiGridHovering', uiGridHovering)
+    .directive('uiGridViewport', uiGridViewport);

@@ -15,22 +15,14 @@
  * limitations under the License.
  */
 
-import angular from 'angular';
+import template from './template.pug';
+import controller from './controller.js';
 
-import templateUrl from 'views/settings/profile.tpl.pug';
-
-angular
-.module('ignite-console.states.profile', [
-    'ui.router'
-])
-.config(['$stateProvider', function($stateProvider) {
-    // set up the states
-    $stateProvider.state('base.settings.profile', {
-        url: '/profile',
-        templateUrl,
-        permission: 'profile',
-        tfMetaTags: {
-            title: 'User profile'
-        }
-    });
-}]);
+export default {
+    template,
+    controller,
+    transclude: true,
+    bindings: {
+        gridApi: '<'
+    }
+};

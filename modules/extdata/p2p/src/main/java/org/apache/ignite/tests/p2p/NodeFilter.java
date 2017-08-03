@@ -15,22 +15,16 @@
  * limitations under the License.
  */
 
-import angular from 'angular';
+package org.apache.ignite.tests.p2p;
 
-import templateUrl from 'views/settings/profile.tpl.pug';
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.lang.IgnitePredicate;
 
-angular
-.module('ignite-console.states.profile', [
-    'ui.router'
-])
-.config(['$stateProvider', function($stateProvider) {
-    // set up the states
-    $stateProvider.state('base.settings.profile', {
-        url: '/profile',
-        templateUrl,
-        permission: 'profile',
-        tfMetaTags: {
-            title: 'User profile'
-        }
-    });
-}]);
+/**
+ *
+ */
+public class NodeFilter implements IgnitePredicate<ClusterNode> {
+    @Override public boolean apply(ClusterNode node) {
+        return true;
+    }
+}

@@ -2872,13 +2872,25 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
                     ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
                     while (!stop.get()) {
-                        String grp = rnd.nextBoolean() ? GROUP1 : GROUP2;
-                        int cacheIdx = rnd.nextInt(CACHES);
+                        try {
+                            String grp = rnd.nextBoolean() ? GROUP1 : GROUP2;
+                            int cacheIdx = rnd.nextInt(CACHES);
 
-                        IgniteCache cache = node.cache(grp + "-" + cacheIdx);
+                            IgniteCache cache = node.cache(grp + "-" + cacheIdx);
 
-                        for (int i = 0; i < 10; i++)
-                            cacheOperation(rnd, cache);
+                            for (int i = 0; i < 10; i++)
+                                cacheOperation(rnd, cache);
+                        }
+                        catch (Exception e) {
+                            if (X.hasCause(e, CacheStoppedException.class)) {
+                                // Cache operation can be blocked on
+                                // awaiting new topology version and cancelled with CacheStoppedException cause.
+
+                                continue;
+                            }
+
+                            throw e;
+                        }
                     }
                 }
                 catch (Exception e) {
