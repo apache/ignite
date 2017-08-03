@@ -2645,9 +2645,6 @@ class ServerImpl extends TcpDiscoveryImpl {
             else
                 assert false : "Unknown message type: " + msg.getClass().getSimpleName();
 
-            if (ensured && redirectToClients(msg))
-                msgHist.add(msg);
-
             if (msg.senderNodeId() != null && !msg.senderNodeId().equals(getLocalNodeId())) {
                 // Received a message from remote node.
                 onMessageExchanged();
@@ -2680,6 +2677,9 @@ class ServerImpl extends TcpDiscoveryImpl {
          */
         private void sendMessageToClients(TcpDiscoveryAbstractMessage msg) {
             if (redirectToClients(msg)) {
+                if (spi.ensured(msg))
+                    msgHist.add(msg);
+
                 byte[] msgBytes = null;
 
                 for (ClientMessageWorker clientMsgWorker : clientMsgWorkers.values()) {
@@ -3789,9 +3789,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                 nodeAddedMsg.client(msg.client());
 
                 processNodeAddedMessage(nodeAddedMsg);
-
-                if (nodeAddedMsg.verified())
-                    msgHist.add(nodeAddedMsg);
             }
             else if (sendMessageToRemotes(msg))
                 sendMessageAcrossRing(msg);
@@ -3960,9 +3957,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                     }
 
                     processNodeAddFinishedMessage(addFinishMsg);
-
-                    if (addFinishMsg.verified())
-                        msgHist.add(addFinishMsg);
 
                     addMessage(new TcpDiscoveryDiscardMessage(locNodeId, msg.id(), false));
 
@@ -5028,9 +5022,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                                             locNodeId, clientNode.id(), clientNode.internalOrder());
 
                                         processNodeFailedMessage(nodeFailedMsg);
-
-                                        if (nodeFailedMsg.verified())
-                                            msgHist.add(nodeFailedMsg);
                                     }
                                 }
                             }
@@ -5225,9 +5216,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 ackMsg.topologyVersion(msg.topologyVersion());
 
                                 processCustomMessage(ackMsg);
-
-                                if (ackMsg.verified())
-                                    msgHist.add(ackMsg);
                             }
                             catch (IgniteCheckedException e) {
                                 U.error(log, "Failed to marshal discovery custom message.", e);
@@ -5329,12 +5317,8 @@ class ServerImpl extends TcpDiscoveryImpl {
             if (joiningEmpty && isLocalNodeCoordinator()) {
                 TcpDiscoveryCustomEventMessage msg;
 
-                while ((msg = pollPendingCustomeMessage()) != null) {
+                while ((msg = pollPendingCustomeMessage()) != null)
                     processCustomMessage(msg);
-
-                    if (msg.verified())
-                        msgHist.add(msg);
-                }
             }
         }
 
