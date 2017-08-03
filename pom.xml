@@ -710,6 +710,7 @@
                                         <echo file="${basedir}/target/site/${project.artifactId}-${project.version}-src.zip.sha1" append="true" message=" ${project.artifactId}-${project.version}-src.zip" />
                                         <zip destfile="${basedir}/incubator-ignite.zip" encoding="UTF-8">
                                             <zipfileset dir="${basedir}" prefix="incubator-ignite" filemode="755">
+                                                <exclude name="${basedir}/target/bin/*.*" />
                                             </zipfileset>
                                         </zip>
                                     </target>
