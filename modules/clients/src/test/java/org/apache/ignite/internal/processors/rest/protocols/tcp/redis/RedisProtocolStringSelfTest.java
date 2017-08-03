@@ -428,16 +428,22 @@ public class RedisProtocolStringSelfTest extends RedisCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testExpire() throws Exception {
-        testExpire((Jedis jedis, String key) ->
-            jedis.expire("k1", 2));
+        testExpire(new Expiration() {
+            @Override public long expire(Jedis jedis, String key) {
+                return jedis.expire("k1", 2);
+            }
+        });
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testExpireMs() throws Exception {
-        testExpire((Jedis jedis, String key) ->
-            jedis.pexpire("k1", 2000));
+        testExpire(new Expiration() {
+            @Override public long expire(Jedis jedis, String key) {
+                return jedis.pexpire("k1", 2000);
+            }
+        });
     }
 
     private void testExpire(Expiration exp) throws Exception {

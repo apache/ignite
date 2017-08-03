@@ -1659,30 +1659,36 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
             assert c != null;
             assert key != null;
 
-            return ctx.closure().callLocalSafe((Callable<Object>)() -> {
-                EntryProcessorResult<Boolean> res = c.invoke(key, (entry, objects) -> {
-                    Object val = entry.getValue();
+            return ctx.closure().callLocalSafe(new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    EntryProcessorResult<Boolean> res = c.invoke(key, new EntryProcessor<Object, Object, Boolean>() {
+                        @Override
+                        public Boolean process(MutableEntry<Object, Object> entry,
+                            Object... objects) throws EntryProcessorException {
+                            Object val = entry.getValue();
 
-                    GridCacheEntryEx ex = ((CacheInvokeEntry)entry).entry();
+                            GridCacheEntryEx ex = ((CacheInvokeEntry)entry).entry();
 
-                    if (val == null || ttl == null)
-                        return false;
+                            if (val == null || ttl == null)
+                                return false;
+
+                            try {
+                                ex.updateTtl(ex.version(), ttl);
+                            }
+                            catch (GridCacheEntryRemovedException e) {
+                                throw new EntryProcessorException(e.getCause());
+                            }
+
+                            return true;
+                        }
+                    });
 
                     try {
-                        ex.updateTtl(ex.version(), ttl);
+                        return res.get();
                     }
-                    catch (GridCacheEntryRemovedException e) {
-                        throw new EntryProcessorException(e.getCause());
+                    catch (EntryProcessorException e) {
+                        throw new IgniteCheckedException(e.getCause());
                     }
-
-                    return true;
-                });
-
-                try {
-                    return res.get();
-                }
-                catch (EntryProcessorException e) {
-                    throw new IgniteCheckedException(e.getCause());
                 }
             }, false);
         }
