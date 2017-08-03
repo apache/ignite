@@ -63,6 +63,13 @@ public class DataRecordPayloadLinker {
     }
 
     /**
+     * @return True if there is payload to link.
+     */
+    public boolean hasPayload() {
+        return delegateLinker.position() != DataRecordLinker.Position.NONE;
+    }
+
+    /**
      * @return WAL pointer associated with DataRecord.
      */
     public WALPointer pointer() {

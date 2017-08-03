@@ -254,7 +254,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
 
             int[] val = (int[])cache.get("key_" + i);
 
-            assertTrue("Invalid data. [key=key_" + i + ']', Arrays.equals(data, val));
+            assertTrue("Invalid data. [key=key_" + i + ']' + ", expected=" + data.length + ", actual=" + val.length, Arrays.equals(data, val));
         }
     }
 

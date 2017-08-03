@@ -240,8 +240,8 @@ public abstract class AbstractWalRecordsIterator
         else if (record instanceof WALReferenceAwareRecord) {
             WALReferenceAwareRecord referenceRecord = (WALReferenceAwareRecord) record;
 
-            // We didn't see DataRecord first, try to find it outside the bounds of iterator.
-            if (linker.pointer() == null) {
+            // There is no DataRecord in linker, try to find it outside the bounds of iterator.
+            if (!linker.hasPayload()) {
                 WALIterator iterator = sharedCtx.wal().replay(referenceRecord.reference());
                 WALRecord dataRecord = iterator.next().getValue();
 
