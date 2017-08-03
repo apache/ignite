@@ -234,7 +234,9 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
             return initReadHandle(fd, null);
         }
         catch (FileNotFoundException e) {
-            log.info("Missing WAL segment in the archive: " + e.getMessage());
+            if (log.isInfoEnabled())
+                log.info("Missing WAL segment in the archive: " + e.getMessage());
+
             return null;
         }
     }

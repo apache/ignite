@@ -146,7 +146,8 @@ public class IgniteDiagnosticPrepareContext {
             @Override public void apply(IgniteInternalFuture<String> fut) {
                 synchronized (IgniteDiagnosticPrepareContext.class) {
                     try {
-                        log.info(fut.get());
+                        if (log.isInfoEnabled())
+                            log.info(fut.get());
                     }
                     catch (Exception e) {
                         U.error(log, "Failed to dump diagnostic info: " + e, e);
