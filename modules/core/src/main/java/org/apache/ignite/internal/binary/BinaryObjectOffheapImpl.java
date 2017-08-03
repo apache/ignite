@@ -324,7 +324,6 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
 
                 break;
             }
-            // TODO ?
 
             case GridBinaryMarshaller.DATE: {
                 long time = BinaryPrimitives.readLong(ptr, fieldPos + 1);

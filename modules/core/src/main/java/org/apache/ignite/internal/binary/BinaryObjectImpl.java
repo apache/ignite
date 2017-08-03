@@ -429,7 +429,6 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
                 val = new String(arr, fieldPos + 5, dataLen, UTF_8);
 
                 break;
-            // TODO ?
             }
 
             case GridBinaryMarshaller.DATE: {
@@ -577,7 +576,6 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
                 totalLen = dataLen + 5;
 
                 break;
-            // TODO ?
             }
 
             case GridBinaryMarshaller.TIMESTAMP:

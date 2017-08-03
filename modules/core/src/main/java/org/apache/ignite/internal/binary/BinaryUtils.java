@@ -442,8 +442,6 @@ public class BinaryUtils {
 
                 break;
 
-            // TODO? And what about class-to-flag mapping
-
             case GridBinaryMarshaller.UUID:
                 writer.doWriteUuid((UUID)val);
 
