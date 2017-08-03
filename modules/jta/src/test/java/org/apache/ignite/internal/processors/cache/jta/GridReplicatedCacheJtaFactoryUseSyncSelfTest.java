@@ -15,27 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.internal.processors.cache.jta;
 
-import javax.cache.configuration.Factory;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.TransactionConfiguration;
-import org.objectweb.transaction.jta.TransactionManager;
 
 /**
- * Factory JTA integration test using PARTITIONED cache.
+ * Factory JTA integration test using REPLICATED cache.
  */
-public class GridPartitionedCacheJtaFactorySelfTest extends AbstractCacheJtaSelfTest {
+public class GridReplicatedCacheJtaFactoryUseSyncSelfTest extends GridReplicatedCacheJtaFactorySelfTest {
     /** {@inheritDoc} */
     @Override protected void configureJta(IgniteConfiguration cfg) {
-        TransactionConfiguration txCfg = cfg.getTransactionConfiguration();
+        super.configureJta(cfg);
 
-        txCfg.setTxManagerFactory(new Factory<TransactionManager>() {
-            private static final long serialVersionUID = 0L;
-
-            @Override public TransactionManager create() {
-                return jotm.getTransactionManager();
-            }
-        });
+        cfg.getTransactionConfiguration().setUseJtaSynchronization(true);
     }
 }

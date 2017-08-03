@@ -56,7 +56,7 @@ import org.apache.ignite.internal.IgniteServicesImpl;
 import org.apache.ignite.internal.cluster.ClusterGroupAdapter;
 import org.apache.ignite.internal.cluster.ClusterNodeLocalMapImpl;
 import org.apache.ignite.internal.executor.GridExecutorService;
-import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
+import org.apache.ignite.internal.processors.cache.GatewayProtectedCacheProxy;
 import org.apache.ignite.internal.processors.service.DummyService;
 import org.apache.ignite.internal.util.GridByteArrayList;
 import org.apache.ignite.internal.util.typedef.F;
@@ -171,8 +171,8 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
         assert inBean.getObjectField() != null;
         assert outBean.getObjectField() != null;
 
-        assert inBean.getObjectField().getClass().equals(IgniteCacheProxy.class);
-        assert outBean.getObjectField().getClass().equals(IgniteCacheProxy.class);
+        assert inBean.getObjectField().getClass().equals(GatewayProtectedCacheProxy.class);
+        assert outBean.getObjectField().getClass().equals(GatewayProtectedCacheProxy.class);
 
         assert inBean != outBean;
 
@@ -201,8 +201,8 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
         assert inBean.getObjectField() != null;
         assert outBean.getObjectField() != null;
 
-        assert inBean.getObjectField().getClass().equals(IgniteCacheProxy.class);
-        assert outBean.getObjectField().getClass().equals(IgniteCacheProxy.class);
+        assert inBean.getObjectField().getClass().equals(GatewayProtectedCacheProxy.class);
+        assert outBean.getObjectField().getClass().equals(GatewayProtectedCacheProxy.class);
 
         assert inBean != outBean;
 

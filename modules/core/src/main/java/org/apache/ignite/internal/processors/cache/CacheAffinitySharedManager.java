@@ -442,7 +442,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                                 grp.topology().update(topVer,
                                     clientTop.partitionMap(true),
                                     clientTop.updateCounters(false),
-                                    Collections.<Integer>emptySet());
+                                    Collections.<Integer>emptySet(),
+                                    null);
                             }
 
                             grpHolder = new CacheGroupHolder1(grp, grpHolder.affinity());
@@ -504,7 +505,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
                 grp.topology().updateTopologyVersion(topFut, discoCache, -1, false);
 
-                grp.topology().update(topVer, partMap, null, Collections.<Integer>emptySet());
+                grp.topology().update(topVer, partMap, null, Collections.<Integer>emptySet(), null);
 
                 topFut.validate(grp, discoCache.allNodes());
             }
@@ -713,7 +714,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 assert cctx.cacheContext(cacheDesc.cacheId()) == null
                     : "Starting cache has not null context: " + cacheDesc.cacheName();
 
-                IgniteCacheProxy cacheProxy = cctx.cache().jcacheProxy(req.cacheName());
+                IgniteCacheProxyImpl cacheProxy = (IgniteCacheProxyImpl) cctx.cache().jcacheProxy(req.cacheName());
 
                 // If it has proxy then try to start it
                 if (cacheProxy != null) {
@@ -782,27 +783,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         for (ExchangeActions.CacheActionData action : exchActions.cacheStopRequests())
             cctx.cache().blockGateway(action.request().cacheName(), true, action.request().restart());
 
-        for (ExchangeActions.CacheGroupActionData action : exchActions.cacheGroupsToStop()) {
+        for (ExchangeActions.CacheGroupActionData action : exchActions.cacheGroupsToStop())
             cctx.exchange().clearClientTopology(action.descriptor().groupId());
-
-            CacheGroupContext gctx = cctx.cache().cacheGroup(action.descriptor().groupId());
-
-            if (gctx != null) {
-                IgniteCheckedException ex;
-
-                String msg = "Failed to wait for topology update, cache group is stopping.";
-
-                // If snapshot operation in progress we must throw CacheStoppedException
-                // for correct cache proxy restart. For more details see
-                // IgniteCacheProxy.cacheException()
-                if (cctx.cache().context().snapshot().snapshotOperationInProgress())
-                    ex = new CacheStoppedException(msg);
-                else
-                    ex = new IgniteCheckedException(msg);
-
-                gctx.affinity().cancelFutures(ex);
-            }
-        }
 
         Set<Integer> stoppedGrps = null;
 
@@ -1460,7 +1442,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      * @throws IgniteCheckedException If failed.
      * @return Future completed when caches initialization is done.
      */
-    private IgniteInternalFuture<?> initCoordinatorCaches(final GridDhtPartitionsExchangeFuture fut)
+    public IgniteInternalFuture<?> initCoordinatorCaches(final GridDhtPartitionsExchangeFuture fut)
         throws IgniteCheckedException {
         final List<IgniteInternalFuture<AffinityTopologyVersion>> futs = new ArrayList<>();
 

@@ -875,9 +875,8 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
                         lsnr.onSessionEnd(locSes, !threwEx);
                 }
 
-                assert !sesHolder.get().ended(store);
-
-                store.sessionEnd(!threwEx);
+                if (!sesHolder.get().ended(store))
+                    store.sessionEnd(!threwEx);
             }
         }
         catch (Exception e) {
@@ -1363,6 +1362,11 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
         }
 
         /** {@inheritDoc} */
+        @Override public void suspend() throws IgniteException {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
         @Override public long timeout() {
             return tx.timeout();
         }
@@ -1404,6 +1408,11 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
 
         /** {@inheritDoc} */
         @Override public IgniteFuture<Void> rollbackAsync() throws IgniteException {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void resume() throws IgniteException {
             throw new UnsupportedOperationException();
         }
 

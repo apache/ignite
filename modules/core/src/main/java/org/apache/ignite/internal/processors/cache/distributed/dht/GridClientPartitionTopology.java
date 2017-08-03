@@ -594,8 +594,8 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
         @Nullable AffinityTopologyVersion exchangeVer,
         GridDhtPartitionFullMap partMap,
         Map<Integer, T2<Long, Long>> cntrMap,
-        Set<Integer> partsToReload
-    ) {
+        Set<Integer> partsToReload,
+        @Nullable AffinityTopologyVersion msgTopVer) {
         if (log.isDebugEnabled())
             log.debug("Updating full partition map [exchVer=" + exchangeVer + ", parts=" + fullMapString() + ']');
 
@@ -606,6 +606,14 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
                 if (log.isDebugEnabled())
                     log.debug("Stale exchange id for full partition map update (will ignore) [lastExchId=" +
                         lastExchangeVer + ", exchVer=" + exchangeVer + ']');
+
+                return false;
+            }
+
+            if (msgTopVer != null && lastExchangeVer != null && lastExchangeVer.compareTo(msgTopVer) > 0) {
+                if (log.isDebugEnabled())
+                    log.debug("Stale topology version for full partition map update message (will ignore) " +
+                        "[lastExchId=" + lastExchangeVer + ", topVersion=" + msgTopVer + ']');
 
                 return false;
             }
@@ -630,8 +638,13 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
                     }
                 }
 
-                for (GridDhtPartitionMap part : partMap.values())
-                    fullMapUpdated |= !node2part.containsKey(part);
+                // Check that we have new nodes.
+                for (GridDhtPartitionMap part : partMap.values()) {
+                    if (fullMapUpdated)
+                        break;
+
+                    fullMapUpdated = !node2part.containsKey(part.nodeId());
+                }
 
                 // Remove entry if node left.
                 for (Iterator<UUID> it = partMap.keySet().iterator(); it.hasNext(); ) {

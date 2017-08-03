@@ -102,7 +102,7 @@ namespace ignite
         template<typename K, typename V>
         cache::Cache<K, V> GetCache(const char* name, IgniteError& err)
         {
-            impl::cache::CacheImpl* cacheImpl = impl.Get()->GetCache<K, V>(name, err);
+            impl::cache::CacheImpl* cacheImpl = impl.Get()->GetCache(name, err);
 
             return cache::Cache<K, V>(cacheImpl);
         }
@@ -139,7 +139,7 @@ namespace ignite
         template<typename K, typename V>
         cache::Cache<K, V> GetOrCreateCache(const char* name, IgniteError& err)
         {
-            impl::cache::CacheImpl* cacheImpl = impl.Get()->GetOrCreateCache<K, V>(name, err);
+            impl::cache::CacheImpl* cacheImpl = impl.Get()->GetOrCreateCache(name, err);
 
             return cache::Cache<K, V>(cacheImpl);
         }
@@ -176,10 +176,25 @@ namespace ignite
         template<typename K, typename V>
         cache::Cache<K, V> CreateCache(const char* name, IgniteError& err)
         {
-            impl::cache::CacheImpl* cacheImpl = impl.Get()->CreateCache<K, V>(name, err);
+            impl::cache::CacheImpl* cacheImpl = impl.Get()->CreateCache(name, err);
 
             return cache::Cache<K, V>(cacheImpl);
         }
+
+        /**
+         * Check if the Ignite grid is active.
+         *
+         * @return True if grid is active and false otherwise.
+         */
+        bool IsActive();
+
+        /**
+         * Change Ignite grid state to active or inactive.
+         *
+         * @param active If true start activation process. If false start
+         *    deactivation process.
+         */
+        void SetActive(bool active);
 
         /**
          * Get transactions.
