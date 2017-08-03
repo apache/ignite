@@ -162,7 +162,6 @@ public class BinaryUtils {
         PLAIN_CLASS_TO_FLAG.put(Character.class, GridBinaryMarshaller.CHAR);
         PLAIN_CLASS_TO_FLAG.put(Boolean.class, GridBinaryMarshaller.BOOLEAN);
         PLAIN_CLASS_TO_FLAG.put(BigDecimal.class, GridBinaryMarshaller.DECIMAL);
-        // FIXME: so what?
         PLAIN_CLASS_TO_FLAG.put(String.class, GridBinaryMarshaller.STRING);
         PLAIN_CLASS_TO_FLAG.put(UUID.class, GridBinaryMarshaller.UUID);
         PLAIN_CLASS_TO_FLAG.put(Date.class, GridBinaryMarshaller.DATE);

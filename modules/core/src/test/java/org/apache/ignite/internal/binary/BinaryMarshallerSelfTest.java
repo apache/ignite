@@ -99,6 +99,12 @@ import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.apache.ignite.internal.binary.BinaryStringEncoding.ENC_IBM866;
+import static org.apache.ignite.internal.binary.BinaryStringEncoding.ENC_UTF_16;
+import static org.apache.ignite.internal.binary.BinaryStringEncoding.ENC_UTF_16BE;
+import static org.apache.ignite.internal.binary.BinaryStringEncoding.ENC_UTF_16LE;
+import static org.apache.ignite.internal.binary.BinaryStringEncoding.ENC_UTF_8;
+import static org.apache.ignite.internal.binary.BinaryStringEncoding.ENC_WINDOWS_1251;
 import static org.apache.ignite.internal.binary.streams.BinaryMemoryAllocator.INSTANCE;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertNotEquals;
@@ -219,20 +225,6 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testStringVer1() throws Exception {
-        doTestString(false);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testStringVer2() throws Exception {
-        doTestString(true);
-    }
-
-    /**
-     * @throws Exception If failed
-     */
-    private void doTestString(boolean ver2) throws Exception {
         // Ascii check.
         String str = "ascii0123456789";
         assertEquals(str, marshalUnmarshal(str));
@@ -255,20 +247,10 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         // Special symbols check.
         str = new String(new char[] {0xD800, '的', 0xD800, 0xD800, 0xDC00, 0xDFFF});
-        if (ver2) {
-            bytes = BinaryUtils.strToUtf8Bytes(str);
-            assertEquals(str, BinaryUtils.utf8BytesToStr(bytes, 0, bytes.length));
-        }
-        else
-            assertNotEquals(str, marshalUnmarshal(str));
+        assertNotEquals(str, marshalUnmarshal(str));
 
         str = new String(new char[] {55296});
-        if (ver2) {
-            bytes = BinaryUtils.strToUtf8Bytes(str);
-            assertEquals(str, BinaryUtils.utf8BytesToStr(bytes, 0, bytes.length));
-        }
-        else
-            assertNotEquals(str, marshalUnmarshal(str));
+        assertNotEquals(str, marshalUnmarshal(str));
 
         bytes = str.getBytes(UTF_8);
         assertNotEquals(str, new String(bytes, UTF_8));
@@ -281,6 +263,60 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         bytes = str.getBytes(UTF_8);
         assertEquals(str, new String(bytes, UTF_8));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testUtf8Ver2Encoding() throws Exception {
+        // Special symbols check.
+        String str = new String(new char[] {0xD800, '的', 0xD800, 0xD800, 0xDC00, 0xDFFF});
+        byte[] bytes = BinaryUtils.strToUtf8Bytes(str);
+        assertEquals(str, BinaryUtils.utf8BytesToStr(bytes, 0, bytes.length));
+
+        str = new String(new char[] {55296});
+        bytes = BinaryUtils.strToUtf8Bytes(str);
+        assertEquals(str, BinaryUtils.utf8BytesToStr(bytes, 0, bytes.length));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testLosslessEncodedString() throws Exception {
+        for (BinaryStringEncoding enc : Arrays.asList(ENC_UTF_8, ENC_UTF_16BE, ENC_UTF_16LE, ENC_UTF_16)) {
+            // Ascii check.
+            String str = "ascii0123456789";
+            assertEquals(str, marshalUnmarshal(str, enc));
+
+            // Extended symbols set check set.
+            str = "的的abcdкириллица";
+            assertEquals(str, marshalUnmarshal(str, enc));
+
+            // Special symbols check.
+            str = new String(new char[] {0xD800, '的', 0xD800, 0xD800, 0xDC00, 0xDFFF});
+            assertNotEquals(str, marshalUnmarshal(str, enc));
+
+            str = new String(new char[] {55296});
+            assertNotEquals(str, marshalUnmarshal(str, enc));
+
+            str = new String(new char[] {0xD801, 0xDC37});
+            assertEquals(str, marshalUnmarshal(str, enc));
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testLossyEncodedString() throws Exception {
+        for (BinaryStringEncoding enc : Arrays.asList(ENC_IBM866, ENC_WINDOWS_1251)) {
+            // Ascii check.
+            String str = "ascii0123456789";
+            assertEquals(str, marshalUnmarshal(str, enc));
+
+            // Extended symbols set check set.
+            str = "abcdкириллица";
+            assertEquals(str, marshalUnmarshal(str, enc));
+        }
     }
 
     /**
@@ -2767,7 +2803,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      */
     public void testDuplicateNameSimpleNameMapper() throws Exception {
         BinaryMarshaller marsh = binaryMarshaller(new BinaryBasicNameMapper(true),
-            new BinaryBasicIdMapper(true), null, null, null);
+            new BinaryBasicIdMapper(true), null, null, null, null);
 
         Test1.Job job1 = new Test1().new Job();
         Test2.Job job2 = new Test2().new Job();
@@ -2791,7 +2827,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      */
     public void testDuplicateNameFullNameMapper() throws Exception {
         BinaryMarshaller marsh = binaryMarshaller(new BinaryBasicNameMapper(false),
-            new BinaryBasicIdMapper(false), null, null, null);
+            new BinaryBasicIdMapper(false), null, null, null, null);
 
         Test1.Job job1 = new Test1().new Job();
         Test2.Job job2 = new Test2().new Job();
@@ -3185,7 +3221,8 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
             TestClass2.class.getName());
 
         BinaryMarshaller m0 = binaryMarshaller(null, excludedClasses);
-        BinaryMarshaller m1 = binaryMarshaller(null);
+        Collection<BinaryTypeConfiguration> col = null;
+        BinaryMarshaller m1 = binaryMarshaller(col);
 
         TestClass0 obj0 = new TestClass0();
         TestClass1 obj1 = new TestClass1();
@@ -3584,6 +3621,14 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
     /**
      * @param obj Original object.
+     * @return Result object.
+     */
+    private <T> T marshalUnmarshal(T obj, BinaryStringEncoding binaryStringEncoding) throws IgniteCheckedException {
+        return marshalUnmarshal(obj, binaryMarshaller(binaryStringEncoding));
+    }
+
+    /**
+     * @param obj Original object.
      * @param marsh Marshaller.
      * @return Result object.
      */
@@ -3626,7 +3671,14 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      *
      */
     protected BinaryMarshaller binaryMarshaller() throws IgniteCheckedException {
-        return binaryMarshaller(null, null, null, null, null);
+        return binaryMarshaller(null, null, null, null, null, null);
+    }
+
+    /**
+     *
+     */
+    protected BinaryMarshaller binaryMarshaller(BinaryStringEncoding binaryStringEncoding) throws IgniteCheckedException {
+        return binaryMarshaller(null, null, null, null, null, binaryStringEncoding);
     }
 
     /**
@@ -3634,7 +3686,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      */
     protected BinaryMarshaller binaryMarshaller(Collection<BinaryTypeConfiguration> cfgs)
         throws IgniteCheckedException {
-        return binaryMarshaller(null, null, null, cfgs, null);
+        return binaryMarshaller(null, null, null, cfgs, null, null);
     }
 
     /**
@@ -3642,7 +3694,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      */
     protected BinaryMarshaller binaryMarshaller(Collection<BinaryTypeConfiguration> cfgs,
         Collection<String> excludedClasses) throws IgniteCheckedException {
-        return binaryMarshaller(null, null, null, cfgs, excludedClasses);
+        return binaryMarshaller(null, null, null, cfgs, excludedClasses, null);
     }
 
     /**
@@ -3651,7 +3703,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     protected BinaryMarshaller binaryMarshaller(BinaryNameMapper nameMapper, BinaryIdMapper mapper,
         Collection<BinaryTypeConfiguration> cfgs)
         throws IgniteCheckedException {
-        return binaryMarshaller(nameMapper, mapper, null, cfgs, null);
+        return binaryMarshaller(nameMapper, mapper, null, cfgs, null, null);
     }
 
     /**
@@ -3659,7 +3711,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      */
     protected BinaryMarshaller binaryMarshaller(BinarySerializer serializer, Collection<BinaryTypeConfiguration> cfgs)
         throws IgniteCheckedException {
-        return binaryMarshaller(null, null, serializer, cfgs, null);
+        return binaryMarshaller(null, null, serializer, cfgs, null, null);
     }
 
     /**
@@ -3670,7 +3722,8 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         BinaryIdMapper mapper,
         BinarySerializer serializer,
         Collection<BinaryTypeConfiguration> cfgs,
-        Collection<String> excludedClasses
+        Collection<String> excludedClasses,
+        BinaryStringEncoding binaryStringEncoding
     ) throws IgniteCheckedException {
         IgniteConfiguration iCfg = new IgniteConfiguration();
 
@@ -3680,7 +3733,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         bCfg.setIdMapper(mapper);
         bCfg.setSerializer(serializer);
         bCfg.setCompactFooter(compactFooter());
-        bCfg.setEncoding(BinaryStringEncoding.ENC_UTF_16BE);
+        bCfg.setEncoding(binaryStringEncoding);
 
         bCfg.setTypeConfigurations(cfgs);
 
