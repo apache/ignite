@@ -676,7 +676,7 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
      */
     public void testConcurrentOperationsAndNodeStartStopMultithreaded() throws Exception {
         // Start several stable nodes.
-        /*ignitionStart(serverConfiguration(1));
+        ignitionStart(serverConfiguration(1));
         ignitionStart(serverConfiguration(2));
         ignitionStart(serverConfiguration(3, true));
 
@@ -684,10 +684,14 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
 
         createSqlCache(cli);
 
+        run(cli, CREATE_SQL_WITH_TEMPLATE);
+
         final AtomicBoolean stopped = new AtomicBoolean();
 
         // Start node start/stop worker.
         final AtomicInteger nodeIdx = new AtomicInteger(4);
+
+        final AtomicInteger dynColCnt = new AtomicInteger();
 
         IgniteInternalFuture startStopFut = multithreadedAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
@@ -734,28 +738,13 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
             }
         }, 1);
 
-        // Start several threads which will mess around indexes.
-        final QueryIndex idx = index(IDX_NAME_1, field(FIELD_NAME_1));
-
         IgniteInternalFuture idxFut = multithreadedAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
-                boolean exists = false;
-
                 while (!stopped.get()) {
                     Ignite node = grid(ThreadLocalRandom.current().nextInt(1, 5));
 
-                    IgniteInternalFuture fut;
-
-                    if (exists) {
-                        fut = queryProcessor(node).dynamicIndexDrop(CACHE_NAME, CACHE_NAME, IDX_NAME_1, true);
-
-                        exists = false;
-                    }
-                    else {
-                        fut = queryProcessor(node).dynamicIndexCreate(CACHE_NAME, CACHE_NAME, TBL_NAME, idx, true);
-
-                        exists = true;
-                    }
+                    IgniteInternalFuture fut = addCols(node, c("newCol" + dynColCnt.getAndIncrement(),
+                        Integer.class.getName()));
 
                     try {
                         fut.get();
@@ -783,15 +772,46 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
         // Make sure cache is operational at this point.
         createSqlCache(cli);
 
-        queryProcessor(cli).dynamicIndexDrop(CACHE_NAME, CACHE_NAME, IDX_NAME_1, true).get();
-        queryProcessor(cli).dynamicIndexCreate(CACHE_NAME, CACHE_NAME, TBL_NAME, idx, true).get();
+        QueryField[] expCols = new QueryField[dynColCnt.get()];
 
-        assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1, field(FIELD_NAME_1));
+        int idxColsCnt = Math.min(300, expCols.length);
 
-        put(cli, 0, KEY_AFTER);
+        Integer[] args = new Integer[idxColsCnt];
 
-        assertIndexUsed(IDX_NAME_1, SQL_SIMPLE_FIELD_1, SQL_ARG_1);
-        assertSqlSimpleData(SQL_SIMPLE_FIELD_1, KEY_AFTER - SQL_ARG_1);*/
+        String updQry = "UPDATE " + TBL_NAME + " SET ";
+
+        String idxQry = "CREATE INDEX idx ON " + TBL_NAME + '(';
+
+        for (int i = 0; i < expCols.length; i++) {
+            expCols[i] = c("newCol" + i, Integer.class.getName());
+
+            if (i >= idxColsCnt)
+                continue;
+
+            if (i > 0) {
+                updQry += ", ";
+
+                idxQry += ", ";
+            }
+
+            updQry += "\"newCol" + i + "\" = id + ?";
+
+            idxQry += "\"newCol" + i + '"';
+
+            args[i] = i;
+        }
+
+        idxQry += ')';
+
+        checkNodesState(TBL_NAME, expCols);
+
+        put(cli, 0, 500);
+
+        run(cli.cache(CACHE_NAME), updQry, (Object[])args);
+
+        run(cli, idxQry);
+
+        run(cli, "DROP INDEX idx");
     }
 
     /**

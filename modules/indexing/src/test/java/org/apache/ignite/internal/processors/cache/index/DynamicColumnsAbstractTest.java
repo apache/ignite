@@ -277,8 +277,8 @@ public abstract class DynamicColumnsAbstractTest extends GridCommonAbstractTest 
      * @param sql Statement.
      * @return result.
      */
-    protected List<List<?>> run(IgniteCache<?, ?> cache, String sql) {
-        return cache.query(new SqlFieldsQuery(sql).setSchema(QueryUtils.DFLT_SCHEMA)).getAll();
+    protected List<List<?>> run(IgniteCache<?, ?> cache, String sql, Object... args) {
+        return cache.query(new SqlFieldsQuery(sql).setSchema(QueryUtils.DFLT_SCHEMA).setArgs(args)).getAll();
     }
 
     /**
