@@ -3896,9 +3896,8 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @param msg Client reconnect message.
          */
         void processClientReconnectMessage(TcpDiscoveryClientReconnectMessage msg) {
-            assert !msg.verified();
-
             UUID nodeId = msg.creatorNodeId();
+            UUID locNodeId = getLocalNodeId();
             TcpDiscoveryNode node = ring.node(nodeId);
 
             assert node == null || node.isClient();
@@ -3910,6 +3909,15 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             if (!isLocalNodeCoordinator() && sendMessageToRemotes(msg))
                 sendMessageAcrossRing(msg);
+
+            if (msg.verified() && msg.routerNodeId().equals(getLocalNodeId())) {
+                ClientMessageWorker wrk = clientMsgWorkers.get(nodeId);
+                if (wrk != null)
+                    wrk.addMessage(msg);
+                else
+                    log.debug("Failed to reconnect client node (disconnected during the process) [locNodeId=" +
+                        locNodeId + ", clientNodeId=" + nodeId + ']');
+            }
         }
 
         /**
@@ -6123,13 +6131,13 @@ class ServerImpl extends TcpDiscoveryImpl {
             boolean isLocNodeRouter = locNodeId.equals(msg.routerNodeId());
 
             if (isLocNodeRouter) {
-                msg.verify(getLocalNodeId());
-
                 TcpDiscoveryNode node = ring.node(nodeId);
                 ClientMessageWorker wrk = clientMsgWorkers.get(nodeId);
 
-                if (wrk != null) {
-                    if (node != null) {
+                if (wrk != null && node != null) {
+                    if (!msg.verified()) {
+                        msg.verify(getLocalNodeId());
+
                         Collection<TcpDiscoveryAbstractMessage> pending = msgHist.messages(msg.lastMessageId(), node);
 
                         if (pending != null) {
@@ -6138,6 +6146,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                             TcpDiscoveryClientReconnectMessage msgCp = new TcpDiscoveryClientReconnectMessage(
                                 msg.creatorNodeId(), msg.routerNodeId(), msg.lastMessageId());
+                            msgCp.client(msg.client());
 
                             msgWorker.addMessage(msgCp);
 
@@ -6157,12 +6166,15 @@ class ServerImpl extends TcpDiscoveryImpl {
                             msgWorker.addMessage(nodeFailedMsg);
                         }
                     }
-                    else if (log.isDebugEnabled())
-                        log.debug("Failed to reconnect client node (disconnected during the process) [locNodeId=" +
-                            locNodeId + ", clientNodeId=" + nodeId + ']');
-
-                    wrk.addMessage(msg);
+                    else
+                        wrk.addMessage(msg);
                 }
+                else if (log.isDebugEnabled())
+                    log.debug("Failed to reconnect client node (disconnected during the process) [locNodeId=" +
+                        locNodeId + ", clientNodeId=" + nodeId + ']');
+
+                if (wrk != null)
+                    wrk.addMessage(msg);
             }
             else
                 msgWorker.addMessage(msg);
