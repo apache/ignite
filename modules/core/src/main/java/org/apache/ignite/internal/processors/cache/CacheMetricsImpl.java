@@ -809,7 +809,8 @@ public class CacheMetricsImpl implements CacheMetrics {
     public long estimateRebalancingFinishTime() {
         long rate = rebalancingKeysRate.getRate();
 
-        return rate <= 0 ? -1L : getKeysToRebalanceLeft() / rate + U.currentTimeMillis();
+        return rate <= 0 ? -1L :
+            ((getKeysToRebalanceLeft() / rate) * REBALANCE_RATE_INTERVAL) + U.currentTimeMillis();
     }
 
     /** {@inheritDoc} */
