@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testframework.junits;
 
+import java.io.File;
 import java.io.ObjectStreamException;
 import java.io.Serializable;
 import java.lang.reflect.Field;
@@ -50,6 +51,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.MavenUtils;
 import org.apache.ignite.binary.BinaryBasicNameMapper;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.BinaryConfiguration;
@@ -82,6 +84,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
@@ -862,6 +865,111 @@ public abstract class GridAbstractTest extends TestCase {
         }
         else
             return startRemoteGrid(igniteInstanceName, null, ctx);
+    }
+
+    /**
+     * Starts new grid of given version and name <b>in separate JVM</b>.
+     *
+     * Uses an ignite-core artifact in the Maven local repository,
+     * if it isn't exists there, it will be downloaded and stored via Maven.
+     *
+     * @param igniteInstanceName Instance name.
+     * @param ver Ignite version.
+     * @param clos IgniteInClosure for post-configuration.
+     * @return Started grid.
+     * @throws Exception If failed.
+     */
+    protected Ignite startGrid(String igniteInstanceName, String ver,
+        IgniteInClosure<IgniteConfiguration> clos) throws Exception {
+        return startGrid(igniteInstanceName, ver, null, clos, null, true);
+    }
+
+    /**
+     * Starts new grid of given version and name <b>in separate JVM</b>.
+     *
+     * Uses an ignite-core artifact in the Maven local repository,
+     * if it isn't exists there, it will be downloaded and stored via Maven.
+     *
+     * @param igniteInstanceName Instance name.
+     * @param ver Ignite version.
+     * @param cfg Ignite configuration.
+     * @param clos IgniteInClosure for post-configuration.
+     * @return Started grid.
+     * @throws Exception If failed.
+     */
+    protected Ignite startGrid(String igniteInstanceName, String ver, IgniteConfiguration cfg,
+        IgniteInClosure<IgniteConfiguration> clos) throws Exception {
+        return startGrid(igniteInstanceName, ver, cfg, clos, null, true);
+    }
+
+    /**
+     * Starts new grid of given version and name <b>in separate JVM</b>.
+     *
+     * Uses an ignite-core artifact in the Maven local repository,
+     * if it isn't exists there, it will be downloaded and stored via Maven.
+     *
+     * @param igniteInstanceName Instance name.
+     * @param ver Ignite version.
+     * @param cfg Ignite configuration.
+     * @param clos IgniteInClosure for post-configuration.
+     * @param jvmArgs Additional JVM arguments.
+     * @param resetDiscovery Reset DiscoverySpi at the configuration.
+     * @return Started grid.
+     * @throws Exception If failed.
+     */
+    protected Ignite startGrid(String igniteInstanceName, final String ver, IgniteConfiguration cfg,
+        IgniteInClosure<IgniteConfiguration> clos, final Collection<String> jvmArgs,
+        boolean resetDiscovery) throws Exception {
+        assert isMultiJvm() : "MultiJvm mode must be switched on for the node stop properly.";
+
+        assert !isFirstGrid(igniteInstanceName) : "Please, start node of current version first.";
+
+        if (cfg == null)
+            cfg = optimize(getConfiguration(igniteInstanceName));
+
+        final String pathToArtifact = MavenUtils.getPathToIgniteCoreArtifact(ver);
+
+        return new IgniteProcessProxy(cfg, log, grid(0), resetDiscovery, clos) {
+            @Override protected Collection<String> filteredJvmArgs() {
+                Collection<String> filteredJvmArgs = new ArrayList<>();
+
+                filteredJvmArgs.add("-ea");
+
+                for (String arg : U.jvmArgs()) {
+                    if (arg.startsWith("-Xmx") || arg.startsWith("-Xms"))
+                        filteredJvmArgs.add(arg);
+                }
+
+                String classPath = System.getProperty("java.class.path");
+
+                String[] paths = classPath.split(File.pathSeparator);
+
+                StringBuilder pathBuilder = new StringBuilder();
+
+                String corePathTemplate = "ignite.modules.core.target.classes".replace(".", File.separator);
+
+                for (String path : paths) {
+                    if (!path.contains(corePathTemplate))
+                        pathBuilder.append(path).append(File.pathSeparator);
+                }
+
+                pathBuilder.append(pathToArtifact).append(File.pathSeparator);
+
+                filteredJvmArgs.add("-cp");
+                filteredJvmArgs.add(pathBuilder.toString());
+
+                // additional JVM arguments
+                if (jvmArgs != null) {
+                    for (String arg : jvmArgs) {
+                        if (!arg.startsWith("-Xmx") && !arg.startsWith("-Xms")
+                            && !arg.startsWith("-cp") && !arg.startsWith("-classpath"))
+                            filteredJvmArgs.add(arg);
+                    }
+                }
+
+                return filteredJvmArgs;
+            }
+        };
     }
 
     /**
