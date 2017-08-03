@@ -6123,43 +6123,46 @@ class ServerImpl extends TcpDiscoveryImpl {
             boolean isLocNodeRouter = locNodeId.equals(msg.routerNodeId());
 
             if (isLocNodeRouter) {
+                msg.verify(getLocalNodeId());
+
                 TcpDiscoveryNode node = ring.node(nodeId);
                 ClientMessageWorker wrk = clientMsgWorkers.get(nodeId);
 
-                if (node != null && wrk != null) {
-                    Collection<TcpDiscoveryAbstractMessage> pending = msgHist.messages(msg.lastMessageId(), node);
+                if (wrk != null) {
+                    if (node != null) {
+                        Collection<TcpDiscoveryAbstractMessage> pending = msgHist.messages(msg.lastMessageId(), node);
 
-                    if (pending != null) {
-                        TcpDiscoveryClientReconnectMessage res = new TcpDiscoveryClientReconnectMessage(
-                            msg.creatorNodeId(), msg.routerNodeId(), msg.lastMessageId());
+                        if (pending != null) {
+                            msg.success(true);
+                            msg.pendingMessages(pending);
 
-                        res.success(true);
-                        res.pendingMessages(pending);
-                        res.verify(getLocalNodeId());
+                            TcpDiscoveryClientReconnectMessage msgCp = new TcpDiscoveryClientReconnectMessage(
+                                msg.creatorNodeId(), msg.routerNodeId(), msg.lastMessageId());
 
-                        wrk.addMessage(res);
+                            msgWorker.addMessage(msgCp);
 
-                        msgWorker.addMessage(msg);
+                            if (log.isDebugEnabled()) {
+                                log.debug("Accept client reconnect, restored pending messages " +
+                                    "[locNodeId=" + locNodeId + ", clientNodeId=" + nodeId + ']');
+                            }
+                        }
+                        else {
+                            if (log.isDebugEnabled())
+                                log.debug("Failing reconnecting client node because failed to restore pending " +
+                                    "messages [locNodeId=" + locNodeId + ", clientNodeId=" + nodeId + ']');
 
-                        if (log.isDebugEnabled()) {
-                            log.debug("Accept client reconnect, restored pending messages " +
-                                "[locNodeId=" + locNodeId + ", clientNodeId=" + nodeId + ']');
+                            TcpDiscoveryNodeFailedMessage nodeFailedMsg = new TcpDiscoveryNodeFailedMessage(locNodeId,
+                                node.id(), node.internalOrder());
+
+                            msgWorker.addMessage(nodeFailedMsg);
                         }
                     }
-                    else {
-                        if (log.isDebugEnabled())
-                            log.debug("Failing reconnecting client node because failed to restore pending " +
-                                "messages [locNodeId=" + locNodeId + ", clientNodeId=" + nodeId + ']');
+                    else if (log.isDebugEnabled())
+                        log.debug("Failed to reconnect client node (disconnected during the process) [locNodeId=" +
+                            locNodeId + ", clientNodeId=" + nodeId + ']');
 
-                        TcpDiscoveryNodeFailedMessage nodeFailedMsg = new TcpDiscoveryNodeFailedMessage(locNodeId,
-                            node.id(), node.internalOrder());
-
-                        msgWorker.addMessage(nodeFailedMsg);
-                    }
+                    wrk.addMessage(msg);
                 }
-                else if (log.isDebugEnabled())
-                    log.debug("Failed to reconnect client node (disconnected during the process) [locNodeId=" +
-                        locNodeId + ", clientNodeId=" + nodeId + ']');
             }
             else
                 msgWorker.addMessage(msg);
