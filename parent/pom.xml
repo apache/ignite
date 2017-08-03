@@ -1163,6 +1163,9 @@
 
         <profile>
             <id>sign-and-deploy</id>
+            <properties>
+                <maven.javadoc.skip>true</maven.javadoc.skip>
+            </properties>
             <build>
                 <plugins>
                     <plugin>
