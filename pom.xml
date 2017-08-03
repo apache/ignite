@@ -606,6 +606,37 @@
             <build>
                 <plugins>
                     <plugin>
+                        <artifactId>maven-assembly-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <!-- skip default -->
+                                <id>source-release-assembly</id>
+                                <goals>
+                                    <goal>single</goal>
+                                </goals>
+                                <configuration>
+                                    <skipAssembly>true</skipAssembly>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>source-release-assembly-ignite</id>
+                                <phase>validate</phase>
+                                <goals>
+                                    <goal>single</goal>
+                                </goals>
+                                <configuration>
+                                    <runOnlyAtExecutionRoot>true</runOnlyAtExecutionRoot>
+                                    <descriptors>
+                                        <descriptor>assembly/release-sources.xml</descriptor>
+                                    </descriptors>
+                                    <tarLongFileMode>gnu</tarLongFileMode>
+                                    <finalName>${project.artifactId}-${project.version}-src</finalName>
+                                    <appendAssemblyId>false</appendAssemblyId>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
                         <groupId>net.ju-n.maven.plugins</groupId>
                         <artifactId>checksum-maven-plugin</artifactId>
                         <version>1.2</version>
@@ -925,7 +956,6 @@
                                     <failOnError>false</failOnError>
                                     <target>
                                         <attachartifact file="${basedir}/target/bin/${project.artifactId}-fabric-${project.version}-bin.zip" classifier="fabric" type="zip" />
-                                        <attachartifact file="${basedir}/target/bin/${project.artifactId}-fabric-lgpl-${project.version}-bin.zip" classifier="fabric-lgpl" type="zip" />
                                         <attachartifact file="${basedir}/target/bin/${project.artifactId}-hadoop-${project.version}-bin.zip" classifier="hadoop" type="zip" />
                                     </target>
                                 </configuration>
@@ -938,7 +968,7 @@
 
 
         <profile>
-            <id>test-copy</id>
+            <id>sign-and-deploy</id>
             <build>
                 <plugins>
 
@@ -948,7 +978,7 @@
                         <executions>
                             <execution>
                                 <id>test-copy-forward</id>
-                                <phase>validate</phase>
+                                <phase>pre-clean</phase>
                                 <goals>
                                     <goal>run</goal>
                                 </goals>

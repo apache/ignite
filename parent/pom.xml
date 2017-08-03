@@ -1162,24 +1162,23 @@
         </profile>
 
         <profile>
-            <id>test-copy</id>
+            <id>sign-and-deploy</id>
             <build>
                 <plugins>
-
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-antrun-plugin</artifactId>
                         <executions>
                             <execution>
                                 <id>test-copy-forward</id>
-                                <phase>validate</phase>
+                                <phase>pre-clean</phase>
                                 <goals>
                                     <goal>run</goal>
                                 </goals>
                                 <configuration>
                                     <failOnError>false</failOnError>
                                     <target>
-                                        <copy todir="${basedir}/../module-temp/${basedir}/target" preservelastmodified="true">
+                                        <copy todir="${basedir}/target-temp/target" overwrite="true" preservelastmodified="true">
                                             <fileset dir="${basedir}/target"/>
                                         </copy>
                                     </target>
@@ -1194,10 +1193,9 @@
                                 <configuration>
                                     <failOnError>false</failOnError>
                                     <target>
-                                        <copy todir="${basedir}/target">
-                                            <fileset dir="${basedir}/../module-temp/${basedir}/target" preservelastmodified="true"/>
+                                        <copy todir="${basedir}/target" overwrite="true" preservelastmodified="true">
+                                            <fileset dir="${basedir}/target-temp/target" />
                                         </copy>
-                                        <delete dir="${basedir}/../module-temp"/>
                                     </target>
                                 </configuration>
                             </execution>
@@ -1206,8 +1204,5 @@
                 </plugins>
             </build>
         </profile>
-
-
-
     </profiles>
 </project>
