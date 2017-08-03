@@ -144,7 +144,7 @@ public class MavenUtils {
 
         pb.command(U.isWindows() ?
             new String[] {"cmd", "/c", cmd} :
-            new String[] {cmd});
+            new String[] {"/bin/bash", "-c", cmd});
 
         final Process p = pb.start();
 
