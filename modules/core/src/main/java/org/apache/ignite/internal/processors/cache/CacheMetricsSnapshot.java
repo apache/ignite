@@ -204,6 +204,12 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
     private long rebalancingBytesRate;
 
     /** */
+    private long rebalanceStartTime;
+
+    /** */
+    private long rebalanceFinishTime;
+
+    /** */
     private String keyType;
 
     /** */
@@ -307,6 +313,8 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
         keysToRebalanceLeft = m.getKeysToRebalanceLeft();
         rebalancingBytesRate = m.getRebalancingBytesRate();
         rebalancingKeysRate = m.getRebalancingKeysRate();
+        rebalanceStartTime = m.rebalancingStartTime();
+        rebalanceFinishTime = m.estimateRebalancingFinishTime();
     }
 
     /**
@@ -713,6 +721,14 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
     /** {@inheritDoc} */
     @Override public long getRebalancingBytesRate() {
         return rebalancingBytesRate;
+    }
+
+    @Override public long estimateRebalancingFinishTime() {
+        return rebalanceFinishTime;
+    }
+
+    @Override public long rebalancingStartTime() {
+        return rebalanceStartTime;
     }
 
     /** {@inheritDoc} */

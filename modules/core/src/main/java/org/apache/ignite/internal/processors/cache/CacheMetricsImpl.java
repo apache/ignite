@@ -29,6 +29,7 @@ import org.apache.ignite.internal.processors.cache.ratemetrics.HitRateMetrics;
 import org.apache.ignite.internal.processors.cache.store.GridCacheWriteBehindStore;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Adapter for cache metrics.
@@ -107,6 +108,8 @@ public class CacheMetricsImpl implements CacheMetrics {
 
     /** Total rebalanced bytes count. */
     private AtomicLong totalRebalancedBytes = new AtomicLong();
+
+    private volatile long rebalanceStartTime = -1L;
 
     /** Estimated rebalancing keys count. */
     private AtomicLong estimatedRebalancingKeys = new AtomicLong();
@@ -791,6 +794,27 @@ public class CacheMetricsImpl implements CacheMetrics {
         rebalancingBytesRate.clear();
 
         rebalancingKeysRate.clear();
+
+        rebalanceStartTime = -1L;
+    }
+
+    /**
+     *
+     */
+    public void startRebalance(long delay){
+        rebalanceStartTime = delay + U.currentTimeMillis();
+    }
+
+    /** {@inheritDoc} */
+    public long estimateRebalancingFinishTime() {
+        long rate = rebalancingKeysRate.getRate();
+
+        return rate <= 0 ? -1L : getKeysToRebalanceLeft() / rate + U.currentTimeMillis();
+    }
+
+    /** {@inheritDoc} */
+    public long rebalancingStartTime() {
+        return rebalanceStartTime;
     }
 
     /**

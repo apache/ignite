@@ -29,6 +29,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -136,5 +137,70 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
         log.info("Ratio: " + ratio);
 
         assertTrue(ratio > 40 && ratio < 60);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testRebalanceEstimateFinishTime() throws Exception {
+        Ignite ignite = startGrids(2);
+
+        IgniteCache<Object, Object> cache1 = ignite.cache(CACHE1);
+        IgniteCache<Object, Object> cache2 = ignite.cache(CACHE2);
+
+        for (int i = 0; i < 10000; i++) {
+            cache1.put(i, CACHE1 + "-" + i);
+
+            if (i % 2 == 0)
+                cache2.put(i, CACHE2 + "-" + i);
+        }
+
+        final CountDownLatch l1 = new CountDownLatch(1);
+        final CountDownLatch l2 = new CountDownLatch(1);
+
+        ignite = startGrid(2);
+
+        ignite.events().localListen(new IgnitePredicate<Event>() {
+            @Override public boolean apply(Event evt) {
+                l1.countDown();
+
+                return false;
+            }
+        }, EventType.EVT_CACHE_REBALANCE_STARTED);
+
+        ignite.events().localListen(new IgnitePredicate<Event>() {
+            @Override public boolean apply(Event evt) {
+                l2.countDown();
+
+                return false;
+            }
+        }, EventType.EVT_CACHE_REBALANCE_STOPPED);
+
+        assertTrue(l1.await(5, TimeUnit.SECONDS));
+
+        CacheMetrics metrics1 = ignite.cache(CACHE1).localMetrics();
+        CacheMetrics metrics2 = ignite.cache(CACHE2).localMetrics();
+
+        long startTime1 = metrics1.rebalancingStartTime();
+        long startTime2 = metrics2.rebalancingStartTime();
+
+        assertTrue(startTime1 > 0);
+        assertTrue(startTime2 > 0);
+
+        assertTrue(l2.await(5, TimeUnit.SECONDS));
+
+        long finishTime1 = metrics1.estimateRebalancingFinishTime();
+        long finishTime2 = metrics2.estimateRebalancingFinishTime();
+
+        assertTrue(finishTime1 > 0);
+        assertTrue(finishTime2 > 0);
+
+
+        log.info(
+            "StartTime1: " + startTime1 + "\n" +
+                "StartTime2: " + startTime2 + "\n" +
+                "FinishTime1: " + finishTime1 + "\n" +
+                "FinishTime2: " + finishTime2);
+
     }
 }

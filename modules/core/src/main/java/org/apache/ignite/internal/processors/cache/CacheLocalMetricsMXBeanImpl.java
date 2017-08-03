@@ -382,4 +382,14 @@ class CacheLocalMetricsMXBeanImpl implements CacheMetricsMXBean {
     @Override public long getRebalancingBytesRate() {
         return cache.metrics0().getRebalancingBytesRate();
     }
+
+    /** {@inheritDoc} */
+    @Override public long estimateRebalancingFinishTime() {
+        return cache.metrics0().estimateRebalancingFinishTime();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long rebalancingStartTime() {
+        return cache.metrics0().rebalancingStartTime();
+    }
 }

@@ -289,13 +289,14 @@ public class GridDhtPartitionDemander {
 
             rebalanceFut = fut;
 
-            fut.sendRebalanceStartedEvent();
-
             for (GridCacheContext cctx : grp.caches()) {
                 if (cctx.config().isStatisticsEnabled()) {
                     final CacheMetricsImpl metrics = cctx.cache().metrics0();
 
                     metrics.clearRebalanceCounters();
+
+                    if (!force)
+                        metrics.startRebalance(0);
 
                     rebalanceFut.listen(new IgniteInClosure<IgniteInternalFuture<Boolean>>() {
                         @Override public void apply(IgniteInternalFuture<Boolean> fut) {
@@ -304,6 +305,8 @@ public class GridDhtPartitionDemander {
                     });
                 }
             }
+
+            fut.sendRebalanceStartedEvent();
 
             if (assigns.cancelled()) { // Pending exchange.
                 if (log.isDebugEnabled())
@@ -350,6 +353,16 @@ public class GridDhtPartitionDemander {
             };
         }
         else if (delay > 0) {
+            for (GridCacheContext cctx : grp.caches()) {
+                if (cctx.config().isStatisticsEnabled()) {
+                    final CacheMetricsImpl metrics = cctx.cache().metrics0();
+
+                    System.out.println("startRebalance:" + ctx.igniteInstanceName());
+
+                    metrics.startRebalance(delay);
+                }
+            }
+
             GridTimeoutObject obj = lastTimeoutObj.get();
 
             if (obj != null)
