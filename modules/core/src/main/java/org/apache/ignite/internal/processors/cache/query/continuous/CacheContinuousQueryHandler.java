@@ -141,7 +141,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
     private transient boolean keepBinary;
 
     /** */
-    private transient ConcurrentMap<Integer, PartitionRecovery> rcvs;
+    private transient ConcurrentMap<Integer, PartitionRecovery> rcvs = new ConcurrentHashMap<>();
 
     /** */
     private transient ConcurrentMap<Integer, EntryBuffer> entryBufs;
@@ -340,8 +340,6 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
 
         ackBuf = new AcknowledgeBuffer();
 
-        rcvs = new ConcurrentHashMap<>();
-
         this.nodeId = nodeId;
 
         this.routineId = routineId;
@@ -490,6 +488,16 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                 sendBackupAcknowledge(ackBuf.acknowledgeOnTimeout(), routineId, ctx);
             }
 
+            @Override public void checkQueueOnTimeout(GridKernalContext ctx) {
+                for (PartitionRecovery rcv : rcvs.values()) {
+                    Collection<CacheEntryEvent<? extends K, ? extends V>> evts = rcv.onTimeout(
+                        ctx.cache().safeJcache(cacheName, cacheId), ctx.cache().context().cacheContext(cacheId));
+
+                    if (!evts.isEmpty())
+                        locLsnr.onUpdated(evts);
+                }
+            }
+
             @Override public void skipUpdateEvent(CacheContinuousQueryEvent<K, V> evt,
                 AffinityTopologyVersion topVer, boolean primary) {
                 assert evt != null;
@@ -555,20 +563,6 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         }
         else
             entry.prepareMarshal(cctx);
-    }
-
-    /**
-     * Wait topology.
-     */
-    public void waitTopologyFuture(GridKernalContext ctx) throws IgniteCheckedException {
-        GridCacheContext<K, V> cctx = cacheContext(ctx);
-
-        if (!cctx.isLocal()) {
-            cacheContext(ctx).affinity().affinityReadyFuture(initTopVer).get();
-
-            for (int partId = 0; partId < cacheContext(ctx).affinity().partitions(); partId++)
-                getOrCreatePartitionRecovery(ctx, partId);
-        }
     }
 
     /** {@inheritDoc} */
@@ -864,31 +858,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         PartitionRecovery rec = rcvs.get(partId);
 
         if (rec == null) {
-            Long partCntr = null;
-
-            AffinityTopologyVersion initTopVer0 = initTopVer;
-
-            if (initTopVer0 != null) {
-                GridCacheContext<K, V> cctx = cacheContext(ctx);
-
-                GridCacheAffinityManager aff = cctx.affinity();
-
-                if (initUpdCntrsPerNode != null) {
-                    for (ClusterNode node : aff.nodes(partId, initTopVer)) {
-                        Map<Integer, Long> map = initUpdCntrsPerNode.get(node.id());
-
-                        if (map != null) {
-                            partCntr = map.get(partId);
-
-                            break;
-                        }
-                    }
-                }
-                else if (initUpdCntrs != null)
-                    partCntr = initUpdCntrs.get(partId);
-            }
-
-            rec = new PartitionRecovery(ctx.log(CU.CONTINUOUS_QRY_LOG_CATEGORY), initTopVer0, partCntr);
+            rec = new PartitionRecovery(ctx.log(CU.CONTINUOUS_QRY_LOG_CATEGORY));
 
             PartitionRecovery oldRec = rcvs.putIfAbsent(partId, rec);
 
@@ -936,7 +906,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
     /**
      *
      */
-    private static class PartitionRecovery {
+    private static class PartitionRecovery<K, V> {
         /** Event which means hole in sequence. */
         private static final CacheContinuousQueryEntry HOLE = new CacheContinuousQueryEntry();
 
@@ -950,6 +920,12 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         private long lastFiredEvt;
 
         /** */
+        private long prevCheckCntr = -1;
+
+        /** */
+        private int pendingSize;
+
+        /** */
         private AffinityTopologyVersion curTop = AffinityTopologyVersion.NONE;
 
         /** */
@@ -957,19 +933,9 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
 
         /**
          * @param log Logger.
-         * @param topVer Topology version.
-         * @param initCntr Update counters.
          */
-        PartitionRecovery(IgniteLogger log, AffinityTopologyVersion topVer, @Nullable Long initCntr) {
+        PartitionRecovery(IgniteLogger log) {
             this.log = log;
-
-            if (initCntr != null) {
-                assert topVer.topologyVersion() > 0 : topVer;
-
-                this.lastFiredEvt = initCntr;
-
-                curTop = topVer;
-            }
         }
 
         /**
@@ -1067,6 +1033,17 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                         }
                     }
                 }
+                else if (!entry.isBackup() &&
+                    (entry.topologyVersion() != null && entry.topologyVersion().equals(curTop))) {
+
+                    if (log.isDebugEnabled())
+                        log.debug("Processed message out of order: " + entry);
+
+                    return !entry.isFiltered() ?
+                        F.<CacheEntryEvent<? extends K, ? extends V>>
+                            asList(new CacheContinuousQueryEvent<K, V>(cache, cctx, entry)) :
+                        Collections.<CacheEntryEvent<? extends K, ? extends V>>emptyList();
+                }
                 else {
                     if (log.isDebugEnabled())
                         log.debug("Skip duplicate continuous query message: " + entry);
@@ -1138,6 +1115,73 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
             }
 
             return entries;
+        }
+
+        /**
+         * Check queue on stuck.
+         *
+         * @param cache Cache.
+         * @param cctx Cache context.
+         *
+         * @return Stacked events.
+         */
+        Collection<CacheEntryEvent<? extends K, ? extends V>> onTimeout(IgniteCache cache, GridCacheContext cctx) {
+            List<CacheEntryEvent<? extends K, ? extends V>> res = Collections.emptyList();
+
+            synchronized (pendingEvts) {
+                // Visited this the first time.
+                if (prevCheckCntr == -1) {
+                    prevCheckCntr = lastFiredEvt;
+                    pendingSize = pendingEvts.size();
+
+                    return Collections.emptyList();
+                }
+
+                // Pending event not found.
+                if (pendingEvts.size() == 0) {
+                    prevCheckCntr = lastFiredEvt;
+                    pendingSize = 0;
+
+                    if (log.isDebugEnabled())
+                        log.debug("No stuck events.");
+
+                    return Collections.emptyList();
+                }
+
+                if (log.isDebugEnabled())
+                    log.debug("Check stuck events [lastFiredEvt=" + lastFiredEvt + ", "
+                        + "prevCheckCntr=" + prevCheckCntr + ", "
+                        + "pendingSize=" + pendingSize + ", "
+                        + "pendingEvts=" + pendingEvts + "]");
+
+                if (pendingSize > 0 && prevCheckCntr == lastFiredEvt) {
+                    int pendingSize0 = Math.min(pendingSize, pendingEvts.size());
+
+                    assert pendingSize0 > 0;
+
+                    res = new ArrayList<>(pendingSize0);
+                    Iterator<Map.Entry<Long, CacheContinuousQueryEntry>> iter = pendingEvts.entrySet().iterator();
+
+                    for (int i = 0; i < pendingSize0; i++) {
+                        Map.Entry<Long, CacheContinuousQueryEntry> e = iter.next();
+
+                        if (e.getValue() != HOLE && !e.getValue().isFiltered())
+                            res.add(new CacheContinuousQueryEvent(cache, cctx, e.getValue()));
+
+                        iter.remove();
+
+                        lastFiredEvt = e.getKey();
+                    }
+                }
+
+                prevCheckCntr = lastFiredEvt;
+                pendingSize = pendingEvts.size();
+
+                if (log.isDebugEnabled())
+                    log.debug("Process stuck events [lastFiredEvt=" + lastFiredEvt + ", " + "evts=" + res + "]");
+            }
+
+            return res;
         }
     }
 
