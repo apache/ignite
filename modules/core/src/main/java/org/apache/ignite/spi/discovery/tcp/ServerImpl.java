@@ -6148,6 +6148,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     if (pending != null) {
                         msg.pendingMessages(pending);
                         msg.success(true);
+                        msg.verify(getLocalNodeId());
 
                         wrk.addMessage(msg);
 
