@@ -36,9 +36,6 @@ public class BinaryConfiguration {
     /** Default compact footer flag setting. */
     public static final boolean DFLT_COMPACT_FOOTER = true;
 
-    /** Default encoding for strings. */
-    public static final BinaryStringEncoding DFLT_ENCODING = BinaryStringEncoding.ENC_UTF_8;
-
     /** ID mapper. */
     private BinaryIdMapper idMapper;
 
@@ -55,7 +52,7 @@ public class BinaryConfiguration {
     private boolean compactFooter = DFLT_COMPACT_FOOTER;
 
     /** Encoding for strings. */
-    private BinaryStringEncoding encoding = DFLT_ENCODING;
+    private BinaryStringEncoding encoding;
 
     /**
      * Sets class names of binary objects explicitly.
