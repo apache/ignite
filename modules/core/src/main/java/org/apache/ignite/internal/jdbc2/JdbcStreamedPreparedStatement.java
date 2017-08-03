@@ -53,10 +53,16 @@ class JdbcStreamedPreparedStatement extends JdbcPreparedStatement {
     }
 
     /** {@inheritDoc} */
-    @Override long[] doBatchUpdate(String sql, Object[] args) throws SQLException {
-        return new long[] {
-            conn.ignite().context().query().
-                streamUpdateQuery(conn.cacheName(), conn.schemaName(), streamer, sql, args)
-        };
+    @Override long doUpdate(String sql, Object[] args) throws SQLException {
+        return conn.ignite().context().query().streamUpdateQuery(conn.cacheName(), conn.schemaName(),
+            streamer, sql, args);
     }
+
+    ///** {@inheritDoc} */
+    //@Override long[] doBatchUpdate(String sql, Object[] args) throws SQLException {
+    //    return new long[] {
+    //        conn.ignite().context().query().
+    //            streamUpdateQuery(conn.cacheName(), conn.schemaName(), streamer, sql, args)
+    //    };
+    //}
 }

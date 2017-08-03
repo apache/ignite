@@ -22,6 +22,7 @@ import java.io.Reader;
 import java.math.BigDecimal;
 import java.net.URL;
 import java.sql.Array;
+import java.sql.BatchUpdateException;
 import java.sql.Blob;
 import java.sql.Clob;
 import java.sql.Date;
@@ -41,6 +42,11 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
+import javax.cache.CacheException;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.internal.processors.query.IgniteSQLBatchUpdateException;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -232,7 +238,7 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
         if (batchArgs == null)
             return U.EMPTY_INTS;
 
-        long[] res = doBatchUpdate(sql, F.flatCollections(batchArgs).toArray());
+        long[] res = doBatchUpdate(sql, batchArgs);
 
         int[] intRes = new int[res.length];
 
@@ -242,6 +248,60 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
         batchArgs = null;
 
         return intRes;
+    }
+
+    /**
+     * Run update query.
+     * @param sql SQL query.
+     * @param args Update arguments.
+     * @return Number of affected items.
+     * @throws SQLException If failed.
+     */
+    private long[] doBatchUpdate(String sql, List<List<Object>> batchArgs) throws SQLException {
+        if (F.isEmpty(sql))
+            throw new SQLException("SQL query is empty");
+
+        Object[] args = F.flatCollections(batchArgs).toArray();
+
+        Ignite ignite = conn.ignite();
+
+        UUID nodeId = conn.nodeId();
+
+        UUID uuid = UUID.randomUUID();
+
+        boolean loc = nodeId == null;
+
+        if (!conn.isDmlSupported())
+            throw new SQLException("Failed to query Ignite: DML operations are supported in versions 1.8.0 and newer");
+
+        JdbcQueryTask qryTask = new JdbcQueryTask(loc ? ignite : null, conn.cacheName(), conn.schemaName(), sql, false,
+            loc, args, getFetchSize(), uuid, conn.isLocalQuery(), conn.isCollocatedQuery(), conn.isDistributedJoins());
+
+        try {
+            JdbcQueryTask.QueryResult qryRes =
+                loc ? qryTask.call() : ignite.compute(ignite.cluster().forNodeId(nodeId)).call(qryTask);
+
+            long[] res = updateCounterFromQueryResult(qryRes.getRows());
+
+            updateCnt = !F.isEmpty(res) ? res[res.length - 1] : -1;
+
+            return res;
+        }
+        catch (IgniteSQLException e) {
+            throw e.toJdbcException();
+        }
+        catch (SQLException e) {
+            throw e;
+        }
+        catch (CacheException e) {
+            if (e.getCause() instanceof IgniteSQLBatchUpdateException)
+                throw ((IgniteSQLBatchUpdateException)e.getCause()).toJdbcException();
+            else
+                throw new BatchUpdateException(null, e.getCause());
+        }
+        catch (Exception e) {
+            throw new SQLException("Failed to query Ignite.", e);
+        }
     }
 
     /** {@inheritDoc} */

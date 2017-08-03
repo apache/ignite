@@ -34,6 +34,7 @@ import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static java.sql.ResultSet.CONCUR_READ_ONLY;
 import static java.sql.ResultSet.FETCH_FORWARD;
@@ -111,8 +112,9 @@ public class JdbcStatement implements Statement {
 
         boolean loc = nodeId == null;
 
-        JdbcQueryTask qryTask = new JdbcQueryTask(loc ? ignite : null, conn.cacheName(), conn.schemaName(), sql, true,
-            loc, getArgs(), fetchSize, uuid, conn.isLocalQuery(), conn.isCollocatedQuery(), conn.isDistributedJoins());
+        JdbcQueryTask qryTask = new JdbcQueryTask(loc ? ignite : null, conn.cacheName(), conn.schemaName(), sql,
+            true, loc, getArgs(), fetchSize, uuid, conn.isLocalQuery(), conn.isCollocatedQuery(),
+            conn.isDistributedJoins());
 
         try {
             JdbcQueryTask.QueryResult res =
@@ -143,16 +145,7 @@ public class JdbcStatement implements Statement {
 
         updateCnt = -1;
 
-        Long res;
-
-        long[] resCntrs = doBatchUpdate(sql, getArgs());
-
-        if (F.isEmpty(resCntrs))
-            res = -1L;
-        else
-            res = resCntrs[resCntrs.length - 1];
-
-        return res.intValue();
+        return Long.valueOf(doUpdate(sql, getArgs())).intValue();
     }
 
     /**
@@ -162,7 +155,7 @@ public class JdbcStatement implements Statement {
      * @return Number of affected items.
      * @throws SQLException If failed.
      */
-    long[] doBatchUpdate(String sql, Object[] args) throws SQLException {
+    long doUpdate(String sql, Object[] args) throws SQLException {
         if (F.isEmpty(sql))
             throw new SQLException("SQL query is empty");
 
@@ -184,11 +177,7 @@ public class JdbcStatement implements Statement {
             JdbcQueryTask.QueryResult qryRes =
                 loc ? qryTask.call() : ignite.compute(ignite.cluster().forNodeId(nodeId)).call(qryTask);
 
-            long[] res = updateCounterFromQueryResult(qryRes.getRows());
-
-            updateCnt = !F.isEmpty(res) ? res[res.length - 1] : -1;
-
-            return res;
+            return updateCnt = updateCounterFromQueryResult(qryRes.getRows())[0];
         }
         catch (IgniteSQLException e) {
             throw e.toJdbcException();
@@ -201,12 +190,13 @@ public class JdbcStatement implements Statement {
         }
     }
 
+
     /**
      * @param rows query result.
      * @return update counter, if found.
      * @throws SQLException if getting an update counter from result proved to be impossible.
      */
-    private static long[] updateCounterFromQueryResult(List<List<?>> rows) throws SQLException {
+    protected static long[] updateCounterFromQueryResult(List<List<?>> rows) throws SQLException {
         if (F.isEmpty(rows))
             return EMPTY_LONG_ARRAY;
 
@@ -352,8 +342,8 @@ public class JdbcStatement implements Statement {
 
         boolean loc = nodeId == null;
 
-        JdbcQueryTask qryTask = new JdbcQueryTask(loc ? ignite : null, conn.cacheName(), conn.schemaName(), sql, null,
-            loc, getArgs(), fetchSize, uuid, conn.isLocalQuery(), conn.isCollocatedQuery(), conn.isDistributedJoins());
+        JdbcQueryTask qryTask = new JdbcQueryTask(loc ? ignite : null, conn.cacheName(), conn.schemaName(), sql,
+            null, loc, getArgs(), fetchSize, uuid, conn.isLocalQuery(), conn.isCollocatedQuery(), conn.isDistributedJoins());
 
         try {
             JdbcQueryTask.QueryResult res =
@@ -488,8 +478,65 @@ public class JdbcStatement implements Statement {
     @Override public int[] executeBatch() throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Batch statements are not supported yet.");
+        rs = null;
+
+        updateCnt = -1;
+
+        if (batch == null)
+            return U.EMPTY_INTS;
+
+        int batchSize = batch.size();
+
+        long[] res = doBatchUpdate(batch.toArray(new String[batchSize]));
+
+        int[] intRes = new int[res.length];
+
+        for (int i = 0; i < res.length; i++)
+            intRes[i] = Long.valueOf(res[i]).intValue();
+
+        updateCnt = F.isEmpty(intRes)? -1 : intRes[intRes.length - 1];
+
+        batch = null;
+
+        return intRes;
     }
+
+    /**
+     * Run update query.
+     * @param sql SQL commands.
+     * @return Number of affected items.
+     * @throws SQLException If failed.
+     */
+    private long[] doBatchUpdate(String[] sql) throws SQLException {
+        assert !F.isEmpty(sql);
+
+        Ignite ignite = conn.ignite();
+
+        UUID nodeId = conn.nodeId();
+
+        boolean loc = nodeId == null;
+
+        if (!conn.isDmlSupported())
+            throw new SQLException("Failed to query Ignite: DML operations are supported in versions 1.8.0 and newer");
+
+        JdbcBatchUpdateTask batchTask = new JdbcBatchUpdateTask(loc ? ignite : null, conn.cacheName(),
+            conn.schemaName(), sql, loc, getFetchSize(), conn.isLocalQuery(), conn.isCollocatedQuery(),
+            conn.isDistributedJoins());
+
+        try {
+            return loc ? batchTask.call() : ignite.compute(ignite.cluster().forNodeId(nodeId)).call(batchTask);
+        }
+        catch (IgniteSQLException e) {
+            throw e.toJdbcException();
+        }
+        catch (SQLException e) {
+            throw e;
+        }
+        catch (Exception e) {
+            throw new SQLException("Failed to query Ignite.", e);
+        }
+    }
+
 
     /** {@inheritDoc} */
     @Override public Connection getConnection() throws SQLException {

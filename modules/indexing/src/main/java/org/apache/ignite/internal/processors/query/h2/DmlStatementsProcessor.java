@@ -59,6 +59,7 @@ import org.apache.ignite.internal.processors.query.GridQueryFieldsResult;
 import org.apache.ignite.internal.processors.query.GridQueryFieldsResultAdapter;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
+import org.apache.ignite.internal.processors.query.IgniteSQLBatchUpdateException;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.dml.FastUpdateArguments;
@@ -258,29 +259,41 @@ public class DmlStatementsProcessor {
 
         List<Object> errKeys = null;
 
-        for (int i = 0; i < batchSize; i++) {
-            if (isBatch)
-                System.arraycopy(args, pos, stepArgs, 0, paramsCnt);
+        int i = 0;
 
-            UpdateResult res = updateSqlFields(schemaName, stmt, fieldsQry, stepArgs, loc, filters, cancel);
+        try {
+            for (; i < batchSize; i++) {
+                if (isBatch)
+                    System.arraycopy(args, pos, stepArgs, 0, paramsCnt);
 
-            if (!F.isEmpty(res.errKeys)) {
-                if (!isBatch)
+                UpdateResult res = updateSqlFields(schemaName, stmt, fieldsQry, stepArgs, loc, filters, cancel);
+
+                if (!F.isEmpty(res.errKeys)) {
                     errKeys = F.asList(res.errKeys);
-                else if (errKeys == null)
-                    errKeys = new ArrayList<>(F.asList(res.errKeys));
-                else
-                    errKeys.addAll(F.asList(res.errKeys));
+
+                    break;
+                }
+
+                resCnt[i] = res.cnt;
+
+                pos += paramsCnt;
             }
-
-            resCnt[i] = res.cnt;
-
-            pos += paramsCnt;
+        }
+        catch (Exception ex) {
+            if (isBatch)
+                throw new IgniteSQLBatchUpdateException(new SQLException(ex), Arrays.copyOf(resCnt, i));
+            else
+                throw ex;
         }
 
-        if (!F.isEmpty(errKeys))
-            throw new IgniteSQLException("Failed to update or delete some keys: " + errKeys.toString(),
-                IgniteQueryErrorCode.CONCURRENT_UPDATE);
+        if (!F.isEmpty(errKeys)) {
+            String error = "Failed to update or delete some keys: " + errKeys.toString();
+
+            if (isBatch)
+                throw new IgniteSQLBatchUpdateException(new SQLException(error), Arrays.copyOf(resCnt, i));
+            else
+                throw new IgniteSQLException(error, IgniteQueryErrorCode.CONCURRENT_UPDATE);
+        }
 
         return resCnt;
     }
