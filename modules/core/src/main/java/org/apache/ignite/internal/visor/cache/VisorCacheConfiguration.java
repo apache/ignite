@@ -320,13 +320,6 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
     }
 
     /**
-     * @return Default lock acquisition timeout.
-     */
-    public long getDfltLockTimeout() {
-        return dfltLockTimeout;
-    }
-
-    /**
      * @return {@code true} if cache statistics collection enabled.
      */
     public boolean isStatisticsEnabled() {
@@ -455,7 +448,7 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
     /**
      * @return Listener configurations.
      */
-    public String getLsnrConfigurations() {
+    public String getListenerConfigurations() {
         return lsnrConfigurations;
     }
 
@@ -476,7 +469,7 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
     /**
      * @return Maximum payload size for offheap indexes.
      */
-    public int getSqlIdxMaxInlineSize() {
+    public int getSqlIndexMaxInlineSize() {
         return sqlIdxMaxInlineSize;
     }
 

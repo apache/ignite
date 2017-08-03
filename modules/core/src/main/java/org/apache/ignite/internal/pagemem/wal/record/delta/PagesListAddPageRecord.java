@@ -33,12 +33,12 @@ public class PagesListAddPageRecord extends PageDeltaRecord {
     private final long dataPageId;
 
     /**
-     * @param cacheId Cache ID.
+     * @param grpId Cache group ID.
      * @param pageId Page ID.
      * @param dataPageId Data page ID to add.
      */
-    public PagesListAddPageRecord(int cacheId, long pageId, long dataPageId) {
-        super(cacheId, pageId);
+    public PagesListAddPageRecord(int grpId, long pageId, long dataPageId) {
+        super(grpId, pageId);
 
         this.dataPageId = dataPageId;
     }

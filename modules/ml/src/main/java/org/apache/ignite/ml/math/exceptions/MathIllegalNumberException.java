@@ -28,7 +28,7 @@ public class MathIllegalNumberException extends MathIllegalArgumentException {
     private static final long serialVersionUID = -7447085893598031110L;
 
     /** Requested. */
-    private final Number argument;
+    private final Number arg;
 
     /**
      * Construct an exception.
@@ -39,13 +39,13 @@ public class MathIllegalNumberException extends MathIllegalArgumentException {
      */
     protected MathIllegalNumberException(String msg, Number wrong, Object... arguments) {
         super(msg, wrong, arguments);
-        argument = wrong;
+        arg = wrong;
     }
 
     /**
      * @return the requested value.
      */
-    public Number getArgument() {
-        return argument;
+    public Number getArg() {
+        return arg;
     }
 }

@@ -20,35 +20,44 @@ package org.apache.ignite.internal.processors.cache.persistence.wal;
 import java.io.EOFException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.PureJavaCrc32;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * File input.
+ * File input, backed by byte buffer file input.
+ * This class allows to read data by chunks from file and then read primitives
  */
 public final class FileInput implements ByteBufferBackedDataInput {
-    /** */
+    /**
+     * Buffer for reading blocks of data into.
+     * <b>Note:</b> biggest block requested from this input can't be longer than buffer capacity
+     */
     private ByteBuffer buf;
 
-    /** */
-    private FileChannel ch;
+    /** I/O interface for read/write operations with file */
+    private FileIO io;
 
     /** */
     private long pos;
 
+    /** */
+    private ByteBufferExpander expBuf;
+
     /**
-     * @param ch  Channel.
-     * @param buf Buffer.
+     * @param io FileIO to read from.
+     * @param buf Buffer for reading blocks of data into.
      */
-    public FileInput(FileChannel ch, ByteBuffer buf) throws IOException {
-        assert ch != null;
+    public FileInput(FileIO io, ByteBufferExpander buf) throws IOException {
+        assert io != null;
 
-        this.ch = ch;
-        this.buf = buf;
+        this.io = io;
+        this.buf = buf.buffer();
 
-        pos = ch.position();
+        expBuf = buf;
+
+        pos = io.position();
 
         clearBuffer();
     }
@@ -67,10 +76,10 @@ public final class FileInput implements ByteBufferBackedDataInput {
      * @param pos Position in bytes from file begin.
      */
     public void seek(long pos) throws IOException {
-        if (pos > ch.size())
+        if (pos > io.size())
             throw new EOFException();
 
-        ch.position(pos);
+        io.position(pos);
 
         this.pos = pos;
 
@@ -92,16 +101,22 @@ public final class FileInput implements ByteBufferBackedDataInput {
         if (available >= requested)
             return;
 
-        if (buf.capacity() < requested)
-            throw new IOException("Requested size is greater than buffer: " + requested);
+        if (buf.capacity() < requested) {
+            if (expBuf == null)
+                throw new IOException("Requested size is greater than buffer: " + requested);
+
+            buf = expBuf.expand(requested);
+
+            assert available == buf.remaining();
+        }
 
         buf.compact();
 
         do {
-            int read = ch.read(buf);
+            int read = io.read(buf);
 
             if (read == -1)
-                throw new EOFException();
+                throw new EOFException("EOF at position [" + io.position() + "] expected to read [" + requested + "] bytes");
 
             available += read;
 

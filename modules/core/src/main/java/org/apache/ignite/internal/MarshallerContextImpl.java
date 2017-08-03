@@ -197,9 +197,7 @@ public class MarshallerContextImpl implements MarshallerContext {
      * @throws IOException In case of error.
      */
     private void processResource(URL url) throws IOException {
-        try (InputStream in = url.openStream()) {
-            BufferedReader rdr = new BufferedReader(new InputStreamReader(in));
-
+        try (BufferedReader rdr = new BufferedReader(new InputStreamReader(url.openStream()))) {
             String line;
 
             while ((line = rdr.readLine()) != null) {
@@ -316,18 +314,14 @@ public class MarshallerContextImpl implements MarshallerContext {
      *
      * @param item type mapping to propose
      * @return null if cache doesn't contain any mappings for given (platformId, typeId) pair,
-     * previous class name otherwise.
+     * previous {@link MappedName mapped name} otherwise.
      */
-    public String onMappingProposed(MarshallerMappingItem item) {
+    public MappedName onMappingProposed(MarshallerMappingItem item) {
         ConcurrentMap<Integer, MappedName> cache = getCacheFor(item.platformId());
 
         MappedName newName = new MappedName(item.className(), false);
-        MappedName oldName;
 
-        if ((oldName = cache.putIfAbsent(item.typeId(), newName)) == null)
-            return null;
-        else
-            return oldName.className();
+        return cache.putIfAbsent(item.typeId(), newName);
     }
 
     /**

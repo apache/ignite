@@ -17,8 +17,10 @@
 
 namespace Apache.Ignite.Core.Tests.Cache
 {
+    using System.IO;
+    using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Common;
-    using Apache.Ignite.Core.Configuration;
+    using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.PersistentStore;
     using NUnit.Framework;
 
@@ -27,15 +29,98 @@ namespace Apache.Ignite.Core.Tests.Cache
     /// </summary>
     public class PersistentStoreTest
     {
+        /** Temp dir for WAL. */
+        private readonly string _tempDir = IgniteUtils.GetTempDirectoryName();
+
+        /// <summary>
+        /// Tears down the test.
+        /// </summary>
+        [TearDown]
+        public void TearDown()
+        {
+            Ignition.StopAll(true);
+
+            if (Directory.Exists(_tempDir))
+            {
+                Directory.Delete(_tempDir, true);
+            }
+        }
+
+        /// <summary>
+        /// Tests that cache data survives node restart.
+        /// </summary>
+        [Test]
+        public void TestCacheDataSurvivesNodeRestart()
+        {
+            var cfg = new IgniteConfiguration(GetTestConfiguration())
+            {
+                PersistentStoreConfiguration = new PersistentStoreConfiguration
+                {
+                    PersistentStorePath = Path.Combine(_tempDir, "Store"),
+                    WalStorePath = Path.Combine(_tempDir, "WalStore"),
+                    WalArchivePath = Path.Combine(_tempDir, "WalArchive"),
+                    MetricsEnabled = true,
+                    CheckpointingPageBufferSize = 1024 * 1024  // TODO: Use default (IGNITE-5717)
+                }
+            };
+
+            const string cacheName = "persistentCache";
+
+            // Start Ignite, put data, stop.
+            using (var ignite = Ignition.Start(cfg))
+            {
+                ignite.SetActive(true);
+
+                var cache = ignite.CreateCache<int, int>(cacheName);
+
+                cache[1] = 1;
+
+                // Check some metrics.
+                var metrics = ignite.GetPersistentStoreMetrics();
+                Assert.Greater(metrics.WalLoggingRate, 0);
+                Assert.Greater(metrics.WalWritingRate, 0);
+                Assert.Greater(metrics.WalFsyncTimeAverage, 0);
+            }
+
+            // Verify directories.
+            Assert.IsTrue(Directory.Exists(cfg.PersistentStoreConfiguration.PersistentStorePath));
+            Assert.IsTrue(Directory.Exists(cfg.PersistentStoreConfiguration.WalStorePath));
+            Assert.IsTrue(Directory.Exists(cfg.PersistentStoreConfiguration.WalArchivePath));
+
+            // Start Ignite, verify data survival.
+            using (var ignite = Ignition.Start(cfg))
+            {
+                ignite.SetActive(true);
+
+                var cache = ignite.GetCache<int, int>(cacheName);
+
+                Assert.AreEqual(1, cache[1]);
+            }
+
+            // Delete store directory.
+            Directory.Delete(_tempDir, true);
+
+            // Start Ignite, verify data loss.
+            using (var ignite = Ignition.Start(cfg))
+            {
+                ignite.SetActive(true);
+
+                Assert.IsFalse(ignite.GetCacheNames().Contains(cacheName));
+            }
+        }
+
         /// <summary>
         /// Tests the grid activation with persistence (inactive by default).
         /// </summary>
         [Test]
         public void TestGridActivationWithPersistence()
         {
-            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            var cfg = new IgniteConfiguration(GetTestConfiguration())
             {
-                PersistentStoreConfiguration = new PersistentStoreConfiguration()
+                PersistentStoreConfiguration = new PersistentStoreConfiguration
+                {
+                    CheckpointingPageBufferSize = 1024 * 1024  // TODO: Use default (IGNITE-5717)
+                }
             };
 
             using (var ignite = Ignition.Start(cfg))
@@ -103,6 +188,37 @@ namespace Apache.Ignite.Core.Tests.Cache
                 Assert.AreEqual("Can not perform the operation because the cluster is inactive.",
                     ex.Message.Substring(0, 62));
             }
+        }
+
+        /// <summary>
+        /// Gets the test configuration.
+        /// </summary>
+        private static IgniteConfiguration GetTestConfiguration()
+        {
+            return new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                MemoryConfiguration = GetMemoryConfig()
+            };
+        }
+
+        /// <summary>
+        /// Gets the memory configuration with reduced MaxMemory to work around persistence bug.
+        /// </summary>
+        private static MemoryConfiguration GetMemoryConfig()
+        {
+            // TODO: Remove this method and use default config (IGNITE-5717).
+            return new MemoryConfiguration
+            {
+                MemoryPolicies = new[]
+                {
+                    new MemoryPolicyConfiguration
+                    {
+                        Name = MemoryConfiguration.DefaultDefaultMemoryPolicyName,
+                        InitialSize = 512*1024*1024,
+                        MaxSize = 512*1024*1024
+                    }
+                }
+            };
         }
     }
 }

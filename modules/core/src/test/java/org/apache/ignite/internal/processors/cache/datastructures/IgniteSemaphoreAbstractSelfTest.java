@@ -35,6 +35,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.util.lang.GridAbsPredicateX;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.lang.IgniteCallable;
@@ -437,8 +438,7 @@ public abstract class IgniteSemaphoreAbstractSelfTest extends IgniteAtomicsAbstr
      * @param semaphoreName Semaphore name.
      * @throws Exception If failed.
      */
-    private void removeSemaphore(String semaphoreName)
-        throws Exception {
+    private void removeSemaphore(final String semaphoreName) throws Exception {
         IgniteSemaphore semaphore = grid(RND.nextInt(NODES_CNT)).semaphore(semaphoreName, 10, false, true);
 
         assert semaphore != null;
@@ -454,8 +454,17 @@ public abstract class IgniteSemaphoreAbstractSelfTest extends IgniteAtomicsAbstr
         semaphore0.close();
 
         // Ensure semaphore is removed on all nodes.
-        for (Ignite g : G.allGrids())
-            assertNull(((IgniteKernal)g).context().dataStructures().semaphore(semaphoreName, null, 10, true, false));
+        assert GridTestUtils.waitForCondition(new GridAbsPredicateX() {
+            @Override public boolean applyx() throws IgniteCheckedException {
+                for (Ignite g : G.allGrids()) {
+                    if (((IgniteKernal)g).context().dataStructures().semaphore(
+                        semaphoreName, null, 10, true, false) != null)
+                        return false;
+                }
+
+                return true;
+            }
+        }, 5_000);
 
         checkRemovedSemaphore(semaphore);
     }

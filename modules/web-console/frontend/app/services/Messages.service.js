@@ -30,6 +30,13 @@ export default ['IgniteMessages', ['$alert', ($alert) => {
             if (err.hasOwnProperty('message'))
                 return prefix + err.message;
 
+            if (_.nonEmpty(err.className)) {
+                if (_.isEmpty(prefix))
+                    prefix = 'Internal cluster error: ';
+
+                return prefix + err.className;
+            }
+
             return prefix + err;
         }
 
@@ -55,6 +62,9 @@ export default ['IgniteMessages', ['$alert', ($alert) => {
         errorMessage,
         hideAlert,
         showError(message, err) {
+            if (message && message.cancelled)
+                return false;
+
             _showMessage(message, err, 'danger', 10);
 
             return false;

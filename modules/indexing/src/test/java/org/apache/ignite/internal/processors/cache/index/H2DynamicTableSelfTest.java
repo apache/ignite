@@ -47,6 +47,7 @@ import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryTypeDescriptorImpl;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.processors.query.h2.H2TableDescriptor;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.ddl.DdlStatementsProcessor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
@@ -694,6 +695,59 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     }
 
     /**
+     * Tests behavior on sequential create and drop of a table and its index.
+     */
+    public void testTableAndIndexRecreate() {
+        execute("drop table if exists \"PUBLIC\".t");
+
+        // First let's check behavior without index name set
+        execute("create table \"PUBLIC\".t (a int primary key, b varchar(30))");
+
+        fillRecreatedTable();
+
+        execute("create index on \"PUBLIC\".t (b desc)");
+        execute("drop table \"PUBLIC\".t");
+
+        assertNull(client().cache("t"));
+
+        execute("create table \"PUBLIC\".t (a int primary key, b varchar(30))");
+
+        fillRecreatedTable();
+
+        execute("create index on \"PUBLIC\".t (b desc)");
+        execute("drop table \"PUBLIC\".t");
+
+        assertNull(client().cache("t"));
+
+        // And now let's do the same for the named index
+        execute("create table \"PUBLIC\".t (a int primary key, b varchar(30))");
+
+        fillRecreatedTable();
+
+        execute("create index namedIdx on \"PUBLIC\".t (b desc)");
+        execute("drop table \"PUBLIC\".t");
+
+        assertNull(client().cache("t"));
+
+        execute("create table \"PUBLIC\".t (a int primary key, b varchar(30))");
+
+        fillRecreatedTable();
+
+        execute("create index namedIdx on \"PUBLIC\".t (b desc)");
+        execute("drop table \"PUBLIC\".t");
+    }
+
+    /**
+     * Fill re-created table with data.
+     */
+    private void fillRecreatedTable() {
+        for (int j = 1; j < 10; j++) {
+            String s = Integer.toString(j);
+            execute("insert into \"PUBLIC\".t (a,b) values (" + s + ", '" + s + "')");
+        }
+    }
+
+    /**
      * Check that dynamic cache created with {@code CREATE TABLE} is correctly configured affinity wise.
      * @param cacheName Cache name to check.
      * @param affKeyFieldName Expected affinity key field name.
@@ -778,6 +832,37 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
                 return null;
             }
         }, IgniteSQLException.class, "DROP TABLE can only be executed on PUBLIC schema.");
+    }
+
+    /**
+     * Test that {@link IgniteH2Indexing#tables(String)} method
+     * only returns tables belonging to given cache.
+     *
+     * @throws Exception if failed.
+     */
+    public void testGetTablesForCache() throws Exception {
+        try {
+            execute("create table t1(id int primary key, name varchar)");
+            execute("create table t2(id int primary key, name varchar)");
+
+            IgniteH2Indexing h2Idx = (IgniteH2Indexing)grid(0).context().query().getIndexing();
+
+            String cacheName = cacheName("T1");
+
+            Collection<H2TableDescriptor> col = GridTestUtils.invoke(h2Idx, "tables", cacheName);
+
+            assertNotNull(col);
+
+            H2TableDescriptor[] tables = col.toArray(new H2TableDescriptor[col.size()]);
+
+            assertEquals(1, tables.length);
+
+            assertEquals(tables[0].table().getName(), "T1");
+        }
+        finally {
+            execute("drop table t1 if exists");
+            execute("drop table t2 if exists");
+        }
     }
 
     /**

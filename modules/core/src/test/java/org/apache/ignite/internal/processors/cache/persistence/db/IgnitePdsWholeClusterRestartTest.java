@@ -76,7 +76,6 @@ public class IgnitePdsWholeClusterRestartTest extends GridCommonAbstractTest {
         ccfg1.setAffinity(new RendezvousAffinityFunction(false, 32));
         ccfg1.setBackups(2);
 
-        cfg.setLateAffinityAssignment(false);
         cfg.setActiveOnStart(false);
 
         // To avoid hostname lookup on start.
@@ -119,6 +118,8 @@ public class IgnitePdsWholeClusterRestartTest extends GridCommonAbstractTest {
      * @throws Exception if failed.
      */
     public void testRestarts() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-5741");
+
         startGrids(GRID_CNT);
 
         ignite(0).active(true);

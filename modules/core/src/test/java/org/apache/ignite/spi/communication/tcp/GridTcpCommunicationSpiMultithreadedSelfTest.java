@@ -479,7 +479,7 @@ public class GridTcpCommunicationSpiMultithreadedSelfTest extends GridSpiAbstrac
 
         timeoutProcessor.start();
 
-        timeoutProcessor.onKernalStart();
+        timeoutProcessor.onKernalStart(true);
 
         for (int i = 0; i < getSpiCount(); i++) {
             CommunicationSpi<Message> spi = newCommunicationSpi();

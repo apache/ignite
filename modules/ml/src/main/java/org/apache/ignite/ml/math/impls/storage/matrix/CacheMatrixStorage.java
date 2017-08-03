@@ -24,6 +24,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.ml.math.MatrixKeyMapper;
 import org.apache.ignite.ml.math.MatrixStorage;
+import org.apache.ignite.ml.math.StorageConstants;
 import org.apache.ignite.ml.math.ValueMapper;
 
 /**
@@ -109,6 +110,11 @@ public class CacheMatrixStorage<K, V> implements MatrixStorage {
     /** {@inheritDoc} */
     @Override public int rowSize() {
         return rows;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int storageMode() {
+        return StorageConstants.ROW_STORAGE_MODE;
     }
 
     /** {@inheritDoc} */
