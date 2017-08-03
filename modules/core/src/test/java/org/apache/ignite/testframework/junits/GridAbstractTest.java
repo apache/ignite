@@ -919,7 +919,9 @@ public abstract class GridAbstractTest extends TestCase {
     protected Ignite startGrid(String igniteInstanceName, final String ver, IgniteConfiguration cfg,
         IgniteInClosure<IgniteConfiguration> clos, final Collection<String> jvmArgs,
         boolean resetDiscovery) throws Exception {
-        assert !isFirstGrid(igniteInstanceName);
+        assert isMultiJvm() : "MultiJvm mode must be switched on for the node stop properly.";
+
+        assert !isFirstGrid(igniteInstanceName) : "Please, start node of current version first.";
 
         if (cfg == null)
             cfg = optimize(getConfiguration(igniteInstanceName));

@@ -49,6 +49,11 @@ public class TestMultiVersionMode extends GridCommonAbstractTest {
         TestCompatibilityPluginProvider.disable();
     }
 
+    /** {@inheritDoc} */
+    @Override protected boolean isMultiJvm() {
+        return true;
+    }
+
     /** */
     public void testJoinMultiVersionTopology() throws Exception {
         try {
