@@ -181,6 +181,24 @@ public class BinarySerializedFieldComparator {
     }
 
     /**
+     * Reads value of length of an array, which can be presented in default format or varint encoding.
+     * Reading method depends whether this is offheap object and the constant {@link BinaryUtils#USE_VARINT_ARRAY_LENGTH}.
+     * <a href="https://developers.google.com/protocol-buffers/docs/encoding#varints">Varint encoding description.</a>
+     *
+     * If you need to know number of bytes which were used for storage of the read value,
+     * use the method {@link BinaryUtils#sizeOfArrayLengthValue(int)}.
+     *
+     * @param off Offset.
+     * @return Value of array's length.
+     */
+    private int readArrayLength(int off) {
+        if (offheap())
+            return BinaryUtils.doReadArrayLength(ptr, curFieldPos + off);
+        else
+            return BinaryUtils.doReadArrayLength(arr, curFieldPos + off);
+    }
+
+    /**
      * Read long value.
      *
      * @param off Offset.
@@ -302,12 +320,12 @@ public class BinarySerializedFieldComparator {
      */
     private static boolean compareByteArrays(BinarySerializedFieldComparator c1, BinarySerializedFieldComparator c2,
                                              int off) {
-        int len = c1.readInt(off);
+        int len = c1.readArrayLength(off);
 
-        if (len != c2.readInt(off))
+        if (len != c2.readArrayLength(off))
             return false;
         else {
-            off += 4;
+            off += BinaryUtils.sizeOfArrayLengthValue(len);
 
             if (c1.offheap()) {
                 if (c2.offheap())
