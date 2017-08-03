@@ -50,7 +50,7 @@ public class JdbcUpdateStatementSelfTest extends JdbcAbstractUpdateStatementSelf
     }
 
     /**
-     *
+     * @throws SQLException If failed.
      */
     public void testBatch() throws SQLException {
         PreparedStatement ps = conn.prepareStatement("update Person set lastName = concat(firstName, 'son') " +

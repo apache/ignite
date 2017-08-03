@@ -27,6 +27,7 @@ import java.util.HashSet;
 import java.util.concurrent.Callable;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 
 /**
@@ -203,7 +204,11 @@ public class JdbcInsertStatementSelfTest extends JdbcAbstractDmlStatementSelfTes
      * @throws SQLException if failed.
      */
     public void testSingleItemBatchError() throws SQLException {
-        formBatch(1, 1); // Duplicate key
+        formBatch(1, 2);
+
+        prepStmt.executeBatch();
+
+        formBatch(1, 2); // Duplicate key
 
         BatchUpdateException reason = (BatchUpdateException)
             GridTestUtils.assertThrows(log, new Callable<Object>() {
@@ -215,12 +220,7 @@ public class JdbcInsertStatementSelfTest extends JdbcAbstractDmlStatementSelfTes
             "Failed to INSERT some keys because they are already in cache");
 
         // Check update counts in the exception.
-        int[] counts = reason.getUpdateCounts();
-
-        assertNotNull(counts);
-
-        assertEquals(1, counts.length);
-        assertEquals(2, counts[0]);
+        assertTrue(F.isEmpty(reason.getUpdateCounts()));
     }
 
     /**

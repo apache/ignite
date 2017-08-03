@@ -95,7 +95,20 @@ class JdbcBatchUpdateTask implements IgniteCallable<long[]> {
 
     /** {@inheritDoc} */
     @Override public long[] call() throws Exception {
-        IgniteCache<?, ? > cache = getCache();
+        IgniteCache<?, ?> cache = ignite.cache(cacheName);
+
+        // Don't create caches on server nodes in order to avoid of data rebalancing.
+        boolean start = ignite.configuration().isClientMode();
+
+        if (cache == null && cacheName == null)
+            cache = ((IgniteKernal)ignite).context().cache().getOrStartPublicCache(start, !loc && locQry);
+
+        if (cache == null) {
+            if (cacheName == null)
+                throw new SQLException("Failed to execute query. No suitable caches found.");
+            else
+                throw new SQLException("Cache not found [cacheName=" + cacheName + ']');
+        }
 
         long[] updCntrs = new long[sqlBatch.length];
 
@@ -133,15 +146,15 @@ class JdbcBatchUpdateTask implements IgniteCallable<long[]> {
         List<List<?>> rows = qryCursor.getAll();
 
         if (F.isEmpty(rows))
-            return (long)SUCCESS_NO_INFO; // consider returning null instead
+            return (long)SUCCESS_NO_INFO;
 
         if (rows.size() != 1)
-            throw new SQLException("Expected number of rows for update operation");
+            throw new SQLException("Expected single row for update operation result");
 
         List<?> row = rows.get(0);
 
         if (F.isEmpty(row) || row.size() != 1)
-            throw new SQLException("Expected row size for update operation");
+            throw new SQLException("Expected row size of 1 for update operation");
 
         Object objRes = row.get(0);
 
@@ -149,25 +162,5 @@ class JdbcBatchUpdateTask implements IgniteCallable<long[]> {
             throw new SQLException("Unexpected update result type");
 
         return (Long) objRes;
-    }
-
-    /** */
-    private IgniteCache<?, ?> getCache() throws Exception {
-        IgniteCache<?, ?> cache = ignite.cache(cacheName);
-
-        // Don't create caches on server nodes in order to avoid of data rebalancing.
-        boolean start = ignite.configuration().isClientMode();
-
-        if (cache == null && cacheName == null)
-            cache = ((IgniteKernal)ignite).context().cache().getOrStartPublicCache(start, !loc && locQry);
-
-        if (cache == null) {
-            if (cacheName == null)
-                throw new SQLException("Failed to execute query. No suitable caches found.");
-            else
-                throw new SQLException("Cache not found [cacheName=" + cacheName + ']');
-        }
-
-        return cache;
     }
 }

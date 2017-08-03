@@ -78,9 +78,6 @@ public class JdbcStatement implements Statement {
     /** Batch statements. */
     private List<String> batch;
 
-    /** */
-    private final static long[] EMPTY_LONG_ARRAY = new long[0];
-
     /**
      * Creates new statement.
      *
@@ -112,9 +109,8 @@ public class JdbcStatement implements Statement {
 
         boolean loc = nodeId == null;
 
-        JdbcQueryTask qryTask = new JdbcQueryTask(loc ? ignite : null, conn.cacheName(), conn.schemaName(), sql,
-            true, loc, getArgs(), fetchSize, uuid, conn.isLocalQuery(), conn.isCollocatedQuery(),
-            conn.isDistributedJoins());
+        JdbcQueryTask qryTask = new JdbcQueryTask(loc ? ignite : null, conn.cacheName(), conn.schemaName(), sql, true,
+            loc, getArgs(), fetchSize, uuid, conn.isLocalQuery(), conn.isCollocatedQuery(), conn.isDistributedJoins());
 
         try {
             JdbcQueryTask.QueryResult res =
@@ -177,7 +173,7 @@ public class JdbcStatement implements Statement {
             JdbcQueryTask.QueryResult qryRes =
                 loc ? qryTask.call() : ignite.compute(ignite.cluster().forNodeId(nodeId)).call(qryTask);
 
-            return updateCnt = updateCounterFromQueryResult(qryRes.getRows())[0];
+            return updateCnt = updateCounterFromQueryResult(qryRes.getRows());
         }
         catch (IgniteSQLException e) {
             throw e.toJdbcException();
@@ -190,35 +186,30 @@ public class JdbcStatement implements Statement {
         }
     }
 
-
     /**
      * @param rows query result.
      * @return update counter, if found.
      * @throws SQLException if getting an update counter from result proved to be impossible.
      */
-    protected static long[] updateCounterFromQueryResult(List<List<?>> rows) throws SQLException {
-        if (F.isEmpty(rows))
-            return EMPTY_LONG_ARRAY;
+    private static long updateCounterFromQueryResult(List<List<?>> rows) throws SQLException {
+         if (F.isEmpty(rows))
+            return -1;
 
-        long[] res = new long[rows.size()];
+        if (rows.size() != 1)
+            throw new SQLException("Expected fetch size of 1 for update operation");
 
-        for (int i = 0; i < res.length; i++) {
-            List<?> row = rows.get(i);
+        List<?> row = rows.get(0);
 
-            if (row.size() != 1)
-                throw new SQLException("Expected row size of 1 for update operation");
+        if (row.size() != 1)
+            throw new SQLException("Expected row size of 1 for update operation");
 
-            Object objRes = row.get(0);
+        Object objRes = row.get(0);
 
-            if (!(objRes instanceof Long))
-                throw new SQLException("Unexpected update result type");
+        if (!(objRes instanceof Long))
+            throw new SQLException("Unexpected update result type");
 
-            res[i] = (Long) objRes;
-        }
-
-        return res;
+        return (Long)objRes;
     }
-
 
     /** {@inheritDoc} */
     @Override public void close() throws SQLException {
@@ -342,8 +333,8 @@ public class JdbcStatement implements Statement {
 
         boolean loc = nodeId == null;
 
-        JdbcQueryTask qryTask = new JdbcQueryTask(loc ? ignite : null, conn.cacheName(), conn.schemaName(), sql,
-            null, loc, getArgs(), fetchSize, uuid, conn.isLocalQuery(), conn.isCollocatedQuery(), conn.isDistributedJoins());
+        JdbcQueryTask qryTask = new JdbcQueryTask(loc ? ignite : null, conn.cacheName(), conn.schemaName(), sql, null,
+            loc, getArgs(), fetchSize, uuid, conn.isLocalQuery(), conn.isCollocatedQuery(), conn.isDistributedJoins());
 
         try {
             JdbcQueryTask.QueryResult res =
@@ -359,15 +350,8 @@ public class JdbcStatement implements Statement {
 
                 this.rs = rs;
             }
-            else {
-                long[] resCntrs = updateCounterFromQueryResult(res.getRows());
-
-                // Take results of the last batch item as last update counter
-                if (F.isEmpty(resCntrs))
-                    updateCnt = -1;
-                else
-                    updateCnt = resCntrs[resCntrs.length - 1];
-            }
+            else
+                updateCnt = updateCounterFromQueryResult(res.getRows());
 
             return res.isQuery();
         }
@@ -536,7 +520,6 @@ public class JdbcStatement implements Statement {
             throw new SQLException("Failed to query Ignite.", e);
         }
     }
-
 
     /** {@inheritDoc} */
     @Override public Connection getConnection() throws SQLException {

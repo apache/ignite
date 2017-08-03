@@ -54,6 +54,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  * JDBC prepared statement implementation.
  */
 public class JdbcPreparedStatement extends JdbcStatement implements PreparedStatement {
+    /** */
+    private final static long[] EMPTY_LONG_ARRAY = new long[0];
+
     /** SQL query. */
     private final String sql;
 
@@ -240,6 +243,8 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
 
         long[] res = doBatchUpdate(sql, batchArgs);
 
+        updateCnt = !F.isEmpty(res) ? res[res.length - 1] : -1;
+
         int[] intRes = new int[res.length];
 
         for (int i = 0; i < res.length; i++)
@@ -251,10 +256,11 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
     }
 
     /**
-     * Run update query.
+     * Run batch update query.
+     *
      * @param sql SQL query.
-     * @param args Update arguments.
-     * @return Number of affected items.
+     * @param batchArgs Batch update arguments.
+     * @return Number of affected items for each item in batch.
      * @throws SQLException If failed.
      */
     private long[] doBatchUpdate(String sql, List<List<Object>> batchArgs) throws SQLException {
@@ -281,11 +287,7 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
             JdbcQueryTask.QueryResult qryRes =
                 loc ? qryTask.call() : ignite.compute(ignite.cluster().forNodeId(nodeId)).call(qryTask);
 
-            long[] res = updateCounterFromQueryResult(qryRes.getRows());
-
-            updateCnt = !F.isEmpty(res) ? res[res.length - 1] : -1;
-
-            return res;
+            return multipleUpdateCountersFromQueryResult(qryRes.getRows());
         }
         catch (IgniteSQLException e) {
             throw e.toJdbcException();
@@ -302,6 +304,34 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
         catch (Exception e) {
             throw new SQLException("Failed to query Ignite.", e);
         }
+    }
+
+    /**
+     * @param rows query result.
+     * @return update counters, if found.
+     * @throws SQLException if getting an update counter from result proved to be impossible.
+     */
+    private static long[] multipleUpdateCountersFromQueryResult(List<List<?>> rows) throws SQLException {
+        if (F.isEmpty(rows))
+            return EMPTY_LONG_ARRAY;
+
+        long[] res = new long[rows.size()];
+
+        for (int i = 0; i < res.length; i++) {
+            List<?> row = rows.get(i);
+
+            if (row.size() != 1)
+                throw new SQLException("Expected row size of 1 for update operation");
+
+            Object objRes = row.get(0);
+
+            if (!(objRes instanceof Long))
+                throw new SQLException("Unexpected update result type");
+
+            res[i] = (Long) objRes;
+        }
+
+        return res;
     }
 
     /** {@inheritDoc} */
