@@ -120,7 +120,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
      * @return Cluster state to be used on public API.
      */
     public boolean publicApiActiveState() {
-        if (ctx.isDaemon())
+        if (ctx.isDaemon() || ctx.clientNode())
             return sendComputeCheckGlobalState();
 
         DiscoveryDataClusterState globalState = this.globalState;
