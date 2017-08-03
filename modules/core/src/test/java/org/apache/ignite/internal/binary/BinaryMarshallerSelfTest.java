@@ -3733,7 +3733,9 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         bCfg.setIdMapper(mapper);
         bCfg.setSerializer(serializer);
         bCfg.setCompactFooter(compactFooter());
-        bCfg.setEncoding(binaryStringEncoding);
+
+        if (binaryStringEncoding != null)
+            bCfg.setEncoding(binaryStringEncoding);
 
         bCfg.setTypeConfigurations(cfgs);
 
