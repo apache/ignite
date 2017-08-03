@@ -109,7 +109,8 @@ public class CacheMetricsImpl implements CacheMetrics {
     /** Total rebalanced bytes count. */
     private AtomicLong totalRebalancedBytes = new AtomicLong();
 
-    private volatile long rebalanceStartTime = -1L;
+    /** Rebalanced start time. */
+    private AtomicLong rebalanceStartTime = new AtomicLong(-1L);
 
     /** Estimated rebalancing keys count. */
     private AtomicLong estimatedRebalancingKeys = new AtomicLong();
@@ -737,7 +738,7 @@ public class CacheMetricsImpl implements CacheMetrics {
     }
 
     /** {@inheritDoc} */
-    public int getTotalPartitionsCount() {
+    @Override public int getTotalPartitionsCount() {
         int res = 0;
 
         if (cctx.isLocal())
@@ -752,7 +753,7 @@ public class CacheMetricsImpl implements CacheMetrics {
     }
 
     /** {@inheritDoc} */
-    public int getRebalancingPartitionsCount() {
+    @Override public int getRebalancingPartitionsCount() {
         int res = 0;
 
         if (cctx.isLocal())
@@ -767,17 +768,17 @@ public class CacheMetricsImpl implements CacheMetrics {
     }
 
     /** {@inheritDoc} */
-    public long getKeysToRebalanceLeft() {
+    @Override public long getKeysToRebalanceLeft() {
         return Math.max(0, estimatedRebalancingKeys.get() - rebalancedKeys.get());
     }
 
     /** {@inheritDoc} */
-    public long getRebalancingKeysRate() {
+    @Override public long getRebalancingKeysRate() {
         return rebalancingKeysRate.getRate();
     }
 
     /** {@inheritDoc} */
-    public long getRebalancingBytesRate() {
+    @Override public long getRebalancingBytesRate() {
         return rebalancingBytesRate.getRate();
     }
 
@@ -795,18 +796,18 @@ public class CacheMetricsImpl implements CacheMetrics {
 
         rebalancingKeysRate.clear();
 
-        rebalanceStartTime = -1L;
+        rebalanceStartTime.set(-1L);
     }
 
     /**
      *
      */
     public void startRebalance(long delay){
-        rebalanceStartTime = delay + U.currentTimeMillis();
+        rebalanceStartTime.addAndGet(delay + U.currentTimeMillis());
     }
 
     /** {@inheritDoc} */
-    public long estimateRebalancingFinishTime() {
+    @Override public long estimateRebalancingFinishTime() {
         long rate = rebalancingKeysRate.getRate();
 
         return rate <= 0 ? -1L :
@@ -814,8 +815,8 @@ public class CacheMetricsImpl implements CacheMetrics {
     }
 
     /** {@inheritDoc} */
-    public long rebalancingStartTime() {
-        return rebalanceStartTime;
+    @Override public long rebalancingStartTime() {
+        return rebalanceStartTime.get();
     }
 
     /**

@@ -511,7 +511,7 @@ public interface CacheMetrics {
     public long estimateRebalancingFinishTime();
 
     /**
-     * @return Rebalancing start time..
+     * @return Rebalancing start time.
      */
     public long rebalancingStartTime();
 

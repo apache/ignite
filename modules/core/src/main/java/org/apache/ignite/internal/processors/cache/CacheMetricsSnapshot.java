@@ -203,10 +203,10 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
     /** Get rebalancing bytes rate. */
     private long rebalancingBytesRate;
 
-    /** */
+    /** Start rebalance time. */
     private long rebalanceStartTime;
 
-    /** */
+    /** Estimate rebalance finish time. */
     private long rebalanceFinishTime;
 
     /** */
@@ -723,10 +723,12 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
         return rebalancingBytesRate;
     }
 
+    /** {@inheritDoc} */
     @Override public long estimateRebalancingFinishTime() {
         return rebalanceFinishTime;
     }
 
+    /** {@inheritDoc} */
     @Override public long rebalancingStartTime() {
         return rebalanceStartTime;
     }

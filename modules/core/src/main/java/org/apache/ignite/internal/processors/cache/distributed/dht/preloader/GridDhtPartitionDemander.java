@@ -297,16 +297,10 @@ public class GridDhtPartitionDemander {
 
                     metrics.clearRebalanceCounters();
 
-                    if (cctx.name().equals("cache1"))
-                        System.out.println("Start rebalance " + cctx.igniteInstanceName());
-
                     metrics.startRebalance(0);
 
                     rebalanceFut.listen(new IgniteInClosure<IgniteInternalFuture<Boolean>>() {
                         @Override public void apply(IgniteInternalFuture<Boolean> fut) {
-                            if (cctx.name().equals("cache1"))
-                                System.out.println("Finish rebalance " + cctx.igniteInstanceName());
-
                             metrics.clearRebalanceCounters();
                         }
                     });
