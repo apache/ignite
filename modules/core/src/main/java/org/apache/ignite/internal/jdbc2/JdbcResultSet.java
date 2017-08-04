@@ -146,8 +146,8 @@ public class JdbcResultSet implements ResultSet {
             boolean loc = nodeId == null;
 
             // Connections from new clients send queries with new tasks, so we have to continue in the same manner
-            JdbcQueryTask qryTask = new JdbcQueryTask(loc ? ignite : null, conn.cacheName(), conn.schemaName(),
-                null, true, loc, null, fetchSize, uuid, conn.isLocalQuery(), conn.isCollocatedQuery(),
+            JdbcQueryTask qryTask = new JdbcQueryTask(loc ? ignite : null, conn.cacheName(), conn.schemaName(), null,
+                true, loc, null, fetchSize, uuid, conn.isLocalQuery(), conn.isCollocatedQuery(),
                 conn.isDistributedJoins());
 
             try {
