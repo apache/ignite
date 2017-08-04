@@ -437,7 +437,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
         try (Connection conn = DriverManager.getConnection(URL)) {
             ResultSet rs = conn.getMetaData().getSchemas(null, "qqq");
 
-            assert !rs.next() : " Empty result set is expected";
+            assert !rs.next() : "Empty result set is expected";
         }
         catch (Exception e) {
             log.error("Unexpected exception", e);
