@@ -2492,7 +2492,7 @@ private IgniteInternalFuture<Object> rebuildIndexesFromHash(@Nullable final Stri
         throws IgniteCheckedException {
         CacheObjectContext coctx = cacheObjectContext(cacheName);
 
-        QueryTypeDescriptorImpl desc = typeByValue(cacheName, coctx, key, val, true);
+        QueryTypeDescriptorImpl desc = typeByValue(cacheName, coctx, key, val, false);
 
         if (desc == null)
             return;

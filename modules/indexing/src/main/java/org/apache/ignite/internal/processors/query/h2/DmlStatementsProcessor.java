@@ -642,6 +642,8 @@ public class DmlStatementsProcessor {
                 newVal = ((BinaryObjectBuilder) newVal).build();
             }
 
+            desc.type().validateKeyAndValue(key, newVal);
+
             Object srcVal = e.get(1);
 
             if (bin && !(srcVal instanceof BinaryObject))

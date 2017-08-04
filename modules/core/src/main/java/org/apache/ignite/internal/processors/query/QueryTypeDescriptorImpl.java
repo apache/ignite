@@ -21,6 +21,7 @@ import java.util.HashSet;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.QueryIndexType;
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -482,7 +483,10 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
         if (validateProps == null)
             return;
 
-        for (GridQueryProperty prop : validateProps)
-            prop.validate(key, val);
+        for (GridQueryProperty prop : validateProps) {
+            if (prop.value(key, val) == null)
+                throw new IgniteSQLException("Null value is not allowed for field '" + prop.name() + "'",
+                    IgniteQueryErrorCode.NULL_VALUE);
+        }
     }
 }

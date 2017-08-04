@@ -630,6 +630,13 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
+     * @return {@code True} in case cache supports query.
+     */
+    public boolean isQueryEnabled() {
+        return !F.isEmpty(cacheCfg.getQueryEntities());
+    }
+
+    /**
      * @return {@code True} if entries should not be deleted from cache immediately.
      */
     public boolean deferredDelete() {
@@ -1811,6 +1818,9 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @throws IgniteCheckedException, If validation fails.
      */
     public void validateKeyAndValue(KeyCacheObject key, CacheObject val) throws IgniteCheckedException {
+        if (!isQueryEnabled())
+            return;
+
         try {
             ctx.query().validateKeyAndValue(cacheName, key, val);
         }

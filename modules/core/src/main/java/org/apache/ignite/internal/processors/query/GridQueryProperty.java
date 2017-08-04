@@ -70,14 +70,4 @@ public interface GridQueryProperty {
      * @return {@code true} if property does not allow {@code null} value.
      */
     public boolean notNull();
-
-    /**
-     * Performs validation of given key and value against configured constraints for this property.
-     * Throws runtime exception if validation fails.
-     *
-     * @param key Key.
-     * @param val Value.
-     * @throws IgniteCheckedException If validation failed.
-     */
-    public void validate(Object key, Object val) throws IgniteCheckedException;
 }

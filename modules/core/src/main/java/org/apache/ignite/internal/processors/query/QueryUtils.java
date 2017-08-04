@@ -46,7 +46,6 @@ import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDefaultAffinityKeyMapper;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
-import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.property.QueryBinaryProperty;
 import org.apache.ignite.internal.processors.query.property.QueryClassProperty;
 import org.apache.ignite.internal.processors.query.property.QueryFieldAccessor;
@@ -1241,13 +1240,6 @@ public class QueryUtils {
         /** {@inheritDoc} */
         @Override public boolean notNull() {
             return true;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void validate(Object key, Object val) throws IgniteCheckedException {
-            if (value(key, val) == null)
-                throw new IgniteSQLException("Null value is not allowed for field '" + name() + "'",
-                    IgniteQueryErrorCode.NULL_VALUE);
         }
     }
 }

@@ -549,11 +549,6 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
                 @Override public boolean notNull() {
                     return false;
                 }
-
-                /** */
-                @Override public void validate(Object key, Object val) throws IgniteCheckedException {
-                    // No-op.
-                }
             };
         }
 
