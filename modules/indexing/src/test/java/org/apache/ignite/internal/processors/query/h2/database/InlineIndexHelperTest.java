@@ -131,7 +131,7 @@ public class InlineIndexHelperTest extends TestCase {
 
     /** */
     public void testStringTruncate() throws Exception {
-        MemoryPolicyConfiguration plcCfg = new MemoryPolicyConfiguration().setMaxSize(1024 * MB);
+        MemoryPolicyConfiguration plcCfg = new MemoryPolicyConfiguration().setInitialSize(1024 * MB).setMaxSize(1024 * MB);
 
         JavaLogger log = new JavaLogger();
 
@@ -181,7 +181,7 @@ public class InlineIndexHelperTest extends TestCase {
 
     /** */
     public void testBytes() throws Exception {
-        MemoryPolicyConfiguration plcCfg = new MemoryPolicyConfiguration().setMaxSize(1024 * MB);
+        MemoryPolicyConfiguration plcCfg = new MemoryPolicyConfiguration().setInitialSize(1024 * MB).setMaxSize(1024 * MB);
 
         JavaLogger log = new JavaLogger();
 
