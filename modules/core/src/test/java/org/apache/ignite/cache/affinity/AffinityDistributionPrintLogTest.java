@@ -57,6 +57,7 @@ public class AffinityDistributionPrintLogTest extends GridCommonAbstractTest {
     /** */
     private int backups = 2;
 
+    /** */
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
@@ -91,18 +92,27 @@ public class AffinityDistributionPrintLogTest extends GridCommonAbstractTest {
         return cfg;
     }
 
-    public void testDistributionCalculationOkMessage() throws Exception {
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDistributionCalculationNotIdealMessage() throws Exception {
         String log = print(true, 0.01);
 
         assertTrue(log.contains("Local node affinity assignment distribution is not ideal"));
     }
 
-    public void testDistributionCalculationProblemMessage() throws Exception {
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDistributionCalculationIdeal() throws Exception {
         String log = print(true, 0.5);
 
         assertFalse(log.contains("Local node affinity assignment distribution is not ideal"));
     }
 
+    /**
+     * @throws Exception If failed.
+     */
     public void testDistributionCalculationDisable() throws Exception {
         String log = print(false, 0);
 
