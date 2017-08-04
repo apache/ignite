@@ -310,26 +310,6 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void testMetadataResultSetClose() throws Exception {
-        try (Connection conn = DriverManager.getConnection(URL);
-             ResultSet tbls = conn.getMetaData().getTables(null, null, "%", null)) {
-            int colCnt = tbls.getMetaData().getColumnCount();
-
-            while (tbls.next()) {
-                for (int i = 0; i < colCnt; i++)
-                    tbls.getObject(i + 1);
-            }
-        }
-        catch (Exception e) {
-            log.error("Unexpected exception", e);
-
-            fail();
-        }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testIndexMetadata() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL);
              ResultSet rs = conn.getMetaData().getIndexInfo(null, "pers", "Person", false, false)) {
