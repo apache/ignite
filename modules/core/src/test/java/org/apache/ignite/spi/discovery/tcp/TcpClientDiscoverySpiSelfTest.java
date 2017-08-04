@@ -22,6 +22,7 @@ import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.UUID;
@@ -62,6 +63,8 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutException;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutHelper;
+import org.apache.ignite.spi.IgniteSpiThread;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -73,6 +76,7 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddedMessage
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_DISCONNECTED;
@@ -555,6 +559,73 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
         await(clientFailedLatch);
 
         checkNodes(2, 3);
+    }
+
+
+    /**
+     * Client should reconnect to available server without EVT_CLIENT_NODE_RECONNECTED event.
+     *
+     * @throws Exception If failed.
+     */
+    public void testClientReconnectOnRouterSuspend() throws Exception {
+        startServerNodes(2);
+
+        TcpDiscoveryNode srvNode = (TcpDiscoveryNode)G.ignite("server-0").cluster().localNode();
+        UUID srvNodeId = srvNode.id();
+
+        clientIpFinder = new TcpDiscoveryVmIpFinder();
+
+        clientIpFinder.setAddresses(
+            Collections.singleton("localhost:" + srvNode.discoveryPort() + ".." + (srvNode.discoveryPort() + 1)));
+
+        startClientNodes(1);
+
+        Ignite client = G.ignite("client-0");
+
+        UUID clientNodeId = client.cluster().localNode().id();
+
+        checkNodes(2, 1);
+
+        CountDownLatch latch = new CountDownLatch(2);
+
+        AtomicBoolean err = new AtomicBoolean();
+
+        for (String nodeName : Arrays.asList("client-0", "server-1")) {
+            G.ignite(nodeName).events().localListen(new IgnitePredicate<Event>() {
+                @Override public boolean apply(Event evt) {
+                    DiscoveryEvent disoEvt = (DiscoveryEvent)evt;
+
+                    if (disoEvt.eventNode().id().equals(srvNodeId)) {
+                        info("Expected event: " + ((DiscoveryEvent) evt).eventNode());
+
+                        latch.countDown();
+                    }
+                    else {
+                        log.info("Unexpected event: " + evt);
+
+                        err.set(true);
+                    }
+
+                    return true;
+                }
+            }, EVT_NODE_FAILED, EVT_CLIENT_NODE_DISCONNECTED, EVT_CLIENT_NODE_RECONNECTED);
+        }
+
+        Thread.sleep(5000);
+
+        TestTcpDiscoverySpi spi0 = ((TestTcpDiscoverySpi)G.ignite("server-0").configuration().getDiscoverySpi());
+
+        spi0.pauseAll(false);
+
+        try {
+            assertTrue("Latch count: " + latch.getCount(), latch.await(5, TimeUnit.MINUTES));
+
+            assertFalse("Unexpected event, see log for details.", err.get());
+            assertEquals(clientNodeId, client.cluster().localNode().id());
+        }
+        finally {
+            spi0.resumeAll();
+        }
     }
 
     /**
