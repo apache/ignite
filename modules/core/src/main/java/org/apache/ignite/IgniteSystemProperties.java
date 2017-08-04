@@ -669,6 +669,27 @@ public final class IgniteSystemProperties {
         "IGNITE_CLIENT_CACHE_CHANGE_MESSAGE_TIMEOUT";
 
     /**
+     * If a partition release future completion time during an exchange exceeds this threshold, the contents of
+     * the future will be dumped to the log on exchange. Default is {@code 0} (disabled).
+     */
+    public static final String IGNITE_PARTITION_RELEASE_FUTURE_DUMP_THRESHOLD =
+        "IGNITE_PARTITION_RELEASE_FUTURE_DUMP_THRESHOLD";
+
+    /**
+     * If this property is set, a node will forcible fail a remote node when it fails to establish a communication
+     * connection.
+     */
+    public static final String IGNITE_ENABLE_FORCIBLE_NODE_KILL = "IGNITE_ENABLE_FORCIBLE_NODE_KILL";
+
+    /**
+     * Tasks stealing will be started if tasks queue size per processor exceeds this threshold.
+     * The property is applicable only for tasks stealing thread pools.
+     * <p>
+     * Default is {@code 3}.
+     */
+    public static final String IGNITE_TASKS_STEALING_THRESHOLD = "IGNITE_TASKS_STEALING_THRESHOLD";
+
+    /**
      * Enforces singleton.
      */
     private IgniteSystemProperties() {

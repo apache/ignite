@@ -21,6 +21,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.worker.GridWorker;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * This class adds some necessary plumbing on top of the {@link Thread} class.
@@ -147,6 +148,15 @@ public class IgniteThread extends Thread {
      */
     public void compositeRwLockIndex(int compositeRwLockIdx) {
         this.compositeRwLockIdx = compositeRwLockIdx;
+    }
+
+    /**
+     * @return IgniteThread or {@code null} if current thread is not an instance of IgniteThread.
+     */
+    public static IgniteThread current(){
+        Thread thread = Thread.currentThread();
+
+        return thread.getClass() == IgniteThread.class || thread instanceof IgniteThread ? ((IgniteThread)thread) : null;
     }
 
     /**
