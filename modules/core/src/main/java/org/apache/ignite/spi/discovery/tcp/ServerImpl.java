@@ -3898,6 +3898,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         void processClientReconnectMessage(TcpDiscoveryClientReconnectMessage msg) {
             UUID nodeId = msg.creatorNodeId();
             UUID locNodeId = getLocalNodeId();
+
             TcpDiscoveryNode node = ring.node(nodeId);
 
             assert node == null || node.isClient();
@@ -3912,9 +3913,10 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             if (msg.verified() && msg.routerNodeId().equals(getLocalNodeId())) {
                 ClientMessageWorker wrk = clientMsgWorkers.get(nodeId);
+
                 if (wrk != null)
                     wrk.addMessage(msg);
-                else
+                else if (log.isDebugEnabled())
                     log.debug("Failed to reconnect client node (disconnected during the process) [locNodeId=" +
                         locNodeId + ", clientNodeId=" + nodeId + ']');
             }

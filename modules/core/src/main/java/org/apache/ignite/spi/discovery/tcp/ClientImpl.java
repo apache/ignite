@@ -512,6 +512,7 @@ class ClientImpl extends TcpDiscoveryImpl {
             // process failed node last
             if (prevAddr != null) {
                 int idx = addrs.indexOf(prevAddr);
+
                 if (idx != -1)
                     Collections.swap(addrs, idx, 0);
             }
@@ -527,6 +528,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                 InetSocketAddress addr = addrs.get(i);
 
                 boolean recon = prevAddr != null;
+
                 T3<SocketStream, Integer, Boolean> sockAndRes = sendJoinRequest(recon, addr);
 
                 if (sockAndRes == null) {
@@ -1621,7 +1623,9 @@ class ClientImpl extends TcpDiscoveryImpl {
                     else if (msg instanceof SocketClosedMessage) {
                         if (((SocketClosedMessage)msg).sock == currSock) {
                             Socket sock = currSock.sock;
+
                             InetSocketAddress prevAddr = new InetSocketAddress(sock.getInetAddress(), sock.getPort());
+
                             currSock = null;
 
                             boolean join = joinLatch.getCount() > 0;
@@ -1650,7 +1654,7 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                                     assert reconnector == null;
 
-                                    this.reconnector = new Reconnector(join, prevAddr);;
+                                    reconnector = new Reconnector(join, prevAddr);
                                     reconnector.start();
                                 }
                             }
