@@ -50,7 +50,6 @@ import org.apache.ignite.IgniteDataStreamerTimeoutException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterTopologyException;
@@ -66,7 +65,6 @@ import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
-import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
@@ -937,10 +935,10 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                         }
                     };
 
-                    final GridFutureAdapter<?> f;
+                    final List<GridFutureAdapter<?>> futs;
 
                     try {
-                        f = buf.update(entriesForNode, topVer, lsnr, remap);
+                        futs = buf.update(entriesForNode, topVer, lsnr, remap);
                     }
                     catch (IgniteInterruptedCheckedException e1) {
                         resFut.onDone(e1);
@@ -956,9 +954,13 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                                 @Override public void run() {
                                     buf0.onNodeLeft();
 
-                                    if (f != null)
-                                        f.onDone(new ClusterTopologyCheckedException("Failed to wait for request completion " +
-                                            "(node has left): " + nodeId));
+                                    if (futs != null) {
+                                        Throwable ex = new ClusterTopologyCheckedException(
+                                                "Failed to wait for request completion (node has left): " + nodeId);
+
+                                        for (int i = 0; i < futs.size(); i++)
+                                            futs.get(i).onDone(ex);
+                                    }
                                 }
                             }, ctx.discovery().topologyVersion(), false);
                         }
@@ -1378,13 +1380,13 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
          * @return Future for operation.
          * @throws IgniteInterruptedCheckedException If failed.
          */
-        @Nullable GridFutureAdapter<?> update(
+        @Nullable List<GridFutureAdapter<?>> update(
             Iterable<DataStreamerEntry> newEntries,
             AffinityTopologyVersion topVer,
             IgniteInClosure<IgniteInternalFuture<?>> lsnr,
             boolean remap
         ) throws IgniteInterruptedCheckedException {
-            GridFutureAdapter<Object> curFut0 = null;
+            List<GridFutureAdapter<?>> res = null;
 
             for (DataStreamerEntry entry : newEntries) {
                 List<DataStreamerEntry> entries0 = null;
@@ -1393,23 +1395,11 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                 // Init buffer.
                 int part = entry.getKey().partition();
 
+                GridFutureAdapter<Object> curFut0;
                 PerStripeBuffer b = stripes[part % stripes.length];
 
                 synchronized (b) {
-                    GridFutureAdapter<Object> curFut = b.curFut;
-
-                    if (curFut0 == null)
-                        curFut0 = curFut;
-                    else if (curFut0.getClass() == GridCompoundFuture.class)
-                        ((GridCompoundFuture)curFut0).add(curFut);
-                    else if (curFut0 != curFut) {
-                        GridCompoundFuture<Object, Object> comp = new GridCompoundFuture<>();
-
-                        comp.add(curFut0);
-                        comp.add(curFut);
-
-                        curFut0 = comp;
-                    }
+                    curFut0 = b.curFut;
 
                     // TODO: think over proper listener model:
                     // Listener should be added only once per whole entries collection.
@@ -1430,6 +1420,11 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                     }
                 }
 
+                if(res == null)
+                    res = new ArrayList<>();
+
+                res.add(curFut0);
+
                 if (!allowOverwrite() && !topVer.equals(curBatchTopVer)) {
                     b.renewBatch(remap);
 
@@ -1448,10 +1443,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                 }
             }
 
-            if(curFut0 != null && curFut0.getClass() == GridCompoundFuture.class)
-                ((GridCompoundFuture)curFut0).markInitialized();
-
-            return curFut0;
+            return res;
         }
 
         /**
