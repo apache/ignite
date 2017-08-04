@@ -15,25 +15,20 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache.affinity.rendezvous;
+package org.apache.ignite.cache.affinity;
 
-import java.io.File;
-import java.io.PrintWriter;
-import java.util.ArrayList;
-import org.apache.commons.io.FileUtils;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cache.affinity.AffinityFunctionContext;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
-import org.apache.ignite.internal.processors.affinity.GridAffinityFunctionContextImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
+import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -46,9 +41,12 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
- * Tests for {@link RendezvousAffinityFunction}.
+ *
  */
-public class RendezvousAffinityFunctionCalculateDistributionSelfTest extends GridCommonAbstractTest {
+public class AffinityDistributionPrintLogTest extends GridCommonAbstractTest {
+    @LoggerResource
+    private IgniteLogger log;
+
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
@@ -93,63 +91,33 @@ public class RendezvousAffinityFunctionCalculateDistributionSelfTest extends Gri
         return cfg;
     }
 
-    /**
-     * @throws Exception If failed.
-     */
     public void testDistributionCalculationOkMessage() throws Exception {
-        System.setProperty(IgniteSystemProperties.IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD, String.valueOf(10));
+        String log = print(true, 0.01);
 
-        Ignite ignite = startGrids(3);
+        assertTrue(log.contains("Local node affinity assignment distribution is not ideal"));
+    }
 
-        awaitPartitionMapExchange();
+    public void testDistributionCalculationProblemMessage() throws Exception {
+        String log = print(true, 0.5);
 
-        final GridStringLogger log = new GridStringLogger(false, this.log);
+        assertFalse(log.contains("Local node affinity assignment distribution is not ideal"));
+    }
 
-        GridCacheProcessor proc = ((IgniteKernal)ignite).context().cache();
+    public void testDistributionCalculationDisable() throws Exception {
+        String log = print(false, 0);
 
-        for (GridCacheContext cctx : proc.context().cacheContexts()) {
-            GridAffinityAssignmentCache aff = GridTestUtils.getFieldValue(cctx.affinity(), "aff");
-
-            GridTestUtils.setFieldValue(aff, "log", log);
-        }
-
-        // fillcache affinity
-
-        startGrid(3);
-
-        String res = log.toString();
-
-        assertTrue(res.contains("Partition map has been built (distribution is even)"));
-        //TODO проверка второго типа сообщений
+        assertFalse(log.contains("Local node affinity assignment distribution is not ideal"));
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testDistributionCalculationProblemMessage() throws Exception {
-        System.setProperty(IgniteSystemProperties.IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD, String.valueOf(55));
-
-        File file = new File(home() + "/work/log/ignite.log");
-
-        new PrintWriter(file).close();
+    public String print(boolean init, double percent) throws Exception {
+        if (init)
+            System.setProperty(IgniteSystemProperties.IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD, String.valueOf(percent));
 
         Ignite ignite = startGrids(2);
 
-        AffinityFunctionContext ctx =
-            new GridAffinityFunctionContextImpl(new ArrayList<>(ignite.cluster().nodes()), null, null,
-                new AffinityTopologyVersion(1), 1);
-
-//        affinityFunction().assignPartitions(ctx);
-
-        assertTrue(FileUtils.readFileToString(file).contains("Partition map has been built (distribution is even)"));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testDistributionCalculationDisable() throws Exception {
-        Ignite ignite = startGrid(0);
-
         awaitPartitionMapExchange();
 
         final GridStringLogger log = new GridStringLogger(false, this.log);
@@ -162,11 +130,10 @@ public class RendezvousAffinityFunctionCalculateDistributionSelfTest extends Gri
             GridTestUtils.setFieldValue(aff, "log", log);
         }
 
-        startGrid(1);
+        startGrid(2);
 
-        String res = log.toString();
+        awaitPartitionMapExchange();
 
-        assertFalse(res.contains("Partition map has been built (distribution is not even for caches)"));
-        assertFalse(res.contains("Partition map has been built (distribution is even)"));
+        return log.toString();
     }
 }
