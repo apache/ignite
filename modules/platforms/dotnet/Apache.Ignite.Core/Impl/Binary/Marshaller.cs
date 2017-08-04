@@ -661,19 +661,15 @@ namespace Apache.Ignite.Core.Impl.Binary
             bool keepDeserialized, IBinaryNameMapper nameMapper, IBinaryIdMapper idMapper,
             IBinarySerializerInternal serializer, string affKeyFieldName, bool isEnum)
         {
+            Debug.Assert(!string.IsNullOrEmpty(typeName));
+
             long typeKey = BinaryUtils.TypeKey(userType, typeId);
 
             BinaryFullTypeDescriptor conflictingType;
 
-            if (_idToDesc.TryGetValue(typeKey, out conflictingType))
+            if (_idToDesc.TryGetValue(typeKey, out conflictingType) && conflictingType.TypeName != typeName)
             {
-                var type1 = conflictingType.Type != null
-                    ? conflictingType.Type.AssemblyQualifiedName
-                    : conflictingType.TypeName;
-
-                var type2 = type != null ? type.AssemblyQualifiedName : typeName;
-
-                ThrowConflictingTypeError(type1, type2, typeId);
+                ThrowConflictingTypeError(typeName, conflictingType.TypeName, typeId);
             }
 
             if (userType && _typeNameToDesc.ContainsKey(typeName))
