@@ -32,6 +32,8 @@ import org.apache.ignite.internal.processors.odbc.SqlListenerNioListener;
 import org.apache.ignite.internal.processors.odbc.SqlListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.SqlListenerRequest;
 import org.apache.ignite.internal.processors.odbc.SqlListenerResponse;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBatchExecuteRequest;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBatchExecuteResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaColumnsRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaColumnsResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaIndexesRequest;
@@ -44,6 +46,7 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaSchemasRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaSchemasResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaTablesRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaTablesResult;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQuery;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryCloseRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteResult;
@@ -67,11 +70,11 @@ public class JdbcThinTcpIo {
     /** Initial output stream capacity for handshake. */
     private static final int HANDSHAKE_MSG_SIZE = 13;
 
-    /** Initial output size for messages with unknown size. */
-    private static final int DYNAMIC_SIZE_MSG_CAP = 1024;
+    /** Initial output for query message. */
+    private static final int DYNAMIC_SIZE_MSG_CAP = 256;
 
-    /** Initial output size for short messages with unknown size. */
-    private static final int DYNAMIC_SIZE_MSG_CAP_256 = 256;
+    /** Maximum batch query count. */
+    private static final int MAX_BATCH_QRY_CNT = 32;
 
     /** Initial output for query fetch message. */
     private static final int QUERY_FETCH_MSG_SIZE = 13;
@@ -304,6 +307,20 @@ public class JdbcThinTcpIo {
     }
 
     /**
+     * @param schema Schema.
+     * @param batch Batch queries.
+     * @return Result.
+     * @throws IOException On error.
+     * @throws IgniteCheckedException On error.
+     */
+    public JdbcBatchExecuteResult batchExecute(String schema, List<JdbcQuery> batch)
+        throws IOException, IgniteCheckedException {
+        int cnt = Math.min(MAX_BATCH_QRY_CNT, batch.size());
+
+        return sendRequest(new JdbcBatchExecuteRequest(schema, batch), DYNAMIC_SIZE_MSG_CAP * cnt);
+    }
+
+    /**
      * @param catalog Catalog.
      * @param schemaPtrn Schema name pattern.
      * @param tablePtrn Table name pattern.
@@ -374,7 +391,7 @@ public class JdbcThinTcpIo {
      * @throws IgniteCheckedException On error.
      */
     public JdbcMetaSchemasResult schemasMeta(String schemaPtrn) throws IOException, IgniteCheckedException {
-        return sendRequest(new JdbcMetaSchemasRequest(schemaPtrn), DYNAMIC_SIZE_MSG_CAP_256);
+        return sendRequest(new JdbcMetaSchemasRequest(schemaPtrn), DYNAMIC_SIZE_MSG_CAP);
     }
 
     /**

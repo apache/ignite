@@ -203,6 +203,41 @@ public class GridCacheAttributes implements Serializable {
     }
 
     /**
+     * @return Rebalance delay.
+     */
+    public long rebalanceDelay() {
+        return ccfg.getRebalanceDelay();
+    }
+
+    /**
+     * @return Rebalance prefetch count.
+     */
+    public long rebalanceBatchesPrefetchCount() {
+        return ccfg.getRebalanceBatchesPrefetchCount();
+    }
+
+    /**
+     * @return Rebalance order.
+     */
+    public int rebalanceOrder() {
+        return ccfg.getRebalanceOrder();
+    }
+
+    /**
+     * @return Rebalance throttle.
+     */
+    public long rebalanceThrottle() {
+        return ccfg.getRebalanceThrottle();
+    }
+
+    /**
+     * @return Rebalance timeout.
+     */
+    public long rebalanceTimeout() {
+        return ccfg.getRebalanceTimeout();
+    }
+
+    /**
      * @return Synchronization mode.
      */
     public CacheWriteSynchronizationMode writeSynchronization() {

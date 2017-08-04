@@ -20,16 +20,15 @@
 // Fire me up!
 
 module.exports = {
-    implements: 'middlewares:api',
-    inject: ['require("mongodb-core")']
+    implements: 'middlewares:api'
 };
 
-module.exports.factory = (mongodb) => {
+module.exports.factory = () => {
     return (req, res, next) => {
         res.api = {
             error(err) {
-                if (err instanceof mongodb.MongoError)
-                    res.status(500).send(err.message);
+                if (err.name === 'MongoError')
+                    return res.status(500).send(err.message);
 
                 res.status(err.httpCode || err.code || 500).send(err.message);
             },

@@ -19,12 +19,14 @@ package org.apache.ignite.internal.processors.odbc.jdbc;
 
 import java.sql.ParameterMetaData;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -42,6 +44,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
+import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.BATCH_EXEC;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.META_COLUMNS;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.META_INDEXES;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.META_PARAMS;
@@ -142,6 +145,9 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
 
                 case QRY_META:
                     return getQueryMeta((JdbcQueryMetadataRequest)req);
+
+                case BATCH_EXEC:
+                    return executeBatch((JdbcBatchExecuteRequest)req);
 
                 case META_TABLES:
                     return getTablesMeta((JdbcMetaTablesRequest)req);
@@ -336,6 +342,59 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
             U.error(log, "Failed to fetch SQL query result [reqId=" + req.requestId() + ", req=" + req + ']', e);
 
             return new JdbcResponse(SqlListenerResponse.STATUS_FAILED, e.toString());
+        }
+    }
+
+    /**
+     * @param req Request.
+     * @return Response.
+     */
+    private SqlListenerResponse executeBatch(JdbcBatchExecuteRequest req) {
+        String schemaName = req.schema();
+
+        if (F.isEmpty(schemaName))
+            schemaName = QueryUtils.DFLT_SCHEMA;
+
+        int successQueries = 0;
+        int updCnts[] = new int[req.queries().size()];
+
+        try {
+            String sql = null;
+
+            for (JdbcQuery q : req.queries()) {
+                if (q.sql() != null)
+                    sql = q.sql();
+
+                SqlFieldsQuery qry = new SqlFieldsQuery(sql);
+
+                qry.setArgs(q.args());
+
+                qry.setDistributedJoins(distributedJoins);
+                qry.setEnforceJoinOrder(enforceJoinOrder);
+                qry.setCollocated(collocated);
+                qry.setReplicatedOnly(replicatedOnly);
+
+                qry.setSchema(schemaName);
+
+                QueryCursorImpl<List<?>> qryCur = (QueryCursorImpl<List<?>>)ctx.query()
+                    .querySqlFieldsNoCache(qry, true);
+
+                if (qryCur.isQuery())
+                    throw new IgniteCheckedException("Query produced result set [qry=" + q.sql() + ", args=" +
+                        Arrays.toString(q.args()) + ']');
+
+                List<List<?>> items = qryCur.getAll();
+
+                updCnts[successQueries++] = ((Long)items.get(0).get(0)).intValue();
+            }
+
+            return new JdbcResponse(new JdbcBatchExecuteResult(updCnts, SqlListenerResponse.STATUS_SUCCESS, null));
+        }
+        catch (Exception e) {
+            U.error(log, "Failed to execute batch query [reqId=" + req.requestId() + ", req=" + req + ']', e);
+
+            return new JdbcResponse(new JdbcBatchExecuteResult(Arrays.copyOf(updCnts, successQueries),
+                SqlListenerResponse.STATUS_FAILED, e.toString()));
         }
     }
 

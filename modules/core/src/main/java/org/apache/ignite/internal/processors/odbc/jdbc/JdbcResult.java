@@ -35,23 +35,26 @@ public class JdbcResult implements JdbcRawBinarylizable {
     /** Query result's columns metadata result. */
     static final byte QRY_META = 5;
 
+    /** Batch queries. */
+    public static final byte BATCH_EXEC = 6;
+
     /** Tables metadata result. */
-    static final byte META_TABLES = 6;
+    static final byte META_TABLES = 7;
 
     /** Columns metadata result. */
-    static final byte META_COLUMNS = 7;
+    static final byte META_COLUMNS = 8;
 
     /** Indexes metadata result. */
-    static final byte META_INDEXES = 8;
+    static final byte META_INDEXES = 9;
 
     /** SQL query parameters metadata result. */
-    static final byte META_PARAMS = 9;
+    static final byte META_PARAMS = 10;
 
     /** Primary keys metadata result. */
-    static final byte META_PRIMARY_KEYS = 10;
+    static final byte META_PRIMARY_KEYS = 11;
 
     /** Primary keys metadata result. */
-    static final byte META_SCHEMAS = 11;
+    static final byte META_SCHEMAS = 12;
 
     /** Success status. */
     private byte type;
@@ -98,6 +101,12 @@ public class JdbcResult implements JdbcRawBinarylizable {
 
             case QRY_META:
                 res = new JdbcQueryMetadataResult();
+
+                break;
+
+            case BATCH_EXEC:
+                res = new JdbcBatchExecuteResult();
+
 
                 break;
 

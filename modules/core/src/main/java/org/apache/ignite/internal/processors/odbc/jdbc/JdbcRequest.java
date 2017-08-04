@@ -36,26 +36,30 @@ public class JdbcRequest extends SqlListenerRequest implements JdbcRawBinaryliza
     /** Close query request. */
     static final byte QRY_CLOSE = 4;
 
-    /** Get query result's columns metadata request. */
+    /** Get query columns metadata request. */
     static final byte QRY_META = 5;
 
-    /** Gte tables metadata request. */
-    static final byte META_TABLES = 6;
+    /** Batch queries. */
+    public static final byte BATCH_EXEC = 6;
+
+    /** Get tables metadata request. */
+    static final byte META_TABLES = 7;
 
     /** Get columns metadata request. */
-    static final byte META_COLUMNS = 7;
+    static final byte META_COLUMNS = 8;
 
     /** Get indexes metadata request. */
-    static final byte META_INDEXES = 8;
+    static final byte META_INDEXES = 9;
 
     /** Get SQL query parameters metadata request. */
-    static final byte META_PARAMS = 9;
+    static final byte META_PARAMS = 10;
 
     /** Get primary keys metadata request. */
-    static final byte META_PRIMARY_KEYS = 10;
+    static final byte META_PRIMARY_KEYS = 11;
 
     /** Get schemas metadata request. */
-    static final byte META_SCHEMAS = 11;
+    static final byte META_SCHEMAS = 12;
+
 
     /** Request type. */
     private byte type;
@@ -112,6 +116,11 @@ public class JdbcRequest extends SqlListenerRequest implements JdbcRawBinaryliza
 
             case QRY_CLOSE:
                 req = new JdbcQueryCloseRequest();
+
+                break;
+
+            case BATCH_EXEC:
+                req = new JdbcBatchExecuteRequest();
 
                 break;
 
