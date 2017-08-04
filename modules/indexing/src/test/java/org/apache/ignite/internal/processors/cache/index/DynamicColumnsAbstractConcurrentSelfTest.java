@@ -774,6 +774,8 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
 
         QueryField[] expCols = new QueryField[dynColCnt.get()];
 
+        // Too many index columns kills indexing internals, have to limit number of the columns
+        // to build the index on.
         int idxColsCnt = Math.min(300, expCols.length);
 
         Integer[] args = new Integer[idxColsCnt];
@@ -812,107 +814,6 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
         run(cli, idxQry);
 
         run(cli, "DROP INDEX idx");
-    }
-
-    /**
-     * Multithreaded cache start/stop along with index operations. Nothing should hang.
-     *
-     * @throws Exception If failed.
-     */
-    public void testConcurrentOperationsAndCacheStartStopMultithreaded() throws Exception {
-        // Start complex topology.
-        /*ignitionStart(serverConfiguration(1));
-        ignitionStart(serverConfiguration(2));
-        ignitionStart(serverConfiguration(3));
-
-        Ignite cli = ignitionStart(clientConfiguration(4));
-
-        final AtomicBoolean stopped = new AtomicBoolean();
-
-        // Start cache create/destroy worker.
-        IgniteInternalFuture startStopFut = multithreadedAsync(new Callable<Void>() {
-            @Override public Void call() throws Exception {
-                boolean exists = false;
-
-                while (!stopped.get()) {
-                    Ignite node = grid(ThreadLocalRandom.current().nextInt(1, 5));
-
-                    if (exists) {
-                        destroySqlCache(node);
-
-                        exists = false;
-                    }
-                    else {
-                        createSqlCache(node);
-
-                        exists = true;
-                    }
-
-                    Thread.sleep(ThreadLocalRandom.current().nextLong(200L, 400L));
-                }
-
-                return null;
-            }
-        }, 1);
-
-        // Start several threads which will mess around indexes.
-        final QueryIndex idx = index(IDX_NAME_1, field(FIELD_NAME_1));
-
-        IgniteInternalFuture idxFut = multithreadedAsync(new Callable<Void>() {
-            @Override public Void call() throws Exception {
-                boolean exists = false;
-
-                while (!stopped.get()) {
-                    Ignite node = grid(ThreadLocalRandom.current().nextInt(1, 5));
-
-                    IgniteInternalFuture fut;
-
-                    if (exists) {
-                        fut = queryProcessor(node).dynamicIndexDrop(CACHE_NAME, CACHE_NAME, IDX_NAME_1, true);
-
-                        exists = false;
-                    }
-                    else {
-                        fut = queryProcessor(node).dynamicIndexCreate(CACHE_NAME, CACHE_NAME, TBL_NAME, idx, true);
-
-                        exists = true;
-                    }
-
-                    try {
-                        fut.get();
-                    }
-                    catch (SchemaOperationException e) {
-                        // No-op.
-                    }
-                    catch (Exception e) {
-                        fail("Unexpected exception: " + e);
-                    }
-                }
-
-                return null;
-            }
-        }, 8);
-
-        Thread.sleep(TEST_DUR);
-
-        stopped.set(true);
-
-        // Make sure nothing hanged.
-        startStopFut.get();
-        idxFut.get();
-
-        // Make sure cache is operational at this point.
-        createSqlCache(cli);
-
-        queryProcessor(cli).dynamicIndexDrop(CACHE_NAME, CACHE_NAME, IDX_NAME_1, true).get();
-        queryProcessor(cli).dynamicIndexCreate(CACHE_NAME, CACHE_NAME, TBL_NAME, idx, true).get();
-
-        //assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1, field(FIELD_NAME_1));
-
-        put(cli, 0, KEY_AFTER);
-
-        /*assertIndexUsed(IDX_NAME_1, SQL_SIMPLE_FIELD_1, SQL_ARG_1);
-        assertSqlSimpleData(SQL_SIMPLE_FIELD_1, KEY_AFTER - SQL_ARG_1);*/
     }
 
     /**
