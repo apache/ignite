@@ -1328,6 +1328,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testReconnectAfterFailTopologyChanged() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-5841");
         reconnectAfterFail(true);
     }
 
