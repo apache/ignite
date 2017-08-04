@@ -419,6 +419,8 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             var typeKey = BinaryUtils.TypeKey(userType, typeId);
 
+            // TODO: This can be unregistered type, or a descriptor without a type.
+            // We need to understand proper actions in these cases.
             if (_idToDesc.TryGetValue(typeKey, out desc) && (!requiresType || desc.Type != null))
             {
                 return desc;
