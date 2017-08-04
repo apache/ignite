@@ -423,7 +423,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      * @param val String value.
      */
     public void doWriteEncodedString(@Nullable String val) {
-        doWriteEncodedString(val, ctx.binaryStringEncoding());
+        doWriteEncodedString(val, ctx != null ? ctx.binaryStringEncoding() : null);
     }
 
     /**
