@@ -15,33 +15,16 @@
  * limitations under the License.
  */
 
-'use strict';
+package org.apache.ignite.internal.processors.cache.distributed;
 
-// Fire me up!
-
-module.exports = {
-    implements: 'middlewares:api'
-};
-
-module.exports.factory = () => {
-    return (req, res, next) => {
-        res.api = {
-            error(err) {
-                if (err.name === 'MongoError')
-                    return res.status(500).send(err.message);
-
-                res.status(err.httpCode || err.code || 500).send(err.message);
-            },
-            ok(data) {
-                res.status(200).json(data);
-            },
-            serverError(err) {
-                err.httpCode = 500;
-
-                res.api.error(err);
-            }
-        };
-
-        next();
-    };
-};
+/**
+ *
+ */
+public class IgniteOptimisticTxSuspendResumeMultiServerTest extends IgniteOptimisticTxSuspendResumeTest {
+    /**
+     * @return Number of server nodes.
+     */
+    protected int serversNumber() {
+        return 4;
+    }
+}
