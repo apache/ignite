@@ -346,7 +346,8 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
                             req.participants(),
                             req.classLoaderId(),
                             req.forceLocalDeployment(),
-                            staleTop);
+                            staleTop,
+                            -1);
 
                         msg = new GridIoMessage(
                             GridTestUtils.<Byte>getFieldValue(ioMsg, "plc"),

@@ -532,7 +532,7 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      *
      * @return Thread pool implementation to be used for data stream messages.
      */
-    public ExecutorService getDataStreamerExecutorService();
+    public StripedExecutor getDataStreamerExecutorService();
 
     /**
      * Should return an instance of fully configured thread pool to be used for
