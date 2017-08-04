@@ -3181,9 +3181,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      */
     protected WALPointer logUpdate(GridCacheOperation op, CacheObject val, GridCacheVersion writeVer, long expireTime, long updCntr)
         throws IgniteCheckedException {
-        // We log individual updates only in ATOMIC cache.
-        assert cctx.atomic();
-
         try {
             if (cctx.shared().wal() != null)
                 return cctx.shared().wal().log(new DataRecord(new DataEntry(

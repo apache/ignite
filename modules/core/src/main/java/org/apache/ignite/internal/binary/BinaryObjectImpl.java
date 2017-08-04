@@ -90,7 +90,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
      * @param start Start.
      */
     public BinaryObjectImpl(BinaryContext ctx, byte[] arr, int start) {
-        assert ctx != null;
+        //assert ctx != null;
         assert arr != null;
 
         this.ctx = ctx;

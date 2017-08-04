@@ -27,4 +27,9 @@ public interface WALReferenceAwareRecord {
      * @return WAL reference.
      */
     WALPointer reference();
+
+    /**
+     * @return True if payload is fragmented across several records.
+     */
+    boolean isFragmented();
 }

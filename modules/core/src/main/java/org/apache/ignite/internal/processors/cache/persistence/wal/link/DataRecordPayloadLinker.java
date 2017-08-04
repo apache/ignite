@@ -1,6 +1,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.wal.link;
 
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
@@ -19,7 +20,7 @@ public class DataRecordPayloadLinker {
     /** Linking entries. */
     private CacheDataRow entries[];
 
-    /** WAL pointer associated with DataRecord. */
+    /** WAL pointer associated with {@link DataRecord}. */
     private WALPointer pointer;
 
     /**
@@ -50,20 +51,25 @@ public class DataRecordPayloadLinker {
     public void linkPayload(WALReferenceAwareRecord record) throws IgniteCheckedException {
         int indexBeforeLink = delegateLinker.position().index;
         int offsetBeforeLink = delegateLinker.position().offset;
+        int entrySize = delegateLinker.currentEntrySize();
 
         delegateLinker.link(record);
 
         // Initialize byte buffer for entry payload.
         ByteBuffer payloadBuffer = ByteBuffer.allocate(record.payloadSize());
+        payloadBuffer.order(ByteOrder.nativeOrder());
 
         // Write data entry payload to buffer.
-        DataPageIO.writeFragmentData(entries[indexBeforeLink], payloadBuffer, offsetBeforeLink, record.payloadSize());
+        if (record.isFragmented())
+            DataPageIO.writeFragmentData(entries[indexBeforeLink], payloadBuffer, entrySize - offsetBeforeLink - record.payloadSize(), record.payloadSize());
+        else
+            DataPageIO.writeRowData(entries[indexBeforeLink], payloadBuffer, record.payloadSize());
 
         record.payload(payloadBuffer.array());
     }
 
     /**
-     * @return True if there is payload to link.
+     * @return True if there is some payload to link.
      */
     public boolean hasPayload() {
         return delegateLinker.position() != DataRecordLinker.Position.NONE;

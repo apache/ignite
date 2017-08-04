@@ -29,11 +29,10 @@ import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALReferenceAwareRecord;
-import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
-import org.apache.ignite.internal.processors.cache.persistence.wal.link.DataRecordPayloadLinker;
+import org.apache.ignite.internal.processors.cache.persistence.wal.link.CachedPayloadLinker;
 import org.apache.ignite.internal.processors.cache.persistence.wal.record.HeaderRecord;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -82,7 +81,7 @@ public abstract class AbstractWalRecordsIterator
     private final ByteBufferExpander buf;
 
     /** Class to link {@link DataRecord) entries payload to {@link WALReferenceAwareRecord} records. */
-    private final DataRecordPayloadLinker linker = new DataRecordPayloadLinker();
+    private final CachedPayloadLinker linker;
 
     /**
      * @param log Logger
@@ -103,7 +102,9 @@ public abstract class AbstractWalRecordsIterator
         this.ioFactory = ioFactory;
 
         // Do not allocate direct buffer for iterator.
-        buf = new ByteBufferExpander(bufSize, ByteOrder.nativeOrder());
+        this.buf = new ByteBufferExpander(bufSize, ByteOrder.nativeOrder());
+
+        this.linker = new CachedPayloadLinker(log, sharedCtx.wal());
     }
 
     /**
@@ -208,7 +209,7 @@ public abstract class AbstractWalRecordsIterator
             ptr.length(rec.size());
 
             // Link payload for records with reference to DataRecord.
-            linkPayload(rec, ptr);
+            linker.linkPayload(rec, ptr);
 
             // cast using diamond operator here can break compile for 7
             return new IgniteBiTuple<>((WALPointer)ptr, rec);
@@ -220,42 +221,10 @@ public abstract class AbstractWalRecordsIterator
         }
     }
 
-    /**
-     * Link {@code byte[]} payload from {@link DataRecord} entries to {@link WALReferenceAwareRecord} record.
-     *
-     * @param record WAL record.
-     * @param pointer WAL pointer.
-     * @throws IgniteCheckedException If unable to link payload to record.
-     */
-    private void linkPayload(WALRecord record, WALPointer pointer) throws IgniteCheckedException {
-        if (record instanceof DataRecord) {
-            DataRecord dataRecord = (DataRecord) record;
-
-            // Re-initialize linker with new DataRecord in case of CREATE or UPDATE operations.
-            if (dataRecord.operation() == GridCacheOperation.CREATE
-                    || dataRecord.operation() == GridCacheOperation.UPDATE) {
-                linker.init(dataRecord, pointer);
-            }
-        }
-        else if (record instanceof WALReferenceAwareRecord) {
-            WALReferenceAwareRecord referenceRecord = (WALReferenceAwareRecord) record;
-
-            // There is no DataRecord in linker, try to find it outside the bounds of iterator.
-            if (!linker.hasPayload()) {
-                WALIterator iterator = sharedCtx.wal().replay(referenceRecord.reference());
-                WALRecord dataRecord = iterator.next().getValue();
-
-                if (!(dataRecord instanceof DataRecord))
-                    throw new IgniteCheckedException("Reference to DataRecord is not valid.");
-
-                linker.init((DataRecord) dataRecord, pointer);
-            }
-
-            if (!linker.pointer().equals(referenceRecord.reference()))
-                throw new IgniteCheckedException("Reference to DataRecord is not valid.");
-
-            linker.linkPayload(referenceRecord);
-        }
+    /** {@inheritDoc} */
+    @Override protected void onClose() throws IgniteCheckedException {
+        linker.reportCacheMisses();
+        super.onClose();
     }
 
     /**
@@ -266,8 +235,7 @@ public abstract class AbstractWalRecordsIterator
     protected void handleRecordException(
         @NotNull final Exception e,
         @Nullable final FileWALPointer ptr) {
-        if (log.isInfoEnabled())
-            log.info("Stopping WAL iteration due to an exception: " + e.getMessage());
+        log.error("Stopping WAL iteration due to an exception: " + e.getMessage());
     }
 
     /**

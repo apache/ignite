@@ -254,7 +254,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
 
             int[] val = (int[])cache.get("key_" + i);
 
-            assertTrue("Invalid data. [key=key_" + i + ']' + ", expected=" + data.length + ", actual=" + val.length, Arrays.equals(data, val));
+            assertTrue("Invalid data. [key=key_" + i + ']', Arrays.equals(data, val));
         }
     }
 
@@ -903,7 +903,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
 
             info("Done puts...");
 
-            for (int i = 2_000; i < 3_000; i++)
+            for (int i = 2000; i < 3000; i++)
                 cache0.remove(i);
 
             info("Done removes...");
@@ -956,7 +956,6 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
                                 .database()
                                 .memoryPolicy(null)
                                 .pageMemory(),
-
                                 ((DirectBuffer)buf1).address());
 
                         buf1.position(0);

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence;
 
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
+import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -57,7 +58,7 @@ public interface CacheDataRow extends CacheSearchRow {
     public void key(KeyCacheObject key);
 
     /**
-     * @return Reference to DataRecord in WAL.
+     * @return WAL reference to {@link DataRecord}.
      */
     WALPointer reference();
 }

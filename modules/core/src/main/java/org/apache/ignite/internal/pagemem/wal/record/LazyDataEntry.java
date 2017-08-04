@@ -115,11 +115,19 @@ public class LazyDataEntry extends DataEntry {
         return val;
     }
 
+    public byte keyType() {
+        return keyType;
+    }
+
     /**
      * @return Key byte array.
      */
     public byte[] rawKey() {
         return keyBytes;
+    }
+
+    public byte valueType() {
+        return valType;
     }
 
     /**

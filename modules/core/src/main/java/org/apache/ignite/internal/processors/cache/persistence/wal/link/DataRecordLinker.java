@@ -1,12 +1,15 @@
 package org.apache.ignite.internal.processors.cache.persistence.wal.link;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
+import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.LazyDataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.WALReferenceAwareRecord;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.CacheObjectByteArrayImpl;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
@@ -31,13 +34,6 @@ public class DataRecordLinker {
      * @throws IgniteCheckedException If linker state is not valid.
      */
     public void init(DataRecord record) throws IgniteCheckedException {
-        if (position != Position.NONE)
-            throw new IgniteCheckedException("Linker previous state is not finished properly: {"
-                    + "numOfDataEntries=" + entrySizes.length
-                    + ", curDataEntrySize=" + entrySizes[position.index]
-                    + ", curPosition=" + position
-                    + "}");
-
         this.position = new Position(0,0);
         this.entrySizes = new int[record.writeEntries().size()];
 
@@ -71,6 +67,13 @@ public class DataRecordLinker {
      */
     public Position position() {
         return position;
+    }
+
+    /**
+     * @return Current entry size.
+     */
+    public int currentEntrySize() {
+        return entrySizes[position.index];
     }
 
     /**
@@ -123,7 +126,7 @@ public class DataRecordLinker {
         public int offset;
 
         /**
-         * Initialize Position with given {@code index} and {@code offset}
+         * Initialize Position with given {@code index} and {@code offset}.
          *
          * @param index Entry index.
          * @param offset Number of linked bytes in current entry.
@@ -152,12 +155,50 @@ public class DataRecordLinker {
         if (entry instanceof LazyDataEntry) {
             LazyDataEntry lazyEntry = (LazyDataEntry) entry;
 
+            // Create key from raw bytes.
+            KeyCacheObject key;
+            switch (lazyEntry.keyType()) {
+                case CacheObject.TYPE_REGULAR: {
+                    key = new KeyCacheObjectImpl(null, lazyEntry.rawKey(), lazyEntry.partitionId());
+                    break;
+                }
+                case CacheObject.TYPE_BINARY: {
+                    key = new BinaryObjectImpl(null, lazyEntry.rawKey(), 0);
+                    break;
+                }
+                default:
+                    throw new IllegalStateException("Undefined key type: " + lazyEntry.keyType());
+            }
+
+            // Create value from raw bytes.
+            CacheObject value;
+            switch (lazyEntry.valueType()) {
+                case CacheObject.TYPE_REGULAR: {
+                    value = new CacheObjectImpl(null, lazyEntry.rawValue());
+                    break;
+                }
+                case CacheObject.TYPE_BINARY: {
+                    value = new BinaryObjectImpl(null, lazyEntry.rawValue(), 0);
+                    break;
+                }
+                case CacheObject.TYPE_BYTE_ARR: {
+                    value = new CacheObjectByteArrayImpl(lazyEntry.rawValue());
+                    break;
+                }
+                case CacheObject.TYPE_BINARY_ENUM: {
+                    value = new BinaryEnumObjectImpl(null, lazyEntry.rawValue());
+                    break;
+                }
+                default:
+                    throw new IllegalStateException("Undefined value type: " + lazyEntry.valueType());
+            }
+
             return new CacheDataRowAdapter(
-                    new KeyCacheObjectImpl(null, lazyEntry.rawKey(), entry.partitionId()),
-                    new CacheObjectImpl(null, lazyEntry.rawValue()),
+                    key,
+                    value,
                     lazyEntry.writeVersion(),
                     lazyEntry.expireTime(),
-                    lazyEntry.cacheId()
+                    lazyEntry.storeCacheId() ? lazyEntry.cacheId() : 0
             );
         }
 
@@ -166,7 +207,7 @@ public class DataRecordLinker {
                 entry.value(),
                 entry.writeVersion(),
                 entry.expireTime(),
-                entry.cacheId()
+                entry.storeCacheId() ? entry.cacheId() : 0
         );
     }
 

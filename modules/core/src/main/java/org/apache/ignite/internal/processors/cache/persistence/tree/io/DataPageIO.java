@@ -649,7 +649,7 @@ public class DataPageIO extends PageIO {
             return false;
 
         if (row != null)
-            writeRowData(pageAddr, dataOff, rowSize, row, false);
+            writeRowData(pageAddr, null, dataOff, rowSize, row, false);
         else
             writeRowData(pageAddr, dataOff, payload);
 
@@ -786,7 +786,7 @@ public class DataPageIO extends PageIO {
 
         int dataOff = getDataOffsetForWrite(pageAddr, fullEntrySize, directCnt, indirectCnt, pageSize);
 
-        writeRowData(pageAddr, dataOff, rowSize, row, true);
+        writeRowData(pageAddr, null, dataOff, rowSize, row, true);
 
         int itemId = addItem(pageAddr, fullEntrySize, directCnt, indirectCnt, dataOff, pageSize);
 
@@ -1375,6 +1375,9 @@ public class DataPageIO extends PageIO {
     }
 
     /**
+     * Order of storing payload data:
+     * CACHE_ID KEY VALUE VERSION EXPIRE_TIME
+     *
      * @param pageAddr Page address.
      * @param dataOff Data offset.
      * @param payloadSize Payload size.
@@ -1382,38 +1385,85 @@ public class DataPageIO extends PageIO {
      * @param newRow {@code False} if existing cache entry is updated, in this case skip key data write.
      * @throws IgniteCheckedException If failed.
      */
-    private void writeRowData(
+    private static void writeRowData(
         long pageAddr,
+        ByteBuffer buf,
         int dataOff,
         int payloadSize,
         CacheDataRow row,
         boolean newRow
     ) throws IgniteCheckedException {
+        // Flag indicates that data should be stored into PageMemory directly.
+        boolean storeDirect = pageAddr != 0;
+
+        assert pageAddr != 0 || buf != null
+                : "Both page address and byte buffer are not valid.";
+
         long addr = pageAddr + dataOff;
 
         int cacheIdSize = row.cacheId() != 0 ? 4 : 0;
 
         if (newRow) {
-            PageUtils.putShort(addr, 0, (short)payloadSize);
-            addr += 2;
-
-            if (cacheIdSize != 0) {
-                PageUtils.putInt(addr, 0, row.cacheId());
-
-                addr += cacheIdSize;
+            if (storeDirect) {
+                PageUtils.putShort(addr, 0, (short)payloadSize);
+                addr += 2;
             }
 
-            addr += row.key().putValue(addr);
+            if (cacheIdSize != 0) {
+                if (storeDirect) {
+                    PageUtils.putInt(addr, 0, row.cacheId());
+                    addr += cacheIdSize;
+                }
+                else {
+                    buf.putInt(row.cacheId());
+                }
+            }
+
+            if (storeDirect) {
+                addr += row.key().putValue(addr);
+            } else {
+                row.key().putValue(buf);
+            }
         }
         else
             addr += (2 + cacheIdSize + row.key().valueBytesLength(null));
 
-        addr += row.value().putValue(addr);
+        if (storeDirect) {
+            addr += row.value().putValue(addr);
+        }
+        else {
+            row.value().putValue(buf);
+        }
 
-        CacheVersionIO.write(addr, row.version(), false);
-        addr += CacheVersionIO.size(row.version(), false);
+        if (storeDirect) {
+            CacheVersionIO.write(addr, row.version(), false);
+            addr += CacheVersionIO.size(row.version(), false);
+        }
+        else {
+            CacheVersionIO.write(buf, row.version(), false);
+        }
 
-        PageUtils.putLong(addr, 0, row.expireTime());
+        if (storeDirect) {
+            PageUtils.putLong(addr, 0, row.expireTime());
+        }
+        else {
+            buf.putLong(row.expireTime());
+        }
+    }
+
+    /**
+     *
+     * @param row Cache data row.
+     * @param buf Byte buffer.
+     * @param payloadSize Payload size.
+     * @throws IgniteCheckedException If failed.
+     */
+    public static void writeRowData(
+            CacheDataRow row,
+            ByteBuffer buf,
+            int payloadSize
+    ) throws IgniteCheckedException {
+        writeRowData(0, buf, 0, payloadSize, row, true);
     }
 
     /**

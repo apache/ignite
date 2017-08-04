@@ -96,7 +96,7 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
      * @param arr Array.
      */
     public BinaryEnumObjectImpl(BinaryContext ctx, byte[] arr) {
-        assert ctx != null;
+        //assert ctx != null;
         assert arr != null;
 
         if (arr[0] == GridBinaryMarshaller.ENUM)

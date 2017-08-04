@@ -697,6 +697,15 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_ENABLE_FORCIBLE_NODE_KILL = "IGNITE_ENABLE_FORCIBLE_NODE_KILL";
 
     /**
+     * The maximum amount of {@link org.apache.ignite.internal.pagemem.wal.record.DataRecord} sizes, that can be cached
+     * during WAL reading. Those records are needed to link {@code byte[]} payload to appropriate
+     * {@link org.apache.ignite.internal.pagemem.wal.record.WALReferenceAwareRecord} records.
+     *
+     * Default size is 128 Mb.
+     */
+    public static final String IGNITE_WAL_DATA_RECORDS_CACHE_SIZE_MB = "IGNITE_WAL_DATA_RECORDS_CACHE_SIZE_MB";
+
+    /**
      * Enforces singleton.
      */
     private IgniteSystemProperties() {
