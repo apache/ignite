@@ -20,6 +20,10 @@ import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsAtomicCacheRebalancingTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsBinaryMetadataOnClusterRestartTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsTxCacheRebalancingTest;
+import org.apache.ignite.internal.processors.cache.persistence.IgnitePersistentStoreCacheGroupsTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsMultiNodePutGetRestartTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsPageEvictionTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.file.IgnitePdsCacheIntegrationTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.file.IgnitePdsNoActualWalHistoryTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalRecoveryTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.WalRecoveryTxLogicalRecordsTest;
@@ -35,12 +39,10 @@ public class IgnitePdsWithIndexingCoreTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Ignite Persistent Store With Indexing Test Suite");
 
-/*
         suite.addTestSuite(IgnitePdsCacheIntegrationTest.class);
         suite.addTestSuite(IgnitePdsPageEvictionTest.class);
         suite.addTestSuite(IgnitePdsMultiNodePutGetRestartTest.class);
         suite.addTestSuite(IgnitePersistentStoreCacheGroupsTest.class);
-*/
         suite.addTestSuite(WalRecoveryTxLogicalRecordsTest.class);
 
         suite.addTestSuite(IgniteWalRecoveryTest.class);
