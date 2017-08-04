@@ -526,7 +526,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 ThrowConflictingTypeError(type, desc0.Type, typeId);
             }
 
-            // TODO: Replace old descriptor
+            // TODO: Replace old descriptor if type is null there.
 
             _typeToDesc.Set(type, desc);
 
