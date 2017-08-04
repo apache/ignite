@@ -296,7 +296,7 @@ public class InlineIndexHelperTest extends TestCase {
 
     /** */
     private void testPutGet(Value v1, Value v2, Value v3) throws Exception {
-        MemoryPolicyConfiguration plcCfg = new MemoryPolicyConfiguration().setMaxSize(1024 * MB);
+        MemoryPolicyConfiguration plcCfg = new MemoryPolicyConfiguration().setInitialSize(1024 * MB).setMaxSize(1024 * MB);
 
         JavaLogger log = new JavaLogger();
 

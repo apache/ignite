@@ -396,32 +396,35 @@ public class InlineIndexHelper {
             case Value.LONG:
             case Value.FLOAT:
             case Value.DOUBLE:
-
                 return compareAsPrimitive(pageAddr, off, v, type);
 
             case Value.TIME:
             case Value.DATE:
             case Value.TIMESTAMP:
-
                 return compareAsDateTime(pageAddr, off, v, type);
 
             case Value.STRING:
             case Value.STRING_FIXED:
             case Value.STRING_IGNORECASE:
-
                 if (compareStringsOptimized)
                     return compareAsString(pageAddr, off, v, type == Value.STRING_IGNORECASE);
 
                 break;
 
             case Value.BYTES:
-
                 return compareAsBytes(pageAddr, off, v);
         }
 
         return Integer.MIN_VALUE;
     }
 
+    /**
+     * @param pageAddr Page address.
+     * @param off Offset.
+     * @param v Value to compare.
+     * @param type Highest value type.
+     * @return Compare result ({@code -2} means we can't compare).
+     */
     private int compareAsDateTime(long pageAddr, int off, Value v, int type) {
         // only compatible types are supported now.
         if(PageUtils.getByte(pageAddr, off) == type) {
@@ -441,16 +444,16 @@ public class InlineIndexHelper {
                 case Value.TIMESTAMP:
                     ValueTimestamp v0 = (ValueTimestamp) v.convertTo(type);
 
-                    long datePart1 = PageUtils.getLong(pageAddr, off + 1);
-                    long datePart2 = v0.getDateValue();
+                    date1 = PageUtils.getLong(pageAddr, off + 1);
+                    date2 = v0.getDateValue();
 
-                    int c = Long.signum(datePart1 - datePart2);
+                    int c = Long.signum(date1 - date2);
 
                     if (c == 0) {
-                        long timePart1 = PageUtils.getLong(pageAddr, off + 9);
-                        long timePart2 = v0.getTimeNanos();
+                        nanos1 = PageUtils.getLong(pageAddr, off + 9);
+                        nanos2 = v0.getTimeNanos();
 
-                        c = Long.signum(timePart1 - timePart2);
+                        c = Long.signum(nanos1 - nanos2);
                     }
 
                     return fixSort(c, sortType());
@@ -460,6 +463,13 @@ public class InlineIndexHelper {
         return Integer.MIN_VALUE;
     }
 
+    /**
+     * @param pageAddr Page address.
+     * @param off Offset.
+     * @param v Value to compare.
+     * @param type Highest value type.
+     * @return Compare result ({@code -2} means we can't compare).
+     */
     private int compareAsPrimitive(long pageAddr, int off, Value v, int type) {
         // only compatible types are supported now.
         if(PageUtils.getByte(pageAddr, off) == type) {
@@ -640,7 +650,7 @@ public class InlineIndexHelper {
                     c2 = (int) GridUnsafe.getByte(addr++) & 0xFF;
 
                     if ((c2 & 0xC0) != 0x80)
-                        throw new IllegalStateException("Malformed input around byte: " + (cntr1 - 1));
+                        throw new IllegalStateException("Malformed input around byte: " + (cntr1 - 2));
 
                     c = c & 0x1F;
                     c = (c << 6) | (c2 & 0x3F);
@@ -661,7 +671,7 @@ public class InlineIndexHelper {
                     c3 = (int) GridUnsafe.getByte(addr++) & 0xFF;
 
                     if (((c2 & 0xC0) != 0x80) || ((c3 & 0xC0) != 0x80))
-                        throw new IllegalStateException("Malformed input around byte: " + (cntr1 - 2));
+                        throw new IllegalStateException("Malformed input around byte: " + (cntr1 - 3));
 
                     c = c & 0x0F;
                     c = (c << 6) | (c2 & 0x3F);
@@ -685,7 +695,7 @@ public class InlineIndexHelper {
                     c4 = (int) GridUnsafe.getByte(addr++) & 0xFF;
 
                     if (((c & 0xF8) != 0xf0) || ((c2 & 0xC0) != 0x80) || ((c3 & 0xC0) != 0x80) || ((c4 & 0xC0) != 0x80))
-                    throw new IllegalStateException("Malformed input around byte: " + (cntr1 - 3));
+                    throw new IllegalStateException("Malformed input around byte: " + (cntr1 - 4));
 
                     c = c & 0x07;
                     c = (c << 6) | (c2 & 0x3F);
