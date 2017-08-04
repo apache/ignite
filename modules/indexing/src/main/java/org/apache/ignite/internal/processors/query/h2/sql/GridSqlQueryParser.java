@@ -30,6 +30,7 @@ import java.util.Map;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
@@ -409,6 +410,9 @@ public class GridSqlQueryParser {
 
     /** */
     private static final String PARAM_AFFINITY_KEY = "AFFINITYKEY";
+
+    /** */
+    private static final String PARAM_WRITE_SYNC = "WRITE_SYNC";
 
     /** */
     private final IdentityHashMap<Object, Object> h2ObjToGridObj = new IdentityHashMap<>();
@@ -1040,17 +1044,17 @@ public class GridSqlQueryParser {
             case PARAM_ATOMICITY:
                 ensureNotEmpty(name, val);
 
-                CacheAtomicityMode mode;
+                CacheAtomicityMode atomicityMode;
 
                 if (CacheAtomicityMode.TRANSACTIONAL.name().equalsIgnoreCase(val))
-                    mode = CacheAtomicityMode.TRANSACTIONAL;
+                    atomicityMode = CacheAtomicityMode.TRANSACTIONAL;
                 else if (CacheAtomicityMode.ATOMIC.name().equalsIgnoreCase(val))
-                    mode = CacheAtomicityMode.ATOMIC;
+                    atomicityMode = CacheAtomicityMode.ATOMIC;
                 else
                     throw new IgniteSQLException("Invalid value of \"" + PARAM_ATOMICITY + "\" parameter " +
                         "(should be either TRANSACTIONAL or ATOMIC): " + val, IgniteQueryErrorCode.PARSING);
 
-                res.atomicityMode(mode);
+                res.atomicityMode(atomicityMode);
 
                 break;
 
@@ -1099,6 +1103,25 @@ public class GridSqlQueryParser {
                         IgniteQueryErrorCode.PARSING);
 
                 res.affinityKey(affColName);
+
+                break;
+
+            case PARAM_WRITE_SYNC:
+                ensureNotEmpty(name, val);
+
+                CacheWriteSynchronizationMode writeSyncMode;
+
+                if (CacheWriteSynchronizationMode.FULL_ASYNC.name().equalsIgnoreCase(val))
+                    writeSyncMode = CacheWriteSynchronizationMode.FULL_ASYNC;
+                else if (CacheWriteSynchronizationMode.FULL_SYNC.name().equalsIgnoreCase(val))
+                    writeSyncMode = CacheWriteSynchronizationMode.FULL_SYNC;
+                else if (CacheWriteSynchronizationMode.PRIMARY_SYNC.name().equalsIgnoreCase(val))
+                    writeSyncMode = CacheWriteSynchronizationMode.PRIMARY_SYNC;
+                else
+                    throw new IgniteSQLException("Invalid value of \"" + PARAM_WRITE_SYNC + "\" parameter " +
+                        "(should be FULL_SYNC, FULL_ASYNC, or PRIMARY_SYNC): " + val, IgniteQueryErrorCode.PARSING);
+
+                res.writeSyncMode(writeSyncMode);
 
                 break;
 

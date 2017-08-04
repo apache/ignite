@@ -151,7 +151,7 @@ public class IgnitePersistentStoreSchemaLoadTest extends GridCommonAbstractTest 
 
         idx.setName(IDX_NAME);
 
-        ig0.context().query().dynamicTableCreate(SCHEMA_NAME, getEntity(), TMPL_NAME, null, null, null, 1, true);
+        ig0.context().query().dynamicTableCreate(SCHEMA_NAME, getEntity(), TMPL_NAME, null, null, null, cmd.writeSyncMode(), 1, true);
 
         assert indexCnt(ig0, CACHE_NAME) == 0;
 
@@ -183,7 +183,7 @@ public class IgnitePersistentStoreSchemaLoadTest extends GridCommonAbstractTest 
             }
         });
 
-        ig0.context().query().dynamicTableCreate(SCHEMA_NAME, getEntity(), TMPL_NAME, null, null, null, 1, true);
+        ig0.context().query().dynamicTableCreate(SCHEMA_NAME, getEntity(), TMPL_NAME, null, null, null, cmd.writeSyncMode(), 1, true);
 
         assert indexCnt(ig0, CACHE_NAME) == 0;
 
