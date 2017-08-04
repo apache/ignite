@@ -186,7 +186,6 @@ public class BinaryFieldImpl implements BinaryFieldEx {
                     val = new String(data, 0, dataLen, UTF_8);
 
                     break;
-                // TODO ?
                 }
 
                 case GridBinaryMarshaller.DATE: {
