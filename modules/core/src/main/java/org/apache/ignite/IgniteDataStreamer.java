@@ -72,7 +72,7 @@ import org.jetbrains.annotations.Nullable;
  *      this setting limits maximum allowed number of parallel buffered stream messages that
  *      are being processed on remote nodes. If this number is exceeded, then
  *      {@link #addData(Object, Object)} method will block to control memory utilization.
- *      Default is equal to CPU count on remote node multiply by {@link #DFLT_PARALLEL_OPS_MULTIPLIER}.
+ *      Default is defined by {@link #DFLT_MAX_PARALLEL_OPS}.
  *  </li>
  *  <li>
  *      {@link #autoFlushFrequency(long)} - automatic flush frequency in milliseconds. Essentially,
@@ -100,8 +100,8 @@ import org.jetbrains.annotations.Nullable;
  * </ul>
  */
 public interface IgniteDataStreamer<K, V> extends AutoCloseable {
-    /** Default concurrent put operations multiplier for CPU count. */
-    public static final int DFLT_PARALLEL_OPS_MULTIPLIER = 20;
+    /** Default concurrent put operations count. */
+    public static final int DFLT_MAX_PARALLEL_OPS = 20;
 
     /** Default per node buffer size. */
     public static final int DFLT_PER_NODE_BUFFER_SIZE = 512;
@@ -193,10 +193,6 @@ public interface IgniteDataStreamer<K, V> extends AutoCloseable {
 
     /**
      * Gets maximum number of parallel stream operations for a single node.
-     * <p>
-     * If not provided (is equal to {@code 0}), then default value is equal to CPU count
-     * on remote node multiply by {@link #DFLT_PARALLEL_OPS_MULTIPLIER}
-     * or equal provided value if this property is set.
      *
      * @return Maximum number of parallel stream operations for a single node.
      */
@@ -207,9 +203,7 @@ public interface IgniteDataStreamer<K, V> extends AutoCloseable {
      * <p>
      * This method should be called prior to {@link #addData(Object, Object)} call.
      * <p>
-     * If not provided (is equal to {@code 0}), then default value is equal to CPU count
-     * on remote node multiply by {@link #DFLT_PARALLEL_OPS_MULTIPLIER}
-     * or equal provided value if this property is set.
+     * If not provided, default value is {@link #DFLT_MAX_PARALLEL_OPS}.
      *
      * @param parallelOps Maximum number of parallel stream operations for a single node.
      */
