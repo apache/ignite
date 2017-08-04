@@ -1386,7 +1386,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
             @Override public boolean apply() {
                 return backupQueue.isEmpty();
             }
-        }, 2000);
+        }, 10000);
 
         assertTrue("Backup queue is not cleared: " + backupQueue, backupQueue.size() < BACKUP_ACK_THRESHOLD);
 
@@ -1408,12 +1408,12 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
             @Override public boolean apply() {
                 return backupQueue.isEmpty();
             }
-        }, ACK_FREQ + 2000);
-
-        assertTrue("Backup queue is not cleared: " + backupQueue, backupQueue.isEmpty());
+        }, ACK_FREQ + 20000);
 
         if (!latch.await(5, SECONDS))
             fail("Failed to wait for notifications [exp=" + keys.size() + ", left=" + lsnr.latch.getCount() + ']');
+
+        assertTrue("Backup queue is not cleared: " + backupQueue, backupQueue.isEmpty());
 
         cur.close();
 
@@ -1464,9 +1464,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
             @Override public boolean apply() {
                 return backupQueue.isEmpty();
             }
-        }, 2000);
-
-        assertTrue("Backup queue is not cleared: " + backupQueue, backupQueue.size() < BACKUP_ACK_THRESHOLD);
+        }, 20000);
 
         boolean wait = waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
@@ -1475,6 +1473,8 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
         }, ttl + 1000);
 
         assertTrue("Entry evicted.", wait);
+
+        assertTrue("Backup queue is not cleared: " + backupQueue, backupQueue.size() < BACKUP_ACK_THRESHOLD);
 
         GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
