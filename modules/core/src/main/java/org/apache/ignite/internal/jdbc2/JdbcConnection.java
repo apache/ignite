@@ -186,7 +186,7 @@ public class JdbcConnection implements Connection {
         streamNodeBufSize = Integer.parseInt(props.getProperty(PROP_STREAMING_PER_NODE_BUF_SIZE,
             String.valueOf(IgniteDataStreamer.DFLT_PER_NODE_BUFFER_SIZE)));
         streamNodeParOps = Integer.parseInt(props.getProperty(PROP_STREAMING_PER_NODE_PAR_OPS,
-            String.valueOf(IgniteDataStreamer.DFLT_MAX_PARALLEL_OPS)));
+            String.valueOf(IgniteDataStreamer.DFLT_PARALLEL_OPS_MULTIPLIER)));
 
         String nodeIdProp = props.getProperty(PROP_NODE_ID);
 
