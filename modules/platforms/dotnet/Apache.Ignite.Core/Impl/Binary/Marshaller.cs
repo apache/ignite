@@ -686,12 +686,16 @@ namespace Apache.Ignite.Core.Impl.Binary
             }
 
             if (type != null)
-                _typeToDesc.GetOrAdd(type, x => descriptor);
+            {
+                _typeToDesc.Set(type, descriptor);
+            }
 
             if (userType)
-                _typeNameToDesc.GetOrAdd(typeName, x => descriptor);
+            {
+                _typeNameToDesc.Set(typeName, descriptor);
+            }
 
-            _idToDesc.GetOrAdd(typeKey, _ => descriptor);
+            _idToDesc.Set(typeKey, descriptor);
 
             return descriptor;
         }
