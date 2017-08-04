@@ -39,6 +39,9 @@ public class JdbcRequest extends SqlListenerRequest implements JdbcRawBinaryliza
     /** Get columns meta query. */
     public static final byte QRY_META = 5;
 
+    /** Batch queries. */
+    public static final byte BATCH_EXEC = 6;
+
     /** Request type. */
     private byte type;
 
@@ -94,6 +97,11 @@ public class JdbcRequest extends SqlListenerRequest implements JdbcRawBinaryliza
 
             case QRY_CLOSE:
                 req = new JdbcQueryCloseRequest();
+
+                break;
+
+            case BATCH_EXEC:
+                req = new JdbcBatchExecuteRequest();
 
                 break;
 

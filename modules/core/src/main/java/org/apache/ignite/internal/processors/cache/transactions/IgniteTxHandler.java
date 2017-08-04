@@ -118,7 +118,19 @@ public class IgniteTxHandler {
                 ", node=" + nearNodeId + ']');
         }
 
-        IgniteInternalFuture<GridNearTxPrepareResponse> fut = prepareNearTx(nearNodeId, req, false);
+        ClusterNode nearNode = ctx.node(nearNodeId);
+
+        if (nearNode == null) {
+            if (txPrepareMsgLog.isDebugEnabled()) {
+                txPrepareMsgLog.debug("Received near prepare from node that left grid (will ignore) [" +
+                    "txId=" + req.version() +
+                    ", node=" + nearNodeId + ']');
+            }
+
+            return;
+        }
+
+        IgniteInternalFuture<GridNearTxPrepareResponse> fut = prepareNearTx(nearNode, req);
 
         assert req.txState() != null || fut == null || fut.error() != null ||
             (ctx.tm().tx(req.version()) == null && ctx.tm().nearTx(req.version()) == null);
@@ -278,32 +290,25 @@ public class IgniteTxHandler {
     }
 
     /**
-     * @param nearNodeId Near node ID that initiated transaction.
-     * @param req Near prepare request.
-     * @param locReq Local request flag.
+     * @param req Request.
      * @return Prepare future.
      */
-    public IgniteInternalFuture<GridNearTxPrepareResponse> prepareNearTx(
-        final UUID nearNodeId,
-        final GridNearTxPrepareRequest req,
-        boolean locReq
-    ) {
+    public IgniteInternalFuture<GridNearTxPrepareResponse> prepareNearTxLocal(final GridNearTxPrepareRequest req) {
         // Make sure not to provide Near entries to DHT cache.
-        if (locReq)
-            req.cloneEntries();
+        req.cloneEntries();
 
-        ClusterNode nearNode = ctx.node(nearNodeId);
+        return prepareNearTx(ctx.localNode(), req);
+    }
 
-        if (nearNode == null) {
-            if (txPrepareMsgLog.isDebugEnabled()) {
-                txPrepareMsgLog.debug("Received near prepare from node that left grid (will ignore) [" +
-                    "txId=" + req.version() +
-                    ", node=" + nearNodeId + ']');
-            }
-
-            return null;
-        }
-
+    /**
+     * @param nearNode Node that initiated transaction.
+     * @param req Near prepare request.
+     * @return Prepare future.
+     */
+    private IgniteInternalFuture<GridNearTxPrepareResponse> prepareNearTx(
+        final ClusterNode nearNode,
+        final GridNearTxPrepareRequest req
+    ) {
         IgniteTxEntry firstEntry;
 
         try {
@@ -350,7 +355,7 @@ public class IgniteTxHandler {
                     if (txPrepareMsgLog.isDebugEnabled()) {
                         txPrepareMsgLog.debug("Topology version mismatch for near prepare, need remap transaction [" +
                             "txId=" + req.version() +
-                            ", node=" + nearNodeId +
+                            ", node=" + nearNode.id() +
                             ", reqTopVer=" + req.topologyVersion() +
                             ", locTopVer=" + top.topologyVersion() +
                             ", req=" + req + ']');
@@ -370,24 +375,24 @@ public class IgniteTxHandler {
                         req.deployInfo() != null);
 
                     try {
-                        ctx.io().send(nearNodeId, res, req.policy());
+                        ctx.io().send(nearNode, res, req.policy());
 
                         if (txPrepareMsgLog.isDebugEnabled()) {
                             txPrepareMsgLog.debug("Sent remap response for near prepare [txId=" + req.version() +
-                                ", node=" + nearNodeId + ']');
+                                ", node=" + nearNode.id() + ']');
                         }
                     }
                     catch (ClusterTopologyCheckedException ignored) {
                         if (txPrepareMsgLog.isDebugEnabled()) {
                             txPrepareMsgLog.debug("Failed to send remap response for near prepare, node failed [" +
                                 "txId=" + req.version() +
-                                ", node=" + nearNodeId + ']');
+                                ", node=" + nearNode.id() + ']');
                         }
                     }
                     catch (IgniteCheckedException e) {
                         U.error(txPrepareMsgLog, "Failed to send remap response for near prepare " +
                             "[txId=" + req.version() +
-                            ", node=" + nearNodeId +
+                            ", node=" + nearNode.id() +
                             ", req=" + req + ']', e);
                     }
 
@@ -1531,39 +1536,39 @@ public class IgniteTxHandler {
                                 entry.op() == TRANSFORM &&
                                 entry.oldValueOnPrimary() &&
                                 !entry.hasValue()) {
-                                while (true) {
-                                    try {
-                                        GridCacheEntryEx cached = entry.cached();
+                                    while (true) {
+                                        try {
+                                            GridCacheEntryEx cached = entry.cached();
 
-                                        if (cached == null) {
-                                            cached = cacheCtx.cache().entryEx(entry.key(), req.topologyVersion());
+                                            if (cached == null) {
+                                                cached = cacheCtx.cache().entryEx(entry.key(), req.topologyVersion());
 
-                                            entry.cached(cached);
-                                        }
+                                                entry.cached(cached);
+                                            }
 
-                                        CacheObject val = cached.innerGet(
-                                            /*ver*/null,
-                                            tx,
-                                            /*readThrough*/false,
-                                            /*updateMetrics*/false,
-                                            /*evt*/false,
-                                            tx.subjectId(),
-                                            /*transformClo*/null,
-                                            tx.resolveTaskName(),
-                                            /*expiryPlc*/null,
-                                            /*keepBinary*/true);
+                                            CacheObject val = cached.innerGet(
+                                                /*ver*/null,
+                                                tx,
+                                                /*readThrough*/false,
+                                                /*updateMetrics*/false,
+                                                /*evt*/false,
+                                                tx.subjectId(),
+                                                /*transformClo*/null,
+                                                tx.resolveTaskName(),
+                                                /*expiryPlc*/null,
+                                                /*keepBinary*/true);
 
-                                        if (val == null)
-                                            val = cacheCtx.toCacheObject(cacheCtx.store().load(null, entry.key()));
+                                            if (val == null)
+                                                val = cacheCtx.toCacheObject(cacheCtx.store().load(null, entry.key()));
 
-                                        if (val != null)
-                                            entry.readValue(val);
+                                            if (val != null)
+                                                entry.readValue(val);
 
-                                    break;
-                                }
-                                catch (GridCacheEntryRemovedException ignored) {
-                                    if (log.isDebugEnabled())
-                                        log.debug("Got entry removed exception, will retry: " + entry.txKey());
+                                        break;
+                                    }
+                                    catch (GridCacheEntryRemovedException ignored) {
+                                        if (log.isDebugEnabled())
+                                            log.debug("Got entry removed exception, will retry: " + entry.txKey());
 
                                         entry.cached(cacheCtx.cache().entryEx(entry.key(), req.topologyVersion()));
                                     }

@@ -987,7 +987,9 @@ public abstract class IgniteUtils {
      * @return Nearest power of 2.
      */
     public static int ceilPow2(int v) {
-        return Integer.highestOneBit(v - 1) << 1;
+        int i = v - 1;
+
+        return Integer.highestOneBit(i) << 1 - (i >>> 30 ^ v >> 31);
     }
 
     /**
@@ -3384,18 +3386,18 @@ public abstract class IgniteUtils {
      * @throws IOException If error occurred.
      */
     public static String readFileToString(String fileName, String charset) throws IOException {
-        Reader input = new InputStreamReader(new FileInputStream(fileName), charset);
+        try (Reader input = new InputStreamReader(new FileInputStream(fileName), charset)) {
+            StringWriter output = new StringWriter();
 
-        StringWriter output = new StringWriter();
+            char[] buf = new char[4096];
 
-        char[] buf = new char[4096];
+            int n;
 
-        int n;
+            while ((n = input.read(buf)) != -1)
+                output.write(buf, 0, n);
 
-        while ((n = input.read(buf)) != -1)
-            output.write(buf, 0, n);
-
-        return output.toString();
+            return output.toString();
+        }
     }
 
     /**
@@ -9344,6 +9346,17 @@ public abstract class IgniteUtils {
             return new GridLeanMap<>(limit);
 
         return new HashMap<>(capacity(limit), 0.75f);
+    }
+
+    /**
+     * @param col non-null collection with one element
+     * @return a SingletonList containing the element in the original collection
+     */
+    public static <T> Collection<T> convertToSingletonList(Collection<T> col) {
+        if (col.size() != 1) {
+            throw new IllegalArgumentException("Unexpected collection size for singleton list, expecting 1 but was: " + col.size());
+        }
+        return Collections.singletonList(col.iterator().next());
     }
 
     /**

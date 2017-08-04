@@ -202,7 +202,7 @@ public class IgfsDataManager extends IgfsManager {
         grpSize = mapper instanceof IgfsGroupDataBlocksKeyMapper ?
             ((IgfsGroupDataBlocksKeyMapper)mapper).getGroupSize() : 1;
 
-        grpBlockSize = igfsCtx.configuration().getBlockSize() * grpSize;
+        grpBlockSize = igfsCtx.configuration().getBlockSize() * (long)grpSize;
 
         assert grpBlockSize != 0;
 

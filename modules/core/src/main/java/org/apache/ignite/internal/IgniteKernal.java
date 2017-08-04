@@ -1015,10 +1015,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             // Notify IO manager the second so further components can send and receive messages.
             ctx.io().onKernalStart(active);
 
-            // Start plugins.
-            for (PluginProvider provider : ctx.plugins().allProviders())
-                provider.onIgniteStart();
-
             boolean recon = false;
 
             // Callbacks.
@@ -1048,6 +1044,10 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                     }
                 }
             }
+
+            // Start plugins.
+            for (PluginProvider provider : ctx.plugins().allProviders())
+                provider.onIgniteStart();
 
             if (recon)
                 reconnectState.waitFirstReconnect();

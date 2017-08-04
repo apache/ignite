@@ -116,9 +116,7 @@ public class SparseDistributedMatrixStorage extends CacheUtils implements Matrix
         // Random cache name.
         cfg.setName(ML_CACHE_NAME);
 
-        IgniteCache<IgniteBiTuple<Integer, IgniteUuid>, Map<Integer, Double>> cache = Ignition.localIgnite().getOrCreateCache(cfg);
-
-        return cache;
+        return Ignition.localIgnite().getOrCreateCache(cfg);
     }
 
     /**
@@ -135,14 +133,6 @@ public class SparseDistributedMatrixStorage extends CacheUtils implements Matrix
      */
     public int accessMode() {
         return acsMode;
-    }
-
-    /**
-     *
-     *
-     */
-    public int storageMode() {
-        return stoMode;
     }
 
     /** {@inheritDoc} */
@@ -228,6 +218,11 @@ public class SparseDistributedMatrixStorage extends CacheUtils implements Matrix
     /** {@inheritDoc} */
     @Override public int rowSize() {
         return rows;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int storageMode() {
+        return stoMode;
     }
 
     /** {@inheritDoc} */

@@ -48,10 +48,10 @@ import static org.apache.ignite.ml.math.impls.MathTestConstants.UNEXPECTED_VAL;
 public class SparseDistributedMatrixTest extends GridCommonAbstractTest {
     /** Number of nodes in grid */
     private static final int NODE_COUNT = 3;
-    /** Cache name. */
-    private static final String CACHE_NAME = "test-cache";
     /** Precision. */
     private static final double PRECISION = 0.0;
+    /** */
+    private static final int MATRIX_SIZE = 10;
     /** Grid instance. */
     private Ignite ignite;
     /** Matrix rows */
@@ -90,8 +90,6 @@ public class SparseDistributedMatrixTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        ignite.destroyCache(CACHE_NAME);
-
         if (cacheMatrix != null) {
             cacheMatrix.destroy();
             cacheMatrix = null;
@@ -166,7 +164,9 @@ public class SparseDistributedMatrixTest extends GridCommonAbstractTest {
         assertEquals(UNEXPECTED_VAL, cacheMatrix.rowSize() * cacheMatrix.columnSize(), cacheMatrix.sum(), PRECISION);
     }
 
-    /** */
+    /**
+     * TODO: IGNITE-5102, wrong min/max, wait for fold/map fix
+     */
     public void testMinMax() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
@@ -283,6 +283,28 @@ public class SparseDistributedMatrixTest extends GridCommonAbstractTest {
             return;
         }
         fail("UnsupportedOperationException expected.");
+    }
+
+    /** */
+    public void testMatrixTimes(){
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
+
+        SparseDistributedMatrix cacheMatrix1 = new SparseDistributedMatrix(MATRIX_SIZE, MATRIX_SIZE, StorageConstants.ROW_STORAGE_MODE, StorageConstants.RANDOM_ACCESS_MODE);
+        SparseDistributedMatrix cacheMatrix2 = new SparseDistributedMatrix(MATRIX_SIZE, MATRIX_SIZE, StorageConstants.ROW_STORAGE_MODE, StorageConstants.RANDOM_ACCESS_MODE);
+
+        for (int i = 0; i < MATRIX_SIZE; i++) {
+            cacheMatrix1.setX(i, i, i);
+            cacheMatrix2.setX(i, i, i);
+        }
+
+        Matrix res = cacheMatrix1.times(cacheMatrix2);
+
+        for(int i = 0; i < MATRIX_SIZE; i++)
+            for(int j = 0; j < MATRIX_SIZE; j++)
+                if (i == j)
+                    assertEquals(UNEXPECTED_VAL, i * i, res.get(i, j), PRECISION);
+                else
+                    assertEquals(UNEXPECTED_VAL, 0, res.get(i, j), PRECISION);
     }
 
     /** */

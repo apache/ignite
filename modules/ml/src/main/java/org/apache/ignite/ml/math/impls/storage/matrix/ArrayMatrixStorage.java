@@ -21,18 +21,26 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Arrays;
+import org.apache.ignite.ml.math.Blas;
 import org.apache.ignite.ml.math.MatrixStorage;
+import org.apache.ignite.ml.math.StorageConstants;
+import org.apache.ignite.ml.math.functions.IgniteIntIntToIntBiFunction;
+import org.apache.ignite.ml.math.util.MatrixUtil;
 
 /**
  * Array based {@link MatrixStorage} implementation.
  */
 public class ArrayMatrixStorage implements MatrixStorage {
     /** Backing data array. */
-    private double[][] data;
+    private double[] data;
     /** Amount of rows in the matrix. */
     private int rows;
     /** Amount of columns in the matrix. */
     private int cols;
+    /** Mode specifying if this matrix is row-major or column-major. */
+    private int stoMode;
+    /** Index mapper */
+    private IgniteIntIntToIntBiFunction idxMapper;
 
     /**
      *
@@ -46,32 +54,62 @@ public class ArrayMatrixStorage implements MatrixStorage {
      * @param cols Amount of columns in the matrix.
      */
     public ArrayMatrixStorage(int rows, int cols) {
+        this(rows, cols, StorageConstants.ROW_STORAGE_MODE);
+    }
+
+    /** */
+    public ArrayMatrixStorage(int rows, int cols, int stoMode) {
         assert rows > 0;
         assert cols > 0;
 
-        this.data = new double[rows][cols];
+        this.data = new double[rows * cols];
         this.rows = rows;
         this.cols = cols;
+        idxMapper = indexMapper(stoMode);
+        this.stoMode = stoMode;
+    }
+
+    /**
+     * @param data Backing data array.
+     */
+    public ArrayMatrixStorage(double[][] data, int stoMode) {
+        this(MatrixUtil.flatten(data, stoMode), data.length, stoMode);
     }
 
     /**
      * @param data Backing data array.
      */
     public ArrayMatrixStorage(double[][] data) {
+        this(MatrixUtil.flatten(data, StorageConstants.ROW_STORAGE_MODE), data.length);
+    }
+
+    /**
+     * @param data Backing data array.
+     */
+    public ArrayMatrixStorage(double[] data, int rows, int stoMode) {
         assert data != null;
-        assert data[0] != null;
+        assert data.length % rows == 0;
 
         this.data = data;
-        this.rows = data.length;
-        this.cols = data[0].length;
+        this.rows = rows;
+        this.cols = data.length / rows;
+        idxMapper = indexMapper(stoMode);
+        this.stoMode = stoMode;
 
         assert rows > 0;
         assert cols > 0;
     }
 
+    /**
+     * @param data Backing data array.
+     */
+    public ArrayMatrixStorage(double[] data, int rows) {
+        this(data, rows, StorageConstants.ROW_STORAGE_MODE);
+    }
+
     /** {@inheritDoc} */
     @Override public double get(int x, int y) {
-        return data[x][y];
+        return data[idxMapper.apply(x, y)];
     }
 
     /** {@inheritDoc} */
@@ -96,7 +134,7 @@ public class ArrayMatrixStorage implements MatrixStorage {
 
     /** {@inheritDoc} */
     @Override public void set(int x, int y, double v) {
-        data[x][y] = v;
+        data[idxMapper.apply(x, y)] = v;
     }
 
     /** {@inheritDoc} */
@@ -115,14 +153,32 @@ public class ArrayMatrixStorage implements MatrixStorage {
     }
 
     /** {@inheritDoc} */
-    @Override public double[][] data() {
+    @Override public double[] data() {
         return data;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int storageMode() {
+        return stoMode;
+    }
+
+    /**
+     * Get the index mapper for given access mode.
+     *
+     * NB: inverted for {@link Blas}.
+     *
+     * @param stoMode Access mode.
+     */
+    private IgniteIntIntToIntBiFunction indexMapper(int stoMode) {
+        return stoMode == StorageConstants.COLUMN_STORAGE_MODE ? (r, c) -> r * cols + c :
+            (r, c) -> c * rows + r;
     }
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeInt(rows);
         out.writeInt(cols);
+        out.writeInt(stoMode);
 
         out.writeObject(data);
     }
@@ -131,8 +187,15 @@ public class ArrayMatrixStorage implements MatrixStorage {
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         rows = in.readInt();
         cols = in.readInt();
+        stoMode = in.readInt();
+        idxMapper = indexMapper(stoMode);
 
-        data = (double[][])in.readObject();
+        data = (double[])in.readObject();
+    }
+
+    /** Get the access mode of this storage. */
+    public int accessMode() {
+        return stoMode;
     }
 
     /** {@inheritDoc} */
@@ -141,7 +204,8 @@ public class ArrayMatrixStorage implements MatrixStorage {
 
         res += res * 37 + rows;
         res += res * 37 + cols;
-        res += res * 37 + Arrays.deepHashCode(data);
+        res += res * 37 + stoMode;
+        res += res * 37 + Arrays.hashCode(data);
 
         return res;
     }
@@ -156,6 +220,6 @@ public class ArrayMatrixStorage implements MatrixStorage {
 
         ArrayMatrixStorage that = (ArrayMatrixStorage)o;
 
-        return Arrays.deepEquals(data, that.data);
+        return stoMode == that.stoMode && Arrays.equals(data, that.data);
     }
 }

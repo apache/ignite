@@ -80,7 +80,7 @@ public class KMeansDistributedClusterer extends BaseKMeansClusterer<SparseDistri
         MathIllegalArgumentException, ConvergenceException {
         SparseDistributedMatrix pointsCp = (SparseDistributedMatrix)points.like(points.rowSize(), points.columnSize());
 
-        // TODO: this copy is very ineffective, just for POC. Immutability of data should be guaranteed by other methods
+        // TODO: IGNITE-5825, this copy is very ineffective, just for POC. Immutability of data should be guaranteed by other methods
         // such as logical locks for example.
         pointsCp.assign(points);
 
@@ -117,10 +117,10 @@ public class KMeansDistributedClusterer extends BaseKMeansClusterer<SparseDistri
     /** Initialize cluster centers. */
     private Vector[] initClusterCenters(SparseDistributedMatrix points, int k) {
         // Initialize empty centers and point costs.
-        int ptsCount = points.rowSize();
+        int ptsCnt = points.rowSize();
 
         // Initialize the first center to a random point.
-        Vector sample = localCopyOf(points.viewRow(rnd.nextInt(ptsCount)));
+        Vector sample = localCopyOf(points.viewRow(rnd.nextInt(ptsCnt)));
 
         List<Vector> centers = new ArrayList<>();
         List<Vector> newCenters = new ArrayList<>();

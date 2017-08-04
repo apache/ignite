@@ -6251,7 +6251,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             else {
                 spi.stats.onMessageProcessingStarted(msg);
 
-                Integer res;
+                int res;
 
                 SocketAddress rmtAddr = sock.getRemoteSocketAddress();
 
