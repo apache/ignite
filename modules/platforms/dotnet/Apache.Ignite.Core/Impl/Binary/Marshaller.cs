@@ -500,6 +500,8 @@ namespace Apache.Ignite.Core.Impl.Binary
             Debug.Assert(type != null);
             Debug.Assert(typeName != null);
 
+            // TODO: Call AddUserType overload.
+
             var ser = GetSerializer(_cfg, null, type, typeId, null, null, _log);
 
             desc = desc == null
@@ -677,6 +679,11 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             var descriptor = new BinaryFullTypeDescriptor(type, typeId, typeName, userType, nameMapper, idMapper, 
                 serializer, keepDeserialized, affKeyFieldName, isEnum);
+
+            if (RegistrationDisabled)
+            {
+                return descriptor;
+            }
 
             if (type != null)
                 _typeToDesc.GetOrAdd(type, x => descriptor);
