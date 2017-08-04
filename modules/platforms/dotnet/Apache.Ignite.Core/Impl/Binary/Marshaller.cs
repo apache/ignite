@@ -385,6 +385,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             BinaryFullTypeDescriptor desc;
 
+            // TODO: RegisterType same as above.
             if (_typeNameToDesc.TryGetValue(typeName, out desc))
             {
                 return desc;
@@ -507,17 +508,25 @@ namespace Apache.Ignite.Core.Impl.Binary
                 : new BinaryFullTypeDescriptor(desc, type, ser, registered);
 
             if (RegistrationDisabled)
+            {
                 return desc;
+            }
 
             var typeKey = BinaryUtils.TypeKey(true, typeId);
 
             var desc0 = _idToDesc.GetOrAdd(typeKey, x => desc);
             if (desc0.Type != null && desc0.Type.FullName != type.FullName)
+            {
                 ThrowConflictingTypeError(type, desc0.Type, typeId);
+            }
 
             desc0 = _typeNameToDesc.GetOrAdd(typeName, x => desc);
             if (desc0.Type != null && desc0.Type.FullName != type.FullName)
+            {
                 ThrowConflictingTypeError(type, desc0.Type, typeId);
+            }
+
+            // TODO: Replace old descriptor
 
             _typeToDesc.Set(type, desc);
 
