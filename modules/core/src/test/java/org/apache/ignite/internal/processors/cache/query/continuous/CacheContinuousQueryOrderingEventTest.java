@@ -28,6 +28,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import javax.cache.Cache;
 import javax.cache.configuration.FactoryBuilder;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryUpdatedListener;
@@ -49,6 +50,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteAsyncCallback;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
@@ -390,6 +392,25 @@ public class CacheContinuousQueryOrderingEventTest extends GridCommonAbstractTes
                     qries.add(qryCursor);
                 }
             }
+
+            IgniteCache<Object, Object> cache = grid(0).cache(ccfg.getName());
+
+            for (int i = 0; i < KEYS; i++) {
+                cache.put(new QueryTestKey(i), new QueryTestValue(-1));
+
+                cache.remove(new QueryTestValue(i));
+            }
+
+            GridTestUtils.waitForCondition(new PA() {
+                @Override public boolean apply() {
+                    return qryCntr.get() >= 4 * KEYS * LISTENER_CNT * NODES;
+                }
+            }, 3000L);
+
+            for (BlockingQueue<CacheEntryEvent<QueryTestKey, QueryTestValue>> q : rcvdEvts)
+                q.clear();
+
+            qryCntr.set(0);
 
             IgniteInternalFuture<Long> f = GridTestUtils.runMultiThreadedAsync(new Runnable() {
                 @Override public void run() {

@@ -240,8 +240,6 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
                                 if (cctx != null && cntrsPerNode != null && !cctx.isLocal() && cctx.affinityNode())
                                     cntrsPerNode.put(ctx.localNodeId(), cctx.topology().updateCounters(false));
-
-                                routine.handler().updateCounters(topVer, cntrsPerNode, cntrs);
                             }
 
                             fut.onRemoteRegistered();

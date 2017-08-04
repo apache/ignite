@@ -99,6 +99,9 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
     /** */
     private static final long BACKUP_ACK_FREQ = 5000;
 
+    /** */
+    private static final long QUEUE_CHECKER_FREQ = 3000;
+
     /** Listeners. */
     private final ConcurrentMap<UUID, CacheContinuousQueryListener> lsnrs = new ConcurrentHashMap8<>();
 
@@ -139,6 +142,8 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
 
             cctx.time().schedule(new BackupCleaner(lsnrs, cctx.kernalContext()), BACKUP_ACK_FREQ, BACKUP_ACK_FREQ);
         }
+
+        cctx.time().schedule(new QueueChecker(lsnrs, cctx.kernalContext()), QUEUE_CHECKER_FREQ, QUEUE_CHECKER_FREQ);
     }
 
     /** {@inheritDoc} */
@@ -654,18 +659,6 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
             timeInterval,
             autoUnsubscribe,
             pred).get();
-
-        try {
-            if (hnd.isQuery() && cctx.userCache() && !onStart)
-                hnd.waitTopologyFuture(cctx.kernalContext());
-        }
-        catch (IgniteCheckedException e) {
-            log.warning("Failed to start continuous query.", e);
-
-            cctx.kernalContext().continuous().stopRoutine(id);
-
-            throw new IgniteCheckedException("Failed to start continuous query.", e);
-        }
 
         if (notifyExisting) {
             final Iterator<GridCacheEntryEx> it = cctx.cache().allEntries().iterator();
@@ -1196,8 +1189,37 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
 
         /** {@inheritDoc} */
         @Override public void run() {
-            for (CacheContinuousQueryListener lsnr : lsnrs.values())
-                lsnr.acknowledgeBackupOnTimeout(ctx);
+            if (!lsnrs.isEmpty()) {
+                for (CacheContinuousQueryListener lsnr : lsnrs.values())
+                    lsnr.acknowledgeBackupOnTimeout(ctx);
+            }
+        }
+    }
+
+    /**
+     * Task flash backup queue.
+     */
+    private static final class QueueChecker implements Runnable {
+        /** Listeners. */
+        private final Map<UUID, CacheContinuousQueryListener> lsnrs;
+
+        /** Context. */
+        private final GridKernalContext ctx;
+
+        /**
+         * @param lsnrs Listeners.
+         */
+        QueueChecker(Map<UUID, CacheContinuousQueryListener> lsnrs, GridKernalContext ctx) {
+            this.lsnrs = lsnrs;
+            this.ctx = ctx;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void run() {
+            if (!lsnrs.isEmpty()) {
+                for (CacheContinuousQueryListener lsnr : lsnrs.values())
+                    lsnr.checkQueueOnTimeout(ctx);
+            }
         }
     }
 

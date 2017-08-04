@@ -69,6 +69,11 @@ public interface CacheContinuousQueryListener<K, V> {
     public void acknowledgeBackupOnTimeout(GridKernalContext ctx);
 
     /**
+     * @param ctx Context.
+     */
+    public void checkQueueOnTimeout(GridKernalContext ctx);
+
+    /**
      * @param evt Event
      * @param topVer Topology version.
      * @param primary Primary
