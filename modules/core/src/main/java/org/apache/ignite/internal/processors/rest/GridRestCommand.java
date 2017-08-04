@@ -100,7 +100,7 @@ public enum GridRestCommand {
     CACHE_SIZE("size"),
 
     /** Set TTL for the key. */
-    CACHE_EXPIRE("expire"),
+    CACHE_UPDATE_TLL("updatettl"),
 
     /** Cache metadata. */
     CACHE_METADATA("metadata"),

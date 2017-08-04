@@ -33,7 +33,7 @@ import org.apache.ignite.internal.processors.rest.request.GridRestCacheRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_EXPIRE;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_UPDATE_TLL;
 import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand.EXPIRE;
 import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand.PEXPIRE;
 
@@ -70,13 +70,15 @@ public class GridRedisExpireCommandHandler extends GridRedisRestCommandHandler {
         assert msg != null;
 
         if (msg.messageSize() < 2)
-            throw new GridRedisGenericException("Wrong number of arguments");
+            throw new GridRedisGenericException("Wrong number of arguments (key is missing)");
+        else if (msg.messageSize() < 3)
+            throw new GridRedisGenericException("Wrong number of arguments (timeout value is missing)");
 
         GridRestCacheRequest restReq = new GridRestCacheRequest();
 
         restReq.clientId(msg.clientId());
         restReq.key(msg.key());
-        restReq.command(CACHE_EXPIRE);
+        restReq.command(CACHE_UPDATE_TLL);
         restReq.cacheName(msg.cacheName());
 
         switch (msg.command()) {

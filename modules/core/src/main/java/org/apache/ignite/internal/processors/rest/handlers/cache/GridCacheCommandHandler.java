@@ -86,7 +86,7 @@ import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_C
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_CLEAR;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_CONTAINS_KEY;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_CONTAINS_KEYS;
-import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_EXPIRE;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_UPDATE_TLL;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_GET;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_GET_ALL;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_GET_AND_PUT;
@@ -140,7 +140,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         CACHE_PREPEND,
         CACHE_METRICS,
         CACHE_SIZE,
-        CACHE_EXPIRE,
+        CACHE_UPDATE_TLL,
         CACHE_METADATA
     );
 
@@ -639,8 +639,8 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
                     break;
                 }
 
-                case CACHE_EXPIRE: {
-                    fut = executeCommand(req.destinationId(), req.clientId(), cacheName, key, new ExpireCommand(key, ttl));
+                case CACHE_UPDATE_TLL: {
+                    fut = executeCommand(req.destinationId(), req.clientId(), cacheName, key, new UpdateTllCommand(key, ttl));
 
                     break;
                 }
@@ -1633,8 +1633,8 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         }
     }
 
-    /** Expire on key. */
-    private static class ExpireCommand extends CacheCommand {
+    /** Update TTL on key. */
+    private static class UpdateTllCommand extends CacheCommand {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -1648,7 +1648,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
          * @param key Key.
          * @param ttl TTL.
          */
-        ExpireCommand(Object key, Long ttl) {
+        UpdateTllCommand(Object key, Long ttl) {
             this.key = key;
             this.ttl = ttl;
         }
@@ -1657,7 +1657,6 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         @Override public IgniteInternalFuture<?> applyx(final IgniteInternalCache<Object, Object> c,
             GridKernalContext ctx) {
             assert c != null;
-            assert key != null;
 
             return ctx.closure().callLocalSafe(new Callable<Object>() {
                 @Override public Object call() throws Exception {
@@ -1665,11 +1664,9 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
                         @Override
                         public Boolean process(MutableEntry<Object, Object> entry,
                             Object... objects) throws EntryProcessorException {
-                            Object val = entry.getValue();
-
                             GridCacheEntryEx ex = ((CacheInvokeEntry)entry).entry();
 
-                            if (val == null || ttl == null)
+                            if (key == null || ttl == null || ttl < 0)
                                 return false;
 
                             try {
