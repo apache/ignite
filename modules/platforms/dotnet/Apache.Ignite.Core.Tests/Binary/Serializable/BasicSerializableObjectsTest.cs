@@ -19,7 +19,6 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
 {
     using System;
     using System.Runtime.Serialization;
-    using Apache.Ignite.Core.Binary;
     using NUnit.Framework;
 
     /// <summary>
@@ -111,13 +110,15 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
             /// </summary>
             private EmptyObject(SerializationInfo info, StreamingContext context)
             {
-                Assert.IsInstanceOf<IBinaryReader>(context.Context);
+                Assert.AreEqual(StreamingContextStates.All, context.State);
+                Assert.IsNull(context.Context);
             }
 
             /** <inheritdoc /> */
             public void GetObjectData(SerializationInfo info, StreamingContext context)
             {
-                Assert.IsInstanceOf<IBinaryWriter>(context.Context);
+                Assert.AreEqual(StreamingContextStates.All, context.State);
+                Assert.IsNull(context.Context);
             }
         }
     }
