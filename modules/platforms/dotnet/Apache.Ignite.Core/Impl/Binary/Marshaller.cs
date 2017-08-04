@@ -421,6 +421,8 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             // TODO: This can be unregistered type, or a descriptor without a type.
             // We need to understand proper actions in these cases.
+            // Basically, both of these cases require full re-registration of the type, and we need only typeName for that.
+            // KnownType does not need to override existing type.
             if (_idToDesc.TryGetValue(typeKey, out desc) && (!requiresType || desc.Type != null))
             {
                 return desc;
