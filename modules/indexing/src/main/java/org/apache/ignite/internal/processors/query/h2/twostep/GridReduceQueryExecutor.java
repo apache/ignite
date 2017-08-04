@@ -1216,8 +1216,8 @@ public class GridReduceQueryExecutor {
      * @return Cursor for plans.
      * @throws IgniteCheckedException if failed.
      */
-    private Iterator<List<?>> explainPlan(@Nullable String schemaName, JdbcConnection c, GridCacheTwoStepQuery qry, Object[] params)
-        throws IgniteCheckedException {
+    private Iterator<List<?>> explainPlan(@Nullable String schemaName, JdbcConnection c, GridCacheTwoStepQuery qry,
+        Object[] params) throws IgniteCheckedException {
         List<List<?>> lists = new ArrayList<>();
 
         for (int i = 0, mapQrys = qry.mapQueries().size(); i < mapQrys; i++) {

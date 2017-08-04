@@ -319,7 +319,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return Prepared statement.
      * @throws SQLException If failed.
      */
-    private PreparedStatement prepareStatement(Connection c, String sql, H2StatementCache stmtCache) throws SQLException {
+    private PreparedStatement prepareStatement(Connection c, String sql, H2StatementCache stmtCache)
+        throws SQLException {
         if (stmtCache != null) {
             PreparedStatement stmt = stmtCache.get(sql);
 
