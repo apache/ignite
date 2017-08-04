@@ -81,7 +81,8 @@ public class MappedFileMemoryProvider implements DirectMemoryProvider {
         File[] files = allocationPath.listFiles(ALLOCATOR_FILTER);
 
         if (files.length != 0) {
-            log.info("Will clean up the following files upon start: " + Arrays.asList(files));
+            if (log.isInfoEnabled())
+                log.info("Will clean up the following files upon start: " + Arrays.asList(files));
 
             for (File file : files) {
                 if (!file.delete())
