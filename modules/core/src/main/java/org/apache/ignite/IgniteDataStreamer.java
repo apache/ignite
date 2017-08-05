@@ -100,8 +100,15 @@ import org.jetbrains.annotations.Nullable;
  * </ul>
  */
 public interface IgniteDataStreamer<K, V> extends AutoCloseable {
+    /**
+     * Default max concurrent put operations count.
+     * @deprecated Is not used anymore.
+     */
+    @Deprecated
+    public static final int DFLT_MAX_PARALLEL_OPS = 16;
+
     /** Default concurrent put operations multiplier for CPU count. */
-    public static final int DFLT_PARALLEL_OPS_MULTIPLIER = 20;
+    public static final int DFLT_PARALLEL_OPS_MULTIPLIER = 8;
 
     /** Default per node buffer size. */
     public static final int DFLT_PER_NODE_BUFFER_SIZE = 512;
@@ -193,10 +200,6 @@ public interface IgniteDataStreamer<K, V> extends AutoCloseable {
 
     /**
      * Gets maximum number of parallel stream operations for a single node.
-     * <p>
-     * If not provided (is equal to {@code 0}), then default value is equal to CPU count
-     * on remote node multiply by {@link #DFLT_PARALLEL_OPS_MULTIPLIER}
-     * or equal provided value if this property is set.
      *
      * @return Maximum number of parallel stream operations for a single node.
      */
@@ -207,9 +210,7 @@ public interface IgniteDataStreamer<K, V> extends AutoCloseable {
      * <p>
      * This method should be called prior to {@link #addData(Object, Object)} call.
      * <p>
-     * If not provided (is equal to {@code 0}), then default value is equal to CPU count
-     * on remote node multiply by {@link #DFLT_PARALLEL_OPS_MULTIPLIER}
-     * or equal provided value if this property is set.
+     * If not provided, default value is {@link #DFLT_MAX_PARALLEL_OPS}.
      *
      * @param parallelOps Maximum number of parallel stream operations for a single node.
      */
