@@ -1362,7 +1362,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
             int streamerPoolSize = attrStreamerPoolSize != null ? attrStreamerPoolSize : node.metrics().getTotalCpus();
 
-            perNodeParallelOps = parallelOps != 0 ? parallelOps : streamerPoolSize;
+            perNodeParallelOps = parallelOps != 0 ? parallelOps : streamerPoolSize * IgniteDataStreamer.DFLT_PARALLEL_OPS_MULTIPLIER;
 
             sem = new Semaphore(perNodeParallelOps);
 
