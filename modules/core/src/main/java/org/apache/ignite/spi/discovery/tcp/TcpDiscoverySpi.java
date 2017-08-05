@@ -1563,7 +1563,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
      *      empty but never null).
      * @throws org.apache.ignite.spi.IgniteSpiException If an error occurs.
      */
-    protected Collection<InetSocketAddress> resolvedAddresses() throws IgniteSpiException {
+    protected List<InetSocketAddress> resolvedAddresses() throws IgniteSpiException {
         List<InetSocketAddress> res = new ArrayList<>();
 
         Collection<InetSocketAddress> addrs;
