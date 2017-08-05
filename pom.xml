@@ -708,21 +708,6 @@
                                         <echo file="${basedir}/target/site/${project.artifactId}-hadoop-${project.version}-bin.zip.sha1" append="true" message=" ${project.artifactId}-hadoop-${project.version}-bin.zip" />
                                         <echo file="${basedir}/target/site/${project.artifactId}-${project.version}-src.zip.md5" append="true" message=" ${project.artifactId}-${project.version}-src.zip" />
                                         <echo file="${basedir}/target/site/${project.artifactId}-${project.version}-src.zip.sha1" append="true" message=" ${project.artifactId}-${project.version}-src.zip" />
-
-                                        <copy todir="${basedir}/../incubator-temp/">
-                                            <fileset dir="${basedir}">
-                                                <include name="**/**.*"/>
-                                                <exclude name="/target/bin/*.*" />
-                                                <exclude name="/target/site/*.*" />
-                                                <exclude name="**release-package**"/>" />
-                                            </fileset>
-                                        </copy>
-                                        <!--
-                                        <zip destfile="${basedir}/incubator-ignite.zip" encoding="UTF-8">
-                                            <zipfileset dir="${basedir}/incubator-temp" prefix="incubator-ignite" filemode="755">
-                                            </zipfileset>
-                                        </zip>
-                                        -->
                                     </target>
                                 </configuration>
                             </execution>
