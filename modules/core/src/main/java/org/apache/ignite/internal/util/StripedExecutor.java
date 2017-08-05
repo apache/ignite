@@ -549,7 +549,7 @@ public class StripedExecutor implements ExecutorService {
     private static class StripeConcurrentQueue extends Stripe {
         /** */
         private static final int IGNITE_TASKS_STEALING_THRESHOLD =
-                IgniteSystemProperties.getInteger(IgniteSystemProperties.IGNITE_TASKS_STEALING_THRESHOLD, 3);
+                IgniteSystemProperties.getInteger(IgniteSystemProperties.IGNITE_DATA_STREAMING_EXECUTOR_SERVICE_TASKS_STEALING_THRESHOLD, 4);
 
         /** Queue. */
         private final Queue<Runnable> queue;
