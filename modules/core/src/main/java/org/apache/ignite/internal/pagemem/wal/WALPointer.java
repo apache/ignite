@@ -25,6 +25,4 @@ public interface WALPointer {
      * Pointer to the next record. Can be used only for original pointers obtained from WAL manager.
      */
     public WALPointer next();
-
-
 }

@@ -69,7 +69,7 @@ public class DataRecordPayloadLinker {
     }
 
     /**
-     * @return True if there is some payload to link.
+     * @return True if there is remaining payload to link.
      */
     public boolean hasPayload() {
         return delegateLinker.position() != DataRecordLinker.Position.NONE;

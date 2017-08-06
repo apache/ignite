@@ -4,7 +4,6 @@ package org.apache.ignite.internal.processors.cache.persistence.wal.link;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
@@ -20,11 +19,8 @@ import org.jetbrains.annotations.NotNull;
  * Wrapper of {@link DataRecordPayloadLinker} with possibility to cache {@link DataRecord} records and tracking cache misses.
  */
 public class CachedPayloadLinker {
-    /** Default cache size of {@link DataRecord} records. */
+    /** Default cache size of {@link DataRecord} records in bytes. */
     private static final long DEFAULT_CACHE_SIZE = 128 * 1024 * 1024;
-
-    /** Ignite logger. */
-    private final IgniteLogger log;
 
     /** WAL manager. */
     private final IgniteWriteAheadLogManager wal;
@@ -35,16 +31,15 @@ public class CachedPayloadLinker {
     /** {@link DataRecord} records cache needed for {@code linker}. */
     private final LinkedHashMap<WALPointer, DataRecord> dataRecordsCache;
 
-    /** The number of WAL lookups for {@link DataRecord}. */
-    private int dataRecordsCacheMisses;
+    /** The number of direct WAL lookups of {@link DataRecord} records. */
+    private int walLookups;
 
     /**
+     * Create an instance of linker with given {@code wal}.
      *
-     * @param log Ignite logger.
-     * @param wal WAL manager.
+     * @param wal WAL manager to lookup {@link DataRecord} records.
      */
-    public CachedPayloadLinker(@NotNull IgniteLogger log, @NotNull IgniteWriteAheadLogManager wal) {
-        this.log = log;
+    public CachedPayloadLinker(@NotNull IgniteWriteAheadLogManager wal) {
         this.wal = wal;
 
         // Extract DataRecords cache size from system properties.
@@ -60,7 +55,7 @@ public class CachedPayloadLinker {
 
             @Override
             protected boolean removeEldestEntry(Map.Entry<WALPointer, DataRecord> eldest) {
-                if (recordsTotalSize > MAX_RECORDS_SIZE) {
+                if (recordsTotalSize > MAX_RECORDS_SIZE && size() > 1) {
                     recordsTotalSize -= eldest.getValue().size();
                     return true;
                 }
@@ -98,14 +93,18 @@ public class CachedPayloadLinker {
         else if (record instanceof WALReferenceAwareRecord) {
             WALReferenceAwareRecord referenceRecord = (WALReferenceAwareRecord) record;
 
-            // There is no DataRecord in linker, try to lookup it.
-            if (!linker.hasPayload() || !linker.pointer().equals(referenceRecord.reference())) {
+            // There is no available payload in linker, try to lookup new DataRecord.
+            if (!linker.hasPayload()) {
                 WALPointer lookupPointer = referenceRecord.reference();
 
                 DataRecord dataRecord = lookupDataRecord(lookupPointer);
 
                 linker.init(dataRecord, lookupPointer);
             }
+
+            if (!linker.pointer().equals(referenceRecord.reference()))
+                throw new IgniteCheckedException("Linker has remaining payload, but DataRecord pointer " + linker.pointer() +
+                        " is not equal to requested reference " + referenceRecord.reference());
 
             linker.linkPayload(referenceRecord);
         }
@@ -124,7 +123,7 @@ public class CachedPayloadLinker {
         if (dataRecord != null)
             return dataRecord;
 
-        dataRecordsCacheMisses++;
+        walLookups++;
 
         try {
             // Try to find record in WAL.
@@ -142,12 +141,9 @@ public class CachedPayloadLinker {
     }
 
     /**
-     * Log the number of cache misses during linkage process.
+     * The number of WAL lookups (cache misses) during linkage process.
      */
-    public void reportCacheMisses() {
-        if (dataRecordsCacheMisses > 0)
-            log.warning("The number DataRecord WAL lookups is " + dataRecordsCacheMisses +
-                    ". Try to increase " + IgniteSystemProperties.IGNITE_WAL_DATA_RECORDS_CACHE_SIZE_MB
-                    + " to reduce number of such lookups.");
+    public int walLookups() {
+        return walLookups;
     }
 }

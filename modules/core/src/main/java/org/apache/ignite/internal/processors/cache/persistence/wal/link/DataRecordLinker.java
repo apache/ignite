@@ -21,7 +21,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
  * Base functionality to link {@link DataRecord} entries to {@link WALReferenceAwareRecord} records.
  */
 public class DataRecordLinker {
-    /** Array with length of entries to be linked contained in DataRecord. */
+    /** Array with length of {@link DataRecord} entries to be linked. */
     private int[] entrySizes;
 
     /** Current linker position. */

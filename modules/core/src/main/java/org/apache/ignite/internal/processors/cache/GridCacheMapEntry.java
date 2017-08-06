@@ -1474,6 +1474,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             long ttl = CU.TTL_ETERNAL;
             long expireTime = CU.EXPIRE_TIME_ETERNAL;
 
+            long updateCntr = nextPartitionCounter(AffinityTopologyVersion.NONE, true, null);
+
             if (op == GridCacheOperation.UPDATE) {
                 if (expiryPlc != null) {
                     ttl = CU.toTtl(hadVal ? expiryPlc.getExpiryForUpdate() : expiryPlc.getExpiryForCreation());
@@ -1503,7 +1505,15 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     // Must persist inside synchronization in non-tx mode.
                     cctx.store().put(null, key, updated, ver);
 
-                storeValue(updated, expireTime, ver, oldRow, null);
+                WALPointer reference = logUpdate(
+                        op,
+                        updated,
+                        ver,
+                        expireTime,
+                        updateCntr
+                );
+
+                storeValue(updated, expireTime, ver, oldRow, reference);
 
                 assert ttl != CU.TTL_ZERO;
 
@@ -1564,8 +1574,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 updateMetrics(op, metrics);
 
             if (lsnrCol != null) {
-                long updateCntr = nextPartitionCounter(AffinityTopologyVersion.NONE, true, null);
-
                 cctx.continuousQueries().onEntryUpdated(
                     lsnrCol,
                     key,
@@ -3168,7 +3176,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         WALPointer reference) throws IgniteCheckedException {
         assert Thread.holdsLock(this);
         assert val != null : "null values in update for key: " + key;
-        //cctx.offheap().update(cctx, key, val, ver, expireTime, localPartition(), oldRow, reference);
+
         cctx.offheap().invoke(cctx, key,  localPartition(), new UpdateClosure(this, val, ver, expireTime, reference));
     }
 

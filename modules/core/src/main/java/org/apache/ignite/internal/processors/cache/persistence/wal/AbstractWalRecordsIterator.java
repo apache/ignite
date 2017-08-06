@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.nio.ByteOrder;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
@@ -223,7 +224,12 @@ public abstract class AbstractWalRecordsIterator
 
     /** {@inheritDoc} */
     @Override protected void onClose() throws IgniteCheckedException {
-        linker.reportCacheMisses();
+        int walLookups = linker.walLookups();
+        if (walLookups > 0)
+            log.warning("The number DataRecord WAL lookups is " + walLookups +
+                ". Try to increase " + IgniteSystemProperties.IGNITE_WAL_DATA_RECORDS_CACHE_SIZE_MB
+                + " to reduce number of such lookups.");
+
         super.onClose();
     }
 
@@ -235,7 +241,7 @@ public abstract class AbstractWalRecordsIterator
     protected void handleRecordException(
         @NotNull final Exception e,
         @Nullable final FileWALPointer ptr) {
-        log.error("Stopping WAL iteration due to an exception: " + e.getMessage());
+        log.warning("Stopping WAL iteration due to an exception: " + e.getMessage());
     }
 
     /**
