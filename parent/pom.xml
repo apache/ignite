@@ -767,7 +767,7 @@
                 </executions>
                 <configuration>
                     <serverId>nexus</serverId>
-                    <nexusUrl>http://www.gridgainsystems.com/nexus/service/local/staging/deploy/maven2</nexusUrl>
+                    <nexusUrl>http://www.gridgainsystems.com/nexus</nexusUrl>
                     <!-- explicit matching using the staging profile id -->
                     <stagingProfileId>b4719b1e52448d</stagingProfileId>
                 </configuration>
