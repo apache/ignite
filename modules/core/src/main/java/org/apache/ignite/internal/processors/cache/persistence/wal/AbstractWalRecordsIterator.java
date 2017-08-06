@@ -105,7 +105,7 @@ public abstract class AbstractWalRecordsIterator
         // Do not allocate direct buffer for iterator.
         this.buf = new ByteBufferExpander(bufSize, ByteOrder.nativeOrder());
 
-        this.linker = new CachedPayloadLinker(log, sharedCtx.wal());
+        this.linker = new CachedPayloadLinker(sharedCtx.wal());
     }
 
     /**
