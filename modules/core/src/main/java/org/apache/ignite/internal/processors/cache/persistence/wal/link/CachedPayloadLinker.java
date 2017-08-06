@@ -94,17 +94,13 @@ public class CachedPayloadLinker {
             WALReferenceAwareRecord referenceRecord = (WALReferenceAwareRecord) record;
 
             // There is no available payload in linker, try to lookup new DataRecord.
-            if (!linker.hasPayload()) {
+            if (!linker.hasPayload() || !linker.pointer().equals(referenceRecord.reference())) {
                 WALPointer lookupPointer = referenceRecord.reference();
 
                 DataRecord dataRecord = lookupDataRecord(lookupPointer);
 
                 linker.init(dataRecord, lookupPointer);
             }
-
-            if (!linker.pointer().equals(referenceRecord.reference()))
-                throw new IgniteCheckedException("Linker has remaining payload, but DataRecord pointer " + linker.pointer() +
-                        " is not equal to requested reference " + referenceRecord.reference());
 
             linker.linkPayload(referenceRecord);
         }
