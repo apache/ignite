@@ -766,7 +766,7 @@
                     </execution>
                 </executions>
                 <configuration>
-                    <serverId>nexus</serverId>
+                    <serverId>gridgain.staging</serverId>
                     <nexusUrl>http://www.gridgainsystems.com/nexus</nexusUrl>
                     <!-- explicit matching using the staging profile id -->
                     <stagingProfileId>b4719b1e52448d</stagingProfileId>
