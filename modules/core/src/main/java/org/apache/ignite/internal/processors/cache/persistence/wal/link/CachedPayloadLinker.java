@@ -19,8 +19,8 @@ import org.jetbrains.annotations.NotNull;
  * Wrapper of {@link DataRecordPayloadLinker} with possibility to cache {@link DataRecord} records and tracking cache misses.
  */
 public class CachedPayloadLinker {
-    /** Default cache size of {@link DataRecord} records in bytes. */
-    private static final long DEFAULT_CACHE_SIZE = 128 * 1024 * 1024;
+    /** Default cache size of {@link DataRecord} records in megabytes. */
+    private static final long DEFAULT_CACHE_SIZE_MB = 128;
 
     /** WAL manager. */
     private final IgniteWriteAheadLogManager wal;
@@ -45,7 +45,7 @@ public class CachedPayloadLinker {
         // Extract DataRecords cache size from system properties.
         final long dataRecordsCacheSize = IgniteSystemProperties.getLong(
                 IgniteSystemProperties.IGNITE_WAL_DATA_RECORDS_CACHE_SIZE_MB,
-                DEFAULT_CACHE_SIZE);
+                DEFAULT_CACHE_SIZE_MB) * 1024 * 1024;
 
         // DataRecords size bounded cache.
         dataRecordsCache = new LinkedHashMap<WALPointer, DataRecord>() {
