@@ -1474,7 +1474,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             long ttl = CU.TTL_ETERNAL;
             long expireTime = CU.EXPIRE_TIME_ETERNAL;
 
-            long updateCntr = nextPartitionCounter(AffinityTopologyVersion.NONE, true, null);
+            long updateCntr = 0;
 
             if (op == GridCacheOperation.UPDATE) {
                 if (expiryPlc != null) {
@@ -1498,6 +1498,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             // Try write-through.
             if (op == GridCacheOperation.UPDATE) {
+//                updateCntr = nextPartitionCounter(AffinityTopologyVersion.NONE, true, null);
+
                 // Detach value before index update.
                 updated = cctx.kernalContext().cacheObjects().prepareForCache(updated, cctx);
 
@@ -1505,6 +1507,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     // Must persist inside synchronization in non-tx mode.
                     cctx.store().put(null, key, updated, ver);
 
+/*
                 WALPointer reference = logUpdate(
                         op,
                         updated,
@@ -1512,8 +1515,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                         expireTime,
                         updateCntr
                 );
+*/
 
-                storeValue(updated, expireTime, ver, oldRow, reference);
+                storeValue(updated, expireTime, ver, oldRow, null);
 
                 assert ttl != CU.TTL_ZERO;
 
@@ -1574,6 +1578,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 updateMetrics(op, metrics);
 
             if (lsnrCol != null) {
+                updateCntr = nextPartitionCounter(AffinityTopologyVersion.NONE, true, null);
+
                 cctx.continuousQueries().onEntryUpdated(
                     lsnrCol,
                     key,
