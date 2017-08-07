@@ -18,7 +18,6 @@
 package org.apache.ignite.ml.math.decompositions;
 
 import org.apache.ignite.ml.math.Matrix;
-import org.apache.ignite.ml.math.Tracer;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.junit.Test;
@@ -168,12 +167,6 @@ public class EigenDecompositionTest {
 
         // Since matrix is square, we need only one dimension
         int n = exp.size();
-
-        System.out.println();
-        Tracer.showAscii(exp);
-        System.out.println();
-        Tracer.showAscii(actual);
-        System.out.println("!!!!!!!!!!!!!!!!!!");
 
         for (int i = 0; i < n; i++)
             assertEquals("Values should be equal", exp.getX(i), actual.getX(i), EPSILON);
