@@ -154,15 +154,6 @@ public final class GridCacheLockImpl implements GridCacheLockEx, IgniteChangeGlo
         /** Threads that are waiting on this lock. */
         private Set<Long> waitingThreads;
 
-        /** */
-        final ReentrantLock localLock = new ReentrantLock();
-
-        /** */
-        final AtomicLong threadCount = new AtomicLong();
-
-        /** */
-        volatile boolean onGlobalLock = false;
-
         /**
          * @param state State.
          */
@@ -410,15 +401,7 @@ public final class GridCacheLockImpl implements GridCacheLockEx, IgniteChangeGlo
             }
             // Check if lock is released or current owner failed.
             if (c == 0 || failed) {
-                threadCount.getAndIncrement();
-
-                localLock.lock();
-
-                if (onGlobalLock)
-                    return true;
-
                 if (compareAndSetGlobalState(0, acquires, current, fair)) {
-                    onGlobalLock = true;
                     // Not used for synchronization (we use ThreadID), but updated anyway.
                     setExclusiveOwnerThread(current);
 
@@ -426,7 +409,7 @@ public final class GridCacheLockImpl implements GridCacheLockEx, IgniteChangeGlo
                         Thread.yield();
 
                     return true;
-                } else localLock.unlock();
+                }
             }
             else if (isHeldExclusively()) {
                 int nextc = c + acquires;
@@ -482,12 +465,8 @@ public final class GridCacheLockImpl implements GridCacheLockEx, IgniteChangeGlo
 
             if (c == 0) {
                 free = true;
-                if (threadCount.decrementAndGet() == 0) {
-                    setGlobalState(0, processAwait(), processSignal());
-                    onGlobalLock = false;
-                }
 
-                localLock.unlock();
+                setGlobalState(0, processAwait(), processSignal());
 
                 while (isHeldExclusively() && !interruptAll)
                     Thread.yield();
