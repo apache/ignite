@@ -129,7 +129,7 @@ public class PagePartitionCountersIO extends PageIO {
             long cacheSize = PageUtils.getLong(pageAddr, off);
             off += 8;
 
-            assert cacheSize > 0 : cacheSize;
+            assert cacheSize >= 0 : cacheSize;
 
             Long old = res.put(cacheId, cacheSize);
 
