@@ -671,7 +671,7 @@ namespace ignite
 
         SqlResult::Type Statement::InternalExecuteGetTypeInfoQuery(int16_t sqlType)
         {
-            if (!type_traits::IsSqlTypeSupported(sqlType))
+            if (sqlType != SQL_ALL_TYPES && !type_traits::IsSqlTypeSupported(sqlType))
             {
                 std::stringstream builder;
                 builder << "Data type is not supported. [typeId=" << sqlType << ']';

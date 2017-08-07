@@ -113,6 +113,9 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
     @GridToStringInclude
     private volatile IgniteInternalCache<K, V> delegate;
 
+    /** Cached proxy wrapper. */
+    private volatile IgniteCacheProxy<K, V> cachedProxy;
+
     /** */
     @GridToStringExclude
     private CacheManager cacheMgr;
@@ -176,6 +179,17 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
     /** {@inheritDoc} */
     @Override public IgniteCacheProxy<K, V> cacheNoGate() {
         return new GatewayProtectedCacheProxy<>(this, new CacheOperationContext(), false);
+    }
+
+    /**
+     * @return Default cached proxy wrapper {@link GatewayProtectedCacheProxy}.
+     */
+    public IgniteCacheProxy<K, V> gatewayWrapper() {
+        if (cachedProxy != null)
+            return cachedProxy;
+
+        cachedProxy = new GatewayProtectedCacheProxy<>(this, new CacheOperationContext(), true);
+        return cachedProxy;
     }
 
     /** {@inheritDoc} */
@@ -677,14 +691,15 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
      */
     private void validate(Query qry) {
         if (!QueryUtils.isEnabled(ctx.config()) && !(qry instanceof ScanQuery) &&
-            !(qry instanceof ContinuousQuery) && !(qry instanceof SpiQuery))
+            !(qry instanceof ContinuousQuery) && !(qry instanceof SpiQuery) && !(qry instanceof SqlQuery) &&
+            !(qry instanceof SqlFieldsQuery))
             throw new CacheException("Indexing is disabled for cache: " + ctx.cache().name() +
-                ". Use setIndexedTypes or setTypeMetadata methods on CacheConfiguration to enable.");
+                    ". Use setIndexedTypes or setTypeMetadata methods on CacheConfiguration to enable.");
 
         if (!ctx.kernalContext().query().moduleEnabled() &&
             (qry instanceof SqlQuery || qry instanceof SqlFieldsQuery || qry instanceof TextQuery))
             throw new CacheException("Failed to execute query. Add module 'ignite-indexing' to the classpath " +
-                "of all Ignite nodes.");
+                    "of all Ignite nodes.");
     }
 
     /** {@inheritDoc} */
@@ -1655,6 +1670,9 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
         if (e instanceof IgniteCheckedException)
             return CU.convertToCacheException((IgniteCheckedException) e);
+
+        if (X.hasCause(e, CacheStoppedException.class))
+            return CU.convertToCacheException(X.cause(e, CacheStoppedException.class));
 
         if (e instanceof RuntimeException)
             return (RuntimeException) e;

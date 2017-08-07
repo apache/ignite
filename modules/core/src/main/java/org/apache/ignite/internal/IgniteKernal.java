@@ -1253,7 +1253,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                                 sysPoolIdleThreads + ", qSize=" + sysPoolQSize + "]" + NL +
                                 "    ^-- Outbound messages queue [size=" + m.getOutboundMessagesQueueSize() + "]";
 
-                            log.info(msg);
+                            if (log.isInfoEnabled())
+                                log.info(msg);
 
                             ctx.cache().context().database().dumpStatistics(log);
                         }

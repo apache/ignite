@@ -1491,7 +1491,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         cctx.io().dumpPendingMessages(pendingMsgs);
 
-        if (pendingMsgs.length() > 0)
+        if (pendingMsgs.length() > 0 && diagnosticLog.isInfoEnabled())
             diagnosticLog.info(pendingMsgs.toString());
 
         if (IgniteSystemProperties.getBoolean(IGNITE_IO_DUMP_ON_TIMEOUT, false))

@@ -1226,7 +1226,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             if (Files.exists(dir.toPath()))
                 log.warning("Read checkpoint status: cpDir.exists() is false, Files.exists(cpDir) is true.");
 
-            log.info("Read checkpoint status: checkpoint directory is not found.");
+            if (log.isInfoEnabled())
+                log.info("Read checkpoint status: checkpoint directory is not found.");
 
             return new CheckpointStatus(0, startId, startPtr, endId, endPtr);
         }
@@ -1263,8 +1264,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         if (endFile != null)
             endPtr = readPointer(endFile, buf);
 
-        // TODO: remove excessive logging after GG-12116 fix.
-        log.info("Read checkpoint status: start marker = " + startFile + ", end marker = " + endFile);
+        if (log.isInfoEnabled())
+            log.info("Read checkpoint status [startMarker=" + startFile + ", endMarker=" + endFile + ']');
 
         return new CheckpointStatus(lastStartTs, startId, startPtr, endId, endPtr);
     }

@@ -614,6 +614,12 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_REBALANCE_STATISTICS_TIME_INTERVAL = "IGNITE_REBALANCE_STATISTICS_TIME_INTERVAL";
 
     /**
+     * When cache has entries with expired TTL, each user operation will also remove this amount of expired entries.
+     * Defaults to {@code 5}.
+     */
+    public static final String IGNITE_TTL_EXPIRE_BATCH_SIZE = "IGNITE_TTL_EXPIRE_BATCH_SIZE";
+
+    /**
      * Indexing discovery history size. Protects from duplicate messages maintaining the list of IDs of recently
      * arrived discovery messages.
      * <p>
