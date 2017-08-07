@@ -134,6 +134,7 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends GridCommonAbstrac
      * @throws Exception If failed.
      */
     public void testTopologyValidator() throws Exception {
+        fail("IGNITE-5958");
         assertTrue(initLatch.await(10, TimeUnit.SECONDS));
 
         // Tests what each node is able to do puts.
