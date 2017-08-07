@@ -163,7 +163,8 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         ATOMIC_DECREMENT,
         CACHE_CAS,
         CACHE_APPEND,
-        CACHE_PREPEND
+        CACHE_PREPEND,
+        CACHE_UPDATE_TLL
     );
 
     /**
@@ -640,6 +641,9 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
                 }
 
                 case CACHE_UPDATE_TLL: {
+                    if (ttl == null)
+                        throw new IgniteCheckedException(GridRestCommandHandlerAdapter.missingParameter("ttl"));
+
                     fut = executeCommand(req.destinationId(), req.clientId(), cacheName, key, new UpdateTllCommand(key, ttl));
 
                     break;
