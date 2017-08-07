@@ -33,8 +33,8 @@ import javax.cache.CacheException;
 import org.apache.ignite.cache.query.annotations.QueryGroupIndex;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cache.query.annotations.QueryTextField;
-import org.apache.ignite.internal.processors.cache.config.ClassProperty;
-import org.apache.ignite.internal.processors.cache.config.TypeDescriptor;
+import org.apache.ignite.internal.processors.cache.query.QueryEntityClassProperty;
+import org.apache.ignite.internal.processors.cache.query.QueryEntityTypeDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -377,14 +377,14 @@ public class QueryEntity implements Serializable {
      * @param desc Type descriptor.
      * @return Type metadata.
      */
-    private static QueryEntity convert(TypeDescriptor desc) {
+    private static QueryEntity convert(QueryEntityTypeDescriptor desc) {
         QueryEntity entity = new QueryEntity();
 
         // Key and val types.
         entity.setKeyType(desc.keyClass().getName());
         entity.setValueType(desc.valueClass().getName());
 
-        for (ClassProperty prop : desc.properties().values())
+        for (QueryEntityClassProperty prop : desc.properties().values())
             entity.addQueryField(prop.fullName(), U.box(prop.type()).getName(), prop.alias());
 
         entity.setKeyFields(desc.keyProperties());
@@ -450,11 +450,11 @@ public class QueryEntity implements Serializable {
      * @param valCls Value class.
      * @return Type descriptor.
      */
-    private static TypeDescriptor processKeyAndValueClasses(
+    private static QueryEntityTypeDescriptor processKeyAndValueClasses(
         Class<?> keyCls,
         Class<?> valCls
     ) {
-        TypeDescriptor d = new TypeDescriptor();
+        QueryEntityTypeDescriptor d = new QueryEntityTypeDescriptor();
 
         d.keyClass(keyCls);
         d.valueClass(valCls);
@@ -473,8 +473,8 @@ public class QueryEntity implements Serializable {
      * @param type Type descriptor.
      * @param parent Parent in case of embeddable.
      */
-    private static void processAnnotationsInClass(boolean key, Class<?> cls, TypeDescriptor type,
-        @Nullable ClassProperty parent) {
+    private static void processAnnotationsInClass(boolean key, Class<?> cls, QueryEntityTypeDescriptor type,
+        @Nullable QueryEntityClassProperty parent) {
         if (U.isJdk(cls) || QueryUtils.isGeometryClass(cls)) {
             if (parent == null && !key && QueryUtils.isSqlType(cls)) { // We have to index primitive _val.
                 String idxName = cls.getSimpleName() + "_" + QueryUtils.VAL_FIELD_NAME + "_idx";
@@ -516,7 +516,7 @@ public class QueryEntity implements Serializable {
                 QueryTextField txtAnn = field.getAnnotation(QueryTextField.class);
 
                 if (sqlAnn != null || txtAnn != null) {
-                    ClassProperty prop = new ClassProperty(field);
+                    QueryEntityClassProperty prop = new QueryEntityClassProperty(field);
 
                     prop.parent(parent);
 
@@ -545,7 +545,7 @@ public class QueryEntity implements Serializable {
      * @param desc Class description.
      */
     private static void processAnnotation(boolean key, QuerySqlField sqlAnn, QueryTextField txtAnn,
-        Class<?> cls, Class<?> curCls, Class<?> fldCls, ClassProperty prop, TypeDescriptor desc) {
+        Class<?> cls, Class<?> curCls, Class<?> fldCls, QueryEntityClassProperty prop, QueryEntityTypeDescriptor desc) {
         if (sqlAnn != null) {
             processAnnotationsInClass(key, fldCls, desc, prop);
 
