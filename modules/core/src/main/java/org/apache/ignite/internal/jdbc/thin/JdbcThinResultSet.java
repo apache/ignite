@@ -1089,27 +1089,7 @@ public class JdbcThinResultSet implements ResultSet {
 
     /** {@inheritDoc} */
     @Override public Date getDate(int colIdx, Calendar cal) throws SQLException {
-        ensureNotClosed();
-        ensureHasCurrentRow();
-
-        try {
-            Object val = curRow.get(colIdx - 1);
-
-            wasNull = val == null;
-
-            if (val == null)
-                return null;
-            else if (val.getClass() == java.util.Date.class)
-                return new Date(((java.util.Date)val).getTime());
-            else
-                return (Date)val;
-        }
-        catch (IndexOutOfBoundsException e) {
-            throw new SQLException("Invalid column index: " + colIdx, e);
-        }
-        catch (ClassCastException e) {
-            throw new SQLException("Value is an not instance of Date", e);
-        }
+        return getDate(colIdx);
     }
 
     /** {@inheritDoc} */
