@@ -1670,9 +1670,6 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
                             Object... objects) throws EntryProcessorException {
                             GridCacheEntryEx ex = ((CacheInvokeEntry)entry).entry();
 
-                            if (key == null || ttl == null || ttl < 0)
-                                return false;
-
                             try {
                                 ex.updateTtl(ex.version(), ttl);
                             }
