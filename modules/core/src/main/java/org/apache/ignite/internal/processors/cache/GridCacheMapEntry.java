@@ -3689,6 +3689,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             assert !evictionDisabled() : this;
         }
 
+        unswap(true);
+
         return entryGetResult(this.val, ver, false);
     }
 

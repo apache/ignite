@@ -1850,7 +1850,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @param readThrough Read-through flag.
      * @param checkTx Check local transaction flag.
      * @param subjId Subject ID.
-     * @param taskName Task name/
+     * @param taskName Task name.
      * @param deserializeBinary Deserialize binary flag.
      * @param expiry Expiry policy.
      * @param skipVals Skip values flag.

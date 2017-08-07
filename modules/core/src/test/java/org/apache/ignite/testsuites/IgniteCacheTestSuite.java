@@ -30,6 +30,7 @@ import org.apache.ignite.cache.affinity.fair.FairAffinityFunctionSelfTest;
 import org.apache.ignite.cache.affinity.local.LocalAffinityFunctionTest;
 import org.apache.ignite.cache.store.GridCacheBalancingStoreSelfTest;
 import org.apache.ignite.cache.store.GridCacheLoadOnlyStoreAdapterSelfTest;
+import org.apache.ignite.cache.store.IgniteCacheWithReadThroughConsistencySelfTest;
 import org.apache.ignite.cache.store.StoreResourceInjectionSelfTest;
 import org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreBinaryMarshallerSelfTest;
 import org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreBinaryMarshallerWithSqlEscapeSelfTest;
@@ -324,6 +325,8 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(IgniteTxConfigCacheSelfTest.class);
 
         suite.addTestSuite(CacheTxFastFinishTest.class);
+
+        suite.addTestSuite(IgniteCacheWithReadThroughConsistencySelfTest.class);
 
         return suite;
     }
