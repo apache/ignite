@@ -25,4 +25,8 @@ public class IgniteClientDiscoveryDataStructuresTest extends IgniteClientDataStr
     @Override protected boolean clientDiscovery() {
         return true;
     }
+
+    @Override public void testReentrantLock() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-5976");
+    }
 }
