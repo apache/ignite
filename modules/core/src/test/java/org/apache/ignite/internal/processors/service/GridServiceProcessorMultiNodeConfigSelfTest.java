@@ -141,6 +141,8 @@ public class GridServiceProcessorMultiNodeConfigSelfTest extends GridServiceProc
      * @throws Exception If failed.
      */
     public void testDeployOnEachNodeUpdateTopology() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-5965");
+
         checkDeployOnEachNodeUpdateTopology(NODE_SINGLE);
     }
 
