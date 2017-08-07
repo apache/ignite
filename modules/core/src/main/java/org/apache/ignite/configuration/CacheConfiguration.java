@@ -21,13 +21,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeSet;
 import javax.cache.Cache;
 import javax.cache.CacheException;
 import javax.cache.configuration.CacheEntryListenerConfiguration;
@@ -48,7 +42,6 @@ import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cache.QueryEntity;
-import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.AffinityKeyMapper;
 import org.apache.ignite.cache.eviction.EvictionFilter;
@@ -58,12 +51,8 @@ import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreSessionListener;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.binary.BinaryContext;
-import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.processors.query.QueryUtils;
-import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -1759,12 +1748,12 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
             Class<?> keyCls = newIndexedTypes[i];
             Class<?> valCls = newIndexedTypes[i + 1];
 
-            QueryEntity qryEnt = new QueryEntity(keyCls, valCls);
+            QueryEntity newEntity = new QueryEntity(keyCls, valCls);
 
             boolean dup = false;
 
             for (QueryEntity entity : qryEntities) {
-                if (F.eq(entity.findValueType(), qryEnt.findValueType())) {
+                if (F.eq(entity.findValueType(), newEntity.findValueType())) {
                     dup = true;
 
                     break;
@@ -1772,13 +1761,13 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
             }
 
             if (!dup)
-                qryEntities.add(qryEnt);
+                qryEntities.add(newEntity);
 
             // Set key configuration if needed.
             String affFieldName = BinaryContext.affinityFieldName(keyCls);
 
             if (affFieldName != null) {
-                CacheKeyConfiguration newKeyCfg = new CacheKeyConfiguration(qryEnt.getKeyType(), affFieldName);
+                CacheKeyConfiguration newKeyCfg = new CacheKeyConfiguration(newEntity.getKeyType(), affFieldName);
 
                 if (F.isEmpty(keyCfg))
                     keyCfg = new CacheKeyConfiguration[] { newKeyCfg };
