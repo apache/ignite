@@ -186,4 +186,55 @@ BOOST_AUTO_TEST_CASE(TestGetTypeInfoAllTypes)
         BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 }
 
+BOOST_AUTO_TEST_CASE(TestColAttributesColumnLength)
+{
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
+
+    SQLCHAR req[] = "select strField from TestType";
+    SQLExecDirect(stmt, req, SQL_NTS);
+
+    SQLLEN intVal;
+    SQLCHAR strBuf[1024];
+    SQLSMALLINT strLen;
+
+    SQLRETURN ret = SQLColAttribute(stmt, 1, SQL_COLUMN_LENGTH, strBuf, sizeof(strBuf), &strLen, &intVal);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+}
+
+BOOST_AUTO_TEST_CASE(TestColAttributesColumnPresicion)
+{
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
+
+    SQLCHAR req[] = "select strField from TestType";
+    SQLExecDirect(stmt, req, SQL_NTS);
+
+    SQLLEN intVal;
+    SQLCHAR strBuf[1024];
+    SQLSMALLINT strLen;
+
+    SQLRETURN ret = SQLColAttribute(stmt, 1, SQL_COLUMN_PRECISION, strBuf, sizeof(strBuf), &strLen, &intVal);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+}
+
+BOOST_AUTO_TEST_CASE(TestColAttributesColumnScale)
+{
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
+
+    SQLCHAR req[] = "select strField from TestType";
+    SQLExecDirect(stmt, req, SQL_NTS);
+
+    SQLLEN intVal;
+    SQLCHAR strBuf[1024];
+    SQLSMALLINT strLen;
+
+    SQLRETURN ret = SQLColAttribute(stmt, 1, SQL_COLUMN_SCALE, strBuf, sizeof(strBuf), &strLen, &intVal);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+}
+
 BOOST_AUTO_TEST_SUITE_END()
