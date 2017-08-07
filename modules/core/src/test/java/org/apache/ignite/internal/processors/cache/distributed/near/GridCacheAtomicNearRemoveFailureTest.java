@@ -42,4 +42,12 @@ public class GridCacheAtomicNearRemoveFailureTest extends GridCacheAbstractRemov
     @Override protected NearCacheConfiguration nearCache() {
         return new NearCacheConfiguration();
     }
+
+    /**
+     * TODO remove overriding after fix https://issues.apache.org/jira/browse/IGNITE-5954
+     * @throws Exception
+     */
+    @Override public void testPutAndRemove() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-5954");
+    }
 }

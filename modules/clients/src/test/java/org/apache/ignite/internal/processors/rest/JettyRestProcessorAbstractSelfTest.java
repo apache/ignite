@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.rest;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -36,8 +38,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.query.SqlQuery;
@@ -1118,6 +1118,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
      * @throws Exception If failed.
      */
     public void testMetadataLocal() throws Exception {
+        fail("https://ggsystems.atlassian.net/browse/GG-12590");
         IgniteCacheProxy<?, ?> cache = F.first(grid(0).context().cache().publicCaches());
 
         assertNotNull("Should have configured public cache!", cache);
@@ -1156,6 +1157,8 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
      * @throws Exception If failed.
      */
     public void testMetadataRemote() throws Exception {
+        fail("https://ggsystems.atlassian.net/browse/GG-12590");
+
         CacheConfiguration<Integer, String> partialCacheCfg = new CacheConfiguration<>("partial");
 
         partialCacheCfg.setIndexedTypes(Integer.class, String.class);

@@ -233,6 +233,8 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
      * @throws Exception If failed.
      */
     public void testConcurrentUpdatesAndQueryStartAtomic() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-5960");
+
         concurrentUpdatesAndQueryStart(ATOMIC, false);
     }
 

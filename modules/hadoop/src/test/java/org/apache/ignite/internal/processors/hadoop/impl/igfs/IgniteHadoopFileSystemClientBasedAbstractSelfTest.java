@@ -89,6 +89,7 @@ public abstract class IgniteHadoopFileSystemClientBasedAbstractSelfTest extends 
 
     /** {@inheritDoc} */
     @Override public void testClientReconnect() throws Exception {
+        fail("IGNITE-5959");
         Path filePath = new Path(PRIMARY_URI, "file1");
 
         final FSDataOutputStream s = fs.create(filePath); // Open the stream before stopping IGFS.
@@ -116,6 +117,7 @@ public abstract class IgniteHadoopFileSystemClientBasedAbstractSelfTest extends 
      * @throws Exception If error occurs.
      */
     @Override public void testClientReconnectMultithreaded() throws Exception {
+        fail("IGNITE-5959");
         final ConcurrentLinkedQueue<FileSystem> q = new ConcurrentLinkedQueue<>();
 
         Configuration cfg = new Configuration();

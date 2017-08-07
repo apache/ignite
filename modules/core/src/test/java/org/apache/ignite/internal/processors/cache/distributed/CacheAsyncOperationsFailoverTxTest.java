@@ -29,4 +29,11 @@ public class CacheAsyncOperationsFailoverTxTest extends CacheAsyncOperationsFail
     @Override protected CacheAtomicityMode atomicityMode() {
         return TRANSACTIONAL;
     }
+
+    @Override public void testAsyncFailover() throws Exception {
+        //todo fix of hang up at afterTest() - unable to stop suite
+        fail("https://issues.apache.org/jira/browse/IGNITE-5549");
+        // Very often causes timeout in Ignite Cache Failover2
+        super.testAsyncFailover();
+    }
 }

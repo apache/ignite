@@ -112,6 +112,8 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testClientReconnectRequest() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-5946"); //flaky failed test with ~63% of success rate
+
         testClientReconnectRequest("/modules/core/src/test/config/websession/example-cache.xml",
             "/modules/core/src/test/config/websession/example-cache2.xml",
             "/modules/core/src/test/config/websession/example-cache-client.xml");
