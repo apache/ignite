@@ -770,8 +770,7 @@ public abstract class AbstractMatrix implements Matrix {
 
         Vector res = likeVector(rows);
 
-        for (int x = 0; x < rows; x++)
-            res.setX(x, vec.dot(viewRow(x)));
+        Blas.gemv(1,this,vec,0,res);
 
         return res;
     }
