@@ -287,6 +287,9 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
             if (ignore(m.getClass()))
                 return;
 
+            if (m instanceof DenseLocalOffHeapMatrix)
+                return; //TODO: IGNITE-5535, waiting offheap support.
+
             double[][] data = fillAndReturn(m);
 
             double[] arr = fillArray(m.columnSize());
@@ -302,7 +305,7 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
                     exp += arr[j] * data[i][j];
 
                 assertEquals("Unexpected value for " + desc + " at " + i,
-                    times.get(i), exp, 0d);
+                    times.get(i), exp, DEFAULT_DELTA);
             }
 
             testInvalidCardinality(() -> m.times(new DenseLocalOnHeapVector(m.columnSize() + 1)), desc);

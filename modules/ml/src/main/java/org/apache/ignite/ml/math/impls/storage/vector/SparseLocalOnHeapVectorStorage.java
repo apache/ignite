@@ -158,6 +158,15 @@ public class SparseLocalOnHeapVectorStorage implements VectorStorage, StorageCon
     }
 
     /** {@inheritDoc} */
+    @Override public double[] data() {
+        double[] data = new double[size];
+
+        sto.forEach((idx, val) -> data[idx]=val);
+
+        return data;
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         if (this == o)
             return true;
