@@ -198,6 +198,8 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
      * @throws Exception if failed
      */
     public void testLoadCacheWithDataStreamerSequentialWithConfigAndRestarts() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-5969");
+
         restarts = true;
         configured = true;
 
