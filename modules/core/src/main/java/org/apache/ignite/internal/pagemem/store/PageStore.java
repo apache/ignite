@@ -95,4 +95,9 @@ public interface PageStore {
      * @throws IgniteCheckedException If sync failed (IO error occurred).
      */
     public void ensure() throws IgniteCheckedException;
+
+    /**
+     * @return Page store version.
+     */
+    public int version();
 }
