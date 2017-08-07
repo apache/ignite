@@ -131,6 +131,15 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
         personCache.put(new AffinityKey<>("p1", "o1"), new Person("John White", 25, 1));
         personCache.put(new AffinityKey<>("p2", "o1"), new Person("Joe Black", 35, 1));
         personCache.put(new AffinityKey<>("p3", "o2"), new Person("Mike Green", 40, 2));
+
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            Statement stmt = conn.createStatement();
+
+            stmt.execute("CREATE TABLE TEST (ID INT primary key, NAME VARCHAR(50))");
+            stmt.execute("CREATE TABLE \"Quoted\" (\"Id\" INT primary key, \"Name\" VARCHAR(50))");
+            stmt.execute("CREATE INDEX \"MyTestIndex quoted\" on \"Quoted\" (\"Id\" DESC)");
+            stmt.execute("CREATE INDEX IDX ON TEST (ID ASC)");
+        }
     }
 
     /** {@inheritDoc} */
@@ -207,6 +216,30 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
 
             rs = meta.getTables("", "PUBLIC", "", new String[]{"WRONG"});
             assertFalse(rs.next());
+        }
+    }
+
+    public void testGetAllTables() throws Exception {
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            DatabaseMetaData meta = conn.getMetaData();
+
+            ResultSet rs = meta.getTables(null, null, null, null);
+
+            Set<String> expectedTbls = new HashSet<>(Arrays.asList(
+                "org.ORGANIZATION",
+                "pers.PERSON",
+                "PUBLIC.TEST",
+                "PUBLIC.Quoted"));
+
+            Set<String> actualTbls = new HashSet<>(expectedTbls.size());
+
+            while(rs.next()) {
+                actualTbls.add(rs.getString("TABLE_SCHEM") + '.'
+                    + rs.getString("TABLE_NAME"));
+            }
+
+            assert expectedTbls.equals(actualTbls) : "expectedTbls=" + expectedTbls +
+                ", actualTbls" + actualTbls;
         }
     }
 
@@ -310,6 +343,39 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    public void testGetAllColumns() throws Exception {
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            DatabaseMetaData meta = conn.getMetaData();
+
+            ResultSet rs = meta.getColumns(null, null, null, null);
+
+            Set<String> expectedCols = new HashSet<>(Arrays.asList(
+                "org.ORGANIZATION.ID",
+                "org.ORGANIZATION.NAME",
+                "pers.PERSON.ORGID",
+                "pers.PERSON.AGE",
+                "pers.PERSON.NAME",
+                "PUBLIC.TEST.ID",
+                "PUBLIC.TEST.NAME",
+                "PUBLIC.Quoted.Id",
+                "PUBLIC.Quoted.Name"));
+
+            Set<String> actualCols = new HashSet<>(expectedCols.size());
+
+            while(rs.next()) {
+                actualCols.add(rs.getString("TABLE_SCHEM") + '.'
+                    + rs.getString("TABLE_NAME") + "."
+                    + rs.getString("COLUMN_NAME"));
+            }
+
+            assert expectedCols.equals(actualCols) : "expectedCols=" + expectedCols +
+                ", actualCols" + actualCols;
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testIndexMetadata() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL);
              ResultSet rs = conn.getMetaData().getIndexInfo(null, "pers", "Person", false, false)) {
@@ -353,6 +419,34 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    public void testGetAllIndexes() throws Exception {
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            ResultSet rs = conn.getMetaData().getIndexInfo(null, null, null, false, false);
+
+            Set<String> expectedIdxs = new HashSet<>(Arrays.asList(
+                "org.ORGANIZATION.ORGANIZATION_ID_ASC_IDX",
+                "org.ORGANIZATION.ORG_NAME_INDEX",
+                "pers.PERSON.PERSON_ORGID_ASC_IDX",
+                "pers.PERSON.PERSON_NAME_ASC_AGE_DESC_IDX",
+                "PUBLIC.TEST.IDX",
+                "PUBLIC.Quoted.MyTestIndex quoted"));
+
+            Set<String> actualIdxs = new HashSet<>(expectedIdxs.size());
+
+            while(rs.next()) {
+                actualIdxs.add(rs.getString("TABLE_SCHEM") +
+                    '.' + rs.getString("TABLE_NAME") +
+                    '.' + rs.getString("INDEX_NAME"));
+            }
+
+            assert expectedIdxs.equals(actualIdxs) : "expectedIdxs=" + expectedIdxs +
+                ", actualIdxs" + actualIdxs;
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testPrimaryKeyMetadata() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL);
              ResultSet rs = conn.getMetaData().getPrimaryKeys(null, "pers", "Person")) {
@@ -371,6 +465,32 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
             log.error("Unexpected exception", e);
 
             fail();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testGetAllPrimaryKeys() throws Exception {
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            ResultSet rs = conn.getMetaData().getPrimaryKeys(null, null, null);
+
+            Set<String> expectedPks = new HashSet<>(Arrays.asList(
+                "org.ORGANIZATION._KEY",
+                "pers.PERSON._KEY",
+                "PUBLIC.TEST.ID",
+                "PUBLIC.Quoted.Id"));
+
+            Set<String> actualPks = new HashSet<>(expectedPks.size());
+
+            while(rs.next()) {
+                actualPks.add(rs.getString("TABLE_SCHEM") +
+                    '.' + rs.getString("TABLE_NAME") +
+                    '.' + rs.getString("COLUMN_NAME"));
+            }
+
+            assert expectedPks.equals(actualPks) : "expectedPks=" + expectedPks +
+                ", actualPks" + actualPks;
         }
     }
 
@@ -410,7 +530,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
         try (Connection conn = DriverManager.getConnection(URL)) {
             ResultSet rs = conn.getMetaData().getSchemas();
 
-            Set<String> expectedSchemas = new HashSet<>(Arrays.asList("PUBLIC", "PERS", "ORG"));
+            Set<String> expectedSchemas = new HashSet<>(Arrays.asList("PUBLIC", "pers", "org"));
 
             Set<String> schemas = new HashSet<>();
 

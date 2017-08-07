@@ -82,7 +82,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
 
     /** {@inheritDoc} */
     @Override public boolean isReadOnly() throws SQLException {
-        return true;
+        return false;
     }
 
     /** {@inheritDoc} */
@@ -182,17 +182,17 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
 
     /** {@inheritDoc} */
     @Override public boolean storesMixedCaseQuotedIdentifiers() throws SQLException {
-        return false;
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public String getIdentifierQuoteString() throws SQLException {
-        return " ";
+        return "\"";
     }
 
     /** {@inheritDoc} */
     @Override public String getSQLKeywords() throws SQLException {
-        return "";
+        return "LIMIT,MINUS,ROWNUM,SYSDATE,SYSTIME,SYSTIMESTAMP,TODAY";
     }
 
     /** {@inheritDoc} */
@@ -733,10 +733,10 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
     private List<Object> tableRow(JdbcTableMeta tblMeta) {
         List<Object> row = new ArrayList<>(10);
 
-        row.add(upperCase(tblMeta.catalog()));
-        row.add(upperCase(tblMeta.schema()));
-        row.add(upperCase(tblMeta.table()));
-        row.add(upperCase(tblMeta.tableType()));
+        row.add(tblMeta.catalog());
+        row.add(tblMeta.schema());
+        row.add(tblMeta.table());
+        row.add(tblMeta.tableType());
         row.add(null);
         row.add(null);
         row.add(null);
@@ -745,14 +745,6 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
         row.add(null);
 
         return row;
-    }
-
-    /**
-     * @param str Source string.
-     * @return Upper case string.
-     */
-    private String upperCase(String str) {
-        return str == null ? null : str.toUpperCase();
     }
 
     /** {@inheritDoc} */
@@ -827,11 +819,11 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
         List<Object> row = new ArrayList<>(20);
 
         row.add((String)null);
-        row.add(upperCase(colMeta.schema()));
-        row.add(upperCase(colMeta.tableName()));
-        row.add(upperCase(colMeta.columnName()));
+        row.add(colMeta.schema());
+        row.add(colMeta.tableName());
+        row.add(colMeta.columnName());
         row.add(colMeta.dataType());
-        row.add(upperCase(colMeta.dataTypeName()));
+        row.add(colMeta.dataTypeName());
         row.add((Integer)null);
         row.add((Integer)null);
         row.add(10);
@@ -923,11 +915,11 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
             List<Object> row = new ArrayList<>(6);
 
             row.add((String)null); // table catalog
-            row.add(upperCase(pkMeta.schema()));
-            row.add(upperCase(pkMeta.tableName()));
-            row.add(upperCase(pkMeta.fields()[i]));
+            row.add(pkMeta.schema());
+            row.add(pkMeta.tableName());
+            row.add(pkMeta.fields()[i]);
             row.add((Integer)i + 1); // sequence number
-            row.add(upperCase(pkMeta.name()));
+            row.add(pkMeta.name());
 
             rows.add(row);
         }
@@ -1006,14 +998,14 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
             List<Object> row = new ArrayList<>(13);
 
             row.add((String)null); // table catalog
-            row.add(upperCase(idxMeta.schema()));
-            row.add(upperCase(idxMeta.tableName()));
+            row.add(idxMeta.schema());
+            row.add(idxMeta.tableName());
             row.add(true); // non unique
             row.add(null); // index qualifier (index catalog)
-            row.add(upperCase(idxMeta.name()));
+            row.add(idxMeta.name());
             row.add((short)tableIndexOther); // type
             row.add((Integer)i); // field ordinal position in index
-            row.add(upperCase(idxMeta.fields()[i]));
+            row.add(idxMeta.fields()[i]);
             row.add(idxMeta.fieldsAsc()[i] ? "A" : "D");
             row.add((Integer)0); // cardinality
             row.add((Integer)0); // pages
@@ -1197,7 +1189,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
             for (String schema : res.schemas()) {
                 List<Object> row = new ArrayList<>(2);
 
-                row.add(upperCase(schema));
+                row.add(schema);
                 row.add(null);
 
                 rows.add(row);

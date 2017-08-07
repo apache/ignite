@@ -27,7 +27,7 @@ import org.jetbrains.annotations.Nullable;
  * JDBC get columns metadata request.
  */
 public class JdbcMetaColumnsRequest extends JdbcRequest {
-    /** Cache name. */
+    /** Schean name. */
     private String schemaName;
 
     /** Table name. */
@@ -59,7 +59,7 @@ public class JdbcMetaColumnsRequest extends JdbcRequest {
     /**
      * @return Cache name.
      */
-    @Nullable public String cacheName() {
+    @Nullable public String schema() {
         return schemaName;
     }
 

@@ -38,7 +38,6 @@ public class JdbcMetaIndexesResult extends JdbcResult {
      */
     JdbcMetaIndexesResult() {
         super(META_INDEXES);
-        this.meta = meta;
     }
 
     /**

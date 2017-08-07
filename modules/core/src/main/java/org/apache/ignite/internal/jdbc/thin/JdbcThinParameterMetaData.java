@@ -23,7 +23,7 @@ import java.util.List;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcParamMeta;
 
 /**
- * JDBC prepared statement implementation.
+ * JDBC SQL query's parameters metadata.
  */
 public class JdbcThinParameterMetaData implements ParameterMetaData {
     /** Meta. */

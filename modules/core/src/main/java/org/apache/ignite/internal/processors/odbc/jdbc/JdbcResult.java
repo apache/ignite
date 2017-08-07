@@ -23,7 +23,7 @@ import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 
 /**
- * JDBS response result.
+ * JDBC response result.
  */
 public class JdbcResult implements JdbcRawBinarylizable {
     /** Execute sql result. */
@@ -53,7 +53,7 @@ public class JdbcResult implements JdbcRawBinarylizable {
     /** Primary keys metadata result. */
     static final byte META_PRIMARY_KEYS = 11;
 
-    /** Primary keys metadata result. */
+    /** Database schemas metadata result. */
     static final byte META_SCHEMAS = 12;
 
     /** Success status. */

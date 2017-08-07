@@ -130,6 +130,8 @@ public class JdbcIndexMeta implements JdbcRawBinarylizable {
 
     /** {@inheritDoc} */
     @Override public void writeBinary(BinaryWriterExImpl writer) throws BinaryObjectException {
+        writer.writeString(schema);
+        writer.writeString(tbl);
         writer.writeString(name);
         writer.writeByte((byte)type.ordinal());
         writer.writeInt(inlineSize);
@@ -139,6 +141,8 @@ public class JdbcIndexMeta implements JdbcRawBinarylizable {
 
     /** {@inheritDoc} */
     @Override public void readBinary(BinaryReaderExImpl reader) throws BinaryObjectException {
+        schema = reader.readString();
+        tbl = reader.readString();
         name = reader.readString();
         type = QueryIndexType.fromOrdinal(reader.readByte());
         inlineSize = reader.readInt();
