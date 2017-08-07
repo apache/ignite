@@ -40,10 +40,10 @@ import org.apache.ignite.IgniteEvents;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.IgniteIllegalStateException;
+import org.apache.ignite.IgniteLock;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteMessaging;
 import org.apache.ignite.IgniteQueue;
-import org.apache.ignite.IgniteLock;
 import org.apache.ignite.IgniteScheduler;
 import org.apache.ignite.IgniteSemaphore;
 import org.apache.ignite.IgniteServices;
@@ -71,6 +71,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheUtilityKey;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.hadoop.Hadoop;
 import org.apache.ignite.internal.util.GridJavaProcess;
+import org.apache.ignite.internal.util.lang.GridAbsClosure;
 import org.apache.ignite.internal.util.lang.IgnitePredicateX;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
@@ -135,38 +136,48 @@ public class IgniteProcessProxy implements IgniteEx {
      */
     public IgniteProcessProxy(IgniteConfiguration cfg, IgniteLogger log, Ignite locJvmGrid, boolean resetDiscovery)
         throws Exception {
+        this(cfg, log, locJvmGrid, resetDiscovery, null);
+    }
+
+    /**
+     * @param cfg Configuration.
+     * @param log Logger.
+     * @param locJvmGrid Local JVM grid.
+     * @param resetDiscovery Reset DiscoverySpi at the configuration.
+     * @param clos IgniteInClosure for post configuration.
+     * @throws Exception On error.
+     * @see #filteredJvmArgs()
+     */
+    public IgniteProcessProxy(IgniteConfiguration cfg, IgniteLogger log, Ignite locJvmGrid, boolean resetDiscovery,
+        IgniteInClosure<IgniteConfiguration> clos) throws Exception {
         this.cfg = cfg;
         this.locJvmGrid = locJvmGrid;
         this.log = log.getLogger("jvm-" + id.toString().substring(0, id.toString().indexOf('-')));
 
+        String params;
+
         String cfgFileName = IgniteNodeRunner.storeToFile(cfg.setNodeId(id), resetDiscovery);
 
-        Collection<String> filteredJvmArgs = new ArrayList<>();
+        params = cfgFileName;
 
-        filteredJvmArgs.add("-ea");
+        if (clos != null) {
+            String closFileName = cfgFileName + "_closure";
 
-        Marshaller marsh = cfg.getMarshaller();
+            IgniteNodeRunner.storeToFile(clos, closFileName);
 
-        if (marsh != null)
-            filteredJvmArgs.add("-D" + IgniteTestResources.MARSH_CLASS_NAME + "=" + marsh.getClass().getName());
-        else
-            filteredJvmArgs.add("-D" + IgniteTestResources.MARSH_CLASS_NAME + "=" + BinaryMarshaller.class.getName());
-
-        for (String arg : U.jvmArgs()) {
-            if (arg.startsWith("-Xmx") || arg.startsWith("-Xms") ||
-                arg.startsWith("-cp") || arg.startsWith("-classpath") ||
-                (marsh != null && arg.startsWith("-D" + IgniteTestResources.MARSH_CLASS_NAME)))
-                filteredJvmArgs.add(arg);
+            params += " " + closFileName;
         }
+
+        Collection<String> filteredJvmArgs = filteredJvmArgs();
 
         final CountDownLatch rmtNodeStartedLatch = new CountDownLatch(1);
 
         if (locJvmGrid != null)
             locJvmGrid.events().localListen(new NodeStartedListener(id, rmtNodeStartedLatch), EventType.EVT_NODE_JOINED);
 
-        proc = GridJavaProcess.exec(
+        proc = exec(
             IgniteNodeRunner.class.getCanonicalName(),
-            cfgFileName, // Params.
+            params,
             this.log,
             // Optional closure to be called each time wrapped process prints line to system.out or system.err.
             new IgniteInClosure<String>() {
@@ -191,6 +202,62 @@ public class IgniteProcessProxy implements IgniteEx {
             throw new IllegalStateException("There was found instance assotiated with " + cfg.getIgniteInstanceName() +
                 ", instance= " + prevVal + ". New started node was stopped.");
         }
+    }
+
+    /**
+     * Executes main() method of the given class in a separate system process.
+     *
+     * @param clsName Class with main() method to be run.
+     * @param params main() method parameters.
+     * @param log Log to use.
+     * @param printC Optional closure to be called each time wrapped process prints line to system.out or system.err.
+     * @param procKilledC Optional closure to be called when process termination is detected.
+     * @param javaHome Java home location. The process will be started under given JVM.
+     * @param jvmArgs JVM arguments to use.
+     * @param cp Additional classpath.
+     * @return GridJavaProcess - wrapper around {@link Process}.
+     * @throws Exception In case of an error.
+     */
+    protected GridJavaProcess exec(String clsName, String params, @Nullable IgniteLogger log,
+        @Nullable IgniteInClosure<String> printC, @Nullable GridAbsClosure procKilledC,
+        @Nullable String javaHome, @Nullable Collection<String> jvmArgs, @Nullable String cp) throws Exception {
+        return GridJavaProcess.exec(
+            clsName,
+            params,
+            log,
+            printC,
+            procKilledC,
+            javaHome,
+            jvmArgs,
+            cp
+        );
+    }
+
+    /**
+     * Creates list of JVM arguments to be used to start new Ignite process.
+     *
+     * @return JVM arguments.
+     */
+    protected Collection<String> filteredJvmArgs() {
+        Collection<String> filteredJvmArgs = new ArrayList<>();
+
+        filteredJvmArgs.add("-ea");
+
+        Marshaller marsh = cfg.getMarshaller();
+
+        if (marsh != null)
+            filteredJvmArgs.add("-D" + IgniteTestResources.MARSH_CLASS_NAME + "=" + marsh.getClass().getName());
+        else
+            filteredJvmArgs.add("-D" + IgniteTestResources.MARSH_CLASS_NAME + "=" + BinaryMarshaller.class.getName());
+
+        for (String arg : U.jvmArgs()) {
+            if (arg.startsWith("-Xmx") || arg.startsWith("-Xms") ||
+                arg.startsWith("-cp") || arg.startsWith("-classpath") ||
+                (marsh != null && arg.startsWith("-D" + IgniteTestResources.MARSH_CLASS_NAME)))
+                filteredJvmArgs.add(arg);
+        }
+
+        return filteredJvmArgs;
     }
 
     /**
