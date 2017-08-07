@@ -3641,6 +3641,26 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /** {@inheritDoc} */
     @Nullable @Override public IgniteLock reentrantLock(
         String name,
+        boolean create
+    ) {
+        guard();
+
+        try {
+            checkClusterState();
+
+            return ctx.dataStructures().reentrantLock(name, create);
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public IgniteLock reentrantLock(
+        String name,
         boolean failoverSafe,
         boolean fair,
         boolean create

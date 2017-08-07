@@ -589,6 +589,9 @@ public interface Ignite extends AutoCloseable {
     public IgniteLock reentrantLock(String name, boolean failoverSafe, boolean fair, boolean create)
         throws IgniteException;
 
+    /** */
+    public IgniteLock reentrantLock(String name, boolean create) throws IgniteException;
+
     /**
      * Will get a named queue from cache and create one if it has not been created yet and {@code cfg} is not
      * {@code null}.

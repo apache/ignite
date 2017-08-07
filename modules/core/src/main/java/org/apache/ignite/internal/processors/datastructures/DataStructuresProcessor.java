@@ -24,10 +24,15 @@ import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.function.Consumer;
+import javax.cache.Cache;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryListenerException;
 import javax.cache.event.CacheEntryUpdatedListener;
 import javax.cache.event.EventType;
+import javax.cache.processor.EntryProcessor;
+import javax.cache.processor.EntryProcessorException;
+import javax.cache.processor.MutableEntry;
 import org.apache.ignite.IgniteAtomicLong;
 import org.apache.ignite.IgniteAtomicReference;
 import org.apache.ignite.IgniteAtomicSequence;
@@ -86,6 +91,7 @@ import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
+import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.processors.datastructures.DataStructureType.ATOMIC_LONG;
 import static org.apache.ignite.internal.processors.datastructures.DataStructureType.ATOMIC_REF;
 import static org.apache.ignite.internal.processors.datastructures.DataStructureType.ATOMIC_SEQ;
@@ -516,8 +522,9 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
             CacheConfiguration tcfg = cacheConfiguration(cfg, cacheName, grpName);
 
-            if (type.equals(REENTRANT_LOCK))
+            if (type.equals(REENTRANT_LOCK)) {
                 tcfg.setAtomicityMode(ATOMIC);
+            }
 
             ctx.cache().dynamicStartCache(tcfg,
                 cacheName,
@@ -1208,6 +1215,32 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                 return true;
             }
         }, name, grpName, SEMAPHORE, null);
+    }
+
+    public IgniteLock reentrantLock(final String name, final boolean create) throws IgniteCheckedException {
+        return getAtomic(new AtomicAccessor<GridCacheLockEx2>() {
+            @Override public T2<GridCacheLockEx2, AtomicDataStructureValue> get(GridCacheInternalKey key,
+                AtomicDataStructureValue val, IgniteInternalCache cache) throws IgniteCheckedException {
+                // Check that reentrant lock hasn't been created in other thread yet.
+                GridCacheLockEx2 reentrantLock = cast(dsMap.get(key), GridCacheLockEx2.class);
+
+                if (reentrantLock != null) {
+                    assert val != null;
+
+                    return new T2<>(reentrantLock, null);
+                }
+
+                if (val == null && !create)
+                    return new T2<>(null, null);
+
+                AtomicDataStructureValue retVal = (val == null ? new GridCacheLockState2(true, true, ctx.discovery().gridStartTime()) : null);
+
+                GridCacheLockEx2 reentrantLock0 = new GridCacheLockImpl2(name, key, cache);
+
+                return new T2<>(reentrantLock0, retVal);
+            }
+        }, null, name, REENTRANT_LOCK, create, GridCacheLockEx2.class);
+
     }
 
     /**

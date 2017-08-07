@@ -515,6 +515,12 @@ public class IgfsIgniteMock implements IgniteEx {
         return null;
     }
 
+    @Override public IgniteLock reentrantLock(String name, boolean create) throws IgniteException {
+        throwUnsupported();
+
+        return null;
+    }
+
     /** {@inheritDoc} */
     @Override public <T> IgniteQueue<T> queue(String name, int cap, @Nullable CollectionConfiguration cfg)
         throws IgniteException {

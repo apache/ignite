@@ -433,6 +433,10 @@ public class IgniteMock implements Ignite {
         return null;
     }
 
+    @Override public IgniteLock reentrantLock(String name, boolean create) throws IgniteException {
+        return null;
+    }
+
     /** {@inheritDoc} */
     @Nullable @Override public <T> IgniteQueue<T> queue(String name,
         int cap,
