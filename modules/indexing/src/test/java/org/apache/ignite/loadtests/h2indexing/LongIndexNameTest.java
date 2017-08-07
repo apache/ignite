@@ -114,7 +114,8 @@ public class LongIndexNameTest extends GridCommonAbstractTest {
         qe.setFields(fieldsMap);
 
         ArrayList<QueryIndex> indices = new ArrayList<>();
-        QueryIndex index = new QueryIndex("name", true, "COM.SBT.AZIMUTH_PSI.PUBLISHER.ENTITIES.PUB.PARTICLES.CARPORT#MODELCOM.SBT.AZIMUTH_PSI.PUBLISHER.ENTITIES.PUB.PARTICLES.CARPORT");
+        QueryIndex index = new QueryIndex("name", true, "LONG_NAME_123456789012345678901234567890" +
+            "12345678901234567890123456789012345678901234567890123456789012345678901234567890");
         QueryIndex index2 = new QueryIndex("age", true, "AGE_IDX");
         indices.add(index);
         indices.add(index2);
