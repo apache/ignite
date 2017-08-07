@@ -71,7 +71,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheUtilityKey;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.hadoop.Hadoop;
 import org.apache.ignite.internal.util.GridJavaProcess;
-import org.apache.ignite.internal.util.lang.GridAbsClosure;
 import org.apache.ignite.internal.util.lang.IgnitePredicateX;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
@@ -140,7 +139,7 @@ public class IgniteProcessProxy implements IgniteEx {
         this.locJvmGrid = locJvmGrid;
         this.log = log.getLogger("jvm-" + id.toString().substring(0, id.toString().indexOf('-')));
 
-        String cfgFileName = IgniteNodeRunner.storeToFile(cfg.setNodeId(id), resetDiscovery);
+        String params = params(cfg, true);
 
         Collection<String> filteredJvmArgs = filteredJvmArgs();
 
@@ -149,9 +148,9 @@ public class IgniteProcessProxy implements IgniteEx {
         if (locJvmGrid != null)
             locJvmGrid.events().localListen(new NodeStartedListener(id, rmtNodeStartedLatch), EventType.EVT_NODE_JOINED);
 
-        proc = exec(
-            IgniteNodeRunner.class.getCanonicalName(),
-            cfgFileName, // Params.
+        proc = GridJavaProcess.exec(
+            getNodeRunnerClassName(),
+            params,
             this.log,
             // Optional closure to be called each time wrapped process prints line to system.out or system.err.
             new IgniteInClosure<String>() {
@@ -179,40 +178,34 @@ public class IgniteProcessProxy implements IgniteEx {
     }
 
     /**
-     * Executes main() method of the given class in a separate system process.
+     * Gets Ignite node runner class name.
      *
-     * @param clsName Class with main() method to be run.
-     * @param params main() method parameters.
-     * @param log Log to use.
-     * @param printC Optional closure to be called each time wrapped process prints line to system.out or system.err.
-     * @param procKilledC Optional closure to be called when process termination is detected.
-     * @param javaHome Java home location. The process will be started under given JVM.
-     * @param jvmArgs JVM arguments to use.
-     * @param cp Additional classpath.
-     * @return GridJavaProcess - wrapper around {@link Process}.
+     * @return Node runner class name.
      * @throws Exception In case of an error.
      */
-    protected GridJavaProcess exec(String clsName, String params, @Nullable IgniteLogger log,
-        @Nullable IgniteInClosure<String> printC, @Nullable GridAbsClosure procKilledC,
-        @Nullable String javaHome, @Nullable Collection<String> jvmArgs, @Nullable String cp) throws Exception {
-        return GridJavaProcess.exec(
-            clsName,
-            params,
-            log,
-            printC,
-            procKilledC,
-            javaHome,
-            jvmArgs,
-            cp
-        );
+    protected String getNodeRunnerClassName() throws Exception {
+        return IgniteNodeRunner.class.getCanonicalName();
+    }
+
+    /**
+     * Create parameters which will be passed to new Ignite Process as command line arguments.
+     *
+     * @param cfg Configuration.
+     * @param resetDiscovery Reset DiscoverySpi at the configuration.
+     * @return Params to be passed to new Ignite process.
+     * @throws Exception In case of an error.
+     */
+    protected String params(IgniteConfiguration cfg, boolean resetDiscovery) throws Exception {
+        return IgniteNodeRunner.storeToFile(cfg.setNodeId(id), resetDiscovery);
     }
 
     /**
      * Creates list of JVM arguments to be used to start new Ignite process.
      *
      * @return JVM arguments.
+     * @throws Exception In case of an error.
      */
-    protected Collection<String> filteredJvmArgs() {
+    protected Collection<String> filteredJvmArgs() throws Exception {
         Collection<String> filteredJvmArgs = new ArrayList<>();
 
         filteredJvmArgs.add("-ea");

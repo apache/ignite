@@ -52,8 +52,6 @@ public class CompatibilityTestIgniteNodeRunner extends IgniteNodeRunner {
      * @throws Exception In case of an error.
      */
     public static void main(String[] args) throws Exception {
-        X.println("****" + System.getProperty("java.class.path"));
-
         X.println(GridJavaProcess.PID_MSG_PREFIX + U.jvmPid());
 
         X.println("Starting Ignite Node... Args=" + Arrays.toString(args));

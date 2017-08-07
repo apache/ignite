@@ -21,16 +21,12 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.util.GridJavaProcess;
-import org.apache.ignite.internal.util.lang.GridAbsClosure;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
 import org.apache.ignite.tests.compatibility.MavenUtils;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Super class for all compatibility tests.
@@ -61,64 +57,50 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
 
         final String closPath = CompatibilityTestIgniteNodeRunner.storeToFile(clos);
 
-        final Collection<String> filteredJvmArguments = filteredJvmArgs(ver);
-
         return new IgniteProcessProxy(getConfiguration(), log, grid(0), true) {
-            @Override protected GridJavaProcess exec(String clsName, String params, @Nullable IgniteLogger log,
-                @Nullable IgniteInClosure<String> printC, @Nullable GridAbsClosure procKilledC,
-                @Nullable String javaHome,
-                @Nullable Collection<String> jvmArgs, @Nullable String cp) throws Exception {
-                return super.exec(
-                    CompatibilityTestIgniteNodeRunner.class.getCanonicalName(),
-                    closPath + " " + getId(),
-                    log,
-                    printC,
-                    procKilledC,
-                    javaHome,
-                    filteredJvmArguments,
-                    cp);
+            @Override protected String getNodeRunnerClassName() throws Exception {
+                return CompatibilityTestIgniteNodeRunner.class.getCanonicalName();
+            }
+
+            @Override protected String params(IgniteConfiguration cfg, boolean resetDiscovery) throws Exception {
+                return closPath + " " + getId();
+            }
+
+            @Override protected Collection<String> filteredJvmArgs() throws Exception {
+                Collection<String> filteredJvmArgs = new ArrayList<>();
+
+                filteredJvmArgs.add("-ea");
+
+                for (String arg : U.jvmArgs()) {
+                    if (arg.startsWith("-Xmx") || arg.startsWith("-Xms"))
+                        filteredJvmArgs.add(arg);
+                }
+
+                String classPath = System.getProperty("java.class.path");
+
+                String[] paths = classPath.split(File.pathSeparator);
+
+                StringBuilder pathBuilder = new StringBuilder();
+
+                String corePathTemplate = "ignite.modules.core.target.classes".replace(".", File.separator);
+                String coreTestsPathTemplate = "ignite.modules.core.target.test-classes".replace(".", File.separator);
+
+                for (String path : paths) {
+                    if (!path.contains(corePathTemplate) && !path.contains(coreTestsPathTemplate))
+                        pathBuilder.append(path).append(File.pathSeparator);
+                }
+
+                String pathToArtifact = MavenUtils.getPathToIgniteCoreArtifact(ver);
+                pathBuilder.append(pathToArtifact).append(File.pathSeparator);
+
+                String pathToTestsArtifact = MavenUtils.getPathToIgniteCoreArtifact(ver, "tests");
+                pathBuilder.append(pathToTestsArtifact).append(File.pathSeparator);
+
+                filteredJvmArgs.add("-cp");
+                filteredJvmArgs.add(pathBuilder.toString());
+
+                return filteredJvmArgs;
             }
         };
-    }
-
-    /**
-     * @param ver Ignite version.
-     * @return JVM arguments.
-     * @throws Exception In case of an error.
-     */
-    protected Collection<String> filteredJvmArgs(String ver) throws Exception {
-        Collection<String> filteredJvmArgs = new ArrayList<>();
-
-        filteredJvmArgs.add("-ea");
-
-        for (String arg : U.jvmArgs()) {
-            if (arg.startsWith("-Xmx") || arg.startsWith("-Xms"))
-                filteredJvmArgs.add(arg);
-        }
-
-        String classPath = System.getProperty("java.class.path");
-
-        String[] paths = classPath.split(File.pathSeparator);
-
-        StringBuilder pathBuilder = new StringBuilder();
-
-        String corePathTemplate = "ignite.modules.core.target.classes".replace(".", File.separator);
-        String coreTestsPathTemplate = "ignite.modules.core.target.test-classes".replace(".", File.separator);
-
-        for (String path : paths) {
-            if (!path.contains(corePathTemplate) && !path.contains(coreTestsPathTemplate))
-                pathBuilder.append(path).append(File.pathSeparator);
-        }
-
-        String pathToArtifact = MavenUtils.getPathToIgniteCoreArtifact(ver);
-        pathBuilder.append(pathToArtifact).append(File.pathSeparator);
-
-        String pathToTestsArtifact = MavenUtils.getPathToIgniteCoreArtifact(ver, "tests");
-        pathBuilder.append(pathToTestsArtifact).append(File.pathSeparator);
-
-        filteredJvmArgs.add("-cp");
-        filteredJvmArgs.add(pathBuilder.toString());
-
-        return filteredJvmArgs;
     }
 }
