@@ -113,7 +113,7 @@ public class AffinityDistributionPrintLogTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testDistributionCalculationDisable() throws Exception {
+    public void testDistributionCalculationDflt() throws Exception {
         String log = print(false, 0);
 
         assertFalse(log.contains("Local node affinity assignment distribution is not ideal"));
