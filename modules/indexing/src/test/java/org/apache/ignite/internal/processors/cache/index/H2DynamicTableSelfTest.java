@@ -374,6 +374,13 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     }
 
     /**
+     * Test that attempting to omit mandatory value of WRITESYNC parameter yields an error.
+     */
+    public void testEmptyWriteSyncMode() {
+        assertCreateTableWithParamsThrows("writesync=", "Parameter value cannot be empty: WRITESYNC");
+    }
+
+    /**
      * Test that attempting to {@code CREATE TABLE} that already exists does not yield an error if the statement
      *     contains {@code IF NOT EXISTS} clause.
      * @throws Exception if failed.
