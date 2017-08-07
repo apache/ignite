@@ -355,7 +355,7 @@ public class GridAffinityAssignmentCache {
 
             if (deltaPrimary > ignitePartDistribution || deltaBackup > ignitePartDistribution) {
                 log.info("Local node affinity assignment distribution is not ideal " +
-                    "[cache=" + cacheOrGrpName + ", node_ID=" + localNodeId + ", " +
+                    "[cache=" + cacheOrGrpName + ", node_ID=" + localNodeId + ",  " +
                     "expectedPrimary=" + String.format("%.2f", expectedCnt) +
                     "(" + String.format("%.2f", expectedPercent) + "%), " +
                     "expectedBackups=" + String.format("%.2f", expectedCnt * this.backups) +
