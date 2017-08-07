@@ -54,6 +54,9 @@ public class JmhCacheLocksBenchmark extends JmhCacheAbstractBenchmark {
     /** Ignite.reentrantLock() with a fixed lock key. */
     private IgniteLock igniteLock;
 
+    /** New Ignite.reentrantLock() with a fixed lock key. */
+    private IgniteLock igniteLock2;
+
     /**
      * Test IgniteCache.lock() with fixed key and no-op inside.
      */
@@ -73,6 +76,15 @@ public class JmhCacheLocksBenchmark extends JmhCacheAbstractBenchmark {
     }
 
     /**
+     * Test new Ignite.reentrantLock() with fixed key and no-op inside.
+     */
+    @Benchmark
+    public void igniteLock2() {
+        igniteLock2.lock();
+        igniteLock2.unlock();
+    }
+
+    /**
      * Create locks and put values in the cache.
      */
     @Setup(Level.Trial)
@@ -80,6 +92,8 @@ public class JmhCacheLocksBenchmark extends JmhCacheAbstractBenchmark {
         cacheLock = cache.lock(lockKey);
 
         igniteLock = node.reentrantLock(lockKey, failoverSafe, fair, true);
+
+        igniteLock2 = node.reentrantLock(lockKey+"2", true);
     }
 
     /**
