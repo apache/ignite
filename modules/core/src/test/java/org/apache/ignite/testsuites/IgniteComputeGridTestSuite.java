@@ -51,6 +51,7 @@ import org.apache.ignite.internal.GridProjectionLocalJobMultipleArgumentsSelfTes
 import org.apache.ignite.internal.GridStopWithWaitSelfTest;
 import org.apache.ignite.internal.GridTaskCancelSingleNodeSelfTest;
 import org.apache.ignite.internal.GridTaskExecutionSelfTest;
+import org.apache.ignite.internal.GridTaskExecutionWithoutPeerClassLoadingSelfTest;
 import org.apache.ignite.internal.GridTaskFailoverAffinityRunTest;
 import org.apache.ignite.internal.GridTaskFailoverSelfTest;
 import org.apache.ignite.internal.GridTaskFutureImplStopGridSelfTest;
@@ -63,13 +64,16 @@ import org.apache.ignite.internal.GridTaskNameAnnotationSelfTest;
 import org.apache.ignite.internal.GridTaskResultCacheSelfTest;
 import org.apache.ignite.internal.GridTaskTimeoutSelfTest;
 import org.apache.ignite.internal.IgniteComputeEmptyClusterGroupTest;
+import org.apache.ignite.internal.IgniteComputeJobOneThreadTest;
 import org.apache.ignite.internal.IgniteComputeTopologyExceptionTest;
 import org.apache.ignite.internal.IgniteExecutorServiceTest;
 import org.apache.ignite.internal.IgniteExplicitImplicitDeploymentSelfTest;
+import org.apache.ignite.internal.IgniteRoundRobinErrorAfterClientReconnectTest;
 import org.apache.ignite.internal.TaskNodeRestartTest;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointManagerSelfTest;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointTaskSelfTest;
 import org.apache.ignite.internal.managers.communication.GridCommunicationManagerListenersSelfTest;
+import org.apache.ignite.internal.processors.compute.PublicThreadpoolStarvationTest;
 import org.apache.ignite.p2p.GridMultinodeRedeployContinuousModeSelfTest;
 import org.apache.ignite.p2p.GridMultinodeRedeployIsolatedModeSelfTest;
 import org.apache.ignite.p2p.GridMultinodeRedeployPrivateModeSelfTest;
@@ -98,6 +102,7 @@ public class IgniteComputeGridTestSuite {
         suite.addTestSuite(GridCancelUnusedJobSelfTest.class);
         suite.addTestSuite(GridTaskJobRejectSelfTest.class);
         suite.addTestSuite(GridTaskExecutionSelfTest.class);
+        suite.addTestSuite(GridTaskExecutionWithoutPeerClassLoadingSelfTest.class);
         suite.addTestSuite(GridFailoverSelfTest.class);
         suite.addTestSuite(GridTaskListenerSelfTest.class);
         suite.addTestSuite(GridFailoverTopologySelfTest.class);
@@ -148,6 +153,9 @@ public class IgniteComputeGridTestSuite {
         suite.addTestSuite(IgniteComputeTopologyExceptionTest.class);
         suite.addTestSuite(GridTaskFailoverAffinityRunTest.class);
         suite.addTestSuite(TaskNodeRestartTest.class);
+        suite.addTestSuite(IgniteRoundRobinErrorAfterClientReconnectTest.class);
+        suite.addTestSuite(PublicThreadpoolStarvationTest.class);
+        suite.addTestSuite(IgniteComputeJobOneThreadTest.class);
 
         return suite;
     }

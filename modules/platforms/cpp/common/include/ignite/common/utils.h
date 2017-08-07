@@ -60,6 +60,13 @@ namespace ignite
         }
 
         /**
+         * Strips leading and trailing whitespaces from string.
+         *
+         * @param str String to be transformed.
+         */
+        IGNITE_IMPORT_EXPORT void StripSurroundingWhitespaces(std::string& str);
+
+        /**
          * Get string representation of long in decimal form.
          *
          * @param val Long value to be converted to string.
