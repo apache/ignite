@@ -310,48 +310,55 @@ public class GridAffinityAssignmentCache {
 
     /**
      * @param assignment List indexed by partition number.
-     * @param size Node size.
+     * @param nodesCnt Nodes count.
      */
-    private void printDistribution(List<List<ClusterNode>> assignment, int size) {
-        Float ignitePartDistribution = getFloat(IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD, 0);
+    private void printDistribution(List<List<ClusterNode>> assignment, int nodesCnt) {
+        Float ignitePartDistribution = getFloat(IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD, 0.1f);
 
-        // TODO disable print distribution?
-        if (ignitePartDistribution == 0)
-            return;
+        int[] partitionsByLocalNode = new int[nodesCnt];
 
-        int[] parts = new int[size];
+        int totalPrimaryCnt = 0;
 
-        for (int i = 0; i < size; i++) {
+        int totalBackupCnt = 0;
+
+        for (int i = 0; i < nodesCnt; i++) {
             for (List<ClusterNode> partitionByNodes : assignment) {
                 if (partitionByNodes.get(i).isLocal())
-                    parts[i] += 1;
+                    partitionsByLocalNode[i] += 1;
+
+                if (i == 0)
+                    totalPrimaryCnt++;
+                else
+                    totalBackupCnt++;
             }
         }
 
-        if (parts.length != 0) {
-            int backups = 0;
-            float backupsPercent = 0;
+        if (partitionsByLocalNode.length != 0) {
+            int localPrimaryCnt = partitionsByLocalNode[0];
+            int localBackupCnt = 0;
+            float localBackupPercent = 0;
 
-            for (int i = 1; i < parts.length; i++) {
-                backups += parts[i];
-                backupsPercent += (float)parts[i] / assignment.size() * 100;
+            for (int i = 1; i < partitionsByLocalNode.length; i++) {
+                localBackupCnt += partitionsByLocalNode[i];
+                localBackupPercent += (float)partitionsByLocalNode[i] / assignment.size() * 100;
             }
 
-            float perNode = (float)assignment.size() / size;
-            float perNodePercent = perNode / assignment.size() * 100;
-            float primaryPerNodePercent = (float)parts[0] / assignment.size() * 100;
-            float delta = Math.abs(perNodePercent - primaryPerNodePercent) +
-                Math.abs(perNodePercent * this.backups - backupsPercent);
+            float expectedCnt = (float)assignment.size() / nodesCnt;
+            float expectedPercent = expectedCnt / assignment.size() * 100;
+            float primaryPerNodePercent = (float)localPrimaryCnt / assignment.size() * 100;
 
-            if (delta > ignitePartDistribution * 100) {
+            float deltaPrimary = Math.abs(1 - (float)localPrimaryCnt * nodesCnt / totalPrimaryCnt);
+            float deltaBackup = Math.abs(1 - (float)localBackupCnt * nodesCnt / totalBackupCnt);
+
+            if (deltaPrimary > ignitePartDistribution || deltaBackup > ignitePartDistribution) {
                 log.info("Local node affinity assignment distribution is not ideal " +
                     "[cache=" + cacheOrGrpName + ", " +
-                    "expectedPrimary=" + String.format("%.2f", perNode) +
-                    "(" + String.format("%.2f", perNodePercent) + "%), " +
-                    "expectedBackups=" + String.format("%.2f", perNode * this.backups) +
-                    "(" + String.format("%.2f", perNodePercent * this.backups) + "%), " +
-                    "primary=" + parts[0] + "(" + String.format("%.2f", primaryPerNodePercent) + "%), " +
-                    "backups=" + backups + "(" + String.format("%.2f", backupsPercent) + "%)].");
+                    "expectedPrimary=" + String.format("%.2f", expectedCnt) +
+                    "(" + String.format("%.2f", expectedPercent) + "%), " +
+                    "expectedBackups=" + String.format("%.2f", expectedCnt * this.backups) +
+                    "(" + String.format("%.2f", expectedPercent * this.backups) + "%), " +
+                    "primary=" + localPrimaryCnt + "(" + String.format("%.2f", primaryPerNodePercent) + "%), " +
+                    "backups=" + localBackupCnt + "(" + String.format("%.2f", localBackupPercent) + "%)].");
             }
         }
     }
