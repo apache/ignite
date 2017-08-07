@@ -298,7 +298,7 @@ public class GridAffinityAssignmentCache {
         assert assignment != null;
 
         if (ctx.cache().cacheConfiguration(cacheOrGrpName).getCacheMode() == PARTITIONED)
-            printDistribution(assignment, sorted.size());
+            printDistribution(assignment, sorted.size(), ctx.localNodeId().toString());
 
         idealAssignment = assignment;
 
@@ -311,8 +311,9 @@ public class GridAffinityAssignmentCache {
     /**
      * @param assignment List indexed by partition number.
      * @param nodesCnt Nodes count.
+     * @param localNodeId Local node id name.
      */
-    private void printDistribution(List<List<ClusterNode>> assignment, int nodesCnt) {
+    private void printDistribution(List<List<ClusterNode>> assignment, int nodesCnt, String localNodeId) {
         Float ignitePartDistribution = getFloat(IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD, 0.1f);
 
         int[] partitionsByLocalNode = new int[nodesCnt];
@@ -347,12 +348,14 @@ public class GridAffinityAssignmentCache {
             float expectedPercent = expectedCnt / assignment.size() * 100;
             float primaryPerNodePercent = (float)localPrimaryCnt / assignment.size() * 100;
 
+
+
             float deltaPrimary = Math.abs(1 - (float)localPrimaryCnt * nodesCnt / totalPrimaryCnt);
             float deltaBackup = Math.abs(1 - (float)localBackupCnt * nodesCnt / totalBackupCnt);
 
             if (deltaPrimary > ignitePartDistribution || deltaBackup > ignitePartDistribution) {
                 log.info("Local node affinity assignment distribution is not ideal " +
-                    "[cache=" + cacheOrGrpName + ", " +
+                    "[cache=" + cacheOrGrpName + ", node_ID=" + localNodeId + ", " +
                     "expectedPrimary=" + String.format("%.2f", expectedCnt) +
                     "(" + String.format("%.2f", expectedPercent) + "%), " +
                     "expectedBackups=" + String.format("%.2f", expectedCnt * this.backups) +
