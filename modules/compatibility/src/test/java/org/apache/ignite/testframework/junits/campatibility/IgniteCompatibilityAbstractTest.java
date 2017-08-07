@@ -63,7 +63,7 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
 
         final Collection<String> filteredJvmArguments = filteredJvmArgs(ver);
 
-        return new IgniteProcessProxy(getConfiguration(), log, grid(0), true, clos) {
+        return new IgniteProcessProxy(getConfiguration(), log, grid(0), true) {
             @Override protected GridJavaProcess exec(String clsName, String params, @Nullable IgniteLogger log,
                 @Nullable IgniteInClosure<String> printC, @Nullable GridAbsClosure procKilledC,
                 @Nullable String javaHome,

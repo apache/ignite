@@ -94,15 +94,8 @@ public class MavenUtils {
         String groupId = names[0];
         String artifactId = names[1];
         String version = names[2];
-        String packaging = null;
-        String classifier = null;
-
-        if (names.length > 3) {
-            packaging = names[3];
-
-            if (names.length > 4)
-                classifier = names[4];
-        }
+        String packaging = names.length > 3 ? names[3] : null;
+        String classifier = names.length > 4 ? names[4] : null;
 
         String jarFileName = String.format("%s-%s%s.%s",
             artifactId,

@@ -136,37 +136,11 @@ public class IgniteProcessProxy implements IgniteEx {
      */
     public IgniteProcessProxy(IgniteConfiguration cfg, IgniteLogger log, Ignite locJvmGrid, boolean resetDiscovery)
         throws Exception {
-        this(cfg, log, locJvmGrid, resetDiscovery, null);
-    }
-
-    /**
-     * @param cfg Configuration.
-     * @param log Logger.
-     * @param locJvmGrid Local JVM grid.
-     * @param resetDiscovery Reset DiscoverySpi at the configuration.
-     * @param clos IgniteInClosure for post configuration.
-     * @throws Exception On error.
-     * @see #filteredJvmArgs()
-     */
-    public IgniteProcessProxy(IgniteConfiguration cfg, IgniteLogger log, Ignite locJvmGrid, boolean resetDiscovery,
-        IgniteInClosure<IgniteConfiguration> clos) throws Exception {
         this.cfg = cfg;
         this.locJvmGrid = locJvmGrid;
         this.log = log.getLogger("jvm-" + id.toString().substring(0, id.toString().indexOf('-')));
 
-        String params;
-
         String cfgFileName = IgniteNodeRunner.storeToFile(cfg.setNodeId(id), resetDiscovery);
-
-        params = cfgFileName;
-
-        if (clos != null) {
-            String closFileName = cfgFileName + "_closure";
-
-            IgniteNodeRunner.storeToFile(clos, closFileName);
-
-            params += " " + closFileName;
-        }
 
         Collection<String> filteredJvmArgs = filteredJvmArgs();
 
@@ -177,7 +151,7 @@ public class IgniteProcessProxy implements IgniteEx {
 
         proc = exec(
             IgniteNodeRunner.class.getCanonicalName(),
-            params,
+            cfgFileName, // Params.
             this.log,
             // Optional closure to be called each time wrapped process prints line to system.out or system.err.
             new IgniteInClosure<String>() {
