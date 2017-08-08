@@ -1153,12 +1153,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         final int timeoutMillis,
         final GridQueryCancel cancel,
         final Object[] params,
-        final int[] parts
+        final int[] parts,
+        final boolean streaming
     ) {
         return new Iterable<List<?>>() {
             @Override public Iterator<List<?>> iterator() {
                 return rdcQryExec.query(schemaName, qry, keepCacheObj, enforceJoinOrder, timeoutMillis, cancel, params,
-                    parts);
+                    parts, streaming);
             }
         };
     }
@@ -1402,7 +1403,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         QueryCursorImpl<List<?>> cursor = new QueryCursorImpl<>(
             runQueryTwoStep(schemaName, twoStepQry, keepBinary, enforceJoinOrder, qry.getTimeout(), cancel,
-                qry.getArgs(), partitions), cancel);
+                qry.getArgs(), partitions, qry.isStreaming()), cancel);
 
         cursor.fieldsMeta(meta);
 

@@ -418,6 +418,7 @@ public class GridMapQueryExecutor {
         final boolean enforceJoinOrder = req.isFlagSet(GridH2QueryRequest.FLAG_ENFORCE_JOIN_ORDER);
         final boolean explain = req.isFlagSet(GridH2QueryRequest.FLAG_EXPLAIN);
         final boolean replicated = req.isFlagSet(GridH2QueryRequest.FLAG_REPLICATED);
+        final boolean streaming = req.streaming();
 
         final List<Integer> cacheIds = req.caches();
 
@@ -449,7 +450,8 @@ public class GridMapQueryExecutor {
                             enforceJoinOrder,
                             false,
                             req.timeout(),
-                            params);
+                            params,
+                            streaming);
 
                         return null;
                     }
@@ -472,7 +474,8 @@ public class GridMapQueryExecutor {
             enforceJoinOrder,
             replicated,
             req.timeout(),
-            params);
+            params,
+            streaming);
     }
 
     /**
@@ -488,6 +491,7 @@ public class GridMapQueryExecutor {
      * @param tbls Tables.
      * @param pageSize Page size.
      * @param distributedJoinMode Query distributed join mode.
+     * @param streaming Streaming flag.
      */
     private void onQueryRequest0(
         ClusterNode node,
@@ -505,7 +509,8 @@ public class GridMapQueryExecutor {
         boolean enforceJoinOrder,
         boolean replicated,
         int timeout,
-        Object[] params
+        Object[] params,
+        boolean streaming
     ) {
         // Prepare to run queries.
         GridCacheContext<?, ?> mainCctx =

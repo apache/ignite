@@ -128,6 +128,9 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
     /** Schema name. */
     private String schemaName;
 
+    /** Streaming flag. */
+    private boolean streaming;
+
     /**
      * Required by {@link Externalizable}
      */
@@ -364,6 +367,20 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
         return this;
     }
 
+    /**
+     * @return Streaming flag.
+     */
+    public boolean streaming() {
+        return streaming;
+    }
+
+    /**
+     * @param streaming Streaming flag.
+     */
+    public void streaming(boolean streaming) {
+        this.streaming = streaming;
+    }
+
     /** {@inheritDoc} */
     @Override public void marshall(Marshaller m) {
         if (paramsBytes != null)
@@ -485,6 +502,12 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
                     return false;
 
                 writer.incrementState();
+
+            case 12:
+                if (!writer.writeBoolean("streaming", streaming))
+                    return false;
+
+                writer.incrementState();
         }
 
         return true;
@@ -594,6 +617,14 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
                     return false;
 
                 reader.incrementState();
+
+            case 12:
+                streaming = reader.readBoolean("streaming");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
         }
 
         return reader.afterMessageRead(GridH2QueryRequest.class);
@@ -606,7 +637,7 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 12;
+        return 13;
     }
 
     /** {@inheritDoc} */

@@ -517,7 +517,8 @@ public class GridReduceQueryExecutor {
         int timeoutMillis,
         GridQueryCancel cancel,
         Object[] params,
-        final int[] parts
+        final int[] parts,
+        boolean streaming
     ) {
         if (F.isEmpty(params))
             params = EMPTY_PARAMS;
@@ -723,6 +724,9 @@ public class GridReduceQueryExecutor {
                     .flags(flags)
                     .timeout(timeoutMillis)
                     .schemaName(schemaName);
+
+                if (mapQrys.size() == 1 && streaming)
+                    req.streaming(true);
 
                 if (send(nodes, req, parts == null ? null : new ExplicitPartitionsSpecializer(qryMap), false)) {
                     awaitAllReplies(r, nodes, cancel);
