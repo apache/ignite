@@ -71,6 +71,9 @@ public class SqlFieldsQuery extends Query<List<?>> {
     /** */
     private boolean replicatedOnly;
 
+    /** */
+    private boolean streaming;
+
     /** Partitions for query */
     private int[] parts;
 
@@ -266,6 +269,23 @@ public class SqlFieldsQuery extends Query<List<?>> {
      */
     public boolean isReplicatedOnly() {
         return replicatedOnly;
+    }
+
+    /**
+     * @param streaming Streaming flag.
+     * @return {@code this} For chaining.
+     */
+    public SqlFieldsQuery setStreaming(boolean streaming) {
+        this.streaming = streaming;
+
+        return this;
+    }
+
+    /**
+     * @return Streaming flag.
+     */
+    public boolean isStreaming() {
+        return streaming;
     }
 
     /**
