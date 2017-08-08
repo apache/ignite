@@ -52,6 +52,9 @@ public final class UpdatePlan {
     /** Index of value column, if it's explicitly mentioned in column list. Ignored for UPDATE and DELETE. */
     public final int valColIdx;
 
+    /** Whether table contains only key columns and _val if fake. */
+    public final boolean noValueTbl;
+
     /** SELECT statement built upon initial DML statement. */
     public final String selectQry;
 
@@ -66,8 +69,8 @@ public final class UpdatePlan {
 
     /** */
     private UpdatePlan(UpdateMode mode, GridH2Table tbl, String[] colNames, int[] colTypes, KeyValueSupplier keySupplier,
-        KeyValueSupplier valSupplier, int keyColIdx, int valColIdx, String selectQry, boolean isLocSubqry,
-        int rowsNum, FastUpdateArguments fastUpdateArgs) {
+        KeyValueSupplier valSupplier, int keyColIdx, int valColIdx, boolean noValueTbl, String selectQry,
+        boolean isLocSubqry, int rowsNum, FastUpdateArguments fastUpdateArgs) {
         this.colNames = colNames;
         this.colTypes = colTypes;
         this.rowsNum = rowsNum;
@@ -80,6 +83,7 @@ public final class UpdatePlan {
         this.valSupplier = valSupplier;
         this.keyColIdx = keyColIdx;
         this.valColIdx = valColIdx;
+        this.noValueTbl = noValueTbl;
         this.selectQry = selectQry;
         this.isLocSubqry = isLocSubqry;
         this.fastUpdateArgs = fastUpdateArgs;
@@ -92,7 +96,7 @@ public final class UpdatePlan {
         assert !F.isEmpty(colNames);
 
         return new UpdatePlan(UpdateMode.MERGE, tbl, colNames, colTypes, keySupplier, valSupplier, keyColIdx, valColIdx,
-            selectQry, isLocSubqry, rowsNum, null);
+            false, selectQry, isLocSubqry, rowsNum, null);
     }
 
     /** */
@@ -101,7 +105,7 @@ public final class UpdatePlan {
         assert !F.isEmpty(colNames);
 
         return new UpdatePlan(UpdateMode.INSERT, tbl, colNames, colTypes, keySupplier, valSupplier, keyColIdx, valColIdx,
-            selectQry, isLocSubqry, rowsNum, null);
+            false, selectQry, isLocSubqry, rowsNum, null);
     }
 
     /** */
@@ -109,20 +113,21 @@ public final class UpdatePlan {
         int valColIdx, String selectQry) {
         assert !F.isEmpty(colNames);
 
-        return new UpdatePlan(UpdateMode.UPDATE, tbl, colNames, colTypes, null, valSupplier, -1, valColIdx, selectQry,
-            false, 0, null);
+        return new UpdatePlan(UpdateMode.UPDATE, tbl, colNames, colTypes, null, valSupplier, -1, valColIdx,
+            false, selectQry, false, 0, null);
     }
 
     /** */
-    public static UpdatePlan forDelete(GridH2Table tbl, String selectQry) {
-        return new UpdatePlan(UpdateMode.DELETE, tbl, null, null, null, null, -1, -1, selectQry, false, 0, null);
+    public static UpdatePlan forDelete(GridH2Table tbl, boolean noValueTbl, String selectQry) {
+        return new UpdatePlan(UpdateMode.DELETE, tbl, null, null, null, null, -1, -1, noValueTbl, selectQry, false, 0,
+            null);
     }
 
     /** */
     public static UpdatePlan forFastUpdate(UpdateMode mode, GridH2Table tbl, FastUpdateArguments fastUpdateArgs) {
         assert mode == UpdateMode.UPDATE || mode == UpdateMode.DELETE;
 
-        return new UpdatePlan(mode, tbl, null, null, null, null, -1, -1, null, false, 0, fastUpdateArgs);
+        return new UpdatePlan(mode, tbl, null, null, null, null, -1, -1, false, null, false, 0, fastUpdateArgs);
     }
 
 }

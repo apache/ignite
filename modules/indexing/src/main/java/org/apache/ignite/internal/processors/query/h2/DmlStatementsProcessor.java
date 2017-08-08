@@ -42,11 +42,9 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -105,9 +103,6 @@ public class DmlStatementsProcessor {
     /** Indexing. */
     private IgniteH2Indexing idx;
 
-    /** Logger. */
-    private IgniteLogger log;
-
     /** Default size for update plan cache. */
     private static final int PLAN_CACHE_SIZE = 1024;
 
@@ -118,13 +113,10 @@ public class DmlStatementsProcessor {
     /**
      * Constructor.
      *
-     * @param ctx Kernal context.
      * @param idx indexing.
      */
-    public void start(GridKernalContext ctx, IgniteH2Indexing idx) {
+    public void start(IgniteH2Indexing idx) {
         this.idx = idx;
-
-        log = ctx.log(DmlStatementsProcessor.class);
     }
 
     /**
@@ -132,7 +124,7 @@ public class DmlStatementsProcessor {
      *
      * @param cacheName Cache name.
      */
-    public void onCacheStop(String cacheName) {
+    void onCacheStop(String cacheName) {
         Iterator<Map.Entry<H2DmlPlanKey, UpdatePlan>> iter = planCache.entrySet().iterator();
 
         while (iter.hasNext()) {
@@ -407,7 +399,7 @@ public class DmlStatementsProcessor {
                 return doUpdate(plan, cur, pageSize);
 
             case DELETE:
-                return doDelete(cctx, cur, pageSize);
+                return doDelete(cctx, cur, pageSize, plan.noValueTbl);
 
             default:
                 throw new IgniteSQLException("Unexpected DML operation [mode=" + plan.mode + ']',
@@ -488,10 +480,11 @@ public class DmlStatementsProcessor {
      * @param cctx Cache context.
      * @param cursor SELECT results.
      * @param pageSize Batch size for streaming, anything <= 0 for single page operations.
+     * @param noValue {@code true} if SELECT results don't contain value, only key.
      * @return Results of DELETE (number of items affected AND keys that failed to be updated).
      */
     @SuppressWarnings({"unchecked", "ConstantConditions", "ThrowableResultOfMethodCallIgnored"})
-    private UpdateResult doDelete(GridCacheContext cctx, Iterable<List<?>> cursor, int pageSize)
+    private UpdateResult doDelete(GridCacheContext cctx, Iterable<List<?>> cursor, int pageSize, boolean noValue)
         throws IgniteCheckedException {
         // With DELETE, we have only two columns - key and value.
         long res = 0;
@@ -507,12 +500,18 @@ public class DmlStatementsProcessor {
 
         while (it.hasNext()) {
             List<?> e = it.next();
-            if (e.size() != 2) {
-                U.warn(log, "Invalid row size on DELETE - expected 2, got " + e.size());
-                continue;
-            }
 
-            rows.put(e.get(0), new ModifyingEntryProcessor(e.get(1), RMV));
+            if (!noValue) {
+                assert e.size() == 2;
+
+                rows.put(e.get(0), new ModifyingEntryProcessor(e.get(1), RMV));
+            }
+            else {
+                assert e.size() == 1;
+
+                // We need entry processors here in order to count affected items on operation end.
+                rows.put(e.get(0), RemovingEntryProcessor.INSTANCE);
+            }
 
             if ((pageSize > 0 && rows.size() == pageSize) || (!it.hasNext())) {
                 PageProcessingResult pageRes = processPage(cctx, rows);
@@ -967,11 +966,9 @@ public class DmlStatementsProcessor {
 
         Object val = plan.valSupplier.apply(row);
 
-        if (QueryUtils.isSqlType(desc.valueClass())) {
-            assert plan.valColIdx != -1;
-
+        // We need to do conversion only for user supplied values.
+        if (plan.valColIdx != -1 && QueryUtils.isSqlType(desc.valueClass()))
             val = convert(val, rowDesc, desc.valueClass(), plan.colTypes[plan.valColIdx]);
-        }
 
         if (key == null)
             throw new IgniteSQLException("Key for INSERT or MERGE must not be null",  IgniteQueryErrorCode.NULL_KEY);
@@ -1081,6 +1078,23 @@ public class DmlStatementsProcessor {
             entryModifier.apply(entry);
 
             return null; // To leave out only erroneous keys - nulls are skipped on results' processing.
+        }
+    }
+
+    /**
+     * Entry processor invoked by DELETE operations on tables that don't have any value columns, only key.
+     */
+    private final static class RemovingEntryProcessor implements EntryProcessor<Object, Object, Boolean> {
+        /** Instance. */
+        public final static RemovingEntryProcessor INSTANCE = new RemovingEntryProcessor();
+
+        /** {@inheritDoc} */
+        @Override public Boolean process(MutableEntry<Object, Object> e, Object... args) throws EntryProcessorException {
+            boolean hadVal = e.exists();
+
+            e.remove();
+
+            return hadVal;
         }
     }
 

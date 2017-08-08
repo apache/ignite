@@ -1898,7 +1898,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             dmlProc = new DmlStatementsProcessor();
             ddlProc = new DdlStatementsProcessor();
 
-            dmlProc.start(ctx, this);
+            dmlProc.start(this);
             ddlProc.start(ctx, this);
         }
 
