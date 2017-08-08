@@ -23,6 +23,7 @@ import java.sql.Timestamp;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 import org.apache.commons.io.Charsets;
 import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
@@ -147,6 +148,29 @@ public class InlineIndexHelperTest extends GridCommonAbstractTest {
         assertEquals(-1, putAndCompare("\ud802\udd20\u0904", "\ud802\udd20\u0905", maxSize));
         assertEquals(1, putAndCompare("\u0905\ud802\udd20", "\u0904\ud802\udd20", maxSize));
         assertEquals(-2, putAndCompare("\ud802\udd20\ud802\udd20\u0905", "\ud802\udd20\ud802\udd20\u0904", maxSize));
+    }
+
+    /** */
+    public void testCompareMixed2() throws Exception {
+        int strCnt = 1000;
+        int symbCnt = 20;
+        int inlineSize = symbCnt * 4 + 3;
+
+        ThreadLocalRandom rnd = ThreadLocalRandom.current();
+
+        String[] strings = new String[strCnt];
+
+        for (int i = 0; i < strings.length; i++)
+            strings[i] = randomString(symbCnt);
+
+        Arrays.sort(strings);
+
+        for (int i = 0; i < 100; i++) {
+            int i1 = rnd.nextInt(strings.length);
+            int i2 = rnd.nextInt(strings.length);
+
+            assertEquals(Integer.compare(i1,i2), putAndCompare(strings[i1], strings[i2], inlineSize));
+        }
     }
 
     /**
@@ -471,4 +495,46 @@ public class InlineIndexHelperTest extends GridCommonAbstractTest {
         return ha.canRelyOnCompare(c, v1, v2);
     }
 
+    private String randomString(int count) {
+        final char[] buffer = new char[count];
+
+        ThreadLocalRandom rnd = ThreadLocalRandom.current();
+
+        while (count-- != 0) {
+            char ch;
+
+            if (rnd.nextInt(100) > 3) {
+                ch = (char) (rnd.nextInt(95) + 32); // regular symbols
+            } else {
+                ch = (char) (rnd.nextInt(65407) + 127); // others symbols
+            }
+
+            if(ch >= 56320 && ch <= 57343) {
+                if(count == 0) {
+                    count++;
+                } else {
+                    // low surrogate, insert high surrogate after putting it in
+                    buffer[count] = ch;
+                    count--;
+                    buffer[count] = (char) (55296 + rnd.nextInt(128));
+                }
+            } else if(ch >= 55296 && ch <= 56191) {
+                if(count == 0) {
+                    count++;
+                } else {
+                    // high surrogate, insert low surrogate before putting it in
+                    buffer[count] = (char) (56320 + rnd.nextInt(128));
+                    count--;
+                    buffer[count] = ch;
+                }
+            } else if(ch >= 56192 && ch <= 56319) {
+                // private high surrogate, no effing clue, so skip it
+                count++;
+            } else {
+                buffer[count] = ch;
+            }
+        }
+
+        return new String(buffer);
+    }
 }
