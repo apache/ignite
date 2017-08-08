@@ -325,7 +325,7 @@ public class QueryEntity implements Serializable {
         return this;
     }
 
-    /**1
+    /**
      * Sets a collection of index entities.
      *
      * @param idxs Collection of index entities.
