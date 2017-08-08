@@ -15,15 +15,13 @@
  * limitations under the License.
  */
 
-package org.apache.ignite;
+package org.apache.ignite.compatibility.spi;
 
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractFullApiSelfTest;
-import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.testframework.junits.campatibility.IgniteCompatibilityAbstractTest;
-import org.apache.ignite.tests.compatibility.plugins.TestCompatibilityPluginProvider;
+import org.apache.ignite.compatibility.testframework.junits.IgniteCompatibilityAbstractTest;
 
 /** */
 public class TestMultiVersionMode extends IgniteCompatibilityAbstractTest {
@@ -33,20 +31,6 @@ public class TestMultiVersionMode extends IgniteCompatibilityAbstractTest {
         cfg.setPeerClassLoadingEnabled(true);
 
         return cfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
-        TestCompatibilityPluginProvider.enable();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        TestCompatibilityPluginProvider.disable();
     }
 
     /** */

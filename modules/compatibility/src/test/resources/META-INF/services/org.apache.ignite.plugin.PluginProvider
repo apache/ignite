@@ -1,1 +1,1 @@
-org.apache.ignite.tests.compatibility.plugins.TestCompatibilityPluginProvider
+org.apache.ignite.compatibility.testframework.plugins.TestCompatibilityPluginProvider

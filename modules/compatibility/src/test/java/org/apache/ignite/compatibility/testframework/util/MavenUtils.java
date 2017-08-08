@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.tests.compatibility;
+package org.apache.ignite.compatibility.testframework.util;
 
 import com.google.common.base.Charsets;
 import com.google.common.io.CharStreams;

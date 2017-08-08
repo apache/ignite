@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testframework.junits.campatibility;
+package org.apache.ignite.compatibility.testframework.junits;
 
 import org.apache.ignite.configuration.IgniteConfiguration;
 

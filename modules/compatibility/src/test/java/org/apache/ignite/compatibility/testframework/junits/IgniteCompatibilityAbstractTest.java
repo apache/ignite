@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testframework.junits.campatibility;
+package org.apache.ignite.compatibility.testframework.junits;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -26,12 +26,27 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
-import org.apache.ignite.tests.compatibility.MavenUtils;
+import org.apache.ignite.compatibility.testframework.plugins.TestCompatibilityPluginProvider;
+import org.apache.ignite.compatibility.testframework.util.MavenUtils;
 
 /**
  * Super class for all compatibility tests.
  */
 public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstractTest {
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
+        TestCompatibilityPluginProvider.enable();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        TestCompatibilityPluginProvider.disable();
+    }
+
     /** {@inheritDoc} */
     @Override protected boolean isMultiJvm() {
         return true;
