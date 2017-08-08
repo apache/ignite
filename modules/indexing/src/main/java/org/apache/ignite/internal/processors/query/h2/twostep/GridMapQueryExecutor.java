@@ -704,7 +704,8 @@ public class GridMapQueryExecutor {
             sendError(node, req.queryRequestId(), new CacheException("No node result found for request: " + req));
 
             return;
-        } else if (nodeRess.cancelled(req.queryRequestId())) {
+        }
+        else if (nodeRess.cancelled(req.queryRequestId())) {
             sendError(node, req.queryRequestId(), new QueryCancelledException());
 
             return;
