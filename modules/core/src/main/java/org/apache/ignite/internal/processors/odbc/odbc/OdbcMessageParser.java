@@ -221,7 +221,7 @@ public class OdbcMessageParser implements SqlListenerMessageParser {
             writer.writeInt(metas.size());
 
             for (OdbcColumnMeta meta : metas)
-                meta.write(writer);
+                meta.write(writer, writer.context());
         }
         else if (res0 instanceof OdbcQueryExecuteBatchResult) {
             OdbcQueryExecuteBatchResult res = (OdbcQueryExecuteBatchResult) res0;
@@ -279,7 +279,7 @@ public class OdbcMessageParser implements SqlListenerMessageParser {
             writer.writeInt(columnsMeta.size());
 
             for (OdbcColumnMeta columnMeta : columnsMeta)
-                columnMeta.write(writer);
+                columnMeta.write(writer, writer.context());
         }
         else if (res0 instanceof OdbcQueryGetTablesMetaResult) {
             OdbcQueryGetTablesMetaResult res = (OdbcQueryGetTablesMetaResult) res0;

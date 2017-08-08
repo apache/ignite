@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.odbc.odbc;
 
 import org.apache.ignite.binary.BinaryRawWriter;
+import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 
@@ -97,13 +98,15 @@ public class OdbcColumnMeta {
      * Write in a binary format.
      *
      * @param writer Binary writer.
+     * @param ctx Binary context.
      */
-    public void write(BinaryRawWriter writer) {
+    public void write(BinaryRawWriter writer, BinaryContext ctx) {
         writer.writeString(schemaName);
         writer.writeString(tableName);
         writer.writeString(columnName);
 
-        byte typeId = BinaryUtils.typeByClass(dataType);
+        // TODO: IGNITE-5655, what about ENCODE_STRING?
+        byte typeId = BinaryUtils.typeByClass(dataType, ctx);
 
         writer.writeByte(typeId);
     }

@@ -35,6 +35,7 @@ import org.apache.ignite.internal.binary.BinaryObjectBuilderSimpleNameLowerCaseM
 import org.apache.ignite.internal.binary.BinaryObjectExceptionSelfTest;
 import org.apache.ignite.internal.binary.BinaryObjectToStringSelfTest;
 import org.apache.ignite.internal.binary.BinarySerialiedFieldComparatorSelfTest;
+import org.apache.ignite.internal.binary.BinarySerialiedStringFieldComparatorSelfTest;
 import org.apache.ignite.internal.binary.BinarySimpleNameTestPropertySelfTest;
 import org.apache.ignite.internal.binary.BinaryTreeSelfTest;
 import org.apache.ignite.internal.binary.GridBinaryAffinityKeySelfTest;
@@ -92,6 +93,7 @@ public class IgniteBinaryObjectsTestSuite extends TestSuite {
         suite.addTestSuite(BinaryObjectExceptionSelfTest.class);
 
         suite.addTestSuite(BinarySerialiedFieldComparatorSelfTest.class);
+        suite.addTestSuite(BinarySerialiedStringFieldComparatorSelfTest.class);
         suite.addTestSuite(BinaryArrayIdentityResolverSelfTest.class);
 
         suite.addTestSuite(BinaryConfigurationConsistencySelfTest.class);

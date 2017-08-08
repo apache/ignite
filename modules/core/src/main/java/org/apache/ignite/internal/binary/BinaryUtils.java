@@ -66,6 +66,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
@@ -76,11 +77,11 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_
  * Binary utils.
  */
 public class BinaryUtils {
-    /** */
-    public static final Map<Class<?>, Byte> PLAIN_CLASS_TO_FLAG = new HashMap<>();
-
-    /** */
-    public static final Map<Byte, Class<?>> FLAG_TO_CLASS = new HashMap<>();
+    /**
+     * Type codes for primitives, primitive wrappers, standard Java classes with binary marshalling support,
+     * and arrays thereof.
+     */
+    private static final Map<Class<?>, Byte> PLAIN_CLASS_TO_FLAG = new HashMap<>();
 
     /** */
     public static final boolean USE_STR_SERIALIZATION_VER_2 = IgniteSystemProperties.getBoolean(
@@ -182,9 +183,6 @@ public class BinaryUtils {
         PLAIN_CLASS_TO_FLAG.put(Date[].class, GridBinaryMarshaller.DATE_ARR);
         PLAIN_CLASS_TO_FLAG.put(Timestamp[].class, GridBinaryMarshaller.TIMESTAMP_ARR);
         PLAIN_CLASS_TO_FLAG.put(Time[].class, GridBinaryMarshaller.TIME_ARR);
-
-        for (Map.Entry<Class<?>, Byte> entry : PLAIN_CLASS_TO_FLAG.entrySet())
-            FLAG_TO_CLASS.put(entry.getValue(), entry.getKey());
 
         PLAIN_CLASS_TO_FLAG.put(byte.class, GridBinaryMarshaller.BYTE);
         PLAIN_CLASS_TO_FLAG.put(short.class, GridBinaryMarshaller.SHORT);
@@ -374,15 +372,11 @@ public class BinaryUtils {
     /**
      * Write value with flag. e.g. writePlainObject(writer, (byte)77) will write two byte: {BYTE, 77}.
      *
-     * @param writer W
+     * @param writer W.
      * @param val Value.
+     * @param flag type code.
      */
-    public static void writePlainObject(BinaryWriterExImpl writer, Object val) {
-        Byte flag = PLAIN_CLASS_TO_FLAG.get(val.getClass());
-
-        if (flag == null)
-            throw new IllegalArgumentException("Can't write object with type: " + val.getClass());
-
+    public static void writePlainObject(BinaryWriterExImpl writer, Object val, @NotNull Byte flag) {
         switch (flag) {
             case GridBinaryMarshaller.BYTE:
                 writer.writeByte(flag);
@@ -438,6 +432,7 @@ public class BinaryUtils {
                 break;
 
             case GridBinaryMarshaller.STRING:
+            case GridBinaryMarshaller.ENCODED_STRING:
                 writer.doWriteEncodedString((String)val);
 
                 break;
@@ -588,10 +583,11 @@ public class BinaryUtils {
 
     /**
      * @param cls Class.
+     * @param ctx Binary context.
      * @return Binary field type.
      */
-    public static byte typeByClass(Class<?> cls) {
-        Byte type = PLAIN_CLASS_TO_FLAG.get(cls);
+    public static byte typeByClass(Class<?> cls, @Nullable BinaryContext ctx) {
+        Byte type = plainTypeByClass(cls, ctx);
 
         if (type != null)
             return type;
@@ -610,6 +606,20 @@ public class BinaryUtils {
             return GridBinaryMarshaller.MAP;
 
         return GridBinaryMarshaller.OBJ;
+    }
+
+    /**
+     * @param cls Class.
+     * @param ctx binary context.
+     * @return Binary field type.
+     */
+    @Nullable public static Byte plainTypeByClass(Class<?> cls, @Nullable BinaryContext ctx) {
+        Byte flag = PLAIN_CLASS_TO_FLAG.get(cls);
+
+        if (flag != null && flag == GridBinaryMarshaller.STRING && ctx != null && ctx.stringEncoding() != null)
+            return GridBinaryMarshaller.ENCODED_STRING;
+        else
+            return flag;
     }
 
     /**

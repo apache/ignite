@@ -199,7 +199,7 @@ public class BinaryConfiguration {
      * @param code encoding code.
      * @return {@code this} for chaining.
      */
-    public BinaryConfiguration setEncoding(byte code) {
+    public BinaryConfiguration setEncoding(@Nullable Byte code) {
         this.encoding = code;
 
         return this;

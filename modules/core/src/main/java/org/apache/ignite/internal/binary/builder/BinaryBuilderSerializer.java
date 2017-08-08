@@ -169,10 +169,10 @@ class BinaryBuilderSerializer {
             return;
         }
 
-        Byte flag = BinaryUtils.PLAIN_CLASS_TO_FLAG.get(val.getClass());
+        Byte flag = BinaryUtils.plainTypeByClass(val.getClass(), writer.context());
 
         if (flag != null) {
-            BinaryUtils.writePlainObject(writer, val);
+            BinaryUtils.writePlainObject(writer, val, flag);
 
             return;
         }
