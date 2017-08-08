@@ -35,6 +35,7 @@ import org.apache.ignite.internal.processors.odbc.SqlListenerResponse;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBatchExecuteRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBatchExecuteResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQuery;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryCancelRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryCloseRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteResult;
@@ -51,7 +52,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 /**
  * JDBC IO layer implementation based on blocking IPC streams.
  */
-public class JdbcThinTcpIo {
+public class JdbcThinTcpIo implements AutoCloseable {
     /** Current version. */
     private static final SqlListenerProtocolVersion CURRENT_VER = SqlListenerProtocolVersion.create(2, 1, 0);
 
@@ -114,6 +115,9 @@ public class JdbcThinTcpIo {
 
     /** Closed flag. */
     private boolean closed;
+
+    /** Connection ID. */
+    private long connId;
 
     /**
      * Constructor.
@@ -202,8 +206,11 @@ public class JdbcThinTcpIo {
 
         boolean accepted = reader.readBoolean();
 
-        if (accepted)
+        if (accepted) {
+            connId = reader.readLong();
+
             return;
+        }
 
         short maj = reader.readShort();
         short min = reader.readShort();
@@ -309,6 +316,16 @@ public class JdbcThinTcpIo {
     }
 
     /**
+     * @param connId Connection ID.
+     * @throws IOException On error.
+     * @throws IgniteCheckedException On error.
+     */
+    public void cancelQuery(long connId)
+        throws IOException, IgniteCheckedException {
+        sendRequest(new JdbcQueryCancelRequest(connId), QUERY_CLOSE_MSG_SIZE);
+    }
+
+    /**
      * @param req ODBC request.
      * @throws IOException On error.
      */
@@ -362,10 +379,8 @@ public class JdbcThinTcpIo {
         return data;
     }
 
-    /**
-     * Close the client IO.
-     */
-    public void close() {
+    /** {@inheritDoc} */
+    @Override public void close() {
         if (closed)
             return;
 
@@ -433,5 +448,27 @@ public class JdbcThinTcpIo {
      */
     public boolean tcpNoDelay() {
         return tcpNoDelay;
+    }
+
+    /**
+     * @return Connection ID.
+     */
+    public long connectionId() {
+        return connId;
+    }
+
+    /**
+     * @param io Opened I/O.
+     * @return Open new I/O.
+     * @throws IgniteCheckedException On error.
+     * @throws IOException On IO error in handshake.
+     */
+    public static JdbcThinTcpIo newIo(JdbcThinTcpIo io) throws IgniteCheckedException, IOException {
+        JdbcThinTcpIo newIo = new JdbcThinTcpIo(io.host, io.port, io.distributedJoins, io.enforceJoinOrder,
+            io.collocated, io.replicatedOnly, io.autoCloseServerCursor, io.sockSndBuf, io.sockRcvBuf, io.tcpNoDelay);
+
+        newIo.start();
+
+        return newIo;
     }
 }

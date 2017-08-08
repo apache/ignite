@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
+import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+
 /**
  * SQL listener request handler.
  */
@@ -36,4 +38,11 @@ public interface SqlListenerRequestHandler {
      * @return Error response.
      */
     public SqlListenerResponse handleException(Exception e);
+
+    /**
+     * Add custom data to handshake response.
+     *
+     * @param writer Binary writer.
+     */
+    public void handshakeAdditionalResponse(BinaryWriterExImpl writer);
 }

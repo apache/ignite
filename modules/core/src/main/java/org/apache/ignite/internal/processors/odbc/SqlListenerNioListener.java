@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.odbc;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -33,6 +34,7 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequestHandler;
 import org.apache.ignite.internal.processors.odbc.odbc.OdbcMessageParser;
 import org.apache.ignite.internal.processors.odbc.odbc.OdbcRequestHandler;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
+import org.apache.ignite.internal.util.nio.GridNioServer;
 import org.apache.ignite.internal.util.nio.GridNioServerListenerAdapter;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.nio.GridNioSessionMetaKey;
@@ -60,8 +62,14 @@ public class SqlListenerNioListener extends GridNioServerListenerAdapter<byte[]>
     /** Request ID generator. */
     private static final AtomicLong REQ_ID_GEN = new AtomicLong();
 
+    /** Session ID generator. */
+    private static final AtomicLong SESSION_ID_GEN = new AtomicLong();
+
     /** Busy lock. */
     private final GridSpinBusyLock busyLock;
+
+    /** Connection ID to JDBC handler map. */
+    private final ConcurrentHashMap<Long, JdbcRequestHandler> handlers = new ConcurrentHashMap<>();
 
     /** Kernal context. */
     private final GridKernalContext ctx;
@@ -104,6 +112,14 @@ public class SqlListenerNioListener extends GridNioServerListenerAdapter<byte[]>
                 log.debug("SQL client disconnected: " + ses.remoteAddress());
             else
                 log.debug("SQL client disconnected due to an error [addr=" + ses.remoteAddress() + ", err=" + e + ']');
+        }
+
+        SqlListenerConnectionContext connCtx = ses.meta(CONN_CTX_META_KEY);
+
+        if (connCtx != null && connCtx.handler() != null && connCtx.handler() instanceof JdbcRequestHandler) {
+            JdbcRequestHandler handler = (JdbcRequestHandler)connCtx.handler();
+
+            handlers.remove(handler.connectionId());
         }
     }
 
@@ -198,9 +214,11 @@ public class SqlListenerNioListener extends GridNioServerListenerAdapter<byte[]>
 
         String errMsg = null;
 
+        SqlListenerConnectionContext connCtx = null;
+
         if (SUPPORTED_VERS.contains(ver)) {
             // Prepare context.
-            SqlListenerConnectionContext connCtx = prepareContext(ver, reader);
+            connCtx = prepareContext(ver, reader);
 
             ses.addMeta(CONN_CTX_META_KEY, connCtx);
         }
@@ -213,8 +231,12 @@ public class SqlListenerNioListener extends GridNioServerListenerAdapter<byte[]>
         // Send response.
         BinaryWriterExImpl writer = new BinaryWriterExImpl(null, new BinaryHeapOutputStream(8), null, null);
 
-        if (errMsg == null)
+        if (errMsg == null) {
             writer.writeBoolean(true);
+
+            if (connCtx != null)
+                connCtx.handler().handshakeAdditionalResponse(writer);
+        }
         else {
             writer.writeBoolean(false);
             writer.writeShort(CURRENT_VER.major());
@@ -256,8 +278,12 @@ public class SqlListenerNioListener extends GridNioServerListenerAdapter<byte[]>
             boolean replicatedOnly = reader.readBoolean();
             boolean autoCloseCursors = reader.readBoolean();
 
-            SqlListenerRequestHandler handler = new JdbcRequestHandler(ctx, busyLock, maxCursors, distributedJoins,
-                enforceJoinOrder, collocated, replicatedOnly, autoCloseCursors);
+            long connId = SESSION_ID_GEN.incrementAndGet();
+
+            JdbcRequestHandler handler = new JdbcRequestHandler(ctx, busyLock, maxCursors, distributedJoins,
+                enforceJoinOrder, collocated, replicatedOnly, autoCloseCursors, connId, handlers);
+
+            handlers.put(connId, handler);
 
             SqlListenerMessageParser parser = new JdbcMessageParser(ctx);
 

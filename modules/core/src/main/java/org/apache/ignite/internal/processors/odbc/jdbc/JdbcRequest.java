@@ -42,6 +42,9 @@ public class JdbcRequest extends SqlListenerRequest implements JdbcRawBinaryliza
     /** Batch queries. */
     public static final byte BATCH_EXEC = 6;
 
+    /** Cancel query. */
+    public static final byte QRY_CANCEL = 7;
+
     /** Request type. */
     private byte type;
 
@@ -102,6 +105,9 @@ public class JdbcRequest extends SqlListenerRequest implements JdbcRawBinaryliza
 
             case BATCH_EXEC:
                 req = new JdbcBatchExecuteRequest();
+
+            case QRY_CANCEL:
+                req = new JdbcQueryCancelRequest();
 
                 break;
 

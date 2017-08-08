@@ -25,7 +25,7 @@ import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 
 /**
- * SQL listener query fetch result.
+ * JDBC query cursor.
  */
 class JdbcQueryCursor {
     /** Query ID. */
@@ -44,7 +44,7 @@ class JdbcQueryCursor {
     private final QueryCursorImpl<List<Object>> cur;
 
     /** Query results iterator. */
-    private final Iterator<List<Object>> iter;
+    private Iterator<List<Object>> iter;
 
     /**
      * @param queryId Query ID.
@@ -57,7 +57,12 @@ class JdbcQueryCursor {
         this.pageSize = pageSize;
         this.maxRows = maxRows;
         this.cur = cur;
+    }
 
+    /**
+     * Open iterator.
+     */
+    public void open() {
         iter = cur.iterator();
     }
 

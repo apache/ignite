@@ -205,6 +205,16 @@ public class JdbcThinStatement implements Statement {
     /** {@inheritDoc} */
     @Override public void cancel() throws SQLException {
         ensureNotClosed();
+
+        try(JdbcThinTcpIo cancelIo = JdbcThinTcpIo.newIo(conn.io())) {
+            cancelIo.cancelQuery(conn.io().connectionId());
+        }
+        catch (IOException e) {
+            throw new SQLException("Failed to query Ignite.", e);
+        }
+        catch (IgniteCheckedException e) {
+            throw new SQLException("Failed to query Ignite.", e);
+        }
     }
 
     /** {@inheritDoc} */

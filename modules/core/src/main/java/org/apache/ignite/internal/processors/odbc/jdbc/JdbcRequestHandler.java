@@ -18,14 +18,17 @@
 package org.apache.ignite.internal.processors.odbc.jdbc;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
+import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.odbc.SqlListenerRequest;
 import org.apache.ignite.internal.processors.odbc.SqlListenerRequestHandler;
@@ -37,6 +40,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.BATCH_EXEC;
+import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.QRY_CANCEL;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.QRY_CLOSE;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.QRY_EXEC;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.QRY_FETCH;
@@ -79,6 +83,11 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
     /** Automatic close of cursors. */
     private final boolean autoCloseCursors;
 
+    /** Connection ID. */
+    private final Long connId;
+
+    private final ConcurrentHashMap<Long, JdbcRequestHandler> handlers;
+
     /**
      * Constructor.
      *
@@ -90,10 +99,12 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
      * @param collocated Collocated flag.
      * @param replicatedOnly Replicated only flag.
      * @param autoCloseCursors Flag to automatically close server cursors.
+     * @param connId Connection ID.
+     * @param handlers Connection Id to handler map.
      */
     public JdbcRequestHandler(GridKernalContext ctx, GridSpinBusyLock busyLock, int maxCursors,
         boolean distributedJoins, boolean enforceJoinOrder, boolean collocated, boolean replicatedOnly, 
-        boolean autoCloseCursors) {
+        boolean autoCloseCursors, long connId, ConcurrentHashMap<Long, JdbcRequestHandler> handlers) {
         this.ctx = ctx;
         this.busyLock = busyLock;
         this.maxCursors = maxCursors;
@@ -102,6 +113,8 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
         this.collocated = collocated;
         this.replicatedOnly = replicatedOnly;
         this.autoCloseCursors = autoCloseCursors;
+        this.connId = connId;
+        this.handlers = handlers;
 
         log = ctx.log(getClass());
     }
@@ -134,6 +147,9 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
 
                 case BATCH_EXEC:
                     return executeBatch((JdbcBatchExecuteRequest)req);
+
+                case QRY_CANCEL:
+                    return cancelQuery((JdbcQueryCancelRequest)req);
             }
 
             return new JdbcResponse(SqlListenerResponse.STATUS_FAILED, "Unsupported JDBC request [req=" + req + ']');
@@ -146,6 +162,28 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
     /** {@inheritDoc} */
     @Override public SqlListenerResponse handleException(Exception e) {
         return new JdbcResponse(SqlListenerResponse.STATUS_FAILED, e.toString());
+    }
+
+    /** {@inheritDoc} */
+    @Override public void handshakeAdditionalResponse(BinaryWriterExImpl writer) {
+        writer.writeLong(connId);
+    }
+
+    /**
+     * @return Connection ID.
+     */
+    public Long connectionId() {
+        return connId;
+    }
+
+    /**
+     */
+    public void cancelCurrentQuery() {
+        assert qryCursors.size() == 1 : "qryCursors.size()=" + qryCursors.size();
+
+        JdbcQueryCursor cur = qryCursors.elements().nextElement();
+
+        ctx.query().cancelQueries(Collections.singleton(cur.queryId()));
     }
 
     /**
@@ -194,6 +232,10 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
 
             JdbcQueryCursor cur = new JdbcQueryCursor(qryId, req.pageSize(), req.maxRows(), (QueryCursorImpl)qryCur);
 
+            qryCursors.put(qryId, cur);
+
+            cur.open();
+
             JdbcQueryExecuteResult res;
 
             if (cur.isQuery())
@@ -209,10 +251,11 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
                 res = new JdbcQueryExecuteResult(qryId, (Long)items.get(0).get(0));
             }
 
-            if (res.last() && (!res.isQuery() || autoCloseCursors))
+            if (res.last() && (!res.isQuery() || autoCloseCursors)) {
                 cur.close();
-            else
-                qryCursors.put(qryId, cur);
+
+                qryCursors.remove(qryId);
+            }
 
             return new JdbcResponse(res);
         }
@@ -221,7 +264,10 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
 
             U.error(log, "Failed to execute SQL query [reqId=" + req.requestId() + ", req=" + req + ']', e);
 
-            return new JdbcResponse(SqlListenerResponse.STATUS_FAILED, e.toString());
+            if (e.getCause() != null && e.getCause() instanceof QueryCancelledException)
+                return new JdbcResponse(SqlListenerResponse.STATUS_FAILED, "The query was cancelled while executing.");
+            else
+                return new JdbcResponse(SqlListenerResponse.STATUS_FAILED, e.toString());
         }
     }
 
@@ -363,6 +409,25 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
 
             return new JdbcResponse(new JdbcBatchExecuteResult(Arrays.copyOf(updCnts, successQueries),
                 SqlListenerResponse.STATUS_FAILED, e.toString()));
+        }
+    }
+
+    /**
+     * @param req Execute query request.
+     * @return Response.
+     */
+    private JdbcResponse cancelQuery(JdbcQueryCancelRequest req) {
+        try {
+            JdbcRequestHandler handler = handlers.get(req.connectionId());
+
+            handler.cancelCurrentQuery();
+
+            return new JdbcResponse(null);
+        }
+        catch (Exception e) {
+            U.error(log, "Failed to cancel query[reqId=" + req.requestId() + ", req=" + req + ']', e);
+
+            return new JdbcResponse(SqlListenerResponse.STATUS_FAILED, e.toString());
         }
     }
 }
