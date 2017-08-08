@@ -18,9 +18,7 @@
 package org.apache.ignite.internal.processors.affinity;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -49,11 +47,12 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
-import org.apache.ignite.IgniteSystemProperties;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_AFFINITY_HISTORY_SIZE;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD;
+import static org.apache.ignite.IgniteSystemProperties.getFloat;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 
 /**
@@ -298,8 +297,8 @@ public class GridAffinityAssignmentCache {
 
         assert assignment != null;
 
-        if (!cacheOrGrpName.equals("ignite-sys-cache"))
-            printDistribution(assignment, sorted, cacheOrGrpName, ctx.localNodeId().toString());
+        if (ctx.cache().cacheConfiguration(cacheOrGrpName).getCacheMode() == PARTITIONED)
+            printDistribution(assignment, sorted.size());
 
         idealAssignment = assignment;
 
@@ -310,111 +309,57 @@ public class GridAffinityAssignmentCache {
     }
 
     /**
-     * @param partitionsByNodes Affinity result.
-     * @param nodes Topology.
-     * @param cacheName
-     * @param localNodeID
+     * @param assignment List indexed by partition number.
+     * @param nodesCnt Nodes count.
      */
-    private void printDistribution(List<List<ClusterNode>> partitionsByNodes,
-        Collection<ClusterNode> nodes, String cacheName, String localNodeID) {
+    private void printDistribution(List<List<ClusterNode>> assignment, int nodesCnt) {
+        Float ignitePartDistribution = getFloat(IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD, 0.1f);
 
-        int[] nodesParts = freqDistribution(partitionsByNodes, nodes);
+        int[] partitionsByLocalNode = new int[nodesCnt];
 
-        String ignitePartDistribution = System.getProperty(IgniteSystemProperties.IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD);
+        int totalPrimaryCnt = 0;
 
-        if (nodesParts.length != 0) {
+        int totalBackupCnt = 0;
 
-            for (int i = 0; i < nodesParts.length; i++) {
+        for (int i = 0; i < nodesCnt; i++) {
+            for (List<ClusterNode> partitionByNodes : assignment) {
+                if (partitionByNodes.get(i).isLocal())
+                    partitionsByLocalNode[i] += 1;
 
-                int nr = 0;
-
-                if (nodesParts[i] != partitionsByNodes.size()) {
-                    int percentage = (int)Math.round((double)nodesParts[i] / partitionsByNodes.size() * 100);
-
-                    if (percentage >= Integer.valueOf(ignitePartDistribution) || ignitePartDistribution == null) {
-                        log.info("Partition map has been built (distribution is not even for caches) [cacheName="
-                            + cacheName + ", " + (nr == 0 ? "Primary" : "Backup") + " nodeId=" + localNodeID +
-                            ", totalPartitionsCount=" + partitionsByNodes.size() + " percentageOfTotalPartsCount=" + percentage + "%"
-                            + ", parts=" + nodesParts[i] + "]");
-                    }
-                    else {
-                        log.info("Partition map has been built (distribution is even)");
-                    }
-                }
-
-                nr++;
-            }
-        }
-    }
-
-    /**
-     * The array with count of partitions on node:
-     *
-     * element 0 - primary partitions counts
-     * element 1 - backup#0 partitions counts
-     * etc
-     *
-     * Rows correspond to the nodes.
-     *
-     * @param partitionsByNodes Affinity result.
-     * @param nodes Topology.
-     * @return Frequency distribution array with counts of partitions on node.
-     */
-    private int[] freqDistribution(List<List<ClusterNode>> partitionsByNodes,
-        Collection<ClusterNode> nodes) {
-        List<Map<ClusterNode, AtomicInteger>> nodeMaps = new ArrayList<>();
-
-        int backups = partitionsByNodes.get(0).size();
-
-        for (int i = 0; i < backups; ++i) {
-            Map<ClusterNode, AtomicInteger> nodeMap = new HashMap<>();
-
-            for (List<ClusterNode> partitionByNodes : partitionsByNodes) {
-                ClusterNode node = partitionByNodes.get(i);
-
-                if (node.isLocal()) {
-                    if (!nodeMap.containsKey(node))
-                        nodeMap.put(node, new AtomicInteger(1));
-                    else
-                        nodeMap.get(node).incrementAndGet();
-                }
-            }
-
-            nodeMaps.add(nodeMap);
-        }
-
-        List<List<Integer>> byNodes = new ArrayList<>(nodes.size());
-
-        int resultCount = 0;
-
-        for (ClusterNode node : nodes) {
-            if (node.isLocal()) {
-                List<Integer> byBackups = new ArrayList<>(backups);
-
-                for (int j = 0; j < backups; ++j) {
-                    if (nodeMaps.get(j).get(node) == null)
-                        byBackups.add(0);
-                    else
-                        byBackups.add(nodeMaps.get(j).get(node).get());
-
-                    resultCount++;
-                }
-
-                byNodes.add(byBackups);
+                if (i == 0)
+                    totalPrimaryCnt++;
+                else
+                    totalBackupCnt++;
             }
         }
 
-        int[] result = new int[resultCount];
+        if (partitionsByLocalNode.length != 0) {
+            int localPrimaryCnt = partitionsByLocalNode[0];
+            int localBackupCnt = 0;
+            float localBackupPercent = 0;
 
-        int i = 0;
+            for (int i = 1; i < partitionsByLocalNode.length; i++) {
+                localBackupCnt += partitionsByLocalNode[i];
+                localBackupPercent += (float)partitionsByLocalNode[i] / assignment.size() * 100;
+            }
 
-        for (List<Integer> byNode : byNodes) {
-            for (Integer partsCount : byNode) {
-                result[i++] = partsCount;
+            float expectedCnt = (float)assignment.size() / nodesCnt;
+            float expectedPercent = expectedCnt / assignment.size() * 100;
+            float primaryPerNodePercent = (float)localPrimaryCnt / assignment.size() * 100;
+
+            float deltaPrimary = Math.abs(1 - (float)localPrimaryCnt * nodesCnt / totalPrimaryCnt);
+            float deltaBackup = Math.abs(1 - (float)localBackupCnt * nodesCnt / totalBackupCnt);
+
+            if (deltaPrimary > ignitePartDistribution || deltaBackup > ignitePartDistribution) {
+                log.info("Local node affinity assignment distribution is not ideal [cache=" + cacheOrGrpName +
+                    ", expectedPrimary=" + String.format("%.2f", expectedCnt) +
+                    "(" + String.format("%.2f", expectedPercent) +
+                    "%), expectedBackups=" + String.format("%.2f", expectedCnt * this.backups) +
+                    "(" + String.format("%.2f", expectedPercent * this.backups) +
+                    "%), primary=" + localPrimaryCnt + "(" + String.format("%.2f", primaryPerNodePercent) +
+                    "%), backups=" + localBackupCnt + "(" + String.format("%.2f", localBackupPercent) + "%)]");
             }
         }
-
-        return result;
     }
 
     /**
