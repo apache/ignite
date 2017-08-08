@@ -249,6 +249,27 @@ public class JdbcInsertStatementSelfTest extends JdbcAbstractDmlStatementSelfTes
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testClearBatch() throws Exception {
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+            @Override public Object call() throws SQLException {
+                return prepStmt.executeBatch();
+            }
+        }, SQLException.class, "Batch is empty");
+
+        formBatch(1, 2);
+
+        prepStmt.clearBatch();
+
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+            @Override public Object call() throws SQLException {
+                return prepStmt.executeBatch();
+            }
+        }, SQLException.class, "Batch is empty");
+    }
+
+    /**
      * Form batch on prepared statement.
      *
      * @param id1 id for first row.

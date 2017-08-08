@@ -22,7 +22,6 @@ import java.io.Reader;
 import java.math.BigDecimal;
 import java.net.URL;
 import java.sql.Array;
-import java.sql.BatchUpdateException;
 import java.sql.Blob;
 import java.sql.Clob;
 import java.sql.Date;
@@ -40,31 +39,20 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Collections;
 import java.util.List;
-import java.util.UUID;
-import javax.cache.CacheException;
-import org.apache.ignite.Ignite;
-import org.apache.ignite.internal.processors.query.IgniteSQLBatchUpdateException;
-import org.apache.ignite.internal.processors.query.IgniteSQLException;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * JDBC prepared statement implementation.
  */
 public class JdbcPreparedStatement extends JdbcStatement implements PreparedStatement {
-    /** */
-    private final static long[] EMPTY_LONG_ARRAY = new long[0];
-
     /** SQL query. */
     private final String sql;
 
-    /** Batch arguments. */
-    private List<List<Object>> batchArgs;
-
     /** H2's parsed statement to retrieve metadata from. */
     PreparedStatement nativeStatement;
+
+    /** Batch arguments. */
+    private List<List<Object>> batchArgs;
 
     /**
      * Creates new prepared statement.
@@ -82,7 +70,7 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
     @Override public void addBatch(String sql) throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Adding new SQL command to batch not supported for prepared " +
+        throw new SQLFeatureNotSupportedException("Adding new SQL command to batch is not supported for prepared " +
             "statement (use addBatch() to add new set of arguments)");
     }
 
@@ -227,112 +215,22 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
         if (batchArgs == null)
             batchArgs = new ArrayList<>();
 
-        batchArgs.add(new ArrayList<>(U.firstNotNull(args, Collections.emptyList())));
+        batchArgs.add(args);
+
+        args = null;
     }
 
     /** {@inheritDoc} */
     @Override public int[] executeBatch() throws SQLException {
         ensureNotClosed();
 
-        rs = null;
+        List<List<Object>> batchArgs = this.batchArgs;
 
-        updateCnt = -1;
+        this.batchArgs = null;
 
-        if (batchArgs == null)
-            return U.EMPTY_INTS;
-
-        long[] res = doBatchUpdate(sql, batchArgs);
-
-        updateCnt = !F.isEmpty(res) ? res[res.length - 1] : -1;
-
-        int[] intRes = new int[res.length];
-
-        for (int i = 0; i < res.length; i++)
-            intRes[i] = Long.valueOf(res[i]).intValue();
-
-        batchArgs = null;
-
-        return intRes;
+        return doBatchUpdate(sql, null, batchArgs);
     }
 
-    /**
-     * Run batch update query.
-     *
-     * @param sql SQL query.
-     * @param batchArgs Batch update arguments.
-     * @return Number of affected items for each item in batch.
-     * @throws SQLException If failed.
-     */
-    private long[] doBatchUpdate(String sql, List<List<Object>> batchArgs) throws SQLException {
-        if (F.isEmpty(sql))
-            throw new SQLException("SQL query is empty");
-
-        Object[] args = F.flatCollections(batchArgs).toArray();
-
-        Ignite ignite = conn.ignite();
-
-        UUID nodeId = conn.nodeId();
-
-        UUID uuid = UUID.randomUUID();
-
-        boolean loc = nodeId == null;
-
-        if (!conn.isDmlSupported())
-            throw new SQLException("Failed to query Ignite: DML operations are supported in versions 1.8.0 and newer");
-
-        JdbcQueryTask qryTask = new JdbcQueryTask(loc ? ignite : null, conn.cacheName(), conn.schemaName(), sql, false,
-            loc, args, getFetchSize(), uuid, conn.isLocalQuery(), conn.isCollocatedQuery(), conn.isDistributedJoins());
-
-        try {
-            JdbcQueryTask.QueryResult qryRes =
-                loc ? qryTask.call() : ignite.compute(ignite.cluster().forNodeId(nodeId)).call(qryTask);
-
-            return multipleUpdateCountersFromQueryResult(qryRes.getRows());
-        }
-        catch (IgniteSQLException e) {
-            throw e.toJdbcException();
-        }
-        catch (SQLException e) {
-            throw e;
-        }
-        catch (CacheException e) {
-            if (e.getCause() instanceof IgniteSQLBatchUpdateException)
-                throw ((IgniteSQLBatchUpdateException)e.getCause()).toJdbcException();
-            else
-                throw new BatchUpdateException(null, e.getCause());
-        }
-        catch (Exception e) {
-            throw new SQLException("Failed to query Ignite.", e);
-        }
-    }
-
-    /**
-     * @param rows query result.
-     * @return update counters, if found.
-     * @throws SQLException if getting an update counter from result proved to be impossible.
-     */
-    private static long[] multipleUpdateCountersFromQueryResult(List<List<?>> rows) throws SQLException {
-        if (F.isEmpty(rows))
-            return EMPTY_LONG_ARRAY;
-
-        long[] res = new long[rows.size()];
-
-        for (int i = 0; i < res.length; i++) {
-            List<?> row = rows.get(i);
-
-            if (row.size() != 1)
-                throw new SQLException("Expected row size of 1 for update operation");
-
-            Object objRes = row.get(0);
-
-            if (!(objRes instanceof Long))
-                throw new SQLException("Unexpected update result type");
-
-            res[i] = (Long) objRes;
-        }
-
-        return res;
-    }
 
     /** {@inheritDoc} */
     @Override public void setCharacterStream(int paramIdx, Reader x, int len) throws SQLException {

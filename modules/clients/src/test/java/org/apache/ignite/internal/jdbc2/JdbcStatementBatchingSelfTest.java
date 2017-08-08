@@ -22,7 +22,6 @@ import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.concurrent.Callable;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 
 /**
@@ -109,22 +108,26 @@ public class JdbcStatementBatchingSelfTest extends JdbcAbstractDmlStatementSelfT
     }
 
     /**
-     * @throws SQLException If failed.
+     * @throws Exception If failed.
      */
-    public void testClearBatch() throws SQLException {
+    public void testClearBatch() throws Exception {
         try (Statement stmt = conn.createStatement()) {
-            int[] res = stmt.executeBatch();
-
-            assertTrue(F.isEmpty(res));
+            GridTestUtils.assertThrows(log, new Callable<Object>() {
+                @Override public Object call() throws SQLException {
+                    return stmt.executeBatch();
+                }
+            }, SQLException.class, "Batch is empty");
 
             stmt.addBatch("INSERT INTO Person(_key, id, firstName, lastName, age, data) " +
                 "VALUES ('p1', 0, 'J', 'W', 250, RAWTOHEX('W'))");
 
             stmt.clearBatch();
 
-            res = stmt.executeBatch();
-
-            assertTrue(F.isEmpty(res));
+            GridTestUtils.assertThrows(log, new Callable<Object>() {
+                @Override public Object call() throws SQLException {
+                    return stmt.executeBatch();
+                }
+            }, SQLException.class, "Batch is empty");
         }
     }
 }

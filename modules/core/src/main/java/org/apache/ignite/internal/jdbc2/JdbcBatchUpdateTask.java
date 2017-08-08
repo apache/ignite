@@ -17,16 +17,17 @@
 
 package org.apache.ignite.internal.jdbc2;
 
+import java.sql.BatchUpdateException;
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteJdbcDriver;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
-import org.apache.ignite.internal.processors.query.IgniteSQLBatchUpdateException;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.resources.IgniteInstanceResource;
@@ -36,7 +37,7 @@ import static java.sql.Statement.SUCCESS_NO_INFO;
 /**
  * Task for SQL batched update statements execution through {@link IgniteJdbcDriver}.
  */
-class JdbcBatchUpdateTask implements IgniteCallable<long[]> {
+class JdbcBatchUpdateTask implements IgniteCallable<int[]> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
@@ -50,8 +51,14 @@ class JdbcBatchUpdateTask implements IgniteCallable<long[]> {
     /** Schema name. */
     private final String schemaName;
 
-    /** Sql batch. */
-    private final String[] sqlBatch;
+    /** SQL command for argument batching. */
+    private final String sql;
+
+    /** Batch of statements. */
+    private final List<String> sqlBatch;
+
+    /** Batch of arguments. */
+    private final List<List<Object>> batchArgs;
 
     /** Fetch size. */
     private final int fetchSize;
@@ -72,29 +79,35 @@ class JdbcBatchUpdateTask implements IgniteCallable<long[]> {
      * @param ignite Ignite.
      * @param cacheName Cache name.
      * @param schemaName Schema name.
-     * @param sqlBatch Collection of sql queries.
+     * @param sql SQL query. {@code null} in case of statement batching.
+     * @param sqlBatch Batch of SQL statements. {@code null} in case of parameter batching.
+     * @param batchArgs Batch of SQL parameters. {@code null} in case of statement batching.
      * @param loc Local execution flag.
      * @param fetchSize Fetch size.
      * @param locQry Local query flag.
      * @param collocatedQry Collocated query flag.
      * @param distributedJoins Distributed joins flag.
      */
-    public JdbcBatchUpdateTask(Ignite ignite, String cacheName, String schemaName, String[] sqlBatch,
-        boolean loc, int fetchSize, boolean locQry, boolean collocatedQry,
-        boolean distributedJoins) {
+    public JdbcBatchUpdateTask(Ignite ignite, String cacheName, String schemaName, String sql,
+        List<String> sqlBatch, List<List<Object>> batchArgs, boolean loc, int fetchSize,
+        boolean locQry, boolean collocatedQry, boolean distributedJoins) {
         this.ignite = ignite;
         this.cacheName = cacheName;
         this.schemaName = schemaName;
+        this.sql = sql;
         this.sqlBatch = sqlBatch;
+        this.batchArgs = batchArgs;
         this.fetchSize = fetchSize;
         this.loc = loc;
         this.locQry = locQry;
         this.collocatedQry = collocatedQry;
         this.distributedJoins = distributedJoins;
+
+        assert (!F.isEmpty(sql) && !F.isEmpty(batchArgs)) ^ !F.isEmpty(sqlBatch);
     }
 
     /** {@inheritDoc} */
-    @Override public long[] call() throws Exception {
+    @Override public int[] call() throws Exception {
         IgniteCache<?, ?> cache = ignite.cache(cacheName);
 
         // Don't create caches on server nodes in order to avoid of data rebalancing.
@@ -110,57 +123,93 @@ class JdbcBatchUpdateTask implements IgniteCallable<long[]> {
                 throw new SQLException("Cache not found [cacheName=" + cacheName + ']');
         }
 
-        long[] updCntrs = new long[sqlBatch.length];
+        int batchSize = F.isEmpty(sql) ? sqlBatch.size() : batchArgs.size();
+
+        int[] updCntrs = new int[batchSize];
 
         int idx = 0;
 
         try {
-            for (; idx < sqlBatch.length; idx++)
-                updCntrs[idx] = doSingleUpdate(cache, sqlBatch[idx]);
-        }
-        catch (SQLException ex) {
-            throw new IgniteSQLBatchUpdateException(ex, Arrays.copyOf(updCntrs, idx));
+            if (F.isEmpty(sql)) {
+                for (; idx < batchSize; idx++)
+                    updCntrs[idx] = doSingleUpdate(cache, sqlBatch.get(idx), null);
+            }
+            else {
+                for (; idx < batchSize; idx++)
+                    updCntrs[idx] = doSingleUpdate(cache, sql, batchArgs.get(idx));
+            }
         }
         catch (Exception ex) {
-            throw new IgniteSQLBatchUpdateException(new SQLException(ex), Arrays.copyOf(updCntrs, idx));
+            throw new BatchUpdateException(Arrays.copyOf(updCntrs, idx), ex);
         }
 
         return updCntrs;
     }
 
-    /** */
-    private Long doSingleUpdate(IgniteCache<?, ?> cache, String s) throws Exception {
-        SqlFieldsQuery qry = new JdbcSqlFieldsQuery(s, false);
+    /**
+     * Performs update.
+     *
+     * @param cache Cache.
+     * @param sqlText SQL text.
+     * @param args Parameters.
+     * @return Update counter.
+     * @throws SQLException If failed.
+     */
+    private Integer doSingleUpdate(IgniteCache<?, ?> cache, String sqlText, List<Object> args) throws SQLException {
+        SqlFieldsQuery qry = new JdbcSqlFieldsQuery(sqlText, false);
 
         qry.setPageSize(fetchSize);
         qry.setLocal(locQry);
         qry.setCollocated(collocatedQry);
         qry.setDistributedJoins(distributedJoins);
         qry.setSchema(schemaName);
+        qry.setArgs(args == null ? null : args.toArray());
 
         QueryCursorImpl<List<?>> qryCursor = (QueryCursorImpl<List<?>>)cache.withKeepBinary().query(qry);
 
         if (qryCursor.isQuery())
-            throw new SQLException("Query produced result set [qry=" + s + ']');
+            throw new SQLException(getError("Query produced result set", qry));
 
         List<List<?>> rows = qryCursor.getAll();
 
         if (F.isEmpty(rows))
-            return (long)SUCCESS_NO_INFO;
+            return SUCCESS_NO_INFO;
 
         if (rows.size() != 1)
-            throw new SQLException("Expected single row for update operation result");
+            throw new SQLException(getError("Expected single row for update operation result", qry));
 
         List<?> row = rows.get(0);
 
         if (F.isEmpty(row) || row.size() != 1)
-            throw new SQLException("Expected row size of 1 for update operation");
+            throw new SQLException(getError("Expected row size of 1 for update operation", qry));
 
         Object objRes = row.get(0);
 
         if (!(objRes instanceof Long))
-            throw new SQLException("Unexpected update result type");
+            throw new SQLException(getError("Unexpected update result type", qry));
 
-        return (Long) objRes;
+        Long longRes = (Long)objRes;
+
+        if (longRes > Integer.MAX_VALUE) {
+            IgniteLogger log = ignite.log();
+
+            if (log != null)
+                log.warning(getError("Query updated row counter (" + longRes + ") exceeds integer range", qry));
+
+            return Integer.MAX_VALUE;
+        }
+
+        return longRes.intValue();
+    }
+
+    /**
+     * Formats error message with query details.
+     *
+     * @param msg Error message.
+     * @param qry Query.
+     * @return Result.
+     */
+    private String getError(String msg, SqlFieldsQuery qry) {
+        return msg + " [qry='" + qry.getSql() + "', params=" + Arrays.deepToString(qry.getArgs()) + ']';
     }
 }

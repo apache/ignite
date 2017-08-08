@@ -34,7 +34,6 @@ import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static java.sql.ResultSet.CONCUR_READ_ONLY;
 import static java.sql.ResultSet.FETCH_FORWARD;
@@ -75,7 +74,7 @@ public class JdbcStatement implements Statement {
     /** Current updated items count. */
     long updateCnt = -1;
 
-    /** Batch statements. */
+    /** Batch of statements. */
     private List<String> batch;
 
     /**
@@ -462,37 +461,30 @@ public class JdbcStatement implements Statement {
     @Override public int[] executeBatch() throws SQLException {
         ensureNotClosed();
 
+        List<String> batch = this.batch;
+
+        this.batch = null;
+
+        return doBatchUpdate(null, batch, null);
+    }
+
+    /**
+     * Runs batch of update commands.
+     *
+     * @param command SQL command.
+     * @param batch Batch of SQL commands.
+     * @param batchArgs Batch of SQL parameters.
+     * @return Number of affected rows.
+     * @throws SQLException If failed.
+     */
+    protected int[] doBatchUpdate(String command, List<String> batch, List<List<Object>> batchArgs)
+        throws SQLException {
         rs = null;
 
         updateCnt = -1;
 
-        if (batch == null)
-            return U.EMPTY_INTS;
-
-        int batchSize = batch.size();
-
-        long[] res = doBatchUpdate(batch.toArray(new String[batchSize]));
-
-        int[] intRes = new int[res.length];
-
-        for (int i = 0; i < res.length; i++)
-            intRes[i] = Long.valueOf(res[i]).intValue();
-
-        updateCnt = F.isEmpty(intRes)? -1 : intRes[intRes.length - 1];
-
-        batch = null;
-
-        return intRes;
-    }
-
-    /**
-     * Run update query.
-     * @param sql SQL commands.
-     * @return Number of affected items.
-     * @throws SQLException If failed.
-     */
-    private long[] doBatchUpdate(String[] sql) throws SQLException {
-        assert !F.isEmpty(sql);
+        if ((F.isEmpty(command) || F.isEmpty(batchArgs)) && F.isEmpty(batch))
+            throw new SQLException("Batch is empty.");
 
         Ignite ignite = conn.ignite();
 
@@ -503,12 +495,16 @@ public class JdbcStatement implements Statement {
         if (!conn.isDmlSupported())
             throw new SQLException("Failed to query Ignite: DML operations are supported in versions 1.8.0 and newer");
 
-        JdbcBatchUpdateTask batchTask = new JdbcBatchUpdateTask(loc ? ignite : null, conn.cacheName(),
-            conn.schemaName(), sql, loc, getFetchSize(), conn.isLocalQuery(), conn.isCollocatedQuery(),
-            conn.isDistributedJoins());
+        JdbcBatchUpdateTask task = new JdbcBatchUpdateTask(loc ? ignite : null, conn.cacheName(),
+            conn.schemaName(), command, batch, batchArgs, loc, getFetchSize(), conn.isLocalQuery(),
+            conn.isCollocatedQuery(), conn.isDistributedJoins());
 
         try {
-            return loc ? batchTask.call() : ignite.compute(ignite.cluster().forNodeId(nodeId)).call(batchTask);
+            int[] res = loc ? task.call() : ignite.compute(ignite.cluster().forNodeId(nodeId)).call(task);
+
+            updateCnt = F.isEmpty(res)? -1 : res[res.length - 1];
+
+            return res;
         }
         catch (IgniteSQLException e) {
             throw e.toJdbcException();
