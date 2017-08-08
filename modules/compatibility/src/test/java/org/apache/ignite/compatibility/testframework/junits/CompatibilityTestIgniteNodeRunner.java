@@ -56,12 +56,13 @@ public class CompatibilityTestIgniteNodeRunner extends IgniteNodeRunner {
 
         X.println("Starting Ignite Node... Args=" + Arrays.toString(args));
 
-        if (args.length < 1)
-            throw new IllegalArgumentException("Two arguments expected: [path/to/closure/file] [node-UUID]");
+        if (args.length < 3)
+            throw new IllegalArgumentException("Three arguments expected: [path/to/closure/file] [ignite-instance-name] [node-uuid]");
 
         IgniteConfiguration cfg = CompatibilityTestsFacade.getConfiguration();
 
-        cfg.setNodeId(UUID.fromString(args[1]));
+        cfg.setIgniteInstanceName(args[1]);
+        cfg.setNodeId(UUID.fromString(args[2]));
 
         IgniteInClosure<IgniteConfiguration> clos = readClosureFromFileAndDelete(args[0]);
 

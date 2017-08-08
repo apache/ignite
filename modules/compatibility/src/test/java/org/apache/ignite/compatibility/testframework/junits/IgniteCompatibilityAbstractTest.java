@@ -21,13 +21,13 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.compatibility.testframework.plugins.TestCompatibilityPluginProvider;
+import org.apache.ignite.compatibility.testframework.util.MavenUtils;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
-import org.apache.ignite.compatibility.testframework.plugins.TestCompatibilityPluginProvider;
-import org.apache.ignite.compatibility.testframework.util.MavenUtils;
 
 /**
  * Super class for all compatibility tests.
@@ -64,7 +64,7 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
      * @return Started grid.
      * @throws Exception If failed.
      */
-    protected Ignite startGrid(String igniteInstanceName, final String ver,
+    protected Ignite startGrid(final String igniteInstanceName, final String ver,
         IgniteInClosure<IgniteConfiguration> clos) throws Exception {
         assert isMultiJvm() : "MultiJvm mode must be switched on for the node stop properly.";
 
@@ -73,12 +73,12 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
         final String closPath = CompatibilityTestIgniteNodeRunner.storeToFile(clos);
 
         return new IgniteProcessProxy(getConfiguration(), log, grid(0), true) {
-            @Override protected String getNodeRunnerClassName() throws Exception {
+            @Override protected String igniteNodeRunnerClassName() throws Exception {
                 return CompatibilityTestIgniteNodeRunner.class.getCanonicalName();
             }
 
             @Override protected String params(IgniteConfiguration cfg, boolean resetDiscovery) throws Exception {
-                return closPath + " " + getId();
+                return closPath + " " + igniteInstanceName + " " + getId();
             }
 
             @Override protected Collection<String> filteredJvmArgs() throws Exception {

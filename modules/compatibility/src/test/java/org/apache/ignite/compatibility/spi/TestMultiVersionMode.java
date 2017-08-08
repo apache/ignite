@@ -17,11 +17,11 @@
 
 package org.apache.ignite.compatibility.spi;
 
+import org.apache.ignite.compatibility.testframework.junits.IgniteCompatibilityAbstractTest;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractFullApiSelfTest;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.compatibility.testframework.junits.IgniteCompatibilityAbstractTest;
 
 /** */
 public class TestMultiVersionMode extends IgniteCompatibilityAbstractTest {
@@ -48,7 +48,6 @@ public class TestMultiVersionMode extends IgniteCompatibilityAbstractTest {
     /** */
     private static class PostConfigurationClosure implements IgniteInClosure<IgniteConfiguration> {
         @Override public void apply(IgniteConfiguration cfg) {
-            cfg.setIgniteInstanceName("testMultiVersion");
             cfg.setLocalHost("127.0.0.1");
             TcpDiscoverySpi disco = new TcpDiscoverySpi();
             disco.setIpFinder(GridCacheAbstractFullApiSelfTest.LOCAL_IP_FINDER);

@@ -149,7 +149,7 @@ public class IgniteProcessProxy implements IgniteEx {
             locJvmGrid.events().localListen(new NodeStartedListener(id, rmtNodeStartedLatch), EventType.EVT_NODE_JOINED);
 
         proc = GridJavaProcess.exec(
-            getNodeRunnerClassName(),
+            igniteNodeRunnerClassName(),
             params,
             this.log,
             // Optional closure to be called each time wrapped process prints line to system.out or system.err.
@@ -183,7 +183,7 @@ public class IgniteProcessProxy implements IgniteEx {
      * @return Node runner class name.
      * @throws Exception In case of an error.
      */
-    protected String getNodeRunnerClassName() throws Exception {
+    protected String igniteNodeRunnerClassName() throws Exception {
         return IgniteNodeRunner.class.getCanonicalName();
     }
 
