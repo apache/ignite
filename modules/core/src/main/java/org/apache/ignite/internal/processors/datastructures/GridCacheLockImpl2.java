@@ -17,14 +17,11 @@
 
 package org.apache.ignite.internal.processors.datastructures;
 
-import java.util.HashMap;
 import java.util.LinkedList;
-import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.AbstractQueuedSynchronizer;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -322,12 +319,12 @@ public final class GridCacheLockImpl2 implements GridCacheLockEx2 {
     }
 
     /** EntryProcessor for release lock by timeout, but acquire it if lock has released. */
-    private static class RemoveIfNotFree implements EntryProcessor<GridCacheInternalKey, GridCacheLockState2, Boolean> {
+    private static class RemoveIfNotFreeProcessor implements EntryProcessor<GridCacheInternalKey, GridCacheLockState2, Boolean> {
         /** */
         final UUID nodeId;
 
         /** */
-        public RemoveIfNotFree(UUID nodeId) {
+        public RemoveIfNotFreeProcessor(UUID nodeId) {
             assert nodeId != null;
 
             this.nodeId = nodeId;
@@ -362,12 +359,12 @@ public final class GridCacheLockImpl2 implements GridCacheLockEx2 {
     }
 
     /** EntryProcessor for lock acquire operation. */
-    private static class OnlyTry implements EntryProcessor<GridCacheInternalKey, GridCacheLockState2, Boolean> {
+    private static class OnlyTryProcessor implements EntryProcessor<GridCacheInternalKey, GridCacheLockState2, Boolean> {
         /** */
         final UUID nodeId;
 
         /** */
-        public OnlyTry(UUID nodeId) {
+        public OnlyTryProcessor(UUID nodeId) {
             assert nodeId != null;
 
             this.nodeId = nodeId;
@@ -396,12 +393,12 @@ public final class GridCacheLockImpl2 implements GridCacheLockEx2 {
     }
 
     /** EntryProcessor for lock acquire operation. */
-    private static class Acquirer implements EntryProcessor<GridCacheInternalKey, GridCacheLockState2, Boolean> {
+    private static class AcquireProcessor implements EntryProcessor<GridCacheInternalKey, GridCacheLockState2, Boolean> {
         /** */
         final UUID nodeId;
 
         /** */
-        public Acquirer(UUID nodeId) {
+        public AcquireProcessor(UUID nodeId) {
             assert nodeId != null;
 
             this.nodeId = nodeId;
@@ -437,12 +434,12 @@ public final class GridCacheLockImpl2 implements GridCacheLockEx2 {
     }
 
     /** EntryProcessor for lock release operation. */
-    private static class Releaser implements EntryProcessor<GridCacheInternalKey, GridCacheLockState2, UUID> {
+    private static class ReleaseProcessor implements EntryProcessor<GridCacheInternalKey, GridCacheLockState2, UUID> {
         /** */
         final UUID nodeId;
 
         /** */
-        public Releaser(UUID nodeId) {
+        public ReleaseProcessor(UUID nodeId) {
             assert nodeId != null;
 
             this.nodeId = nodeId;
@@ -480,16 +477,16 @@ public final class GridCacheLockImpl2 implements GridCacheLockEx2 {
      */
     private static class GlobalSync {
         /** */
-        private final Acquirer acquirer;
+        private final AcquireProcessor acquireProcessor;
 
         /** */
-        private final Releaser releaser;
+        private final ReleaseProcessor releaseProcessor;
 
         /** */
-        private final OnlyTry onlyTry;
+        private final OnlyTryProcessor onlyTryProcessor;
 
         /** */
-        private final RemoveIfNotFree removeIfNotFree;
+        private final RemoveIfNotFreeProcessor removeIfNotFreeProcessor;
 
         /** */
         private final GridCacheInternalKey key;
@@ -514,10 +511,10 @@ public final class GridCacheLockImpl2 implements GridCacheLockEx2 {
             assert listener != null;
             assert ctx != null;
 
-            acquirer = new Acquirer(nodeId);
-            releaser = new Releaser(nodeId);
-            onlyTry = new OnlyTry(nodeId);
-            removeIfNotFree = new RemoveIfNotFree(nodeId);
+            acquireProcessor = new AcquireProcessor(nodeId);
+            releaseProcessor = new ReleaseProcessor(nodeId);
+            onlyTryProcessor = new OnlyTryProcessor(nodeId);
+            removeIfNotFreeProcessor = new RemoveIfNotFreeProcessor(nodeId);
             this.key = key;
             lockView = view;
             this.listener = listener;
@@ -532,7 +529,7 @@ public final class GridCacheLockImpl2 implements GridCacheLockEx2 {
         /** */
         private final boolean tryAcquireOrAdd() {
             try {
-                return lockView.invoke(key, acquirer).get();
+                return lockView.invoke(key, acquireProcessor).get();
             }
             catch (IgniteCheckedException ignored) {
                 return false;
@@ -542,7 +539,7 @@ public final class GridCacheLockImpl2 implements GridCacheLockEx2 {
         /** */
         private final boolean tryAcquire() {
             try {
-                return lockView.invoke(key, onlyTry).get();
+                return lockView.invoke(key, onlyTryProcessor).get();
             }
             catch (IgniteCheckedException ignored) {
                 return false;
@@ -552,7 +549,7 @@ public final class GridCacheLockImpl2 implements GridCacheLockEx2 {
         /** */
         private final boolean acquireOrRemove() {
             try {
-                return lockView.invoke(key, removeIfNotFree).get();
+                return lockView.invoke(key, removeIfNotFreeProcessor).get();
             }
             catch (IgniteCheckedException ignored) {
                 return false;
@@ -616,7 +613,7 @@ public final class GridCacheLockImpl2 implements GridCacheLockEx2 {
 
         /** {@inheritDoc} */
         private final void release() {
-            lockView.invokeAsync(key, releaser).listen(
+            lockView.invokeAsync(key, releaseProcessor).listen(
                 new IgniteInClosure<IgniteInternalFuture<EntryProcessorResult<UUID>>>() {
                     @Override public void apply(IgniteInternalFuture<EntryProcessorResult<UUID>> future) {
                         try {
