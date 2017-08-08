@@ -496,13 +496,13 @@ public class InlineIndexHelper {
                     int int1 = PageUtils.getInt(pageAddr, off + 1);
                     int int2 = v.getInt();
 
-                    return fixSort(Integer.signum(int1 - int2), sortType());
+                    return fixSort(Integer.compare(int1, int2), sortType());
 
                 case Value.LONG:
                     long long1 = PageUtils.getLong(pageAddr, off + 1);
                     long long2 = v.getLong();
 
-                    return fixSort(Long.signum(long1 - long2), sortType());
+                    return fixSort(Long.compare(long1, long2), sortType());
 
                 case Value.FLOAT:
                     float float1 = Float.intBitsToFloat(PageUtils.getInt(pageAddr, off + 1));

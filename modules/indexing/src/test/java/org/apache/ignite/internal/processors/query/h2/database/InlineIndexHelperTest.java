@@ -21,8 +21,8 @@ import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.UUID;
-import junit.framework.TestCase;
 import org.apache.commons.io.Charsets;
 import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
@@ -30,7 +30,7 @@ import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
 import org.apache.ignite.internal.processors.cache.persistence.MemoryMetricsImpl;
-import org.apache.ignite.logger.java.JavaLogger;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.h2.result.SortOrder;
 import org.h2.value.CompareMode;
 import org.h2.value.Value;
@@ -52,7 +52,7 @@ import org.h2.value.ValueUuid;
 /**
  * Simple tests for {@link InlineIndexHelper}.
  */
-public class InlineIndexHelperTest extends TestCase {
+public class InlineIndexHelperTest extends GridCommonAbstractTest {
     /** */
     private static final int CACHE_ID = 42;
 
@@ -77,6 +77,125 @@ public class InlineIndexHelperTest extends TestCase {
 
         bytes = InlineIndexHelper.trimUTF8("aaaaaa".getBytes(Charsets.UTF_8), 4);
         assertEquals(4, bytes.length);
+    }
+
+    /** */
+    public void testCompare1bytes() throws Exception {
+        int maxSize = 3 + 2; // 2 ascii chars + 3 bytes header.
+
+        assertEquals(0, putAndCompare("aa", "aa", maxSize));
+        assertEquals(-1, putAndCompare("aa", "bb", maxSize));
+        assertEquals(-1, putAndCompare("aaa", "bbb", maxSize));
+        assertEquals(1, putAndCompare("bbb", "aaa", maxSize));
+        assertEquals(1, putAndCompare("aaa", "aa", maxSize));
+        assertEquals(1, putAndCompare("aaa", "a", maxSize));
+        assertEquals(-2, putAndCompare("aaa", "aaa", maxSize));
+        assertEquals(-2, putAndCompare("aaa", "aab", maxSize));
+        assertEquals(-2, putAndCompare("aab", "aaa", maxSize));
+    }
+
+    /** */
+    public void testCompare2bytes() throws Exception {
+        int maxSize = 3 + 4; // 2 2-bytes chars + 3 bytes header.
+
+        assertEquals(0, putAndCompare("¡¡", "¡¡", maxSize));
+        assertEquals(-1, putAndCompare("¡¡", "¢¢", maxSize));
+        assertEquals(-1, putAndCompare("¡¡¡", "¢¢¢", maxSize));
+        assertEquals(1, putAndCompare("¢¢¢", "¡¡¡", maxSize));
+        assertEquals(1, putAndCompare("¡¡¡", "¡¡", maxSize));
+        assertEquals(1, putAndCompare("¡¡¡", "¡", maxSize));
+        assertEquals(-2, putAndCompare("¡¡¡", "¡¡¡", maxSize));
+        assertEquals(-2, putAndCompare("¡¡¡", "¡¡¢", maxSize));
+        assertEquals(-2, putAndCompare("¡¡¢", "¡¡¡", maxSize));
+    }
+
+    /** */
+    public void testCompare3bytes() throws Exception {
+        int maxSize = 3 + 6; // 2 3-bytes chars + 3 bytes header.
+
+        assertEquals(0, putAndCompare("ऄऄ", "ऄऄ", maxSize));
+        assertEquals(-1, putAndCompare("ऄऄ", "अअ", maxSize));
+        assertEquals(-1, putAndCompare("ऄऄऄ", "अअअ", maxSize));
+        assertEquals(1, putAndCompare("अअअ", "ऄऄऄ", maxSize));
+        assertEquals(1, putAndCompare("ऄऄऄ", "ऄऄ", maxSize));
+        assertEquals(1, putAndCompare("ऄऄऄ", "ऄ", maxSize));
+        assertEquals(-2, putAndCompare("ऄऄऄ", "ऄऄऄ", maxSize));
+        assertEquals(-2, putAndCompare("ऄऄऄ", "ऄऄअ", maxSize));
+        assertEquals(-2, putAndCompare("ऄऄअ", "ऄऄऄ", maxSize));
+    }
+
+    /** */
+    public void testCompare4bytes() throws Exception {
+        int maxSize = 3 + 8; // 2 4-bytes chars + 3 bytes header.
+
+        assertEquals(0, putAndCompare("\ud802\udd20\ud802\udd20", "\ud802\udd20\ud802\udd20", maxSize));
+        assertEquals(-1, putAndCompare("\ud802\udd20\ud802\udd20", "\ud802\udd21\ud802\udd21", maxSize));
+        assertEquals(-1, putAndCompare("\ud802\udd20\ud802\udd20\ud802\udd20", "\ud802\udd21\ud802\udd21\ud802\udd21", maxSize));
+        assertEquals(1, putAndCompare("\ud802\udd21\ud802\udd21\ud802\udd21", "\ud802\udd20\ud802\udd20\ud802\udd20", maxSize));
+        assertEquals(1, putAndCompare("\ud802\udd20\ud802\udd20\ud802\udd20", "\ud802\udd20\ud802\udd20", maxSize));
+        assertEquals(1, putAndCompare("\ud802\udd20\ud802\udd20\ud802\udd20", "\ud802\udd20", maxSize));
+        assertEquals(-2, putAndCompare("\ud802\udd20\ud802\udd20\ud802\udd20", "\ud802\udd20\ud802\udd20\ud802\udd20", maxSize));
+        assertEquals(-2, putAndCompare("\ud802\udd20\ud802\udd20\ud802\udd20", "\ud802\udd20\ud802\udd20\ud802\udd21", maxSize));
+        assertEquals(-2, putAndCompare("\ud802\udd20\ud802\udd20\ud802\udd21", "\ud802\udd20\ud802\udd20\ud802\udd20", maxSize));
+    }
+
+    /** */
+    public void testCompareMixed() throws Exception {
+        int maxSize = 3 + 8; // 2 up to 4-bytes chars + 3 bytes header.
+
+        assertEquals(0, putAndCompare("\ud802\udd20\u0904", "\ud802\udd20\u0904", maxSize));
+        assertEquals(-1, putAndCompare("\ud802\udd20\u0904", "\ud802\udd20\u0905", maxSize));
+        assertEquals(1, putAndCompare("\u0905\ud802\udd20", "\u0904\ud802\udd20", maxSize));
+        assertEquals(-2, putAndCompare("\ud802\udd20\ud802\udd20\u0905", "\ud802\udd20\ud802\udd20\u0904", maxSize));
+    }
+
+    /**
+     * @param v1 Value 1.
+     * @param v2 Value 2.
+     * @param maxSize Max inline size.
+     * @return Compare result.
+     * @throws Exception If failed.
+     */
+    private int putAndCompare(String v1, String v2, int maxSize) throws Exception {
+        MemoryPolicyConfiguration plcCfg = new MemoryPolicyConfiguration().setInitialSize(1024 * MB).setMaxSize(1024 * MB);
+
+        PageMemory pageMem = new PageMemoryNoStoreImpl(log,
+                new UnsafeMemoryProvider(log),
+                null,
+                PAGE_SIZE,
+                plcCfg,
+                new MemoryMetricsImpl(plcCfg),
+                false);
+
+        pageMem.start();
+
+        long pageId = 0L;
+        long page = 0L;
+
+        try {
+            pageId = pageMem.allocatePage(CACHE_ID, 1, PageIdAllocator.FLAG_DATA);
+            page = pageMem.acquirePage(CACHE_ID, pageId);
+            long pageAddr = pageMem.readLock(CACHE_ID, pageId, page);
+
+            int off = 0;
+
+            InlineIndexHelper ih = new InlineIndexHelper(Value.STRING, 1, 0, CompareMode.getInstance(null, 0));
+            ih.put(pageAddr, off, ValueString.get(v1), maxSize);
+
+            Comparator<Value> comp = new Comparator<Value>() {
+                /** {@inheritDoc} */
+                @Override public int compare(Value o1, Value o2) {
+                    throw new AssertionError("Optimized algorithm should be used.");
+                }
+            };
+
+            return ih.compare(pageAddr, off, maxSize,  ValueString.get(v2), comp);
+        }
+        finally {
+            if (page != 0L)
+                pageMem.releasePage(CACHE_ID, pageId, page);
+            pageMem.stop();
+        }
     }
 
     /** Limit is too small to cut */
@@ -133,10 +252,8 @@ public class InlineIndexHelperTest extends TestCase {
     public void testStringTruncate() throws Exception {
         MemoryPolicyConfiguration plcCfg = new MemoryPolicyConfiguration().setInitialSize(1024 * MB).setMaxSize(1024 * MB);
 
-        JavaLogger log = new JavaLogger();
-
-        PageMemory pageMem = new PageMemoryNoStoreImpl(log,
-            new UnsafeMemoryProvider(log),
+        PageMemory pageMem = new PageMemoryNoStoreImpl(log(),
+            new UnsafeMemoryProvider(log()),
             null,
             PAGE_SIZE,
             plcCfg,
@@ -183,10 +300,8 @@ public class InlineIndexHelperTest extends TestCase {
     public void testBytes() throws Exception {
         MemoryPolicyConfiguration plcCfg = new MemoryPolicyConfiguration().setInitialSize(1024 * MB).setMaxSize(1024 * MB);
 
-        JavaLogger log = new JavaLogger();
-
-        PageMemory pageMem = new PageMemoryNoStoreImpl(log,
-            new UnsafeMemoryProvider(log),
+        PageMemory pageMem = new PageMemoryNoStoreImpl(log(),
+            new UnsafeMemoryProvider(log()),
             null,
             PAGE_SIZE,
             plcCfg,
@@ -298,10 +413,8 @@ public class InlineIndexHelperTest extends TestCase {
     private void testPutGet(Value v1, Value v2, Value v3) throws Exception {
         MemoryPolicyConfiguration plcCfg = new MemoryPolicyConfiguration().setInitialSize(1024 * MB).setMaxSize(1024 * MB);
 
-        JavaLogger log = new JavaLogger();
-
-        PageMemory pageMem = new PageMemoryNoStoreImpl(log,
-            new UnsafeMemoryProvider(log),
+        PageMemory pageMem = new PageMemoryNoStoreImpl(log(),
+            new UnsafeMemoryProvider(log()),
             null,
             PAGE_SIZE,
             plcCfg,
