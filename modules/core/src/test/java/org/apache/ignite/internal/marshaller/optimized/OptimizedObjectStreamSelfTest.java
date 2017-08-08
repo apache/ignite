@@ -964,7 +964,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
                 assertEquals(i < 10 ? 40 + i : 0, buf[i]);
         }
         finally {
-            OptimizedObjectStreamRegistry.closeIn(in);
+            OptimizedObjectStreamRegistry.closeIn(in, true);
         }
     }
 
@@ -1080,7 +1080,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
         }
         finally {
             OptimizedObjectStreamRegistry.closeOut(out);
-            OptimizedObjectStreamRegistry.closeIn(in);
+            OptimizedObjectStreamRegistry.closeIn(in, true);
         }
     }
 

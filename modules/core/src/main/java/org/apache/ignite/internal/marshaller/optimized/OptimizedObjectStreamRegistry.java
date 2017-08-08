@@ -84,7 +84,7 @@ class OptimizedObjectStreamRegistry {
             }
         }
         else
-            return holder(true).acquireOut();
+            return holder().acquireOut();
     }
 
     /**
@@ -95,7 +95,7 @@ class OptimizedObjectStreamRegistry {
      * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException If thread is interrupted while trying to take holder from pool.
      */
     static OptimizedObjectInputStream in(boolean useCache) throws IgniteInterruptedCheckedException {
-        if (inPool != null) {
+        if (useCache && inPool != null) {
             try {
                 return inPool.take();
             }
@@ -105,7 +105,7 @@ class OptimizedObjectStreamRegistry {
             }
         }
         else
-            return holder(useCache).acquireIn();
+            return holder().acquireIn();
     }
 
     /**
@@ -133,12 +133,13 @@ class OptimizedObjectStreamRegistry {
      * Closes and releases input stream.
      *
      * @param in Object input stream.
+     * @param useCache True if using class cache, false otherwise.
      */
     @SuppressWarnings("TypeMayBeWeakened")
-    static void closeIn(OptimizedObjectInputStream in) {
+    static void closeIn(OptimizedObjectInputStream in, boolean useCache) {
         U.close(in, null);
 
-        if (inPool != null) {
+        if (useCache && inPool != null) {
             boolean b = inPool.offer(in);
 
             assert b;
@@ -146,8 +147,12 @@ class OptimizedObjectStreamRegistry {
         else {
             StreamHolder holder = holders.get();
 
-            if (holder != null)
+            if (holder != null) {
                 holder.releaseIn();
+
+                if (!useCache)
+                    holders.set(null);
+            }
         }
     }
 
@@ -155,13 +160,9 @@ class OptimizedObjectStreamRegistry {
      * Gets holder from pool or thread local.
      *
      * @return Stream holder.
-     * @param useCache True if using class cache, false otherwise.
      * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException If thread is interrupted while trying to take holder from pool.
      */
-    private static StreamHolder holder(boolean useCache) throws IgniteInterruptedCheckedException {
-        if (!useCache)
-            return new StreamHolder();
-
+    private static StreamHolder holder() throws IgniteInterruptedCheckedException {
         StreamHolder holder = holders.get();
 
         if (holder == null)
