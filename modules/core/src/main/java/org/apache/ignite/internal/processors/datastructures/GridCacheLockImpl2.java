@@ -71,9 +71,6 @@ public final class GridCacheLockImpl2 implements GridCacheLockEx2 {
     /** Internal synchronization object. */
     private final LocalSync sync;
 
-    /** Map containing condition objects. */
-    private final  Map<String, AbstractQueuedSynchronizer.ConditionObject> conditionMap = new HashMap<>();
-
     /**
      * Constructor.
      *
@@ -146,7 +143,7 @@ public final class GridCacheLockImpl2 implements GridCacheLockEx2 {
     @Override public void lock() {
         ctx.kernalContext().gateway().readLock();
 
-        try{
+        try {
             sync.lock();
         }
         finally {
@@ -173,7 +170,7 @@ public final class GridCacheLockImpl2 implements GridCacheLockEx2 {
     @Override public boolean tryLock() {
         ctx.kernalContext().gateway().readLock();
 
-        try{
+        try {
             return sync.tryLock();
         }
         finally {
@@ -202,7 +199,7 @@ public final class GridCacheLockImpl2 implements GridCacheLockEx2 {
     @Override public void unlock() {
         ctx.kernalContext().gateway().readLock();
 
-        try{
+        try {
             sync.unlock();
         }
         finally {
@@ -231,13 +228,17 @@ public final class GridCacheLockImpl2 implements GridCacheLockEx2 {
 
     /** {@inheritDoc} */
     @Override public boolean isLocked() throws IgniteException {
+        ctx.kernalContext().gateway().readLock();
+
         try {
             return sync.isLocked();
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
         }
-
+        finally {
+            ctx.kernalContext().gateway().readUnlock();
+        }
     }
 
     /** {@inheritDoc} */
@@ -312,7 +313,85 @@ public final class GridCacheLockImpl2 implements GridCacheLockEx2 {
         /** */
         public void await() throws InterruptedException {
             latch.await();
+        }
 
+        /** */
+        public boolean await(long timeout, TimeUnit unit) throws InterruptedException {
+            return latch.await(timeout, unit);
+        }
+    }
+
+    /** EntryProcessor for release lock by timeout, but acquire it if lock has released. */
+    private static class RemoveIfNotFree implements EntryProcessor<GridCacheInternalKey, GridCacheLockState2, Boolean> {
+        /** */
+        final UUID nodeId;
+
+        /** */
+        public RemoveIfNotFree(UUID nodeId) {
+            assert nodeId != null;
+
+            this.nodeId = nodeId;
+        }
+
+        /** */
+        @Override public Boolean process(MutableEntry<GridCacheInternalKey, GridCacheLockState2> entry,
+            Object... objects) throws EntryProcessorException {
+
+            assert entry != null;
+
+            if (entry.exists()) {
+                GridCacheLockState2 state = entry.getValue();
+
+                boolean acquired = state.lockIfFree(nodeId);
+
+                boolean updated = true;
+
+                // Remove if can't acquire lock.
+                if (!acquired)
+                    updated = state.removeFromWaitingList(nodeId);
+
+                // Write result if necessary.
+                if (updated)
+                    entry.setValue(state);
+
+                return acquired;
+            }
+
+            return false;
+        }
+    }
+
+    /** EntryProcessor for lock acquire operation. */
+    private static class OnlyTry implements EntryProcessor<GridCacheInternalKey, GridCacheLockState2, Boolean> {
+        /** */
+        final UUID nodeId;
+
+        /** */
+        public OnlyTry(UUID nodeId) {
+            assert nodeId != null;
+
+            this.nodeId = nodeId;
+        }
+
+        /** */
+        @Override public Boolean process(MutableEntry<GridCacheInternalKey, GridCacheLockState2> entry,
+            Object... objects) throws EntryProcessorException {
+
+            assert entry != null;
+
+            if (entry.exists()) {
+                GridCacheLockState2 state = entry.getValue();
+
+                boolean acquired = state.lockIfFree(nodeId);
+
+                // Write result if necessary
+                if (acquired)
+                    entry.setValue(state);
+
+                return acquired;
+            }
+
+            return false;
         }
     }
 
@@ -396,14 +475,21 @@ public final class GridCacheLockImpl2 implements GridCacheLockEx2 {
         }
     }
 
-    /** Sync class for acquire/relese global lock in grid.
-     *  It avoid problems with thread local synchronization. */
+    /**
+     * Sync class for acquire/relese global lock in grid. It avoid problems with thread local synchronization.
+     */
     private static class GlobalSync {
         /** */
         private final Acquirer acquirer;
 
         /** */
         private final Releaser releaser;
+
+        /** */
+        private final OnlyTry onlyTry;
+
+        /** */
+        private final RemoveIfNotFree removeIfNotFree;
 
         /** */
         private final GridCacheInternalKey key;
@@ -430,6 +516,8 @@ public final class GridCacheLockImpl2 implements GridCacheLockEx2 {
 
             acquirer = new Acquirer(nodeId);
             releaser = new Releaser(nodeId);
+            onlyTry = new OnlyTry(nodeId);
+            removeIfNotFree = new RemoveIfNotFree(nodeId);
             this.key = key;
             lockView = view;
             this.listener = listener;
@@ -438,11 +526,11 @@ public final class GridCacheLockImpl2 implements GridCacheLockEx2 {
 
         /** */
         private final GridCacheLockState2 forceGet() throws IgniteCheckedException {
-                return lockView.get(key);
+            return lockView.get(key);
         }
 
         /** */
-        private final boolean tryAcquire() {
+        private final boolean tryAcquireOrAdd() {
             try {
                 return lockView.invoke(key, acquirer).get();
             }
@@ -452,29 +540,75 @@ public final class GridCacheLockImpl2 implements GridCacheLockEx2 {
         }
 
         /** */
-        private final void waitForUpdate() {
+        private final boolean tryAcquire() {
             try {
-                listener.await();
+                return lockView.invoke(key, onlyTry).get();
             }
-            catch (InterruptedException e) {
-                //No-op.
+            catch (IgniteCheckedException ignored) {
+                return false;
             }
         }
 
         /** */
-        private final void acquire(){
-            while (!tryAcquire()) {
+        private final boolean acquireOrRemove() {
+            try {
+                return lockView.invoke(key, removeIfNotFree).get();
+            }
+            catch (IgniteCheckedException ignored) {
+                return false;
+            }
+        }
+
+        /** */
+        private final boolean waitForUpdate() {
+            try {
+                listener.await();
+                return true;
+            }
+            catch (InterruptedException e) {
+                return false;
+            }
+        }
+
+        /**
+         *
+         * @param timeout
+         * @param unit
+         * @return true if await finished well, false if InterruptedException has been thrown or timeout.
+         */
+        private final boolean waitForUpdate(long timeout, TimeUnit unit) {
+            try {
+                return listener.await(timeout, unit);
+            }
+            catch (InterruptedException e) {
+                return false;
+            }
+        }
+
+        /** */
+        private final void acquire() {
+            while (!tryAcquireOrAdd()) {
                 waitForUpdate();
             }
+        }
+
+        /** */
+        private final boolean acquire(long timeout, TimeUnit unit) {
+            while (!tryAcquireOrAdd()) {
+                if (!waitForUpdate(timeout, unit)) {
+                    return acquireOrRemove();
+                }
+            }
+
+            return true;
         }
 
         /** */
         private final boolean acquireInterruptibly() {
             while (!tryAcquire()) {
-                if (Thread.currentThread().isInterrupted())
-                    return false;
-
-                waitForUpdate();
+                if (!waitForUpdate()) {
+                    return acquireOrRemove();
+                }
             }
 
             return true;
@@ -501,9 +635,7 @@ public final class GridCacheLockImpl2 implements GridCacheLockEx2 {
                         }
                     }
                 });
-
         }
-
     }
 
     /** Local gateway before global lock. */
@@ -551,14 +683,14 @@ public final class GridCacheLockImpl2 implements GridCacheLockEx2 {
 
                 onGlobalLock = true;
 
-                nextFinish = MAX_TIME+System.nanoTime();
+                nextFinish = MAX_TIME + System.nanoTime();
             }
             return true;
         }
 
         /** */
         private void releaseGlobaLock() {
-            if (threadCount.decrementAndGet() <= 0 || System.nanoTime()>=nextFinish) {
+            if (threadCount.decrementAndGet() <= 0 || System.nanoTime() >= nextFinish) {
                 globalSync.release();
 
                 onGlobalLock = false;
@@ -576,15 +708,18 @@ public final class GridCacheLockImpl2 implements GridCacheLockEx2 {
 
                 onGlobalLock = true;
 
-                nextFinish = MAX_TIME+System.nanoTime();
+                nextFinish = MAX_TIME + System.nanoTime();
             }
         }
 
         /** {@inheritDoc} */
         @Override public void unlock() {
-            releaseGlobaLock();
-
-            lock.unlock();
+            try {
+                releaseGlobaLock();
+            }
+            finally {
+                lock.unlock();
+            }
         }
 
         /** {@inheritDoc} */
@@ -593,7 +728,8 @@ public final class GridCacheLockImpl2 implements GridCacheLockEx2 {
 
             try {
                 lock.lockInterruptibly();
-            } catch (InterruptedException e) {
+            }
+            catch (InterruptedException e) {
                 releaseGlobaLock();
 
                 throw e;
@@ -633,15 +769,27 @@ public final class GridCacheLockImpl2 implements GridCacheLockEx2 {
         @Override public boolean tryLock(long time, TimeUnit unit) throws InterruptedException {
             assert unit != null;
 
-            // TODO: make timeout better.
-            long finish = System.nanoTime() + unit.toNanos(time);
+            long start = System.nanoTime();
 
-            while (!tryLock()) {
-                if (System.nanoTime()>=finish)
-                    return false;
+            if (lock.tryLock(time, unit)) {
+                if (onGlobalLock) {
+                    threadCount.incrementAndGet();
+
+                    return true;
+                }
+                else {
+                    long left = unit.toNanos(time) - (System.nanoTime() - start);
+
+                    if (globalSync.acquire(left, TimeUnit.NANOSECONDS)) {
+                        onGlobalLock = true;
+
+                        threadCount.incrementAndGet();
+
+                        return true;
+                    }
+                }
             }
-
-            return true;
+            return false;
         }
 
         /** {@inheritDoc} */

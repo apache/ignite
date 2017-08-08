@@ -153,6 +153,7 @@ public final class GridCacheLockState2 extends VolatileAtomicDataStructureValue 
         return failoverSafe;
     }
 
+    /** */
     public boolean addToWaitingList(UUID nodeId) {
         if (nodes == null) {
             nodes = new LinkedList<>();
@@ -161,6 +162,14 @@ public final class GridCacheLockState2 extends VolatileAtomicDataStructureValue 
 
         nodes.add(nodeId);
         return true;
+    }
+
+    /** */
+    public boolean removeFromWaitingList(UUID nodeId) {
+        if (nodes == null)
+            return false;
+
+        return nodes.remove(nodeId);
     }
 
     /**
