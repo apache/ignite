@@ -1056,7 +1056,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
         byte flag = in.readByte();
 
         if (flag == STRING)
-            return BinaryUtils.doReadUtf8EncodedString(in);
+            return BinaryUtils.doReadString(in);
         else if (flag == ENCODED_STRING)
             return BinaryUtils.doReadEncodedString(in);
         else if (flag == NULL)
@@ -1844,7 +1844,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
                 break;
 
             case STRING:
-                obj = BinaryUtils.doReadUtf8EncodedString(in);
+                obj = BinaryUtils.doReadString(in);
 
                 break;
 

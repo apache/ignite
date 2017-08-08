@@ -72,7 +72,7 @@ public abstract class SqlListenerUtils {
                 return reader.readDouble();
 
             case GridBinaryMarshaller.STRING:
-                return BinaryUtils.doReadUtf8EncodedString(reader.in());
+                return BinaryUtils.doReadString(reader.in());
 
             case GridBinaryMarshaller.ENCODED_STRING:
                 return BinaryUtils.doReadEncodedString(reader.in());

@@ -1282,7 +1282,7 @@ public class BinaryUtils {
      * @param in input stream.
      * @return decoded string.
      */
-    public static String doReadUtf8EncodedString(BinaryInputStream in) {
+    public static String doReadString(BinaryInputStream in) {
         return doReadString(in, null);
     }
 
@@ -1427,7 +1427,7 @@ public class BinaryUtils {
             if (flag == GridBinaryMarshaller.NULL)
                 arr[i] = null;
             else if (flag == GridBinaryMarshaller.STRING)
-                arr[i] = doReadUtf8EncodedString(in);
+                arr[i] = doReadString(in);
             else if (flag == GridBinaryMarshaller.ENCODED_STRING) {
                 arr[i] = doReadEncodedString(in);
             } else
@@ -1647,7 +1647,7 @@ public class BinaryUtils {
         if (flag != GridBinaryMarshaller.STRING)
             throw new BinaryObjectException("Failed to read class name [position=" + (in.position() - 1) + ']');
 
-        return doReadUtf8EncodedString(in);
+        return doReadString(in);
     }
 
     /**
@@ -1934,7 +1934,7 @@ public class BinaryUtils {
                 return doReadDecimal(in);
 
             case GridBinaryMarshaller.STRING:
-                return doReadUtf8EncodedString(in);
+                return doReadString(in);
 
             case GridBinaryMarshaller.ENCODED_STRING:
                 return doReadEncodedString(in);
