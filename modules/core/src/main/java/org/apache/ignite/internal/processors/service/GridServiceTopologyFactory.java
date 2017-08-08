@@ -30,7 +30,9 @@ public class GridServiceTopologyFactory {
      */
     public static GridServiceTopology get(Iterable<ClusterNode> nodes, int cnt) {
         A.notNull(nodes, "nodes");
-        A.ensure(nodes.iterator().hasNext(), "nodes must not be empty");
+
+        if (!nodes.iterator().hasNext())
+            return new EmptyServiceTopology();
 
         Collection<UUID> nodeIds = new ArrayList<>();
 
@@ -67,7 +69,8 @@ public class GridServiceTopologyFactory {
             }
         }
 
-        A.ensure(nodeCntMap.size() > 0, "nodeCntMap must not be empty");
+        if (nodeCntMap.size() == 0)
+            return new EmptyServiceTopology();
 
         if (nodeCntMap.size() > 1)
             return allSame ?
