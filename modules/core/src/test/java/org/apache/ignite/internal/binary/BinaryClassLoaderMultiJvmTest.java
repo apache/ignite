@@ -31,14 +31,14 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.testframework.GridTestExternalClassLoader;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import java.lang.ref.WeakReference;
 import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.net.URL;
-import java.util.Map;
 
 /**
  */
@@ -81,26 +81,32 @@ public class BinaryClassLoaderMultiJvmTest extends GridCommonAbstractTest {
         ClassLoader testClassLoader = new GridTestExternalClassLoader(new URL[] {
             new URL(GridTestProperties.getProperty("p2p.uri.cls"))});
 
+        WeakReference<ClassLoader> clsLdrRef = new WeakReference<ClassLoader>(testClassLoader);
+
         try {
             Ignite ign = startGrids(2);
 
-            ign.compute(ign.cluster().forRemotes()).broadcast(() -> {
-                Ignite client = Ignition.ignite(getTestIgniteInstanceName(CLIENT_ID));
+            ign.compute(ign.cluster().forRemotes()).broadcast(new IgniteRunnable() {
+                @Override public void run() {
 
-                ClassLoader clientCestClassLoader = null;
+                    Ignite client = Ignition.ignite(getTestIgniteInstanceName(CLIENT_ID));
 
-                try {
-                    clientCestClassLoader = new GridTestExternalClassLoader(new URL[] {
-                        new URL(GridTestProperties.getProperty("p2p.uri.cls"))});
+                    ClassLoader clientCestClassLoader = null;
 
-                    info("Client name: " + client.name());
+                    try {
+                        clientCestClassLoader = new GridTestExternalClassLoader(new URL[] {
+                            new URL(GridTestProperties.getProperty("p2p.uri.cls"))});
 
-                    loadItems(clientCestClassLoader, client);
-                    loadOrganization(clientCestClassLoader, client);
-                    loadEnumItems(clientCestClassLoader, client);
-                }
-                catch (Exception e) {
-                    e.printStackTrace();
+                        info("Client name: " + client.name());
+
+                        loadItems(clientCestClassLoader, client);
+                        loadOrganization(clientCestClassLoader, client);
+                        loadEnumItems(clientCestClassLoader, client);
+                    }
+                    catch (Exception e) {
+                        e.printStackTrace();
+                    }
+
                 }
             });
 
@@ -112,7 +118,7 @@ public class BinaryClassLoaderMultiJvmTest extends GridCommonAbstractTest {
 
             testClassLoader = null;
 
-            checkClassCacheEmpty();
+            checkClassCacheEmpty(clsLdrRef);
         }
         finally {
             stopAllGrids();
@@ -126,26 +132,31 @@ public class BinaryClassLoaderMultiJvmTest extends GridCommonAbstractTest {
         ClassLoader testClassLoader = new GridTestExternalClassLoader(new URL[] {
             new URL(GridTestProperties.getProperty("p2p.uri.cls"))});
 
+        WeakReference<ClassLoader> clsLdrRef = new WeakReference<ClassLoader>(testClassLoader);
+
         try {
             Ignite ign = startGrids(2);
 
-            ign.compute(ign.cluster().forClients()).broadcast(() -> {
-                Ignite client = Ignition.ignite(getTestIgniteInstanceName(CLIENT_ID));
+            ign.compute(ign.cluster().forClients()).broadcast(new IgniteRunnable() {
+                @Override public void run() {
 
-                ClassLoader clientCestClassLoader = null;
+                    Ignite client = Ignition.ignite(getTestIgniteInstanceName(CLIENT_ID));
 
-                try {
-                    clientCestClassLoader = new GridTestExternalClassLoader(new URL[] {
-                        new URL(GridTestProperties.getProperty("p2p.uri.cls"))});
+                    ClassLoader clientCestClassLoader = null;
 
-                    info("Client name: " + client.name());
+                    try {
+                        clientCestClassLoader = new GridTestExternalClassLoader(new URL[] {
+                            new URL(GridTestProperties.getProperty("p2p.uri.cls"))});
 
-                    loadItems(clientCestClassLoader, client);
-                    loadOrganization(clientCestClassLoader, client);
-                    loadEnumItems(clientCestClassLoader, client);
-                }
-                catch (Exception e) {
-                    e.printStackTrace();
+                        info("Client name: " + client.name());
+
+                        loadItems(clientCestClassLoader, client);
+                        loadOrganization(clientCestClassLoader, client);
+                        loadEnumItems(clientCestClassLoader, client);
+                    }
+                    catch (Exception e) {
+                        e.printStackTrace();
+                    }
                 }
             });
 
@@ -157,7 +168,7 @@ public class BinaryClassLoaderMultiJvmTest extends GridCommonAbstractTest {
 
             testClassLoader = null;
 
-            checkClassCacheEmpty();
+            checkClassCacheEmpty(clsLdrRef);
         }
         finally {
             stopAllGrids();
@@ -165,21 +176,15 @@ public class BinaryClassLoaderMultiJvmTest extends GridCommonAbstractTest {
     }
 
     /**
-     *
+     * @param clsLdrRef Weak reference to testclassLoader.
      */
-    private void checkClassCacheEmpty() throws NoSuchFieldException, IllegalAccessException, IgniteInterruptedCheckedException {
+    private void checkClassCacheEmpty(WeakReference<ClassLoader> clsLdrRef) throws IgniteInterruptedCheckedException {
         System.gc();
         System.runFinalization();
 
         IgniteUtils.sleep(1_000);
 
-        Field weakCacheField = IgniteUtils.class.getDeclaredField("weakCache");
-
-        weakCacheField.setAccessible(true);
-
-        Map weakCache = (Map)weakCacheField.get(null);
-
-        assertEquals(weakCache.size(), 0);
+        assertNull(clsLdrRef.get());
     }
 
     /**

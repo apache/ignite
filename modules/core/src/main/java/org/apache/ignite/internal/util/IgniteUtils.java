@@ -8456,9 +8456,6 @@ public abstract class IgniteUtils {
         return forName(clsName, ldr, true);
     }
 
-    private static Map<ClassLoader, ConcurrentMap<String, WeakReference<Class>>> weakCache =
-        Collections.synchronizedMap(new WeakHashMap<ClassLoader, ConcurrentMap<String, WeakReference<Class>>>());
-
     /**
      * Gets class for provided name. Accepts primitive types names.
      *
@@ -8480,7 +8477,7 @@ public abstract class IgniteUtils {
             if (ldr instanceof ClassCache)
                 return ((ClassCache)ldr).getFromCache(clsName);
             else if (!useCache) {
-                cls = loadClassFromCache(clsName, ldr, weakCache);
+                cls = Class.forName(clsName, true, ldr);
 
                 return cls;
             }
@@ -8506,35 +8503,6 @@ public abstract class IgniteUtils {
                 cls = old;
         }
 
-        return cls;
-    }
-
-    /**
-     * @param clsName Class name.
-     * @param ldr Loader.
-     */
-    private static Class<?> loadClassFromCache(String clsName, @Nullable ClassLoader ldr,
-        Map<ClassLoader, ConcurrentMap<String, WeakReference<Class>>> cache) throws ClassNotFoundException {
-        Class<?> cls;
-
-        ConcurrentMap<String, WeakReference<Class>> ldrMap = cache.get(ldr);
-
-        if (ldrMap == null) {
-            ConcurrentMap<String, WeakReference<Class>> old = cache.putIfAbsent(ldr, ldrMap = new ConcurrentHashMap8<>());
-
-            if (old != null)
-                ldrMap = old;
-        }
-
-        WeakReference<Class> clsRef = ldrMap.get(clsName);
-
-        cls = clsRef != null ? clsRef.get() : null;
-
-        if (cls == null) {
-            cls = Class.forName(clsName, true, ldr);
-
-            ldrMap.putIfAbsent(clsName, new WeakReference<>(cls));
-        }
         return cls;
     }
 
