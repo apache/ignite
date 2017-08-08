@@ -27,7 +27,7 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
 /**
- * Map query results.
+ * Mapper query results.
  */
 class MapQueryResults {
     /** H@ indexing. */

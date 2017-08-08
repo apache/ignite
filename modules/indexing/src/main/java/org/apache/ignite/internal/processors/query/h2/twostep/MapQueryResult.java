@@ -39,7 +39,7 @@ import java.util.UUID;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_OBJECT_READ;
 
 /**
- * Result for a single part of the query.
+ * Mapper result for a single part of the query.
  */
 class MapQueryResult implements AutoCloseable {
     /** */

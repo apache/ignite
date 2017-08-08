@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.query.h2.twostep;
 
 /**
- * Map request key.
+ * Mapper request key.
  */
 class MapRequestKey {
     /** */

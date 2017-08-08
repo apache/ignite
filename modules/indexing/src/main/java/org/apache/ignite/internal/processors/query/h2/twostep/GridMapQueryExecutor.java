@@ -65,7 +65,6 @@ import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQuery
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageResponse;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest;
-import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
@@ -87,7 +86,6 @@ import static org.apache.ignite.internal.processors.query.h2.opt.DistributedJoin
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.MAP;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.REPLICATED;
 import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory.toMessages;
-import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.PER_SEGMENT_Q;
 
 /**
  * Map query executor.
@@ -103,7 +101,7 @@ public class GridMapQueryExecutor {
     private IgniteH2Indexing h2;
 
     /** */
-    private ConcurrentMap<UUID, NodeResults> qryRess = new ConcurrentHashMap8<>();
+    private ConcurrentMap<UUID, MapNodeResults> qryRess = new ConcurrentHashMap8<>();
 
     /** */
     private final GridSpinBusyLock busyLock;
@@ -138,7 +136,7 @@ public class GridMapQueryExecutor {
 
                 GridH2QueryContext.clearAfterDeadNode(locNodeId, nodeId);
 
-                NodeResults nodeRess = qryRess.remove(nodeId);
+                MapNodeResults nodeRess = qryRess.remove(nodeId);
 
                 if (nodeRess == null)
                     return;
@@ -204,7 +202,7 @@ public class GridMapQueryExecutor {
     private void onCancel(ClusterNode node, GridQueryCancelRequest msg) {
         long qryReqId = msg.queryRequestId();
 
-        NodeResults nodeRess = resultsForNode(node.id());
+        MapNodeResults nodeRess = resultsForNode(node.id());
 
         boolean clear = GridH2QueryContext.clear(ctx.localNodeId(), node.id(), qryReqId, MAP);
 
@@ -221,13 +219,13 @@ public class GridMapQueryExecutor {
      * @param nodeId Node ID.
      * @return Results for node.
      */
-    private NodeResults resultsForNode(UUID nodeId) {
-        NodeResults nodeRess = qryRess.get(nodeId);
+    private MapNodeResults resultsForNode(UUID nodeId) {
+        MapNodeResults nodeRess = qryRess.get(nodeId);
 
         if (nodeRess == null) {
-            nodeRess = new NodeResults();
+            nodeRess = new MapNodeResults();
 
-            NodeResults old = qryRess.putIfAbsent(nodeId, nodeRess);
+            MapNodeResults old = qryRess.putIfAbsent(nodeId, nodeRess);
 
             if (old != null)
                 nodeRess = old;
@@ -513,7 +511,7 @@ public class GridMapQueryExecutor {
         GridCacheContext<?, ?> mainCctx =
             !F.isEmpty(cacheIds) ? ctx.cache().context().cacheContext(cacheIds.get(0)) : null;
 
-        NodeResults nodeRess = resultsForNode(node.id());
+        MapNodeResults nodeRess = resultsForNode(node.id());
 
         MapQueryResults qr = null;
 
@@ -700,7 +698,7 @@ public class GridMapQueryExecutor {
      * @param req Request.
      */
     private void onNextPageRequest(ClusterNode node, GridQueryNextPageRequest req) {
-        NodeResults nodeRess = qryRess.get(node.id());
+        MapNodeResults nodeRess = qryRess.get(node.id());
 
         if (nodeRess == null) {
             sendError(node, req.queryRequestId(), new CacheException("No node result found for request: " + req));
@@ -730,7 +728,7 @@ public class GridMapQueryExecutor {
      * @param segmentId Index segment ID.
      * @param pageSize Page size.
      */
-    private void sendNextPage(NodeResults nodeRess, ClusterNode node, MapQueryResults qr, int qry, int segmentId,
+    private void sendNextPage(MapNodeResults nodeRess, ClusterNode node, MapQueryResults qr, int qry, int segmentId,
         int pageSize) {
         MapQueryResult res = qr.result(qry);
 
@@ -810,88 +808,5 @@ public class GridMapQueryExecutor {
         }
     }
 
-
-    /**
-     * Node results.
-     */
-    private static class NodeResults {
-        /** */
-        private final ConcurrentMap<MapRequestKey, MapQueryResults> res = new ConcurrentHashMap8<>();
-
-        /** */
-        private final GridBoundedConcurrentLinkedHashMap<Long, Boolean> qryHist =
-            new GridBoundedConcurrentLinkedHashMap<>(1024, 1024, 0.75f, 64, PER_SEGMENT_Q);
-
-        /**
-         * @param reqId Query Request ID.
-         * @return {@code False} if query was already cancelled.
-         */
-        boolean cancelled(long reqId) {
-            return qryHist.get(reqId) != null;
-        }
-
-        /**
-         * @param reqId Query Request ID.
-         * @return {@code True} if cancelled.
-         */
-        boolean onCancel(long reqId) {
-            Boolean old = qryHist.putIfAbsent(reqId, Boolean.FALSE);
-
-            return old == null;
-        }
-
-        /**
-         * @param reqId Query Request ID.
-         * @param segmentId Index segment ID.
-         * @return query partial results.
-         */
-        public MapQueryResults get(long reqId, int segmentId) {
-            return res.get(new MapRequestKey(reqId, segmentId));
-        }
-
-        /**
-         * Cancel all thread of given request.
-         * @param reqId Request ID.
-         */
-        public void cancelRequest(long reqId) {
-            for (MapRequestKey key : res.keySet()) {
-                if (key.requestId() == reqId) {
-                    MapQueryResults removed = res.remove(key);
-
-                    if (removed != null)
-                        removed.cancel(true);
-                }
-            }
-        }
-
-        /**
-         * @param reqId Query Request ID.
-         * @param segmentId Index segment ID.
-         * @param qr Query Results.
-         * @return {@code True} if removed.
-         */
-        public boolean remove(long reqId, int segmentId, MapQueryResults qr) {
-            return res.remove(new MapRequestKey(reqId, segmentId), qr);
-        }
-
-        /**
-         * @param reqId Query Request ID.
-         * @param segmentId Index segment ID.
-         * @param qr Query Results.
-         * @return previous value.
-         */
-        public MapQueryResults put(long reqId, int segmentId, MapQueryResults qr) {
-            return res.put(new MapRequestKey(reqId, segmentId), qr);
-        }
-
-        /**
-         * Cancel all node queries.
-         */
-        public void cancelAll() {
-            for (MapQueryResults ress : res.values())
-                ress.cancel(true);
-        }
-
-    }
 
 }
