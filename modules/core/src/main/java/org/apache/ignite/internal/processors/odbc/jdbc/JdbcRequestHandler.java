@@ -605,11 +605,14 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
 
                     final String keyName = table.keyFieldName() == null ? "_KEY" : table.keyFieldName();
 
-                    if (fields.isEmpty())
-                        meta.add(new JdbcPrimaryKeyMeta(schemaName, table.tableName(), keyName, new String[] {"_KEY"}));
-                    else
+                    if (fields.isEmpty()) {
+                        meta.add(new JdbcPrimaryKeyMeta(schemaName, table.tableName(), keyName,
+                            new String[] {keyName}));
+                    }
+                    else {
                         meta.add(new JdbcPrimaryKeyMeta(schemaName, table.tableName(), keyName,
                             fields.toArray(new String[fields.size()])));
+                    }
                 }
             }
 
