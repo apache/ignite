@@ -68,7 +68,6 @@ import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryReq
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -108,8 +107,7 @@ public class GridMapQueryExecutor {
     private final GridSpinBusyLock busyLock;
 
     /** */
-    private final ConcurrentMap<T2<String, AffinityTopologyVersion>, GridReservable> reservations =
-        new ConcurrentHashMap8<>();
+    private final ConcurrentMap<MapReservationKey, GridReservable> reservations = new ConcurrentHashMap8<>();
 
     /**
      * @param busyLock Busy lock.
@@ -275,8 +273,7 @@ public class GridMapQueryExecutor {
                 continue;
 
             // For replicated cache topology version does not make sense.
-            final T2<String,AffinityTopologyVersion> grpKey =
-                new T2<>(cctx.name(), cctx.isReplicated() ? null : topVer);
+            final MapReservationKey grpKey = new MapReservationKey(cctx.name(), cctx.isReplicated() ? null : topVer);
 
             GridReservable r = reservations.get(grpKey);
 
@@ -803,8 +800,8 @@ public class GridMapQueryExecutor {
      */
     public void onCacheStop(String cacheName) {
         // Drop group reservations.
-        for (T2<String,AffinityTopologyVersion> grpKey : reservations.keySet()) {
-            if (F.eq(grpKey.get1(), cacheName))
+        for (MapReservationKey grpKey : reservations.keySet()) {
+            if (F.eq(grpKey.cacheName(), cacheName))
                 reservations.remove(grpKey);
         }
     }
