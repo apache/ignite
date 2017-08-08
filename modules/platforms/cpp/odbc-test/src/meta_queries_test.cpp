@@ -318,4 +318,23 @@ BOOST_AUTO_TEST_CASE(TestGetDataWithColumns)
     CheckSingleRowResultSetWithGetData(stmt);
 }
 
+BOOST_AUTO_TEST_CASE(TestGetDataWithSelectQuery)
+{
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
+
+    SQLCHAR insertReq[] = "insert into TestType(_key, strField) VALUES(1, 'Lorem ipsum')";
+    SQLRETURN ret = SQLExecDirect(stmt, insertReq, SQL_NTS);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    SQLCHAR selectReq[] = "select strField from TestType";
+    ret = SQLExecDirect(stmt, selectReq, SQL_NTS);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    CheckSingleRowResultSetWithGetData(stmt);
+}
+
 BOOST_AUTO_TEST_SUITE_END()
