@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.h2.twostep;
 
-import java.lang.reflect.Field;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.util.AbstractCollection;
@@ -39,7 +38,6 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.CacheQueryExecutedEvent;
-import org.apache.ignite.events.CacheQueryReadEvent;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
@@ -64,7 +62,6 @@ import org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RetryException;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueCacheObject;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryCancelRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryFailResponse;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageRequest;
@@ -79,13 +76,11 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.h2.jdbc.JdbcResultSet;
-import org.h2.result.ResultInterface;
 import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
-import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_OBJECT_READ;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.QUERY_POOL;
 import static org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion.NONE;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.OWNING;
@@ -100,23 +95,6 @@ import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.PER_SEGMENT_Q;
  * Map query executor.
  */
 public class GridMapQueryExecutor {
-    /** */
-    private static final Field RESULT_FIELD;
-
-    /*
-     * Initialize.
-     */
-    static {
-        try {
-            RESULT_FIELD = JdbcResultSet.class.getDeclaredField("result");
-
-            RESULT_FIELD.setAccessible(true);
-        }
-        catch (NoSuchFieldException e) {
-            throw new IllegalStateException("Check H2 version in classpath.", e);
-        }
-    }
-
     /** */
     private IgniteLogger log;
 
@@ -756,14 +734,14 @@ public class GridMapQueryExecutor {
      */
     private void sendNextPage(NodeResults nodeRess, ClusterNode node, QueryResults qr, int qry, int segmentId,
         int pageSize) {
-        QueryResult res = qr.result(qry);
+        MapQueryResult res = qr.result(qry);
 
         assert res != null;
 
-        if (res.closed)
+        if (res.closed())
             return;
 
-        int page = res.page;
+        int page = res.page();
 
         List<Value[]> rows = new ArrayList<>(Math.min(64, pageSize));
 
@@ -780,9 +758,9 @@ public class GridMapQueryExecutor {
             boolean loc = node.isLocal();
 
             GridQueryNextPageResponse msg = new GridQueryNextPageResponse(qr.qryReqId, segmentId, qry, page,
-                page == 0 ? res.rowCnt : -1,
-                res.cols,
-                loc ? null : toMessages(rows, new ArrayList<Message>(res.cols)),
+                page == 0 ? res.rowCount() : -1,
+                res.columnCount(),
+                loc ? null : toMessages(rows, new ArrayList<Message>(res.columnCount())),
                 loc ? rows : null);
 
             if (loc)
@@ -929,7 +907,7 @@ public class GridMapQueryExecutor {
         private final long qryReqId;
 
         /** */
-        private final AtomicReferenceArray<QueryResult> results;
+        private final AtomicReferenceArray<MapQueryResult> results;
 
         /** */
         private final GridQueryCancel[] cancels;
@@ -963,7 +941,7 @@ public class GridMapQueryExecutor {
          * @param qry Query result index.
          * @return Query result.
          */
-        QueryResult result(int qry) {
+        MapQueryResult result(int qry) {
             return results.get(qry);
         }
 
@@ -974,7 +952,7 @@ public class GridMapQueryExecutor {
          * @param rs Result set.
          */
         void addResult(int qry, GridCacheSqlQuery q, UUID qrySrcNodeId, ResultSet rs, Object[] params) {
-            QueryResult res = new QueryResult(h2, rs, cacheName, qrySrcNodeId, q, params);
+            MapQueryResult res = new MapQueryResult(h2, rs, cacheName, qrySrcNodeId, q, params);
 
             if (!results.compareAndSet(qry, null, res))
                 throw new IllegalStateException();
@@ -985,9 +963,9 @@ public class GridMapQueryExecutor {
          */
         boolean isAllClosed() {
             for (int i = 0; i < results.length(); i++) {
-                QueryResult res = results.get(i);
+                MapQueryResult res = results.get(i);
 
-                if (res == null || !res.closed)
+                if (res == null || !res.closed())
                     return false;
             }
 
@@ -1004,7 +982,7 @@ public class GridMapQueryExecutor {
             canceled = true;
 
             for (int i = 0; i < results.length(); i++) {
-                QueryResult res = results.get(i);
+                MapQueryResult res = results.get(i);
 
                 if (res != null) {
                     res.close();
@@ -1019,180 +997,6 @@ public class GridMapQueryExecutor {
                         cancel.cancel();
                 }
             }
-        }
-    }
-
-    /**
-     * Result for a single part of the query.
-     */
-    private static class QueryResult implements AutoCloseable {
-        /** Indexing. */
-        private final IgniteH2Indexing h2;
-
-        /** */
-        private final ResultInterface res;
-
-        /** */
-        private final ResultSet rs;
-
-        /** */
-        private final String cacheName;
-
-        /** */
-        private final GridCacheSqlQuery qry;
-
-        /** */
-        private final UUID qrySrcNodeId;
-
-        /** */
-        private final int cols;
-
-        /** */
-        private int page;
-
-        /** */
-        private final int rowCnt;
-
-        /** */
-        private boolean cpNeeded;
-
-        /** */
-        private volatile boolean closed;
-
-        /** */
-        private final Object[] params;
-
-        /**
-         * @param rs Result set.
-         * @param cacheName Cache name.
-         * @param qrySrcNodeId Query source node.
-         * @param qry Query.
-         * @param params Query params.
-         */
-        private QueryResult(IgniteH2Indexing h2, ResultSet rs, @Nullable String cacheName,
-            UUID qrySrcNodeId, GridCacheSqlQuery qry, Object[] params) {
-            this.h2 = h2;
-            this.cacheName = cacheName;
-            this.qry = qry;
-            this.params = params;
-            this.qrySrcNodeId = qrySrcNodeId;
-            this.cpNeeded = F.eq(h2.kernalContext().localNodeId(), qrySrcNodeId);
-
-            if (rs != null) {
-                this.rs = rs;
-                try {
-                    res = (ResultInterface)RESULT_FIELD.get(rs);
-                }
-                catch (IllegalAccessException e) {
-                    throw new IllegalStateException(e); // Must not happen.
-                }
-
-                rowCnt = res.getRowCount();
-                cols = res.getVisibleColumnCount();
-            }
-            else {
-                this.rs = null;
-                this.res = null;
-                this.cols = -1;
-                this.rowCnt = -1;
-
-                closed = true;
-            }
-        }
-
-        /**
-         * @param rows Collection to fetch into.
-         * @param pageSize Page size.
-         * @return {@code true} If there are no more rows available.
-         */
-        synchronized boolean fetchNextPage(List<Value[]> rows, int pageSize) {
-            if (closed)
-                return true;
-
-            boolean readEvt = cacheName != null && h2.kernalContext().event().isRecordable(EVT_CACHE_QUERY_OBJECT_READ);
-
-            page++;
-
-            for (int i = 0 ; i < pageSize; i++) {
-                if (!res.next())
-                    return true;
-
-                Value[] row = res.currentRow();
-
-                if (cpNeeded) {
-                    boolean copied = false;
-
-                    for (int j = 0; j < row.length; j++) {
-                        Value val = row[j];
-
-                        if (val instanceof GridH2ValueCacheObject) {
-                            GridH2ValueCacheObject valCacheObj = (GridH2ValueCacheObject)val;
-
-                            row[j] = new GridH2ValueCacheObject(valCacheObj.getCacheObject(), h2.objectContext()) {
-                                @Override public Object getObject() {
-                                    return getObject(true);
-                                }
-                            };
-
-                            copied = true;
-                        }
-                    }
-
-                    if (i == 0 && !copied)
-                        cpNeeded = false; // No copy on read caches, skip next checks.
-                }
-
-                assert row != null;
-
-                if (readEvt) {
-                    GridKernalContext ctx = h2.kernalContext();
-
-                    ctx.event().record(new CacheQueryReadEvent<>(
-                        ctx.discovery().localNode(),
-                        "SQL fields query result set row read.",
-                        EVT_CACHE_QUERY_OBJECT_READ,
-                        CacheQueryType.SQL.name(),
-                        cacheName,
-                        null,
-                        qry.query(),
-                        null,
-                        null,
-                        params,
-                        qrySrcNodeId,
-                        null,
-                        null,
-                        null,
-                        null,
-                        row(row)));
-                }
-
-                rows.add(res.currentRow());
-            }
-
-            return false;
-        }
-
-        /**
-         * @param row Values array row.
-         * @return Objects list row.
-         */
-        private List<?> row(Value[] row) {
-            List<Object> res = new ArrayList<>(row.length);
-
-            for (Value v : row)
-                res.add(v.getObject());
-
-            return res;
-        }
-
-        /** {@inheritDoc} */
-        @Override public synchronized void close() {
-            if (closed)
-                return;
-
-            closed = true;
-
-            U.closeQuiet(rs);
         }
     }
 
