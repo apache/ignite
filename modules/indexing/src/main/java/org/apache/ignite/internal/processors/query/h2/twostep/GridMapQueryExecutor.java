@@ -90,6 +90,7 @@ import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2V
 /**
  * Map query executor.
  */
+@SuppressWarnings("ForLoopReplaceableByForEach")
 public class GridMapQueryExecutor {
     /** */
     private IgniteLogger log;
@@ -807,6 +808,4 @@ public class GridMapQueryExecutor {
                 reservations.remove(grpKey);
         }
     }
-
-
 }
