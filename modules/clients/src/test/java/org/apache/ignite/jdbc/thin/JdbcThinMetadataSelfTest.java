@@ -219,6 +219,9 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
         }
     }
 
+    /**
+     * @throws Exception If failed.
+     */
     public void testGetAllTables() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
             DatabaseMetaData meta = conn.getMetaData();
