@@ -1172,6 +1172,25 @@ public class BinaryContext {
     }
 
     /**
+     * Register "type ID to type name" mapping on all nodes to allow for mapping requests resolution form client.
+     * Other {@link BinaryContext}'s "register" methods and method
+     * {@link BinaryContext#descriptorForClass(Class, boolean)} already call this functionality so use this method
+     * only when registering types names whose {@link Class} is unknown.
+     *
+     * @param typeId Type ID
+     * @param clsName Class Name
+     * @return {@code True} if the mapping was registered successfully
+     */
+    public boolean registerUserTypeName(int typeId, String clsName) {
+        try {
+            return marshCtx.registerClassName(JAVA_ID, typeId, clsName);
+        }
+        catch (IgniteCheckedException e) {
+            throw new BinaryObjectException("Failed to register user type name.", e);
+        }
+    }
+
+    /**
      * Throw exception on class duplication.
      *
      * @param clsName Class name.
