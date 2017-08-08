@@ -155,8 +155,7 @@ struct MetaQueriesTestSuiteFixture
 
         ret = SQLFetch(stmt);
 
-        if (!SQL_SUCCEEDED(ret))
-            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+        BOOST_REQUIRE_EQUAL(ret, SQL_NO_DATA);
 
         ret = SQLGetData(stmt, 1, SQL_C_CHAR, buf, sizeof(buf), &bufLen);
 
