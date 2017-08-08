@@ -840,7 +840,7 @@ public class GridMapQueryExecutor {
      */
     private static class NodeResults {
         /** */
-        private final ConcurrentMap<RequestKey, QueryResults> res = new ConcurrentHashMap8<>();
+        private final ConcurrentMap<MapRequestKey, QueryResults> res = new ConcurrentHashMap8<>();
 
         /** */
         private final GridBoundedConcurrentLinkedHashMap<Long, Boolean> qryHist =
@@ -870,22 +870,21 @@ public class GridMapQueryExecutor {
          * @return query partial results.
          */
         public QueryResults get(long reqId, int segmentId) {
-            return res.get(new RequestKey(reqId, segmentId));
+            return res.get(new MapRequestKey(reqId, segmentId));
         }
 
         /**
          * Cancel all thread of given request.
-         * @param reqID Request ID.
+         * @param reqId Request ID.
          */
-        public void cancelRequest(long reqID) {
-            for (RequestKey key : res.keySet()) {
-                if (key.reqId == reqID) {
+        public void cancelRequest(long reqId) {
+            for (MapRequestKey key : res.keySet()) {
+                if (key.requestId() == reqId) {
                     QueryResults removed = res.remove(key);
 
                     if (removed != null)
                         removed.cancel(true);
                 }
-
             }
         }
 
@@ -896,7 +895,7 @@ public class GridMapQueryExecutor {
          * @return {@code True} if removed.
          */
         public boolean remove(long reqId, int segmentId, QueryResults qr) {
-            return res.remove(new RequestKey(reqId, segmentId), qr);
+            return res.remove(new MapRequestKey(reqId, segmentId), qr);
         }
 
         /**
@@ -906,7 +905,7 @@ public class GridMapQueryExecutor {
          * @return previous value.
          */
         public QueryResults put(long reqId, int segmentId, QueryResults qr) {
-            return res.put(new RequestKey(reqId, segmentId), qr);
+            return res.put(new MapRequestKey(reqId, segmentId), qr);
         }
 
         /**
@@ -917,42 +916,6 @@ public class GridMapQueryExecutor {
                 ress.cancel(true);
         }
 
-        /**
-         *
-         */
-        private static class RequestKey {
-            /** */
-            private long reqId;
-
-            /** */
-            private int segmentId;
-
-            /** Constructor */
-            RequestKey(long reqId, int segmentId) {
-                this.reqId = reqId;
-                this.segmentId = segmentId;
-            }
-
-            /** {@inheritDoc} */
-            @Override public boolean equals(Object o) {
-                if (this == o)
-                    return true;
-                if (o == null || getClass() != o.getClass())
-                    return false;
-
-                RequestKey other = (RequestKey)o;
-
-                return reqId == other.reqId && segmentId == other.segmentId;
-
-            }
-
-            /** {@inheritDoc} */
-            @Override public int hashCode() {
-                int result = (int)(reqId ^ (reqId >>> 32));
-                result = 31 * result + segmentId;
-                return result;
-            }
-        }
     }
 
     /**
@@ -1232,4 +1195,5 @@ public class GridMapQueryExecutor {
             U.closeQuiet(rs);
         }
     }
+
 }
