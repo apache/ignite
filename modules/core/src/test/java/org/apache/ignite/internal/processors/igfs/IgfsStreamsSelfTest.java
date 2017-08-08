@@ -176,7 +176,7 @@ public class IgfsStreamsSelfTest extends IgfsCommonAbstractTest {
 
     /** @throws Exception If failed. */
     public void testCreateFileColocated() throws Exception {
-        fail("IGNITE-5957");
+        fail("https://issues.apache.org/jira/browse/IGNITE-5957");
         IgfsPath path = new IgfsPath("/colocated");
 
         UUID uuid = UUID.randomUUID();
