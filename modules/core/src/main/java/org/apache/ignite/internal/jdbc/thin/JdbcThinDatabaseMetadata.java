@@ -1274,7 +1274,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
 
     /** {@inheritDoc} */
     @Override public boolean isWrapperFor(Class<?> iface) throws SQLException {
-        return iface != null && iface == DatabaseMetaData.class;
+        return iface != null && iface.isAssignableFrom(JdbcThinDatabaseMetadata.class);
     }
 
     /** {@inheritDoc} */
