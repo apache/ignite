@@ -338,7 +338,7 @@ public class GridIoMessage implements Message {
         if (msg instanceof GridCacheMessage)
             return ((GridCacheMessage)msg).partition();
         if (msg instanceof DataStreamerRequest)
-            return ((DataStreamerRequest)msg).partition(); // TODO introduce partitionAware interface.
+            return ((DataStreamerRequest)msg).partition();
         else
             return STRIPE_DISABLED_PART;
     }
