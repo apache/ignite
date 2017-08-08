@@ -319,12 +319,12 @@ public final class GridCacheLockImpl2 implements GridCacheLockEx2 {
     }
 
     /** EntryProcessor for release lock by timeout, but acquire it if lock has released. */
-    private static class RemoveIfNotFreeProcessor implements EntryProcessor<GridCacheInternalKey, GridCacheLockState2, Boolean> {
+    private static class LockOrRemoveProcessor implements EntryProcessor<GridCacheInternalKey, GridCacheLockState2, Boolean> {
         /** */
         final UUID nodeId;
 
         /** */
-        public RemoveIfNotFreeProcessor(UUID nodeId) {
+        public LockOrRemoveProcessor(UUID nodeId) {
             assert nodeId != null;
 
             this.nodeId = nodeId;
@@ -339,19 +339,13 @@ public final class GridCacheLockImpl2 implements GridCacheLockEx2 {
             if (entry.exists()) {
                 GridCacheLockState2 state = entry.getValue();
 
-                boolean acquired = state.lockIfFree(nodeId);
-
-                boolean updated = true;
-
-                // Remove if can't acquire lock.
-                if (!acquired)
-                    updated = state.removeFromWaitingList(nodeId);
+                GridCacheLockState2.LockedModified result = state.lockOrRemove(nodeId);
 
                 // Write result if necessary.
-                if (updated)
+                if (result.modified)
                     entry.setValue(state);
 
-                return acquired;
+                return result.locked;
             }
 
             return false;
@@ -359,12 +353,12 @@ public final class GridCacheLockImpl2 implements GridCacheLockEx2 {
     }
 
     /** EntryProcessor for lock acquire operation. */
-    private static class OnlyTryProcessor implements EntryProcessor<GridCacheInternalKey, GridCacheLockState2, Boolean> {
+    private static class LockIfFree implements EntryProcessor<GridCacheInternalKey, GridCacheLockState2, Boolean> {
         /** */
         final UUID nodeId;
 
         /** */
-        public OnlyTryProcessor(UUID nodeId) {
+        public LockIfFree(UUID nodeId) {
             assert nodeId != null;
 
             this.nodeId = nodeId;
@@ -379,13 +373,13 @@ public final class GridCacheLockImpl2 implements GridCacheLockEx2 {
             if (entry.exists()) {
                 GridCacheLockState2 state = entry.getValue();
 
-                boolean acquired = state.lockIfFree(nodeId);
+                GridCacheLockState2.LockedModified result = state.lockIfFree(nodeId);
 
                 // Write result if necessary
-                if (acquired)
+                if (result.modified)
                     entry.setValue(state);
 
-                return acquired;
+                return result.locked;
             }
 
             return false;
@@ -413,20 +407,14 @@ public final class GridCacheLockImpl2 implements GridCacheLockEx2 {
             if (entry.exists()) {
                 GridCacheLockState2 state = entry.getValue();
 
-                boolean acquired = state.lockIfFree(nodeId);
-
-                boolean updated = true;
-
-                if (!acquired) {
-                    // Another node is acquiring the lock, so we add our-self in waiting-list.
-                    updated = state.addToWaitingList(nodeId);
-                }
+                GridCacheLockState2.LockedModified result = state.lockOrAdd(nodeId);
 
                 // Write result if necessary
-                if (updated)
+                if (result.modified) {
                     entry.setValue(state);
+                }
 
-                return acquired;
+                return result.locked;
             }
 
             return false;
@@ -454,15 +442,9 @@ public final class GridCacheLockImpl2 implements GridCacheLockEx2 {
             if (entry.exists()) {
                 GridCacheLockState2 state = entry.getValue();
 
-                try {
-                    state.unlock(nodeId);
-                }
-                catch (IllegalMonitorStateException e) {
-                    throw new EntryProcessorException(e);
-                }
+                UUID nextNode = state.unlock(nodeId);
 
-                UUID nextNode = state.getFirstNode();
-
+                // Always update value in right using.
                 entry.setValue(state);
 
                 return nextNode;
@@ -483,10 +465,10 @@ public final class GridCacheLockImpl2 implements GridCacheLockEx2 {
         private final ReleaseProcessor releaseProcessor;
 
         /** */
-        private final OnlyTryProcessor onlyTryProcessor;
+        private final LockIfFree lockIfFree;
 
         /** */
-        private final RemoveIfNotFreeProcessor removeIfNotFreeProcessor;
+        private final LockOrRemoveProcessor lockOrRemoveProcessor;
 
         /** */
         private final GridCacheInternalKey key;
@@ -513,8 +495,8 @@ public final class GridCacheLockImpl2 implements GridCacheLockEx2 {
 
             acquireProcessor = new AcquireProcessor(nodeId);
             releaseProcessor = new ReleaseProcessor(nodeId);
-            onlyTryProcessor = new OnlyTryProcessor(nodeId);
-            removeIfNotFreeProcessor = new RemoveIfNotFreeProcessor(nodeId);
+            lockIfFree = new LockIfFree(nodeId);
+            lockOrRemoveProcessor = new LockOrRemoveProcessor(nodeId);
             this.key = key;
             lockView = view;
             this.listener = listener;
@@ -539,7 +521,7 @@ public final class GridCacheLockImpl2 implements GridCacheLockEx2 {
         /** */
         private final boolean tryAcquire() {
             try {
-                return lockView.invoke(key, onlyTryProcessor).get();
+                return lockView.invoke(key, lockIfFree).get();
             }
             catch (IgniteCheckedException ignored) {
                 return false;
@@ -549,7 +531,7 @@ public final class GridCacheLockImpl2 implements GridCacheLockEx2 {
         /** */
         private final boolean acquireOrRemove() {
             try {
-                return lockView.invoke(key, removeIfNotFreeProcessor).get();
+                return lockView.invoke(key, lockOrRemoveProcessor).get();
             }
             catch (IgniteCheckedException ignored) {
                 return false;

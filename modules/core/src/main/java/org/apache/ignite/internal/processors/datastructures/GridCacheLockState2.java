@@ -37,21 +37,9 @@ public final class GridCacheLockState2 extends VolatileAtomicDataStructureValue 
     /** */
     private long gridStartTime;
 
-    /** FailoverSafe flag. */
-    private boolean failoverSafe;
-
-    /** Flag indicating lock fairness. */
-    private boolean fair;
-
     /** Queue containing nodes that are waiting to acquire this lock, used to ensure fairness. */
     @GridToStringInclude
     public LinkedList<UUID> nodes;
-
-    /**
-     * Flag indicating that global state changed.
-     * Used in fair mode to ensure that only successful acquires and releases trigger update.
-     */
-    //private boolean changed;
 
     @Override public boolean equals(Object o) {
         if (this == o)
@@ -61,10 +49,6 @@ public final class GridCacheLockState2 extends VolatileAtomicDataStructureValue 
 
         GridCacheLockState2 state = (GridCacheLockState2)o;
 
-        if (failoverSafe != state.failoverSafe)
-            return false;
-        if (fair != state.fair)
-            return false;
         if (nodes != null ? !nodes.equals(state.nodes) : state.nodes != null)
             return false;
 
@@ -74,24 +58,16 @@ public final class GridCacheLockState2 extends VolatileAtomicDataStructureValue 
     /**
      * Constructor.
      *
-     * @param failoverSafe true if created in failoverSafe mode.
-     * @param fair true if created in fair mode.
      * @param gridStartTime Cluster start time.
      */
-    public GridCacheLockState2(boolean failoverSafe, boolean fair, long gridStartTime) {
+    public GridCacheLockState2(long gridStartTime) {
         nodes = new LinkedList<>();
-
-        this.fair = fair;
-
-        this.failoverSafe = failoverSafe;
 
         this.gridStartTime = gridStartTime;
     }
 
+    /** Clone constructor. */
     private GridCacheLockState2(GridCacheLockState2 state) {
-        failoverSafe = state.failoverSafe;
-
-        fair = state.fair;
         nodes = new LinkedList<>(state.nodes);
     }
 
@@ -112,90 +88,105 @@ public final class GridCacheLockState2 extends VolatileAtomicDataStructureValue 
         return gridStartTime;
     }
 
-    /** */
-    public boolean lockIfFree(UUID nodeId) {
+    /** Will take lock if it is free. */
+    public LockedModified lockIfFree(UUID nodeId) {
+        LockedModified result = new LockedModified(true, false);
+
         if (nodes == null)
             nodes = new LinkedList<>();
 
         if (nodes.isEmpty()) {
             nodes.add(nodeId);
 
-            return true;
+            result.modified = true;
+
+            return result;
         }
 
         if (nodes.getFirst().equals(nodeId))
-            return true;
+            return result;
 
-        return false;
+        result.locked = false;
+
+        return result;
     }
 
-    public void unlock(UUID nodeId) {
+    /** Will take lock if it is free, or remove node from the waiting queue. */
+    public LockedModified lockOrRemove(UUID nodeId) {
+        LockedModified result = new LockedModified(true, false);
+
+        if (nodes == null)
+            nodes = new LinkedList<>();
+
+        if (nodes.isEmpty()) {
+            nodes.add(nodeId);
+
+            result.modified = true;
+
+            return result;
+        }
+
+        if (nodes.getFirst().equals(nodeId))
+            return result;
+
+        result.locked = false;
+
+        if (nodes.remove(nodeId))
+            result.modified = true;
+
+        return result;
+    }
+
+    /** Will take lock if it is free, or will add node to the waiting queue. */
+    public LockedModified lockOrAdd(UUID nodeId) {
+        LockedModified result = new LockedModified(true, false);
+
+        if (nodes == null)
+            nodes = new LinkedList<>();
+
+        if (nodes.isEmpty()) {
+            nodes.add(nodeId);
+
+            result.modified = true;
+
+            return result;
+        }
+
+        if (nodes.getFirst().equals(nodeId))
+            return result;
+
+        if (!nodes.contains(nodeId)) {
+            nodes.add(nodeId);
+
+            result.modified = true;
+        }
+
+        result.locked = false;
+
+        return result;
+    }
+
+    /** Remove node from first position in waiting list. */
+    public UUID unlock(UUID nodeId) {
         if (nodes == null || nodes.isEmpty() || !nodes.getFirst().equals(nodeId))
-            return;
+            return null;
 
         nodes.removeFirst();
-    }
 
-    public boolean remove(UUID nodeId) {
-        return nodes.remove(nodeId);
-    }
-
-    public UUID getFirstNode() {
-        if (nodes == null || nodes.isEmpty())
+        if (nodes.isEmpty())
             return null;
+
         return nodes.getFirst();
-    }
-
-    /**
-     * @return Failover safe flag.
-     */
-    public boolean isFailoverSafe() {
-        return failoverSafe;
-    }
-
-    /** */
-    public boolean addToWaitingList(UUID nodeId) {
-        if (nodes == null) {
-            nodes = new LinkedList<>();
-        } else if (nodes.contains(nodeId))
-            return false;
-
-        nodes.add(nodeId);
-        return true;
-    }
-
-    /** */
-    public boolean removeFromWaitingList(UUID nodeId) {
-        if (nodes == null)
-            return false;
-
-        return nodes.remove(nodeId);
-    }
-
-    /**
-     * @return Fair flag.
-     */
-    public boolean isFair() {
-        return fair;
     }
 
     /** {@inheritDoc} */
     @Override public Object clone() throws CloneNotSupportedException {
-        return super.clone();
-    }
-
-    /** */
-    public GridCacheLockState2 fastClone() {
         return new GridCacheLockState2(this);
     }
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeLong(gridStartTime);
-
-        out.writeBoolean(failoverSafe);
-
-        out.writeBoolean(fair);
 
         out.writeBoolean(nodes != null);
 
@@ -210,10 +201,6 @@ public final class GridCacheLockState2 extends VolatileAtomicDataStructureValue 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException {
         gridStartTime = in.readLong();
-
-        failoverSafe = in.readBoolean();
-
-        fair = in.readBoolean();
 
         if (in.readBoolean()) {
             int size = in.readInt();
@@ -230,5 +217,16 @@ public final class GridCacheLockState2 extends VolatileAtomicDataStructureValue 
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridCacheLockState2.class, this);
+    }
+
+    /** Simple tuple for result. */
+    public static class LockedModified {
+        boolean locked;
+        boolean modified;
+
+        public LockedModified(boolean locked, boolean modified) {
+            this.locked = locked;
+            this.modified = modified;
+        }
     }
 }
