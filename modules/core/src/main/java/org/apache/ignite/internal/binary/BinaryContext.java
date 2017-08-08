@@ -1387,9 +1387,9 @@ public class BinaryContext {
     }
 
     /**
-     * @return Binary string encoding.
+     * @return String encoding code.
      */
-    @Nullable public BinaryStringEncoding binaryStringEncoding() {
+    @Nullable public Byte stringEncoding() {
         BinaryConfiguration binCfg = igniteCfg.getBinaryConfiguration();
 
         return binCfg != null ? binCfg.getEncoding() : null;

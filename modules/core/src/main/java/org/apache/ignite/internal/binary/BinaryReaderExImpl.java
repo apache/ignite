@@ -1707,7 +1707,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
      * @param flags flag values.
      * @return comma-separated list of string flag representations.
      */
-    private String fieldFlagNames(byte... flags) {
+    private String fieldFlagNames(byte ... flags) {
         StringBuilder sb = new StringBuilder();
 
         if (flags.length > 0) {

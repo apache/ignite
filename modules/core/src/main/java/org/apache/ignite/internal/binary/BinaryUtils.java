@@ -1076,7 +1076,7 @@ public class BinaryUtils {
         else if (cls == BigDecimal.class)
             return BinaryWriteMode.DECIMAL;
         else if (cls == String.class)
-            return ctx.binaryStringEncoding() != null ? BinaryWriteMode.ENCODED_STRING : BinaryWriteMode.STRING;
+            return ctx.stringEncoding() != null ? BinaryWriteMode.ENCODED_STRING : BinaryWriteMode.STRING;
         else if (cls == UUID.class)
             return BinaryWriteMode.UUID;
         else if (cls == Date.class)
@@ -1285,12 +1285,12 @@ public class BinaryUtils {
     public static String doReadEncodedString(BinaryInputStream in) {
         byte code = in.readByte();
 
-        BinaryStringEncoding enc = BinaryStringEncoding.lookup(code);
+        Charset charset = BinaryStringEncoding.charsetByCode(code);
 
-        if (enc == null)
+        if (charset == null)
             throw new BinaryObjectException("Unsupported string encoding [code=" + code + "]");
 
-        return doReadString(in, enc.charset());
+        return doReadString(in, charset);
     }
 
     /**

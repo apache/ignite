@@ -239,7 +239,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         out.position(out.position() + GridBinaryMarshaller.DFLT_HDR_LEN);
 
         if (clsName != null)
-            doWriteUtf8EncodedString(clsName);
+            doWriteString(clsName);
     }
 
     /**
@@ -413,7 +413,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      *
      * @param val String value.
      */
-    public void doWriteUtf8EncodedString(@Nullable String val) {
+    public void doWriteString(@Nullable String val) {
         doWriteEncodedString(val, null);
     }
 
@@ -423,27 +423,28 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      * @param val String value.
      */
     public void doWriteEncodedString(@Nullable String val) {
-        doWriteEncodedString(val, ctx != null ? ctx.binaryStringEncoding() : null);
+        doWriteEncodedString(val, ctx != null ? ctx.stringEncoding() : null);
     }
 
     /**
      * Writes string using certain encoding.
      *
      * @param val value to be written.
-     * @param enc encoding to use.
+     * @param enc encoding code to use.
      */
-    private void doWriteEncodedString(@Nullable String val, @Nullable BinaryStringEncoding enc) {
+    @SuppressWarnings("ConstantConditions")
+    private void doWriteEncodedString(@Nullable String val, @Nullable Byte enc) {
         if (val == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else {
             byte[] strArr;
 
             if (enc != null) {
-                strArr = val.getBytes(enc.charset());
+                strArr = val.getBytes(BinaryStringEncoding.charsetByCode(enc));
 
                 out.unsafeEnsure(1 + 1 + 4);
                 out.unsafeWriteByte(GridBinaryMarshaller.ENCODED_STRING);
-                out.unsafeWriteByte(enc.id());
+                out.unsafeWriteByte(enc);
             } else {
                 if (BinaryUtils.USE_STR_SERIALIZATION_VER_2)
                     strArr = BinaryUtils.strToUtf8Bytes(val);
@@ -766,7 +767,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
             else {
                 out.unsafeWriteInt(GridBinaryMarshaller.UNREGISTERED_TYPE_ID);
 
-                doWriteUtf8EncodedString(val.getClass().getComponentType().getName());
+                doWriteString(val.getClass().getComponentType().getName());
             }
 
             out.writeInt(val.length);
@@ -837,7 +838,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
                 out.unsafeWriteInt(desc.typeId());
             else {
                 out.unsafeWriteInt(GridBinaryMarshaller.UNREGISTERED_TYPE_ID);
-                doWriteUtf8EncodedString(val.getDeclaringClass().getName());
+                doWriteString(val.getDeclaringClass().getName());
             }
 
             out.writeInt(val.ordinal());
@@ -865,7 +866,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
             out.unsafeWriteByte(GridBinaryMarshaller.BINARY_ENUM);
             out.unsafeWriteInt(typeId);
 
-            doWriteUtf8EncodedString(val.className());
+            doWriteString(val.className());
 
             out.writeInt(val.enumOrdinal());
         }
@@ -891,7 +892,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
             else {
                 out.unsafeWriteInt(GridBinaryMarshaller.UNREGISTERED_TYPE_ID);
 
-                doWriteUtf8EncodedString(val.getClass().getComponentType().getName());
+                doWriteString(val.getClass().getComponentType().getName());
             }
 
             out.writeInt(val.length);
@@ -920,7 +921,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
             else {
                 out.unsafeWriteInt(GridBinaryMarshaller.UNREGISTERED_TYPE_ID);
 
-                doWriteUtf8EncodedString(val.getName());
+                doWriteString(val.getName());
             }
         }
     }
@@ -945,7 +946,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
                 else {
                     out.writeInt(GridBinaryMarshaller.UNREGISTERED_TYPE_ID);
 
-                    doWriteUtf8EncodedString(intf.getName());
+                    doWriteString(intf.getName());
                 }
             }
 

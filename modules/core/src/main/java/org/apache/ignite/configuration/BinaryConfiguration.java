@@ -19,14 +19,12 @@ package org.apache.ignite.configuration;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryIdMapper;
 import org.apache.ignite.binary.BinaryNameMapper;
 import org.apache.ignite.binary.BinarySerializer;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
-import org.apache.ignite.internal.binary.BinaryStringEncoding;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Configuration object for Ignite Binary Objects.
@@ -51,8 +49,12 @@ public class BinaryConfiguration {
     /** Compact footer flag. */
     private boolean compactFooter = DFLT_COMPACT_FOOTER;
 
-    /** Encoding for strings. */
-    private BinaryStringEncoding encoding;
+    /**
+     * Encoding for strings.
+     *
+     * @see org.apache.ignite.internal.binary.BinaryStringEncoding
+     */
+    private Byte encoding;
 
     /**
      * Sets class names of binary objects explicitly.
@@ -185,36 +187,20 @@ public class BinaryConfiguration {
     }
 
     /**
-     * @return encoding.
+     * @return encoding code.
      */
-    public BinaryStringEncoding getEncoding() {
+    @Nullable public Byte getEncoding() {
         return encoding;
     }
 
     /**
      * Sets string encoding.
      *
-     * @param encoding encoding.
+     * @param code encoding code.
      * @return {@code this} for chaining.
      */
-    public BinaryConfiguration setEncoding(@NotNull BinaryStringEncoding encoding) {
-        this.encoding = encoding;
-
-        return this;
-    }
-
-    /**
-     * Sets string encoding name.
-     *
-     * @param encodingName encoding name.
-     * @return {@code this} for chaining.
-     * @throws IgniteException if fails to find encoding name among supported encodings.
-     */
-    public BinaryConfiguration setEncodingName(String encodingName) {
-        this.encoding = BinaryStringEncoding.lookup(encodingName);
-
-        if (this.encoding == null)
-            throw new IgniteException("Failed to find encoding " + encodingName);
+    public BinaryConfiguration setEncoding(byte code) {
+        this.encoding = code;
 
         return this;
     }

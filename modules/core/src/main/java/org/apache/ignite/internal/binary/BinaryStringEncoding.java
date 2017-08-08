@@ -18,105 +18,33 @@
 package org.apache.ignite.internal.binary;
 
 import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
-import java.util.Map;
-import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Charsets enumerated to be used in binary marshalling for string data.
+ * Encoding codes to be used in binary marshalling for string data.
  */
-public enum BinaryStringEncoding {
+public class BinaryStringEncoding {
     /** */
-    ENC_US_ASCII(StandardCharsets.US_ASCII),
+    public static final byte ENC_WINDOWS_1251 = (byte)1;
 
     /** */
-    ENC_ISO_8859_1(StandardCharsets.ISO_8859_1),
-
-    /** */
-    ENC_UTF_8(StandardCharsets.UTF_8),
-
-    /** */
-    ENC_UTF_16BE(StandardCharsets.UTF_16BE),
-
-    /** */
-    ENC_UTF_16LE(StandardCharsets.UTF_16LE),
-
-    /** */
-    ENC_UTF_16(StandardCharsets.UTF_16),
-
-    /** */
-    ENC_KOI8_R(Charset.forName("KOI8-R")),
-
-    /** */
-    ENC_IBM866(Charset.forName("IBM866")),
-
-    /** */
-    ENC_WINDOWS_1251(Charset.forName("windows-1251"));
+    public static final Charset CS_WINDOWS_1251 = Charset.forName("windows-1251");
 
     // TODO: IGNITE-5655, add more; http://docs.oracle.com/javase/7/docs/technotes/guides/intl/encoding.doc.html
 
-    /** Name-to-instance mapping. */
-    private static final Map<String, BinaryStringEncoding> nameToInstance = new HashMap<>();
+    /**
+     * Retrieves charset by numeric encoding code.
+     *
+     * @param code encoding code.
+     * @return charset or {@code null} if no charset corresponds to code given.
+     */
+    @Nullable public static Charset charsetByCode(byte code) {
+        switch (code) {
+            case ENC_WINDOWS_1251:
+                return CS_WINDOWS_1251;
 
-    /** Byte-to-instance mapping. */
-    private static final Map<Byte, BinaryStringEncoding> byteToInstance = new HashMap<>();
-
-    /** */
-    static {
-        for (BinaryStringEncoding enc : values()) {
-            byteToInstance.put((byte)enc.ordinal(), enc);
-            nameToInstance.put(enc.charset.name(), enc);
+            default:
+                return null;
         }
-    }
-
-    /** */
-    private final Charset charset;
-
-    /**
-     * Looks for {@link BinaryStringEncoding} instance by binary code.
-     *
-     * @param code binary encoding code.
-     * @return {@link BinaryStringEncoding} instance or null if not found.
-     */
-    public static BinaryStringEncoding lookup(byte code) {
-        return byteToInstance.get(code);
-    }
-
-    /**
-     * Looks for {@link BinaryStringEncoding} instance by encoding name.
-     *
-     * @param name Encoding name.
-     * @return {@link BinaryStringEncoding} instance or null if not found.
-     */
-    public static BinaryStringEncoding lookup(String name) {
-        return nameToInstance.get(name);
-    }
-
-    /**
-     * Constructs encoding for charset given.
-     *
-     * @param charset charset.
-     */
-    BinaryStringEncoding(@NotNull Charset charset) {
-        this.charset = charset;
-    }
-
-    /**
-     * Encoding id.
-     *
-     * @return Encoding id.
-     */
-    public byte id() {
-        return (byte)ordinal();
-    }
-
-    /**
-     * Corresponding charset.
-     *
-     * @return charset.
-     */
-    @NotNull public Charset charset() {
-        return charset;
     }
 }
