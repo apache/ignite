@@ -306,7 +306,7 @@ public class GridMapQueryExecutor {
             GridReservable r = reservations.get(grpKey);
 
             if (explicitParts == null && r != null) { // Try to reserve group partition if any and no explicits.
-                if (r != ReplicatedReservation.INSTANCE) {
+                if (r != MapReplicatedReservation.INSTANCE) {
                     if (!r.reserve())
                         return false; // We need explicit partitions here -> retry.
 
@@ -327,7 +327,7 @@ public class GridMapQueryExecutor {
                         }
 
                         // Mark that we checked this replicated cache.
-                        reservations.putIfAbsent(grpKey, ReplicatedReservation.INSTANCE);
+                        reservations.putIfAbsent(grpKey, MapReplicatedReservation.INSTANCE);
                     }
                 }
                 else { // Reserve primary partitions for partitioned cache (if no explicit given).
@@ -553,7 +553,7 @@ public class GridMapQueryExecutor {
                 }
             }
 
-            qr = new QueryResults(reqId, qrys.size(), mainCctx != null ? mainCctx.name() : null);
+            qr = new QueryResults(h2, reqId, qrys.size(), mainCctx != null ? mainCctx.name() : null);
 
             if (nodeRess.put(reqId, segmentId, qr) != null)
                 throw new IllegalStateException();
@@ -956,9 +956,12 @@ public class GridMapQueryExecutor {
     }
 
     /**
-     *
+     * Map query results.
      */
-    private class QueryResults {
+    private static class QueryResults {
+        /** H@ indexing. */
+        private final IgniteH2Indexing h2;
+
         /** */
         private final long qryReqId;
 
@@ -980,7 +983,9 @@ public class GridMapQueryExecutor {
          * @param cacheName Cache name.
          */
         @SuppressWarnings("unchecked")
-        private QueryResults(long qryReqId, int qrys, @Nullable String cacheName) {
+        private QueryResults(IgniteH2Indexing h2, long qryReqId, int qrys,
+            @Nullable String cacheName) {
+            this.h2 = h2;
             this.qryReqId = qryReqId;
             this.cacheName = cacheName;
 
@@ -1006,7 +1011,9 @@ public class GridMapQueryExecutor {
          * @param rs Result set.
          */
         void addResult(int qry, GridCacheSqlQuery q, UUID qrySrcNodeId, ResultSet rs, Object[] params) {
-            if (!results.compareAndSet(qry, null, new QueryResult(rs, ctx, cacheName, qrySrcNodeId, q, params)))
+            QueryResult res = new QueryResult(h2, rs, cacheName, qrySrcNodeId, q, params);
+
+            if (!results.compareAndSet(qry, null, res))
                 throw new IllegalStateException();
         }
 
@@ -1055,15 +1062,15 @@ public class GridMapQueryExecutor {
     /**
      * Result for a single part of the query.
      */
-    private class QueryResult implements AutoCloseable {
+    private static class QueryResult implements AutoCloseable {
+        /** Indexing. */
+        private final IgniteH2Indexing h2;
+
         /** */
         private final ResultInterface res;
 
         /** */
         private final ResultSet rs;
-
-        /** Kernal context. */
-        private final GridKernalContext ctx;
 
         /** */
         private final String cacheName;
@@ -1094,20 +1101,19 @@ public class GridMapQueryExecutor {
 
         /**
          * @param rs Result set.
-         * @param ctx Kernal context.
          * @param cacheName Cache name.
          * @param qrySrcNodeId Query source node.
          * @param qry Query.
          * @param params Query params.
          */
-        private QueryResult(ResultSet rs, GridKernalContext ctx, @Nullable String cacheName,
+        private QueryResult(IgniteH2Indexing h2, ResultSet rs, @Nullable String cacheName,
             UUID qrySrcNodeId, GridCacheSqlQuery qry, Object[] params) {
-            this.ctx = ctx;
+            this.h2 = h2;
             this.cacheName = cacheName;
             this.qry = qry;
             this.params = params;
             this.qrySrcNodeId = qrySrcNodeId;
-            this.cpNeeded = F.eq(ctx.localNodeId(), qrySrcNodeId);
+            this.cpNeeded = F.eq(h2.kernalContext().localNodeId(), qrySrcNodeId);
 
             if (rs != null) {
                 this.rs = rs;
@@ -1140,7 +1146,7 @@ public class GridMapQueryExecutor {
             if (closed)
                 return true;
 
-            boolean readEvt = cacheName != null && ctx.event().isRecordable(EVT_CACHE_QUERY_OBJECT_READ);
+            boolean readEvt = cacheName != null && h2.kernalContext().event().isRecordable(EVT_CACHE_QUERY_OBJECT_READ);
 
             page++;
 
@@ -1176,6 +1182,8 @@ public class GridMapQueryExecutor {
                 assert row != null;
 
                 if (readEvt) {
+                    GridKernalContext ctx = h2.kernalContext();
+
                     ctx.event().record(new CacheQueryReadEvent<>(
                         ctx.discovery().localNode(),
                         "SQL fields query result set row read.",
@@ -1221,25 +1229,7 @@ public class GridMapQueryExecutor {
 
             closed = true;
 
-            U.close(rs, log);
-        }
-    }
-
-    /**
-     * Fake reservation object for replicated caches.
-     */
-    private static class ReplicatedReservation implements GridReservable {
-        /** */
-        static final ReplicatedReservation INSTANCE = new ReplicatedReservation();
-
-        /** {@inheritDoc} */
-        @Override public boolean reserve() {
-            throw new IllegalStateException();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void release() {
-            throw new IllegalStateException();
+            U.closeQuiet(rs);
         }
     }
 }
