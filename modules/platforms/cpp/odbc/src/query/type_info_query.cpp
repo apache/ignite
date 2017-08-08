@@ -155,7 +155,7 @@ namespace ignite
                 columnsMeta.push_back(ColumnMeta(sch, tbl, "NUM_PREC_RADIX",     IGNITE_TYPE_INT));
                 columnsMeta.push_back(ColumnMeta(sch, tbl, "INTERVAL_PRECISION", IGNITE_TYPE_SHORT));
 
-                assert(IsSqlTypeSupported(sqlType));
+                assert(IsSqlTypeSupported(sqlType) || sqlType == SQL_ALL_TYPES);
 
                 if (sqlType == SQL_ALL_TYPES)
                 {

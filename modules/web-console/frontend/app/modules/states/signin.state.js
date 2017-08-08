@@ -17,6 +17,7 @@
 
 import angular from 'angular';
 import templateUrl from 'views/signin.tpl.pug';
+import controller from 'app/controllers/auth.controller';
 
 angular
 .module('ignite-console.states.login', [
@@ -24,30 +25,29 @@ angular
     // services
     'ignite-console.user'
 ])
-.config(['$stateProvider', 'AclRouteProvider', function($stateProvider) {
+.config(['$stateProvider', function($stateProvider) {
     // set up the states
     $stateProvider
     .state('signin', {
         url: '/',
         templateUrl,
-        resolve: {
-            user: ['$state', 'User', ($state, User) => {
-                return User.read()
-                    .then(() => {
-                        try {
-                            const {name, params} = JSON.parse(localStorage.getItem('lastStateChangeSuccess'));
+        redirectTo: (trans) => {
+            return trans.injector().get('User').read()
+                .then(() => {
+                    try {
+                        const {name, params} = JSON.parse(localStorage.getItem('lastStateChangeSuccess'));
 
-                            $state.go(name, params);
-                        } catch (ignored) {
-                            $state.go('base.configuration.tabs');
-                        }
-                    })
-                    .catch(() => {});
-            }]
+                        const restored = trans.router.stateService.target(name, params);
+
+                        return restored.valid() ? restored : 'base.configuration.tabs';
+                    } catch (ignored) {
+                        return 'base.configuration.tabs';
+                    }
+                })
+                .catch(() => true);
         },
+        controller,
         controllerAs: '$ctrl',
-        controller() {},
-        metaTags: {
-        }
+        unsaved: true
     });
 }]);
