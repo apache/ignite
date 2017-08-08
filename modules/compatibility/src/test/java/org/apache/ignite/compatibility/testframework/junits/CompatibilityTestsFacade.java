@@ -42,10 +42,5 @@ public class CompatibilityTestsFacade {
         @Override public IgniteConfiguration getConfiguration() throws Exception {
             return super.getConfiguration();
         }
-
-        /** {@inheritDoc} */
-        @Override protected boolean isMultiJvm() {
-            return true;
-        }
     }
 }
