@@ -29,6 +29,7 @@ import java.util.Arrays;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.compatibility.testframework.plugins.TestCompatibilityPluginProvider;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.GridJavaProcess;
 import org.apache.ignite.internal.util.typedef.X;
@@ -58,6 +59,8 @@ public class CompatibilityTestIgniteNodeRunner extends IgniteNodeRunner {
 
         if (args.length < 3)
             throw new IllegalArgumentException("Three arguments expected: [path/to/closure/file] [ignite-instance-name] [node-uuid]");
+
+        TestCompatibilityPluginProvider.enable();
 
         IgniteConfiguration cfg = CompatibilityTestsFacade.getConfiguration();
 

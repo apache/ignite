@@ -19,26 +19,83 @@ package org.apache.ignite.compatibility.spi;
 
 import org.apache.ignite.compatibility.testframework.junits.IgniteCompatibilityAbstractTest;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractFullApiSelfTest;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 
 /** */
 public class TestMultiVersionMode extends IgniteCompatibilityAbstractTest {
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration() throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration();
-        cfg.setPeerClassLoadingEnabled(true);
+    /** */
+    public void testJoinMultiVersionTopologyLocalFirst() throws Exception {
+        try {
+            IgniteEx ignite = startGrid(0);
 
-        return cfg;
+            assertEquals(1, topologyVersion(ignite));
+
+            startGrid("testMultiVersion", "2.1.0", new PostConfigurationClosure());
+
+            assertEquals(2, topologyVersion(ignite));
+        }
+        finally {
+            stopAllGrids();
+        }
     }
 
     /** */
-    public void testJoinMultiVersionTopology() throws Exception {
+    public void testJoinMultiVersionTopologyRemoteFirst() throws Exception {
         try {
-            startGrid(0);
+            startGrid(1, "2.1.0", new PostConfigurationClosure());
 
-            startGrid("testMultiVersion", "2.1.0", new PostConfigurationClosure());
+            IgniteEx ignite = startGrid(0);
+
+            assertEquals(2, topologyVersion(ignite));
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /** */
+    public void testJoinMultiVersionTopologyRemoteFirst2() throws Exception {
+        try {
+            startGrid(1, "2.1.0", new PostConfigurationClosure());
+
+            IgniteEx ignite = startGrid(0);
+
+            assertEquals(2, topologyVersion(ignite));
+
+            startGrid(3, "2.1.0", new PostConfigurationClosure());
+
+            assertEquals(3, topologyVersion(ignite));
+
+            startGrid(4);
+
+            assertEquals(4, topologyVersion(ignite));
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /** */
+    public void testJoinMultiVersionTopologyLocalFirst2() throws Exception {
+        try {
+            IgniteEx ignite = startGrid(0);
+
+            assertEquals(1, topologyVersion(ignite));
+
+            startGrid(1, "2.1.0", new PostConfigurationClosure());
+
+            assertEquals(2, topologyVersion(ignite));
+
+            startGrid(2, "2.1.0", new PostConfigurationClosure());
+
+            assertEquals(3, topologyVersion(ignite));
+
+            startGrid(3, "2.1.0", new PostConfigurationClosure());
+
+            assertEquals(4, topologyVersion(ignite));
         }
         finally {
             stopAllGrids();
@@ -53,5 +110,13 @@ public class TestMultiVersionMode extends IgniteCompatibilityAbstractTest {
             disco.setIpFinder(GridCacheAbstractFullApiSelfTest.LOCAL_IP_FINDER);
             cfg.setDiscoverySpi(disco);
         }
+    }
+
+    /**
+     * @param ignite Ignite instance.
+     * @return Topology version.
+     */
+    private static long topologyVersion(IgniteEx ignite) {
+        return ignite.context().discovery().topologyVersion();
     }
 }
