@@ -845,32 +845,59 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
     /** {@inheritDoc} */
     @Override public ResultSet getColumnPrivileges(String catalog, String schema, String tbl,
         String colNamePtrn) throws SQLException {
-        return emptyResultSet();
+        return new JdbcThinResultSet(Collections.<List<Object>>emptyList(), Arrays.asList(
+            new JdbcColumnMeta(null, null, "TABLE_CAT", String.class),
+            new JdbcColumnMeta(null, null, "TABLE_SCHEM", String.class),
+            new JdbcColumnMeta(null, null, "TABLE_NAME", String.class),
+            new JdbcColumnMeta(null, null, "COLUMN_NAME", String.class),
+            new JdbcColumnMeta(null, null, "GRANTOR", String.class),
+            new JdbcColumnMeta(null, null, "GRANTEE", String.class),
+            new JdbcColumnMeta(null, null, "PRIVILEGE", String.class),
+            new JdbcColumnMeta(null, null, "IS_GRANTABLE", String.class)
+        ));
     }
 
     /** {@inheritDoc} */
     @Override public ResultSet getTablePrivileges(String catalog, String schemaPtrn,
         String tblNamePtrn) throws SQLException {
-        return emptyResultSet();
+        return new JdbcThinResultSet(Collections.<List<Object>>emptyList(), Arrays.asList(
+            new JdbcColumnMeta(null, null, "TABLE_CAT", String.class),
+            new JdbcColumnMeta(null, null, "TABLE_SCHEM", String.class),
+            new JdbcColumnMeta(null, null, "TABLE_NAME", String.class),
+            new JdbcColumnMeta(null, null, "GRANTOR", String.class),
+            new JdbcColumnMeta(null, null, "GRANTEE", String.class),
+            new JdbcColumnMeta(null, null, "PRIVILEGE", String.class),
+            new JdbcColumnMeta(null, null, "IS_GRANTABLE", String.class)
+        ));
     }
 
     /** {@inheritDoc} */
     @Override public ResultSet getBestRowIdentifier(String catalog, String schema, String tbl, int scope,
         boolean nullable) throws SQLException {
-        return emptyResultSet();
+        return new JdbcThinResultSet(Collections.<List<Object>>emptyList(), Arrays.asList(
+            new JdbcColumnMeta(null, null, "SCOPE", Short.class),
+            new JdbcColumnMeta(null, null, "COLUMN_NAME", String.class),
+            new JdbcColumnMeta(null, null, "DATA_TYPE", Integer.class),
+            new JdbcColumnMeta(null, null, "TYPE_NAME", String.class),
+            new JdbcColumnMeta(null, null, "COLUMN_SIZE", Integer.class),
+            new JdbcColumnMeta(null, null, "BUFFER_LENGTH", Integer.class),
+            new JdbcColumnMeta(null, null, "DECIMAL_DIGITS", Short.class),
+            new JdbcColumnMeta(null, null, "PSEUDO_COLUMN", Short.class)
+        ));
     }
 
     /** {@inheritDoc} */
     @Override public ResultSet getVersionColumns(String catalog, String schema, String tbl) throws SQLException {
-        return emptyResultSet();
-    }
-
-    /**
-     * @return Empty result set.
-     */
-    private ResultSet emptyResultSet() {
-        return new JdbcThinResultSet(Collections.singletonList(Collections.emptyList()),
-            Collections.<JdbcColumnMeta>emptyList());
+        return new JdbcThinResultSet(Collections.<List<Object>>emptyList(), Arrays.asList(
+            new JdbcColumnMeta(null, null, "SCOPE", Short.class),
+            new JdbcColumnMeta(null, null, "COLUMN_NAME", String.class),
+            new JdbcColumnMeta(null, null, "DATA_TYPE", Integer.class),
+            new JdbcColumnMeta(null, null, "TYPE_NAME", String.class),
+            new JdbcColumnMeta(null, null, "COLUMN_SIZE", Integer.class),
+            new JdbcColumnMeta(null, null, "BUFFER_LENGTH", Integer.class),
+            new JdbcColumnMeta(null, null, "DECIMAL_DIGITS", Short.class),
+            new JdbcColumnMeta(null, null, "PSEUDO_COLUMN", Short.class)
+        ));
     }
 
     /** {@inheritDoc} */
@@ -929,23 +956,87 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
 
     /** {@inheritDoc} */
     @Override public ResultSet getImportedKeys(String catalog, String schema, String tbl) throws SQLException {
-        return emptyResultSet();
+        return new JdbcThinResultSet(Collections.<List<Object>>emptyList(), Arrays.asList(
+            new JdbcColumnMeta(null, null, "PKTABLE_CAT", String.class),
+            new JdbcColumnMeta(null, null, "PKTABLE_SCHEM", String.class),
+            new JdbcColumnMeta(null, null, "PKTABLE_NAME", String.class),
+            new JdbcColumnMeta(null, null, "PKCOLUMN_NAME", String.class),
+            new JdbcColumnMeta(null, null, "FKTABLE_CAT", String.class),
+            new JdbcColumnMeta(null, null, "FKTABLE_SCHEM", String.class),
+            new JdbcColumnMeta(null, null, "FKTABLE_NAME", String.class),
+            new JdbcColumnMeta(null, null, "FKCOLUMN_NAME", String.class),
+            new JdbcColumnMeta(null, null, "KEY_SEQ", Short.class),
+            new JdbcColumnMeta(null, null, "UPDATE_RULE", Short.class),
+            new JdbcColumnMeta(null, null, "DELETE_RULE", Short.class),
+            new JdbcColumnMeta(null, null, "FK_NAME", String.class),
+            new JdbcColumnMeta(null, null, "PK_NAME", String.class),
+            new JdbcColumnMeta(null, null, "DEFERRABILITY", Short.class)
+        ));
     }
 
     /** {@inheritDoc} */
     @Override public ResultSet getExportedKeys(String catalog, String schema, String tbl) throws SQLException {
-        return emptyResultSet();
+        return new JdbcThinResultSet(Collections.<List<Object>>emptyList(), Arrays.asList(
+            new JdbcColumnMeta(null, null, "PKTABLE_CAT", String.class),
+            new JdbcColumnMeta(null, null, "PKTABLE_SCHEM", String.class),
+            new JdbcColumnMeta(null, null, "PKTABLE_NAME", String.class),
+            new JdbcColumnMeta(null, null, "PKCOLUMN_NAME", String.class),
+            new JdbcColumnMeta(null, null, "FKTABLE_CAT", String.class),
+            new JdbcColumnMeta(null, null, "FKTABLE_SCHEM", String.class),
+            new JdbcColumnMeta(null, null, "FKTABLE_NAME", String.class),
+            new JdbcColumnMeta(null, null, "FKCOLUMN_NAME", String.class),
+            new JdbcColumnMeta(null, null, "KEY_SEQ", Short.class),
+            new JdbcColumnMeta(null, null, "UPDATE_RULE", Short.class),
+            new JdbcColumnMeta(null, null, "DELETE_RULE", Short.class),
+            new JdbcColumnMeta(null, null, "FK_NAME", String.class),
+            new JdbcColumnMeta(null, null, "PK_NAME", String.class),
+            new JdbcColumnMeta(null, null, "DEFERRABILITY", Short.class)
+        ));
     }
 
     /** {@inheritDoc} */
     @Override public ResultSet getCrossReference(String parentCatalog, String parentSchema, String parentTbl,
         String foreignCatalog, String foreignSchema, String foreignTbl) throws SQLException {
-        return emptyResultSet();
+        return new JdbcThinResultSet(Collections.<List<Object>>emptyList(), Arrays.asList(
+            new JdbcColumnMeta(null, null, "PKTABLE_CAT", String.class),
+            new JdbcColumnMeta(null, null, "PKTABLE_SCHEM", String.class),
+            new JdbcColumnMeta(null, null, "PKTABLE_NAME", String.class),
+            new JdbcColumnMeta(null, null, "PKCOLUMN_NAME", String.class),
+            new JdbcColumnMeta(null, null, "FKTABLE_CAT", String.class),
+            new JdbcColumnMeta(null, null, "FKTABLE_SCHEM", String.class),
+            new JdbcColumnMeta(null, null, "FKTABLE_NAME", String.class),
+            new JdbcColumnMeta(null, null, "FKCOLUMN_NAME", String.class),
+            new JdbcColumnMeta(null, null, "KEY_SEQ", Short.class),
+            new JdbcColumnMeta(null, null, "UPDATE_RULE", Short.class),
+            new JdbcColumnMeta(null, null, "DELETE_RULE", Short.class),
+            new JdbcColumnMeta(null, null, "FK_NAME", String.class),
+            new JdbcColumnMeta(null, null, "PK_NAME", String.class),
+            new JdbcColumnMeta(null, null, "DEFERRABILITY", Short.class)
+        ));
     }
 
     /** {@inheritDoc} */
     @Override public ResultSet getTypeInfo() throws SQLException {
-        return emptyResultSet();
+        return new JdbcThinResultSet(Collections.<List<Object>>emptyList(), Arrays.asList(
+            new JdbcColumnMeta(null, null, "TYPE_NAME", String.class),
+            new JdbcColumnMeta(null, null, "DATA_TYPE", Integer.class),
+            new JdbcColumnMeta(null, null, "PRECISION", Integer.class),
+            new JdbcColumnMeta(null, null, "LITERAL_PREFIX", String.class),
+            new JdbcColumnMeta(null, null, "LITERAL_SUFFIX", String.class),
+            new JdbcColumnMeta(null, null, "CREATE_PARAMS", String.class),
+            new JdbcColumnMeta(null, null, "NULLABLE", Short.class),
+            new JdbcColumnMeta(null, null, "CASE_SENSITIVE", Boolean.class),
+            new JdbcColumnMeta(null, null, "SEARCHABLE", Short.class),
+            new JdbcColumnMeta(null, null, "UNSIGNED_ATTRIBUTE", Boolean.class),
+            new JdbcColumnMeta(null, null, "FIXED_PREC_SCALE", Boolean.class),
+            new JdbcColumnMeta(null, null, "AUTO_INCREMENT", Boolean.class),
+            new JdbcColumnMeta(null, null, "LOCAL_TYPE_NAME", String.class),
+            new JdbcColumnMeta(null, null, "MINIMUM_SCALE", Short.class),
+            new JdbcColumnMeta(null, null, "MAXIMUM_SCALE", Short.class),
+            new JdbcColumnMeta(null, null, "SQL_DATA_TYPE", Integer.class),
+            new JdbcColumnMeta(null, null, "SQL_DATETIME_SUB", Integer.class),
+            new JdbcColumnMeta(null, null, "NUM_PREC_RADIX", Integer.class)
+        ));
     }
 
     /** {@inheritDoc} */
@@ -1080,7 +1171,15 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
     /** {@inheritDoc} */
     @Override public ResultSet getUDTs(String catalog, String schemaPtrn, String typeNamePtrn,
         int[] types) throws SQLException {
-        return emptyResultSet();
+        return new JdbcThinResultSet(Collections.<List<Object>>emptyList(), Arrays.asList(
+            new JdbcColumnMeta(null, null, "TYPE_CAT", String.class),
+            new JdbcColumnMeta(null, null, "TYPE_SCHEM", String.class),
+            new JdbcColumnMeta(null, null, "TYPE_NAME", String.class),
+            new JdbcColumnMeta(null, null, "CLASS_NAME", String.class),
+            new JdbcColumnMeta(null, null, "DATA_TYPE", Integer.class),
+            new JdbcColumnMeta(null, null, "REMARKS", String.class),
+            new JdbcColumnMeta(null, null, "BASE_TYPE", Short.class)
+        ));
     }
 
     /** {@inheritDoc} */
@@ -1111,19 +1210,53 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
     /** {@inheritDoc} */
     @Override public ResultSet getSuperTypes(String catalog, String schemaPtrn,
         String typeNamePtrn) throws SQLException {
-        return emptyResultSet();
+        return new JdbcThinResultSet(Collections.<List<Object>>emptyList(), Arrays.asList(
+            new JdbcColumnMeta(null, null, "TYPE_CAT", String.class),
+            new JdbcColumnMeta(null, null, "TYPE_SCHEM", String.class),
+            new JdbcColumnMeta(null, null, "TYPE_NAME", String.class),
+            new JdbcColumnMeta(null, null, "SUPERTYPE_CAT", String.class),
+            new JdbcColumnMeta(null, null, "SUPERTYPE_SCHEM", String.class),
+            new JdbcColumnMeta(null, null, "SUPERTYPE_NAME", String.class)
+        ));
     }
 
     /** {@inheritDoc} */
     @Override public ResultSet getSuperTables(String catalog, String schemaPtrn,
         String tblNamePtrn) throws SQLException {
-        return emptyResultSet();
+        return new JdbcThinResultSet(Collections.<List<Object>>emptyList(), Arrays.asList(
+            new JdbcColumnMeta(null, null, "TABLE_CAT", String.class),
+            new JdbcColumnMeta(null, null, "TABLE_SCHEM", String.class),
+            new JdbcColumnMeta(null, null, "TABLE_NAME", String.class),
+            new JdbcColumnMeta(null, null, "SUPERTABLE_NAME", String.class)
+        ));
     }
 
     /** {@inheritDoc} */
     @Override public ResultSet getAttributes(String catalog, String schemaPtrn, String typeNamePtrn,
         String attributeNamePtrn) throws SQLException {
-        return emptyResultSet();
+        return new JdbcThinResultSet(Collections.<List<Object>>emptyList(), Arrays.asList(
+            new JdbcColumnMeta(null, null, "TYPE_CAT", String.class),
+            new JdbcColumnMeta(null, null, "TYPE_SCHEM", String.class),
+            new JdbcColumnMeta(null, null, "TYPE_NAME", String.class),
+            new JdbcColumnMeta(null, null, "ATTR_NAME", String.class),
+            new JdbcColumnMeta(null, null, "DATA_TYPE", Integer.class),
+            new JdbcColumnMeta(null, null, "ATTR_TYPE_NAME", String.class),
+            new JdbcColumnMeta(null, null, "ATTR_SIZE", Integer.class),
+            new JdbcColumnMeta(null, null, "DECIMAL_DIGITS", Integer.class),
+            new JdbcColumnMeta(null, null, "NUM_PREC_RADIX", Integer.class),
+            new JdbcColumnMeta(null, null, "NULLABLE", Integer.class),
+            new JdbcColumnMeta(null, null, "REMARKS", String.class),
+            new JdbcColumnMeta(null, null, "ATTR_DEF", String.class),
+            new JdbcColumnMeta(null, null, "SQL_DATA_TYPE", Integer.class),
+            new JdbcColumnMeta(null, null, "SQL_DATETIME_SUB", Integer.class),
+            new JdbcColumnMeta(null, null, "CHAR_OCTET_LENGTH", Integer.class),
+            new JdbcColumnMeta(null, null, "ORDINAL_POSITION", Integer.class),
+            new JdbcColumnMeta(null, null, "IS_NULLABLE", String.class),
+            new JdbcColumnMeta(null, null, "SCOPE_CATALOG", String.class),
+            new JdbcColumnMeta(null, null, "SCOPE_SCHEMA", String.class),
+            new JdbcColumnMeta(null, null, "SCOPE_TABLE", String.class),
+            new JdbcColumnMeta(null, null, "SOURCE_DATA_TYPE", Short.class)
+        ));
     }
 
     /** {@inheritDoc} */
@@ -1222,7 +1355,12 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
 
     /** {@inheritDoc} */
     @Override public ResultSet getClientInfoProperties() throws SQLException {
-        return emptyResultSet();
+        return new JdbcThinResultSet(Collections.<List<Object>>emptyList(), Arrays.asList(
+            new JdbcColumnMeta(null, null, "NAME", String.class),
+            new JdbcColumnMeta(null, null, "MAX_LEN", Integer.class),
+            new JdbcColumnMeta(null, null, "DEFAULT_VALUE", String.class),
+            new JdbcColumnMeta(null, null, "DESCRIPTION", String.class)
+        ));
     }
 
     /** {@inheritDoc} */
@@ -1280,7 +1418,20 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
     /** {@inheritDoc} */
     @Override public ResultSet getPseudoColumns(String catalog, String schemaPtrn, String tblNamePtrn,
         String colNamePtrn) throws SQLException {
-        return emptyResultSet();
+        return new JdbcThinResultSet(Collections.<List<Object>>emptyList(), Arrays.asList(
+            new JdbcColumnMeta(null, null, "TABLE_CAT", String.class),
+            new JdbcColumnMeta(null, null, "TABLE_SCHEM", String.class),
+            new JdbcColumnMeta(null, null, "TABLE_NAME", String.class),
+            new JdbcColumnMeta(null, null, "COLUMN_NAME", String.class),
+            new JdbcColumnMeta(null, null, "DATA_TYPE", Integer.class),
+            new JdbcColumnMeta(null, null, "COLUMN_SIZE", Integer.class),
+            new JdbcColumnMeta(null, null, "DECIMAL_DIGITS", Integer.class),
+            new JdbcColumnMeta(null, null, "NUM_PREC_RADIX", Integer.class),
+            new JdbcColumnMeta(null, null, "COLUMN_USAGE", Integer.class),
+            new JdbcColumnMeta(null, null, "REMARKS", String.class),
+            new JdbcColumnMeta(null, null, "CHAR_OCTET_LENGTH", Integer.class),
+            new JdbcColumnMeta(null, null, "IS_NULLABLE", String.class)
+        ));
     }
 
     /** {@inheritDoc} */
