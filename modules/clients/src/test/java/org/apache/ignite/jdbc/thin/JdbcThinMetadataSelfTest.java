@@ -135,7 +135,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
         try (Connection conn = DriverManager.getConnection(URL)) {
             Statement stmt = conn.createStatement();
 
-            stmt.execute("CREATE TABLE TEST (ID INT primary key, NAME VARCHAR(50))");
+            stmt.execute("CREATE TABLE TEST (ID INT, NAME VARCHAR(50), VAL VARCHAR(50), PRIMARY KEY (ID, NAME))");
             stmt.execute("CREATE TABLE \"Quoted\" (\"Id\" INT primary key, \"Name\" VARCHAR(50))");
             stmt.execute("CREATE INDEX \"MyTestIndex quoted\" on \"Quoted\" (\"Id\" DESC)");
             stmt.execute("CREATE INDEX IDX ON TEST (ID ASC)");
@@ -360,6 +360,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "pers.PERSON.NAME",
                 "PUBLIC.TEST.ID",
                 "PUBLIC.TEST.NAME",
+                "PUBLIC.TEST.VAL",
                 "PUBLIC.Quoted.Id",
                 "PUBLIC.Quoted.Name"));
 
@@ -482,6 +483,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "org.ORGANIZATION._KEY",
                 "pers.PERSON._KEY",
                 "PUBLIC.TEST.ID",
+                "PUBLIC.TEST.NAME",
                 "PUBLIC.Quoted.Id"));
 
             Set<String> actualPks = new HashSet<>(expectedPks.size());
