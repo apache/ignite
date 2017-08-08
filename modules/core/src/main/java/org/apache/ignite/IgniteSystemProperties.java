@@ -703,6 +703,15 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_ENABLE_FORCIBLE_NODE_KILL = "IGNITE_ENABLE_FORCIBLE_NODE_KILL";
 
     /**
+     * This property is responsible for the distribution of partitions on the local node and
+     * sets the percentage of the ideal distribution of the local partition relative to the total number
+     * of partitions on the affinity nodes.
+     * <p>
+     * Default is 0.1.
+     */
+    public static final String IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD = "IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD";
+
+    /**
      * Enforces singleton.
      */
     private IgniteSystemProperties() {

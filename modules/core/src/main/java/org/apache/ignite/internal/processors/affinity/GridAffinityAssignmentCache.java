@@ -47,10 +47,12 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_AFFINITY_HISTORY_SIZE;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD;
+import static org.apache.ignite.IgniteSystemProperties.getFloat;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 
 /**
@@ -295,12 +297,73 @@ public class GridAffinityAssignmentCache {
 
         assert assignment != null;
 
+        if (ctx.cache().cacheConfiguration(cacheOrGrpName).getCacheMode() == PARTITIONED)
+            printDistribution(assignment, sorted.size(), ctx.localNodeId().toString());
+
         idealAssignment = assignment;
 
         if (locCache)
             initialize(topVer, assignment);
 
         return assignment;
+    }
+
+    /**
+     * @param assignment List indexed by partition number.
+     * @param nodesCnt Nodes count.
+     * @param localNodeId Local node id name.
+     */
+    private void printDistribution(List<List<ClusterNode>> assignment, int nodesCnt, String localNodeId) {
+        Float ignitePartDistribution = getFloat(IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD, 0.1f);
+
+        int[] partitionsByLocalNode = new int[nodesCnt];
+
+        int totalPrimaryCnt = 0;
+
+        int totalBackupCnt = 0;
+
+        for (int i = 0; i < nodesCnt; i++) {
+            for (List<ClusterNode> partitionByNodes : assignment) {
+                if (partitionByNodes.get(i).isLocal())
+                    partitionsByLocalNode[i] += 1;
+
+                if (i == 0)
+                    totalPrimaryCnt++;
+                else
+                    totalBackupCnt++;
+            }
+        }
+
+        if (partitionsByLocalNode.length != 0) {
+            int localPrimaryCnt = partitionsByLocalNode[0];
+            int localBackupCnt = 0;
+            float localBackupPercent = 0;
+
+            for (int i = 1; i < partitionsByLocalNode.length; i++) {
+                localBackupCnt += partitionsByLocalNode[i];
+                localBackupPercent += (float)partitionsByLocalNode[i] / assignment.size() * 100;
+            }
+
+            float expectedCnt = (float)assignment.size() / nodesCnt;
+            float expectedPercent = expectedCnt / assignment.size() * 100;
+            float primaryPerNodePercent = (float)localPrimaryCnt / assignment.size() * 100;
+
+
+
+            float deltaPrimary = Math.abs(1 - (float)localPrimaryCnt * nodesCnt / totalPrimaryCnt);
+            float deltaBackup = Math.abs(1 - (float)localBackupCnt * nodesCnt / totalBackupCnt);
+
+            if (deltaPrimary > ignitePartDistribution || deltaBackup > ignitePartDistribution) {
+                log.info("Local node affinity assignment distribution is not ideal " +
+                    "[cache=" + cacheOrGrpName + ", node_ID=" + localNodeId + ",  " +
+                    "expectedPrimary=" + String.format("%.2f", expectedCnt) +
+                    "(" + String.format("%.2f", expectedPercent) + "%), " +
+                    "expectedBackups=" + String.format("%.2f", expectedCnt * this.backups) +
+                    "(" + String.format("%.2f", expectedPercent * this.backups) + "%), " +
+                    "primary=" + localPrimaryCnt + "(" + String.format("%.2f", primaryPerNodePercent) + "%), " +
+                    "backups=" + localBackupCnt + "(" + String.format("%.2f", localBackupPercent) + "%)].");
+            }
+        }
     }
 
     /**
