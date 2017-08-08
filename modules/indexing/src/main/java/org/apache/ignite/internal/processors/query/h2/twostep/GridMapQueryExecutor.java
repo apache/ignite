@@ -30,7 +30,6 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicReferenceArray;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -55,7 +54,6 @@ import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.cache.query.QueryTable;
-import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode;
@@ -517,7 +515,7 @@ public class GridMapQueryExecutor {
 
         NodeResults nodeRess = resultsForNode(node.id());
 
-        QueryResults qr = null;
+        MapQueryResults qr = null;
 
         List<GridReservable> reserved = new ArrayList<>();
 
@@ -531,7 +529,7 @@ public class GridMapQueryExecutor {
                 }
             }
 
-            qr = new QueryResults(h2, reqId, qrys.size(), mainCctx != null ? mainCctx.name() : null);
+            qr = new MapQueryResults(h2, reqId, qrys.size(), mainCctx != null ? mainCctx.name() : null);
 
             if (nodeRess.put(reqId, segmentId, qr) != null)
                 throw new IllegalStateException();
@@ -597,7 +595,7 @@ public class GridMapQueryExecutor {
                         rs = h2.executeSqlQueryWithTimer(conn, qry.query(),
                             F.asList(qry.parameters(params)), true,
                             timeout,
-                            qr.cancels[qryIdx]);
+                            qr.queryCancel(qryIdx));
 
                         if (evt) {
                             assert mainCctx != null;
@@ -622,7 +620,7 @@ public class GridMapQueryExecutor {
 
                     qr.addResult(qryIdx, qry, node.id(), rs, params);
 
-                    if (qr.canceled) {
+                    if (qr.cancelled()) {
                         qr.result(qryIdx).close();
 
                         throw new QueryCancelledException();
@@ -714,11 +712,11 @@ public class GridMapQueryExecutor {
             return;
         }
 
-        QueryResults qr = nodeRess.get(req.queryRequestId(), req.segmentId());
+        MapQueryResults qr = nodeRess.get(req.queryRequestId(), req.segmentId());
 
         if (qr == null)
             sendError(node, req.queryRequestId(), new CacheException("No query result found for request: " + req));
-        else if (qr.canceled)
+        else if (qr.cancelled())
             sendError(node, req.queryRequestId(), new QueryCancelledException());
         else
             sendNextPage(nodeRess, node, qr, req.query(), req.segmentId(), req.pageSize());
@@ -732,7 +730,7 @@ public class GridMapQueryExecutor {
      * @param segmentId Index segment ID.
      * @param pageSize Page size.
      */
-    private void sendNextPage(NodeResults nodeRess, ClusterNode node, QueryResults qr, int qry, int segmentId,
+    private void sendNextPage(NodeResults nodeRess, ClusterNode node, MapQueryResults qr, int qry, int segmentId,
         int pageSize) {
         MapQueryResult res = qr.result(qry);
 
@@ -751,13 +749,13 @@ public class GridMapQueryExecutor {
             res.close();
 
             if (qr.isAllClosed())
-                nodeRess.remove(qr.qryReqId, segmentId, qr);
+                nodeRess.remove(qr.queryRequestId(), segmentId, qr);
         }
 
         try {
             boolean loc = node.isLocal();
 
-            GridQueryNextPageResponse msg = new GridQueryNextPageResponse(qr.qryReqId, segmentId, qry, page,
+            GridQueryNextPageResponse msg = new GridQueryNextPageResponse(qr.queryRequestId(), segmentId, qry, page,
                 page == 0 ? res.rowCount() : -1,
                 res.columnCount(),
                 loc ? null : toMessages(rows, new ArrayList<Message>(res.columnCount())),
@@ -814,11 +812,11 @@ public class GridMapQueryExecutor {
 
 
     /**
-     *
+     * Node results.
      */
     private static class NodeResults {
         /** */
-        private final ConcurrentMap<MapRequestKey, QueryResults> res = new ConcurrentHashMap8<>();
+        private final ConcurrentMap<MapRequestKey, MapQueryResults> res = new ConcurrentHashMap8<>();
 
         /** */
         private final GridBoundedConcurrentLinkedHashMap<Long, Boolean> qryHist =
@@ -847,7 +845,7 @@ public class GridMapQueryExecutor {
          * @param segmentId Index segment ID.
          * @return query partial results.
          */
-        public QueryResults get(long reqId, int segmentId) {
+        public MapQueryResults get(long reqId, int segmentId) {
             return res.get(new MapRequestKey(reqId, segmentId));
         }
 
@@ -858,7 +856,7 @@ public class GridMapQueryExecutor {
         public void cancelRequest(long reqId) {
             for (MapRequestKey key : res.keySet()) {
                 if (key.requestId() == reqId) {
-                    QueryResults removed = res.remove(key);
+                    MapQueryResults removed = res.remove(key);
 
                     if (removed != null)
                         removed.cancel(true);
@@ -872,7 +870,7 @@ public class GridMapQueryExecutor {
          * @param qr Query Results.
          * @return {@code True} if removed.
          */
-        public boolean remove(long reqId, int segmentId, QueryResults qr) {
+        public boolean remove(long reqId, int segmentId, MapQueryResults qr) {
             return res.remove(new MapRequestKey(reqId, segmentId), qr);
         }
 
@@ -882,7 +880,7 @@ public class GridMapQueryExecutor {
          * @param qr Query Results.
          * @return previous value.
          */
-        public QueryResults put(long reqId, int segmentId, QueryResults qr) {
+        public MapQueryResults put(long reqId, int segmentId, MapQueryResults qr) {
             return res.put(new MapRequestKey(reqId, segmentId), qr);
         }
 
@@ -890,114 +888,10 @@ public class GridMapQueryExecutor {
          * Cancel all node queries.
          */
         public void cancelAll() {
-            for (QueryResults ress : res.values())
+            for (MapQueryResults ress : res.values())
                 ress.cancel(true);
         }
 
-    }
-
-    /**
-     * Map query results.
-     */
-    private static class QueryResults {
-        /** H@ indexing. */
-        private final IgniteH2Indexing h2;
-
-        /** */
-        private final long qryReqId;
-
-        /** */
-        private final AtomicReferenceArray<MapQueryResult> results;
-
-        /** */
-        private final GridQueryCancel[] cancels;
-
-        /** */
-        private final String cacheName;
-
-        /** */
-        private volatile boolean canceled;
-
-        /**
-         * @param qryReqId Query request ID.
-         * @param qrys Number of queries.
-         * @param cacheName Cache name.
-         */
-        @SuppressWarnings("unchecked")
-        private QueryResults(IgniteH2Indexing h2, long qryReqId, int qrys,
-            @Nullable String cacheName) {
-            this.h2 = h2;
-            this.qryReqId = qryReqId;
-            this.cacheName = cacheName;
-
-            results = new AtomicReferenceArray<>(qrys);
-            cancels = new GridQueryCancel[qrys];
-
-            for (int i = 0; i < cancels.length; i++)
-                cancels[i] = new GridQueryCancel();
-        }
-
-        /**
-         * @param qry Query result index.
-         * @return Query result.
-         */
-        MapQueryResult result(int qry) {
-            return results.get(qry);
-        }
-
-        /**
-         * @param qry Query result index.
-         * @param q Query object.
-         * @param qrySrcNodeId Query source node.
-         * @param rs Result set.
-         */
-        void addResult(int qry, GridCacheSqlQuery q, UUID qrySrcNodeId, ResultSet rs, Object[] params) {
-            MapQueryResult res = new MapQueryResult(h2, rs, cacheName, qrySrcNodeId, q, params);
-
-            if (!results.compareAndSet(qry, null, res))
-                throw new IllegalStateException();
-        }
-
-        /**
-         * @return {@code true} If all results are closed.
-         */
-        boolean isAllClosed() {
-            for (int i = 0; i < results.length(); i++) {
-                MapQueryResult res = results.get(i);
-
-                if (res == null || !res.closed())
-                    return false;
-            }
-
-            return true;
-        }
-
-        /**
-         * Cancels the query.
-         */
-        void cancel(boolean forceQryCancel) {
-            if (canceled)
-                return;
-
-            canceled = true;
-
-            for (int i = 0; i < results.length(); i++) {
-                MapQueryResult res = results.get(i);
-
-                if (res != null) {
-                    res.close();
-
-                    continue;
-                }
-
-                if (forceQryCancel) {
-                    GridQueryCancel cancel = cancels[i];
-
-                    if (cancel != null)
-                        cancel.cancel();
-                }
-            }
-        }
     }
 
 }
