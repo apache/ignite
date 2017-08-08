@@ -145,6 +145,7 @@ public class GridMapQueryExecutor {
         }, EventType.EVT_NODE_FAILED, EventType.EVT_NODE_LEFT);
 
         ctx.io().addMessageListener(GridTopic.TOPIC_QUERY, new GridMessageListener() {
+            @SuppressWarnings("deprecation")
             @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
                 if (!busyLock.enterBusy())
                     return;
@@ -353,6 +354,7 @@ public class GridMapQueryExecutor {
             return Collections.emptySet();
 
         return new AbstractCollection<Integer>() {
+            @SuppressWarnings("NullableProblems")
             @Override public Iterator<Integer> iterator() {
                 return new Iterator<Integer>() {
                     /** */
