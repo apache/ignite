@@ -19,8 +19,6 @@ package org.apache.ignite.ml.math;
 
 import com.github.fommil.netlib.BLAS;
 import com.github.fommil.netlib.F2jBLAS;
-import it.unimi.dsi.fastutil.ints.IntIterator;
-import it.unimi.dsi.fastutil.ints.IntSet;
 import java.util.Set;
 import org.apache.ignite.ml.math.exceptions.CardinalityException;
 import org.apache.ignite.ml.math.exceptions.MathIllegalArgumentException;
@@ -30,7 +28,10 @@ import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.ml.math.impls.matrix.SparseBlockDistributedMatrix;
 import org.apache.ignite.ml.math.impls.matrix.SparseDistributedMatrix;
 import org.apache.ignite.ml.math.impls.matrix.SparseLocalOnHeapMatrix;
+import org.apache.ignite.ml.math.impls.vector.CacheVector;
+import org.apache.ignite.ml.math.impls.vector.DenseLocalOffHeapVector;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
+import org.apache.ignite.ml.math.impls.vector.SparseLocalOffHeapVector;
 import org.apache.ignite.ml.math.impls.vector.SparseLocalVector;
 import org.apache.ignite.ml.math.util.MatrixUtil;
 
@@ -244,9 +245,9 @@ public class Blas {
         else if (alpha == 0.0)
             scal(c, beta);
         else {
-            checkTypes(a, "gemm");
-            checkTypes(b, "gemm");
-            checkTypes(c, "gemm");
+            checkMatrixType(a, "gemm");
+            checkMatrixType(b, "gemm");
+            checkMatrixType(c, "gemm");
 
             double[] fA = a.getStorage().data();
             double[] fB = b.getStorage().data();
@@ -265,10 +266,19 @@ public class Blas {
     /**
      * Currently we support only local onheap matrices for BLAS.
      */
-    private static void checkTypes(Matrix a, String op){
+    private static void checkMatrixType(Matrix a, String op){
         if (a instanceof DenseLocalOffHeapMatrix || a instanceof SparseDistributedMatrix
             || a instanceof SparseBlockDistributedMatrix)
             throw new IllegalArgumentException("Operation doesn't support for matrix [class="
+                + a.getClass().getName() + ", operation="+op+"].");
+    }
+
+    /**
+     * Currently we support only local onheap vectors for BLAS.
+     */
+    private static void checkVectorType(Vector a, String op){
+        if (a instanceof DenseLocalOffHeapVector || a instanceof SparseLocalOffHeapVector || a instanceof CacheVector)
+            throw new IllegalArgumentException("Operation doesn't support for vector [class="
                 + a.getClass().getName() + ", operation="+op+"].");
     }
 
@@ -281,9 +291,15 @@ public class Blas {
      * @param beta Beta.
      * @param y Vector y.
      */
-    public static void gemv(double alpha, Matrix a, Vector x, double beta, DenseLocalOnHeapVector y) {
+    public static void gemv(double alpha, Matrix a, Vector x, double beta, Vector y) {
         checkCardinality(a, x);
-        checkCardinality(a, y);
+
+        if (a.rowSize() != y.size())
+            throw new CardinalityException(a.columnSize(), y.size());
+
+        checkMatrixType(a, "gemv");
+        checkVectorType(x,"gemv");
+        checkVectorType(y, "gemv");
 
         if (alpha == 0.0 && beta == 1.0)
             return;
@@ -293,128 +309,14 @@ public class Blas {
             return;
         }
 
-        if (a instanceof SparseLocalOnHeapMatrix && x instanceof DenseLocalOnHeapVector)
-            gemv(alpha, (SparseLocalOnHeapMatrix)a, (DenseLocalOnHeapVector)x, beta, y);
-        else if (a instanceof SparseLocalOnHeapMatrix && x instanceof SparseLocalVector)
-            gemv(alpha, (SparseLocalOnHeapMatrix)a, (SparseLocalVector)x, beta, y);
-        else if (a instanceof DenseLocalOnHeapMatrix && x instanceof DenseLocalOnHeapVector)
-            gemv(alpha, (DenseLocalOnHeapMatrix)a, (DenseLocalOnHeapVector)x, beta, y);
-        else if (a instanceof DenseLocalOnHeapMatrix && x instanceof SparseLocalVector)
-            gemv(alpha, (DenseLocalOnHeapMatrix)a, (SparseLocalVector)x, beta, y);
-        else
-            throw new IllegalArgumentException("Operation gemv doesn't support running thist input [matrix=" +
-                a.getClass().getSimpleName() + ", vector=" + x.getClass().getSimpleName()+"].");
-    }
+        double[] fA = a.getStorage().data();
+        double[] fX = x.getStorage().data();
+        double[] fY = y.getStorage().data();
 
-    /**
-     * y := alpha * A * x + beta * y.
-     *
-     * @param alpha Alpha.
-     * @param a Matrix a.
-     * @param x Vector x.
-     * @param beta Beta.
-     * @param y Vector y.
-     */
-    private static void gemv(double alpha, SparseLocalOnHeapMatrix a, DenseLocalOnHeapVector x, double beta,
-        DenseLocalOnHeapVector y) {
+        nativeBlas.dgemv("N", a.rowSize(), a.columnSize(), alpha, fA, a.rowSize(), fX, 1, beta, fY, 1);
 
-        if (beta != 1.0)
-            scal(y, beta);
-
-        IntIterator rowIter = a.indexesMap().keySet().iterator();
-        while (rowIter.hasNext()) {
-            int row = rowIter.nextInt();
-
-            double sum = 0.0;
-            IntIterator colIter = a.indexesMap().get(row).iterator();
-            while (colIter.hasNext()) {
-                int col = colIter.nextInt();
-                sum += alpha * a.getX(row, col) * x.getX(col);
-            }
-
-            y.setX(row, y.getX(row) + sum);
-        }
-    }
-
-    /**
-     * y := alpha * A * x + beta * y.
-     *
-     * @param alpha Alpha.
-     * @param a Matrix a.
-     * @param x Vector x.
-     * @param beta Beta.
-     * @param y Vector y.
-     */
-    private static void gemv(double alpha, DenseLocalOnHeapMatrix a, DenseLocalOnHeapVector x, double beta,
-        DenseLocalOnHeapVector y) {
-        nativeBlas.dgemv("N", a.rowSize(), a.columnSize(), alpha, a.getStorage().data(), a.rowSize(), x.getStorage().data(), 1, beta,
-            y.getStorage().data(), 1);
-    }
-
-    /**
-     * y := alpha * A * x + beta * y.
-     *
-     * @param alpha Alpha.
-     * @param a Matrix a.
-     * @param x Vector x.
-     * @param beta Beta.
-     * @param y Vector y.
-     */
-    private static void gemv(double alpha, SparseLocalOnHeapMatrix a, SparseLocalVector x, double beta,
-        DenseLocalOnHeapVector y) {
-
-
-        if (beta != 1.0)
-            scal(y, beta);
-
-        IntIterator rowIter = a.indexesMap().keySet().iterator();
-        while (rowIter.hasNext()) {
-            int row = rowIter.nextInt();
-
-            double sum = 0.0;
-            IntIterator colIter = a.indexesMap().get(row).iterator();
-            while (colIter.hasNext()) {
-                int col = colIter.nextInt();
-
-                sum += alpha * a.getX(row, col) * x.getX(col);
-            }
-
-            y.set(row, y.get(row) + sum);
-        }
-    }
-
-    /**
-     * y := alpha * A * x + beta * y.
-     *
-     * @param alpha Alpha.
-     * @param a Matrix a.
-     * @param x Vector x.
-     * @param beta Beta.
-     * @param y Vector y.
-     */
-    private static void gemv(double alpha, DenseLocalOnHeapMatrix a, SparseLocalVector x, double beta,
-        DenseLocalOnHeapVector y) {
-        int rowCntrForA = 0;
-        int mA = a.rowSize();
-
-        double[] aData = a.getStorage().data();
-
-        IntSet indexes = x.indexes();
-
-        double[] yValues = y.getStorage().data();
-
-        while (rowCntrForA < mA) {
-            double sum = 0.0;
-
-            IntIterator iter = indexes.iterator();
-            while (iter.hasNext()) {
-                int xIdx = iter.nextInt();
-                sum += x.getX(xIdx) * aData[xIdx * mA + rowCntrForA];
-            }
-
-            yValues[rowCntrForA] = sum * alpha + beta * yValues[rowCntrForA];
-            rowCntrForA++;
-        }
+        if (y instanceof SparseLocalVector)
+            y.assign(fY);
     }
 
     /**
@@ -427,7 +329,6 @@ public class Blas {
             for (int i = 0; i < m.rowSize(); i++)
                 for (int j = 0; j < m.columnSize(); j++)
                     m.setX(i, j, m.getX(i, j) * alpha);
-
     }
 
     /**
