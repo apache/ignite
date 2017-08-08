@@ -112,8 +112,6 @@ public class AffinityDistributionPrintLogTest extends GridCommonAbstractTest {
 
         String log = print(false, 0.0, 1);
 
-        System.out.println("+++ "+ log);
-
         assertTrue(log.contains(CHECK_MESSAGE));
     }
 
