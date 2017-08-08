@@ -145,7 +145,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
 
             reader.position(start + GridBinaryMarshaller.DFLT_HDR_LEN);
 
-            clsNameToWrite = reader.readUtf8EncodedString();
+            clsNameToWrite = reader.readString();
 
             Class cls;
 

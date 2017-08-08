@@ -196,7 +196,7 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
      *
      * @return String.
      */
-    public String readUtf8EncodedString() {
+    public String readString() {
         byte flag = readByte();
 
         if (flag == GridBinaryMarshaller.NULL)
