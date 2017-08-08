@@ -331,7 +331,7 @@ public class JdbcThinTcpIo {
      */
     public JdbcMetaTablesResult tablesMeta(String catalog, String schemaPtrn, String tablePtrn, String[] types)
         throws IOException, IgniteCheckedException {
-        return sendRequest(new JdbcMetaTablesRequest(catalog, schemaPtrn, tablePtrn, types), DYNAMIC_SIZE_MSG_CAP);
+        return sendRequest(new JdbcMetaTablesRequest(schemaPtrn, tablePtrn, types), DYNAMIC_SIZE_MSG_CAP);
     }
 
     /**

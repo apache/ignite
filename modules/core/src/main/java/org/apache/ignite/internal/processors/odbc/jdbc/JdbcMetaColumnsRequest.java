@@ -27,8 +27,8 @@ import org.jetbrains.annotations.Nullable;
  * JDBC get columns metadata request.
  */
 public class JdbcMetaColumnsRequest extends JdbcRequest {
-    /** Schean name. */
-    private String schemaName;
+    /** Schema name. */
+    private String schema;
 
     /** Table name. */
     private String tableName;
@@ -44,14 +44,14 @@ public class JdbcMetaColumnsRequest extends JdbcRequest {
     }
 
     /**
-     * @param schemaName Cache name.
+     * @param schema Schema name.
      * @param tableName Table name.
      * @param columnName Column name.
      */
-    public JdbcMetaColumnsRequest(String schemaName, String tableName, String columnName) {
+    public JdbcMetaColumnsRequest(String schema, String tableName, String columnName) {
         super(META_COLUMNS);
 
-        this.schemaName = schemaName;
+        this.schema = schema;
         this.tableName = tableName;
         this.columnName = columnName;
     }
@@ -60,7 +60,7 @@ public class JdbcMetaColumnsRequest extends JdbcRequest {
      * @return Cache name.
      */
     @Nullable public String schema() {
-        return schemaName;
+        return schema;
     }
 
     /**
@@ -81,7 +81,7 @@ public class JdbcMetaColumnsRequest extends JdbcRequest {
     @Override public void writeBinary(BinaryWriterExImpl writer) throws BinaryObjectException {
         super.writeBinary(writer);
 
-        writer.writeString(schemaName);
+        writer.writeString(schema);
         writer.writeString(tableName);
         writer.writeString(columnName);
     }
@@ -90,7 +90,7 @@ public class JdbcMetaColumnsRequest extends JdbcRequest {
     @Override public void readBinary(BinaryReaderExImpl reader) throws BinaryObjectException {
         super.readBinary(reader);
 
-        schemaName = reader.readString();
+        schema = reader.readString();
         tableName = reader.readString();
         columnName = reader.readString();
     }

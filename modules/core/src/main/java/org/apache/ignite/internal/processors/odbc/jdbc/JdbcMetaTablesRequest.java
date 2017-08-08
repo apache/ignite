@@ -26,9 +26,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  * JDBC tables metadata request.
  */
 public class JdbcMetaTablesRequest extends JdbcRequest {
-    /** Catalog search pattern. */
-    private String catalog;
-
     /** Schema search pattern. */
     private String schema;
 
@@ -46,25 +43,16 @@ public class JdbcMetaTablesRequest extends JdbcRequest {
     }
 
     /**
-     * @param catalog Catalog search pattern.
      * @param schema Schema search pattern.
      * @param table Table search pattern.
      * @param tableTypes Table types.
      */
-    public JdbcMetaTablesRequest(String catalog, String schema, String table, String[] tableTypes) {
+    public JdbcMetaTablesRequest(String schema, String table, String[] tableTypes) {
         super(META_TABLES);
 
-        this.catalog = catalog;
         this.schema = schema;
         this.table = table;
         this.tableTypes = tableTypes;
-    }
-
-    /**
-     * @return catalog search pattern.
-     */
-    public String catalog() {
-        return catalog;
     }
 
     /**
@@ -92,7 +80,6 @@ public class JdbcMetaTablesRequest extends JdbcRequest {
     @Override public void writeBinary(BinaryWriterExImpl writer) throws BinaryObjectException {
         super.writeBinary(writer);
 
-        writer.writeString(catalog);
         writer.writeString(schema);
         writer.writeString(table);
         writer.writeStringArray(tableTypes);
@@ -102,7 +89,6 @@ public class JdbcMetaTablesRequest extends JdbcRequest {
     @Override public void readBinary(BinaryReaderExImpl reader) throws BinaryObjectException {
         super.readBinary(reader);
 
-        this.catalog = reader.readString();
         this.schema = reader.readString();
         this.table = reader.readString();
         this.tableTypes = reader.readStringArray();
