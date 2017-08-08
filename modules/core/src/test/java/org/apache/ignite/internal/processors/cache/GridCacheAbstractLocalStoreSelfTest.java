@@ -47,6 +47,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.store.CacheLocalStore;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.G;
@@ -293,6 +294,12 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
         Ignite ignite2 = startGrid(2);
 
         awaitPartitionMapExchange();
+
+        // We need a backup key on grid 1, so we must wait for late affinity assignment to change.
+        AffinityTopologyVersion waitTopVer = new AffinityTopologyVersion(2, 1);
+
+        grid(1).context().cache().context().exchange().affinityReadyFuture(waitTopVer).get();
+        grid(2).context().cache().context().exchange().affinityReadyFuture(waitTopVer).get();
 
         final String name = BACKUP_CACHE_2;
 
