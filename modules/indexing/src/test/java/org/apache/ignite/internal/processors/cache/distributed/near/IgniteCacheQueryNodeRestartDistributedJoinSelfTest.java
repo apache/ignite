@@ -55,6 +55,8 @@ public class IgniteCacheQueryNodeRestartDistributedJoinSelfTest extends IgniteCa
      * @throws Exception If failed.
      */
     public void testRestarts() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-5992");
+
         restarts(false);
     }
 
@@ -62,6 +64,8 @@ public class IgniteCacheQueryNodeRestartDistributedJoinSelfTest extends IgniteCa
      * @throws Exception If failed.
      */
     public void testRestartsBroadcast() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-5992");
+
         restarts(true);
     }
 
