@@ -126,13 +126,9 @@ public class AffinityDistributionPrintLogTest extends GridCommonAbstractTest {
         if (init)
             System.setProperty(IgniteSystemProperties.IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD, String.valueOf(percent));
 
-        System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!!! Before startGrids(2) ");
-
         Ignite ignite = startGrids(2);
 
         awaitPartitionMapExchange();
-
-        System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!!! After startGrids(2) ");
 
         final GridStringLogger log = new GridStringLogger(false, this.log);
 
@@ -144,11 +140,7 @@ public class AffinityDistributionPrintLogTest extends GridCommonAbstractTest {
             GridTestUtils.setFieldValue(aff, "log", log);
         }
 
-        System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!!! Before startGrid(2) ");
-
         startGrid(2);
-
-        System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!!! After startGrid(2) ");
 
         awaitPartitionMapExchange();
 
