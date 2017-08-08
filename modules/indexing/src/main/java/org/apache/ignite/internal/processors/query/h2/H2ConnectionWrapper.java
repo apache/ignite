@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.query.h2;
 import java.io.Closeable;
 import java.io.IOException;
 import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -98,8 +97,7 @@ public class H2ConnectionWrapper implements Closeable {
      * Closes cached statements.
      */
     public void closeCachedStatements() {
-        for (PreparedStatement stmt: stmtCache.values())
-            U.closeQuiet(stmt);
+        stmtCache.close();
     }
 
     /** {@inheritDoc} */

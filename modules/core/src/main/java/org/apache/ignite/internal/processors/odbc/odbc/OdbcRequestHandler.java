@@ -502,9 +502,7 @@ public class OdbcRequestHandler implements SqlListenerRequestHandler {
      */
     private SqlListenerResponse getParamsMeta(OdbcQueryGetParamsMetaRequest req) {
         try {
-            PreparedStatement stmt = ctx.query().getIndexing().prepareNativeStatement(req.schema(), req.query());
-
-            ParameterMetaData pmd = stmt.getParameterMetaData();
+            ParameterMetaData pmd = ctx.query().getIndexing().getParameterMetaData(req.schema(), req.query());
 
             byte[] typeIds = new byte[pmd.getParameterCount()];
 

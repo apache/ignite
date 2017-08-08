@@ -17,38 +17,132 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
+import java.util.Iterator;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-import java.sql.PreparedStatement;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
  * Statement cache.
  */
-public class H2StatementCache extends LinkedHashMap<String, PreparedStatement> {
+public class H2StatementCache {
     /** */
-    private int size;
+    private final StatementsMap stmts;
+
+    /** */
+    private final Lock readLock;
+
+    /** */
+    private final Lock writeLock;
 
     /**
      * @param size Size.
      */
     H2StatementCache(int size) {
-        super(size, (float)0.75, true);
+        stmts = new StatementsMap(size);
 
-        this.size = size;
+        ReadWriteLock readWriteLock = new ReentrantReadWriteLock(true);
+
+        readLock = readWriteLock.readLock();
+        writeLock = readWriteLock.writeLock();
     }
 
-    /** {@inheritDoc} */
-    @Override protected boolean removeEldestEntry(Map.Entry<String, PreparedStatement> eldest) {
-        boolean rmv = size() > size;
+    /** */
+    public H2CachedPreparedStatement get(String sql) {
+        readLock.lock();
 
-        if (rmv) {
-            PreparedStatement stmt = eldest.getValue();
+        try {
+            return stmts.get(sql);
+        }
+        finally {
+            readLock.unlock();
+        }
+    }
 
-            U.closeQuiet(stmt);
+    /** */
+    public void put(String sql, H2CachedPreparedStatement stmt) {
+        readLock.lock();
+
+        try {
+            // put may invoke removeEldestEntry()
+            stmts.put(sql, stmt);
+        }
+        finally {
+            readLock.unlock();
+        }
+    }
+
+    /** */
+    public void removeExpired(long expirationTime) {
+        writeLock.lock();
+
+        try {
+            Iterator<Map.Entry<String, H2CachedPreparedStatement>> it = stmts.entrySet().iterator();
+
+            while (it.hasNext()) {
+                H2CachedPreparedStatement stmt = it.next().getValue();
+
+                // Entries are sorted by access-order,
+                // so no point in advancing past the item that is not expired.
+                if (stmt.lastUsage() < expirationTime)
+                    break;
+
+                if (stmt.shutdown(false)) {
+                    it.remove();
+
+                    U.closeQuiet(stmt.statement());
+                }
+            }
+        }
+        finally {
+            writeLock.unlock();
+        }
+    }
+
+    /** */
+    public void close() {
+        writeLock.lock();
+
+        try {
+            for (H2CachedPreparedStatement stmt: stmts.values()) {
+                // TODO: we need to make sure nobody is using the statement, but do not want to wait.
+                stmt.shutdown(true);
+
+                U.closeQuiet(stmt.statement());
+            }
+        }
+        finally {
+            writeLock.unlock();
+        }
+    }
+
+    /** */
+    private class StatementsMap extends LinkedHashMap<String, H2CachedPreparedStatement> {
+        /** */
+        private int size;
+
+        /** */
+        private StatementsMap(int size) {
+            super(size, (float)0.75, true);
+
+            this.size = size;
         }
 
-        return rmv;
+        /** {@inheritDoc} */
+        @Override protected boolean removeEldestEntry(Map.Entry<String, H2CachedPreparedStatement> eldest) {
+            boolean rmv = size() > size;
+
+            if (rmv) {
+                H2CachedPreparedStatement stmt = eldest.getValue();
+
+                U.closeQuiet(stmt.statement());
+            }
+
+            return rmv;
+        }
     }
 }

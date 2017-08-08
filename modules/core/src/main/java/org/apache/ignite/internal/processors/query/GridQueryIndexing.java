@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal.processors.query;
 
+import java.sql.ParameterMetaData;
 import java.sql.PreparedStatement;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.Collection;
 import java.util.List;
@@ -251,13 +253,20 @@ public interface GridQueryIndexing {
     public void onDisconnected(IgniteFuture<?> reconnectFut);
 
     /**
-     * Prepare native statement to retrieve JDBC metadata from.
      *
-     * @param schemaName Schema name.
+     * @param schemaName Schema.
      * @param sql Query.
-     * @return {@link PreparedStatement} from underlying engine to supply metadata to Prepared - most likely H2.
+     * @return Result set metadata.
      */
-    public PreparedStatement prepareNativeStatement(String schemaName, String sql) throws SQLException;
+    public ResultSetMetaData getMetaData(String schemaName, String sql);
+
+    /**
+     *
+     * @param schemaName Schema.
+     * @param sql Query.
+     * @return Parameter metadata.
+     */
+    public ParameterMetaData getParameterMetaData(String schemaName, String sql);
 
     /**
      * Collect queries that already running more than specified duration.
@@ -288,10 +297,11 @@ public interface GridQueryIndexing {
     public String schema(String cacheName);
 
     /**
-     * Check if passed statement is insert statemtn.
+     * Check if passed statement is insert statement.
      *
-     * @param nativeStmt Native statement.
+     * @param schemaName Schema name.
+     * @param sql Query.
      * @return {@code True} if insert.
      */
-    public boolean isInsertStatement(PreparedStatement nativeStmt);
+    public boolean isInsertStatement(String schemaName, String sql);
 }

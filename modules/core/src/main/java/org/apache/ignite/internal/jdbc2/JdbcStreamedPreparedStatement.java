@@ -36,13 +36,10 @@ class JdbcStreamedPreparedStatement extends JdbcPreparedStatement {
      * @param sql  SQL query.
      * @param streamer Data streamer to use with this statement. Will be closed on statement close.
      */
-    JdbcStreamedPreparedStatement(JdbcConnection conn, String sql, IgniteDataStreamer<?, ?> streamer,
-        PreparedStatement nativeStmt) {
+    JdbcStreamedPreparedStatement(JdbcConnection conn, String sql, IgniteDataStreamer<?, ?> streamer) {
         super(conn, sql);
 
         this.streamer = streamer;
-
-        nativeStatement = nativeStmt;
     }
 
     /** {@inheritDoc} */

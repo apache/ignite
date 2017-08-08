@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal.processors.query;
 
+import java.sql.ParameterMetaData;
 import java.sql.PreparedStatement;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -2141,16 +2143,28 @@ private IgniteInternalFuture<Object> rebuildIndexesFromHash(@Nullable final Stri
 
     /**
      *
-     * @param cacheName Cache name.
+     * @param schemaName Schema.
      * @param sql Query.
-     * @return {@link PreparedStatement} from underlying engine to supply metadata to Prepared - most likely H2.
+     * @return Metadata.
+     * @throws SQLException If failed.
      */
-    public PreparedStatement prepareNativeStatement(String cacheName, String sql) throws SQLException {
+    public ResultSetMetaData getMetaData(String schemaName, String sql) throws SQLException {
         checkxEnabled();
 
-        String schemaName = idx.schema(cacheName);
+        return idx.getMetaData(schemaName, sql);
+    }
 
-        return idx.prepareNativeStatement(schemaName, sql);
+    /**
+     *
+     * @param schemaName Schema.
+     * @param sql Query.
+     * @return Parameter metadata.
+     * @throws SQLException If failed.
+     */
+    public ParameterMetaData getParameterMetaData(String schemaName, String sql) throws SQLException {
+        checkxEnabled();
+
+        return idx.getParameterMetaData(schemaName, sql);
     }
 
     /**

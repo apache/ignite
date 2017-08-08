@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.sql.ParameterMetaData;
 import java.sql.PreparedStatement;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.Collection;
 import java.util.Collections;
@@ -334,7 +336,12 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
         }
 
         /** {@inheritDoc} */
-        @Override public PreparedStatement prepareNativeStatement(String space, String sql) throws SQLException {
+        @Override public ResultSetMetaData getMetaData(String schemaName, String sql) {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public ParameterMetaData getParameterMetaData(String schemaName, String sql) {
             return null;
         }
 
@@ -359,7 +366,7 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
         }
 
         /** {@inheritDoc} */
-        @Override public boolean isInsertStatement(PreparedStatement nativeStmt) {
+        @Override public boolean isInsertStatement(String cacheName, String sql) {
             return false;
         }
     }

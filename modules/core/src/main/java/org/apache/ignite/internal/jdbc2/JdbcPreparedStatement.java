@@ -47,9 +47,6 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
     /** SQL query. */
     private final String sql;
 
-    /** H2's parsed statement to retrieve metadata from. */
-    PreparedStatement nativeStatement;
-
     /**
      * Creates new prepared statement.
      *
@@ -252,7 +249,7 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
     @Override public ResultSetMetaData getMetaData() throws SQLException {
         ensureNotClosed();
 
-        return getNativeStatement().getMetaData();
+        return conn.getMetaData(sql);
     }
 
     /** {@inheritDoc} */
@@ -284,7 +281,7 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
     @Override public ParameterMetaData getParameterMetaData() throws SQLException {
         ensureNotClosed();
 
-        return getNativeStatement().getParameterMetaData();
+        return conn.getParameterMetaData(sql);
     }
 
     /** {@inheritDoc} */
@@ -449,16 +446,5 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
 
         while (args.size() < size)
             args.add(null);
-    }
-
-    /**
-     * @return H2's prepared statement to get metadata from.
-     * @throws SQLException if failed.
-     */
-    private PreparedStatement getNativeStatement() throws SQLException {
-        if (nativeStatement != null)
-            return nativeStatement;
-
-        return (nativeStatement = conn.prepareNativeStatement(sql));
     }
 }

@@ -24,7 +24,9 @@ import java.sql.Clob;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.NClob;
+import java.sql.ParameterMetaData;
 import java.sql.PreparedStatement;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLClientInfoException;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
@@ -567,9 +569,7 @@ public class JdbcConnection implements Connection {
         else {
             GridQueryIndexing idx = ignite().context().query().getIndexing();
 
-            PreparedStatement nativeStmt = prepareNativeStatement(sql);
-
-            if (!idx.isInsertStatement(nativeStmt))
+            if (!idx.isInsertStatement(schemaName(), sql))
                 throw new IgniteSQLException("Only INSERT operations are supported in streaming mode",
                     IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
@@ -584,7 +584,7 @@ public class JdbcConnection implements Connection {
             if (streamNodeParOps > 0)
                 streamer.perNodeParallelOperations(streamNodeParOps);
 
-            stmt = new JdbcStreamedPreparedStatement(this, sql, streamer, nativeStmt);
+            stmt = new JdbcStreamedPreparedStatement(this, sql, streamer);
         }
 
         statements.add(stmt);
@@ -847,10 +847,20 @@ public class JdbcConnection implements Connection {
 
     /**
      * @param sql Query.
-     * @return {@link PreparedStatement} from underlying engine to supply metadata to Prepared - most likely H2.
+     * @return Metadata.
+     * @throws SQLException If failed.
      */
-    PreparedStatement prepareNativeStatement(String sql) throws SQLException {
-        return ignite().context().query().prepareNativeStatement(schemaName(), sql);
+    ResultSetMetaData getMetaData(String sql) throws SQLException {
+        return ignite().context().query().getMetaData(schemaName(), sql);
+    }
+
+    /**
+     * @param sql Query.
+     * @return Parameter metadata.
+     * @throws SQLException If failed.
+     */
+    ParameterMetaData getParameterMetaData(String sql) throws SQLException {
+        return ignite().context().query().getParameterMetaData(schemaName(), sql);
     }
 
     /**
