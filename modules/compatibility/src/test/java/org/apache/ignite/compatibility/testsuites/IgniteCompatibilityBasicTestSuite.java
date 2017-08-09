@@ -18,6 +18,7 @@
 package org.apache.ignite.compatibility.testsuites;
 
 import junit.framework.TestSuite;
+import org.apache.ignite.compatibility.binary.VarintArraysSizeCompatibilityTest;
 import org.apache.ignite.compatibility.spi.MultiVersionClusterTest;
 
 /**
@@ -32,6 +33,8 @@ public class IgniteCompatibilityBasicTestSuite {
         TestSuite suite = new TestSuite("Ignite Compatibility Basic Test Suite");
 
         suite.addTestSuite(MultiVersionClusterTest.class);
+        
+        suite.addTestSuite(VarintArraysSizeCompatibilityTest.class);
 
         return suite;
     }
