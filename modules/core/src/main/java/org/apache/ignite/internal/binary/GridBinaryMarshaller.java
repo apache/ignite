@@ -75,9 +75,6 @@ public class GridBinaryMarshaller {
     /** String with implicit UTF-8 encoding. */
     public static final byte STRING = 9;
 
-    /** String with explicit encoding set. */
-    public static final byte ENCODED_STRING = 39;
-
     /** */
     public static final byte UUID = 10;
 
@@ -158,6 +155,9 @@ public class GridBinaryMarshaller {
 
     /** Binary enum */
     public static final byte BINARY_ENUM = 38;
+
+    /** String with explicit encoding set. */
+    public static final byte ENCODED_STRING = 39;
 
     /** */
     public static final byte NULL = (byte)101;

@@ -105,7 +105,6 @@ public class OdbcColumnMeta {
         writer.writeString(tableName);
         writer.writeString(columnName);
 
-        // TODO: IGNITE-5655, what about ENCODE_STRING?
         byte typeId = BinaryUtils.typeByClass(dataType, ctx);
 
         writer.writeByte(typeId);

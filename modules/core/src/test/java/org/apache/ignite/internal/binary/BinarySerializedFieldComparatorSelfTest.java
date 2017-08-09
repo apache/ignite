@@ -26,7 +26,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 /**
  * Unit tests for serialized field comparer.
  */
-public class BinarySerialiedFieldComparatorSelfTest extends BinarySerialiedFieldComparatorAbstractSelfTest {
+public class BinarySerializedFieldComparatorSelfTest extends BinarySerializedFieldComparatorAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg =  super.getConfiguration(igniteInstanceName);

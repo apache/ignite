@@ -28,7 +28,7 @@ import org.eclipse.jetty.util.ConcurrentHashSet;
 /**
  * Unit tests for serialized field comparer.
  */
-public class BinarySerialiedFieldComparatorAbstractSelfTest extends GridCommonAbstractTest {
+public class BinarySerializedFieldComparatorAbstractSelfTest extends GridCommonAbstractTest {
     /** Type counter. */
     private static final AtomicInteger TYPE_CTR = new AtomicInteger();
 

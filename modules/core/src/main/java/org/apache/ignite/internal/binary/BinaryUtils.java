@@ -1330,7 +1330,7 @@ public class BinaryUtils {
     }
 
     /**
-     * Reads encoded string from array of bytes starting at arbitrary offset.
+     * Reads string from array of bytes starting at arbitrary offset.
      *
      * @param src source array.
      * @param off offset from the beginning of source array.
