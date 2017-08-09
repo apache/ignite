@@ -24,12 +24,14 @@ import java.io.ObjectOutput;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import javax.cache.Cache;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryEventFilter;
 import javax.cache.event.CacheEntryUpdatedListener;
@@ -39,6 +41,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
+import org.apache.ignite.cache.query.TransformedEventListener;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.CacheQueryExecutedEvent;
 import org.apache.ignite.events.CacheQueryReadEvent;
@@ -69,6 +72,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteAsyncCallback;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -90,6 +94,19 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
     /** */
     static final int LSNR_MAX_BUF_SIZE =
         IgniteSystemProperties.getInteger("IGNITE_CONTINUOUS_QUERY_LISTENER_MAX_BUFFER_SIZE", 10_000);
+
+    /**
+     * Transformer implementation for processing received remote events.
+     * They are already transformed so we simply return transformed value for event.
+     */
+    private transient IgniteClosure<CacheEntryEvent<? extends K, ? extends V>, ?> returnValTrans =
+        new IgniteClosure<CacheEntryEvent<? extends K, ? extends V>, Object>() {
+            @Override public Object apply(CacheEntryEvent<? extends K, ? extends V> evt) {
+                assert evt.getKey() == null;
+
+                return evt.getValue();
+            }
+        };
 
     /** Cache name. */
     private String cacheName;
@@ -161,7 +178,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
     private transient boolean ignoreClsNotFound;
 
     /** */
-    private transient boolean asyncCb;
+    transient boolean asyncCb;
 
     /** */
     private transient UUID nodeId;
@@ -196,14 +213,13 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
     public CacheContinuousQueryHandler(
         String cacheName,
         Object topic,
-        CacheEntryUpdatedListener<K, V> locLsnr,
-        CacheEntryEventSerializableFilter<K, V> rmtFilter,
+        @Nullable CacheEntryUpdatedListener<K, V> locLsnr,
+        @Nullable CacheEntryEventSerializableFilter<K, V> rmtFilter,
         boolean oldValRequired,
         boolean sync,
         boolean ignoreExpired,
         boolean ignoreClsNotFound) {
         assert topic != null;
-        assert locLsnr != null;
 
         this.cacheName = cacheName;
         this.topic = topic;
@@ -449,20 +465,40 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
 
                     ClusterNode node = ctx.discovery().node(nodeId);
 
+                    IgniteClosure<CacheEntryEvent<? extends K, ? extends V>, ?> trans = getTransformer();
+
                     for (Map.Entry<Integer, CacheContinuousQueryEventBuffer> bufE : entryBufs.entrySet()) {
                         CacheContinuousQueryEventBuffer buf = bufE.getValue();
 
                         Collection<CacheContinuousQueryEntry> backupQueue = buf.flushOnExchange();
 
                         if (backupQueue != null && node != null) {
+                            Collection<CacheContinuousQueryEntry> transBackupQueue =
+                                trans != null ?
+                                    new ArrayList<CacheContinuousQueryEntry>(backupQueue.size()) :
+                                    null;
+
+                            Cache cache = cctx.kernalContext().cache().jcache(cctx.name());
+
                             for (CacheContinuousQueryEntry e : backupQueue) {
                                 e.markBackup();
 
-                                if (!e.isFiltered())
+                                if (!e.isFiltered()) {
+                                    if (trans != null) {
+                                        e = transformToEntry(trans, new CacheContinuousQueryEvent<K, V>(cache, cctx, e));
+
+                                        transBackupQueue.add(e);
+                                    }
+
                                     prepareEntry(cctx, nodeId, e);
+                                }
                             }
 
-                            ctx.continuous().addBackupNotification(nodeId, routineId, backupQueue, topic);
+                            ctx.continuous().addBackupNotification(
+                                nodeId,
+                                routineId,
+                                trans != null ? transBackupQueue: backupQueue,
+                                topic);
                         }
                     }
                 }
@@ -505,14 +541,14 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                         if (asyncCb) {
                             ctx.asyncCallbackPool().execute(new Runnable() {
                                 @Override public void run() {
-                                    locLsnr.onUpdated(evts);
+                                    notifyLocalListener(evts, getTransformer());
                                 }
                             }, part);
                         }
                         else
                             skipCtx.addProcessClosure(new Runnable() {
                                 @Override public void run() {
-                                    locLsnr.onUpdated(evts);
+                                    notifyLocalListener(evts, getTransformer());
                                 }
                             });
                     }
@@ -581,6 +617,20 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
      */
     public CacheEntryEventFilter getEventFilter() {
         return rmtFilter;
+    }
+
+    /**
+     * @return Cache entry event transformer.
+     */
+    @Nullable protected IgniteClosure<CacheEntryEvent<? extends K, ? extends V>, ?> getTransformer() {
+        return null;
+    }
+
+    /**
+     * @return Local listener of transformed events.
+     */
+    @Nullable protected TransformedEventListener<?> localTransformedEventListener() {
+        return null;
     }
 
     /**
@@ -752,8 +802,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
             }
         }
 
-        if (!entries0.isEmpty())
-            locLsnr.onUpdated(entries0);
+        notifyLocalListener(entries0, returnValTrans);
     }
 
     /**
@@ -825,26 +874,31 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
             if (cctx == null)
                 return;
 
-            final CacheContinuousQueryEntry entry = evt.entry();
+            CacheContinuousQueryEntry entry = evt.entry();
 
             if (loc) {
                 if (!locCache) {
                     Collection<CacheEntryEvent<? extends K, ? extends V>> evts = handleEvent(ctx, entry);
 
-                    if (!evts.isEmpty())
-                        locLsnr.onUpdated(evts);
+                    notifyLocalListener(evts, getTransformer());
 
                     if (!internal && !skipPrimaryCheck)
                         sendBackupAcknowledge(ackBuf.onAcknowledged(entry), routineId, ctx);
                 }
                 else {
                     if (!entry.isFiltered())
-                        locLsnr.onUpdated(F.<CacheEntryEvent<? extends K, ? extends V>>asList(evt));
+                        notifyLocalListener(F.<CacheEntryEvent<? extends K, ? extends V>>asList(evt), getTransformer());
                 }
             }
             else {
-                if (!entry.isFiltered())
+                if (!entry.isFiltered()) {
+                    IgniteClosure<CacheEntryEvent<? extends K, ? extends V>, ?> trans = getTransformer();
+
+                    if (trans != null)
+                        entry = transformToEntry(trans, evt);
+
                     prepareEntry(cctx, nodeId, entry);
+                }
 
                 Object entryOrList = handleEntry(cctx, entry);
 
@@ -886,6 +940,28 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                 null
             ));
         }
+    }
+
+    /**
+     * Notifies local listener.
+     *
+     * @param evts Events.
+     * @param trans Transformer
+     */
+    private void notifyLocalListener(Collection<CacheEntryEvent<? extends K, ? extends V>> evts,
+        @Nullable IgniteClosure<CacheEntryEvent<? extends K, ? extends V>, ?> trans) {
+        TransformedEventListener locTransLsnr = localTransformedEventListener();
+
+        assert (locLsnr != null && locTransLsnr == null) || (locLsnr == null && locTransLsnr != null);
+
+        if (F.isEmpty(evts))
+            return;
+
+        if (locLsnr != null)
+            locLsnr.onUpdated(evts);
+
+        if (locTransLsnr != null)
+            locTransLsnr.onUpdated(transform(trans, evts));
     }
 
     /**
@@ -1258,4 +1334,62 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         }
     }
 
+    /**
+     * @param trans Transformer.
+     * @param evts Source events.
+     * @return Collection of transformed values.
+     */
+    private Iterable transform(final IgniteClosure<CacheEntryEvent<? extends K, ? extends V>, ?> trans,
+        Collection<CacheEntryEvent<? extends K, ? extends V>> evts) {
+        final Iterator<CacheEntryEvent<? extends K, ? extends V>> iter = evts.iterator();
+
+        return F.iterator(evts, new IgniteClosure() {
+            @Override public Object apply(Object o) {
+                return transform(trans, iter.next());
+            }
+        }, true);
+    }
+
+    /**
+     * Transform event data with {@link #getTransformer()} if exists.
+     *
+     * @param trans Transformer.
+     * @param evt Event to transform.
+     * @return Entry contains only transformed data if transformer exists. Unchanged event if transformer is not set.
+     * @see #getTransformer()
+     */
+    private CacheContinuousQueryEntry transformToEntry(IgniteClosure<CacheEntryEvent<? extends K, ? extends V>, ?> trans,
+        CacheContinuousQueryEvent<? extends K, ? extends V> evt) {
+        Object transVal = transform(trans, evt);
+
+        return new CacheContinuousQueryEntry(evt.entry().cacheId(),
+            evt.entry().eventType(),
+            null,
+            transVal == null ? null : evt.context().toCacheObject(transVal),
+            null,
+            evt.entry().isKeepBinary(),
+            evt.entry().partition(),
+            evt.entry().updateCounter(),
+            evt.entry().topologyVersion(),
+            evt.entry().flags());
+    }
+
+    /**
+     * @param trans Transformer.
+     * @param evt Event.
+     * @return Transformed value.
+     */
+    private Object transform(IgniteClosure<CacheEntryEvent<? extends K, ? extends V>, ?> trans,
+        CacheEntryEvent<? extends K, ? extends V> evt) {
+        Object transVal = null;
+
+        try {
+            transVal = trans.apply(evt);
+        }
+        catch (Exception e) {
+            U.error(log, e);
+        }
+
+        return transVal;
+    }
 }
