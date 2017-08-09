@@ -576,20 +576,23 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                                 else {
                                                     assert val != null : txEntry;
 
-                                                    WALPointer reference = cctx.wal().log(new DataRecord(
-                                                        new DataEntry(
-                                                                cacheCtx.cacheId(),
-                                                                txEntry.key(),
-                                                                val,
-                                                                op,
-                                                                nearXidVersion(),
-                                                                writeVersion(),
-                                                                cached.expireTime(),
-                                                                txEntry.key().partition(),
-                                                                txEntry.updateCounter(),
-                                                                cacheCtx.group().storeCacheIdInDataPage()
-                                                        )
-                                                    ));
+                                                    WALPointer reference = null;
+
+                                                    if (cctx.wal() != null)
+                                                        reference = cctx.wal().log(new DataRecord(
+                                                            new DataEntry(
+                                                                    cacheCtx.cacheId(),
+                                                                    txEntry.key(),
+                                                                    val,
+                                                                    op,
+                                                                    nearXidVersion(),
+                                                                    writeVersion(),
+                                                                    cached.expireTime(),
+                                                                    txEntry.key().partition(),
+                                                                    txEntry.updateCounter(),
+                                                                    cacheCtx.group().storeCacheIdInDataPage()
+                                                            )
+                                                        ));
 
                                                     cached.innerSet(this,
                                                         eventNodeId(),
