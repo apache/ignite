@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.pagemem.wal.record;
 
-import java.util.Collections;
-import java.util.List;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -29,7 +27,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 public class DataRecord extends WALRecord {
     /** */
     @GridToStringInclude
-    private List<DataEntry> writeEntries;
+    private DataEntry writeEntry;
 
     /** {@inheritDoc} */
     @Override public RecordType type() {
@@ -47,31 +45,21 @@ public class DataRecord extends WALRecord {
      * @param writeEntry Write entry.
      */
     public DataRecord(DataEntry writeEntry) {
-        this(Collections.singletonList(writeEntry));
+        this.writeEntry = writeEntry;
     }
 
     /**
-     * @param writeEntries Write entries.
+     * @return Write entry.
      */
-    public DataRecord(List<DataEntry> writeEntries) {
-        this.writeEntries = writeEntries;
+    public DataEntry writeEntry() {
+        return writeEntry;
     }
 
     /**
-     * @return Collection of write entries.
-     */
-    public List<DataEntry> writeEntries() {
-        return writeEntries == null ? Collections.<DataEntry>emptyList() : writeEntries;
-    }
-
-    /**
-     * @return Operation performed with entries.
+     * @return Operation performed with entry.
      */
     public GridCacheOperation operation() {
-        if (writeEntries == null || writeEntries.size() == 0)
-            return GridCacheOperation.NOOP;
-
-        return writeEntries.get(0).op();
+        return writeEntry.op();
     }
 
     /** {@inheritDoc} */

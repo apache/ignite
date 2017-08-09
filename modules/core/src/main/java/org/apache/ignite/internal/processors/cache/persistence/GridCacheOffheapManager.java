@@ -613,7 +613,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         private final int part;
 
         /** */
-        private Iterator<DataEntry> entryIt;
+        private DataEntry entry;
 
         /** */
         private CacheDataRow next;
@@ -695,20 +695,16 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             next = null;
 
             while (true) {
-                if (entryIt != null) {
-                    while (entryIt.hasNext()) {
-                        DataEntry entry = entryIt.next();
+                if (entry != null) {
+                    if (entry.partitionId() == part && cacheGrpCaches.contains(entry.cacheId())) {
 
-                        if (entry.partitionId() == part && cacheGrpCaches.contains(entry.cacheId())) {
+                        next = new DataEntryRow(entry);
 
-                            next = new DataEntryRow(entry);
-
-                            return;
-                        }
+                        return;
                     }
                 }
 
-                entryIt = null;
+                entry = null;
 
                 while (walIt.hasNext()) {
                     IgniteBiTuple<WALPointer, WALRecord> rec = walIt.next();
@@ -716,14 +712,14 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                     if (rec.get2() instanceof DataRecord) {
                         DataRecord data = (DataRecord)rec.get2();
 
-                        entryIt = data.writeEntries().iterator();
+                        entry = data.writeEntry();
                         // Move on to the next valid data entry.
 
                         break;
                     }
                 }
 
-                if (entryIt == null)
+                if (entry == null)
                     return;
             }
         }

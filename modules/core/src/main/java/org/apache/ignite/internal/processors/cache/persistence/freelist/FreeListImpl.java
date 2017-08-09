@@ -218,7 +218,7 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
             if (needWalDeltaRecord(pageId, page, null)) {
                 assert row.reference() != null;
 
-                wal.log(new DataPageInsertFragmentRecord(grpId, pageId, payloadSize, lastLink, row.reference()));
+                wal.log(new DataPageInsertFragmentRecord(grpId, pageId, payloadSize, written, lastLink, row.reference()));
             }
 
             return written + payloadSize;

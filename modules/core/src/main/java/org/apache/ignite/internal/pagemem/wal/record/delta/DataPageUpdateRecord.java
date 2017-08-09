@@ -23,13 +23,14 @@ import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALReferenceAwareRecord;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Update existing record in data page.
  */
 public class DataPageUpdateRecord extends PageDeltaRecord implements WALReferenceAwareRecord {
     /** */
-    private int itemId;
+    private final int itemId;
 
     /** Actual fragment data size. */
     private final int payloadSize;
@@ -94,6 +95,11 @@ public class DataPageUpdateRecord extends PageDeltaRecord implements WALReferenc
     }
 
     /** {@inheritDoc} */
+    @Override public int offset() {
+        return -1;
+    }
+
+    /** {@inheritDoc} */
     @Override public void payload(byte[] payload) {
         this.payload = payload;
     }
@@ -104,7 +110,9 @@ public class DataPageUpdateRecord extends PageDeltaRecord implements WALReferenc
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isFragmented() {
-        return false;
+    @Override public String toString() {
+        return S.toString(DataPageUpdateRecord.class, this,
+                "payloadSize", payloadSize,
+                "super", super.toString());
     }
 }

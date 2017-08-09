@@ -21,10 +21,8 @@ import java.io.DataInput;
 import java.io.EOFException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
@@ -244,10 +242,7 @@ public class RecordV1Serializer implements RecordSerializer {
             case DATA_RECORD:
                 DataRecord dataRec = (DataRecord)record;
 
-                buf.putInt(dataRec.writeEntries().size());
-
-                for (DataEntry dataEntry : dataRec.writeEntries())
-                    putDataEntry(buf, dataEntry);
+                putDataEntry(buf, dataRec.writeEntry());
 
                 break;
 
@@ -289,6 +284,7 @@ public class RecordV1Serializer implements RecordSerializer {
 
                 buf.putLong(difRec.lastLink());
                 buf.putInt(difRec.payloadSize());
+                buf.putInt(difRec.offset());
 
                 ((FileWALPointer) difRec.reference()).put(buf);
 
@@ -790,14 +786,7 @@ public class RecordV1Serializer implements RecordSerializer {
                 break;
 
             case DATA_RECORD:
-                int entryCnt = in.readInt();
-
-                List<DataEntry> entries = new ArrayList<>(entryCnt);
-
-                for (int i = 0; i < entryCnt; i++)
-                    entries.add(readDataEntry(in));
-
-                res = new DataRecord(entries);
+                res = new DataRecord(readDataEntry(in));
 
                 break;
 
@@ -847,12 +836,11 @@ public class RecordV1Serializer implements RecordSerializer {
                 pageId = in.readLong();
 
                 long lastLink = in.readLong();
-
                 int payloadSize = in.readInt();
-
+                int recordOffset = in.readInt();
                 WALPointer reference = FileWALPointer.read(in);
 
-                res = new DataPageInsertFragmentRecord(cacheId, pageId, payloadSize, lastLink, reference);
+                res = new DataPageInsertFragmentRecord(cacheId, pageId, payloadSize, recordOffset, lastLink, reference);
 
                 break;
             }
@@ -1260,7 +1248,7 @@ public class RecordV1Serializer implements RecordSerializer {
             case DATA_RECORD:
                 DataRecord dataRec = (DataRecord)record;
 
-                return commonFields + 4 + dataSize(dataRec);
+                return commonFields + entrySize(dataRec.writeEntry());
 
             case HEADER_RECORD:
                 return HEADER_RECORD_SIZE;
@@ -1280,7 +1268,7 @@ public class RecordV1Serializer implements RecordSerializer {
             case DATA_PAGE_INSERT_FRAGMENT_RECORD:
                 final DataPageInsertFragmentRecord difRec = (DataPageInsertFragmentRecord)record;
 
-                return commonFields + 4 + 8 + 8 + 4 +
+                return commonFields + 4 + 8 + 8 + 4 + 4 +
                         ((FileWALPointer) difRec.reference()).size();
 
             case DATA_PAGE_REMOVE_RECORD:
@@ -1410,20 +1398,6 @@ public class RecordV1Serializer implements RecordSerializer {
         int fileOffset = in.readInt();
 
         return new FileWALPointer(idx, fileOffset, 0);
-    }
-
-    /**
-     * @param dataRec Data record to serialize.
-     * @return Full data record size.
-     * @throws IgniteCheckedException If failed to obtain the length of one of the entries.
-     */
-    private int dataSize(DataRecord dataRec) throws IgniteCheckedException {
-        int sz = 0;
-
-        for (DataEntry entry : dataRec.writeEntries())
-            sz += entrySize(entry);
-
-        return sz;
     }
 
     /**

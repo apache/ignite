@@ -23,6 +23,7 @@ import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALReferenceAwareRecord;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Insert fragment to data page record.
@@ -33,6 +34,9 @@ public class DataPageInsertFragmentRecord extends PageDeltaRecord implements WAL
 
     /** Actual fragment data size. */
     private final int payloadSize;
+
+    /** Fragment payload offset relatively to whole record payload. */
+    private final int offset;
 
     /** WAL reference to {@link DataRecord}. */
     private final WALPointer reference;
@@ -50,6 +54,7 @@ public class DataPageInsertFragmentRecord extends PageDeltaRecord implements WAL
         int grpId,
         long pageId,
         int payloadSize,
+        int offset,
         long lastLink,
         WALPointer reference
     ) {
@@ -57,6 +62,7 @@ public class DataPageInsertFragmentRecord extends PageDeltaRecord implements WAL
 
         this.lastLink = lastLink;
         this.payloadSize = payloadSize;
+        this.offset = offset;
         this.reference = reference;
     }
 
@@ -72,6 +78,10 @@ public class DataPageInsertFragmentRecord extends PageDeltaRecord implements WAL
         return RecordType.DATA_PAGE_INSERT_FRAGMENT_RECORD;
     }
 
+    public byte[] getPayload() {
+        return payload;
+    }
+
     /**
      * @return Link to the last entry fragment.
      */
@@ -85,6 +95,11 @@ public class DataPageInsertFragmentRecord extends PageDeltaRecord implements WAL
     }
 
     /** {@inheritDoc} */
+    @Override public int offset() {
+        return offset;
+    }
+
+    /** {@inheritDoc} */
     @Override public void payload(byte[] payload) {
         this.payload = payload;
     }
@@ -95,7 +110,10 @@ public class DataPageInsertFragmentRecord extends PageDeltaRecord implements WAL
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isFragmented() {
-        return true;
+    @Override public String toString() {
+        return S.toString(DataPageInsertFragmentRecord.class, this,
+                "payloadSize", payloadSize,
+                "offset", offset,
+                "super", super.toString());
     }
 }

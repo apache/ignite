@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed;
 
 import java.io.Externalizable;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -479,40 +478,6 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                         batchStoreCommit(writeMap().values());
 
                         try {
-                            // Write created and modified entries to WAL
-                            List<DataEntry> dataEntries = null;
-
-                            for (IgniteTxEntry txEntry : entries) {
-                                GridCacheContext cacheCtx = txEntry.context();
-                                GridCacheOperation op = txEntry.op();
-                                CacheObject val = txEntry.value();
-
-                                if (!near() && cctx.wal() != null && op != NOOP && op != RELOAD && op != READ) {
-                                    if (dataEntries == null)
-                                        dataEntries = new ArrayList<>(entries.size());
-
-                                    dataEntries.add(
-                                            new DataEntry(
-                                                    cacheCtx.cacheId(),
-                                                    txEntry.key(),
-                                                    val,
-                                                    op,
-                                                    nearXidVersion(),
-                                                    writeVersion(),
-                                                    0,
-                                                    txEntry.key().partition(),
-                                                    txEntry.updateCounter(),
-                                                    cacheCtx.group().storeCacheIdInDataPage()
-                                            )
-                                    );
-                                }
-                            }
-
-                            WALPointer reference = null;
-
-                            if (dataEntries != null && !near() && cctx.wal() != null)
-                                reference = cctx.wal().log(new DataRecord(dataEntries));
-
                             // Node that for near transactions we grab all entries.
                             for (IgniteTxEntry txEntry : entries) {
                                 GridCacheContext cacheCtx = txEntry.context();
@@ -610,6 +575,21 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                                         txEntry.updateCounter());
                                                 else {
                                                     assert val != null : txEntry;
+
+                                                    WALPointer reference = cctx.wal().log(new DataRecord(
+                                                        new DataEntry(
+                                                                cacheCtx.cacheId(),
+                                                                txEntry.key(),
+                                                                val,
+                                                                op,
+                                                                nearXidVersion(),
+                                                                writeVersion(),
+                                                                cached.expireTime(),
+                                                                txEntry.key().partition(),
+                                                                txEntry.updateCounter(),
+                                                                cacheCtx.group().storeCacheIdInDataPage()
+                                                        )
+                                                    ));
 
                                                     cached.innerSet(this,
                                                         eventNodeId(),
