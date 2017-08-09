@@ -45,15 +45,9 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  *
  */
 public class AffinityDistributionPrintLogTest extends GridCommonAbstractTest {
+    /** Logger. */
     @LoggerResource
     private IgniteLogger log;
-
-    /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
-        super.afterTest();
-
-        stopAllGrids();
-    }
 
     /** */
     private int parts = 1024;
@@ -66,6 +60,13 @@ public class AffinityDistributionPrintLogTest extends GridCommonAbstractTest {
 
     /** */
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        stopAllGrids();
+    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -143,9 +144,9 @@ public class AffinityDistributionPrintLogTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param dflt
-     * @param percent
-     * @param nodeCnt
+     * @param dflt Use default IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD.
+     * @param percent Value of IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD for setting.
+     * @param nodeCnt Node count.
      * @return Intercepted log.
      * @throws Exception If failed.
      */

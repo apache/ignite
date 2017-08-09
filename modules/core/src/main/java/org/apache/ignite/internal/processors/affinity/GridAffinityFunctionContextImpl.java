@@ -45,7 +45,6 @@ public class GridAffinityFunctionContextImpl implements AffinityFunctionContext 
 
     /**
      * @param topSnapshot Topology snapshot.
-     * @param prevAssignment Prevent Assignment.
      * @param discoEvt Discovery Event.
      * @param topVer Topology version.
      * @param backups Quantity of backups.
