@@ -260,6 +260,8 @@ public class GridCacheBinaryObjectMetadataExchangeMultinodeTest extends GridComm
      * Verifies that all sequential updates that don't introduce any conflicts are accepted and observed by all nodes.
      */
     public void testSequentialUpdatesNoConflicts() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-6007");
+
         IgniteEx ignite0 = startGrid(0);
 
         final IgniteEx ignite1 = startGrid(1);
