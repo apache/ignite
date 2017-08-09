@@ -25,12 +25,14 @@ public class TestExample {
                  Ignition.start(new IgniteConfiguration().setIgniteInstanceName("client").setClientMode(true))) {
                 IgniteCache<Long, Person> cliCache = cli.cache(CACHE_NAME);
 
-                SqlFieldsQuery qry = new SqlFieldsQuery("SELECT firstName FROM Person").setStreaming(true);
+                SqlFieldsQuery qry = new SqlFieldsQuery("SELECT firstName FROM Person WHERE 1=1");
 
                 int cnt = 0;
 
                 for (List<?> row : cliCache.query(qry)) {
                     cnt += row.size();
+
+                    System.out.println("ROW: " + cnt);
                 }
 
                 System.out.println("DONE: " + cnt);
