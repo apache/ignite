@@ -43,6 +43,30 @@ public class TestMultiVersionMode extends IgniteCompatibilityAbstractTest {
     }
 
     /** */
+    public void testJoinMultiVersionTopologyLocalFirst2() throws Exception {
+        try {
+            IgniteEx ignite = startGrid(0);
+
+            assertEquals(1, topologyVersion(ignite));
+
+            startGrid(1, "2.1.0", new PostConfigurationClosure());
+
+            assertEquals(2, topologyVersion(ignite));
+
+            startGrid(2, "2.1.0", new PostConfigurationClosure());
+
+            assertEquals(3, topologyVersion(ignite));
+
+            startGrid(3, "2.1.0", new PostConfigurationClosure());
+
+            assertEquals(4, topologyVersion(ignite));
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /** */
     public void testJoinMultiVersionTopologyRemoteFirst() throws Exception {
         try {
             startGrid(1, "2.1.0", new PostConfigurationClosure());
@@ -79,23 +103,23 @@ public class TestMultiVersionMode extends IgniteCompatibilityAbstractTest {
     }
 
     /** */
-    public void testJoinMultiVersionTopologyLocalFirst2() throws Exception {
+    public void testJoinMultiVersionTopologyRemoteFirst3() throws Exception {
         try {
-            IgniteEx ignite = startGrid(0);
-
-            assertEquals(1, topologyVersion(ignite));
-
             startGrid(1, "2.1.0", new PostConfigurationClosure());
 
-            assertEquals(2, topologyVersion(ignite));
-
             startGrid(2, "2.1.0", new PostConfigurationClosure());
+
+            IgniteEx ignite = startGrid(0);
 
             assertEquals(3, topologyVersion(ignite));
 
             startGrid(3, "2.1.0", new PostConfigurationClosure());
 
             assertEquals(4, topologyVersion(ignite));
+
+            startGrid(4, "2.1.0", new PostConfigurationClosure());
+
+            assertEquals(5, topologyVersion(ignite));
         }
         finally {
             stopAllGrids();

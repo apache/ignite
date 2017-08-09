@@ -137,9 +137,9 @@ public class IgniteProcessProxy implements IgniteEx {
         throws Exception {
         this.cfg = cfg;
         this.locJvmGrid = locJvmGrid;
-        this.log = log.getLogger("jvm-" + id.toString().substring(0, id.toString().indexOf('-')));
+        this.log = getLogger(log, "jvm-" + id.toString().substring(0, id.toString().indexOf('-')));
 
-        String params = params(cfg, true);
+        String params = params(cfg, resetDiscovery);
 
         Collection<String> filteredJvmArgs = filteredJvmArgs();
 
@@ -175,6 +175,17 @@ public class IgniteProcessProxy implements IgniteEx {
             throw new IllegalStateException("There was found instance assotiated with " + cfg.getIgniteInstanceName() +
                 ", instance= " + prevVal + ". New started node was stopped.");
         }
+    }
+
+    /**
+     * Creates new logger instance based on given logger with given category.
+     *
+     * @param log Base logger.
+     * @param ctgr Category.
+     * @return Initiated logger.
+     */
+    protected IgniteLogger getLogger(IgniteLogger log, Object ctgr) {
+        return log.getLogger(ctgr);
     }
 
     /**

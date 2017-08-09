@@ -23,15 +23,13 @@ import java.util.Collection;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.compatibility.testframework.junits.logger.ListenedGridTestLog4jLogger;
 import org.apache.ignite.compatibility.testframework.plugins.TestCompatibilityPluginProvider;
 import org.apache.ignite.compatibility.testframework.util.MavenUtils;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.events.DiscoveryEvent;
-import org.apache.ignite.events.Event;
-import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
-import org.apache.ignite.internal.util.lang.IgnitePredicateX;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -98,13 +96,17 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
         IgniteInClosure<IgniteConfiguration> clos) throws Exception {
         assert isMultiJvm() : "MultiJvm mode must be switched on for the node stop properly.";
 
-        assert !igniteInstanceName.equals(getTestIgniteInstanceName(0)) : "Use default instance name for local nodes only!";
+        assert !igniteInstanceName.equals(getTestIgniteInstanceName(0)) : "Use default instance name for local nodes only.";
 
         final String closPath = CompatibilityTestIgniteNodeRunner.storeToFile(clos);
 
         final IgniteConfiguration cfg = getConfiguration(igniteInstanceName); // won't use to start node
 
-        IgniteEx ignite = new IgniteProcessProxy(cfg, log, locJvmInstance, true) {
+        IgniteProcessProxy ignite = new IgniteProcessProxy(cfg, log, locJvmInstance, true) {
+            @Override protected IgniteLogger getLogger(IgniteLogger log, Object ctgr) {
+                return ListenedGridTestLog4jLogger.createLogger(ctgr);
+            }
+
             @Override protected String igniteNodeRunnerClassName() throws Exception {
                 return CompatibilityTestIgniteNodeRunner.class.getCanonicalName();
             }
@@ -153,6 +155,20 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
         if (rmJvmInstance == null)
             rmJvmInstance = ignite;
 
+        if (locJvmInstance == null) {
+            CountDownLatch nodeJoinedLatch = new CountDownLatch(1);
+
+            String nodeId = ignite.getId().toString();
+
+            ListenedGridTestLog4jLogger logger = (ListenedGridTestLog4jLogger)rmJvmInstance.log();
+
+            logger.addListener(nodeId, new LoggedJoinNodeClosure(nodeJoinedLatch, nodeId));
+
+            assert nodeJoinedLatch.await(30, TimeUnit.SECONDS) : "Node has not joined [id=" + nodeId + "]";
+
+            logger.removeListener(nodeId);
+        }
+
         return ignite;
     }
 
@@ -160,16 +176,29 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
     @Override protected Ignite startGrid(String igniteInstanceName, IgniteConfiguration cfg,
         GridSpringResourceContext ctx)
         throws Exception {
-        Ignite ignite = super.startGrid(igniteInstanceName, cfg, ctx);
+        Ignite ignite;
 
         // if started node isn't first node in the local JVM then it was checked earlier for join to topology
-        if (rmJvmInstance != null && locJvmInstance == null) {
+        // in IgniteProcessProxy constructor.
+        if (locJvmInstance == null && rmJvmInstance != null) {
             CountDownLatch nodeJoinedLatch = new CountDownLatch(1);
 
-            ignite.events().localListen(new ChangedTopologyVersionListener(nodeJoinedLatch), EventType.EVT_NODE_METRICS_UPDATED);
+            String nodeId = cfg.getNodeId().toString();
 
-            assert nodeJoinedLatch.await(30, TimeUnit.SECONDS) : "Node has not joined [id=" + ignite.configuration().getNodeId() + "]";
+            ListenedGridTestLog4jLogger logger = (ListenedGridTestLog4jLogger)rmJvmInstance.log();
+
+            logger.addListener(nodeId, new LoggedJoinNodeClosure(nodeJoinedLatch, nodeId));
+
+            ignite = super.startGrid(igniteInstanceName, cfg, ctx);
+
+            assert ignite.configuration().getNodeId() == cfg.getNodeId() : "Started node have unexpected node id.";
+
+            assert nodeJoinedLatch.await(30, TimeUnit.SECONDS) : "Node has not joined [id=" + nodeId + "]";
+
+            logger.removeListener(nodeId);
         }
+        else
+            ignite = super.startGrid(igniteInstanceName, cfg, ctx);
 
         if (locJvmInstance == null && !isRemoteJvm(igniteInstanceName))
             locJvmInstance = ignite;
@@ -178,26 +207,25 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
     }
 
     /** */
-    protected static class ChangedTopologyVersionListener extends IgnitePredicateX<Event> {
+    protected static class LoggedJoinNodeClosure implements IgniteInClosure<String> {
         /** Node joined latch. */
-        private final CountDownLatch nodeJoinedLatch;
+        private CountDownLatch nodeJoinedLatch;
+
+        /** Patter to comparing. */
+        private String pattern;
 
         /**
          * @param nodeJoinedLatch Node joined latch.
+         * @param nodeId Expected node id.
          */
-        ChangedTopologyVersionListener(CountDownLatch nodeJoinedLatch) {
+        public LoggedJoinNodeClosure(CountDownLatch nodeJoinedLatch, String nodeId) {
             this.nodeJoinedLatch = nodeJoinedLatch;
+            this.pattern = "evt=NODE_JOINED, node=" + nodeId;
         }
 
-        /** {@inheritDoc} */
-        @Override public boolean applyx(Event e) {
-            if (((DiscoveryEvent)e).topologyVersion() != 1) {
+        @Override public void apply(String s) {
+            if (s.contains(pattern) && nodeJoinedLatch.getCount() > 0)
                 nodeJoinedLatch.countDown();
-
-                return false;
-            }
-
-            return true;
         }
     }
 }
