@@ -34,6 +34,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Super class for all compatibility tests.
@@ -206,12 +207,23 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
         return ignite;
     }
 
+    /** {@inheritDoc} */
+    @Override protected void stopGrid(@Nullable String igniteInstanceName, boolean cancel, boolean awaitTop) {
+        if (isRemoteJvm(igniteInstanceName))
+            throw new UnsupportedOperationException("Operation isn't supported yet for remotes nodes, use stopAllGrids() instead.");
+        else {
+            super.stopGrid(igniteInstanceName, cancel, awaitTop);
+
+            locJvmInstance = null;
+        }
+    }
+
     /** */
     protected static class LoggedJoinNodeClosure implements IgniteInClosure<String> {
         /** Node joined latch. */
         private CountDownLatch nodeJoinedLatch;
 
-        /** Patter to comparing. */
+        /** Pattern for comparing. */
         private String pattern;
 
         /**
