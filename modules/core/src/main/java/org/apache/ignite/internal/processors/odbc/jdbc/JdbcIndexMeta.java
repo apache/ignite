@@ -39,9 +39,6 @@ public class JdbcIndexMeta implements JdbcRawBinarylizable {
     /** Index type. */
     private QueryIndexType type;
 
-    /** Inline size. */
-    private int inlineSize;
-
     /** Index fields */
     private String[] fields;
 
@@ -70,7 +67,6 @@ public class JdbcIndexMeta implements JdbcRawBinarylizable {
 
         name = idx.name();
         type = idx.type();
-        inlineSize = idx.inlineSize();
         fields = idx.fields().toArray(new String[idx.fields().size()]);
 
         fieldsAsc = new boolean[fields.length];
@@ -108,13 +104,6 @@ public class JdbcIndexMeta implements JdbcRawBinarylizable {
     }
 
     /**
-     * @return Inline size.
-     */
-    public int inlineSize() {
-        return inlineSize;
-    }
-
-    /**
      * @return Index fields
      */
     public String[] fields() {
@@ -134,7 +123,6 @@ public class JdbcIndexMeta implements JdbcRawBinarylizable {
         writer.writeString(tbl);
         writer.writeString(name);
         writer.writeByte((byte)type.ordinal());
-        writer.writeInt(inlineSize);
         writer.writeStringArray(fields);
         writer.writeBooleanArray(fieldsAsc);
     }
@@ -145,7 +133,6 @@ public class JdbcIndexMeta implements JdbcRawBinarylizable {
         tbl = reader.readString();
         name = reader.readString();
         type = QueryIndexType.fromOrdinal(reader.readByte());
-        inlineSize = reader.readInt();
         fields = reader.readStringArray();
         fieldsAsc = reader.readBooleanArray();
 
