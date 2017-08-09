@@ -25,7 +25,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public class BinaryStringEncoding {
     /** */
-    public static final byte ENC_WINDOWS_1251 = (byte)1;
+    public static final byte ENC_WINDOWS_1251 = 1;
 
     /** */
     public static final Charset CS_WINDOWS_1251 = Charset.forName("windows-1251");
