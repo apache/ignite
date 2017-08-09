@@ -88,6 +88,25 @@ public class GridCacheQuerySqlFieldInlineSizeSelfTest extends GridCommonAbstract
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testNegativeInlineSize() throws Exception {
+        final CacheConfiguration ccfg = defaultCacheConfiguration();
+
+        GridTestUtils.assertThrows(
+            log, new Callable<Object>() {
+
+                @Override public Object call() throws Exception {
+                    ccfg.setIndexedTypes(Integer.class, TestValueNegativeInlineSize.class);
+
+                    return null;
+                }
+            },
+            CacheException.class,
+            "Invalid inline size [idxName=TestValueNegativeInlineSize_val_idx, inlineSize=-10]");
+    }
+
+    /**
      *
      */
     static class TestValueSingleFieldIndexes {
@@ -127,4 +146,13 @@ public class GridCacheQuerySqlFieldInlineSizeSelfTest extends GridCommonAbstract
         @QuerySqlField(orderedGroups = @QuerySqlField.Group(name = "idx", order = 1), inlineSize = 10)
         String val1;
     }
+
+    /**
+     *
+     */
+    static class TestValueNegativeInlineSize {
+         /** */
+         @QuerySqlField(index = true, inlineSize = -10)
+         String val;
+     }
 }
