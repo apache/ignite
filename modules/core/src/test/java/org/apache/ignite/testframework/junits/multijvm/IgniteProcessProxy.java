@@ -137,7 +137,7 @@ public class IgniteProcessProxy implements IgniteEx {
         throws Exception {
         this.cfg = cfg;
         this.locJvmGrid = locJvmGrid;
-        this.log = getLogger(log, "jvm-" + id.toString().substring(0, id.toString().indexOf('-')));
+        this.log = logger(log, "jvm-" + id.toString().substring(0, id.toString().indexOf('-')));
 
         String params = params(cfg, resetDiscovery);
 
@@ -185,7 +185,7 @@ public class IgniteProcessProxy implements IgniteEx {
      * @return Initiated logger.
      * @throws Exception In case of an error.
      */
-    protected IgniteLogger getLogger(IgniteLogger log, Object ctgr) throws Exception {
+    protected IgniteLogger logger(IgniteLogger log, Object ctgr) throws Exception {
         return log.getLogger(ctgr);
     }
 

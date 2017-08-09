@@ -72,7 +72,7 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
      * Uses an ignite-core artifact in the Maven local repository, if it isn't exists there, it will be downloaded and
      * stored via Maven.
      *
-     * @param idx Instance index.
+     * @param idx Index of the grid to start.
      * @param ver Ignite version.
      * @param clos IgniteInClosure for post-configuration.
      * @return Started grid.
@@ -102,10 +102,10 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
 
         final String closPath = CompatibilityTestIgniteNodeRunner.storeToFile(clos);
 
-        final IgniteConfiguration cfg = getConfiguration(igniteInstanceName); // won't use to start node
+        final IgniteConfiguration cfg = getConfiguration(igniteInstanceName); // stub - won't be used at node startup
 
         IgniteProcessProxy ignite = new IgniteProcessProxy(cfg, log, locJvmInstance, true) {
-            @Override protected IgniteLogger getLogger(IgniteLogger log, Object ctgr) {
+            @Override protected IgniteLogger logger(IgniteLogger log, Object ctgr) {
                 return ListenedGridTestLog4jLogger.createLogger(ctgr);
             }
 

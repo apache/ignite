@@ -64,12 +64,14 @@ public class CompatibilityTestIgniteNodeRunner extends IgniteNodeRunner {
 
         IgniteConfiguration cfg = CompatibilityTestsFacade.getConfiguration();
 
-        cfg.setIgniteInstanceName(args[1]);
-        cfg.setNodeId(UUID.fromString(args[2]));
-
         IgniteInClosure<IgniteConfiguration> clos = readClosureFromFileAndDelete(args[0]);
 
         clos.apply(cfg);
+
+        // Ignite instance name and id must be set according to arguments
+        // it's used for nodes managing: start, stop etc.
+        cfg.setIgniteInstanceName(args[1]);
+        cfg.setNodeId(UUID.fromString(args[2]));
 
         Ignite ignite = Ignition.start(cfg);
 
