@@ -1031,6 +1031,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
                     .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
                     .setAffinity(new RendezvousAffinityFunction(false, 32))
                     .setCacheMode(CacheMode.PARTITIONED)
+                    .setRebalanceMode(CacheRebalanceMode.SYNC)
                     .setBackups(2);
 
             ignite.createCache(cacheConfiguration);
@@ -1038,8 +1039,8 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
             IgniteCache<Object, Object> cache = ignite.cache(cacheName);
             Map<Object, Object> map = new HashMap<>();
 
-            final int transactions = 50;
-            final int operationsPerTransaction = 1000;
+            final int transactions = 500;
+            final int operationsPerTransaction = 20;
 
             Random random = new Random();
 
@@ -1061,9 +1062,9 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
                     cache.put(key, value);
                 }
 
-                tx.commitAsync().get();
+                tx.commit();
 
-                if (t % 5 == 0)
+                if (t % 50 == 0)
                     log.info("Finished transaction " + t);
             }
 
