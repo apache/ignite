@@ -43,4 +43,8 @@ public class GridCachePartitionedDataStructuresFailoverSelfTest
     @Override public void testSemaphoreSingleNodeFailure() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-5975");
     }
+
+    @Override public void testSemaphoreNonFailoverSafe() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-6005");
+    }
 }
