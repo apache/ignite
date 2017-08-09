@@ -43,6 +43,8 @@ public class CacheRemoveAllSelfTest extends GridCacheAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void testRemoveAll() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-6008");
+
         IgniteCache<Integer, String> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         for (int i = 0; i < 10_000; ++i)
