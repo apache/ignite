@@ -567,6 +567,12 @@ public class GridMapQueryExecutor {
                 }
 
                 // Run queries.
+                if (streaming) {
+                    GridCacheSqlQuery qry = qrys.iterator().next();
+
+                    h2.executeSqlStreaming(conn, qry.query(), F.asList(qry.parameters(params)));
+                }
+
                 int qryIdx = 0;
 
                 boolean evt = mainCctx != null && ctx.event().isRecordable(EVT_CACHE_QUERY_EXECUTED);

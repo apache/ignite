@@ -25,7 +25,7 @@ public class TestExample {
                  Ignition.start(new IgniteConfiguration().setIgniteInstanceName("client").setClientMode(true))) {
                 IgniteCache<Long, Person> cliCache = cli.cache(CACHE_NAME);
 
-                SqlFieldsQuery qry = new SqlFieldsQuery("SELECT firstName FROM Person");
+                SqlFieldsQuery qry = new SqlFieldsQuery("SELECT firstName FROM Person").setStreaming(true);
 
                 int cnt = 0;
 
