@@ -83,8 +83,6 @@ public class IgniteTestResources {
         home = U.getIgniteHome();
         locHost = localHost();
 
-        U.setWorkDirectory(null, null);
-
         GridTestKernalContext ctx = new GridTestKernalContext(log);
 
         rsrcProc = new GridResourceProcessor(ctx);

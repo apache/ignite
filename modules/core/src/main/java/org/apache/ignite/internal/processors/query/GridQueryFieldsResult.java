@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query;
 
 import java.util.List;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.spi.IgniteSpiCloseableIterator;
 
 /**
@@ -37,5 +38,5 @@ public interface GridQueryFieldsResult {
      *
      * @return Iterator over queried fields.
      */
-    IgniteSpiCloseableIterator<List<?>> iterator();
+    IgniteSpiCloseableIterator<List<?>> iterator() throws IgniteCheckedException;
 }

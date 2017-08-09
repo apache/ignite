@@ -22,6 +22,7 @@ import org.apache.ignite.internal.processors.hadoop.message.HadoopMessage;
 import org.apache.ignite.internal.util.nio.GridNioFilterAdapter;
 import org.apache.ignite.internal.util.nio.GridNioFuture;
 import org.apache.ignite.internal.util.nio.GridNioSession;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
 
 /**
@@ -29,15 +30,15 @@ import org.apache.ignite.marshaller.Marshaller;
  */
 public class HadoopMarshallerFilter extends GridNioFilterAdapter {
     /** Marshaller. */
-    private Marshaller marshaller;
+    private Marshaller marsh;
 
     /**
-     * @param marshaller Marshaller to use.
+     * @param marsh Marshaller to use.
      */
-    public HadoopMarshallerFilter(Marshaller marshaller) {
+    public HadoopMarshallerFilter(Marshaller marsh) {
         super("HadoopMarshallerFilter");
 
-        this.marshaller = marshaller;
+        this.marsh = marsh;
     }
 
     /** {@inheritDoc} */
@@ -59,14 +60,14 @@ public class HadoopMarshallerFilter extends GridNioFilterAdapter {
     @Override public GridNioFuture<?> onSessionWrite(GridNioSession ses, Object msg) throws IgniteCheckedException {
         assert msg instanceof HadoopMessage : "Invalid message type: " + msg;
 
-        return proceedSessionWrite(ses, marshaller.marshal(msg));
+        return proceedSessionWrite(ses, U.marshal(marsh, msg));
     }
 
     @Override public void onMessageReceived(GridNioSession ses, Object msg) throws IgniteCheckedException {
         assert msg instanceof byte[];
 
         // Always unmarshal with system classloader.
-        proceedMessageReceived(ses, marshaller.unmarshal((byte[])msg, null));
+        proceedMessageReceived(ses, U.unmarshal(marsh, (byte[])msg, null));
     }
 
     /** {@inheritDoc} */

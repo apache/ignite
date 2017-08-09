@@ -17,15 +17,27 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.Arrays;
+import java.math.BigDecimal;
+import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 import javax.cache.Cache;
-import org.apache.ignite.IgniteBinary;
+
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
+import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -43,12 +55,65 @@ public class IgniteBinaryObjectQueryArgumentsTest extends GridCommonAbstractTest
     /** */
     private static final int NODES = 3;
 
+    /** */
+    private static final String PRIM_CACHE = "prim-cache";
+
+    /** */
+    private static final String STR_CACHE = "str-cache";
+
+    /** */
+    private static final String ENUM_CACHE = "enum-cache";
+
+    /** */
+    private static final String UUID_CACHE = "uuid-cache";
+
+    /** */
+    private static final String DATE_CACHE = "date-cache";
+
+    /** */
+    private static final String TIMESTAMP_CACHE = "timestamp-cache";
+
+    /** */
+    private static final String BIG_DECIMAL_CACHE = "decimal-cache";
+
+    /** */
+    private static final String OBJECT_CACHE = "obj-cache";
+
+    /** */
+    private static final String FIELD_CACHE = "field-cache";
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
+        cfg.setCacheConfiguration(getCacheConfigurations());
+
+        cfg.setMarshaller(null);
+
+        return cfg;
+    }
+
+    /**
+     * @return {@code True} If query is local.
+     */
+    protected boolean isLocal() {
+        return false;
+    }
+
+    /**
+     * @return Memory mode.
+     */
+    protected CacheMemoryMode memoryMode() {
+        return CacheMemoryMode.ONHEAP_TIERED;
+    }
+
+    /**
+     * @param cacheName Cache name.
+     * @return Cache config.
+     */
+    protected CacheConfiguration getCacheConfiguration(final String cacheName) {
         CacheConfiguration ccfg = new CacheConfiguration();
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
 
@@ -57,11 +122,64 @@ public class IgniteBinaryObjectQueryArgumentsTest extends GridCommonAbstractTest
         person.setValueType(Person.class.getName());
         person.addQueryField("name", String.class.getName(), null);
 
-        ccfg.setQueryEntities(Arrays.asList(person));
+        ccfg.setQueryEntities(Collections.singletonList(person));
 
-        cfg.setCacheConfiguration(ccfg);
+        ccfg.setMemoryMode(memoryMode());
 
-        cfg.setMarshaller(null);
+        ccfg.setName(cacheName);
+
+        return ccfg;
+    }
+
+    /**
+     * @return Cache configurations.
+     */
+    private CacheConfiguration[] getCacheConfigurations() {
+        final ArrayList<CacheConfiguration> ccfgs = new ArrayList<>();
+
+        ccfgs.add(getCacheConfiguration(OBJECT_CACHE));
+        ccfgs.addAll(getCacheConfigurations(STR_CACHE, String.class, Person.class));
+        ccfgs.addAll(getCacheConfigurations(PRIM_CACHE, Integer.class, Person.class));
+        ccfgs.addAll(getCacheConfigurations(ENUM_CACHE, EnumKey.class, Person.class));
+        ccfgs.addAll(getCacheConfigurations(UUID_CACHE, UUID.class, Person.class));
+        ccfgs.addAll(getCacheConfigurations(DATE_CACHE, Date.class, Person.class));
+        ccfgs.addAll(getCacheConfigurations(TIMESTAMP_CACHE, Timestamp.class, Person.class));
+        ccfgs.addAll(getCacheConfigurations(BIG_DECIMAL_CACHE, BigDecimal.class, Person.class));
+        ccfgs.add(getCacheConfiguration(FIELD_CACHE, Integer.class, SearchValue.class));
+
+        return ccfgs.toArray(new CacheConfiguration[ccfgs.size()]);
+    }
+
+    /**
+     *
+     * @param cacheName Cache name.
+     * @param key Key type.
+     * @param val Value type.
+     * @return Configurations.
+     */
+    private List<CacheConfiguration> getCacheConfigurations(final String cacheName, final Class<?> key, final Class<?> val) {
+        final List<CacheConfiguration> res = new ArrayList<>();
+
+        res.add(getCacheConfiguration(cacheName, key, val));
+        res.add(getCacheConfiguration(cacheName + "-val", val, key));
+
+        return res;
+    }
+
+    /**
+     * @param cacheName Cache name.
+     * @param key Key type.
+     * @param val Value type
+     * @return Configuration.
+     */
+    @SuppressWarnings("unchecked")
+    private CacheConfiguration getCacheConfiguration(final String cacheName, final Class<?> key, final Class<?> val) {
+        CacheConfiguration cfg = new CacheConfiguration();
+
+        cfg.setName(cacheName);
+
+        cfg.setMemoryMode(memoryMode());
+        cfg.setIndexedTypes(key, val);
 
         return cfg;
     }
@@ -70,7 +188,9 @@ public class IgniteBinaryObjectQueryArgumentsTest extends GridCommonAbstractTest
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        startGridsMultiThreaded(NODES);
+        final int nodes = isLocal() ? 1 : NODES;
+
+        startGridsMultiThreaded(nodes);
     }
 
     /** {@inheritDoc} */
@@ -84,31 +204,210 @@ public class IgniteBinaryObjectQueryArgumentsTest extends GridCommonAbstractTest
      * @throws Exception If failed.
      */
     public void testObjectArgument() throws Exception {
-        IgniteCache<TestKey, Person> cache = ignite(0).cache(null);
+        testKeyQuery(OBJECT_CACHE, new TestKey(1), new TestKey(2));
+    }
 
-        for (int i = 0; i < 100; i++)
-            cache.put(new TestKey(i), new Person("name-" + i));
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPrimitiveObjectArgument() throws Exception {
+        testKeyValQuery(PRIM_CACHE, 1, 2);
+    }
 
-        SqlQuery<TestKey, Person> qry = new SqlQuery<>(Person.class, "where _key=?");
+    /**
+     * @throws Exception If failed.
+     */
+    public void testStringObjectArgument() throws Exception {
+        testKeyValQuery(STR_CACHE, "str1", "str2");
+    }
 
-        IgniteBinary binary = ignite(0).binary();
+    /**
+     * @throws Exception If failed.
+     */
+    public void testEnumObjectArgument() throws Exception {
+       testKeyValQuery(ENUM_CACHE, EnumKey.KEY1, EnumKey.KEY2);
+    }
 
-        for (int i = 0; i < 100; i++) {
-            Object key = new TestKey(i);
+    /**
+     * @throws Exception If failed.
+     */
+    public void testUuidObjectArgument() throws Exception {
+        final UUID uuid1 = UUID.randomUUID();
+        UUID uuid2 = UUID.randomUUID();
 
-            if (i % 2 == 0)
-                key = binary.toBinary(key);
+        while (uuid1.equals(uuid2))
+            uuid2 = UUID.randomUUID();
 
-            qry.setArgs(key);
+        testKeyValQuery(UUID_CACHE, uuid1, uuid2);
+    }
 
-            List<Cache.Entry<TestKey, Person>> res = cache.query(qry).getAll();
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDateObjectArgument() throws Exception {
+        testKeyValQuery(DATE_CACHE, new Date(0), new Date(1));
+    }
 
-            assertEquals(1, res.size());
+    /**
+     * @throws Exception If failed.
+     */
+    public void testTimestampArgument() throws Exception {
+        testKeyValQuery(TIMESTAMP_CACHE, new Timestamp(0), new Timestamp(1));
+    }
 
-            Person p = res.get(0).getValue();
 
-            assertEquals("name-" + i, p.name);
+    /**
+     * @throws Exception If failed.
+     */
+    public void testBigDecimalArgument() throws Exception {
+        final ThreadLocalRandom rnd = ThreadLocalRandom.current();
+
+        final BigDecimal bd1 = new BigDecimal(rnd.nextDouble());
+        BigDecimal bd2 = new BigDecimal(rnd.nextDouble());
+
+        while (bd1.equals(bd2))
+            bd2 = new BigDecimal(rnd.nextDouble());
+
+        testKeyValQuery(BIG_DECIMAL_CACHE, bd1, bd2);
+    }
+
+    /**
+     * Test simple queries.
+     *
+     * @param cacheName Cache name.
+     * @param key1 Key 1.
+     * @param key2 Key 2.
+     * @param <T> Key type.
+     */
+    private <T> void testKeyValQuery(final String cacheName, final T key1, final T key2) {
+        testKeyQuery(cacheName, key1, key2);
+        testValQuery(cacheName + "-val", key1, key2);
+    }
+
+    /**
+     * Test simple query by key.
+     *
+     * @param cacheName Cache name.
+     * @param key1 Key 1.
+     * @param key2 Key 2.
+     * @param <T> Key type.
+     */
+    private <T> void testKeyQuery(final String cacheName, final T key1, final T key2) {
+        final IgniteCache<T, Person> cache = ignite(0).cache(cacheName);
+
+        final Person p1 = new Person("p1");
+        final Person p2 = new Person("p2");
+
+        cache.put(key1, p1);
+        cache.put(key2, p2);
+
+        final SqlQuery<T, Person> qry = new SqlQuery<>(Person.class, "where _key=?");
+
+        final SqlFieldsQuery fieldsQry = new SqlFieldsQuery("select * from Person where _key=?");
+
+        qry.setLocal(isLocal());
+        fieldsQry.setLocal(isLocal());
+
+        qry.setArgs(key1);
+        fieldsQry.setArgs(key1);
+
+        final List<Cache.Entry<T, Person>> res = cache.query(qry).getAll();
+        final List<List<?>> fieldsRes = cache.query(fieldsQry).getAll();
+
+        assertEquals(1, res.size());
+        assertEquals(1, fieldsRes.size());
+
+        assertEquals(p1, res.get(0).getValue());
+        assertEquals(key1, res.get(0).getKey());
+
+        assertTrue(fieldsRes.get(0).size() >= 2);
+        assertEquals(key1, fieldsRes.get(0).get(0));
+        assertEquals(p1, fieldsRes.get(0).get(1));
+    }
+
+    /**
+     * Test simple query by value.
+     *
+     * @param cacheName Cache name.
+     * @param val1 Value 1.
+     * @param val2 Value 2.
+     * @param <T> Value type.
+     */
+    private <T> void testValQuery(final String cacheName, final T val1, final T val2) {
+        final IgniteCache<Person, T> cache = ignite(0).cache(cacheName);
+
+        final Class<?> valType = val1.getClass();
+
+        final Person p1 = new Person("p1");
+        final Person p2 = new Person("p2");
+
+        cache.put(p1, val1);
+        cache.put(p2, val2);
+
+        final SqlQuery<Person, T> qry = new SqlQuery<>(valType, "where _val=?");
+
+        final SqlFieldsQuery fieldsQry = new SqlFieldsQuery("select * from " + valType.getSimpleName() + " where _val=?");
+
+        qry.setLocal(isLocal());
+        fieldsQry.setLocal(isLocal());
+
+        qry.setArgs(val1);
+        fieldsQry.setArgs(val1);
+
+        final List<Cache.Entry<Person, T>> res = cache.query(qry).getAll();
+        final List<List<?>> fieldsRes = cache.query(fieldsQry).getAll();
+
+        assertEquals(1, res.size());
+        assertEquals(1, fieldsRes.size());
+
+        assertEquals(p1, res.get(0).getKey());
+        assertEquals(val1, res.get(0).getValue());
+
+        assertTrue(fieldsRes.get(0).size() >= 2);
+        assertEquals(p1, fieldsRes.get(0).get(0));
+        assertEquals(val1, fieldsRes.get(0).get(1));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testFieldSearch() throws Exception {
+        final IgniteCache<Integer, SearchValue> cache = ignite(0).cache(FIELD_CACHE);
+
+        final Map<Integer, SearchValue> map = new HashMap<>();
+
+        for (int i = 0; i < 10; i++) {
+            map.put(i,
+                new SearchValue(
+                    UUID.randomUUID(),
+                    String.valueOf(i),
+                    new BigDecimal(i * 0.1),
+                    i,
+                    new Date(i),
+                    new Timestamp(i),
+                    new Person(String.valueOf("name-" + i)),
+                    i % 2 == 0 ? EnumKey.KEY1 : EnumKey.KEY2)
+            );
         }
+
+        cache.putAll(map);
+
+        SqlQuery<Integer, SearchValue> qry = new SqlQuery<>(SearchValue.class,
+            "where uuid=? and str=? and decimal=? and integer=? and date=? and ts=? and person=? and enumKey=?");
+
+        final int k = ThreadLocalRandom.current().nextInt(10);
+
+        final SearchValue val = map.get(k);
+
+        qry.setLocal(isLocal());
+        qry.setArgs(val.uuid, val.str, val.decimal, val.integer, val.date, val.ts, val.person, val.enumKey);
+
+        final List<Cache.Entry<Integer, SearchValue>> res = cache.query(qry).getAll();
+
+        assertEquals(1, res.size());
+
+        assertEquals(val.integer, res.get(0).getKey());
+        assertEquals(val, res.get(0).getValue());
     }
 
     /**
@@ -124,6 +423,27 @@ public class IgniteBinaryObjectQueryArgumentsTest extends GridCommonAbstractTest
         public Person(String name) {
             this.name = name;
         }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(final Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            final Person person = (Person) o;
+
+            return name != null ? name.equals(person.name) : person.name == null;
+
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return name != null ? name.hashCode() : 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(Person.class, this);
+        }
     }
 
     /**
@@ -136,7 +456,7 @@ public class IgniteBinaryObjectQueryArgumentsTest extends GridCommonAbstractTest
         /**
          * @param id Key.
          */
-        public TestKey(int id) {
+        TestKey(int id) {
             this.id = id;
         }
 
@@ -156,6 +476,116 @@ public class IgniteBinaryObjectQueryArgumentsTest extends GridCommonAbstractTest
         /** {@inheritDoc} */
         @Override public int hashCode() {
             return id;
+        }
+    }
+
+    /**
+     *
+     */
+    private enum EnumKey {
+        /** */
+        KEY1,
+
+        /** */
+        KEY2
+    }
+
+    /**
+     *
+     */
+    private static class SearchValue {
+        /** */
+        @QuerySqlField
+        private UUID uuid;
+
+        /** */
+        @QuerySqlField
+        private String str;
+
+        /** */
+        @QuerySqlField
+        private BigDecimal decimal;
+
+        /** */
+        @QuerySqlField
+        private Integer integer;
+
+        /** */
+        @QuerySqlField
+        private Date date;
+
+        /** */
+        @QuerySqlField
+        private Timestamp ts;
+
+        /** */
+        @QuerySqlField
+        private Person person;
+
+        /** */
+        @QuerySqlField
+        private EnumKey enumKey;
+
+        /**
+         *
+         * @param uuid UUID.
+         * @param str String.
+         * @param decimal Decimal.
+         * @param integer Integer.
+         * @param date Date.
+         * @param ts Timestamp.
+         * @param person Person.
+         * @param enumKey Enum.
+         */
+        SearchValue(
+            final UUID uuid,
+            final String str,
+            final BigDecimal decimal,
+            final Integer integer,
+            final Date date,
+            final Timestamp ts,
+            final Person person,
+            final EnumKey enumKey
+        ) {
+            this.uuid = uuid;
+            this.str = str;
+            this.decimal = decimal;
+            this.integer = integer;
+            this.date = date;
+            this.ts = ts;
+            this.person = person;
+            this.enumKey = enumKey;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(final Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            final SearchValue that = (SearchValue) o;
+
+            if (uuid != null ? !uuid.equals(that.uuid) : that.uuid != null) return false;
+            if (str != null ? !str.equals(that.str) : that.str != null) return false;
+            if (decimal != null ? !decimal.equals(that.decimal) : that.decimal != null) return false;
+            if (integer != null ? !integer.equals(that.integer) : that.integer != null) return false;
+            if (date != null ? !date.equals(that.date) : that.date != null) return false;
+            if (ts != null ? !ts.equals(that.ts) : that.ts != null) return false;
+            if (person != null ? !person.equals(that.person) : that.person != null) return false;
+            return enumKey == that.enumKey;
+
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            int res = uuid != null ? uuid.hashCode() : 0;
+            res = 31 * res + (str != null ? str.hashCode() : 0);
+            res = 31 * res + (decimal != null ? decimal.hashCode() : 0);
+            res = 31 * res + (integer != null ? integer.hashCode() : 0);
+            res = 31 * res + (date != null ? date.hashCode() : 0);
+            res = 31 * res + (ts != null ? ts.hashCode() : 0);
+            res = 31 * res + (person != null ? person.hashCode() : 0);
+            res = 31 * res + (enumKey != null ? enumKey.hashCode() : 0);
+            return res;
         }
     }
 }

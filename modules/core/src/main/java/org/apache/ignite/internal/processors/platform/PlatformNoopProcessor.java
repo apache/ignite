@@ -175,4 +175,19 @@ public class PlatformNoopProcessor extends GridProcessorAdapter implements Platf
     @Override public PlatformTarget getOrCreateNearCache(@Nullable String cacheName, long memPtr) {
         return null;
     }
+
+    /** {@inheritDoc} */
+    @Override public boolean loggerIsLevelEnabled(int level) {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void loggerLog(int level, String message, String category, String errorInfo) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public PlatformTarget binaryProcessor() {
+        return null;
+    }
 }

@@ -1,0 +1,6 @@
+*.idea
+*.log
+.npmrc
+node_modules
+agent_dists/*.zip
+config/*.json

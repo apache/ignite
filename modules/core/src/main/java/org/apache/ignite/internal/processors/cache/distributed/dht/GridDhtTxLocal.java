@@ -314,6 +314,8 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
                 true);
         }
 
+        long timeout = remainingTime();
+
         // For pessimistic mode we don't distribute prepare request.
         GridDhtTxPrepareFuture fut = prepFut;
 
@@ -322,11 +324,16 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
             if (!PREP_FUT_UPD.compareAndSet(this, null, fut = new GridDhtTxPrepareFuture(
                 cctx,
                 this,
+                timeout,
                 nearMiniId,
                 Collections.<IgniteTxKey, GridCacheVersion>emptyMap(),
                 true,
-                needReturnValue())))
+                needReturnValue()))) {
+                if (timeout == -1)
+                    prepFut.onError(timeoutException());
+
                 return prepFut;
+            }
         }
         else
             // Prepare was called explicitly.
@@ -334,15 +341,16 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
 
         if (!state(PREPARING)) {
             if (setRollbackOnly()) {
-                if (timedOut())
-                    fut.onError(new IgniteTxTimeoutCheckedException("Transaction timed out and was rolled back: " + this));
+                if (timeout == -1)
+                    fut.onError(new IgniteTxTimeoutCheckedException("Transaction timed out and was rolled back: " +
+                        this));
                 else
                     fut.onError(new IgniteCheckedException("Invalid transaction state for prepare [state=" + state() +
                         ", tx=" + this + ']'));
             }
             else
-                fut.onError(new IgniteTxRollbackCheckedException("Invalid transaction state for prepare [state=" + state()
-                    + ", tx=" + this + ']'));
+                fut.onError(new IgniteTxRollbackCheckedException("Invalid transaction state for prepare [state=" +
+                    state() + ", tx=" + this + ']'));
 
             return fut;
         }
@@ -394,6 +402,8 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
         // In optimistic mode prepare still can be called explicitly from salvageTx.
         GridDhtTxPrepareFuture fut = prepFut;
 
+        long timeout = remainingTime();
+
         if (fut == null) {
             init();
 
@@ -401,6 +411,7 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
             if (!PREP_FUT_UPD.compareAndSet(this, null, fut = new GridDhtTxPrepareFuture(
                 cctx,
                 this,
+                timeout,
                 nearMiniId,
                 verMap,
                 last,
@@ -409,6 +420,9 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
 
                 assert f.nearMiniId().equals(nearMiniId) : "Wrong near mini id on existing future " +
                     "[futMiniId=" + f.nearMiniId() + ", miniId=" + nearMiniId + ", fut=" + f + ']';
+
+                if (timeout == -1)
+                    f.onError(timeoutException());
 
                 return chainOnePhasePrepare(f);
             }
@@ -427,7 +441,7 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
                     fut.complete();
 
                 if (setRollbackOnly()) {
-                    if (timedOut())
+                    if (timeout == -1)
                         fut.onError(new IgniteTxTimeoutCheckedException("Transaction timed out and was rolled back: " +
                             this));
                     else

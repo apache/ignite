@@ -1259,8 +1259,8 @@ namespace Apache.Ignite.Core.Impl.Binary
                 // Are we dealing with a well-known type?
                 var handler = BinarySystemHandlers.GetWriteHandler(type);
 
-                if (handler == null)  // We did our best, object cannot be marshalled.
-                    throw new BinaryObjectException("Unsupported object type [type=" + type + ", object=" + obj + ']');
+                if (handler == null) // We did our best, object cannot be marshalled.
+                    throw BinaryUtils.GetUnsupportedTypeException(type, obj);
                 
                 if (handler.SupportsHandles && WriteHandle(_stream.Position, obj))
                     return;
@@ -1316,7 +1316,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 WriteLongField(*(long*)&val0);
             }
             else
-                throw new BinaryObjectException("Unsupported object type [type=" + type.FullName + ", object=" + val + ']');
+                throw BinaryUtils.GetUnsupportedTypeException(type, val);
         }
 
         /// <summary>
@@ -1439,26 +1439,6 @@ namespace Apache.Ignite.Core.Impl.Binary
         internal ICollection<BinaryType> GetBinaryTypes()
         {
             return _metas == null ? null : _metas.Values;
-        }
-
-        /// <summary>
-        /// Check whether the given object is binarizeble, i.e. it can be serialized with binary marshaller.
-        /// </summary>
-        /// <param name="obj">Object.</param>
-        /// <returns>True if binarizable.</returns>
-        internal bool IsBinarizable(object obj)
-        {
-            if (obj != null)
-            {
-                Type type = obj.GetType();
-
-                // We assume object as binarizable only in case it has descriptor.
-                // Collections, Enums and non-primitive arrays do not have descriptors
-                // and this is fine here because we cannot know whether their members are binarizable.
-                return _marsh.GetDescriptor(type) != null || BinarySystemHandlers.GetWriteHandler(type) != null;
-            }
-
-            return true;
         }
 
         /// <summary>

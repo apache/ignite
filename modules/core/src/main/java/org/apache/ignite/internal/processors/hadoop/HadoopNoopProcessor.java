@@ -79,8 +79,8 @@ public class HadoopNoopProcessor extends HadoopProcessorAdapter {
      * Creates an exception to be uniformly thrown from all the methods.
      */
     private IllegalStateException createException() {
-        return new IllegalStateException("Hadoop module is not loaded (please ensure that ignite-hadoop.jar is in " +
-            "classpath and IgniteConfiguration.peerClassLoadingEnabled is set to false).");
+        return new IllegalStateException("Hadoop module is not loaded (please ensure that ignite-hadoop.jar is " +
+            "in libs and IgniteConfiguration.peerClassLoadingEnabled is set to false).");
     }
 
     /** {@inheritDoc} */

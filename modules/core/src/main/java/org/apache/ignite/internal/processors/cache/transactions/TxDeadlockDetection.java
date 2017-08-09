@@ -36,8 +36,11 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_TX_DEADLOCK_DETECTION_TIMEOUT;
@@ -106,22 +109,30 @@ public class TxDeadlockDetection {
         stack.push(txId);
 
         while (!stack.isEmpty()) {
-            GridCacheVersion v = stack.pop();
+            GridCacheVersion v = stack.peek();
 
-            if (visited.contains(v))
+            if (visited.contains(v)) {
+                stack.pop();
+                inPath.remove(v);
+
                 continue;
+            }
 
             visited.add(v);
 
             Set<GridCacheVersion> children = wfg.get(v);
 
-            if (children == null || children.isEmpty())
+            if (children == null || children.isEmpty()) {
+                stack.pop();
+                inPath.remove(v);
+
                 continue;
+            }
 
             inPath.add(v);
 
             for (GridCacheVersion w : children) {
-                if (inPath.contains(w)) {
+                if (inPath.contains(w) && visited.contains(w)) {
                     List<GridCacheVersion> cycle = new ArrayList<>();
 
                     for (GridCacheVersion x = v; !x.equals(w); x = edgeTo.get(x))
@@ -158,15 +169,18 @@ public class TxDeadlockDetection {
         private final Set<IgniteTxKey> keys;
 
         /** Processed keys. */
+        @GridToStringInclude
         private final Set<IgniteTxKey> processedKeys = new HashSet<>();
 
         /** Processed nodes. */
         private final Set<UUID> processedNodes = new HashSet<>();
 
         /** Pending keys. */
+        @GridToStringInclude
         private Map<UUID, Set<IgniteTxKey>> pendingKeys = new HashMap<>();
 
         /** Nodes queue. */
+        @GridToStringInclude
         private final UniqueDeque<UUID> nodesQueue = new UniqueDeque<>();
 
         /** Preferred nodes. */
@@ -194,6 +208,7 @@ public class TxDeadlockDetection {
         private int itersCnt;
 
         /** Timeout object. */
+        @GridToStringExclude
         private DeadlockTimeoutObject timeoutObj;
 
         /** Timed out flag. */
@@ -252,8 +267,8 @@ public class TxDeadlockDetection {
 
             if (topVer == null) // Tx manager already stopped
                 onDone();
-
-            map(keys, Collections.<IgniteTxKey, TxLockList>emptyMap());
+            else
+                map(keys, Collections.<IgniteTxKey, TxLockList>emptyMap());
         }
 
         /**
@@ -441,14 +456,17 @@ public class TxDeadlockDetection {
          * @param txLocks Tx locks.
          */
         private void updateWaitForGraph(Map<IgniteTxKey, TxLockList> txLocks) {
+            if (txLocks == null || txLocks.isEmpty())
+                return;
+
             for (Map.Entry<IgniteTxKey, TxLockList> e : txLocks.entrySet()) {
 
                 GridCacheVersion txOwner = null;
 
                 for (TxLock lock : e.getValue().txLocks()) {
-                    if (lock.owner()) {
-                        assert txOwner == null;
-
+                    if (lock.owner() && txOwner == null) {
+                        // Actually we can get lock list with more than one owner. In this case ignore all owners
+                        // except first because likely the first owner was cause of deadlock.
                         txOwner = lock.txId();
 
                         if (keys.contains(e.getKey()) && !txId.equals(lock.txId())) {
@@ -463,7 +481,7 @@ public class TxDeadlockDetection {
                         continue;
                     }
 
-                    if (lock.candiate()) {
+                    if (lock.candiate() || lock.owner()) {
                         GridCacheVersion txId0 = lock.txId();
 
                         Set<GridCacheVersion> waitForTxs = wfg.get(txId0);
@@ -485,9 +503,9 @@ public class TxDeadlockDetection {
 
             if (res != null && set) {
                 if (res.classError() != null) {
-                    IgniteLogger log = cctx.logger(TxDeadlockDetection.class);
+                    IgniteLogger log = cctx.kernalContext().log(this.getClass());
 
-                    log.warning("Failed to finish deadlock detection due to an error: " + nodeId);
+                    U.warn(log, "Failed to finish deadlock detection due to an error: " + nodeId);
 
                     onDone();
                 }
@@ -528,6 +546,11 @@ public class TxDeadlockDetection {
             return false;
         }
 
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(TxDeadlockFuture.class, this);
+        }
+
         /**
          * Lock request timeout object.
          */
@@ -542,6 +565,10 @@ public class TxDeadlockDetection {
             /** {@inheritDoc} */
             @Override public void onTimeout() {
                 timedOut = true;
+
+                IgniteLogger log = cctx.kernalContext().log(this.getClass());
+
+                U.warn(log, "Deadlock detection was timed out [timeout=" + DEADLOCK_TIMEOUT + ", fut=" + this + ']');
 
                 onDone();
             }

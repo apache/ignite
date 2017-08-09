@@ -22,6 +22,8 @@ import java.nio.ByteOrder;
 import java.security.AccessController;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
+
+import org.apache.ignite.IgniteSystemProperties;
 import sun.misc.Unsafe;
 
 /**
@@ -1204,7 +1206,12 @@ public abstract class GridUnsafe {
     private static boolean unaligned() {
         String arch = System.getProperty("os.arch");
 
-        return arch.equals("i386") || arch.equals("x86") || arch.equals("amd64") || arch.equals("x86_64");
+        boolean res = arch.equals("i386") || arch.equals("x86") || arch.equals("amd64") || arch.equals("x86_64");
+
+        if (!res)
+            res = IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_UNALIGNED_MEMORY_ACCESS, false);
+
+        return res;
     }
 
     /**
