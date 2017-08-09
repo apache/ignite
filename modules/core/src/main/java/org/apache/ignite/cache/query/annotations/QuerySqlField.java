@@ -22,6 +22,7 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.internal.processors.cache.query.CacheQuery;
 
 /**
@@ -86,6 +87,16 @@ public @interface QuerySqlField {
      * @return Name of property.
      */
     String name() default "";
+
+    /**
+     * Index inline size.
+     *
+     * The optimization is used for indexed field. The part of the field value is placed (inlined) directly into
+     * index page to avoid excessive data page reads when using index.
+     *
+     * @return The size in bytes of the index inline.
+     */
+    int inlineSize() default QueryEntity.DEFAULT_INLINE_SIZE;
 
     /**
      * Describes group of index and position of field in this group.

@@ -24,6 +24,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import javax.cache.CacheException;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -87,17 +88,6 @@ public class QueryEntityTypeDescriptor {
     }
 
     /**
-     * Adds index.
-     *
-     * @param idxName Index name.
-     * @param type Index type.
-     * @return Index descriptor.
-     */
-    public QueryEntityIndexDescriptor addIndex(String idxName, QueryIndexType type) {
-        return addIndex(idxName, type, -1);
-    }
-
-    /**
      * Adds field to index.
      *
      * @param idxName Index name.
@@ -110,7 +100,7 @@ public class QueryEntityTypeDescriptor {
         QueryEntityIndexDescriptor desc = indexes.get(idxName);
 
         if (desc == null)
-            desc = addIndex(idxName, QueryIndexType.SORTED);
+            desc = addIndex(idxName, QueryIndexType.SORTED, QueryEntity.DEFAULT_INLINE_SIZE);
 
         desc.addField(field, orderNum, descending);
     }

@@ -21,6 +21,7 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import org.apache.ignite.cache.QueryEntity;
 
 /**
  * Describes group index.
@@ -34,6 +35,13 @@ public @interface QueryGroupIndex {
      * @return Name.
      */
     String name();
+
+    /**
+     * The size in bytes of the index inline.
+     *
+     * @return The size in bytes of the index inline.
+     */
+    int inlineSize() default QueryEntity.DEFAULT_INLINE_SIZE;
 
     /**
      * List of group indexes for type.
