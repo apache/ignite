@@ -21,8 +21,10 @@ import java.io.DataInput;
 import java.io.EOFException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
@@ -242,7 +244,10 @@ public class RecordV1Serializer implements RecordSerializer {
             case DATA_RECORD:
                 DataRecord dataRec = (DataRecord)record;
 
-                putDataEntry(buf, dataRec.writeEntry());
+                buf.putInt(dataRec.writeEntries().size());
+
+                for (DataEntry dataEntry : dataRec.writeEntries())
+                    putDataEntry(buf, dataEntry);
 
                 break;
 
@@ -786,7 +791,14 @@ public class RecordV1Serializer implements RecordSerializer {
                 break;
 
             case DATA_RECORD:
-                res = new DataRecord(readDataEntry(in));
+                int entryCnt = in.readInt();
+
+                List<DataEntry> entries = new ArrayList<>(entryCnt);
+
+                for (int i = 0; i < entryCnt; i++)
+                    entries.add(readDataEntry(in));
+
+                res = new DataRecord(entries);
 
                 break;
 
@@ -1248,7 +1260,7 @@ public class RecordV1Serializer implements RecordSerializer {
             case DATA_RECORD:
                 DataRecord dataRec = (DataRecord)record;
 
-                return commonFields + entrySize(dataRec.writeEntry());
+                return commonFields + 4 + dataSize(dataRec);
 
             case HEADER_RECORD:
                 return HEADER_RECORD_SIZE;
@@ -1398,6 +1410,20 @@ public class RecordV1Serializer implements RecordSerializer {
         int fileOffset = in.readInt();
 
         return new FileWALPointer(idx, fileOffset, 0);
+    }
+
+    /**
+     * @param dataRec Data record to serialize.
+     * @return Full data record size.
+     * @throws IgniteCheckedException If failed to obtain the length of one of the entries.
+     */
+    private int dataSize(DataRecord dataRec) throws IgniteCheckedException {
+        int sz = 0;
+
+        for (DataEntry entry : dataRec.writeEntries())
+            sz += entrySize(entry);
+
+        return sz;
     }
 
     /**

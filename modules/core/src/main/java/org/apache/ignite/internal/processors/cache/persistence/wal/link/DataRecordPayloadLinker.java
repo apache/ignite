@@ -54,8 +54,12 @@ public class DataRecordPayloadLinker {
      * @throws IgniteCheckedException If it's impossible to create linker.
      */
     public DataRecordPayloadLinker(DataRecord record) throws IgniteCheckedException {
-        this.entry = wrap(record.writeEntry());
-        this.entrySize = FreeListImpl.getRowSize(entry, record.writeEntry().storeCacheId());
+        assert record.writeEntries().size() == 1;
+
+        DataEntry writeEntry = record.writeEntries().get(0);
+
+        this.entry = wrap(writeEntry);
+        this.entrySize = FreeListImpl.getRowSize(entry, writeEntry.storeCacheId());
     }
 
     /**

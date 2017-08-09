@@ -1485,15 +1485,17 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 switch (rec.type()) {
                     case DATA_RECORD:
-                        DataEntry dataEntry = ((DataRecord) rec).writeEntry();
+                        DataRecord dataRecord = (DataRecord) rec;
 
-                        int cacheId = dataEntry.cacheId();
+                        for (DataEntry dataEntry : dataRecord.writeEntries()) {
+                            int cacheId = dataEntry.cacheId();
 
-                        GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
+                            GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
 
-                        applyUpdate(cacheCtx, dataEntry, reference);
+                            applyUpdate(cacheCtx, dataEntry, reference);
 
-                        applied++;
+                            applied++;
+                        }
 
                         break;
 
