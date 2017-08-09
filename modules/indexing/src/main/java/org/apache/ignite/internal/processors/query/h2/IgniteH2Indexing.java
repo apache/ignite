@@ -111,6 +111,7 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuerySplitter;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridMapQueryExecutor;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridReduceQueryExecutor;
+import org.apache.ignite.internal.processors.query.h2.twostep.MapQueryStreamingResultTarget;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
@@ -146,12 +147,10 @@ import org.h2.engine.SysProperties;
 import org.h2.index.Index;
 import org.h2.jdbc.JdbcPreparedStatement;
 import org.h2.jdbc.JdbcStatement;
-import org.h2.result.ResultTarget;
 import org.h2.server.web.WebServer;
 import org.h2.table.IndexColumn;
 import org.h2.tools.Server;
 import org.h2.util.JdbcUtils;
-import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
@@ -972,33 +971,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     public void executeSqlStreaming(Connection conn, String sql, @Nullable Collection<Object> params)
         throws IgniteCheckedException {
-        JdbcPreparedStatement stmt = (JdbcPreparedStatement)preparedStatementWithParams(conn, sql, params, false);
+        JdbcPreparedStatement stmt = (JdbcPreparedStatement) preparedStatementWithParams(conn, sql, params, false);
 
         CommandContainer cmd = U.field(stmt, "command");
 
         Select select = U.field(cmd, "prepared");
 
-        select.query(0, new IgniteResultTarget());
-    }
-
-    /**
-     * Hacked result target.
-     */
-    private static class IgniteResultTarget implements ResultTarget {
-        /** Row count. */
-        private int rowCnt;
-
-        /** {@inheritDoc} */
-        @Override public void addRow(Value[] values) {
-            System.out.println("ADD ROW: " + Arrays.toString(values));
-
-            rowCnt++;
-        }
-
-        /** {@inheritDoc} */
-        @Override public int getRowCount() {
-            return rowCnt;
-        }
+        select.query(0, new MapQueryStreamingResultTarget());
     }
 
     /**
