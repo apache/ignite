@@ -513,7 +513,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     }
 
     /** {@inheritDoc} */
-    @Override public ExecutorService getDataStreamerExecutorService() {
+    @Override public StripedExecutor getDataStreamerExecutorService() {
         return null;
     }
 
