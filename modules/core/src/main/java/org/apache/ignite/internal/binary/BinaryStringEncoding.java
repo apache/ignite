@@ -30,8 +30,6 @@ public class BinaryStringEncoding {
     /** */
     private static final Charset CS_WINDOWS_1251 = Charset.forName("windows-1251");
 
-    // TODO: IGNITE-5655, add more; http://docs.oracle.com/javase/7/docs/technotes/guides/intl/encoding.doc.html
-
     /**
      * Retrieves charset by numeric encoding code.
      *
