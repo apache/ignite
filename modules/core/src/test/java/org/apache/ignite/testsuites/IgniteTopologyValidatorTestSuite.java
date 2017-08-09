@@ -31,6 +31,7 @@ import org.apache.ignite.internal.processors.cache.IgniteTopologyValidatorReplic
 import org.apache.ignite.internal.processors.cache.IgniteTopologyValidatorReplicatedAtomicCacheTest;
 import org.apache.ignite.internal.processors.cache.IgniteTopologyValidatorReplicatedTxCacheGroupsTest;
 import org.apache.ignite.internal.processors.cache.IgniteTopologyValidatorReplicatedTxCacheTest;
+import org.apache.ignite.testframework.junits.TestMultiVersionMode;
 
 /**
  * Topology validator test suite.
@@ -58,6 +59,8 @@ public class IgniteTopologyValidatorTestSuite extends TestSuite {
         suite.addTest(new TestSuite(IgniteTopologyValidatorReplicatedTxCacheGroupsTest.class));
 
         suite.addTest(new TestSuite(IgniteTopologyValidatorGridSplitCacheTest.class));
+
+        suite.addTest(new TestSuite(TestMultiVersionMode.class));
 
         return suite;
     }
