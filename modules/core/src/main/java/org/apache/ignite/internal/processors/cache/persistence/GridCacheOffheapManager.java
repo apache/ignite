@@ -700,6 +700,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                         next = new DataEntryRow(entry);
 
+                        entry = null;
+
                         return;
                     }
                 }
