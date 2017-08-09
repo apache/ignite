@@ -332,6 +332,8 @@ public class ZookeeperIpFinderTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testFourNodesKillRestartZookeeper() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-6010");
+
         allowDuplicateRegistrations = false;
 
         // start 4 nodes
