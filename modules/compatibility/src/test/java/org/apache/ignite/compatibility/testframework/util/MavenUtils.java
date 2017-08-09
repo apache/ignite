@@ -135,9 +135,7 @@ public class MavenUtils {
      * @throws Exception In case of an error.
      */
     private static String defineMavenLocalRepositoryPath() throws Exception {
-        Process p = exec("mvn help:effective-settings");
-
-        String output = CharStreams.toString(new InputStreamReader(p.getInputStream(), Charsets.UTF_8));
+        String output = exec("mvn help:effective-settings");
 
         int endTagPos = output.indexOf("</localRepository>");
 
@@ -164,10 +162,10 @@ public class MavenUtils {
      * Executes given command in operation system.
      *
      * @param cmd Command to execute.
-     * @return Process of executed command.
+     * @return Output of result of executed command.
      * @throws Exception In case of an error.
      */
-    private static Process exec(String cmd) throws Exception {
+    private static String exec(String cmd) throws Exception {
         ProcessBuilder pb = new ProcessBuilder();
         pb.redirectErrorStream(true);
 
@@ -177,27 +175,34 @@ public class MavenUtils {
 
         final Process p = pb.start();
 
-        Future<Integer> fut = Executors.newSingleThreadExecutor().submit(new Callable<Integer>() {
-            @Override public Integer call() throws Exception {
-                return p.waitFor();
+        Future<String> fut = Executors.newSingleThreadExecutor().submit(new Callable<String>() {
+            @Override public String call() throws Exception {
+                String output = CharStreams.toString(new InputStreamReader(p.getInputStream(), Charsets.UTF_8));
+
+                p.waitFor();
+
+                return output;
             }
         });
 
+        String output = null;
+
         try {
-            int exitVal = fut.get(10, TimeUnit.MINUTES);
+            output = fut.get(5, TimeUnit.MINUTES);
+
+            int exitVal = p.exitValue();
 
             if (exitVal != 0)
                 throw new Exception(String.format("Abnormal exit value of %s for pid %s", exitVal, U.jvmPid()));
+
+            return output;
         }
         catch (Exception e) {
             p.destroy();
 
-            X.printerrln("Command='" + cmd + "' couldn't be executed: "
-                + CharStreams.toString(new InputStreamReader(p.getInputStream(), Charsets.UTF_8)), e);
+            X.printerrln("Command='" + cmd + "' couldn't be executed: " + output, Charsets.UTF_8, e);
 
             throw e;
         }
-
-        return p;
     }
 }
