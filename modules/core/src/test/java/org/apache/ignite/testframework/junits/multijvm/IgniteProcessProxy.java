@@ -178,13 +178,14 @@ public class IgniteProcessProxy implements IgniteEx {
     }
 
     /**
-     * Creates new logger instance based on given logger with given category.
+     * Creates new logger instance based on given logger and given category.
      *
      * @param log Base logger.
      * @param ctgr Category.
      * @return Initiated logger.
+     * @throws Exception In case of an error.
      */
-    protected IgniteLogger getLogger(IgniteLogger log, Object ctgr) {
+    protected IgniteLogger getLogger(IgniteLogger log, Object ctgr) throws Exception {
         return log.getLogger(ctgr);
     }
 
@@ -199,7 +200,7 @@ public class IgniteProcessProxy implements IgniteEx {
     }
 
     /**
-     * Create parameters which will be passed to new Ignite Process as command line arguments.
+     * Creates parameters which will be passed to new Ignite Process as command line arguments.
      *
      * @param cfg Configuration.
      * @param resetDiscovery Reset DiscoverySpi at the configuration.
@@ -211,7 +212,7 @@ public class IgniteProcessProxy implements IgniteEx {
     }
 
     /**
-     * Creates list of JVM arguments to be used to start new Ignite process.
+     * Creates list of JVM arguments to be used to start new Ignite process in separate JVM.
      *
      * @return JVM arguments.
      * @throws Exception In case of an error.

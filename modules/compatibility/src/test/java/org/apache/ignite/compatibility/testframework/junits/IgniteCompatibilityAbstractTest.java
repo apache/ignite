@@ -20,6 +20,7 @@ package org.apache.ignite.compatibility.testframework.junits;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
@@ -159,15 +160,15 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
         if (locJvmInstance == null) {
             CountDownLatch nodeJoinedLatch = new CountDownLatch(1);
 
-            String nodeId = ignite.getId().toString();
+            UUID nodeId = ignite.getId();
 
-            ListenedGridTestLog4jLogger logger = (ListenedGridTestLog4jLogger)rmJvmInstance.log();
+            ListenedGridTestLog4jLogger log = (ListenedGridTestLog4jLogger)rmJvmInstance.log();
 
-            logger.addListener(nodeId, new LoggedJoinNodeClosure(nodeJoinedLatch, nodeId));
+            log.addListener(nodeId, new LoggedJoinNodeClosure(nodeJoinedLatch, nodeId));
 
             assert nodeJoinedLatch.await(30, TimeUnit.SECONDS) : "Node has not joined [id=" + nodeId + "]";
 
-            logger.removeListener(nodeId);
+            log.removeListener(nodeId);
         }
 
         return ignite;
@@ -175,8 +176,7 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
 
     /** {@inheritDoc} */
     @Override protected Ignite startGrid(String igniteInstanceName, IgniteConfiguration cfg,
-        GridSpringResourceContext ctx)
-        throws Exception {
+        GridSpringResourceContext ctx) throws Exception {
         Ignite ignite;
 
         // if started node isn't first node in the local JVM then it was checked earlier for join to topology
@@ -184,11 +184,11 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
         if (locJvmInstance == null && rmJvmInstance != null) {
             CountDownLatch nodeJoinedLatch = new CountDownLatch(1);
 
-            String nodeId = cfg.getNodeId().toString();
+            UUID nodeId = cfg.getNodeId();
 
-            ListenedGridTestLog4jLogger logger = (ListenedGridTestLog4jLogger)rmJvmInstance.log();
+            ListenedGridTestLog4jLogger log = (ListenedGridTestLog4jLogger)rmJvmInstance.log();
 
-            logger.addListener(nodeId, new LoggedJoinNodeClosure(nodeJoinedLatch, nodeId));
+            log.addListener(nodeId, new LoggedJoinNodeClosure(nodeJoinedLatch, nodeId));
 
             ignite = super.startGrid(igniteInstanceName, cfg, ctx);
 
@@ -196,7 +196,7 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
 
             assert nodeJoinedLatch.await(30, TimeUnit.SECONDS) : "Node has not joined [id=" + nodeId + "]";
 
-            logger.removeListener(nodeId);
+            log.removeListener(nodeId);
         }
         else
             ignite = super.startGrid(igniteInstanceName, cfg, ctx);
@@ -230,11 +230,12 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
          * @param nodeJoinedLatch Node joined latch.
          * @param nodeId Expected node id.
          */
-        public LoggedJoinNodeClosure(CountDownLatch nodeJoinedLatch, String nodeId) {
+        public LoggedJoinNodeClosure(CountDownLatch nodeJoinedLatch, UUID nodeId) {
             this.nodeJoinedLatch = nodeJoinedLatch;
             this.pattern = "evt=NODE_JOINED, node=" + nodeId;
         }
 
+        /** {@inheritDoc} */
         @Override public void apply(String s) {
             if (s.contains(pattern) && nodeJoinedLatch.getCount() > 0)
                 nodeJoinedLatch.countDown();

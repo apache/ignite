@@ -25,7 +25,7 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 
 /** */
-public class TestMultiVersionMode extends IgniteCompatibilityAbstractTest {
+public class MultiVersionClusterTest extends IgniteCompatibilityAbstractTest {
     /** */
     public void testJoinMultiVersionTopologyLocalFirst() throws Exception {
         try {
@@ -128,10 +128,13 @@ public class TestMultiVersionMode extends IgniteCompatibilityAbstractTest {
 
     /** */
     private static class PostConfigurationClosure implements IgniteInClosure<IgniteConfiguration> {
+        /** {@inheritDoc} */
         @Override public void apply(IgniteConfiguration cfg) {
             cfg.setLocalHost("127.0.0.1");
+
             TcpDiscoverySpi disco = new TcpDiscoverySpi();
             disco.setIpFinder(GridCacheAbstractFullApiSelfTest.LOCAL_IP_FINDER);
+
             cfg.setDiscoverySpi(disco);
         }
     }

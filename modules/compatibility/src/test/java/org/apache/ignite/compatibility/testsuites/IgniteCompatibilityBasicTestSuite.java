@@ -18,7 +18,7 @@
 package org.apache.ignite.compatibility.testsuites;
 
 import junit.framework.TestSuite;
-import org.apache.ignite.compatibility.spi.TestMultiVersionMode;
+import org.apache.ignite.compatibility.spi.MultiVersionClusterTest;
 
 /**
  * Compatibility tests basic test suite.
@@ -31,7 +31,7 @@ public class IgniteCompatibilityBasicTestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Ignite Compatibility Basic Test Suite");
 
-        suite.addTestSuite(TestMultiVersionMode.class);
+        suite.addTestSuite(MultiVersionClusterTest.class);
 
         return suite;
     }

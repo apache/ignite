@@ -17,6 +17,7 @@
 
 package org.apache.ignite.compatibility.testframework.junits.logger;
 
+import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
@@ -29,7 +30,7 @@ import org.jsr166.ConcurrentHashMap8;
  */
 public class ListenedGridTestLog4jLogger extends GridTestLog4jLogger {
     /** Listeners. */
-    private final ConcurrentMap<String, IgniteInClosure<String>> lsnrs = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<UUID, IgniteInClosure<String>> lsnrs = new ConcurrentHashMap8<>();
 
     /** {@inheritDoc} */
     public ListenedGridTestLog4jLogger(Logger impl) {
@@ -72,7 +73,7 @@ public class ListenedGridTestLog4jLogger extends GridTestLog4jLogger {
      * @param lsnr Listener.
      * @return The previous value associated with the specified key, or null if there was no mapping for the key.
      */
-    public IgniteInClosure<String> addListener(@NotNull String key, @NotNull IgniteInClosure<String> lsnr) {
+    public IgniteInClosure<String> addListener(@NotNull UUID key, @NotNull IgniteInClosure<String> lsnr) {
         return lsnrs.putIfAbsent(key, lsnr);
     }
 
@@ -83,7 +84,7 @@ public class ListenedGridTestLog4jLogger extends GridTestLog4jLogger {
      * @return Returns the value to which this map previously associated the key, or null if the map contained no
      * mapping for the key.
      */
-    public IgniteInClosure<String> removeListener(@NotNull String key) {
+    public IgniteInClosure<String> removeListener(@NotNull UUID key) {
         return lsnrs.remove(key);
     }
 }

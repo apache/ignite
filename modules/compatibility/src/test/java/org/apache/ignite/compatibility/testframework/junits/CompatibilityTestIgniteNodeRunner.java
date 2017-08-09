@@ -80,7 +80,7 @@ public class CompatibilityTestIgniteNodeRunner extends IgniteNodeRunner {
      * Stores {@link IgniteInClosure} to file as xml.
      *
      * @param clos IgniteInClosure.
-     * @return A name of file where the configuration was stored.
+     * @return A name of file where the closure was stored.
      * @throws IOException In case of an error.
      * @see #readClosureFromFileAndDelete(String)
      */
