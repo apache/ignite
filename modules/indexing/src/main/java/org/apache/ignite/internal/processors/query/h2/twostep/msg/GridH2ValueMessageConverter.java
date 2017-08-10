@@ -28,19 +28,6 @@ import org.h2.value.Value;
  * Message converter.
  */
 public class GridH2ValueMessageConverter implements MessageConverter<Value, GridH2ValueMessage> {
-    /** Singleton instance. */
-    public static final GridH2ValueMessageConverter INSTANCE = new GridH2ValueMessageConverter(null);
-
-    /**
-     * Create converter for the given context.
-     *
-     * @param ctx Context.
-     * @return Converter.
-     */
-    public static GridH2ValueMessageConverter forContext(GridKernalContext ctx) {
-        return new GridH2ValueMessageConverter(ctx);
-    }
-
     /**
      * Convert value to message.
      *
@@ -142,7 +129,7 @@ public class GridH2ValueMessageConverter implements MessageConverter<Value, Grid
      *
      * @param ctx Kernal context.
      */
-    private GridH2ValueMessageConverter(GridKernalContext ctx) {
+    public GridH2ValueMessageConverter(GridKernalContext ctx) {
         this.ctx = ctx;
     }
 

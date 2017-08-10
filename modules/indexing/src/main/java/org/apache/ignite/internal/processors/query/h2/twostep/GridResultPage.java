@@ -65,47 +65,40 @@ public class GridResultPage {
 
         // res == null means that it is a terminating dummy page for the given source node ID.
         if (res != null) {
-            Collection<?> plainRows = res.plainRows();
+            final int cols = res.columns();
 
-            if (plainRows != null) {
-                rowsInPage = plainRows.size();
+            Collection<Value> vals = (Collection<Value>)res.values();
 
-                rows = (Iterator<Value[]>)plainRows.iterator();
-            }
-            else {
-                final int cols = res.columns();
+            rowsInPage = vals.size() / cols;
 
-                rowsInPage = res.values().size() / cols;
+            final Iterator<Value> valsIter = vals.iterator();
 
-                final Iterator<Message> valsIter = res.values().iterator();
+            rows = new Iterator<Value[]>() {
+                /** */
+                int rowIdx;
 
-                rows = new Iterator<Value[]>() {
-                    /** */
-                    int rowIdx;
+                @Override public boolean hasNext() {
+                    return rowIdx < rowsInPage;
+                }
 
-                    @Override public boolean hasNext() {
-                        return rowIdx < rowsInPage;
+                @Override public Value[] next() {
+                    if (!hasNext())
+                        throw new NoSuchElementException();
+
+                    rowIdx++;
+
+                    try {
+                        return fillArray(valsIter, new Value[cols]);
                     }
-
-                    @Override public Value[] next() {
-                        if (!hasNext())
-                            throw new NoSuchElementException();
-
-                        rowIdx++;
-
-                        try {
-                            return fillArray(valsIter, new Value[cols], ctx);
-                        }
-                        catch (IgniteCheckedException e) {
-                            throw new CacheException(e);
-                        }
+                    catch (IgniteCheckedException e) {
+                        throw new CacheException(e);
                     }
+                }
 
-                    @Override public void remove() {
-                        throw new UnsupportedOperationException();
-                    }
-                };
-            }
+                @Override public void remove() {
+                    throw new UnsupportedOperationException();
+                }
+            };
         }
         else {
             rowsInPage = 0;

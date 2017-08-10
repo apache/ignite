@@ -36,6 +36,7 @@ public abstract class GridH2ValueMessage implements Message {
      * @return Value.
      * @throws IgniteCheckedException If failed.
      */
+    // TODO: Try encapsulating array where it is really needed.
     public abstract Value value(GridKernalContext ctx) throws IgniteCheckedException;
 
     /** {@inheritDoc} */

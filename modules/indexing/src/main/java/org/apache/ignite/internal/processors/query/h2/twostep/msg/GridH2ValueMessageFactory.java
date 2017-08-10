@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.h2.twostep.msg;
 
-import java.util.Collection;
 import java.util.Iterator;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
@@ -118,22 +117,6 @@ public class GridH2ValueMessageFactory implements MessageFactory {
     }
 
     /**
-     * @param src Source values.
-     * @param dst Destination collection.
-     * @return Destination collection.
-     * @throws IgniteCheckedException If failed.
-     */
-    public static Collection<Message> toMessages(Collection<Value[]> src, Collection<Message> dst)
-        throws IgniteCheckedException {
-        for (Value[] row : src) {
-            for (Value val : row)
-                dst.add(toMessage(val));
-        }
-
-        return dst;
-    }
-
-    /**
      * @param src Source iterator.
      * @param dst Array to fill with values.
      * @param ctx Kernal context.
@@ -146,6 +129,22 @@ public class GridH2ValueMessageFactory implements MessageFactory {
             Message msg = src.next();
 
             dst[i] = ((GridH2ValueMessage)msg).value(ctx);
+        }
+
+        return dst;
+    }
+
+    /**
+     * @param src Source iterator.
+     * @param dst Array to fill with values.
+     * @return Filled array.
+     * @throws IgniteCheckedException If failed.
+     */
+    public static Value[] fillArray(Iterator<? extends Value> src, Value[] dst) throws IgniteCheckedException {
+        for (int i = 0; i < dst.length; i++) {
+            Value val = src.next();
+
+            dst[i] = val;
         }
 
         return dst;

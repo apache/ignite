@@ -62,13 +62,9 @@ public class GridQueryNextPageResponse implements MessageEx {
     /** */
     private int cols;
 
-    /** */
+    /** Flat values. */
     @GridDirectCollection(Message.class)
-    private Collection<Message> vals;
-
-    /** */
-    @GridDirectTransient
-    private transient Collection<?> plainRows;
+    private transient Collection<?> vals;
 
     /** */
     private AffinityTopologyVersion retry;
@@ -90,12 +86,11 @@ public class GridQueryNextPageResponse implements MessageEx {
      * @param page Page.
      * @param allRows All rows count.
      * @param cols Number of columns in row.
-     * @param vals Values for rows in this page added sequentially.
-     * @param plainRows Not marshalled rows for local node.
+     * @param vals Values.
      */
     public GridQueryNextPageResponse(GridKernalContext ctx, long qryReqId, int segmentId, int qry, int page,
-        int allRows, int cols, Collection<Message> vals, Collection<?> plainRows) {
-        assert vals != null ^ plainRows != null;
+        int allRows, int cols, Collection<?> vals) {
+        assert vals != null;
         assert cols > 0 : cols;
 
         this.ctx = ctx;
@@ -106,7 +101,6 @@ public class GridQueryNextPageResponse implements MessageEx {
         this.allRows = allRows;
         this.cols = cols;
         this.vals = vals;
-        this.plainRows = plainRows;
     }
 
     /**
@@ -154,15 +148,8 @@ public class GridQueryNextPageResponse implements MessageEx {
     /**
      * @return Values.
      */
-    public Collection<Message> values() {
+    public Collection<?> values() {
         return vals;
-    }
-
-    /**
-     * @return Plain rows.
-     */
-    public Collection<?> plainRows() {
-        return plainRows;
     }
 
     /** {@inheritDoc} */
@@ -343,8 +330,6 @@ public class GridQueryNextPageResponse implements MessageEx {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridQueryNextPageResponse.class, this,
-            "valsSize", vals != null ? vals.size() : 0,
-            "rowsSize", plainRows != null ? plainRows.size() : 0);
+        return S.toString(GridQueryNextPageResponse.class, this, "valsSize", vals.size());
     }
 }

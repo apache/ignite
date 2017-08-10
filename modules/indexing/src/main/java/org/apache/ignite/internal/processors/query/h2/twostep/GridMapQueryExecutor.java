@@ -82,7 +82,6 @@ import static org.apache.ignite.internal.processors.query.h2.opt.DistributedJoin
 import static org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode.distributedJoinMode;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.MAP;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.REPLICATED;
-import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory.toMessages;
 
 /**
  * Map query executor.
@@ -714,6 +713,7 @@ public class GridMapQueryExecutor {
 
         int page = res.page();
 
+        // TODO: Fetch directly to final array list.
         List<Value[]> rows = new ArrayList<>(Math.min(64, pageSize));
 
         boolean last = res.fetchNextPage(rows, pageSize);
@@ -728,12 +728,16 @@ public class GridMapQueryExecutor {
         try {
             boolean loc = node.isLocal();
 
+            Collection<Value> plainVals = new ArrayList<>(rows.size() * res.columnCount());
+
+            for (Value[] row : rows)
+                Collections.addAll(plainVals, row);
+
             GridQueryNextPageResponse msg = new GridQueryNextPageResponse(ctx, qr.queryRequestId(), segmentId, qry,
                 page,
                 page == 0 ? res.rowCount() : -1,
                 res.columnCount(),
-                loc ? null : toMessages(rows, new ArrayList<Message>(res.columnCount())),
-                loc ? rows : null);
+                plainVals);
 
             if (loc)
                 h2.reduceQueryExecutor().onMessage(ctx.localNodeId(), msg);
@@ -757,9 +761,8 @@ public class GridMapQueryExecutor {
             boolean loc = node.isLocal();
 
             GridQueryNextPageResponse msg = new GridQueryNextPageResponse(ctx, reqId, segmentId,
-            /*qry*/0, /*page*/0, /*allRows*/0, /*cols*/1,
-                loc ? null : Collections.<Message>emptyList(),
-                loc ? Collections.<Value[]>emptyList() : null);
+                /*qry*/0, /*page*/0, /*allRows*/0, /*cols*/1,
+                Collections.<Value[]>emptyList());
 
             msg.retry(h2.readyTopologyVersion());
 

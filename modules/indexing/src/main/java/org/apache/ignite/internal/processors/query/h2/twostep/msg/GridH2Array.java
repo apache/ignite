@@ -42,7 +42,7 @@ public class GridH2Array extends GridH2ValueMessage {
     private Collection<Message> x;
 
     /**
-     *
+     * Constructor.
      */
     public GridH2Array() {
         // No-op.
