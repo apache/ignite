@@ -1804,6 +1804,22 @@ class ServerImpl extends TcpDiscoveryImpl {
     }
 
     /**
+     * Trying get node in any state (visible or not)
+     * @param nodeId Node id.
+     */
+    ClusterNode getNode0(UUID nodeId) {
+        assert nodeId != null;
+
+        UUID locNodeId0 = getLocalNodeId();
+
+        if (locNodeId0 != null && locNodeId0.equals(nodeId))
+            // Return local node directly.
+            return locNode;
+
+        return ring.node(nodeId);
+    }
+
+    /**
      * Thread that cleans IP finder and keeps it in the correct state, unregistering
      * addresses of the nodes that has left the topology.
      * <p>

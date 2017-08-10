@@ -132,6 +132,8 @@ import org.apache.ignite.spi.IgniteSpiThread;
 import org.apache.ignite.spi.IgniteSpiTimeoutObject;
 import org.apache.ignite.spi.communication.CommunicationListener;
 import org.apache.ignite.spi.communication.CommunicationSpi;
+import org.apache.ignite.spi.discovery.DiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentLinkedDeque8;
@@ -141,6 +143,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.SSL_META;
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.RecoveryLastReceivedMessage.ALREADY_CONNECTED;
+import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.RecoveryLastReceivedMessage.NEED_WAIT;
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.RecoveryLastReceivedMessage.NODE_STOPPING;
 
 /**
@@ -442,7 +445,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
              * @param ses Session.
              * @param msg Message.
              */
-            private void onFirstMessage(GridNioSession ses, Message msg) {
+            private void onFirstMessage(final GridNioSession ses, Message msg) {
                 UUID sndId;
 
                 ConnectionKey connKey;
@@ -466,10 +469,35 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 final ClusterNode rmtNode = getSpiContext().node(sndId);
 
                 if (rmtNode == null) {
-                    U.warn(log, "Close incoming connection, unknown node [nodeId=" + sndId +
-                        ", ses=" + ses + ']');
+                    DiscoverySpi discoverySpi = ignite().configuration().getDiscoverySpi();
 
-                    ses.close();
+                    assert discoverySpi instanceof TcpDiscoverySpi;
+
+                    TcpDiscoverySpi tcpDiscoverySpi = (TcpDiscoverySpi) discoverySpi;
+
+                    ClusterNode node0 = tcpDiscoverySpi.getNode0(sndId);
+
+                    boolean unknownNode = true;
+
+                    if (node0 != null) {
+                        assert node0.isClient() : node0;
+
+                        if (node0.version().greaterThanEqual(2, 2, 0))
+                            unknownNode = false;
+                    }
+
+                    if (unknownNode) {
+                        U.warn(log, "Close incoming connection, unknown node [nodeId=" + sndId + ", ses=" + ses + ']');
+
+                        ses.close();
+                    }
+                    else {
+                        ses.send(new RecoveryLastReceivedMessage(NEED_WAIT)).listen(new CI1<IgniteInternalFuture<?>>() {
+                            @Override public void apply(IgniteInternalFuture<?> fut) {
+                                ses.close();
+                            }
+                        });
+                    }
 
                     return;
                 }
@@ -3031,6 +3059,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
             IgniteSpiOperationTimeoutHelper timeoutHelper = new IgniteSpiOperationTimeoutHelper(this,
                 !node.isClient());
 
+            int lastWaitingTimeout = 1;
+
             while (!conn) { // Reconnection on handshake timeout.
                 try {
                     SocketChannel ch = SocketChannel.open();
@@ -3100,6 +3130,13 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                             recoveryDesc.release();
 
                             throw new ClusterTopologyCheckedException("Remote node started stop procedure: " + node.id());
+                        }
+                        else if (rcvCnt == NEED_WAIT) {
+                            recoveryDesc.release();
+
+                            Thread.sleep(Math.min(60000, lastWaitingTimeout *= 2));
+
+                            continue;
                         }
                     }
                     finally {
@@ -4558,6 +4595,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
         /** */
         static final long NODE_STOPPING = -2;
+
+        /** Need wait. */
+        static final long NEED_WAIT = -3;
 
         /** Message body size in bytes. */
         private static final int MESSAGE_SIZE = 8;
