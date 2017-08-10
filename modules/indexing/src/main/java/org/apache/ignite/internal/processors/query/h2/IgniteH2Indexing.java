@@ -1886,7 +1886,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         else {
             this.ctx = ctx;
 
-            this.msgConverter = new GridH2ValueMessageConverter(ctx);
+            msgConverter = new GridH2ValueMessageConverter(ctx);
 
             schemas.put(QueryUtils.DFLT_SCHEMA, new H2Schema(QueryUtils.DFLT_SCHEMA));
 

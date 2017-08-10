@@ -68,7 +68,6 @@ import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.h2.jdbc.JdbcResultSet;
 import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
@@ -713,7 +712,6 @@ public class GridMapQueryExecutor {
 
         int page = res.page();
 
-        // TODO: Fetch directly to final array list.
         List<Value[]> rows = new ArrayList<>(Math.min(64, pageSize));
 
         boolean last = res.fetchNextPage(rows, pageSize);
@@ -728,16 +726,16 @@ public class GridMapQueryExecutor {
         try {
             boolean loc = node.isLocal();
 
-            Collection<Value> plainVals = new ArrayList<>(rows.size() * res.columnCount());
+            Collection<Value> vals = new ArrayList<>(rows.size() * res.columnCount());
 
             for (Value[] row : rows)
-                Collections.addAll(plainVals, row);
+                Collections.addAll(vals, row);
 
             GridQueryNextPageResponse msg = new GridQueryNextPageResponse(ctx, qr.queryRequestId(), segmentId, qry,
                 page,
                 page == 0 ? res.rowCount() : -1,
                 res.columnCount(),
-                plainVals);
+                vals);
 
             if (loc)
                 h2.reduceQueryExecutor().onMessage(ctx.localNodeId(), msg);
