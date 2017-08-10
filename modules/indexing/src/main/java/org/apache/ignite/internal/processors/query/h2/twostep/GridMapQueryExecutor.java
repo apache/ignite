@@ -424,7 +424,7 @@ public class GridMapQueryExecutor {
         final boolean enforceJoinOrder = req.isFlagSet(GridH2QueryRequest.FLAG_ENFORCE_JOIN_ORDER);
         final boolean explain = req.isFlagSet(GridH2QueryRequest.FLAG_EXPLAIN);
         final boolean replicated = req.isFlagSet(GridH2QueryRequest.FLAG_REPLICATED);
-        final boolean streaming = req.streaming();
+        final boolean lazy = req.isFlagSet(GridH2QueryRequest.FLAG_LAZY);
 
         final List<Integer> cacheIds = req.caches();
 
@@ -457,7 +457,7 @@ public class GridMapQueryExecutor {
                             false,
                             req.timeout(),
                             params,
-                            streaming);
+                            lazy);
 
                         return null;
                     }
@@ -481,7 +481,7 @@ public class GridMapQueryExecutor {
             replicated,
             req.timeout(),
             params,
-            streaming);
+            lazy);
     }
 
     /**

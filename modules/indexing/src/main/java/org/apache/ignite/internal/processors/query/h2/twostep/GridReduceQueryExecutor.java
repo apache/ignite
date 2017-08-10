@@ -712,6 +712,9 @@ public class GridReduceQueryExecutor {
                 if (isReplicatedOnly)
                     flags |= GridH2QueryRequest.FLAG_REPLICATED;
 
+                if (streaming && mapQrys.size() == 1)
+                    flags |= GridH2QueryRequest.FLAG_LAZY;
+
                 GridH2QueryRequest req = new GridH2QueryRequest()
                     .requestId(qryReqId)
                     .topologyVersion(topVer)
@@ -724,9 +727,6 @@ public class GridReduceQueryExecutor {
                     .flags(flags)
                     .timeout(timeoutMillis)
                     .schemaName(schemaName);
-
-                if (mapQrys.size() == 1 && streaming)
-                    req.streaming(true);
 
                 if (send(nodes, req, parts == null ? null : new ExplicitPartitionsSpecializer(qryMap), false)) {
                     awaitAllReplies(r, nodes, cancel);
