@@ -91,6 +91,9 @@ public class JdbcThinConnection implements Connection {
     /** Ignite endpoint. */
     private JdbcThinTcpIo cliIo;
 
+    /** Metadata. */
+    private JdbcThinDatabaseMetadata metadata;
+
     /**
      * Creates new connection.
      *
@@ -279,7 +282,10 @@ public class JdbcThinConnection implements Connection {
     @Override public DatabaseMetaData getMetaData() throws SQLException {
         ensureNotClosed();
 
-        return new JdbcThinDatabaseMetadata(this);
+        if (metadata == null)
+            metadata = new JdbcThinDatabaseMetadata(this);
+
+        return metadata;
     }
 
     /** {@inheritDoc} */

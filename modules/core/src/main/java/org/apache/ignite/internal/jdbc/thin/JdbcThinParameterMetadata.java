@@ -20,19 +20,21 @@ package org.apache.ignite.internal.jdbc.thin;
 import java.sql.ParameterMetaData;
 import java.sql.SQLException;
 import java.util.List;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcParamMeta;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcParameterMeta;
 
 /**
  * JDBC SQL query's parameters metadata.
  */
-public class JdbcThinParameterMetaData implements ParameterMetaData {
+public class JdbcThinParameterMetadata implements ParameterMetaData {
     /** Meta. */
-    private final List<JdbcParamMeta> meta;
+    private final List<JdbcParameterMeta> meta;
 
     /**
      * @param meta Parameters metadata.
      */
-    public JdbcThinParameterMetaData(List<JdbcParamMeta> meta) {
+    public JdbcThinParameterMetadata(List<JdbcParameterMeta> meta) {
+        assert meta != null;
+
         this.meta = meta;
     }
 
@@ -43,42 +45,42 @@ public class JdbcThinParameterMetaData implements ParameterMetaData {
 
     /** {@inheritDoc} */
     @Override public int isNullable(int param) throws SQLException {
-        return meta.get(param - 1).isNullable();
+        return parameter(param).isNullable();
     }
 
     /** {@inheritDoc} */
     @Override public boolean isSigned(int param) throws SQLException {
-        return meta.get(param - 1).isSigned();
+        return parameter(param).isSigned();
     }
 
     /** {@inheritDoc} */
     @Override public int getPrecision(int param) throws SQLException {
-        return meta.get(param - 1).precision();
+        return parameter(param).precision();
     }
 
     /** {@inheritDoc} */
     @Override public int getScale(int param) throws SQLException {
-        return meta.get(param - 1).scale();
+        return parameter(param).scale();
     }
 
     /** {@inheritDoc} */
     @Override public int getParameterType(int param) throws SQLException {
-        return meta.get(param - 1).type();
+        return parameter(param).type();
     }
 
     /** {@inheritDoc} */
     @Override public String getParameterTypeName(int param) throws SQLException {
-        return meta.get(param - 1).typeName();
+        return parameter(param).typeName();
     }
 
     /** {@inheritDoc} */
     @Override public String getParameterClassName(int param) throws SQLException {
-        return meta.get(param - 1).typeClass();
+        return parameter(param).typeClass();
     }
 
     /** {@inheritDoc} */
     @Override public int getParameterMode(int param) throws SQLException {
-        return meta.get(param - 1).mode();
+        return parameter(param).mode();
     }
 
     /** {@inheritDoc} */
@@ -91,6 +93,20 @@ public class JdbcThinParameterMetaData implements ParameterMetaData {
 
     /** {@inheritDoc} */
     @Override public boolean isWrapperFor(Class<?> iface) throws SQLException {
-        return iface != null && iface.isAssignableFrom(JdbcThinParameterMetaData.class);
+        return iface != null && iface.isAssignableFrom(JdbcThinParameterMetadata.class);
+    }
+
+    /**
+     * Bounds checks the parameter index.
+     *
+     * @param param Parameter index.
+     * @return Parameter.
+     * @throws SQLException If failed.
+     */
+    private JdbcParameterMeta parameter(int param) throws SQLException {
+        if (param <= 0 || param > meta.size())
+            throw new SQLException("Invalid parameter number");
+
+        return meta.get(param - 1);
     }
 }

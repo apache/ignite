@@ -59,6 +59,7 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResponse;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResult;
 import org.apache.ignite.internal.util.ipc.loopback.IpcClientTcpEndpoint;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteProductVersion;
 
 /**
  * JDBC IO layer implementation based on blocking IPC streams.
@@ -126,6 +127,9 @@ public class JdbcThinTcpIo {
 
     /** Closed flag. */
     private boolean closed;
+
+    /** Ignite server version. */
+    private IgniteProductVersion igniteVer;
 
     /**
      * Constructor.
@@ -214,8 +218,18 @@ public class JdbcThinTcpIo {
 
         boolean accepted = reader.readBoolean();
 
-        if (accepted)
+        if (accepted) {
+            byte maj = reader.readByte();
+            byte min = reader.readByte();
+            byte maintenance = reader.readByte();
+            String stage = reader.readString();
+            long ts = reader.readLong();
+            byte[] hash = reader.readByteArray();
+
+            igniteVer = new IgniteProductVersion(maj, min, maintenance, stage, ts, hash);
+
             return;
+        }
 
         short maj = reader.readShort();
         short min = reader.readShort();
@@ -321,7 +335,6 @@ public class JdbcThinTcpIo {
     }
 
     /**
-     * @param catalog Catalog.
      * @param schemaPtrn Schema name pattern.
      * @param tablePtrn Table name pattern.
      * @param types Table types
@@ -329,7 +342,7 @@ public class JdbcThinTcpIo {
      * @throws IOException On error.
      * @throws IgniteCheckedException On error.
      */
-    public JdbcMetaTablesResult tablesMeta(String catalog, String schemaPtrn, String tablePtrn, String[] types)
+    public JdbcMetaTablesResult tablesMeta(String schemaPtrn, String tablePtrn, String[] types)
         throws IOException, IgniteCheckedException {
         return sendRequest(new JdbcMetaTablesRequest(schemaPtrn, tablePtrn, types), DYNAMIC_SIZE_MSG_CAP);
     }
@@ -519,5 +532,12 @@ public class JdbcThinTcpIo {
      */
     public boolean tcpNoDelay() {
         return tcpNoDelay;
+    }
+
+    /**
+     * @return Ignnite server version.
+     */
+    IgniteProductVersion igniteVersion() {
+        return igniteVer;
     }
 }

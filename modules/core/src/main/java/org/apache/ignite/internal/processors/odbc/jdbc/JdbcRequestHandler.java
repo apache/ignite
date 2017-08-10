@@ -32,6 +32,8 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteVersionUtils;
+import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.odbc.SqlListenerRequest;
 import org.apache.ignite.internal.processors.odbc.SqlListenerRequestHandler;
@@ -160,7 +162,7 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
                     return getIndexesMeta((JdbcMetaIndexesRequest)req);
 
                 case META_PARAMS:
-                    return getParamsMeta((JdbcMetaParamsRequest)req);
+                    return getParametersMeta((JdbcMetaParamsRequest)req);
 
                 case META_PRIMARY_KEYS:
                     return getPrimaryKeys((JdbcMetaPrimaryKeysRequest)req);
@@ -180,6 +182,18 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
     @Override public SqlListenerResponse handleException(Exception e) {
         return new JdbcResponse(SqlListenerResponse.STATUS_FAILED, e.toString());
     }
+
+    /** {@inheritDoc} */
+    @Override public void handshakeAdditionalResponse(BinaryWriterExImpl writer) {
+        // Write server version.
+        writer.writeByte(IgniteVersionUtils.VER.major());
+        writer.writeByte(IgniteVersionUtils.VER.minor());
+        writer.writeByte(IgniteVersionUtils.VER.maintenance());
+        writer.writeString(IgniteVersionUtils.VER.stage());
+        writer.writeLong(IgniteVersionUtils.VER.revisionTimestamp());
+        writer.writeByteArray(IgniteVersionUtils.VER.revisionHash());
+    }
+
 
     /**
      * {@link JdbcQueryExecuteRequest} command handler.
@@ -549,17 +563,17 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
      * @param req Request.
      * @return Response.
      */
-    private SqlListenerResponse getParamsMeta(JdbcMetaParamsRequest req) {
+    private SqlListenerResponse getParametersMeta(JdbcMetaParamsRequest req) {
         try {
             ParameterMetaData paramMeta = ctx.query().prepareNativeStatement(req.schema(), req.sql())
                 .getParameterMetaData();
 
             int size = paramMeta.getParameterCount();
 
-            List<JdbcParamMeta> meta = new ArrayList<>(size);
+            List<JdbcParameterMeta> meta = new ArrayList<>(size);
 
             for (int i = 0; i < size; i++)
-                meta.add(new JdbcParamMeta(paramMeta, i + 1));
+                meta.add(new JdbcParameterMeta(paramMeta, i + 1));
 
             JdbcMetaParamsResult res = new JdbcMetaParamsResult(meta);
 

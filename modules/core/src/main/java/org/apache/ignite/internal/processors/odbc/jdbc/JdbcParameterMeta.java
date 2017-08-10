@@ -28,7 +28,7 @@ import org.apache.ignite.internal.binary.BinaryWriterExImpl;
  *
  * {@see java.sql.ParameterMetaData}.
  */
-public class JdbcParamMeta implements JdbcRawBinarylizable {
+public class JdbcParameterMeta implements JdbcRawBinarylizable {
     /** Null value is allow for the param. */
     private int isNullable;
 
@@ -57,7 +57,7 @@ public class JdbcParamMeta implements JdbcRawBinarylizable {
     /**
      * Default constructor is used for binary serialization.
      */
-    public JdbcParamMeta() {
+    public JdbcParameterMeta() {
         // No-op.
     }
 
@@ -66,7 +66,7 @@ public class JdbcParamMeta implements JdbcRawBinarylizable {
      * @param order Param order.
      * @throws SQLException On errror.
      */
-    public JdbcParamMeta(ParameterMetaData meta, int order) throws SQLException {
+    public JdbcParameterMeta(ParameterMetaData meta, int order) throws SQLException {
         isNullable = meta.isNullable(order);
         signed = meta.isSigned(order);
         precision = meta.getPrecision(order);

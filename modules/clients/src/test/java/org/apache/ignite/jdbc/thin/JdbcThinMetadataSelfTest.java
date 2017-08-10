@@ -40,6 +40,7 @@ import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.affinity.AffinityKey;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -413,11 +414,6 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
 
             assert cnt == 3;
         }
-        catch (Exception e) {
-            log.error("Unexpected exception", e);
-
-            fail();
-        }
     }
 
     /**
@@ -464,11 +460,6 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
             }
 
             assert cnt == 1;
-        }
-        catch (Exception e) {
-            log.error("Unexpected exception", e);
-
-            fail();
         }
     }
 
@@ -521,11 +512,6 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
             assert meta.getParameterType(2) == Types.INTEGER;
             assert meta.isNullable(2) == ParameterMetaData.parameterNullableUnknown;
         }
-        catch (Exception e) {
-            log.error("Unexpected exception", e);
-
-            fail();
-        }
     }
 
     /**
@@ -548,11 +534,6 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
             assert expectedSchemas.equals(schemas) : "Unexpected schemas: " + schemas +
                 ". Expected schemas: " + expectedSchemas;
         }
-        catch (Exception e) {
-            log.error("Unexpected exception", e);
-
-            fail();
-        }
     }
 
     /**
@@ -564,10 +545,15 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
 
             assert !rs.next() : "Empty result set is expected";
         }
-        catch (Exception e) {
-            log.error("Unexpected exception", e);
+    }
 
-            fail();
+    /**
+     * @throws Exception If failed.
+     */
+    public void testVersions() throws Exception {
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            assert conn.getMetaData().getDatabaseProductVersion().equals(IgniteVersionUtils.VER.toString());
+            assert conn.getMetaData().getDriverVersion().equals(IgniteVersionUtils.VER.toString());
         }
     }
 

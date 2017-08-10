@@ -23,12 +23,14 @@ import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.RowIdLifetime;
 import java.sql.SQLException;
+import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.jdbc2.JdbcUtils;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcColumnMeta;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcIndexMeta;
@@ -43,6 +45,7 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcTableMeta;
 import static java.sql.Connection.TRANSACTION_NONE;
 import static java.sql.ResultSet.CONCUR_READ_ONLY;
 import static java.sql.ResultSet.HOLD_CURSORS_OVER_COMMIT;
+import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
 import static java.sql.RowIdLifetime.ROWID_UNSUPPORTED;
 
 /**
@@ -107,32 +110,32 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
 
     /** {@inheritDoc} */
     @Override public String getDatabaseProductName() throws SQLException {
-        return "Ignite Cache";
+        return "Ignite";
     }
 
     /** {@inheritDoc} */
     @Override public String getDatabaseProductVersion() throws SQLException {
-        return "4.1.0";
+        return conn.io().igniteVersion().toString();
     }
 
     /** {@inheritDoc} */
     @Override public String getDriverName() throws SQLException {
-        return "Ignite JDBC Driver";
+        return "Ignite JDBC Thin Driver";
     }
 
     /** {@inheritDoc} */
     @Override public String getDriverVersion() throws SQLException {
-        return "1.0";
+        return IgniteVersionUtils.VER.toString();
     }
 
     /** {@inheritDoc} */
     @Override public int getDriverMajorVersion() {
-        return 1;
+        return IgniteVersionUtils.VER.major();
     }
 
     /** {@inheritDoc} */
     @Override public int getDriverMinorVersion() {
-        return 0;
+        return IgniteVersionUtils.VER.minor();
     }
 
     /** {@inheritDoc} */
@@ -197,27 +200,31 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
 
     /** {@inheritDoc} */
     @Override public String getNumericFunctions() throws SQLException {
+        // TODO: IGNITE-6028
         return "";
     }
 
     /** {@inheritDoc} */
     @Override public String getStringFunctions() throws SQLException {
+        // TODO: IGNITE-6028
         return "";
     }
 
     /** {@inheritDoc} */
     @Override public String getSystemFunctions() throws SQLException {
+        // TODO: IGNITE-6028
         return "";
     }
 
     /** {@inheritDoc} */
     @Override public String getTimeDateFunctions() throws SQLException {
+        // TODO: IGNITE-6028
         return "";
     }
 
     /** {@inheritDoc} */
     @Override public String getSearchStringEscape() throws SQLException {
-        return "";
+        return "\\";
     }
 
     /** {@inheritDoc} */
@@ -247,12 +254,12 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
 
     /** {@inheritDoc} */
     @Override public boolean supportsConvert() throws SQLException {
-        return false;
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public boolean supportsConvert(int fromType, int toType) throws SQLException {
-        return false;
+        return true;
     }
 
     /** {@inheritDoc} */
@@ -317,7 +324,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
 
     /** {@inheritDoc} */
     @Override public boolean supportsCoreSQLGrammar() throws SQLException {
-        return false;
+        return true;
     }
 
     /** {@inheritDoc} */
@@ -327,7 +334,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
 
     /** {@inheritDoc} */
     @Override public boolean supportsANSI92EntryLevelSQL() throws SQLException {
-        return false;
+        return true;
     }
 
     /** {@inheritDoc} */
@@ -352,7 +359,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
 
     /** {@inheritDoc} */
     @Override public boolean supportsFullOuterJoins() throws SQLException {
-        return true;
+        return false;
     }
 
     /** {@inheritDoc} */
@@ -387,7 +394,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
 
     /** {@inheritDoc} */
     @Override public boolean supportsSchemasInDataManipulation() throws SQLException {
-        return false;
+        return true;
     }
 
     /** {@inheritDoc} */
@@ -697,7 +704,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
             if (conn.isClosed())
                 throw new SQLException("Connection is closed.");
 
-            JdbcMetaTablesResult res = conn.io().tablesMeta(catalog, schemaPtrn, tblNamePtrn, tblTypes);
+            JdbcMetaTablesResult res = conn.io().tablesMeta(schemaPtrn, tblNamePtrn, tblTypes);
 
             List<List<Object>> rows = new LinkedList<>();
 
@@ -1017,7 +1024,93 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
 
     /** {@inheritDoc} */
     @Override public ResultSet getTypeInfo() throws SQLException {
-        return new JdbcThinResultSet(Collections.<List<Object>>emptyList(), Arrays.asList(
+        List<List<Object>> types = new ArrayList<>(21);
+
+        types.add(Arrays.<Object>asList("BOOLEAN", Types.BOOLEAN, 1, null, null, null,
+            (short)typeNullable, false, (short)typeSearchable, false, false, false, "BOOLEAN", 0, 0,
+            Types.BOOLEAN, 0, 10));
+
+        types.add(Arrays.<Object>asList("TINYINT", Types.TINYINT, 3, null, null, null,
+            (short)typeNullable, false, (short)typeSearchable, false, false, false, "TINYINT", 0, 0,
+            Types.TINYINT, 0, 10));
+
+        types.add(Arrays.<Object>asList("SMALLINT", Types.SMALLINT, 5, null, null, null,
+            (short)typeNullable, false, (short)typeSearchable, false, false, false, "SMALLINT", 0, 0,
+            Types.SMALLINT, 0, 10));
+
+        types.add(Arrays.<Object>asList("INTEGER", Types.INTEGER, 10, null, null, null,
+            (short)typeNullable, false, (short)typeSearchable, false, false, false, "INTEGER", 0, 0,
+            Types.INTEGER, 0, 10));
+
+        types.add(Arrays.<Object>asList("BIGINT", Types.BIGINT, 19, null, null, null,
+            (short)typeNullable, false, (short)typeSearchable, false, false, false, "BIGINT", 0, 0,
+            Types.BIGINT, 0, 10));
+
+        types.add(Arrays.<Object>asList("FLOAT", Types.FLOAT, 17, null, null, null,
+            (short)typeNullable, false, (short)typeSearchable, false, false, false, "FLOAT", 0, 0,
+            Types.FLOAT, 0, 10));
+
+        types.add(Arrays.<Object>asList("REAL", Types.REAL, 7, null, null, null,
+            (short)typeNullable, false, (short)typeSearchable, false, false, false, "REAL", 0, 0,
+            Types.REAL, 0, 10));
+
+        types.add(Arrays.<Object>asList("DOUBLE", Types.DOUBLE, 17, null, null, null,
+            (short)typeNullable, false, (short)typeSearchable, false, false, false, "DOUBLE", 0, 0,
+            Types.DOUBLE, 0, 10));
+
+        types.add(Arrays.<Object>asList("NUMERIC", Types.NUMERIC, Integer.MAX_VALUE, null, null, "PRECISION,SCALE",
+            (short)typeNullable, false, (short)typeSearchable, false, false, false, "NUMERIC", 0, 0,
+            Types.NUMERIC, 0, 10));
+
+        types.add(Arrays.<Object>asList("DECIMAL", Types.DECIMAL, Integer.MAX_VALUE, null, null, "PRECISION,SCALE",
+            (short)typeNullable, false, (short)typeSearchable, false, false, false, "DECIMAL", 0, 0,
+            Types.DECIMAL, 0, 10));
+
+        types.add(Arrays.<Object>asList("DATE", Types.DATE, 8, "DATE '", "'", null,
+            (short)typeNullable, false, (short)typeSearchable, false, false, false, "DATE", 0, 0,
+            Types.DATE, 0, null));
+
+        types.add(Arrays.<Object>asList("TIME", Types.TIME, 6, "TIME '", "'", null,
+            (short)typeNullable, false, (short)typeSearchable, false, false, false, "TIME", 0, 0,
+            Types.TIME, 0, null));
+
+        types.add(Arrays.<Object>asList("TIMESTAMP", Types.TIMESTAMP, 23, "TIMESTAMP '", "'", null,
+            (short)typeNullable, false, (short)typeSearchable, false, false, false, "TIMESTAMP", 0, 10,
+            Types.TIMESTAMP, 0, null));
+
+        types.add(Arrays.<Object>asList("CHAR", Types.CHAR, Integer.MAX_VALUE, "'", "'", "LENGTH",
+            (short)typeNullable, true, (short)typeSearchable, false, false, false, "CHAR", 0, 0,
+            Types.CHAR, 0, null));
+
+        types.add(Arrays.<Object>asList("VARCHAR", Types.VARCHAR, Integer.MAX_VALUE, "'", "'", "LENGTH",
+            (short)typeNullable, true, (short)typeSearchable, false, false, false, "VARCHAR", 0, 0,
+            Types.VARCHAR, 0, null));
+
+        types.add(Arrays.<Object>asList("LONGVARCHAR", Types.LONGVARCHAR, Integer.MAX_VALUE, "'", "'", "LENGTH",
+            (short)typeNullable, true, (short)typeSearchable, false, false, false, "LONGVARCHAR", 0, 0,
+            Types.LONGVARCHAR, 0, null));
+
+        types.add(Arrays.<Object>asList("BINARY", Types.BINARY, Integer.MAX_VALUE, "'", "'", "LENGTH",
+            (short)typeNullable, false, (short)typeSearchable, false, false, false, "BINARY", 0, 0,
+            Types.BINARY, 0, null));
+
+        types.add(Arrays.<Object>asList("VARBINARY", Types.VARBINARY, Integer.MAX_VALUE, "'", "'", "LENGTH",
+            (short)typeNullable, false, (short)typeSearchable, false, false, false, "VARBINARY", 0, 0,
+            Types.VARBINARY, 0, null));
+
+        types.add(Arrays.<Object>asList("LONGVARBINARY", Types.LONGVARBINARY, Integer.MAX_VALUE, "'", "'", "LENGTH",
+            (short)typeNullable, false, (short)typeSearchable, false, false, false, "LONGVARBINARY", 0, 0,
+            Types.LONGVARBINARY, 0, null));
+
+        types.add(Arrays.<Object>asList("OTHER", Types.OTHER, Integer.MAX_VALUE, "'", "'", "LENGTH",
+            (short)typeNullable, false, (short)typeSearchable, false, false, false, "OTHER", 0, 0,
+            Types.OTHER, 0, null));
+
+        types.add(Arrays.<Object>asList("ARRAY", Types.ARRAY, 0, "(", "')", null,
+            (short)typeNullable, false, (short)typeSearchable, false, false, false, "ARRAY", 0, 0,
+            Types.ARRAY, 0, null));
+
+        return new JdbcThinResultSet(types, Arrays.asList(
             new JdbcColumnMeta(null, null, "TYPE_NAME", String.class),
             new JdbcColumnMeta(null, null, "DATA_TYPE", Integer.class),
             new JdbcColumnMeta(null, null, "PRECISION", Integer.class),
@@ -1110,12 +1203,12 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
 
     /** {@inheritDoc} */
     @Override public boolean supportsResultSetType(int type) throws SQLException {
-        return true;
+        return type == TYPE_FORWARD_ONLY;
     }
 
     /** {@inheritDoc} */
     @Override public boolean supportsResultSetConcurrency(int type, int concurrency) throws SQLException {
-        return concurrency == CONCUR_READ_ONLY;
+        return supportsResultSetType(type) && concurrency == CONCUR_READ_ONLY;
     }
 
     /** {@inheritDoc} */
@@ -1271,17 +1364,17 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
 
     /** {@inheritDoc} */
     @Override public int getDatabaseMajorVersion() throws SQLException {
-        return 1;
+        return conn.io().igniteVersion().major();
     }
 
     /** {@inheritDoc} */
     @Override public int getDatabaseMinorVersion() throws SQLException {
-        return 0;
+        return conn.io().igniteVersion().minor();
     }
 
     /** {@inheritDoc} */
     @Override public int getJDBCMajorVersion() throws SQLException {
-        return 1;
+        return 4;
     }
 
     /** {@inheritDoc} */
@@ -1291,7 +1384,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
 
     /** {@inheritDoc} */
     @Override public int getSQLStateType() throws SQLException {
-        return 0;
+        return DatabaseMetaData.sqlStateSQL99;
     }
 
     /** {@inheritDoc} */
@@ -1354,7 +1447,8 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
     }
 
     /** {@inheritDoc} */
-        @Override public ResultSet getClientInfoProperties() throws SQLException {
+    @Override public ResultSet getClientInfoProperties() throws SQLException {
+        // TODO: IGNITE-5425.
         return new JdbcThinResultSet(Collections.<List<Object>>emptyList(), Arrays.asList(
             new JdbcColumnMeta(null, null, "NAME", String.class),
             new JdbcColumnMeta(null, null, "MAX_LEN", Integer.class),
@@ -1366,7 +1460,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
     /** {@inheritDoc} */
     @Override public ResultSet getFunctions(String catalog, String schemaPtrn,
         String functionNamePtrn) throws SQLException {
-
+        // TODO: IGNITE-6028
         return new JdbcThinResultSet(Collections.<List<Object>>emptyList(), Arrays.asList(
             new JdbcColumnMeta(null, null, "FUNCTION_CAT", String.class),
             new JdbcColumnMeta(null, null, "FUNCTION_SCHEM", String.class),
@@ -1380,7 +1474,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
     /** {@inheritDoc} */
     @Override public ResultSet getFunctionColumns(String catalog, String schemaPtrn, String functionNamePtrn,
         String colNamePtrn) throws SQLException {
-
+        // TODO: IGNITE-6028
         return new JdbcThinResultSet(Collections.<List<Object>>emptyList(), Arrays.asList(
             new JdbcColumnMeta(null, null, "FUNCTION_CAT", String.class),
             new JdbcColumnMeta(null, null, "FUNCTION_SCHEM", String.class),

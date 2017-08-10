@@ -55,6 +55,9 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
     /** Query arguments. */
     protected ArrayList<Object> args;
 
+    /** Parameter meta data. */
+    private JdbcThinParameterMetadata metaData;
+
     /**
      * Creates new prepared statement.
      *
@@ -329,9 +332,14 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
             if (conn.isClosed())
                 throw new SQLException("Connection is closed.");
 
+            if (metaData != null)
+                return metaData;
+
             JdbcMetaParamsResult res = conn.io().parametersMeta(conn.getSchema(), sql);
 
-            return new JdbcThinParameterMetaData(res.meta());
+            metaData = new JdbcThinParameterMetadata(res.meta());
+
+            return metaData;
         }
         catch (IOException e) {
             conn.close();

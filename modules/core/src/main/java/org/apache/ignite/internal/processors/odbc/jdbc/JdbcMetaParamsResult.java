@@ -30,7 +30,7 @@ import org.apache.ignite.internal.util.typedef.F;
  */
 public class JdbcMetaParamsResult extends JdbcResult {
     /** Parameters meta results. */
-    private List<JdbcParamMeta> meta;
+    private List<JdbcParameterMeta> meta;
 
     /**
      * Default constructor is used for deserialization.
@@ -42,7 +42,7 @@ public class JdbcMetaParamsResult extends JdbcResult {
     /**
      * @param meta Column metadata.
      */
-    JdbcMetaParamsResult(List<JdbcParamMeta> meta) {
+    JdbcMetaParamsResult(List<JdbcParameterMeta> meta) {
         super(META_PARAMS);
         this.meta = meta;
     }
@@ -56,7 +56,7 @@ public class JdbcMetaParamsResult extends JdbcResult {
         else {
             writer.writeInt(meta.size());
 
-            for(JdbcParamMeta m : meta)
+            for(JdbcParameterMeta m : meta)
                 m.writeBinary(writer);
         }
     }
@@ -73,7 +73,7 @@ public class JdbcMetaParamsResult extends JdbcResult {
             meta = new ArrayList<>(size);
 
             for (int i = 0; i < size; ++i) {
-                JdbcParamMeta m = new JdbcParamMeta();
+                JdbcParameterMeta m = new JdbcParameterMeta();
 
                 m.readBinary(reader);
 
@@ -85,7 +85,7 @@ public class JdbcMetaParamsResult extends JdbcResult {
     /**
      * @return Query result rows.
      */
-    public List<JdbcParamMeta> meta() {
+    public List<JdbcParameterMeta> meta() {
         return meta;
     }
 }

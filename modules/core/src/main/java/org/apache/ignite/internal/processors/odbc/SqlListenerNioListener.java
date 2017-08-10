@@ -198,9 +198,11 @@ public class SqlListenerNioListener extends GridNioServerListenerAdapter<byte[]>
 
         String errMsg = null;
 
+        SqlListenerConnectionContext connCtx = null;
+
         if (SUPPORTED_VERS.contains(ver)) {
             // Prepare context.
-            SqlListenerConnectionContext connCtx = prepareContext(ver, reader);
+            connCtx = prepareContext(ver, reader);
 
             ses.addMeta(CONN_CTX_META_KEY, connCtx);
         }
@@ -213,8 +215,12 @@ public class SqlListenerNioListener extends GridNioServerListenerAdapter<byte[]>
         // Send response.
         BinaryWriterExImpl writer = new BinaryWriterExImpl(null, new BinaryHeapOutputStream(8), null, null);
 
-        if (errMsg == null)
+        if (errMsg == null) {
             writer.writeBoolean(true);
+
+            if (connCtx != null)
+                connCtx.handler().handshakeAdditionalResponse(writer);
+        }
         else {
             writer.writeBoolean(false);
             writer.writeShort(CURRENT_VER.major());
