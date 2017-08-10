@@ -45,10 +45,14 @@ public class GridH2CacheObject extends GridH2ValueMessage {
     }
 
     /**
+     * Constructor.
+     *
+     * @param ctx Kernal context.
      * @param v Value.
      * @throws IgniteCheckedException If failed.
      */
-    public GridH2CacheObject(GridH2ValueCacheObject v) throws IgniteCheckedException {
+    public GridH2CacheObject(GridKernalContext ctx, GridH2ValueCacheObject v) throws IgniteCheckedException {
+        this.ctx = ctx;
         this.obj = v.getCacheObject();
 
         obj.prepareMarshal(v.valueContext());
@@ -56,9 +60,9 @@ public class GridH2CacheObject extends GridH2ValueMessage {
 
     /** {@inheritDoc} */
     @Override public Value value() throws IgniteCheckedException {
-        CacheObjectValueContext valCtx = this.ctx.query().objectContext();
+        CacheObjectValueContext valCtx = ctx.query().objectContext();
 
-        obj.finishUnmarshal(valCtx, this.ctx.cache().context().deploy().globalLoader());
+        obj.finishUnmarshal(valCtx, ctx.cache().context().deploy().globalLoader());
 
         return new GridH2ValueCacheObject(obj, valCtx);
     }

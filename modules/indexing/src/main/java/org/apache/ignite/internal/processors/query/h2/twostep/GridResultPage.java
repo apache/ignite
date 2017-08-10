@@ -23,15 +23,9 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.UUID;
 import javax.cache.CacheException;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageResponse;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.h2.value.Value;
-
-import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory.fillArray;
-import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory.fillArray2;
 
 /**
  * Page result.
@@ -89,12 +83,15 @@ public class GridResultPage {
 
                     rowIdx++;
 
-                    try {
-                        return fillArray(valsIter, new Value[cols]);
+                    Value[] dst = new Value[cols];
+
+                    for (int i = 0; i < dst.length; i++) {
+                        Value val = valsIter.next();
+
+                        dst[i] = val;
                     }
-                    catch (IgniteCheckedException e) {
-                        throw new CacheException(e);
-                    }
+
+                    return dst;
                 }
 
                 @Override public void remove() {

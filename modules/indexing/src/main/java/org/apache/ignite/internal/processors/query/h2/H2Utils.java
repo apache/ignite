@@ -19,10 +19,32 @@ package org.apache.ignite.internal.processors.query.h2;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueCacheObject;
+import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2Array;
+import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2Boolean;
+import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2Byte;
+import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2Bytes;
+import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2CacheObject;
+import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2Date;
+import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2Decimal;
+import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2Double;
+import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2Float;
+import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2Geometry;
+import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2Integer;
+import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2JavaObject;
+import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2Long;
+import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2Null;
+import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2Short;
+import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2String;
+import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2Time;
+import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2Timestamp;
+import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2Uuid;
+import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessage;
 import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
@@ -260,6 +282,78 @@ public class H2Utils {
         Value h2Val = desc.wrap(val, objType);
 
         return h2Val.convertTo(type).getObject();
+    }
+
+    /**
+     * @param ctx Kernal context.
+     * @param v Value.
+     * @return Message.
+     * @throws IgniteCheckedException If failed.
+     */
+    public static GridH2ValueMessage toMessage(GridKernalContext ctx, Value v) throws IgniteCheckedException {
+        switch (v.getType()) {
+            case Value.NULL:
+                return GridH2Null.INSTANCE;
+
+            case Value.BOOLEAN:
+                return new GridH2Boolean(v);
+
+            case Value.BYTE:
+                return new GridH2Byte(v);
+
+            case Value.SHORT:
+                return new GridH2Short(v);
+
+            case Value.INT:
+                return new GridH2Integer(v);
+
+            case Value.LONG:
+                return new GridH2Long(v);
+
+            case Value.DECIMAL:
+                return new GridH2Decimal(v);
+
+            case Value.DOUBLE:
+                return new GridH2Double(v);
+
+            case Value.FLOAT:
+                return new GridH2Float(v);
+
+            case Value.DATE:
+                return new GridH2Date(v);
+
+            case Value.TIME:
+                return new GridH2Time(v);
+
+            case Value.TIMESTAMP:
+                return new GridH2Timestamp(v);
+
+            case Value.BYTES:
+                return new GridH2Bytes(v);
+
+            case Value.STRING:
+            case Value.STRING_FIXED:
+            case Value.STRING_IGNORECASE:
+                return new GridH2String(v);
+
+            case Value.ARRAY:
+                return new GridH2Array(ctx, v);
+
+            case Value.JAVA_OBJECT:
+                if (v instanceof GridH2ValueCacheObject)
+                    return new GridH2CacheObject(ctx, (GridH2ValueCacheObject)v);
+
+                return new GridH2JavaObject(v);
+
+            case Value.UUID:
+                return new GridH2Uuid(v);
+
+            case Value.GEOMETRY:
+                return new GridH2Geometry(v);
+
+            default:
+                throw new IllegalStateException("Unsupported H2 type: " + v.getType());
+        }
     }
 
     /**

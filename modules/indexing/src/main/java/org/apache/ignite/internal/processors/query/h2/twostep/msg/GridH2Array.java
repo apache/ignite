@@ -20,17 +20,18 @@ package org.apache.ignite.internal.processors.query.h2.twostep.msg;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectCollection;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.h2.value.Value;
 import org.h2.value.ValueArray;
-
-import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory.fillArray2;
-import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory.toMessage;
 
 /**
  * H2 Array.
@@ -51,7 +52,7 @@ public class GridH2Array extends GridH2ValueMessage {
      * @param val Value.
      * @throws IgniteCheckedException If failed.
      */
-    public GridH2Array(Value val) throws IgniteCheckedException {
+    public GridH2Array(GridKernalContext ctx, Value val) throws IgniteCheckedException {
         assert val.getType() == Value.ARRAY : val.getType();
 
         ValueArray arr = (ValueArray)val;
@@ -59,12 +60,22 @@ public class GridH2Array extends GridH2ValueMessage {
         x = new ArrayList<>(arr.getList().length);
 
         for (Value v : arr.getList())
-            x.add(toMessage(v));
+            x.add(H2Utils.toMessage(ctx, v));
     }
 
     /** {@inheritDoc} */
     @Override public Value value() throws IgniteCheckedException {
-        return ValueArray.get(fillArray2(x.iterator(), new Value[x.size()]));
+        Iterator<? extends Message> src = x.iterator();
+
+        Value[] dst = new Value[x.size()];
+
+        for (int i = 0; i < dst.length; i++) {
+            Message msg = src.next();
+
+            dst[i] = ((GridH2ValueMessage)msg).value();
+        }
+
+        return ValueArray.get(dst);
     }
 
     /** {@inheritDoc} */
