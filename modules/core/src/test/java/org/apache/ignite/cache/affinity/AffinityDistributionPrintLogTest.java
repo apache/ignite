@@ -53,7 +53,7 @@ public class AffinityDistributionPrintLogTest extends GridCommonAbstractTest {
     private int parts = 1024;
 
     /** */
-    private String CHECK_MESSAGE = "Local node affinity assignment distribution is not ideal";
+    private final String CHECK_MESSAGE = "Local node affinity assignment distribution is not ideal";
 
     /** */
     private int backups = 2;
