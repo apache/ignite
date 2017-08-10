@@ -26,6 +26,7 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueCacheObject
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.jdbc.JdbcResultSet;
+import org.h2.result.LazyResult;
 import org.h2.result.ResultInterface;
 import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
@@ -120,7 +121,10 @@ class MapQueryResult implements AutoCloseable {
                 throw new IllegalStateException(e); // Must not happen.
             }
 
-            rowCnt = res.getRowCount();
+            if (res instanceof LazyResult)
+                System.out.println("LAZY! LAZY! LAZY! LAZY! LAZY! LAZY! LAZY! LAZY! ");
+
+            rowCnt = (res instanceof LazyResult) ? 10_000 : res.getRowCount();
             cols = res.getVisibleColumnCount();
         }
         else {

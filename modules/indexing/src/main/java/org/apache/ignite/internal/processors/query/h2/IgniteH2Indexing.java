@@ -139,10 +139,10 @@ import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.h2.api.ErrorCode;
 import org.h2.api.JavaObjectSerializer;
 import org.h2.command.CommandContainer;
-import org.h2.command.CommandInterface;
 import org.h2.command.Prepared;
 import org.h2.command.dml.Insert;
 import org.h2.command.dml.Select;
+import org.h2.engine.Session;
 import org.h2.engine.SysProperties;
 import org.h2.index.Index;
 import org.h2.jdbc.JdbcPreparedStatement;
@@ -925,10 +925,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             });
         }
 
+        Session ses = H2Utils.session(conn);
+
         if (timeoutMillis > 0)
-            H2Utils.session(conn).setQueryTimeout(timeoutMillis);
+            ses.setQueryTimeout(timeoutMillis);
 
         try {
+            ses.setLazyQueryExecution(true);
+
             return stmt.executeQuery();
         }
         catch (SQLException e) {
@@ -940,7 +944,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
         finally {
             if (timeoutMillis > 0)
-                H2Utils.session(conn).setQueryTimeout(0);
+                ses.setQueryTimeout(0);
+
+            ses.setLazyQueryExecution(false);
         }
     }
 
@@ -977,7 +983,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         Select select = U.field(cmd, "prepared");
 
-        select.query(0, new MapQueryStreamingResultTarget());
+        select.query(0, new MapQueryStreamingResultTarget(1, false));
     }
 
     /**

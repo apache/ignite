@@ -14,15 +14,18 @@ public class TestExample {
     public static final String CACHE_NAME = "cache";
 
     public static void main(String[] args) {
-        try (Ignite srv = Ignition.start()) {
+        try (Ignite srv = Ignition.start(new IgniteConfiguration().setLocalHost("127.0.0.1"))) {
             IgniteCache<Long, Person> srvCache = srv.createCache(
                 new CacheConfiguration<Long, Person>().setName(CACHE_NAME).setIndexedTypes(Long.class, Person.class));
 
             for (long i = 0; i < 10_000; i++)
                 srvCache.put(i, new Person(i, "First" + i, "Last" + i));
 
-            try (Ignite cli=
-                 Ignition.start(new IgniteConfiguration().setIgniteInstanceName("client").setClientMode(true))) {
+            System.out.println("PUT FINISHED");
+
+            try (Ignite cli = Ignition.start(new IgniteConfiguration().setIgniteInstanceName("client").setLocalHost("127.0.0.1").setClientMode(true))) {
+                System.out.println("CLIENT STARTED");
+
                 IgniteCache<Long, Person> cliCache = cli.cache(CACHE_NAME);
 
                 SqlFieldsQuery qry = new SqlFieldsQuery("SELECT firstName FROM Person WHERE 1=1");
@@ -36,6 +39,9 @@ public class TestExample {
                 }
 
                 System.out.println("DONE: " + cnt);
+            }
+            catch (Exception e) {
+                System.out.println(e);
             }
         }
     }
