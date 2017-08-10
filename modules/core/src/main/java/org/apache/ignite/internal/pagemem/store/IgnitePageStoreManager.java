@@ -77,6 +77,7 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager, IgniteCh
      *
      * @param grpId Cache group ID of the evicted partition.
      * @param partId Partition ID.
+     * @param tag Partition tag (growing 1-based partition file version).
      * @throws IgniteCheckedException If failed to handle partition destroy callback.
      */
     public void onPartitionDestroyed(int grpId, int partId, int tag) throws IgniteCheckedException;

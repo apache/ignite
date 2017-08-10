@@ -1006,7 +1006,7 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
             walSegmentSize: Number,
             walHistorySize: Number,
             walFlushFrequency: Number,
-            walFsyncDelay: Number,
+            walFsyncDelayNanos: Number,
             walRecordIteratorBufferSize: Number,
             lockWaitTime: Number,
             rateTimeInterval: Number,
@@ -1055,7 +1055,7 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
         date: Date,
         group: String,
         action: String,
-        amount: { type: Number, default: 1 }
+        amount: { type: Number, default: 0 }
     });
 
     ActivitiesSchema.index({ owner: 1, group: 1, action: 1, date: 1}, { unique: true });

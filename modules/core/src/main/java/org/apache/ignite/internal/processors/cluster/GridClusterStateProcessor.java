@@ -273,7 +273,8 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
                 if (fut != null)
                     fut.setRemaining(nodeIds, topVer.nextMinorVersion());
 
-                log.info("Start state transition: " + msg.activate());
+                if (log.isInfoEnabled())
+                    log.info("Started state transition: " + msg.activate());
 
                 globalState = DiscoveryDataClusterState.createTransitionState(msg.activate(),
                     msg.requestId(),

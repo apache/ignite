@@ -1499,7 +1499,7 @@ public class PlatformConfigurationUtils {
                 .setWalMode(WALMode.fromOrdinal(in.readInt()))
                 .setTlbSize(in.readInt())
                 .setWalFlushFrequency((int) in.readLong())
-                .setWalFsyncDelay(in.readInt())
+                .setWalFsyncDelayNanos(in.readLong())
                 .setWalRecordIteratorBufferSize(in.readInt())
                 .setAlwaysWriteFullPages(in.readBoolean())
                 .setMetricsEnabled(in.readBoolean())
@@ -1531,7 +1531,7 @@ public class PlatformConfigurationUtils {
             w.writeInt(cfg.getWalMode().ordinal());
             w.writeInt(cfg.getTlbSize());
             w.writeLong(cfg.getWalFlushFrequency());
-            w.writeInt(cfg.getWalFsyncDelay());
+            w.writeLong(cfg.getWalFsyncDelayNanos());
             w.writeInt(cfg.getWalRecordIteratorBufferSize());
             w.writeBoolean(cfg.isAlwaysWriteFullPages());
             w.writeBoolean(cfg.isMetricsEnabled());

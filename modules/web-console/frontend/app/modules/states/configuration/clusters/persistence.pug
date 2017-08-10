@@ -62,7 +62,7 @@ include /app/helpers/jade/mixins
                     +number('WAL flush frequency:', `${model}.walFlushFrequency`, '"PersistenceWalFlushFrequency"', enabled, '2000', '1',
                     'How often will be fsync, in milliseconds. In background mode, exist thread which do fsync by timeout')
                 .settings-row
-                    +number('WAL fsync delay:', `${model}.walFsyncDelay`, '"PersistenceWalFsyncDelay"', enabled, '1', '1', 'WAL fsync delay, in nanoseconds')
+                    +number('WAL fsync delay:', `${model}.walFsyncDelayNanos`, '"PersistenceWalFsyncDelay"', enabled, '1000', '1', 'WAL fsync delay, in nanoseconds')
                 .settings-row
                     +number('WAL record iterator buffer size:', `${model}.walRecordIteratorBufferSize`, '"PersistenceWalRecordIteratorBufferSize"', enabled, '67108864', '1',
                     'How many bytes iterator read from disk(for one reading), during go ahead WAL')

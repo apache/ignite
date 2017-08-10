@@ -799,8 +799,8 @@ public class PageMemoryImpl implements PageMemoryEx {
     }
 
     /** {@inheritDoc} */
-    @Override public Integer getForCheckpoint(FullPageId fullId, ByteBuffer tmpBuf, CheckpointMetricsTracker tracker) {
-        assert tmpBuf.remaining() == pageSize();
+    @Override public Integer getForCheckpoint(FullPageId fullId, ByteBuffer outBuf, CheckpointMetricsTracker tracker) {
+        assert outBuf.remaining() == pageSize();
 
         Segment seg = segment(fullId.groupId(), fullId.pageId());
 
@@ -810,9 +810,14 @@ public class PageMemoryImpl implements PageMemoryEx {
 
         int tag;
 
+        boolean tmpBuffer = false;
+
         seg.readLock().lock();
 
         try {
+            if (!isInCheckpoint(fullId))
+                return null;
+
             tag = seg.partTag(fullId.groupId(), PageIdUtils.partId(fullId.pageId()));
 
             relPtr = seg.loadedPages.get(
@@ -833,6 +838,8 @@ public class PageMemoryImpl implements PageMemoryEx {
                 // Pin the page until page will not be copied.
                 if (PageHeader.tempBufferPointer(absPtr) == INVALID_REL_PTR)
                     PageHeader.acquirePage(absPtr);
+                else
+                    tmpBuffer = true;
             }
         }
         finally {
@@ -876,7 +883,7 @@ public class PageMemoryImpl implements PageMemoryEx {
             }
         }
         else
-            return copyPageForCheckpoint(absPtr, fullId, tmpBuf, tracker) ? tag : null;
+            return copyPageForCheckpoint(absPtr, fullId, outBuf, tmpBuffer, tracker) ? tag : null;
     }
 
     /**
@@ -884,19 +891,24 @@ public class PageMemoryImpl implements PageMemoryEx {
      * @param fullId Full id.
      * @param tmpBuf Tmp buffer.
      */
-    private boolean copyPageForCheckpoint(long absPtr, FullPageId fullId, ByteBuffer tmpBuf, CheckpointMetricsTracker tracker) {
+    private boolean copyPageForCheckpoint(
+        long absPtr,
+        FullPageId fullId,
+        ByteBuffer tmpBuf,
+        boolean tmpBuffer,
+        CheckpointMetricsTracker tracker
+    ) {
         assert absPtr != 0;
+        assert PageHeader.isAcquired(absPtr);
 
         rwLock.writeLock(absPtr + PAGE_LOCK_OFFSET, OffheapReadWriteLock.TAG_LOCK_ALWAYS);
 
         try {
             long tmpRelPtr = PageHeader.tempBufferPointer(absPtr);
 
-            if (!clearCheckpoint(fullId)){
-                assert tmpRelPtr == INVALID_REL_PTR;
+            boolean success = clearCheckpoint(fullId);
 
-                return false;
-            }
+            assert success : "Page was pin when we resolve abs pointer, it can not be evicted";
 
             if (tmpRelPtr != INVALID_REL_PTR){
                 PageHeader.tempBufferPointer(absPtr, INVALID_REL_PTR);
@@ -914,6 +926,12 @@ public class PageMemoryImpl implements PageMemoryEx {
 
                 // We pinned the page when allocated the temp buffer, release it now.
                 PageHeader.releasePage(absPtr);
+
+                // Need release again because we pin page when resolve abs pointer,
+                // and page did not have tmp buffer page.
+                if (!tmpBuffer)
+                    PageHeader.releasePage(absPtr);
+
             }
             else {
                 copyInBuffer(absPtr, tmpBuf);
@@ -1554,7 +1572,7 @@ public class PageMemoryImpl implements PageMemoryEx {
         /** */
         private final int maxDirtyPages;
 
-        /** */
+        /** Maps partition (cacheId, partId) to its tag. Tag is 1-based incrementing partition file counter */
         private final Map<T2<Integer, Integer>, Integer> partTagMap = new HashMap<>();
 
         /**
@@ -1892,7 +1910,7 @@ public class PageMemoryImpl implements PageMemoryEx {
         /**
          * @param grpId Cache group ID.
          * @param partId Partition ID.
-         * @return Partition tag.
+         * @return Partition tag. Growing 1 based partition file version
          */
         private int partTag(int grpId, int partId) {
             assert getReadHoldCount() > 0 || getWriteHoldCount() > 0;

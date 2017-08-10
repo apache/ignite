@@ -90,7 +90,7 @@ public class RestExecutor {
 
     /** */
     private RestResult sendRequest(boolean demo, String path, Map<String, Object> params,
-        String mtd, Map<String, Object> headers, String body) throws IOException {
+        Map<String, Object> headers, String body) throws IOException {
         if (demo && AgentClusterDemo.getDemoUrl() == null) {
             try {
                 AgentClusterDemo.tryStart().await();
@@ -120,36 +120,24 @@ public class RestExecutor {
                     reqBuilder.addHeader(entry.getKey(), entry.getValue().toString());
         }
 
-        if ("GET".equalsIgnoreCase(mtd)) {
+        if (body != null) {
+            MediaType contentType = MediaType.parse("text/plain");
+
+            reqBuilder.post(RequestBody.create(contentType, body));
+        }
+        else {
+            FormBody.Builder formBody = new FormBody.Builder();
+
             if (params != null) {
                 for (Map.Entry<String, Object> entry : params.entrySet()) {
                     if (entry.getValue() != null)
-                        urlBuilder.addQueryParameter(entry.getKey(), entry.getValue().toString());
+                        formBody.add(entry.getKey(), entry.getValue().toString());
                 }
             }
+
+            reqBuilder.post(formBody.build());
         }
-        else if ("POST".equalsIgnoreCase(mtd)) {
-            if (body != null) {
-                MediaType contentType = MediaType.parse("text/plain");
-
-                reqBuilder.post(RequestBody.create(contentType, body));
-            }
-            else {
-                FormBody.Builder formBody = new FormBody.Builder();
-
-                if (params != null) {
-                    for (Map.Entry<String, Object> entry : params.entrySet()) {
-                        if (entry.getValue() != null)
-                            formBody.add(entry.getKey(), entry.getValue().toString());
-                    }
-                }
-
-                reqBuilder.post(formBody.build());
-            }
-        }
-        else
-            throw new IllegalArgumentException("Unknown HTTP-method: " + mtd);
-
+        
         reqBuilder.url(urlBuilder.build());
 
         try (Response resp = httpClient.newCall(reqBuilder.build()).execute()) {
@@ -180,7 +168,7 @@ public class RestExecutor {
                 "Please ensure that nodes have [ignite-rest-http] module in classpath " +
                 "(was copied from libs/optional to libs folder).");
 
-            throw new ConnectException("Failed connect to node and execute REST command [url=" + urlBuilder + "]");
+            throw new ConnectException("Failed connect to node and execute REST command [url=" + urlBuilder + ", parameters=" + params + "]");
         }
     }
 
@@ -188,21 +176,20 @@ public class RestExecutor {
      * @param demo Is demo node request.
      * @param path Path segment.
      * @param params Params.
-     * @param mtd Method.
      * @param headers Headers.
      * @param body Body.
      */
     public RestResult execute(boolean demo, String path, Map<String, Object> params,
-        String mtd, Map<String, Object> headers, String body) {
+        Map<String, Object> headers, String body) {
         if (log.isDebugEnabled())
-            log.debug("Start execute REST command [method=" + mtd + ", uri=/" + (path == null ? "" : path) +
+            log.debug("Start execute REST command [uri=/" + (path == null ? "" : path) +
                 ", parameters=" + params + "]");
 
         try {
-            return sendRequest(demo, path, params, mtd, headers, body);
+            return sendRequest(demo, path, params, headers, body);
         }
         catch (Exception e) {
-            U.error(log, "Failed to execute REST command [method=" + mtd + ", uri=/" + (path == null ? "" : path) +
+            U.error(log, "Failed to execute REST command [uri=/" + (path == null ? "" : path) +
                 ", parameters=" + params + "]", e);
 
             return RestResult.fail(404, e.getMessage());
@@ -219,6 +206,6 @@ public class RestExecutor {
         params.put("attr", true);
         params.put("mtr", full);
 
-        return sendRequest(demo, "ignite", params, "GET", null, null);
+        return sendRequest(demo, "ignite", params, null, null);
     }
 }

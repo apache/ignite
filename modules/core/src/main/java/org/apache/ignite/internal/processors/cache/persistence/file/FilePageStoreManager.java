@@ -318,6 +318,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
      * @param cacheId Cache ID to write.
      * @param pageId Page ID.
      * @param pageBuf Page buffer.
+     * @param tag Partition tag (growing 1-based partition file version). Used to validate page is not outdated
      * @return PageStore to which the page has been written.
      * @throws IgniteCheckedException If IO error occurred.
      */
@@ -364,21 +365,16 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         if (dirExisted && !idxFile.exists())
             grpsWithoutIdx.add(grpDesc.groupId());
 
-        FilePageStore idxStore = new FilePageStore(
-            PageMemory.FLAG_IDX,
-            idxFile,
-            pstCfg.getFileIOFactory(),
-            cctx.kernalContext().config().getMemoryConfiguration());
+        FileVersionCheckingFactory pageStoreFactory = new FileVersionCheckingFactory(
+            pstCfg.getFileIOFactory(), igniteCfg.getMemoryConfiguration());
+
+        FilePageStore idxStore = pageStoreFactory.createPageStore(PageMemory.FLAG_IDX, idxFile);
 
         FilePageStore[] partStores = new FilePageStore[grpDesc.config().getAffinity().partitions()];
 
         for (int partId = 0; partId < partStores.length; partId++) {
-            FilePageStore partStore = new FilePageStore(
-                PageMemory.FLAG_DATA,
-                new File(cacheWorkDir, String.format(PART_FILE_TEMPLATE, partId)),
-                pstCfg.getFileIOFactory(),
-                cctx.kernalContext().config().getMemoryConfiguration()
-            );
+            FilePageStore partStore = pageStoreFactory.createPageStore(
+                PageMemory.FLAG_DATA, new File(cacheWorkDir, String.format(PART_FILE_TEMPLATE, partId)));
 
             partStores[partId] = partStore;
         }

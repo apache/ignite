@@ -78,6 +78,7 @@ public class MapWrapperStorage implements VectorStorage {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         data = (Map<Integer, Double>)in.readObject();
     }

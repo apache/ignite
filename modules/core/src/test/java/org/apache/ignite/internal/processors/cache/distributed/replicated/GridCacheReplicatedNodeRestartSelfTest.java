@@ -51,7 +51,7 @@ public class GridCacheReplicatedNodeRestartSelfTest extends GridCacheAbstractNod
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-5515");
+        //outcommented to get failure on TC: fail("https://issues.apache.org/jira/browse/IGNITE-5515");
     }
 
     /** {@inheritDoc} */

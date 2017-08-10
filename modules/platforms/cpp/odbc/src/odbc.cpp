@@ -1019,7 +1019,7 @@ namespace ignite
     {
         using odbc::Statement;
 
-        LOG_MSG("SQLGetTypeInfo called");
+        LOG_MSG("SQLGetTypeInfo called: [type=" << type << ']');
 
         Statement *statement = reinterpret_cast<Statement*>(stmt);
 

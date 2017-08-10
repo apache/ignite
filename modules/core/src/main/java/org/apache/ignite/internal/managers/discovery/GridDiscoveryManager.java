@@ -192,6 +192,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         }
     };
 
+    /** */
+    private final Object discoEvtMux = new Object();
+
     /** Discovery event worker. */
     private final DiscoveryWorker discoWrk = new DiscoveryWorker();
 
@@ -546,6 +549,26 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             }
 
             @Override public void onDiscovery(
+                final int type,
+                final long topVer,
+                final ClusterNode node,
+                final Collection<ClusterNode> topSnapshot,
+                final Map<Long, Collection<ClusterNode>> snapshots,
+                @Nullable DiscoverySpiCustomMessage spiCustomMsg) {
+                synchronized (discoEvtMux) {
+                    onDiscovery0(type, topVer, node, topSnapshot, snapshots, spiCustomMsg);
+                }
+            }
+
+            /**
+             * @param type Event type.
+             * @param topVer Event topology version.
+             * @param node Event node.
+             * @param topSnapshot Topology snapsjot.
+             * @param snapshots Topology snapshots history.
+             * @param spiCustomMsg Custom event.
+             */
+            private void onDiscovery0(
                 final int type,
                 final long topVer,
                 final ClusterNode node,
@@ -1974,6 +1997,16 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         return snapshots.get(topVer);
     }
 
+    /**
+     * Gets server nodes topology by specified version from snapshots history storage.
+     *
+     * @param topVer Topology version.
+     * @return Server topology nodes or {@code null} if there are no nodes for passed in version.
+     */
+    @Nullable public Collection<ClusterNode> serverTopologyNodes(long topVer) {
+        return F.view(topology(topVer), F.not(FILTER_CLI));
+    }
+
     /** @return All daemon nodes in topology. */
     public Collection<ClusterNode> daemonNodes() {
         return discoCache().daemonNodes();
@@ -2062,12 +2095,15 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     public void clientCacheStartEvent(UUID reqId,
         @Nullable Map<String, DynamicCacheChangeRequest> startReqs,
         @Nullable Set<String> cachesToClose) {
-        discoWrk.addEvent(EVT_DISCOVERY_CUSTOM_EVT,
-            AffinityTopologyVersion.NONE,
-            localNode(),
-            null,
-            Collections.<ClusterNode>emptyList(),
-            new ClientCacheChangeDummyDiscoveryMessage(reqId, startReqs, cachesToClose));
+        // Prevent race when discovery message was processed, but was passed to discoWrk.
+        synchronized (discoEvtMux) {
+            discoWrk.addEvent(EVT_DISCOVERY_CUSTOM_EVT,
+                AffinityTopologyVersion.NONE,
+                localNode(),
+                null,
+                Collections.<ClusterNode>emptyList(),
+                new ClientCacheChangeDummyDiscoveryMessage(reqId, startReqs, cachesToClose));
+        }
     }
 
     /**
