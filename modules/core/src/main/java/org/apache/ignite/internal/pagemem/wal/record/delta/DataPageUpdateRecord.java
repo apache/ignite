@@ -33,10 +33,10 @@ public class DataPageUpdateRecord extends PageDeltaRecord implements WALReferenc
     private final int itemId;
 
     /** Actual fragment data size. */
-    private final int payloadSize;
+    private int payloadSize;
 
     /** WAL reference to {@link DataRecord}. */
-    private final WALPointer reference;
+    private WALPointer reference;
 
     /** Actual fragment data. */
     private byte[] payload;
@@ -46,6 +46,7 @@ public class DataPageUpdateRecord extends PageDeltaRecord implements WALReferenc
      * @param pageId Page ID.
      * @param itemId Item ID.
      * @param payloadSize Record data size.
+     * @param reference WAL reference to {@link DataRecord}.
      */
     public DataPageUpdateRecord(
         int grpId,
@@ -56,9 +57,29 @@ public class DataPageUpdateRecord extends PageDeltaRecord implements WALReferenc
     ) {
         super(grpId, pageId);
 
-        this.payloadSize = payloadSize;
         this.itemId = itemId;
+        this.payloadSize = payloadSize;
         this.reference = reference;
+    }
+
+    /**
+     * Old constructor for backward compatibility.
+     *
+     * @param grpId Cache group ID.
+     * @param pageId Page ID.
+     * @param itemId Item ID.
+     * @param payload Record data.
+     */
+    public DataPageUpdateRecord(
+            int grpId,
+            long pageId,
+            int itemId,
+            byte[] payload
+    ) {
+        super(grpId, pageId);
+
+        this.itemId = itemId;
+        this.payload = payload;
     }
 
     /**

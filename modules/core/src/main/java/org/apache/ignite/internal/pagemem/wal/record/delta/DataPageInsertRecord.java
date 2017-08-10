@@ -30,10 +30,10 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  */
 public class DataPageInsertRecord extends PageDeltaRecord implements WALReferenceAwareRecord {
     /** Actual fragment data size. */
-    private final int payloadSize;
+    private int payloadSize;
 
     /** WAL reference to {@link DataRecord}. */
-    private final WALPointer reference;
+    private WALPointer reference;
 
     /** Actual fragment data. */
     private byte[] payload;
@@ -41,7 +41,8 @@ public class DataPageInsertRecord extends PageDeltaRecord implements WALReferenc
     /**
      * @param grpId Cache group ID.
      * @param pageId Page ID.
-     * @param payloadSize Remainder of the record.
+     * @param payloadSize Record data size.
+     * @param reference WAL reference to {@link DataRecord}.
      */
     public DataPageInsertRecord(
         int grpId,
@@ -53,6 +54,23 @@ public class DataPageInsertRecord extends PageDeltaRecord implements WALReferenc
 
         this.payloadSize = payloadSize;
         this.reference = reference;
+    }
+
+    /**
+     * Old constructor for backward compatibility.
+     *
+     * @param grpId Cache group ID.
+     * @param pageId Page ID.
+     * @param payload Record payload.
+     */
+    public DataPageInsertRecord(
+            int grpId,
+            long pageId,
+            byte[] payload
+    ) {
+        super(grpId, pageId);
+
+        this.payload = payload;
     }
 
     /**
