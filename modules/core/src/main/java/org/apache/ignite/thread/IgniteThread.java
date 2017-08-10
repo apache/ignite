@@ -149,6 +149,16 @@ public class IgniteThread extends Thread {
     }
 
     /**
+     * @return IgniteThread or {@code null} if current thread is not an instance of IgniteThread.
+     */
+    public static IgniteThread current(){
+        Thread thread = Thread.currentThread();
+
+        return thread.getClass() == IgniteThread.class || thread instanceof IgniteThread ?
+            ((IgniteThread)thread) : null;
+    }
+
+    /**
      * Creates new thread name.
      *
      * @param num Thread number.
