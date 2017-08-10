@@ -67,6 +67,9 @@ public class GridQueryNextPageResponse implements Message {
     /** */
     private AffinityTopologyVersion retry;
 
+    /** Last page flag. */
+    private boolean last;
+
     /**
      * For {@link Externalizable}.
      */
@@ -83,9 +86,10 @@ public class GridQueryNextPageResponse implements Message {
      * @param cols Number of columns in row.
      * @param vals Values for rows in this page added sequentially.
      * @param plainRows Not marshalled rows for local node.
+     * @param last Last page flag.
      */
     public GridQueryNextPageResponse(long qryReqId, int segmentId, int qry, int page, int allRows, int cols,
-        Collection<Message> vals, Collection<?> plainRows) {
+        Collection<Message> vals, Collection<?> plainRows, boolean last) {
         assert vals != null ^ plainRows != null;
         assert cols > 0 : cols;
 
@@ -97,6 +101,7 @@ public class GridQueryNextPageResponse implements Message {
         this.cols = cols;
         this.vals = vals;
         this.plainRows = plainRows;
+        this.last = last;
     }
 
     /**
@@ -220,6 +225,11 @@ public class GridQueryNextPageResponse implements Message {
 
                 writer.incrementState();
 
+            case 8:
+                if (!writer.writeBoolean("last", last))
+                    return false;
+
+                writer.incrementState();
         }
 
         return true;
@@ -296,6 +306,14 @@ public class GridQueryNextPageResponse implements Message {
                     return false;
 
                 reader.incrementState();
+
+            case 8:
+                last = reader.readBoolean("last");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
         }
 
         return reader.afterMessageRead(GridQueryNextPageResponse.class);
@@ -308,7 +326,7 @@ public class GridQueryNextPageResponse implements Message {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 8;
+        return 9;
     }
 
     /**
@@ -323,6 +341,20 @@ public class GridQueryNextPageResponse implements Message {
      */
     public void retry(AffinityTopologyVersion retry) {
         this.retry = retry;
+    }
+
+    /**
+     * @return Last page flag.
+     */
+    public boolean last() {
+        return last;
+    }
+
+    /**
+     * @param last Last page flag.
+     */
+    public void last(boolean last) {
+        this.last = last;
     }
 
     /** {@inheritDoc} */
