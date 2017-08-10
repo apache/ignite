@@ -43,6 +43,7 @@ import org.apache.ignite.testframework.GridTestUtils;
  * Tests of storing data in compatibility mode.
  */
 public class VarintArraysSizeCompatibilityTest extends IgniteCompatibilityAbstractTest {
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration() throws Exception {
         IgniteConfiguration cfg = super.getConfiguration();
         cfg.setPeerClassLoadingEnabled(true);
