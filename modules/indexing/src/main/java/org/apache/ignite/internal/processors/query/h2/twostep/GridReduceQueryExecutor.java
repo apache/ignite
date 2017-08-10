@@ -84,13 +84,12 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.h2.command.ddl.CreateTableData;
 import org.h2.engine.Session;
-import org.h2.index.Cursor;
 import org.h2.index.Index;
 import org.h2.jdbc.JdbcConnection;
-import org.h2.result.Row;
 import org.h2.table.Column;
 import org.h2.util.IntArray;
 import org.h2.value.Value;
@@ -511,7 +510,7 @@ public class GridReduceQueryExecutor {
      */
     public Iterator<List<?>> query(
         String schemaName,
-        GridCacheTwoStepQuery qry,
+        final GridCacheTwoStepQuery qry,
         boolean keepBinary,
         boolean enforceJoinOrder,
         int timeoutMillis,
@@ -617,10 +616,25 @@ public class GridReduceQueryExecutor {
 
             final boolean skipMergeTbl = !qry.explain() && qry.skipMergeTable();
 
-            final int segmentsPerIndex = qry.explain() || isReplicatedOnly ? 1 :
+            final int segmentsPerIdx = qry.explain() || isReplicatedOnly ? 1 :
                 findFirstPartitioned(cacheIds).config().getQueryParallelism();
 
             int replicatedQrysCnt = 0;
+
+            final Collection<ClusterNode> finalNodes = nodes;
+
+            // This will be executed either at the end of lazy iteration or after merge table is filled.
+            final IgniteOutClosure<Void> clo = new IgniteOutClosure<Void>() {
+                @Override public Void apply() {
+                    // Make sure any activity related to current attempt is cancelled.
+                    cancelRemoteQueriesIfNeeded(finalNodes, r, qryReqId, qry.distributedJoins());
+
+                    if (!runs.remove(qryReqId, r))
+                        U.warn(log, "Query run was already removed: " + qryReqId);
+
+                    return null;
+                }
+            };
 
             for (GridCacheSqlQuery mapQry : qry.mapQueries()) {
                 GridMergeIndex idx;
@@ -653,7 +667,7 @@ public class GridReduceQueryExecutor {
                     idx.setSources(singletonList(node), 1); // Replicated tables can have only 1 segment.
                 }
                 else
-                    idx.setSources(nodes, segmentsPerIndex);
+                    idx.setSources(nodes, segmentsPerIdx);
 
                 idx.setPageSize(r.pageSize());
 
@@ -661,7 +675,7 @@ public class GridReduceQueryExecutor {
             }
 
             r.latch(new CountDownLatch(isReplicatedOnly ? 1 :
-                (r.indexes().size() - replicatedQrysCnt) * nodes.size() * segmentsPerIndex + replicatedQrysCnt));
+                (r.indexes().size() - replicatedQrysCnt) * nodes.size() * segmentsPerIdx + replicatedQrysCnt));
 
             runs.put(qryReqId, r);
 
@@ -685,8 +699,6 @@ public class GridReduceQueryExecutor {
                 }
 
                 final boolean distributedJoins = qry.distributedJoins();
-
-                final Collection<ClusterNode> finalNodes = nodes;
 
                 cancel.set(new Runnable() {
                     @Override public void run() {
@@ -756,29 +768,8 @@ public class GridReduceQueryExecutor {
                 Iterator<List<?>> resIter = null;
 
                 if (!retry) {
-                    if (skipMergeTbl) {
-                        List<List<?>> res = new ArrayList<>();
-
-                        // Simple UNION ALL can have multiple indexes.
-                        for (GridMergeIndex idx : r.indexes()) {
-                            Cursor cur = idx.findInStream(null, null);
-
-                            while (cur.next()) {
-                                Row row = cur.get();
-
-                                int cols = row.getColumnCount();
-
-                                List<Object> resRow = new ArrayList<>(cols);
-
-                                for (int c = 0; c < cols; c++)
-                                    resRow.add(row.getValue(c).getObject());
-
-                                res.add(resRow);
-                            }
-                        }
-
-                        resIter = res.iterator();
-                    }
+                    if (skipMergeTbl)
+                        resIter = new GridMergeIndexesIterator(r.indexes(), clo);
                     else {
                         cancel.checkCancelled();
 
@@ -842,13 +833,10 @@ public class GridReduceQueryExecutor {
                 throw new CacheException("Failed to run reduce query locally.", cause);
             }
             finally {
-                // Make sure any activity related to current attempt is cancelled.
-                cancelRemoteQueriesIfNeeded(nodes, r, qryReqId, qry.distributedJoins());
-
-                if (!runs.remove(qryReqId, r))
-                    U.warn(log, "Query run was already removed: " + qryReqId);
-
+                // If we have fetched all data to merge table, then let's free all resources here.
                 if (!skipMergeTbl) {
+                    clo.apply();
+
                     for (int i = 0, mapQrys = qry.mapQueries().size(); i < mapQrys; i++)
                         fakeTable(null, i).innerTable(null); // Drop all merge tables.
                 }
