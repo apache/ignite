@@ -507,6 +507,7 @@ public class GridReduceQueryExecutor {
      * @param cancel Query cancel.
      * @param params Query parameters.
      * @param parts Partitions.
+     * @param lazy Lazy execution flag.
      * @return Rows iterator.
      */
     public Iterator<List<?>> query(
@@ -518,7 +519,7 @@ public class GridReduceQueryExecutor {
         GridQueryCancel cancel,
         Object[] params,
         final int[] parts,
-        boolean streaming
+        boolean lazy
     ) {
         if (F.isEmpty(params))
             params = EMPTY_PARAMS;
@@ -712,7 +713,7 @@ public class GridReduceQueryExecutor {
                 if (isReplicatedOnly)
                     flags |= GridH2QueryRequest.FLAG_REPLICATED;
 
-                if (streaming && mapQrys.size() == 1)
+                if (lazy && mapQrys.size() == 1)
                     flags |= GridH2QueryRequest.FLAG_LAZY;
 
                 GridH2QueryRequest req = new GridH2QueryRequest()

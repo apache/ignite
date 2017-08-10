@@ -72,7 +72,7 @@ public class SqlFieldsQuery extends Query<List<?>> {
     private boolean replicatedOnly;
 
     /** */
-    private boolean streaming;
+    private boolean lazy;
 
     /** Partitions for query */
     private int[] parts;
@@ -272,20 +272,20 @@ public class SqlFieldsQuery extends Query<List<?>> {
     }
 
     /**
-     * @param streaming Streaming flag.
+     * @param lazy Lazy flag.
      * @return {@code this} For chaining.
      */
-    public SqlFieldsQuery setStreaming(boolean streaming) {
-        this.streaming = streaming;
+    public SqlFieldsQuery setLazy(boolean lazy) {
+        this.lazy = lazy;
 
         return this;
     }
 
     /**
-     * @return Streaming flag.
+     * @return Lazy flag.
      */
-    public boolean isStreaming() {
-        return streaming;
+    public boolean isLazy() {
+        return lazy;
     }
 
     /**
