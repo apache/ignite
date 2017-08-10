@@ -33,6 +33,9 @@ class MapQueryResults {
     /** H@ indexing. */
     private final IgniteH2Indexing h2;
 
+    /** Node ID. */
+    private final UUID nodeId;
+
     /** */
     private final long qryReqId;
 
@@ -54,9 +57,9 @@ class MapQueryResults {
      * @param cacheName Cache name.
      */
     @SuppressWarnings("unchecked")
-    MapQueryResults(IgniteH2Indexing h2, long qryReqId, int qrys,
-        @Nullable String cacheName) {
+    MapQueryResults(IgniteH2Indexing h2, UUID nodeId, long qryReqId, int qrys, @Nullable String cacheName) {
         this.h2 = h2;
+        this.nodeId = nodeId;
         this.qryReqId = qryReqId;
         this.cacheName = cacheName;
 
@@ -65,6 +68,13 @@ class MapQueryResults {
 
         for (int i = 0; i < cancels.length; i++)
             cancels[i] = new GridQueryCancel();
+    }
+
+    /**
+     * @return Node ID.
+     */
+    UUID nodeId() {
+        return nodeId;
     }
 
     /**
