@@ -229,7 +229,7 @@ public class GridMapQueryExecutor {
         MapNodeResults nodeRess = qryRess.get(nodeId);
 
         if (nodeRess == null) {
-            nodeRess = new MapNodeResults();
+            nodeRess = new MapNodeResults(nodeId);
 
             MapNodeResults old = qryRess.putIfAbsent(nodeId, nodeRess);
 
