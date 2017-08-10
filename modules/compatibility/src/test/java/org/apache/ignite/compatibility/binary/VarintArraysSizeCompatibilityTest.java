@@ -20,7 +20,6 @@ package org.apache.ignite.compatibility.binary;
 import java.math.BigDecimal;
 import java.sql.Time;
 import java.sql.Timestamp;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.UUID;
 import javax.cache.processor.EntryProcessor;
@@ -81,37 +80,34 @@ public class VarintArraysSizeCompatibilityTest extends IgniteCompatibilityAbstra
      * @throws Exception If failed.
      */
     public void testArraysStoringInCompatibilityMode() throws Exception {
-        startGrid(1, "2.1.0", new PostConfigurationClosure());
-
-        startGrid(2, "2.1.0", new PostConfigurationClosure());
+        startGrid(1, "2.1.0", new CompatibilityConfigurationClosure());
+        startGrid(2, "2.1.0", new CompatibilityConfigurationClosure());
 
         Ignite ignite = startGrid(0);
 
-        CacheConfiguration<String, TestObject> cacheCfg = defaultCacheConfiguration();
+        CacheConfiguration<Integer, TestObject> cacheCfg = defaultCacheConfiguration();
+
         cacheCfg.setCacheMode(CacheMode.REPLICATED);
-        cacheCfg.setName("varintTestCache");
         cacheCfg.setRebalanceMode(CacheRebalanceMode.SYNC);
 
-        IgniteCache<String, TestObject> cache = ignite.createCache(cacheCfg);
+        IgniteCache<Integer, TestObject> cache = ignite.createCache(cacheCfg);
 
-        final TestObject obj = new TestObject();
+        final TestObject val = new TestObject();
 
-        final String key = "key";
+        Integer key = backupKeys(cache, 1, 1000).get(0);
 
-        cache.put(key, obj);
+        cache.put(key, val);
 
-        cache.invoke(
-            key,
-            new EntryProcessor<String, TestObject, TestObject>() {
-                @Override public TestObject process(MutableEntry<String, TestObject> entry,
-                    Object... objects) throws EntryProcessorException {
-                    TestObject val = entry.getValue();
-
-                    assertEquals(obj, val);
-
-                    return val;
-                }
-            });
+        assertTrue(
+            cache.invoke(
+                key,
+                new EntryProcessor<Integer, TestObject, Boolean>() {
+                    @Override public Boolean process(MutableEntry<Integer, TestObject> entry,
+                        Object... objects) throws EntryProcessorException {
+                        return val.equals(entry.getValue());
+                    }
+                })
+        );
     }
 
     /** */
@@ -135,23 +131,7 @@ public class VarintArraysSizeCompatibilityTest extends IgniteCompatibilityAbstra
 
         /** {@inheritDoc} */
         @Override public int hashCode() {
-            int result = Arrays.hashCode(bArr);
-            result = 31 * result + Arrays.hashCode(boolArr);
-            result = 31 * result + Arrays.hashCode(cArr);
-            result = 31 * result + Arrays.hashCode(sArr);
-            result = 31 * result + Arrays.hashCode(iArr);
-            result = 31 * result + Arrays.hashCode(lArr);
-            result = 31 * result + Arrays.hashCode(fArr);
-            result = 31 * result + Arrays.hashCode(dArr);
-            result = 31 * result + Arrays.hashCode(bdArr);
-            result = 31 * result + Arrays.hashCode(strArr);
-            result = 31 * result + Arrays.hashCode(uuidArr);
-            result = 31 * result + Arrays.hashCode(dateArr);
-            result = 31 * result + Arrays.hashCode(tsArr);
-            result = 31 * result + Arrays.hashCode(timeArr);
-            result = 31 * result + Arrays.hashCode(enumArr);
-            result = 31 * result + Arrays.hashCode(objArr);
-            return result;
+            return 0;
         }
 
         /** {@inheritDoc} */
@@ -166,7 +146,7 @@ public class VarintArraysSizeCompatibilityTest extends IgniteCompatibilityAbstra
     }
 
     /** */
-    private static class PostConfigurationClosure implements IgniteInClosure<IgniteConfiguration> {
+    private static class CompatibilityConfigurationClosure implements IgniteInClosure<IgniteConfiguration> {
         /** {@inheritDoc} */
         @Override public void apply(IgniteConfiguration cfg) {
             cfg.setLocalHost("127.0.0.1");
