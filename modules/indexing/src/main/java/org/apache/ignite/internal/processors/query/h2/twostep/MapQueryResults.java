@@ -122,6 +122,7 @@ class MapQueryResults {
         cancelled = true;
 
         for (int i = 0; i < results.length(); i++) {
+            // TODO: IGNITE-5991: Correct thread.
             MapQueryResult res = results.get(i);
 
             if (res != null) {

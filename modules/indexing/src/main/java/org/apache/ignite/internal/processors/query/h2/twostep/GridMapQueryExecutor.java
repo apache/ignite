@@ -52,7 +52,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservabl
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
-import org.apache.ignite.internal.processors.cache.query.QueryTable;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode;
@@ -205,6 +204,7 @@ public class GridMapQueryExecutor {
      * @param node Node.
      * @param msg Message.
      */
+    // TODO: IGNITE-5991: Correct thread.
     private void onCancel(ClusterNode node, GridQueryCancelRequest msg) {
         long qryReqId = msg.queryRequestId();
 
@@ -517,6 +517,7 @@ public class GridMapQueryExecutor {
      * @param distributedJoinMode Query distributed join mode.
      * @param lazy Streaming flag.
      */
+    // TODO: IGNITE-5991: Correct thread.
     private void onQueryRequest0(
         ClusterNode node,
         long reqId,
@@ -606,8 +607,7 @@ public class GridMapQueryExecutor {
                     ResultSet rs = null;
 
                     // If we are not the target node for this replicated query, just ignore it.
-                    if (qry.node() == null ||
-                        (segmentId == 0 && qry.node().equals(ctx.localNodeId()))) {
+                    if (qry.node() == null || (segmentId == 0 && qry.node().equals(ctx.localNodeId()))) {
                         rs = h2.executeSqlQueryWithTimer(conn, qry.query(),
                             F.asList(qry.parameters(params)), true,
                             timeout,
@@ -740,6 +740,7 @@ public class GridMapQueryExecutor {
      * @param segmentId Index segment ID.
      * @param pageSize Page size.
      */
+    // TODO: IGNITE-5991: Correct thread.
     private void sendNextPage(MapNodeResults nodeRess, ClusterNode node, MapQueryResults qr, int qry, int segmentId,
         int pageSize) {
         MapQueryResult res = qr.result(qry);

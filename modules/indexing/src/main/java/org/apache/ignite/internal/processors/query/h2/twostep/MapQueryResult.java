@@ -121,10 +121,7 @@ class MapQueryResult implements AutoCloseable {
                 throw new IllegalStateException(e); // Must not happen.
             }
 
-            if (res instanceof LazyResult)
-                System.out.println("LAZY! LAZY! LAZY! LAZY! LAZY! LAZY! LAZY! LAZY! ");
-
-            rowCnt = (res instanceof LazyResult) ? 10_000 : res.getRowCount();
+            rowCnt = (res instanceof LazyResult) ? -1 : res.getRowCount();
             cols = res.getVisibleColumnCount();
         }
         else {
