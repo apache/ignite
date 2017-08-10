@@ -17,35 +17,42 @@
 
 package org.apache.ignite.internal.direct.stream.v2;
 
-import java.lang.reflect.Array;
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.BitSet;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.RandomAccess;
-import java.util.UUID;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.direct.stream.DirectByteBufferStream;
-import org.apache.ignite.internal.util.GridUnsafe;
-import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.*;
-import org.jetbrains.annotations.Nullable;
-import sun.nio.ch.DirectBuffer;
+ import org.apache.ignite.IgniteException;
+ import org.apache.ignite.internal.direct.stream.DirectByteBufferStream;
+ import org.apache.ignite.internal.util.GridUnsafe;
+ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+ import org.apache.ignite.internal.util.typedef.internal.S;
+ import org.apache.ignite.internal.util.typedef.internal.U;
+ import org.apache.ignite.lang.IgniteUuid;
+ import org.apache.ignite.plugin.extensions.communication.Message;
+ import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
+ import org.apache.ignite.plugin.extensions.communication.MessageFactory;
+ import org.apache.ignite.plugin.extensions.communication.MessageReader;
+ import org.apache.ignite.plugin.extensions.communication.MessageReaderConverter;
+ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+ import org.apache.ignite.plugin.extensions.communication.MessageWriterConverter;
+ import org.jetbrains.annotations.Nullable;
+ import sun.nio.ch.DirectBuffer;
 
-import static org.apache.ignite.internal.util.GridUnsafe.BIG_ENDIAN;
-import static org.apache.ignite.internal.util.GridUnsafe.BYTE_ARR_OFF;
-import static org.apache.ignite.internal.util.GridUnsafe.CHAR_ARR_OFF;
-import static org.apache.ignite.internal.util.GridUnsafe.DOUBLE_ARR_OFF;
-import static org.apache.ignite.internal.util.GridUnsafe.FLOAT_ARR_OFF;
-import static org.apache.ignite.internal.util.GridUnsafe.INT_ARR_OFF;
-import static org.apache.ignite.internal.util.GridUnsafe.LONG_ARR_OFF;
-import static org.apache.ignite.internal.util.GridUnsafe.SHORT_ARR_OFF;
+ import java.lang.reflect.Array;
+ import java.nio.ByteBuffer;
+ import java.util.ArrayList;
+ import java.util.BitSet;
+ import java.util.Collection;
+ import java.util.Iterator;
+ import java.util.List;
+ import java.util.Map;
+ import java.util.RandomAccess;
+ import java.util.UUID;
+
+ import static org.apache.ignite.internal.util.GridUnsafe.BIG_ENDIAN;
+ import static org.apache.ignite.internal.util.GridUnsafe.BYTE_ARR_OFF;
+ import static org.apache.ignite.internal.util.GridUnsafe.CHAR_ARR_OFF;
+ import static org.apache.ignite.internal.util.GridUnsafe.DOUBLE_ARR_OFF;
+ import static org.apache.ignite.internal.util.GridUnsafe.FLOAT_ARR_OFF;
+ import static org.apache.ignite.internal.util.GridUnsafe.INT_ARR_OFF;
+ import static org.apache.ignite.internal.util.GridUnsafe.LONG_ARR_OFF;
+ import static org.apache.ignite.internal.util.GridUnsafe.SHORT_ARR_OFF;
 
 /**
  * Direct marshalling I/O stream (version 2).

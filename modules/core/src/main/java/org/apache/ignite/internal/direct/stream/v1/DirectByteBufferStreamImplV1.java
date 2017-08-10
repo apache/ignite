@@ -17,6 +17,22 @@
 
 package org.apache.ignite.internal.direct.stream.v1;
 
+import org.apache.ignite.internal.direct.stream.DirectByteBufferStream;
+import org.apache.ignite.internal.util.GridUnsafe;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.plugin.extensions.communication.MessageReaderConverter;
+import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.MessageWriterConverter;
+import org.jetbrains.annotations.Nullable;
+import sun.nio.ch.DirectBuffer;
+
 import java.lang.reflect.Array;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -26,15 +42,6 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.UUID;
-import org.apache.ignite.internal.direct.stream.DirectByteBufferStream;
-import org.apache.ignite.internal.util.GridUnsafe;
-import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.*;
-import org.jetbrains.annotations.Nullable;
-import sun.nio.ch.DirectBuffer;
 
 /**
  * Direct marshalling I/O stream (version 1).
@@ -539,7 +546,7 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public <T> void writeCollection(Collection<T> col, MessageCollectionItemType itemType,
-                                              MessageWriter writer, @Nullable MessageWriterConverter converter) {
+        MessageWriter writer, @Nullable MessageWriterConverter converter) {
         if (col != null) {
             if (it == null) {
                 writeInt(col.size());
