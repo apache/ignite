@@ -51,8 +51,9 @@ class GridMergeIndexesIterator extends GridCloseableIteratorAdapterEx<List<?>> {
      * Constructor.
      * @param idxs Indexes to iterate over.
      * @param clo Closure to run when this iterator is closed, or when all indexes have been traversed.
+     * @throws IgniteCheckedException if failed.
      */
-    GridMergeIndexesIterator(Iterable<GridMergeIndex> idxs, IgniteOutClosure<?> clo) {
+    GridMergeIndexesIterator(Iterable<GridMergeIndex> idxs, IgniteOutClosure<?> clo) throws IgniteCheckedException {
         this.idxs = idxs.iterator();
         this.clo = clo;
 
@@ -73,48 +74,47 @@ class GridMergeIndexesIterator extends GridCloseableIteratorAdapterEx<List<?>> {
         if (res == null)
             throw new NoSuchElementException();
 
-        next = null;
-
-        try {
-            goNext();
-        }
-        catch (Throwable e) {
-            doCleanup();
-
-            throw new IgniteCheckedException(e);
-        }
+        goNext();
 
         return res;
     }
 
     /**
      * Retrieve next row.
+     * @throws IgniteCheckedException if failed.
      */
-    private void goNext() {
+    private void goNext() throws IgniteCheckedException {
         next = null;
 
-        boolean gotNext = false;
+        try {
+            boolean gotNext = false;
 
-        while (cur == null || !(gotNext = cur.next())) {
-            if (idxs.hasNext())
-                cur = idxs.next().findInStream(null, null);
-            else {
-                // We're out of records, let's clean up.
-                doCleanup();
+            while (cur == null || !(gotNext = cur.next())) {
+                if (idxs.hasNext())
+                    cur = idxs.next().findInStream(null, null);
+                else {
+                    // We're out of records, let's clean up.
+                    doCleanup();
 
-                break;
+                    break;
+                }
+            }
+
+            if (gotNext) {
+                Row row = cur.get();
+
+                int cols = row.getColumnCount();
+
+                next = new ArrayList<>(cols);
+
+                for (int c = 0; c < cols; c++)
+                    next.add(row.getValue(c).getObject());
             }
         }
+        catch (Throwable e) {
+            doCleanup();
 
-        if (gotNext) {
-            Row row = cur.get();
-
-            int cols = row.getColumnCount();
-
-            next = new ArrayList<>(cols);
-
-            for (int c = 0; c < cols; c++)
-                next.add(row.getValue(c).getObject());
+            throw new IgniteCheckedException(e);
         }
     }
 
