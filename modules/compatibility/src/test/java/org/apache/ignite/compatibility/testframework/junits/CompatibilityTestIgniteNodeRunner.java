@@ -75,6 +75,7 @@ public class CompatibilityTestIgniteNodeRunner extends IgniteNodeRunner {
 
         Ignite ignite = Ignition.start(cfg);
 
+        // it needs to set private static field 'ignite' of the IgniteNodeRunner class via reflection
         GridTestUtils.setFieldValue(new IgniteNodeRunner(), "ignite", ignite);
     }
 
