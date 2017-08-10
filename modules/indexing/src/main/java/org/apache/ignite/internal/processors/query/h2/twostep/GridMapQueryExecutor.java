@@ -58,6 +58,7 @@ import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RetryException;
+import org.apache.ignite.internal.processors.query.h2.twostep.lazy.MapQueryLazyIgniteThread;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryCancelRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryFailResponse;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageRequest;
@@ -159,6 +160,13 @@ public class GridMapQueryExecutor {
                 }
             }
         });
+    }
+
+    /**
+     * @return {@code True} if running in lazy mode.
+     */
+    private static boolean lazyThread() {
+        return Thread.currentThread() instanceof MapQueryLazyIgniteThread;
     }
 
     /**

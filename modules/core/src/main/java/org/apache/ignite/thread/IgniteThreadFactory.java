@@ -30,16 +30,16 @@ import org.jetbrains.annotations.NotNull;
  */
 public class IgniteThreadFactory implements ThreadFactory {
     /** Ignite instance name. */
-    private final String igniteInstanceName;
+    protected final String igniteInstanceName;
 
     /** Thread name. */
-    private final String threadName;
+    protected final String threadName;
 
     /** Index generator for threads. */
     private final AtomicInteger idxGen = new AtomicInteger();
 
     /** */
-    private final byte plc;
+    protected final byte plc;
 
     /**
      * Constructs new thread factory for given grid. All threads will belong
