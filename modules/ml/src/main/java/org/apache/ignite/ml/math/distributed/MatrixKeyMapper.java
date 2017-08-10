@@ -15,15 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.math;
+package org.apache.ignite.ml.math.distributed;
+
+import org.apache.ignite.ml.math.KeyMapper;
+import org.apache.ignite.ml.math.Matrix;
 
 /**
- * Maps {@link Vector} element index to cache key.
+ * Maps {@link Matrix} row and column index to cache key.
  */
-public interface VectorKeyMapper<K> extends KeyMapper<K> {
+public interface MatrixKeyMapper<K> extends KeyMapper<K> {
     /**
-     * @param i Vector element index.
-     * @return Cache key for given element index.
+     * @param x Matrix row index.
+     * @param y Matrix column index.
+     * @return Cache key for given row and column.
      */
-    public K apply(int i);
+    public K apply(int x, int y);
 }

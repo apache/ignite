@@ -15,16 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.math;
+package org.apache.ignite.ml.math.distributed;
+
+import java.util.Collection;
 
 /**
- * Maps {@link Matrix} row and column index to cache key.
+ * Extension for any distributed storage.
  */
-public interface MatrixKeyMapper<K> extends KeyMapper<K> {
+public interface DistributedStorage<K> {
     /**
-     * @param x Matrix row index.
-     * @param y Matrix column index.
-     * @return Cache key for given row and column.
+     * Build a keyset for this storage.
      */
-    public K apply(int x, int y);
+    public Collection<K> getAllKeys();
+
+    /**
+     * @return The name of cache used in this storage.
+     */
+    public String cacheName();
 }

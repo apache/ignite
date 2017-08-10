@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.math.impls.storage.matrix;
+package org.apache.ignite.ml.math.distributed;
 
 import java.io.Externalizable;
 import java.io.IOException;
@@ -34,6 +34,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.ml.math.impls.matrix.BlockEntry;
 import org.apache.ignite.ml.math.impls.matrix.SparseBlockDistributedMatrix;
+import org.apache.ignite.ml.math.impls.storage.matrix.BaseBlockMatrixKey;
 import org.jetbrains.annotations.Nullable;
 
 /**

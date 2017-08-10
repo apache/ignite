@@ -29,11 +29,11 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.StorageConstants;
 import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.distributed.BlockMatrixKey;
+import org.apache.ignite.ml.math.distributed.CacheUtils;
 import org.apache.ignite.ml.math.exceptions.CardinalityException;
 import org.apache.ignite.ml.math.exceptions.UnsupportedOperationException;
 import org.apache.ignite.ml.math.functions.IgniteDoubleFunction;
-import org.apache.ignite.ml.math.impls.CacheUtils;
-import org.apache.ignite.ml.math.impls.storage.matrix.BlockMatrixKey;
 import org.apache.ignite.ml.math.impls.storage.matrix.BlockMatrixStorage;
 
 /**
@@ -104,7 +104,7 @@ public class SparseBlockDistributedMatrix extends AbstractMatrix implements Stor
         String cacheName = BlockMatrixStorage.ML_BLOCK_CACHE_NAME;
         SparseBlockDistributedMatrix matrixC = new SparseBlockDistributedMatrix(matrixA.rowSize(), matrixB.columnSize());
 
-        CacheUtils.bcast(BlockMatrixStorage.ML_BLOCK_CACHE_NAME, () -> {
+        CacheUtils.bcast(cacheName, () -> {
             Ignite ignite = Ignition.localIgnite();
             Affinity affinity = ignite.affinity(cacheName);
 

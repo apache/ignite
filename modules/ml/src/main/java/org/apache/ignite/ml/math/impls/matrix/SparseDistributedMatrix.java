@@ -17,14 +17,22 @@
 
 package org.apache.ignite.ml.math.impls.matrix;
 
+import java.util.Collection;
+import java.util.Map;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.affinity.Affinity;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.StorageConstants;
 import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.distributed.BlockMatrixKey;
+import org.apache.ignite.ml.math.distributed.CacheUtils;
 import org.apache.ignite.ml.math.exceptions.CardinalityException;
 import org.apache.ignite.ml.math.exceptions.UnsupportedOperationException;
 import org.apache.ignite.ml.math.functions.IgniteDoubleFunction;
-import org.apache.ignite.ml.math.impls.CacheUtils;
 import org.apache.ignite.ml.math.impls.storage.matrix.SparseDistributedMatrixStorage;
 
 /**
@@ -97,28 +105,66 @@ public class SparseDistributedMatrix extends AbstractMatrix implements StorageCo
      * TODO: IGNITE-5114, tmp naive implementation, WIP.
      */
     @Override public Matrix times(Matrix mtx) {
-        int cols = columnSize();
+        if (mtx == null)
+            throw new IllegalArgumentException("The matrix should be not null.");
 
-        if (cols != mtx.rowSize())
-            throw new CardinalityException(cols, mtx.rowSize());
+        if (columnSize() != mtx.rowSize())
+            throw new CardinalityException(columnSize(), mtx.rowSize());
 
-        int rows = rowSize();
+        SparseDistributedMatrix matrixA = this;
+        SparseDistributedMatrix matrixB = (SparseDistributedMatrix)mtx;
 
-        int mtxCols = mtx.columnSize();
+        String cacheName = storage().cacheName();
+        SparseDistributedMatrix matrixC = new SparseDistributedMatrix(matrixA.rowSize(), matrixB.columnSize()
+            , getStorage().storageMode(), getStorage().isRandomAccess() ? RANDOM_ACCESS_MODE : SEQUENTIAL_ACCESS_MODE);
 
-        Matrix res = like(rows, mtxCols);
+        CacheUtils.bcast(cacheName, () -> {
+            Ignite ignite = Ignition.localIgnite();
+            Affinity affinity = ignite.affinity(cacheName);
 
-        for (int x = 0; x < rows; x++)
-            for (int y = 0; y < mtxCols; y++) {
-                double sum = 0.0;
+            IgniteCache<BlockMatrixKey, BlockEntry> cache = ignite.getOrCreateCache(cacheName);
+            ClusterNode locNode = ignite.cluster().localNode();
 
-                for (int k = 0; k < cols; k++)
-                    sum += getX(x, k) * mtx.getX(k, y);
+            SparseDistributedMatrixStorage storageC = matrixC.storage();
 
-                res.setX(x, y, sum);
-            }
+            Map<ClusterNode, Collection<BlockMatrixKey>> keysCToNodes = affinity.mapKeysToNodes(storageC.getAllKeys());
+            Collection<BlockMatrixKey> locKeys = keysCToNodes.get(locNode);
 
-        return res;
+            if (locKeys == null)
+                return;
+
+            // compute Cij locally on each node
+            // TODO: IGNITE:5114, exec in parallel
+            locKeys.forEach(key -> {
+                //TODO:WIP
+
+                cache.put(storageC.getCacheKey(newBlockId), blockC);
+            });
+        });
+
+
+//        int cols = columnSize();
+//
+//        if (cols != mtx.rowSize())
+//            throw new CardinalityException(cols, mtx.rowSize());
+//
+//        int rows = rowSize();
+//
+//        int mtxCols = mtx.columnSize();
+//
+//        Matrix res = like(rows, mtxCols);
+//
+//        for (int x = 0; x < rows; x++)
+//            for (int y = 0; y < mtxCols; y++) {
+//                double sum = 0.0;
+//
+//                for (int k = 0; k < cols; k++)
+//                    sum += getX(x, k) * mtx.getX(k, y);
+//
+//                res.setX(x, y, sum);
+//            }
+//
+//        return res;
     }
 
     /** {@inheritDoc} */

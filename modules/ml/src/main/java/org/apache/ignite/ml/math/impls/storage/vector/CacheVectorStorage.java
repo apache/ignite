@@ -22,9 +22,9 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.ml.math.ValueMapper;
-import org.apache.ignite.ml.math.VectorKeyMapper;
 import org.apache.ignite.ml.math.VectorStorage;
+import org.apache.ignite.ml.math.distributed.ValueMapper;
+import org.apache.ignite.ml.math.distributed.VectorKeyMapper;
 
 /**
  * Vector storage based on existing cache and index and value mapping functions.

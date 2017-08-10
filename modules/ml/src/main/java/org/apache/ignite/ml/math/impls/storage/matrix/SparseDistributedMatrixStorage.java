@@ -22,6 +22,7 @@ import it.unimi.dsi.fastutil.ints.Int2DoubleRBTreeMap;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -37,15 +38,16 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.ml.math.MatrixStorage;
 import org.apache.ignite.ml.math.StorageConstants;
-import org.apache.ignite.ml.math.impls.CacheUtils;
+import org.apache.ignite.ml.math.distributed.CacheUtils;
+import org.apache.ignite.ml.math.distributed.DistributedStorage;
 import org.apache.ignite.ml.math.impls.matrix.SparseDistributedMatrix;
 
 /**
  * {@link MatrixStorage} implementation for {@link SparseDistributedMatrix}.
  */
-public class SparseDistributedMatrixStorage extends CacheUtils implements MatrixStorage, StorageConstants {
+public class SparseDistributedMatrixStorage extends CacheUtils implements MatrixStorage, StorageConstants, DistributedStorage<IgniteBiTuple<Integer, IgniteUuid>> {
     /** Cache name used for all instances of {@link SparseDistributedMatrixStorage}. */
-    public static final String ML_CACHE_NAME = "ML_SPARSE_MATRICES_CONTAINER";
+    private static final String CACHE_NAME = "ML_SPARSE_MATRICES_CONTAINER";
     /** Amount of rows in the matrix. */
     private int rows;
     /** Amount of columns in the matrix. */
@@ -57,6 +59,7 @@ public class SparseDistributedMatrixStorage extends CacheUtils implements Matrix
     /** Matrix uuid. */
     private IgniteUuid uuid;
 
+    //TODO, IGNITE-5725, create separate key class.
     /** Actual distributed storage. */
     private IgniteCache<
         IgniteBiTuple<Integer, IgniteUuid> /* Row or column index with matrix uuid. */,
@@ -114,7 +117,7 @@ public class SparseDistributedMatrixStorage extends CacheUtils implements Matrix
         cfg.setCacheMode(CacheMode.PARTITIONED);
 
         // Random cache name.
-        cfg.setName(ML_CACHE_NAME);
+        cfg.setName(CACHE_NAME);
 
         return Ignition.localIgnite().getOrCreateCache(cfg);
     }
@@ -160,8 +163,8 @@ public class SparseDistributedMatrixStorage extends CacheUtils implements Matrix
      */
     private double matrixGet(int a, int b) {
         // Remote get from the primary node (where given row or column is stored locally).
-        return ignite().compute(groupForKey(ML_CACHE_NAME, a)).call(() -> {
-            IgniteCache<IgniteBiTuple<Integer, IgniteUuid>, Map<Integer, Double>> cache = Ignition.localIgnite().getOrCreateCache(ML_CACHE_NAME);
+        return ignite().compute(groupForKey(CACHE_NAME, a)).call(() -> {
+            IgniteCache<IgniteBiTuple<Integer, IgniteUuid>, Map<Integer, Double>> cache = Ignition.localIgnite().getOrCreateCache(CACHE_NAME);
 
             // Local get.
             Map<Integer, Double> map = cache.localPeek(getCacheKey(a), CachePeekMode.PRIMARY);
@@ -182,8 +185,8 @@ public class SparseDistributedMatrixStorage extends CacheUtils implements Matrix
      */
     private void matrixSet(int a, int b, double v) {
         // Remote set on the primary node (where given row or column is stored locally).
-        ignite().compute(groupForKey(ML_CACHE_NAME, a)).run(() -> {
-            IgniteCache<IgniteBiTuple<Integer, IgniteUuid>, Map<Integer, Double>> cache = Ignition.localIgnite().getOrCreateCache(ML_CACHE_NAME);
+        ignite().compute(groupForKey(CACHE_NAME, a)).run(() -> {
+            IgniteCache<IgniteBiTuple<Integer, IgniteUuid>, Map<Integer, Double>> cache = Ignition.localIgnite().getOrCreateCache(CACHE_NAME);
 
             // Local get.
             Map<Integer, Double> map = cache.localPeek(getCacheKey(a), CachePeekMode.PRIMARY);
@@ -308,5 +311,17 @@ public class SparseDistributedMatrixStorage extends CacheUtils implements Matrix
     /** */
     public IgniteUuid getUUID() {
         return uuid;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<IgniteBiTuple<Integer, IgniteUuid>> getAllKeys() {
+        int range = stoMode == ROW_STORAGE_MODE ? rows : cols;
+
+        return IntStream.range(0, range).mapToObj(i -> new IgniteBiTuple<>(i, getUUID())).collect(Collectors.toList());
+    }
+
+    /** {@inheritDoc} */
+    @Override public String cacheName() {
+        return CACHE_NAME;
     }
 }

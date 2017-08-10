@@ -37,7 +37,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.ml.math.MatrixStorage;
 import org.apache.ignite.ml.math.StorageConstants;
-import org.apache.ignite.ml.math.impls.CacheUtils;
+import org.apache.ignite.ml.math.distributed.BlockMatrixKey;
+import org.apache.ignite.ml.math.distributed.CacheUtils;
+import org.apache.ignite.ml.math.distributed.DistributedStorage;
 import org.apache.ignite.ml.math.impls.matrix.BlockEntry;
 import org.apache.ignite.ml.math.impls.matrix.SparseBlockDistributedMatrix;
 
@@ -46,9 +48,9 @@ import static org.apache.ignite.ml.math.impls.matrix.BlockEntry.MAX_BLOCK_SIZE;
 /**
  * Storage for {@link SparseBlockDistributedMatrix}.
  */
-public class BlockMatrixStorage extends CacheUtils implements MatrixStorage, StorageConstants {
+public class BlockMatrixStorage extends CacheUtils implements MatrixStorage, StorageConstants, DistributedStorage<BlockMatrixKey> {
     /** Cache name used for all instances of {@link BlockMatrixStorage}. */
-    public static final String ML_BLOCK_CACHE_NAME = "ML_BLOCK_SPARSE_MATRICES_CONTAINER";
+    private static final String CACHE_NAME = "ML_BLOCK_SPARSE_MATRICES_CONTAINER";
     /** */
     private int blocksInCol;
     /** */
@@ -256,10 +258,8 @@ public class BlockMatrixStorage extends CacheUtils implements MatrixStorage, Sto
         return getColForBlock(locBlock);
     }
 
-    /**
-     * Build a keyset for this matrix storage.
-     */
-    public Collection<BlockMatrixKey> getAllKeys() {
+    /** {@inheritDoc} */
+    @Override public Collection<BlockMatrixKey> getAllKeys() {
         long maxBlockId = numberOfBlocks();
         Collection<BlockMatrixKey> keys = new LinkedList<>();
 
@@ -267,6 +267,11 @@ public class BlockMatrixStorage extends CacheUtils implements MatrixStorage, Sto
             keys.add(getCacheKey(id));
 
         return keys;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String cacheName() {
+        return CACHE_NAME;
     }
 
     /** */
@@ -348,8 +353,8 @@ public class BlockMatrixStorage extends CacheUtils implements MatrixStorage, Sto
     private void matrixSet(int a, int b, double v) {
         long id = getBlockId(a, b);
         // Remote set on the primary node (where given row or column is stored locally).
-        ignite().compute(groupForKey(ML_BLOCK_CACHE_NAME, id)).run(() -> {
-            IgniteCache<BlockMatrixKey, BlockEntry> cache = Ignition.localIgnite().getOrCreateCache(ML_BLOCK_CACHE_NAME);
+        ignite().compute(groupForKey(CACHE_NAME, id)).run(() -> {
+            IgniteCache<BlockMatrixKey, BlockEntry> cache = Ignition.localIgnite().getOrCreateCache(CACHE_NAME);
 
             BlockMatrixKey key = getCacheKey(getBlockId(a, b));
 
@@ -396,8 +401,8 @@ public class BlockMatrixStorage extends CacheUtils implements MatrixStorage, Sto
      */
     private double matrixGet(int a, int b) {
         // Remote get from the primary node (where given row or column is stored locally).
-        return ignite().compute(groupForKey(ML_BLOCK_CACHE_NAME, getBlockId(a, b))).call(() -> {
-            IgniteCache<BlockMatrixKey, BlockEntry> cache = Ignition.localIgnite().getOrCreateCache(ML_BLOCK_CACHE_NAME);
+        return ignite().compute(groupForKey(CACHE_NAME, getBlockId(a, b))).call(() -> {
+            IgniteCache<BlockMatrixKey, BlockEntry> cache = Ignition.localIgnite().getOrCreateCache(CACHE_NAME);
 
             BlockMatrixKey key = getCacheKey(getBlockId(a, b));
 
@@ -433,7 +438,7 @@ public class BlockMatrixStorage extends CacheUtils implements MatrixStorage, Sto
         cfg.setCacheMode(CacheMode.PARTITIONED);
 
         // Random cache name.
-        cfg.setName(ML_BLOCK_CACHE_NAME);
+        cfg.setName(CACHE_NAME);
 
         return Ignition.localIgnite().getOrCreateCache(cfg);
     }

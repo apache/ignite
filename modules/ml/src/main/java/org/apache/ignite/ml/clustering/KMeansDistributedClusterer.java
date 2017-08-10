@@ -29,18 +29,18 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.ml.math.DistanceMeasure;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.VectorUtils;
+import org.apache.ignite.ml.math.distributed.CacheUtils;
 import org.apache.ignite.ml.math.exceptions.ConvergenceException;
 import org.apache.ignite.ml.math.exceptions.MathIllegalArgumentException;
 import org.apache.ignite.ml.math.functions.Functions;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
-import org.apache.ignite.ml.math.impls.CacheUtils;
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.ml.math.impls.matrix.SparseDistributedMatrix;
 import org.apache.ignite.ml.math.impls.storage.matrix.SparseDistributedMatrixStorage;
 import org.apache.ignite.ml.math.util.MapUtil;
 import org.apache.ignite.ml.math.util.MatrixUtil;
 
-import static org.apache.ignite.ml.math.impls.CacheUtils.distributedFold;
+import static org.apache.ignite.ml.math.distributed.CacheUtils.distributedFold;
 import static org.apache.ignite.ml.math.util.MatrixUtil.localCopyOf;
 
 /**
