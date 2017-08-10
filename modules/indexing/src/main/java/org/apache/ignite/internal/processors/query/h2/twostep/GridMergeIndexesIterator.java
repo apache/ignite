@@ -105,10 +105,12 @@ class GridMergeIndexesIterator extends GridCloseableIteratorAdapterEx<List<?>> {
 
                 int cols = row.getColumnCount();
 
-                next = new ArrayList<>(cols);
+                List<Object> res = new ArrayList<>(cols);
 
                 for (int c = 0; c < cols; c++)
-                    next.add(row.getValue(c).getObject());
+                    res.add(row.getValue(c).getObject());
+
+                next = res;
             }
         }
         catch (Throwable e) {
