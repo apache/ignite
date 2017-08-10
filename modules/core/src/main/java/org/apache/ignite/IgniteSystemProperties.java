@@ -703,6 +703,14 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_ENABLE_FORCIBLE_NODE_KILL = "IGNITE_ENABLE_FORCIBLE_NODE_KILL";
 
     /**
+     * Tasks stealing will be started if tasks queue size per data-streamer thread exceeds this threshold.
+     * <p>
+     * Default value is {@code 4}.
+     */
+    public static final String IGNITE_DATA_STREAMING_EXECUTOR_SERVICE_TASKS_STEALING_THRESHOLD =
+            "IGNITE_DATA_STREAMING_EXECUTOR_SERVICE_TASKS_STEALING_THRESHOLD";
+
+    /**
      * Enforces singleton.
      */
     private IgniteSystemProperties() {
