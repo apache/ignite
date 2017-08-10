@@ -1354,7 +1354,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
     }
 
     /** {@inheritDoc} */
-    @Override public ResultSet getClientInfoProperties() throws SQLException {
+        @Override public ResultSet getClientInfoProperties() throws SQLException {
         return new JdbcThinResultSet(Collections.<List<Object>>emptyList(), Arrays.asList(
             new JdbcColumnMeta(null, null, "NAME", String.class),
             new JdbcColumnMeta(null, null, "MAX_LEN", Integer.class),

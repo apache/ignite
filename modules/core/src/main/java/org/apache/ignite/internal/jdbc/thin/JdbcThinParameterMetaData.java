@@ -43,42 +43,42 @@ public class JdbcThinParameterMetaData implements ParameterMetaData {
 
     /** {@inheritDoc} */
     @Override public int isNullable(int param) throws SQLException {
-        return meta.get(param -1).isNullable();
+        return meta.get(param - 1).isNullable();
     }
 
     /** {@inheritDoc} */
     @Override public boolean isSigned(int param) throws SQLException {
-        return meta.get(param -1).isSigned();
+        return meta.get(param - 1).isSigned();
     }
 
     /** {@inheritDoc} */
     @Override public int getPrecision(int param) throws SQLException {
-        return meta.get(param -1).precision();
+        return meta.get(param - 1).precision();
     }
 
     /** {@inheritDoc} */
     @Override public int getScale(int param) throws SQLException {
-        return meta.get(param -1).scale();
+        return meta.get(param - 1).scale();
     }
 
     /** {@inheritDoc} */
     @Override public int getParameterType(int param) throws SQLException {
-        return meta.get(param -1).type();
+        return meta.get(param - 1).type();
     }
 
     /** {@inheritDoc} */
     @Override public String getParameterTypeName(int param) throws SQLException {
-        return meta.get(param -1).typeName();
+        return meta.get(param - 1).typeName();
     }
 
     /** {@inheritDoc} */
     @Override public String getParameterClassName(int param) throws SQLException {
-        return meta.get(param -1).typeClass();
+        return meta.get(param - 1).typeClass();
     }
 
     /** {@inheritDoc} */
     @Override public int getParameterMode(int param) throws SQLException {
-        return meta.get(param -1).mode();
+        return meta.get(param - 1).mode();
     }
 
     /** {@inheritDoc} */
