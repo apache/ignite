@@ -975,30 +975,35 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         assert !cctx.isNear() : cctx.name();
 
         if (hasPendingEntries && pendingEntries != null) {
-            cctx.shared().database().checkpointReadLock();
+            GridCacheVersion obsoleteVer = null;
 
-            try {
-                GridCacheVersion obsoleteVer = null;
+            long now = U.currentTimeMillis();
 
-                long now = U.currentTimeMillis();
-
-                GridCursor<PendingRow> cur;
+            GridCursor<PendingRow> cur;
 
             if (grp.sharedGroup())
                 cur = pendingEntries.find(new PendingRow(cctx.cacheId()), new PendingRow(cctx.cacheId(), now, 0));
             else
                 cur = pendingEntries.find(null, new PendingRow(UNDEFINED_CACHE_ID, now, 0));
 
-                int cleared = 0;
+            if (!cur.next())
+                return false;
 
-                while (cur.next()) {
+            int cleared = 0;
+
+            cctx.shared().database().checkpointReadLock();
+
+            try {
+                do {
                     PendingRow row = cur.get();
 
                     if (amount != -1 && cleared > amount)
                         return true;
 
-                if (row.key.partition() == -1)
-                    row.key.partition(cctx.affinity().partition(row.key));assert row.key != null && row.link != 0 && row.expireTime != 0 : row;
+                    if (row.key.partition() == -1)
+                        row.key.partition(cctx.affinity().partition(row.key));
+
+                    assert row.key != null && row.link != 0 && row.expireTime != 0 : row;
 
                     if (pendingEntries.removex(row)) {
                         if (obsoleteVer == null)
@@ -1009,6 +1014,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
                     cleared++;
                 }
+                while (cur.next());
             }
             finally {
                 cctx.shared().database().checkpointReadUnlock();

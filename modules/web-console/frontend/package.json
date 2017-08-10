@@ -57,7 +57,7 @@
     "babel-polyfill": "6.23.0",
     "babel-preset-es2015": "6.24.1",
     "babel-preset-stage-1": "6.24.1",
-    "babel-runtime": "6.23.0",
+    "babel-runtime": "6.25.0",
     "bootstrap-sass": "3.3.7",
     "brace": "0.10.0",
     "copy-webpack-plugin": "4.0.1",

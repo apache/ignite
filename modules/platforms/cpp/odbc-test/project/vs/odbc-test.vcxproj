@@ -168,6 +168,7 @@
     <ClCompile Include="..\..\src\configuration_test.cpp" />
     <ClCompile Include="..\..\src\connection_info_test.cpp" />
     <ClCompile Include="..\..\src\cursor_test.cpp" />
+    <ClCompile Include="..\..\src\meta_queries_test.cpp" />
     <ClCompile Include="..\..\src\queries_test.cpp" />
     <ClCompile Include="..\..\src\parser_test.cpp" />
     <ClCompile Include="..\..\src\row_test.cpp" />
