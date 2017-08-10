@@ -39,7 +39,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.multijvm.IgniteNodeRunner;
 
 /**
- * Run Ignite node.
+ * Runs Ignite node.
  */
 public class CompatibilityTestIgniteNodeRunner extends IgniteNodeRunner {
     /** */
@@ -112,19 +112,19 @@ public class CompatibilityTestIgniteNodeRunner extends IgniteNodeRunner {
     /**
      * Reads closure from given file name and delete the file after.
      *
-     * @param closFileName Closure file name.
+     * @param fileName Closure file name.
      * @return IgniteInClosure for post-configuration.
      * @throws IOException In case of an error.
      * @see #storeToFile(IgniteInClosure, String)
      */
     @SuppressWarnings("unchecked")
     public static IgniteInClosure<IgniteConfiguration> readClosureFromFileAndDelete(
-        String closFileName) throws IOException {
-        try (BufferedReader closReader = Files.newBufferedReader(Paths.get(closFileName), StandardCharsets.UTF_8)) {
-            return (IgniteInClosure)new XStream().fromXML(closReader);
+        String fileName) throws IOException {
+        try (BufferedReader reader = Files.newBufferedReader(Paths.get(fileName), StandardCharsets.UTF_8)) {
+            return (IgniteInClosure)new XStream().fromXML(reader);
         }
         finally {
-            new File(closFileName).delete();
+            new File(fileName).delete();
         }
     }
 }
