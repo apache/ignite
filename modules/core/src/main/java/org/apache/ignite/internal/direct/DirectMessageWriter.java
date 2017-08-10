@@ -17,11 +17,6 @@
 
 package org.apache.ignite.internal.direct;
 
-import java.nio.ByteBuffer;
-import java.util.BitSet;
-import java.util.Collection;
-import java.util.Map;
-import java.util.UUID;
 import org.apache.ignite.internal.direct.state.DirectMessageState;
 import org.apache.ignite.internal.direct.state.DirectMessageStateItem;
 import org.apache.ignite.internal.direct.stream.DirectByteBufferStream;
@@ -36,6 +31,12 @@ import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemTy
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.plugin.extensions.communication.MessageWriterConverter;
 import org.jetbrains.annotations.Nullable;
+
+import java.nio.ByteBuffer;
+import java.util.BitSet;
+import java.util.Collection;
+import java.util.Map;
+import java.util.UUID;
 
 /**
  * Message writer implementation.
@@ -288,8 +289,8 @@ public class DirectMessageWriter implements MessageWriter {
     }
 
     /** {@inheritDoc} */
-    @Override public <T1, T2> boolean writeCollection(String name, Collection<T1> col,
-        MessageCollectionItemType itemType, MessageWriterConverter<T1, T2> itemConverter) {
+    @Override public <T> boolean writeCollection(String name, Collection<T> col, MessageCollectionItemType itemType,
+        @Nullable MessageWriterConverter itemConverter) {
         DirectByteBufferStream stream = state.item().stream;
 
         stream.writeCollection(col, itemType, this, itemConverter);

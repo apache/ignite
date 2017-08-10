@@ -17,12 +17,14 @@
 
 package org.apache.ignite.plugin.extensions.communication;
 
+import org.apache.ignite.lang.IgniteUuid;
+import org.jetbrains.annotations.Nullable;
+
 import java.nio.ByteBuffer;
 import java.util.BitSet;
 import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
-import org.apache.ignite.lang.IgniteUuid;
 
 /**
  * Communication message writer.
@@ -282,8 +284,8 @@ public interface MessageWriter {
      * @param itemConverter Item converter.
      * @return Whether value was fully written.
      */
-    public <T1, T2> boolean writeCollection(String name, Collection<T1> col, MessageCollectionItemType itemType,
-        MessageWriterConverter<T1, T2> itemConverter);
+    public <T> boolean writeCollection(String name, Collection<T> col, MessageCollectionItemType itemType,
+        @Nullable MessageWriterConverter itemConverter);
 
     /**
      * Writes map.
