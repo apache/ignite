@@ -324,15 +324,17 @@ public class GridAffinityAssignmentCache {
 
         int totalBackupCnt = 0;
 
-        for (int i = 0; i < nodesCnt; i++) {
-            for (List<ClusterNode> partitionByNodes : assignment) {
-                if (partitionByNodes.get(i) != null && partitionByNodes.get(i).isLocal())
-                    partitionsByLocalNode[i] += 1;
+        for (List<ClusterNode> partitionByNodes : assignment) {
+            if (partitionByNodes != null) {
+                for (int i = 0; i < nodesCnt; i++) {
+                    if (partitionByNodes.get(i) != null && partitionByNodes.get(i).isLocal())
+                        partitionsByLocalNode[i] += 1;
 
-                if (i == 0)
-                    totalPrimaryCnt++;
-                else
-                    totalBackupCnt++;
+                    if (i == 0)
+                        totalPrimaryCnt++;
+                    else
+                        totalBackupCnt++;
+                }
             }
         }
 
