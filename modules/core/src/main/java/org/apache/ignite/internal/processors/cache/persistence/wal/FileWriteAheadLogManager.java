@@ -63,7 +63,10 @@ import org.apache.ignite.internal.processors.cache.persistence.PersistenceMetric
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.record.HeaderRecord;
+import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordDataV1Serializer;
+import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordDataV2Serializer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer;
+import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV2Serializer;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.GridUnsafe;
@@ -261,7 +264,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 "write ahead log archive directory"
             );
 
-            serializer = new RecordV1Serializer(cctx);
+            serializer = new RecordV1Serializer(new RecordDataV1Serializer(cctx));
 
             GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)cctx.database();
 
@@ -1014,7 +1017,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         switch (ver) {
             case 1:
-                return new RecordV1Serializer(cctx);
+                return new RecordV1Serializer(new RecordDataV1Serializer(cctx));
+
+            case 2:
+                RecordDataV2Serializer dataV2Serializer = new RecordDataV2Serializer(new RecordDataV1Serializer(cctx));
+                return new RecordV2Serializer(dataV2Serializer);
 
             default:
                 throw new IgniteCheckedException("Failed to create a serializer with the given version " +
