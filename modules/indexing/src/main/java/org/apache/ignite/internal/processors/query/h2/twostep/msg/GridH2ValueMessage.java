@@ -32,12 +32,10 @@ public abstract class GridH2ValueMessage implements Message {
     /**
      * Gets H2 value.
      *
-     * @param ctx Kernal context.
      * @return Value.
      * @throws IgniteCheckedException If failed.
      */
-    // TODO: Try encapsulating array where it is really needed.
-    public abstract Value value(GridKernalContext ctx) throws IgniteCheckedException;
+    public abstract Value value() throws IgniteCheckedException;
 
     /** {@inheritDoc} */
     @Override public void onAckReceived() {

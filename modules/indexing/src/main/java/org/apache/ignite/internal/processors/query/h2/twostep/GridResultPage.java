@@ -31,6 +31,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.h2.value.Value;
 
 import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory.fillArray;
+import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory.fillArray2;
 
 /**
  * Page result.

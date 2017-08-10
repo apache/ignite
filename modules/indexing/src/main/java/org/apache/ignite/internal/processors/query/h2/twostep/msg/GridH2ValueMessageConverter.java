@@ -114,7 +114,7 @@ public class GridH2ValueMessageConverter implements MessageConverter<Value, Grid
      */
     public static Value toValue(GridH2ValueMessage msg, GridKernalContext ctx) {
         try {
-            return msg.value(ctx);
+            return msg.value();
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException("Failed to convert message to H2 value: " + msg, e);

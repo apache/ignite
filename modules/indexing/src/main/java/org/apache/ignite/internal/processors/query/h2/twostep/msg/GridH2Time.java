@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.query.h2.twostep.msg;
 
 import java.nio.ByteBuffer;
-import org.apache.ignite.internal.GridKernalContext;
+
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.h2.value.Value;
@@ -51,7 +51,7 @@ public class GridH2Time extends GridH2ValueMessage {
 
 
     /** {@inheritDoc} */
-    @Override public Value value(GridKernalContext ctx) {
+    @Override public Value value() {
         return ValueTime.fromNanos(nanos);
     }
 

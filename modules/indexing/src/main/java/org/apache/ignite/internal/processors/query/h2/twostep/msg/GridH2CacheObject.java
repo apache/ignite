@@ -31,14 +31,17 @@ import org.h2.value.Value;
  * H2 Cache object message.
  */
 public class GridH2CacheObject extends GridH2ValueMessage {
+    /** Kernal context. */
+    private GridKernalContext ctx;
+
     /** */
     private CacheObject obj;
 
     /**
-     *
+     * Constructor.
      */
-    public GridH2CacheObject() {
-        // No-op.
+    public GridH2CacheObject(GridKernalContext ctx) {
+        this.ctx = ctx;
     }
 
     /**
@@ -52,10 +55,10 @@ public class GridH2CacheObject extends GridH2ValueMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public Value value(GridKernalContext ctx) throws IgniteCheckedException {
-        CacheObjectValueContext valCtx = ctx.query().objectContext();
+    @Override public Value value() throws IgniteCheckedException {
+        CacheObjectValueContext valCtx = this.ctx.query().objectContext();
 
-        obj.finishUnmarshal(valCtx, ctx.cache().context().deploy().globalLoader());
+        obj.finishUnmarshal(valCtx, this.ctx.cache().context().deploy().globalLoader());
 
         return new GridH2ValueCacheObject(obj, valCtx);
     }

@@ -708,7 +708,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
                 continue;
 
             try {
-                vals[indexColumns[i].column.getColumnId()] = msgVals.get(i).value(ctx);
+                vals[indexColumns[i].column.getColumnId()] = msgVals.get(i).value();
             }
             catch (IgniteCheckedException e) {
                 throw new CacheException(e);
@@ -782,7 +782,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
 
         for (int i = 0; i < vals0.length; i++) {
             try {
-                vals0[i] = vals.get(i).value(ctx);
+                vals0[i] = vals.get(i).value();
             }
             catch (IgniteCheckedException e) {
                 throw new CacheException(e);

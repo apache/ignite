@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectCollection;
-import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -30,7 +29,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.h2.value.Value;
 import org.h2.value.ValueArray;
 
-import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory.fillArray;
+import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory.fillArray2;
 import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory.toMessage;
 
 /**
@@ -64,8 +63,8 @@ public class GridH2Array extends GridH2ValueMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public Value value(GridKernalContext ctx) throws IgniteCheckedException {
-        return ValueArray.get(fillArray(x.iterator(), new Value[x.size()], ctx));
+    @Override public Value value() throws IgniteCheckedException {
+        return ValueArray.get(fillArray2(x.iterator(), new Value[x.size()]));
     }
 
     /** {@inheritDoc} */

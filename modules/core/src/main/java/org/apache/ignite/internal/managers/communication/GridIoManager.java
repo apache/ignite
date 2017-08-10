@@ -324,6 +324,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         for (IgniteComponentType compType : IgniteComponentType.values()) {
             MessageFactory f = compType.messageFactory();
 
+            if (f instanceof MessageFactoryEx)
+                ((MessageFactoryEx)f).kernalContext(ctx);
+
             if (f != null)
                 compMsgs.add(f);
         }

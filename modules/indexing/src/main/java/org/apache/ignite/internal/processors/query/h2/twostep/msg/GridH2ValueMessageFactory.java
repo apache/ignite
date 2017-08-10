@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.h2.twostep.msg;
 import java.util.Iterator;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.managers.communication.MessageFactoryEx;
 import org.apache.ignite.internal.processors.cache.query.QueryTable;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueCacheObject;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -30,7 +31,15 @@ import org.jetbrains.annotations.Nullable;
 /**
  * H2 Value message factory.
  */
-public class GridH2ValueMessageFactory implements MessageFactory {
+public class GridH2ValueMessageFactory implements MessageFactoryEx {
+    /** Kernal context. */
+    private GridKernalContext ctx;
+
+    /** {@inheritDoc} */
+    @Override public void kernalContext(GridKernalContext ctx) {
+        this.ctx = ctx;
+    }
+
     /** {@inheritDoc} */
     @Nullable @Override public Message create(short type) {
         switch (type) {
@@ -89,7 +98,7 @@ public class GridH2ValueMessageFactory implements MessageFactory {
                 return new GridH2Geometry();
 
             case -22:
-                return new GridH2CacheObject();
+                return new GridH2CacheObject(ctx);
 
             case -30:
                 return new GridH2IndexRangeRequest();
@@ -119,16 +128,15 @@ public class GridH2ValueMessageFactory implements MessageFactory {
     /**
      * @param src Source iterator.
      * @param dst Array to fill with values.
-     * @param ctx Kernal context.
      * @return Filled array.
      * @throws IgniteCheckedException If failed.
      */
-    public static Value[] fillArray(Iterator<? extends Message> src, Value[] dst, GridKernalContext ctx)
+    public static Value[] fillArray2(Iterator<? extends Message> src, Value[] dst)
         throws IgniteCheckedException {
         for (int i = 0; i < dst.length; i++) {
             Message msg = src.next();
 
-            dst[i] = ((GridH2ValueMessage)msg).value(ctx);
+            dst[i] = ((GridH2ValueMessage)msg).value();
         }
 
         return dst;
