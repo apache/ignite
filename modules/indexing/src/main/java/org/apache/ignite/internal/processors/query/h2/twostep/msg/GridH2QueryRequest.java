@@ -190,6 +190,10 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
     }
 
     /**
+     * Get tables.
+     * <p>
+     * N.B.: Was used in AI 1.9 for snapshots. Unused at the moment, but should be kept for compatibility reasons.
+     *
      * @return Tables.
      */
     public Collection<QueryTable> tables() {

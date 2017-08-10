@@ -438,31 +438,51 @@ public class GridMapQueryExecutor {
 
             final int segment = i;
 
-            ctx.closure().callLocal(
-                new Callable<Void>() {
-                    @Override public Void call() throws Exception {
-                        onQueryRequest0(node,
-                            req.requestId(),
-                            segment,
-                            req.schemaName(),
-                            req.queries(),
-                            cacheIds,
-                            req.topologyVersion(),
-                            partsMap,
-                            parts,
-                            req.tables(),
-                            req.pageSize(),
-                            joinMode,
-                            enforceJoinOrder,
-                            false,
-                            req.timeout(),
-                            params,
-                            lazy);
+            if (lazy) {
+                onQueryRequest0(node,
+                    req.requestId(),
+                    0,
+                    req.schemaName(),
+                    req.queries(),
+                    cacheIds,
+                    req.topologyVersion(),
+                    partsMap,
+                    parts,
+                    req.pageSize(),
+                    joinMode,
+                    enforceJoinOrder,
+                    false, // Replicated is always false here (see condition above).
+                    req.timeout(),
+                    params,
+                    true); // Lazy = true.
+            }
+            else {
+                ctx.closure().callLocal(
+                    new Callable<Void>() {
+                        @Override
+                        public Void call() throws Exception {
+                            onQueryRequest0(node,
+                                req.requestId(),
+                                segment,
+                                req.schemaName(),
+                                req.queries(),
+                                cacheIds,
+                                req.topologyVersion(),
+                                partsMap,
+                                parts,
+                                req.pageSize(),
+                                joinMode,
+                                enforceJoinOrder,
+                                false,
+                                req.timeout(),
+                                params,
+                                false); // Lazy = false.
 
-                        return null;
+                            return null;
+                        }
                     }
-                }
-                , QUERY_POOL);
+                    , QUERY_POOL);
+            }
         }
 
         onQueryRequest0(node,
@@ -474,7 +494,6 @@ public class GridMapQueryExecutor {
             req.topologyVersion(),
             partsMap,
             parts,
-            req.tables(),
             req.pageSize(),
             joinMode,
             enforceJoinOrder,
@@ -494,10 +513,9 @@ public class GridMapQueryExecutor {
      * @param topVer Topology version.
      * @param partsMap Partitions map for unstable topology.
      * @param parts Explicit partitions for current node.
-     * @param tbls Tables.
      * @param pageSize Page size.
      * @param distributedJoinMode Query distributed join mode.
-     * @param streaming Streaming flag.
+     * @param lazy Streaming flag.
      */
     private void onQueryRequest0(
         ClusterNode node,
@@ -509,14 +527,13 @@ public class GridMapQueryExecutor {
         AffinityTopologyVersion topVer,
         Map<UUID, int[]> partsMap,
         int[] parts,
-        Collection<QueryTable> tbls,
         int pageSize,
         DistributedJoinMode distributedJoinMode,
         boolean enforceJoinOrder,
         boolean replicated,
         int timeout,
         Object[] params,
-        boolean streaming
+        boolean lazy
     ) {
         // Prepare to run queries.
         GridCacheContext<?, ?> mainCctx =
@@ -575,7 +592,7 @@ public class GridMapQueryExecutor {
                 }
 
                 // Run queries.
-                if (streaming) {
+                if (lazy) {
                     GridCacheSqlQuery qry = qrys.iterator().next();
 
                     h2.executeSqlStreaming(conn, qry.query(), F.asList(qry.parameters(params)));
