@@ -891,9 +891,14 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public <C extends Collection<?>> C readCollection(MessageCollectionItemType itemType,
         MessageReader reader) {
+        return readCollection(itemType, reader, null);
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override public <C extends Collection<?>> C readCollection(MessageCollectionItemType itemType,
+        MessageReader reader, @Nullable MessageReaderConverter converter) {
         if (readSize == -1) {
             int size = readInt();
 
@@ -912,6 +917,9 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
 
                 if (!lastFinished)
                     return null;
+
+                if (converter != null)
+                    item = converter.convert(item);
 
                 col.add(item);
 

@@ -304,6 +304,16 @@ public interface DirectByteBufferStream {
      */
     public <C extends Collection<?>> C readCollection(MessageCollectionItemType itemType, MessageReader reader);
 
+
+    /**
+     * @param itemType Item type.
+     * @param reader Reader.
+     * @param converter Optional converter.
+     * @return Collection.
+     */
+    public <C extends Collection<?>> C readCollection(MessageCollectionItemType itemType, MessageReader reader,
+        @Nullable MessageReaderConverter converter);
+
     /**
      * @param keyType Key type.
      * @param valType Value type.

@@ -30,10 +30,7 @@ import org.apache.ignite.internal.direct.stream.v2.DirectByteBufferStreamImplV2;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
-import org.apache.ignite.plugin.extensions.communication.MessageFactory;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -328,9 +325,15 @@ public class DirectMessageReader implements MessageReader {
 
     /** {@inheritDoc} */
     @Override public <C extends Collection<?>> C readCollection(String name, MessageCollectionItemType itemType) {
+        return readCollection(name, itemType, null);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <C extends Collection<?>> C readCollection(String name, MessageCollectionItemType itemType,
+        @Nullable MessageReaderConverter converter) {
         DirectByteBufferStream stream = state.item().stream;
 
-        C col = stream.readCollection(itemType, this);
+        C col = stream.readCollection(itemType, this, converter);
 
         lastRead = stream.lastFinished();
 

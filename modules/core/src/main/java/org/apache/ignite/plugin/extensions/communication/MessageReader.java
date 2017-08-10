@@ -24,6 +24,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.lang.IgniteUuid;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Communication message reader.
@@ -255,6 +256,17 @@ public interface MessageReader {
      * @return Collection.
      */
     public <C extends Collection<?>> C readCollection(String name, MessageCollectionItemType itemType);
+
+    /**
+     * Reads collection.
+     *
+     * @param name Field name.
+     * @param itemType Collection item type.
+     * @param converter Converter.
+     * @return Collection.
+     */
+    public <C extends Collection<?>> C readCollection(String name, MessageCollectionItemType itemType,
+        @Nullable MessageReaderConverter converter);
 
     /**
      * Reads map.
