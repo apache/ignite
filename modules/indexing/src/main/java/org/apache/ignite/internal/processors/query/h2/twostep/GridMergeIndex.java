@@ -280,7 +280,7 @@ public abstract class GridMergeIndex extends BaseIndex {
         if (nodeId == null)
             nodeId = F.first(sources);
 
-        addPage0(new GridResultPage(null, nodeId, null) {
+        addPage0(new GridResultPage(nodeId, null) {
             @Override public boolean isFail() {
                 return true;
             }
@@ -369,7 +369,7 @@ public abstract class GridMergeIndex extends BaseIndex {
     protected final GridResultPage createDummyLastPage(GridResultPage lastPage) {
         assert !lastPage.isDummyLast(); // It must be a real last page.
 
-        return new GridResultPage(ctx, lastPage.source(), null).setLast(true);
+        return new GridResultPage(lastPage.source(), null).setLast(true);
     }
 
     /**

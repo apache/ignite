@@ -53,12 +53,13 @@ public class GridResultPage {
     private boolean last;
 
     /**
-     * @param ctx Kernal context.
+     * Constructor.
+     *
      * @param src Source.
      * @param res Response.
      */
     @SuppressWarnings("unchecked")
-    public GridResultPage(final GridKernalContext ctx, UUID src, GridQueryNextPageResponse res) {
+    public GridResultPage(UUID src, GridQueryNextPageResponse res) {
         assert src != null;
 
         this.src = src;

@@ -288,7 +288,7 @@ public class GridReduceQueryExecutor {
         GridResultPage page;
 
         try {
-            page = new GridResultPage(ctx, node.id(), msg) {
+            page = new GridResultPage(node.id(), msg) {
                 @Override public void fetchNextPage() {
                     Object errState = r.state();
 
