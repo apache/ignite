@@ -111,6 +111,7 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuerySplitter;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridMapQueryExecutor;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridReduceQueryExecutor;
+import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageConverter;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
@@ -133,6 +134,7 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageConverter;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.h2.api.ErrorCode;
@@ -304,6 +306,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** */
     protected volatile GridKernalContext ctx;
+
+    /** Message converter. */
+    private volatile GridH2ValueMessageConverter msgConverter;
 
     /** Cache object value context. */
     protected CacheQueryObjectValueContext valCtx;
@@ -1725,6 +1730,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         return prep instanceof Insert;
     }
 
+    /** {@inheritDoc} */
+    @Override public MessageConverter messageConverter() {
+        return msgConverter;
+    }
+
     /**
      * Called periodically by {@link GridTimeoutProcessor} to clean up the {@link #stmtCache}.
      */
@@ -1875,6 +1885,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
         else {
             this.ctx = ctx;
+
+            this.msgConverter = GridH2ValueMessageConverter.forContext(ctx);
 
             schemas.put(QueryUtils.DFLT_SCHEMA, new H2Schema(QueryUtils.DFLT_SCHEMA));
 

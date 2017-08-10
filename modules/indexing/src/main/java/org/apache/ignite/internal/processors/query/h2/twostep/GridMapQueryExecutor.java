@@ -728,7 +728,8 @@ public class GridMapQueryExecutor {
         try {
             boolean loc = node.isLocal();
 
-            GridQueryNextPageResponse msg = new GridQueryNextPageResponse(qr.queryRequestId(), segmentId, qry, page,
+            GridQueryNextPageResponse msg = new GridQueryNextPageResponse(ctx, qr.queryRequestId(), segmentId, qry,
+                page,
                 page == 0 ? res.rowCount() : -1,
                 res.columnCount(),
                 loc ? null : toMessages(rows, new ArrayList<Message>(res.columnCount())),
@@ -755,7 +756,7 @@ public class GridMapQueryExecutor {
         try {
             boolean loc = node.isLocal();
 
-            GridQueryNextPageResponse msg = new GridQueryNextPageResponse(reqId, segmentId,
+            GridQueryNextPageResponse msg = new GridQueryNextPageResponse(ctx, reqId, segmentId,
             /*qry*/0, /*page*/0, /*allRows*/0, /*cols*/1,
                 loc ? null : Collections.<Message>emptyList(),
                 loc ? Collections.<Value[]>emptyList() : null);

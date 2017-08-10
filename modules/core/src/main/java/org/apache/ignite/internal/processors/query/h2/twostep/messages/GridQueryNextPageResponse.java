@@ -22,7 +22,9 @@ import java.nio.ByteBuffer;
 import java.util.Collection;
 import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteCodeGeneratingFail;
+import org.apache.ignite.internal.managers.communication.MessageEx;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -34,9 +36,13 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  * Next page response.
  */
 @IgniteCodeGeneratingFail
-public class GridQueryNextPageResponse implements Message {
+public class GridQueryNextPageResponse implements MessageEx {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** Kernal context. */
+    @GridDirectTransient
+    private transient GridKernalContext ctx;
 
     /** */
     private long qryReqId;
@@ -75,6 +81,9 @@ public class GridQueryNextPageResponse implements Message {
     }
 
     /**
+     * Constructor.
+     *
+     * @param ctx Kernal context.
      * @param qryReqId Query request ID.
      * @param segmentId Index segment ID.
      * @param qry Query.
@@ -84,11 +93,12 @@ public class GridQueryNextPageResponse implements Message {
      * @param vals Values for rows in this page added sequentially.
      * @param plainRows Not marshalled rows for local node.
      */
-    public GridQueryNextPageResponse(long qryReqId, int segmentId, int qry, int page, int allRows, int cols,
-        Collection<Message> vals, Collection<?> plainRows) {
+    public GridQueryNextPageResponse(GridKernalContext ctx, long qryReqId, int segmentId, int qry, int page,
+        int allRows, int cols, Collection<Message> vals, Collection<?> plainRows) {
         assert vals != null ^ plainRows != null;
         assert cols > 0 : cols;
 
+        this.ctx = ctx;
         this.qryReqId = qryReqId;
         this.segmentId = segmentId;
         this.qry = qry;
@@ -156,6 +166,11 @@ public class GridQueryNextPageResponse implements Message {
     }
 
     /** {@inheritDoc} */
+    @Override public void kernalContext(GridKernalContext ctx) {
+        this.ctx = ctx;
+    }
+
+    /** {@inheritDoc} */
     @Override public void onAckReceived() {
         // No-op.
     }
@@ -203,7 +218,8 @@ public class GridQueryNextPageResponse implements Message {
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeCollection("vals", vals, MessageCollectionItemType.MSG))
+                if (!writer.writeCollection("vals", vals, MessageCollectionItemType.MSG,
+                    ctx.query().messageConverter()))
                     return false;
 
                 writer.incrementState();
@@ -274,7 +290,7 @@ public class GridQueryNextPageResponse implements Message {
                 reader.incrementState();
 
             case 5:
-                vals = reader.readCollection("vals", MessageCollectionItemType.MSG);
+                vals = reader.readCollection("vals", MessageCollectionItemType.MSG, ctx.query().messageConverter());
 
                 if (!reader.isLastRead())
                     return false;

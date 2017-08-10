@@ -331,7 +331,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         if (!compMsgs.isEmpty())
             msgs = F.concat(msgs, compMsgs.toArray(new MessageFactory[compMsgs.size()]));
 
-        msgFactory = new GridIoMessageFactory(msgs);
+        msgFactory = new GridIoMessageFactory(ctx, msgs);
 
         if (log.isDebugEnabled())
             log.debug(startInfo());

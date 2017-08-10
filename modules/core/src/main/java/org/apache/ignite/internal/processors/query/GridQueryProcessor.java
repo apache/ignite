@@ -104,6 +104,7 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
+import org.apache.ignite.plugin.extensions.communication.MessageConverter;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.thread.IgniteThread;
@@ -2477,6 +2478,13 @@ private IgniteInternalFuture<Object> rebuildIndexesFromHash(@Nullable final Stri
      */
     public CacheQueryObjectValueContext objectContext() {
         return valCtx;
+    }
+
+    /**
+     * @return Message converter.
+     */
+    public MessageConverter messageConverter() {
+        return idx.messageConverter();
     }
 
     /**

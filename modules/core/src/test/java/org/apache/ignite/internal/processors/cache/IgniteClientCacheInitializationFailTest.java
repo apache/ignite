@@ -55,6 +55,7 @@ import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.plugin.extensions.communication.MessageConverter;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -361,6 +362,11 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
         /** {@inheritDoc} */
         @Override public boolean isInsertStatement(PreparedStatement nativeStmt) {
             return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public MessageConverter messageConverter() {
+            return null;
         }
     }
 }

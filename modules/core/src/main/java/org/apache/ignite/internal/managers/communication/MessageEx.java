@@ -15,25 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.plugin.extensions.communication;
+package org.apache.ignite.internal.managers.communication;
+
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
- * Message converter.
+ * Extended IO message interface.
  */
-public interface MessageConverter<ORIGINAL, REPLACEMENT> {
+public interface MessageEx extends Message {
     /**
-     * Convert object on write (from real object to object for the stream).
+     * Set kernal context.
      *
-     * @param obj Object.
-     * @return Converted object.
+     * @param ctx Kernal context.
      */
-    REPLACEMENT convertOnWrite(ORIGINAL obj);
-
-    /**
-     * Convert object on read (from object for the stream to real object).
-     *
-     * @param obj Object.
-     * @return Converted object.
-     */
-    ORIGINAL convertOnRead(REPLACEMENT obj);
+    void kernalContext(GridKernalContext ctx);
 }

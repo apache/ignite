@@ -24,6 +24,7 @@ import org.apache.ignite.internal.GridJobExecuteRequest;
 import org.apache.ignite.internal.GridJobExecuteResponse;
 import org.apache.ignite.internal.GridJobSiblingsRequest;
 import org.apache.ignite.internal.GridJobSiblingsResponse;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTaskCancelRequest;
 import org.apache.ignite.internal.GridTaskSessionRequest;
 import org.apache.ignite.internal.IgniteDiagnosticMessage;
@@ -162,13 +163,17 @@ public class GridIoMessageFactory implements MessageFactory {
     /** Custom messages registry. Used for test purposes. */
     private static final Map<Short, IgniteOutClosure<Message>> CUSTOM = new ConcurrentHashMap8<>();
 
+    /** Kernal context. */
+    private final GridKernalContext ctx;
+
     /** Extensions. */
     private final MessageFactory[] ext;
 
     /**
      * @param ext Extensions.
      */
-    public GridIoMessageFactory(MessageFactory[] ext) {
+    public GridIoMessageFactory(GridKernalContext ctx, MessageFactory[] ext) {
+        this.ctx = ctx;
         this.ext = ext;
     }
 
@@ -893,6 +898,9 @@ public class GridIoMessageFactory implements MessageFactory {
 
         if (msg == null)
             throw new IgniteException("Invalid message type: " + type);
+
+        if (msg instanceof MessageEx)
+            ((MessageEx)msg).kernalContext(ctx);
 
         return msg;
     }

@@ -39,6 +39,7 @@ import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.plugin.extensions.communication.MessageConverter;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.jetbrains.annotations.Nullable;
 
@@ -294,4 +295,9 @@ public interface GridQueryIndexing {
      * @return {@code True} if insert.
      */
     public boolean isInsertStatement(PreparedStatement nativeStmt);
+
+    /**
+     * @return Message converter.
+     */
+    public MessageConverter messageConverter();
 }
