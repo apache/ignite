@@ -328,7 +328,7 @@ public abstract class GridMergeIndex extends BaseIndex {
     private void markLastPage(GridResultPage page) {
         GridQueryNextPageResponse res = page.response();
 
-        if (res.allRows() != -2 && !res.last()) { // -2 means the last page.
+        if (!res.last()) {
             UUID nodeId = page.source();
 
             initLastPages(nodeId, res);
@@ -336,12 +336,12 @@ public abstract class GridMergeIndex extends BaseIndex {
             ConcurrentMap<SourceKey,Integer> lp = lastPages;
 
             if (lp == null)
-                return; // It was not initialized --> wait for -2.
+                return; // It was not initialized --> wait for last page flag.
 
             Integer lastPage = lp.get(new SourceKey(nodeId, res.segmentId()));
 
             if (lastPage == null)
-                return; // This node may use the new protocol --> wait for -2.
+                return; // This node may use the new protocol --> wait for last page flag.
 
             if (lastPage != res.page()) {
                 assert lastPage > res.page();
