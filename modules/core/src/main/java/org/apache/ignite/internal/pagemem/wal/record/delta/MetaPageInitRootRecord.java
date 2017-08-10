@@ -31,8 +31,8 @@ public class MetaPageInitRootRecord extends PageDeltaRecord {
     /**
      * @param pageId Meta page ID.
      */
-    public MetaPageInitRootRecord(int cacheId, long pageId, long rootId) {
-        super(cacheId, pageId);
+    public MetaPageInitRootRecord(int grpId, long pageId, long rootId) {
+        super(grpId, pageId);
 
         assert pageId != rootId;
 

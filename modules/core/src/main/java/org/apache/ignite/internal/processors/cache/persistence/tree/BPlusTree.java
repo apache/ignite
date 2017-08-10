@@ -377,7 +377,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             byte[] newRowBytes = io.store(pageAddr, idx, newRow, null, needWal);
 
             if (needWal)
-                wal.log(new ReplaceRecord<>(cacheId, pageId, io, newRowBytes, idx));
+                wal.log(new ReplaceRecord<>(grpId, pageId, io, newRowBytes, idx));
 
             return FOUND;
         }
@@ -2200,7 +2200,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         io.splitExistingPage(pageAddr, mid, fwdId);
 
         if (needWalDeltaRecord(pageId, page, null))
-            wal.log(new SplitExistingPageRecord(cacheId, pageId, mid, fwdId));
+            wal.log(new SplitExistingPageRecord(grpId, pageId, mid, fwdId));
 
         return res;
     }
@@ -2685,7 +2685,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             byte[] rowBytes = io.insert(pageAddr, idx, row, null, rightId, needWal);
 
             if (needWal)
-                wal.log(new InsertRecord<>(cacheId, pageId, io, idx, rowBytes, rightId));
+                wal.log(new InsertRecord<>(grpId, pageId, io, idx, rowBytes, rightId));
         }
 
         /**
@@ -2728,7 +2728,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                             inner(io).setLeft(fwdPageAddr, 0, rightId);
 
                             if (needWalDeltaRecord(fwdId, fwdPage, fwdPageWalPlc)) // Rare case, we can afford separate WAL record to avoid complexity.
-                                wal.log(new FixLeftmostChildRecord(cacheId, fwdId, rightId));
+                                wal.log(new FixLeftmostChildRecord(grpId, fwdId, rightId));
                         }
                     }
                     else // Insert into newly allocated forward page.
@@ -2744,7 +2744,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                         io.setCount(pageAddr, cnt - 1);
 
                         if (needWalDeltaRecord(pageId, page, null)) // Rare case, we can afford separate WAL record to avoid complexity.
-                            wal.log(new FixCountRecord(cacheId, pageId, cnt - 1));
+                            wal.log(new FixCountRecord(grpId, pageId, cnt - 1));
                     }
 
                     if (!hadFwd && lvl == getRootLevel()) { // We are splitting root.
@@ -2775,7 +2775,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                                     needWal);
 
                                 if (needWal)
-                                    wal.log(new NewRootInitRecord<>(cacheId, newRootId, newRootId,
+                                    wal.log(new NewRootInitRecord<>(grpId, newRootId, newRootId,
                                         inner(io), pageId, moveUpRowBytes, fwdId));
                             }
                             finally {
@@ -3656,7 +3656,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             io.remove(pageAddr, idx, cnt);
 
             if (needWalDeltaRecord(pageId, page, walPlc))
-                wal.log(new RemoveRecord(cacheId, pageId, idx, cnt));
+                wal.log(new RemoveRecord(grpId, pageId, idx, cnt));
         }
 
         /**
@@ -3909,7 +3909,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             leaf.io.setRemoveId(leaf.buf, rmvId);
 
             if (needWalDeltaRecord(leaf.pageId, leaf.page, leaf.walPlc))
-                wal.log(new FixRemoveId(cacheId, leaf.pageId, rmvId));
+                wal.log(new FixRemoveId(grpId, leaf.pageId, rmvId));
         }
 
         /**

@@ -44,11 +44,6 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
     public void onContinuousProcessorStarted(GridKernalContext ctx) throws IgniteCheckedException;
 
     /**
-     * @throws IgniteCheckedException If failed.
-     */
-    public void onUtilityCacheStarted() throws IgniteCheckedException;
-
-    /**
      * @param typeName Type name.
      * @return Type ID.
      */

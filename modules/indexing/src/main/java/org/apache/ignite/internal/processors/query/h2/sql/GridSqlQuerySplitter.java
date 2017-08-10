@@ -2318,14 +2318,15 @@ public class GridSqlQuerySplitter {
             GridSqlConst constant = (GridSqlConst)right;
 
             return new CacheQueryPartitionInfo(ctx.affinity().partition(tbl.cacheName(),
-                constant.value().getObject()), null, -1);
+                constant.value().getObject()), null, null, -1, -1);
         }
 
         assert right instanceof GridSqlParameter;
 
         GridSqlParameter param = (GridSqlParameter) right;
 
-        return new CacheQueryPartitionInfo(-1, tbl.cacheName(), param.index());
+        return new CacheQueryPartitionInfo(-1, tbl.cacheName(), tbl.getName(),
+            column.column().getType(), param.index());
     }
 
     /**

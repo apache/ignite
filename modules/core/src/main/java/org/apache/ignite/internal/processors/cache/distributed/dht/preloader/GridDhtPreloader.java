@@ -179,22 +179,21 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public GridDhtPreloaderAssignments assign(GridDhtPartitionsExchangeFuture exchFut) {
+    @Override public GridDhtPreloaderAssignments assign(GridDhtPartitionExchangeId exchId, GridDhtPartitionsExchangeFuture exchFut) {
         // No assignments for disabled preloader.
         GridDhtPartitionTopology top = grp.topology();
 
-        if (!grp.rebalanceEnabled() || !grp.shared().kernalContext().state().active())
-            return new GridDhtPreloaderAssignments(exchFut, top.topologyVersion());
+        if (!grp.rebalanceEnabled())
+            return new GridDhtPreloaderAssignments(exchId, top.topologyVersion());
 
         int partCnt = grp.affinity().partitions();
 
-        assert exchFut.forcePreload() || exchFut.dummyReassign() ||
-            exchFut.exchangeId().topologyVersion().equals(top.topologyVersion()) :
-            "Topology version mismatch [exchId=" + exchFut.exchangeId() +
+        assert exchFut == null || exchFut.topologyVersion().equals(top.topologyVersion()) :
+            "Topology version mismatch [exchId=" + exchId +
                 ", grp=" + grp.name() +
                 ", topVer=" + top.topologyVersion() + ']';
 
-        GridDhtPreloaderAssignments assigns = new GridDhtPreloaderAssignments(exchFut, top.topologyVersion());
+        GridDhtPreloaderAssignments assigns = new GridDhtPreloaderAssignments(exchId, top.topologyVersion());
 
         AffinityTopologyVersion topVer = assigns.topologyVersion();
 
@@ -204,7 +203,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
             if (ctx.exchange().hasPendingExchange()) {
                 if (log.isDebugEnabled())
                     log.debug("Skipping assignments creation, exchange worker has pending assignments: " +
-                        exchFut.exchangeId());
+                        exchId);
 
                 assigns.cancelled(true);
 
@@ -220,7 +219,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
                 ClusterNode histSupplier = null;
 
-                if (ctx.database().persistenceEnabled()) {
+                if (ctx.database().persistenceEnabled() && exchFut != null) {
                     UUID nodeId = exchFut.partitionHistorySupplier(grp.groupId(), p);
 
                     if (nodeId != null)
@@ -243,7 +242,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                     if (msg == null) {
                         assigns.put(histSupplier, msg = new GridDhtPartitionDemandMessage(
                             top.updateSequence(),
-                            exchFut.exchangeId().topologyVersion(),
+                            exchId.topologyVersion(),
                             grp.groupId()));
                     }
 
@@ -292,14 +291,12 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                         top.own(part);
 
                         if (grp.eventRecordable(EVT_CACHE_REBALANCE_PART_DATA_LOST)) {
-                            DiscoveryEvent discoEvt = exchFut.discoveryEvent();
-
-                        grp.addRebalanceEvent(p,
-                            EVT_CACHE_REBALANCE_PART_DATA_LOST,
-                            discoEvt.eventNode(),
-                            discoEvt.type(),
-                            discoEvt.timestamp());
-                    }
+                            grp.addRebalanceEvent(p,
+                                EVT_CACHE_REBALANCE_PART_DATA_LOST,
+                                exchId.eventNode(),
+                                exchId.event(),
+                                exchId.eventTimestamp());
+                        }
 
                         if (log.isDebugEnabled())
                             log.debug("Owning partition as there are no other owners: " + part);
@@ -312,7 +309,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                     if (msg == null) {
                         assigns.put(n, msg = new GridDhtPartitionDemandMessage(
                             top.updateSequence(),
-                            exchFut.exchangeId().topologyVersion(),
+                            exchId.topologyVersion(),
                             grp.groupId()));
                     }
 

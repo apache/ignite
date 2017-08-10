@@ -340,7 +340,7 @@ const DFLT_CLUSTER = {
         walSegmentSize: 67108864,
         walHistorySize: 20,
         walFlushFrequency: 2000,
-        walFsyncDelay: 1,
+        walFsyncDelayNanos: 1000,
         walRecordIteratorBufferSize: 67108864,
         lockWaitTime: 10000,
         rateTimeInterval: 60000,

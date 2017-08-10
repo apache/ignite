@@ -128,7 +128,7 @@ public class GridManagerLocalMessageListenerSelfTest extends GridCommonAbstractT
 
         mgr.start();
 
-        mgr.onKernalStart();
+        mgr.onKernalStart(true);
 
         assertTrue(mgr.enabled());
     }
@@ -143,7 +143,7 @@ public class GridManagerLocalMessageListenerSelfTest extends GridCommonAbstractT
 
         assertTrue(mgr.enabled());
 
-        mgr.onKernalStart();
+        mgr.onKernalStart(true);
 
         mgr.onKernalStop(false);
 

@@ -22,6 +22,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
@@ -340,7 +341,7 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
                 AffinityTopologyVersion topVer = fut.topologyVersion();
 
                 if (!allowOverwrite && !topVer.equals(req.topologyVersion())) {
-                    Exception err = new IgniteCheckedException(
+                    Exception err = new ClusterTopologyCheckedException(
                         "DataStreamer will retry data transfer at stable topology " +
                             "[reqTop=" + req.topologyVersion() + ", topVer=" + topVer + ", node=remote]");
 

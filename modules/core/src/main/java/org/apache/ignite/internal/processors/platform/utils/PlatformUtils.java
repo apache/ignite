@@ -58,6 +58,7 @@ import org.apache.ignite.internal.processors.platform.memory.PlatformInputStream
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemoryUtils;
 import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
+import org.apache.ignite.internal.util.MutableSingletonList;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -941,7 +942,7 @@ public class PlatformUtils {
         for (Object obj : col)
             col0.add(unwrapBinary(obj));
 
-        return col0;
+        return (col0 instanceof MutableSingletonList) ? U.convertToSingletonList(col0) : col0;
     }
 
     /**

@@ -47,13 +47,10 @@ public abstract class IgniteChangeGlobalStateAbstractTest extends GridCommonAbst
     private static final String clientSuffix = "-client";
 
     /** Primary ip finder. */
-    protected final TcpDiscoveryIpFinder primaryIpFinder = new TcpDiscoveryVmIpFinder(true);
+    private final TcpDiscoveryIpFinder primaryIpFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** Back up ip finder. */
-    protected final TcpDiscoveryIpFinder backUpIpFinder = new TcpDiscoveryVmIpFinder(true);
-
-    /** Consistent id count. */
-    private int consistentIdCnt;
+    private final TcpDiscoveryIpFinder backUpIpFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** Nodes. */
     protected Map<String, Ignite> nodes = new ConcurrentHashMap<>();
@@ -91,28 +88,28 @@ public abstract class IgniteChangeGlobalStateAbstractTest extends GridCommonAbst
     }
 
     /**
-     *
+     * @return Number of server nodes in primary cluster.
      */
     protected int primaryNodes() {
         return 3;
     }
 
     /**
-     *
+     * @return Number of client nodes in primary cluster.
      */
     protected int primaryClientNodes() {
         return 3;
     }
 
     /**
-     *
+     * @return Number of server nodes in backup cluster.
      */
     protected int backUpNodes() {
         return 3;
     }
 
     /**
-     *
+     * @return Number of client nodes in backup cluster.
      */
     protected int backUpClientNodes() {
         return 3;
@@ -120,6 +117,7 @@ public abstract class IgniteChangeGlobalStateAbstractTest extends GridCommonAbst
 
     /**
      * @param idx idx.
+     * @return Primary cluster node.
      */
     protected Ignite primary(int idx) {
         return nodes.get("node" + idx + primarySuffix);
@@ -127,29 +125,33 @@ public abstract class IgniteChangeGlobalStateAbstractTest extends GridCommonAbst
 
     /**
      * @param idx idx.
+     * @return Primary cluster client node.
      */
-    protected Ignite primaryClient(int idx) {
+    Ignite primaryClient(int idx) {
         return nodes.get("node" + idx + primarySuffix + clientSuffix);
     }
 
     /**
      * @param idx idx.
+     * @return Backup cluster node.
      */
-    protected Ignite backUp(int idx) {
+    Ignite backUp(int idx) {
         return nodes.get("node" + idx + backUpSuffix);
     }
 
     /**
      * @param idx idx.
+     * @return Backup cluster client node.
      */
-    protected Ignite backUpClient(int idx) {
+    Ignite backUpClient(int idx) {
         return nodes.get("node" + idx + backUpSuffix + clientSuffix);
     }
 
     /**
      * @param cnt Count.
+     * @throws Exception If failed.
      */
-    protected void startPrimaryNodes(int cnt) throws Exception {
+    private void startPrimaryNodes(int cnt) throws Exception {
         for (int i = 0; i < cnt; i++)
             startPrimary(i);
 
@@ -159,8 +161,9 @@ public abstract class IgniteChangeGlobalStateAbstractTest extends GridCommonAbst
 
     /**
      * @param idx Index.
+     * @throws Exception If failed.
      */
-    protected void startPrimary(int idx) throws Exception {
+    private void startPrimary(int idx) throws Exception {
         String node = "node" + idx;
 
         String name = node + primarySuffix;
@@ -176,22 +179,26 @@ public abstract class IgniteChangeGlobalStateAbstractTest extends GridCommonAbst
 
     /**
      * @param cnt Count.
+     * @throws Exception If failed.
      */
-    protected void startBackUpNodes(int cnt) throws Exception {
+    private void startBackUpNodes(int cnt) throws Exception {
         for (int i = 0; i < cnt; i++)
             startBackUp(i);
     }
 
     /**
      * @param idx Index.
+     * @throws Exception If failed.
      */
-    protected void startBackUp(int idx) throws Exception {
+    void startBackUp(int idx) throws Exception {
         String node = "node" + idx;
 
         String name = node + backUpSuffix;
 
         IgniteConfiguration cfg = getConfiguration(name);
+
         cfg.setConsistentId(node);
+
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(backUpIpFinder);
 
         Ignite ig = startGrid(name, cfg);
@@ -201,16 +208,19 @@ public abstract class IgniteChangeGlobalStateAbstractTest extends GridCommonAbst
 
     /**
      * @param cnt Count.
+     * @throws Exception If failed.
      */
-    protected void startPrimaryClientNodes(int cnt) throws Exception {
+    void startPrimaryClientNodes(int cnt) throws Exception {
         for (int i = 0; i < cnt; i++) {
             String node = "node" + i;
 
             String name = node + primarySuffix + clientSuffix;
 
             IgniteConfiguration cfg = getConfiguration(name);
+
             cfg.setConsistentId(node);
             cfg.setClientMode(true);
+
             ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(primaryIpFinder);
 
             Ignite ig = startGrid(name, cfg);
@@ -221,8 +231,9 @@ public abstract class IgniteChangeGlobalStateAbstractTest extends GridCommonAbst
 
     /**
      * @param cnt Count.
+     * @throws Exception If failed.
      */
-    protected void startBackUpClientNodes(int cnt) throws Exception {
+    private void startBackUpClientNodes(int cnt) throws Exception {
         for (int i = 0; i < cnt; i++) {
             String node = "node" + i;
 
@@ -241,9 +252,9 @@ public abstract class IgniteChangeGlobalStateAbstractTest extends GridCommonAbst
     }
 
     /**
-     *
+     * @return All nodes from backup cluster.
      */
-    protected Iterable<Ignite> allBackUpNodes() {
+    Iterable<Ignite> allBackUpNodes() {
         List<Ignite> r = new ArrayList<>();
 
         for (String name : this.nodes.keySet())
@@ -254,11 +265,10 @@ public abstract class IgniteChangeGlobalStateAbstractTest extends GridCommonAbst
     }
 
     /**
-     *
+     * @param includeClient If {@code true} then allow to return client.
+     * @return Random node from backup topology.
      */
-    protected Ignite randomBackUp(boolean includeClient) {
-        int nodes = 0;
-
+    Ignite randomBackUp(boolean includeClient) {
         List<Ignite> igs = new ArrayList<>();
 
         for (String name : this.nodes.keySet())
@@ -281,7 +291,7 @@ public abstract class IgniteChangeGlobalStateAbstractTest extends GridCommonAbst
     /**
      * @param i Idx.
      */
-    protected void stopPrimary(int i) {
+    void stopPrimary(int i) {
         String name = "node" + i + primarySuffix;
 
         nodes.get(name).close();
@@ -292,7 +302,7 @@ public abstract class IgniteChangeGlobalStateAbstractTest extends GridCommonAbst
     /**
      *
      */
-    protected void stopAllPrimary() {
+    void stopAllPrimary() {
         stopAll(primarySuffix);
     }
 
@@ -357,10 +367,9 @@ public abstract class IgniteChangeGlobalStateAbstractTest extends GridCommonAbst
     }
 
     /**
-     *
+     * @return Test class name.
      */
     protected String testName() {
         return getClass().getSimpleName();
     }
-
 }

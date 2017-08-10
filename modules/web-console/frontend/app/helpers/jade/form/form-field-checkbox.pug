@@ -15,7 +15,7 @@
     limitations under the License.
 
 mixin form-field-checkbox(label, model, name, disabled, required, tip)
-    .checkbox
+    .checkbox(id=`{{ ${name} }}Field`)
         label(id=`{{ ${name} }}Label`)
             .input-tip
                 if block

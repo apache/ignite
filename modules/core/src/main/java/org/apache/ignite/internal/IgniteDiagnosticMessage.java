@@ -413,7 +413,9 @@ public class IgniteDiagnosticMessage implements Message {
             for (IgniteInternalTx tx : ctx.cache().context().tm().activeTransactions()) {
                 if (dhtVer.equals(tx.xidVersion()) || nearVer.equals(tx.nearXidVersion())) {
                     sb.append(U.nl())
-                        .append("    [ver=").append(tx.xidVersion())
+                        .append("    ")
+                        .append(tx.getClass().getSimpleName())
+                        .append(" [ver=").append(tx.xidVersion())
                         .append(", nearVer=").append(tx.nearXidVersion())
                         .append(", topVer=").append(tx.topologyVersion())
                         .append(", state=").append(tx.state())
@@ -455,6 +457,14 @@ public class IgniteDiagnosticMessage implements Message {
 
         sb.append("Partitions exchange info [readyVer=").append(exchMgr.readyAffinityVersion()).append(']').append(U.nl())
             .append("Last initialized exchange future: ").append(fut);
+    }
+
+    /**
+     * @param sb String builder.
+     * @param ctx Context.
+     */
+    static void dumpPendingCacheMessages(StringBuilder sb, GridKernalContext ctx) {
+        ctx.cache().context().io().dumpPendingMessages(sb);
     }
 
     /**

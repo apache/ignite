@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.h2;
 
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.h2.util.LocalDateTimeUtils;
 import org.h2.value.DataType;
 
 import java.math.BigDecimal;
@@ -141,6 +142,15 @@ public enum H2DatabaseType {
 
         if (DataType.isGeometryClass(cls))
             return GEOMETRY;
+
+        if (LocalDateTimeUtils.isJava8DateApiPresent()) {
+            if (LocalDateTimeUtils.isLocalDate(cls))
+                return DATE;
+            else if (LocalDateTimeUtils.isLocalTime(cls))
+                return TIME;
+            else if (LocalDateTimeUtils.isLocalDateTime(cls))
+                return TIMESTAMP;
+        }
 
         return cls.isArray() && !cls.getComponentType().isPrimitive() ? ARRAY : OTHER;
     }

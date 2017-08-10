@@ -698,7 +698,9 @@ public abstract class GridAbstractTest extends TestCase {
 
         if (cnt > 1) {
             startGridsMultiThreaded(1, cnt - 1);
-            checkTopology(cnt);
+
+            if (checkTopology())
+                checkTopology(cnt);
         }
 
         return ignite;
@@ -764,7 +766,8 @@ public abstract class GridAbstractTest extends TestCase {
                 Thread.sleep(1000);
         }
 
-        throw new Exception("Failed to wait for proper topology: " + cnt);
+        throw new Exception("Failed to wait for proper topology [expCnt=" + cnt +
+            ", actualTopology=" + grid(0).cluster().nodes() + ']');
     }
 
     /** */
@@ -2099,13 +2102,13 @@ public abstract class GridAbstractTest extends TestCase {
         for (Ignite g : G.allGrids()) {
             final GridKernalContext ctx = ((IgniteKernal)g).context();
 
-            if (ctx.isStopping())
+            if (ctx.isStopping() || !g.active())
                 continue;
 
             AffinityTopologyVersion topVer = ctx.discovery().topologyVersionEx();
             AffinityTopologyVersion exchVer = ctx.cache().context().exchange().readyAffinityVersion();
 
-            if (! topVer.equals(exchVer)) {
+            if (!topVer.equals(exchVer)) {
                 info("Topology version mismatch [node="  + g.name() +
                     ", exchVer=" + exchVer +
                     ", topVer=" + topVer + ']');

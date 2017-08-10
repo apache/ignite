@@ -27,7 +27,9 @@ import org.apache.ignite.internal.IgniteEx;
  *
  */
 public class IgniteStandByClientReconnectToNewClusterTest extends IgniteAbstractStandByClientReconnectTest {
-
+    /**
+     * @throws Exception If failed.
+     */
     public void testActiveClientReconnectToActiveCluster() throws Exception {
         CountDownLatch activateLatch = new CountDownLatch(1);
 
@@ -104,6 +106,9 @@ public class IgniteStandByClientReconnectToNewClusterTest extends IgniteAbstract
         checkAllCaches();
     }
 
+    /**
+     * @throws Exception If failed.
+     */
     public void testActiveClientReconnectToInActiveCluster() throws Exception {
         startNodes(null);
 
@@ -181,6 +186,9 @@ public class IgniteStandByClientReconnectToNewClusterTest extends IgniteAbstract
         checkAllCaches();
     }
 
+    /**
+     * @throws Exception If failed.
+     */
     public void testInActiveClientReconnectToActiveCluster() throws Exception {
         CountDownLatch activateLatch = new CountDownLatch(1);
 
@@ -236,6 +244,9 @@ public class IgniteStandByClientReconnectToNewClusterTest extends IgniteAbstract
         checkDescriptors(client, exp2);
     }
 
+    /**
+     * @throws Exception If failed.
+     */
     public void testInActiveClientReconnectToInActiveCluster() throws Exception {
         startNodes(null);
 

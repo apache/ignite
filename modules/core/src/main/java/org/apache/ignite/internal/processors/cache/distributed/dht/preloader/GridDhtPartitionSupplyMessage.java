@@ -56,8 +56,8 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
     private AffinityTopologyVersion topVer;
 
     /** Partitions that have been fully sent. */
-    @GridDirectCollection(int.class)
-    private Collection<Integer> last;
+    @GridDirectMap(keyType = int.class, valueType = long.class)
+    private Map<Integer, Long> last;
 
     /** Partitions which were not found. */
     @GridToStringInclude
@@ -128,19 +128,19 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
     /**
      * @return Flag to indicate last message for partition.
      */
-    Collection<Integer> last() {
-        return last == null ? Collections.<Integer>emptySet() : last;
+    Map<Integer, Long> last() {
+        return last == null ? Collections.<Integer, Long>emptyMap() : last;
     }
 
     /**
      * @param p Partition which was fully sent.
      */
-    void last(int p) {
+    void last(int p, long cntr) {
         if (last == null)
-            last = new HashSet<>();
+            last = new HashMap<>();
 
-        if (last.add(p)) {
-            msgSize += 4;
+        if (last.put(p, cntr) == null) {
+            msgSize += 12;
 
             // If partition is empty, we need to add it.
             if (!infos().containsKey(p)) {
@@ -304,7 +304,7 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
                 writer.incrementState();
 
             case 7:
-                if (!writer.writeCollection("last", last, MessageCollectionItemType.INT))
+                if (!writer.writeMap("last", last, MessageCollectionItemType.INT, MessageCollectionItemType.LONG))
                     return false;
 
                 writer.incrementState();
@@ -382,7 +382,7 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
                 reader.incrementState();
 
             case 7:
-                last = reader.readCollection("last", MessageCollectionItemType.INT);
+                last = reader.readMap("last", MessageCollectionItemType.INT, MessageCollectionItemType.LONG, false);
 
                 if (!reader.isLastRead())
                     return false;

@@ -28,6 +28,8 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteServices;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.MemoryConfiguration;
+import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.console.demo.service.DemoCachesLoadService;
 import org.apache.ignite.console.demo.service.DemoComputeLoadService;
 import org.apache.ignite.console.demo.service.DemoRandomCacheLoadService;
@@ -122,6 +124,16 @@ public class AgentClusterDemo {
         cfg.setCommunicationSpi(commSpi);
         cfg.setGridLogger(new Slf4jLogger(log));
         cfg.setMetricsLogFrequency(0);
+
+        MemoryConfiguration memCfg = new MemoryConfiguration();
+
+        MemoryPolicyConfiguration memPlc = new MemoryPolicyConfiguration();
+        memPlc.setName("demo");
+        memPlc.setMetricsEnabled(true);
+
+        memCfg.setMemoryPolicies(memPlc);
+
+        cfg.setMemoryConfiguration(memCfg);
 
         if (client)
             cfg.setClientMode(true);

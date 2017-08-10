@@ -179,7 +179,8 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
         qryEntity.addQueryField("id", Integer.class.getName(), null);
         qryEntity.addQueryField("name", String.class.getName(), null);
         qryEntity.setTableName("Type2");
-        qryEntity.setIndexes(Arrays.asList(new QueryIndex("id")));
+        qryEntity.setIndexes(Arrays.asList(new QueryIndex("id")
+            .setName("index~!@#$%^&*()_=-+;[]{}|?,.*`:nameWithNonLetterSymbols")));
 
         entityList.add(qryEntity);
 

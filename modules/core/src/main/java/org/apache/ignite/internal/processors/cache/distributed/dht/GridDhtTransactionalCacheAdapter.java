@@ -1338,7 +1338,12 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                 ", res=" + res + ']', e);
 
             if (tx != null)
-                tx.rollbackDhtLocalAsync();
+                try {
+                    tx.rollbackDhtLocalAsync();
+                }
+                catch (Throwable e1) {
+                    e.addSuppressed(e1);
+                }
 
             // Convert to closure exception as this method is only called form closures.
             throw new GridClosureException(e);
@@ -1700,7 +1705,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         GridCacheEntryEx nearEntry = near().peekEx(key);
 
         if (nearEntry != null)
-            nearEntry.invalidate(null, ver);
+            nearEntry.invalidate(ver);
     }
 
     /**

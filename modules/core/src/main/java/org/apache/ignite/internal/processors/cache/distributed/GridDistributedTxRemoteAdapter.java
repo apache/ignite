@@ -29,6 +29,7 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.pagemem.wal.StorageException;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
@@ -61,6 +62,7 @@ import org.apache.ignite.internal.util.lang.GridTuple;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -716,14 +718,21 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                     }
                                 }
                                 catch (Throwable ex) {
+                                    boolean nodeStopping = X.hasCause(ex, NodeStoppingException.class);
+
                                     // In case of error, we still make the best effort to commit,
                                     // as there is no way to rollback at this point.
                                     err = new IgniteTxHeuristicCheckedException("Commit produced a runtime exception " +
                                         "(all transaction entries will be invalidated): " + CU.txString(this), ex);
 
-                                    U.error(log, "Commit failed.", err);
+                                    if (nodeStopping) {
+                                        U.warn(log, "Failed to commit transaction, node is stopping [tx=" + this +
+                                            ", err=" + ex + ']');
+                                    }
+                                    else
+                                        U.error(log, "Commit failed.", err);
 
-                                    uncommit();
+                                    uncommit(nodeStopping);
 
                                     state(UNKNOWN);
 

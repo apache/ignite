@@ -22,6 +22,8 @@ import org.apache.ignite.internal.processors.cache.IgnitePdsSingleNodeWithIndexi
 import org.apache.ignite.internal.processors.cache.IgnitePdsSingleNodeWithIndexingPutGetPersistenceTest;
 import org.apache.ignite.internal.processors.database.IgniteDbMultiNodeWithIndexingPutGetTest;
 import org.apache.ignite.internal.processors.database.IgniteDbSingleNodeWithIndexingPutGetTest;
+import org.apache.ignite.internal.processors.database.IgniteDbSingleNodeWithIndexingWalRestoreTest;
+import org.apache.ignite.internal.processors.database.IgnitePersistentStoreQueryWithMultipleClassesPerCacheTest;
 import org.apache.ignite.internal.processors.database.IgnitePersistentStoreSchemaLoadTest;
 
 /**
@@ -35,11 +37,13 @@ public class IgnitePdsWithIndexingTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Ignite Db Memory Leaks With Indexing Test Suite");
 
+        suite.addTestSuite(IgniteDbSingleNodeWithIndexingWalRestoreTest.class);
         suite.addTestSuite(IgniteDbSingleNodeWithIndexingPutGetTest.class);
         suite.addTestSuite(IgniteDbMultiNodeWithIndexingPutGetTest.class);
         suite.addTestSuite(IgnitePdsSingleNodeWithIndexingPutGetPersistenceTest.class);
         suite.addTestSuite(IgnitePdsSingleNodeWithIndexingAndGroupPutGetPersistenceSelfTest.class);
         suite.addTestSuite(IgnitePersistentStoreSchemaLoadTest.class);
+        suite.addTestSuite(IgnitePersistentStoreQueryWithMultipleClassesPerCacheTest.class);
 
         return suite;
     }

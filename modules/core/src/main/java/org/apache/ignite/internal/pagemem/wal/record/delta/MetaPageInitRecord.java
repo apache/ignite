@@ -36,14 +36,14 @@ public class MetaPageInitRecord extends InitNewPageRecord {
     private int ioType;
 
     /**
-     * @param cacheId Cache ID.
+     * @param grpId Cache group ID.
      * @param pageId Page ID.
      * @param ioType IO type.
      * @param treeRoot Tree root.
      * @param reuseListRoot Reuse list root.
      */
-    public MetaPageInitRecord(int cacheId, long pageId, int ioType, int ioVer, long treeRoot, long reuseListRoot) {
-        super(cacheId, pageId, ioType, ioVer, pageId);
+    public MetaPageInitRecord(int grpId, long pageId, int ioType, int ioVer, long treeRoot, long reuseListRoot) {
+        super(grpId, pageId, ioType, ioVer, pageId);
 
         assert ioType == PageIO.T_META || ioType == PageIO.T_PART_META;
 

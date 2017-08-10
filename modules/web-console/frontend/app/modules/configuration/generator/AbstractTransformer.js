@@ -304,8 +304,8 @@ export default class AbstractTransformer {
     }
 
     // Generate domain model for query group.
-    static domainModelQuery(domain) {
-        return this.toSection(this.generator.domainModelQuery(domain));
+    static domainModelQuery(domain, available) {
+        return this.toSection(this.generator.domainModelQuery(domain, available));
     }
 
     // Generate domain model for store group.

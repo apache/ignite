@@ -94,6 +94,12 @@ public class VisorNodeDataCollectorTaskResult extends VisorDataTransferObject {
     /** Whether pending exchange future exists from nodes. */
     private Map<UUID, Boolean> pendingExchanges = new HashMap<>();
 
+    /** All persistence metrics collected from nodes. */
+    private Map<UUID, VisorPersistenceMetrics> persistenceMetrics = new HashMap<>();
+
+    /** Exceptions caught during collecting persistence metrics from nodes. */
+    private Map<UUID, VisorExceptionWrapper> persistenceMetricsEx = new HashMap<>();
+
     /**
      * Default constructor.
      */
@@ -120,7 +126,9 @@ public class VisorNodeDataCollectorTaskResult extends VisorDataTransferObject {
             igfsEndpoints.isEmpty() &&
             igfssEx.isEmpty() &&
             readyTopVers.isEmpty() &&
-            pendingExchanges.isEmpty();
+            pendingExchanges.isEmpty() &&
+            persistenceMetrics.isEmpty() &&
+            persistenceMetricsEx.isEmpty();
     }
 
     /**
@@ -249,6 +257,20 @@ public class VisorNodeDataCollectorTaskResult extends VisorDataTransferObject {
         return pendingExchanges;
     }
 
+    /**
+     * All persistence metrics collected from nodes.
+     */
+    public Map<UUID, VisorPersistenceMetrics> getPersistenceMetrics() {
+        return persistenceMetrics;
+    }
+
+    /**
+     * @return Exceptions caught during collecting persistence metrics from nodes.
+     */
+    public Map<UUID, VisorExceptionWrapper> getPersistenceMetricsEx() {
+        return persistenceMetricsEx;
+    }
+
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         out.writeBoolean(active);
@@ -268,6 +290,8 @@ public class VisorNodeDataCollectorTaskResult extends VisorDataTransferObject {
         U.writeMap(out, igfssEx);
         U.writeMap(out, readyTopVers);
         U.writeMap(out, pendingExchanges);
+        U.writeMap(out, persistenceMetrics);
+        U.writeMap(out, persistenceMetricsEx);
     }
 
     /** {@inheritDoc} */
@@ -289,6 +313,8 @@ public class VisorNodeDataCollectorTaskResult extends VisorDataTransferObject {
         igfssEx = U.readMap(in);
         readyTopVers = U.readMap(in);
         pendingExchanges = U.readMap(in);
+        persistenceMetrics = U.readMap(in);
+        persistenceMetricsEx = U.readMap(in);
     }
 
     /** {@inheritDoc} */

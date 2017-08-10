@@ -46,7 +46,7 @@ public class FileWALPointer implements WALPointer, Comparable<FileWALPointer> {
     }
 
     /**
-     * @param idx File timestamp index.
+     * @param idx Absolute WAL segment file index .
      * @param fileOffset Offset in file, from the beginning.
      * @param len Record length.
      * @param forceFlush Force flush flag.
@@ -59,7 +59,7 @@ public class FileWALPointer implements WALPointer, Comparable<FileWALPointer> {
     }
 
     /**
-     * @return Timestamp index.
+     * @return Absolute WAL segment file index .
      */
     public long index() {
         return idx;

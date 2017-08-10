@@ -203,10 +203,10 @@ public class IgnitePdsEvictionTest extends GridCommonAbstractTest {
                     try {
                         FullPageId fullId = pageIds.get(i);
 
-                        long page = memory.acquirePage(fullId.cacheId(), fullId.pageId());
+                        long page = memory.acquirePage(fullId.groupId(), fullId.pageId());
 
                         try {
-                            final long pageAddr = memory.writeLock(fullId.cacheId(), fullId.pageId(), page);
+                            final long pageAddr = memory.writeLock(fullId.groupId(), fullId.pageId(), page);
 
                             try {
                                 PageIO.setPageId(pageAddr, fullId.pageId());
@@ -214,11 +214,11 @@ public class IgnitePdsEvictionTest extends GridCommonAbstractTest {
                                 PageUtils.putLong(pageAddr, PageIO.COMMON_HEADER_END, i * 2);
                             }
                             finally {
-                                memory.writeUnlock(fullId.cacheId(), fullId.pageId(), page, null, true);
+                                memory.writeUnlock(fullId.groupId(), fullId.pageId(), page, null, true);
                             }
                         }
                         finally {
-                            memory.releasePage(fullId.cacheId(), fullId.pageId(), page);
+                            memory.releasePage(fullId.groupId(), fullId.pageId(), page);
                         }
                     }
                     finally {
@@ -252,19 +252,19 @@ public class IgnitePdsEvictionTest extends GridCommonAbstractTest {
                     try {
                         final FullPageId fullId = pageIds.get(i);
 
-                        long page = memory.acquirePage(fullId.cacheId(), fullId.pageId());
+                        long page = memory.acquirePage(fullId.groupId(), fullId.pageId());
                         try {
-                            final long pageAddr = memory.readLock(fullId.cacheId(), fullId.pageId(), page);
+                            final long pageAddr = memory.readLock(fullId.groupId(), fullId.pageId(), page);
 
                             try {
                                 assertEquals(i * 2, PageUtils.getLong(pageAddr, PageIO.COMMON_HEADER_END));
                             }
                             finally {
-                                memory.readUnlock(fullId.cacheId(), fullId.pageId(), page);
+                                memory.readUnlock(fullId.groupId(), fullId.pageId(), page);
                             }
                         }
                         finally {
-                            memory.releasePage(fullId.cacheId(), fullId.pageId(), page);
+                            memory.releasePage(fullId.groupId(), fullId.pageId(), page);
                         }
                     }
                     finally {

@@ -157,6 +157,72 @@ namespace ignite
                 return impl.Get()->RunAsync<F>(action);
             }
 
+            /**
+             * Broadcasts provided ComputeFunc to all nodes in the cluster group.
+             *
+             * @tparam R Function return type. BinaryType should be specialized
+             *  for the type if it is not primitive.
+             * @tparam F Compute function type. Should implement ComputeFunc<R>
+             *  class.
+             * @param func Compute function to call.
+             * @return Vector containing computation results.
+             * @throw IgniteError in case of error.
+             */
+            template<typename R, typename F>
+            std::vector<R> Broadcast(const F& func)
+            {
+                return impl.Get()->BroadcastAsync<R, F>(func).GetValue();
+            }
+
+            /**
+             * Broadcasts provided ComputeFunc to all nodes in the cluster group.
+             *
+             * @tparam F Compute function type. Should implement ComputeFunc<R>
+             *  class.
+             * @param func Compute function to call.
+             * @throw IgniteError in case of error.
+             */
+            template<typename F>
+            void Broadcast(const F& func)
+            {
+                impl.Get()->BroadcastAsync<F, false>(func).GetValue();
+            }
+
+            /**
+             * Asyncronuously broadcasts provided ComputeFunc to all nodes in the
+             * cluster group.
+             *
+             * @tparam R Function return type. BinaryType should be specialized
+             *  for the type if it is not primitive.
+             * @tparam F Compute function type. Should implement ComputeFunc<R>
+             *  class.
+             * @param func Compute function to call.
+             * @return Future that can be used to access computation results once
+             *  they are ready.
+             * @throw IgniteError in case of error.
+             */
+            template<typename R, typename F>
+            Future< std::vector<R> > BroadcastAsync(const F& func)
+            {
+                return impl.Get()->BroadcastAsync<R, F>(func);
+            }
+
+            /**
+             * Asyncronuously broadcasts provided ComputeFunc to all nodes in the
+             * cluster group.
+             *
+             * @tparam F Compute function type. Should implement ComputeFunc<R>
+             *  class.
+             * @param func Compute function to call.
+             * @return Future that can be used to wait for action to complete.
+             * @throw IgniteError in case of error.
+             */
+            template<typename F>
+            Future<void> BroadcastAsync(const F& func)
+            {
+                return impl.Get()->BroadcastAsync<F, false>(func);
+            }
+
         private:
             /** Implementation. */
             common::concurrent::SharedPointer<impl::compute::ComputeImpl> impl;

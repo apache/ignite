@@ -65,7 +65,6 @@ public class CacheMatrix<K, V> extends AbstractMatrix {
 
     /**
      *
-     *
      */
     @SuppressWarnings({"unchecked"})
     private CacheMatrixStorage<K, V> storage() {
@@ -93,7 +92,7 @@ public class CacheMatrix<K, V> extends AbstractMatrix {
      * @param d Value to divide to.
      */
     @Override public Matrix divide(double d) {
-        return mapOverValues((Double v) -> v / d);
+        return mapOverValues(v -> v / d);
     }
 
     /**
@@ -102,7 +101,7 @@ public class CacheMatrix<K, V> extends AbstractMatrix {
      * @param x Value to add.
      */
     @Override public Matrix plus(double x) {
-        return mapOverValues((Double v) -> v + x);
+        return mapOverValues(v -> v + x);
     }
 
     /**
@@ -111,12 +110,12 @@ public class CacheMatrix<K, V> extends AbstractMatrix {
      * @param x Value to multiply to.
      */
     @Override public Matrix times(double x) {
-        return mapOverValues((Double v) -> v * x);
+        return mapOverValues(v -> v * x);
     }
 
     /** {@inheritDoc} */
     @Override public Matrix assign(double val) {
-        return mapOverValues((Double v) -> val);
+        return mapOverValues(v -> val);
     }
 
     /** {@inheritDoc} */

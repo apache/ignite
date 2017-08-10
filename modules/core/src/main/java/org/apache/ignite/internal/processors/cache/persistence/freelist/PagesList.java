@@ -47,6 +47,7 @@ import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
 import static java.lang.Boolean.FALSE;
@@ -66,7 +67,7 @@ public abstract class PagesList extends DataStructure {
     /** */
     private static final int MAX_STRIPES_PER_BUCKET =
         IgniteSystemProperties.getInteger("IGNITE_PAGES_LIST_STRIPES_PER_BUCKET",
-            Math.min(8, Runtime.getRuntime().availableProcessors() * 2));
+            Math.max(8, Runtime.getRuntime().availableProcessors()));
 
     /** */
     protected final AtomicLong[] bucketsSize;
@@ -333,7 +334,7 @@ public abstract class PagesList extends DataStructure {
                     io.resetCount(pageAddr);
 
                     if (needWalDeltaRecord(pageId, page, null))
-                        wal.log(new PageListMetaResetCountRecord(cacheId, pageId));
+                        wal.log(new PageListMetaResetCountRecord(grpId, pageId));
 
                     nextPageId = io.getNextMetaPageId(pageAddr);
                 }
@@ -507,6 +508,21 @@ public abstract class PagesList extends DataStructure {
      * @throws IgniteCheckedException If failed.
      */
     private Stripe getPageForPut(int bucket) throws IgniteCheckedException {
+        // Striped pool optimization.
+        int stripeIdx; IgniteThread igniteThread = IgniteThread.current();
+
+        if (igniteThread != null && (stripeIdx = igniteThread.stripe()) != -1) {
+            Stripe[] tails = getBucket(bucket);
+
+            while (tails == null || stripeIdx >= tails.length) {
+                addStripe(bucket, true);
+
+                tails = getBucket(bucket);
+            }
+
+            return tails[stripeIdx];
+        }
+
         Stripe[] tails = getBucket(bucket);
 
         if (tails == null)
@@ -607,12 +623,8 @@ public abstract class PagesList extends DataStructure {
             try {
                 long tailAddr = writeLockPage(tailId, tailPage, bucket, lockAttempt++); // Explicit check.
 
-                if (tailAddr == 0L) {
-                    if (isReuseBucket(bucket) && lockAttempt == TRY_LOCK_ATTEMPTS)
-                        addStripeForReuseBucket(bucket);
-
+                if (tailAddr == 0L)
                     continue;
-                }
 
                 assert PageIO.getPageId(tailAddr) == tailId : "pageId = " + PageIO.getPageId(tailAddr) + ", tailId = " + tailId;
                 assert PageIO.getType(tailAddr) == PageIO.T_PAGE_LIST_NODE;
@@ -682,13 +694,13 @@ public abstract class PagesList extends DataStructure {
             incrementBucketSize(bucket);
 
             if (needWalDeltaRecord(pageId, page, null))
-                wal.log(new PagesListAddPageRecord(cacheId, pageId, dataId));
+                wal.log(new PagesListAddPageRecord(grpId, pageId, dataId));
 
             DataPageIO dataIO = DataPageIO.VERSIONS.forPage(dataAddr);
             dataIO.setFreeListPageId(dataAddr, pageId);
 
             if (needWalDeltaRecord(dataId, dataPage, null))
-                wal.log(new DataPageSetFreeListPageRecord(cacheId, dataId, pageId));
+                wal.log(new DataPageSetFreeListPageRecord(grpId, dataId, pageId));
         }
 
         return true;
@@ -728,11 +740,11 @@ public abstract class PagesList extends DataStructure {
             setupNextPage(io, pageId, pageAddr, newDataId, dataAddr);
 
             if (needWalDeltaRecord(pageId, page, null))
-                wal.log(new PagesListSetNextRecord(cacheId, pageId, newDataId));
+                wal.log(new PagesListSetNextRecord(grpId, pageId, newDataId));
 
             if (needWalDeltaRecord(dataId, data, null))
                 wal.log(new PagesListInitNewPageRecord(
-                    cacheId,
+                    grpId,
                     dataId,
                     io.getType(),
                     io.getVersion(),
@@ -761,13 +773,13 @@ public abstract class PagesList extends DataStructure {
                     setupNextPage(io, pageId, pageAddr, nextId, nextPageAddr);
 
                     if (needWalDeltaRecord(pageId, page, null))
-                        wal.log(new PagesListSetNextRecord(cacheId, pageId, nextId));
+                        wal.log(new PagesListSetNextRecord(grpId, pageId, nextId));
 
                     int idx = io.addPage(nextPageAddr, dataId, pageSize());
 
                     if (needWalDeltaRecord(nextId, nextPage, nextWalPlc))
                         wal.log(new PagesListInitNewPageRecord(
-                            cacheId,
+                            grpId,
                             nextId,
                             io.getType(),
                             io.getVersion(),
@@ -781,7 +793,7 @@ public abstract class PagesList extends DataStructure {
                     dataIO.setFreeListPageId(dataAddr, nextId);
 
                     if (needWalDeltaRecord(dataId, data, null))
-                        wal.log(new DataPageSetFreeListPageRecord(cacheId, dataId, nextId));
+                        wal.log(new DataPageSetFreeListPageRecord(grpId, dataId, nextId));
 
                     incrementBucketSize(bucket);
 
@@ -853,12 +865,12 @@ public abstract class PagesList extends DataStructure {
                         setupNextPage(io, prevId, prevAddr, nextId, nextPageAddr);
 
                         if (needWalDeltaRecord(prevId, prevPage, walPlc))
-                            wal.log(new PagesListSetNextRecord(cacheId, prevId, nextId));
+                            wal.log(new PagesListSetNextRecord(grpId, prevId, nextId));
 
                         // Here we should never write full page, because it is known to be new.
                         if (needWalDeltaRecord(nextId, nextPage, FALSE))
                             wal.log(new PagesListInitNewPageRecord(
-                                cacheId,
+                                grpId,
                                 nextId,
                                 io.getType(),
                                 io.getVersion(),
@@ -887,7 +899,7 @@ public abstract class PagesList extends DataStructure {
                 else {
                     // TODO: use single WAL record for bag?
                     if (needWalDeltaRecord(prevId, prevPage, walPlc))
-                        wal.log(new PagesListAddPageRecord(cacheId, prevId, nextId));
+                        wal.log(new PagesListAddPageRecord(grpId, prevId, nextId));
 
                     incrementBucketSize(bucket);
                 }
@@ -912,13 +924,26 @@ public abstract class PagesList extends DataStructure {
      * @param bucket Bucket index.
      * @return Page for take.
      */
-    private Stripe getPageForTake(int bucket) {
+    private Stripe getPageForTake(int bucket) throws IgniteCheckedException {
         Stripe[] tails = getBucket(bucket);
 
         if (tails == null || bucketsSize[bucket].get() == 0)
             return null;
 
         int len = tails.length;
+
+        // Striped pool optimization.
+        int stripeIdx; IgniteThread igniteThread = IgniteThread.current();
+
+        if (igniteThread != null && (stripeIdx = igniteThread.stripe()) != -1) {
+            if (stripeIdx >= len)
+                return null;
+
+            Stripe stripe = tails[stripeIdx];
+
+            return stripe.empty ? null : stripe;
+        }
+
         int init = randomInt(len);
         int cur = init;
 
@@ -943,6 +968,12 @@ public abstract class PagesList extends DataStructure {
      */
     private long writeLockPage(long pageId, long page, int bucket, int lockAttempt)
         throws IgniteCheckedException {
+        // Striped pool optimization.
+        IgniteThread igniteThread = IgniteThread.current();
+
+        if (igniteThread != null && igniteThread.stripe() != -1)
+            return writeLock(pageId, page);
+
         long pageAddr = tryWriteLock(pageId, page);
 
         if (pageAddr != 0L)
@@ -952,27 +983,13 @@ public abstract class PagesList extends DataStructure {
             Stripe[] stripes = getBucket(bucket);
 
             if (stripes == null || stripes.length < MAX_STRIPES_PER_BUCKET) {
-                if (!isReuseBucket(bucket))
-                    addStripe(bucket, true);
+                addStripe(bucket, !isReuseBucket(bucket));
 
                 return 0L;
             }
         }
 
         return lockAttempt < TRY_LOCK_ATTEMPTS ? 0L : writeLock(pageId, page); // Must be explicitly checked further.
-    }
-
-    /**
-     * @param bucket Bucket.
-     * @throws IgniteCheckedException If failed.
-     */
-    private void addStripeForReuseBucket(int bucket) throws IgniteCheckedException {
-        assert isReuseBucket(bucket);
-
-        Stripe[] stripes = getBucket(bucket);
-
-        if (stripes == null || stripes.length < MAX_STRIPES_PER_BUCKET)
-            addStripe(bucket, false);
     }
 
     /**
@@ -994,12 +1011,8 @@ public abstract class PagesList extends DataStructure {
             try {
                 long tailAddr = writeLockPage(tailId, tailPage, bucket, lockAttempt++); // Explicit check.
 
-                if (tailAddr == 0L) {
-                    if (isReuseBucket(bucket) && lockAttempt == TRY_LOCK_ATTEMPTS)
-                        addStripeForReuseBucket(bucket);
-
+                if (tailAddr == 0L)
                     continue;
-                }
 
                 if (stripe.empty) {
                     // Another thread took the last page.
@@ -1035,7 +1048,7 @@ public abstract class PagesList extends DataStructure {
                         decrementBucketSize(bucket);
 
                         if (needWalDeltaRecord(tailId, tailPage, null))
-                            wal.log(new PagesListRemovePageRecord(cacheId, tailId, pageId));
+                            wal.log(new PagesListRemovePageRecord(grpId, tailId, pageId));
 
                         dirty = true;
 
@@ -1085,7 +1098,7 @@ public abstract class PagesList extends DataStructure {
                             initIo.initNewPage(tailAddr, dataPageId, pageSize());
 
                             if (needWalDeltaRecord(tailId, tailPage, null)) {
-                                wal.log(new InitNewPageRecord(cacheId, tailId, initIo.getType(),
+                                wal.log(new InitNewPageRecord(grpId, tailId, initIo.getType(),
                                     initIo.getVersion(), dataPageId));
                             }
                         }
@@ -1163,13 +1176,13 @@ public abstract class PagesList extends DataStructure {
                 decrementBucketSize(bucket);
 
                 if (needWalDeltaRecord(pageId, page, null))
-                    wal.log(new PagesListRemovePageRecord(cacheId, pageId, dataId));
+                    wal.log(new PagesListRemovePageRecord(grpId, pageId, dataId));
 
                 // Reset free list page ID.
                 dataIO.setFreeListPageId(dataAddr, 0L);
 
                 if (needWalDeltaRecord(dataId, dataPage, null))
-                    wal.log(new DataPageSetFreeListPageRecord(cacheId, dataId, 0L));
+                    wal.log(new DataPageSetFreeListPageRecord(grpId, dataId, 0L));
 
                 if (!io.isEmpty(pageAddr))
                     return true; // In optimistic case we still have something in the page and can leave it as is.
@@ -1343,7 +1356,7 @@ public abstract class PagesList extends DataStructure {
                 nextIO.setPreviousId(nextAddr, 0);
 
                 if (needWalDeltaRecord(nextId, nextPage, null))
-                    wal.log(new PagesListSetPreviousRecord(cacheId, nextId, 0L));
+                    wal.log(new PagesListSetPreviousRecord(grpId, nextId, 0L));
             }
             else // Do a fair merge: link previous and next to each other.
                 fairMerge(prevId, pageId, nextId, nextPage, nextAddr);
@@ -1384,12 +1397,12 @@ public abstract class PagesList extends DataStructure {
                 prevIO.setNextId(prevAddr, nextId);
 
                 if (needWalDeltaRecord(prevId, prevPage, null))
-                    wal.log(new PagesListSetNextRecord(cacheId, prevId, nextId));
+                    wal.log(new PagesListSetNextRecord(grpId, prevId, nextId));
 
                 nextIO.setPreviousId(nextAddr, prevId);
 
                 if (needWalDeltaRecord(nextId, nextPage, null))
-                    wal.log(new PagesListSetPreviousRecord(cacheId, nextId, prevId));
+                    wal.log(new PagesListSetPreviousRecord(grpId, nextId, prevId));
             }
             finally {
                 writeUnlock(prevId, prevPage, prevAddr, true);

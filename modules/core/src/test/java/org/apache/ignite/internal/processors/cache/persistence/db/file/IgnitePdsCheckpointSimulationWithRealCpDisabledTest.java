@@ -228,9 +228,9 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
 
             // Check getForInitialWrite methods.
             for (FullPageId fullId : initWrites) {
-                long page = mem.acquirePage(fullId.cacheId(), fullId.pageId());
+                long page = mem.acquirePage(fullId.groupId(), fullId.pageId());
                 try {
-                    long pageAddr = mem.writeLock(fullId.cacheId(), fullId.pageId(), page);
+                    long pageAddr = mem.writeLock(fullId.groupId(), fullId.pageId(), page);
 
                     try {
                         DataPageIO.VERSIONS.latest().initNewPage(pageAddr, fullId.pageId(), mem.pageSize());
@@ -239,11 +239,11 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
                             PageUtils.putByte(pageAddr, i, (byte)0xAB);
                     }
                     finally {
-                        mem.writeUnlock(fullId.cacheId(), fullId.pageId(), page, null, true);
+                        mem.writeUnlock(fullId.groupId(), fullId.pageId(), page, null, true);
                     }
                 }
                 finally {
-                    mem.releasePage(fullId.cacheId(), fullId.pageId(), page);
+                    mem.releasePage(fullId.groupId(), fullId.pageId(), page);
                 }
             }
 
@@ -527,26 +527,26 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
                 pageIds[i] = new FullPageId(mem.allocatePage(cacheId, 0, PageIdAllocator.FLAG_DATA), cacheId);
 
             for (FullPageId fullId : pageIds) {
-                long page = mem.acquirePage(fullId.cacheId(), fullId.pageId());
+                long page = mem.acquirePage(fullId.groupId(), fullId.pageId());
 
                 try {
-                    assertTrue(mem.isDirty(fullId.cacheId(), fullId.pageId(), page)); //page is dirty right after allocation
+                    assertTrue(mem.isDirty(fullId.groupId(), fullId.pageId(), page)); //page is dirty right after allocation
 
-                    long pageAddr = mem.writeLock(fullId.cacheId(), fullId.pageId(), page);
+                    long pageAddr = mem.writeLock(fullId.groupId(), fullId.pageId(), page);
 
                     PageIO.setPageId(pageAddr, fullId.pageId());
 
                     try {
-                        assertTrue(mem.isDirty(fullId.cacheId(), fullId.pageId(), page));
+                        assertTrue(mem.isDirty(fullId.groupId(), fullId.pageId(), page));
                     }
                     finally {
-                        mem.writeUnlock(fullId.cacheId(), fullId.pageId(),page, null,true);
+                        mem.writeUnlock(fullId.groupId(), fullId.pageId(),page, null,true);
                     }
 
-                    assertTrue(mem.isDirty(fullId.cacheId(), fullId.pageId(), page));
+                    assertTrue(mem.isDirty(fullId.groupId(), fullId.pageId(), page));
                 }
                 finally {
-                    mem.releasePage(fullId.cacheId(), fullId.pageId(), page);
+                    mem.releasePage(fullId.groupId(), fullId.pageId(), page);
                 }
             }
         }
@@ -564,24 +564,24 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
 
                 ByteBuffer buf = ByteBuffer.allocate(mem.pageSize());
 
-                long page = mem.acquirePage(fullId.cacheId(), fullId.pageId());
+                long page = mem.acquirePage(fullId.groupId(), fullId.pageId());
 
                 try {
-                    assertTrue(mem.isDirty(fullId.cacheId(), fullId.pageId(), page));
+                    assertTrue(mem.isDirty(fullId.groupId(), fullId.pageId(), page));
 
-                    long pageAddr = mem.writeLock(fullId.cacheId(), fullId.pageId(), page);
+                    long pageAddr = mem.writeLock(fullId.groupId(), fullId.pageId(), page);
 
                     try {
-                        assertFalse(mem.isDirty(fullId.cacheId(), fullId.pageId(), page));
+                        assertFalse(mem.isDirty(fullId.groupId(), fullId.pageId(), page));
 
                         for (int i = PageIO.COMMON_HEADER_END; i < mem.pageSize(); i++)
                             PageUtils.putByte(pageAddr, i, (byte)1);
                     }
                     finally {
-                        mem.writeUnlock(fullId.cacheId(), fullId.pageId(), page, null, true);
+                        mem.writeUnlock(fullId.groupId(), fullId.pageId(), page, null, true);
                     }
 
-                    assertTrue(mem.isDirty(fullId.cacheId(), fullId.pageId(), page));
+                    assertTrue(mem.isDirty(fullId.groupId(), fullId.pageId(), page));
 
                     buf.rewind();
 
@@ -593,7 +593,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
                         assertEquals((byte)0, buf.get());
                 }
                 finally {
-                    mem.releasePage(fullId.cacheId(), fullId.pageId(), page);
+                    mem.releasePage(fullId.groupId(), fullId.pageId(), page);
                 }
             }
         }
@@ -604,12 +604,12 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
         mem.finishCheckpoint();
 
         for (FullPageId fullId : pageIds) {
-            long page = mem.acquirePage(fullId.cacheId(), fullId.pageId());
+            long page = mem.acquirePage(fullId.groupId(), fullId.pageId());
             try {
-                assertTrue(mem.isDirty(fullId.cacheId(), fullId.pageId(), page));
+                assertTrue(mem.isDirty(fullId.groupId(), fullId.pageId(), page));
             }
             finally {
-                mem.releasePage(fullId.cacheId(), fullId.pageId(), page);
+                mem.releasePage(fullId.groupId(), fullId.pageId(), page);
             }
         }
     }
@@ -618,9 +618,9 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
      * @throws Exception if failed.
      */
     private void writePageData(FullPageId fullId, PageMemory mem) throws Exception {
-        long page = mem.acquirePage(fullId.cacheId(), fullId.pageId());
+        long page = mem.acquirePage(fullId.groupId(), fullId.pageId());
         try {
-            long pageAddr = mem.writeLock(fullId.cacheId(), fullId.pageId(), page);
+            long pageAddr = mem.writeLock(fullId.groupId(), fullId.pageId(), page);
 
             try {
                 DataPageIO.VERSIONS.latest().initNewPage(pageAddr, fullId.pageId(), mem.pageSize());
@@ -631,11 +631,11 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
                     PageUtils.putByte(pageAddr, i, (byte)rnd.nextInt(255));
             }
             finally {
-                mem.writeUnlock(fullId.cacheId(), fullId.pageId(), page, null, true);
+                mem.writeUnlock(fullId.groupId(), fullId.pageId(), page, null, true);
             }
         }
         finally {
-            mem.releasePage(fullId.cacheId(), fullId.pageId(), page);
+            mem.releasePage(fullId.groupId(), fullId.pageId(), page);
         }
     }
 
@@ -693,9 +693,9 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
 
             assertNotNull("Missing WAL record for a written page: " + fullId, walData);
 
-            long page = mem.acquirePage(fullId.cacheId(), fullId.pageId());
+            long page = mem.acquirePage(fullId.groupId(), fullId.pageId());
             try {
-                long pageAddr = mem.readLock(fullId.cacheId(), fullId.pageId(), page);
+                long pageAddr = mem.readLock(fullId.groupId(), fullId.pageId(), page);
 
                 try {
                     for (int i = PageIO.COMMON_HEADER_END; i < mem.pageSize(); i++) {
@@ -707,11 +707,11 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
                     }
                 }
                 finally {
-                    mem.readUnlock(fullId.cacheId(), fullId.pageId(), page);
+                    mem.readUnlock(fullId.groupId(), fullId.pageId(), page);
                 }
             }
             finally {
-                mem.releasePage(fullId.cacheId(), fullId.pageId(), page);
+                mem.releasePage(fullId.groupId(), fullId.pageId(), page);
             }
         }
     }
@@ -772,10 +772,10 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
                         ig.context().cache().context().database().checkpointReadLock();
 
                         try {
-                            long page = mem.acquirePage(fullId.cacheId(), fullId.pageId());
+                            long page = mem.acquirePage(fullId.groupId(), fullId.pageId());
 
                             try {
-                                long pageAddr = mem.writeLock(fullId.cacheId(), fullId.pageId(), page);
+                                long pageAddr = mem.writeLock(fullId.groupId(), fullId.pageId(), page);
 
                                 PageIO.setPageId(pageAddr, fullId.pageId());
 
@@ -813,11 +813,11 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
                                     resMap.put(fullId, state);
                                 }
                                 finally {
-                                    mem.writeUnlock(fullId.cacheId(), fullId.pageId(),page, null,true);
+                                    mem.writeUnlock(fullId.groupId(), fullId.pageId(),page, null,true);
                                 }
                             }
                             finally {
-                                mem.releasePage(fullId.cacheId(), fullId.pageId(),page);}
+                                mem.releasePage(fullId.groupId(), fullId.pageId(),page);}
                             }
                             finally {
                                 ig.context().cache().context().database().checkpointReadUnlock();
@@ -958,17 +958,17 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
 
         for (FullPageId fullId : pages) {
 
-            long page = mem.acquirePage(fullId.cacheId(), fullId.pageId());
+            long page = mem.acquirePage(fullId.groupId(), fullId.pageId());
 
             try {
                 assertFalse("Page has a temp heap copy after the last checkpoint: [cacheId=" +
-                    fullId.cacheId() + ", pageId=" + fullId.pageId() + "]", mem.hasTempCopy(page));
+                    fullId.groupId() + ", pageId=" + fullId.pageId() + "]", mem.hasTempCopy(page));
 
                 assertFalse("Page is dirty after the last checkpoint: [cacheId=" +
-                    fullId.cacheId() + ", pageId=" + fullId.pageId() + "]", mem.isDirty(fullId.cacheId(), fullId.pageId(), page));
+                    fullId.groupId() + ", pageId=" + fullId.pageId() + "]", mem.isDirty(fullId.groupId(), fullId.pageId(), page));
             }
             finally {
-                mem.releasePage(fullId.cacheId(), fullId.pageId(), page);
+                mem.releasePage(fullId.groupId(), fullId.pageId(), page);
             }
         }
 

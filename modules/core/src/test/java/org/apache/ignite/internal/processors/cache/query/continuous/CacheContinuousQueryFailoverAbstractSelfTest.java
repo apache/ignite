@@ -134,8 +134,6 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setLateAffinityAssignment(true);
-
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 

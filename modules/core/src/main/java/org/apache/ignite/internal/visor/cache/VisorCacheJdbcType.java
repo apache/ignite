@@ -64,7 +64,7 @@ public class VisorCacheJdbcType extends VisorDataTransferObject {
     public static List<VisorCacheJdbcType> list(Factory factory) {
         List<VisorCacheJdbcType> res = new ArrayList<>();
 
-        if (factory != null || factory instanceof CacheJdbcPojoStoreFactory) {
+        if (factory instanceof CacheJdbcPojoStoreFactory) {
             CacheJdbcPojoStoreFactory jdbcFactory = (CacheJdbcPojoStoreFactory) factory;
 
             JdbcType[] jdbcTypes = jdbcFactory.getTypes();

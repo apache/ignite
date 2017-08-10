@@ -28,6 +28,7 @@ import org.apache.ignite.internal.processors.cache.CacheDhtLocalPartitionAfterRe
 import org.apache.ignite.internal.processors.cache.CacheEnumOperationsSingleNodeTest;
 import org.apache.ignite.internal.processors.cache.CacheEnumOperationsTest;
 import org.apache.ignite.internal.processors.cache.CacheExchangeMessageDuplicatedStateTest;
+import org.apache.ignite.internal.processors.cache.CacheGroupLocalConfigurationSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheMemoryPolicyConfigurationTest;
 import org.apache.ignite.internal.processors.cache.CacheOptimisticTransactionsWithFilterSingleServerTest;
 import org.apache.ignite.internal.processors.cache.CacheOptimisticTransactionsWithFilterTest;
@@ -78,7 +79,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheDhtP
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheDhtPreloadStartStopSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheDhtPreloadUnloadSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCachePartitionedNearDisabledLockSelfTest;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridCachePartitionedPreloadEventsSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCachePartitionedTopologyChangeSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCachePartitionedUnloadEventsSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCacheClearDuringRebalanceTest;
@@ -233,7 +233,6 @@ public class IgniteCacheTestSuite2 extends TestSuite {
         suite.addTest(new TestSuite(GridCacheAtomicNearEvictionEventSelfTest.class));
 
         suite.addTest(new TestSuite(GridCachePartitionedTopologyChangeSelfTest.class));
-        suite.addTest(new TestSuite(GridCachePartitionedPreloadEventsSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedUnloadEventsSelfTest.class));
         suite.addTest(new TestSuite(GridCacheColocatedOptimisticTransactionSelfTest.class));
         suite.addTestSuite(GridCacheAtomicMessageCountSelfTest.class);
@@ -261,6 +260,7 @@ public class IgniteCacheTestSuite2 extends TestSuite {
         suite.addTest(new TestSuite(MemoryPolicyConfigValidationTest.class));
         suite.addTest(new TestSuite(MemoryPolicyInitializationTest.class));
         suite.addTest(new TestSuite(CacheMemoryPolicyConfigurationTest.class));
+        suite.addTest(new TestSuite(CacheGroupLocalConfigurationSelfTest.class));
         suite.addTest(new TestSuite(CacheEnumOperationsSingleNodeTest.class));
         suite.addTest(new TestSuite(CacheEnumOperationsTest.class));
         suite.addTest(new TestSuite(IgniteCacheIncrementTxTest.class));

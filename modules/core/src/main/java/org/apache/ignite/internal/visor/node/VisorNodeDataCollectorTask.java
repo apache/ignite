@@ -97,19 +97,19 @@ public class VisorNodeDataCollectorTask extends VisorMultiNodeTask<VisorNodeData
             taskRes.getEvents().addAll(jobRes.getEvents());
 
         if (jobRes.getEventsEx() != null)
-            taskRes.getEventsEx().put(nid, new VisorExceptionWrapper(jobRes.getEventsEx()));
+            taskRes.getEventsEx().put(nid, jobRes.getEventsEx());
 
         if (!jobRes.getMemoryMetrics().isEmpty())
             taskRes.getMemoryMetrics().put(nid, jobRes.getMemoryMetrics());
 
         if (jobRes.getMemoryMetricsEx() != null)
-            taskRes.getMemoryMetricsEx().put(nid, new VisorExceptionWrapper(jobRes.getMemoryMetricsEx()));
+            taskRes.getMemoryMetricsEx().put(nid, jobRes.getMemoryMetricsEx());
 
         if (!jobRes.getCaches().isEmpty())
             taskRes.getCaches().put(nid, jobRes.getCaches());
 
         if (jobRes.getCachesEx() != null)
-            taskRes.getCachesEx().put(nid, new VisorExceptionWrapper(jobRes.getCachesEx()));
+            taskRes.getCachesEx().put(nid, jobRes.getCachesEx());
 
         if (!jobRes.getIgfss().isEmpty())
             taskRes.getIgfss().put(nid, jobRes.getIgfss());
@@ -118,7 +118,13 @@ public class VisorNodeDataCollectorTask extends VisorMultiNodeTask<VisorNodeData
             taskRes.getIgfsEndpoints().put(nid, jobRes.getIgfsEndpoints());
 
         if (jobRes.getIgfssEx() != null)
-            taskRes.getIgfssEx().put(nid, new VisorExceptionWrapper(jobRes.getIgfssEx()));
+            taskRes.getIgfssEx().put(nid, jobRes.getIgfssEx());
+
+        if (jobRes.getPersistenceMetrics() != null)
+            taskRes.getPersistenceMetrics().put(nid, jobRes.getPersistenceMetrics());
+
+        if (jobRes.getPersistenceMetricsEx() != null)
+            taskRes.getPersistenceMetricsEx().put(nid, jobRes.getPersistenceMetricsEx());
 
         taskRes.getReadyAffinityVersions().put(nid, jobRes.getReadyAffinityVersion());
 

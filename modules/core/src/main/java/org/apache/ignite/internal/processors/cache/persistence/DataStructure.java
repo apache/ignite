@@ -45,7 +45,7 @@ public abstract class DataStructure implements PageLockListener {
     public static Random rnd;
 
     /** */
-    protected final int cacheId;
+    protected final int grpId;
 
     /** */
     protected final PageMemory pageMem;
@@ -57,7 +57,7 @@ public abstract class DataStructure implements PageLockListener {
     protected ReuseList reuseList;
 
     /**
-     * @param cacheId Cache ID.
+     * @param cacheId Cache group ID.
      * @param pageMem Page memory.
      * @param wal Write ahead log manager.
      */
@@ -68,16 +68,16 @@ public abstract class DataStructure implements PageLockListener {
     ) {
         assert pageMem != null;
 
-        this.cacheId = cacheId;
+        this.grpId = cacheId;
         this.pageMem = pageMem;
         this.wal = wal;
     }
 
     /**
-     * @return Cache ID.
+     * @return Cache group ID.
      */
-    public final int getCacheId() {
-        return cacheId;
+    public final int groupId() {
+        return grpId;
     }
 
     /**
@@ -114,7 +114,7 @@ public abstract class DataStructure implements PageLockListener {
      * @throws IgniteCheckedException If failed.
      */
     protected long allocatePageNoReuse() throws IgniteCheckedException {
-        return pageMem.allocatePage(cacheId, PageIdAllocator.INDEX_PARTITION, FLAG_IDX);
+        return pageMem.allocatePage(grpId, PageIdAllocator.INDEX_PARTITION, FLAG_IDX);
     }
 
     /**
@@ -126,7 +126,7 @@ public abstract class DataStructure implements PageLockListener {
         assert PageIdUtils.flag(pageId) == FLAG_IDX && PageIdUtils.partId(pageId) == INDEX_PARTITION ||
             PageIdUtils.flag(pageId) == FLAG_DATA && PageIdUtils.partId(pageId) <= MAX_PARTITION_ID : U.hexLong(pageId);
 
-        return pageMem.acquirePage(cacheId, pageId);
+        return pageMem.acquirePage(grpId, pageId);
     }
 
     /**
@@ -134,7 +134,7 @@ public abstract class DataStructure implements PageLockListener {
      * @param page  Page pointer.
      */
     protected final void releasePage(long pageId, long page) {
-        pageMem.releasePage(cacheId, pageId, page);
+        pageMem.releasePage(grpId, pageId, page);
     }
 
     /**
@@ -143,7 +143,7 @@ public abstract class DataStructure implements PageLockListener {
      * @return Page address or {@code 0} if failed to lock due to recycling.
      */
     protected final long tryWriteLock(long pageId, long page) {
-        return PageHandler.writeLock(pageMem, cacheId, pageId, page, this, true);
+        return PageHandler.writeLock(pageMem, grpId, pageId, page, this, true);
     }
 
     /**
@@ -152,7 +152,7 @@ public abstract class DataStructure implements PageLockListener {
      * @return Page address.
      */
     protected final long writeLock(long pageId, long page) {
-        return PageHandler.writeLock(pageMem, cacheId, pageId, page, this, false);
+        return PageHandler.writeLock(pageMem, grpId, pageId, page, this, false);
     }
 
     /**
@@ -174,7 +174,7 @@ public abstract class DataStructure implements PageLockListener {
      * @return Page address.
      */
     protected final long readLock(long pageId, long page) {
-        return PageHandler.readLock(pageMem, cacheId, pageId, page, this);
+        return PageHandler.readLock(pageMem, grpId, pageId, page, this);
     }
 
     /**
@@ -183,7 +183,7 @@ public abstract class DataStructure implements PageLockListener {
      * @param pageAddr  Page address.
      */
     protected final void readUnlock(long pageId, long page, long pageAddr) {
-        PageHandler.readUnlock(pageMem, cacheId, pageId, page, pageAddr, this);
+        PageHandler.readUnlock(pageMem, grpId, pageId, page, pageAddr, this);
     }
 
     /**
@@ -194,7 +194,7 @@ public abstract class DataStructure implements PageLockListener {
      * @param dirty Dirty flag.
      */
     protected final void writeUnlock(long pageId, long page, long pageAddr, Boolean walPlc, boolean dirty) {
-        PageHandler.writeUnlock(pageMem, cacheId, pageId, page, pageAddr, this, walPlc, dirty);
+        PageHandler.writeUnlock(pageMem, grpId, pageId, page, pageAddr, this, walPlc, dirty);
     }
 
     /**
@@ -204,7 +204,7 @@ public abstract class DataStructure implements PageLockListener {
      * @return {@code true} If we need to make a delta WAL record for the change in this page.
      */
     protected final boolean needWalDeltaRecord(long pageId, long page, Boolean walPlc) {
-        return PageHandler.isWalDeltaRecordNeeded(pageMem, cacheId, pageId, page, wal, walPlc);
+        return PageHandler.isWalDeltaRecordNeeded(pageMem, grpId, pageId, page, wal, walPlc);
     }
 
     /**
@@ -220,7 +220,7 @@ public abstract class DataStructure implements PageLockListener {
         PageHandler<?, R> h,
         int intArg,
         R lockFailed) throws IgniteCheckedException {
-        return PageHandler.writePage(pageMem, cacheId, pageId, this, h, null, null, null, null, intArg, lockFailed);
+        return PageHandler.writePage(pageMem, grpId, pageId, this, h, null, null, null, null, intArg, lockFailed);
     }
 
     /**
@@ -238,7 +238,7 @@ public abstract class DataStructure implements PageLockListener {
         X arg,
         int intArg,
         R lockFailed) throws IgniteCheckedException {
-        return PageHandler.writePage(pageMem, cacheId, pageId, this, h, null, null, null, arg, intArg, lockFailed);
+        return PageHandler.writePage(pageMem, grpId, pageId, this, h, null, null, null, arg, intArg, lockFailed);
     }
 
     /**
@@ -258,7 +258,7 @@ public abstract class DataStructure implements PageLockListener {
         X arg,
         int intArg,
         R lockFailed) throws IgniteCheckedException {
-        return PageHandler.writePage(pageMem, cacheId, pageId, page, this, h, null, null, null, arg, intArg, lockFailed);
+        return PageHandler.writePage(pageMem, grpId, pageId, page, this, h, null, null, null, arg, intArg, lockFailed);
     }
 
     /**
@@ -278,7 +278,7 @@ public abstract class DataStructure implements PageLockListener {
         X arg,
         int intArg,
         R lockFailed) throws IgniteCheckedException {
-        return PageHandler.writePage(pageMem, cacheId, pageId, this, h, init, wal, null, arg, intArg, lockFailed);
+        return PageHandler.writePage(pageMem, grpId, pageId, this, h, init, wal, null, arg, intArg, lockFailed);
     }
 
     /**
@@ -296,7 +296,7 @@ public abstract class DataStructure implements PageLockListener {
         X arg,
         int intArg,
         R lockFailed) throws IgniteCheckedException {
-        return PageHandler.readPage(pageMem, cacheId, pageId, this, h, arg, intArg, lockFailed);
+        return PageHandler.readPage(pageMem, grpId, pageId, this, h, arg, intArg, lockFailed);
     }
 
     /**
@@ -316,7 +316,7 @@ public abstract class DataStructure implements PageLockListener {
         X arg,
         int intArg,
         R lockFailed) throws IgniteCheckedException {
-        return PageHandler.readPage(pageMem, cacheId, pageId, page, this, h, arg, intArg, lockFailed);
+        return PageHandler.readPage(pageMem, grpId, pageId, page, this, h, arg, intArg, lockFailed);
     }
 
     /**
@@ -325,7 +325,7 @@ public abstract class DataStructure implements PageLockListener {
      * @throws IgniteCheckedException if failed.
      */
     protected final void init(long pageId, PageIO init) throws IgniteCheckedException {
-        PageHandler.initPage(pageMem, cacheId, pageId, init, wal, this);
+        PageHandler.initPage(pageMem, grpId, pageId, init, wal, this);
     }
 
     /**
@@ -346,7 +346,7 @@ public abstract class DataStructure implements PageLockListener {
         PageIO.setPageId(pageAddr, rotated);
 
         if (needWalDeltaRecord(pageId, page, walPlc))
-            wal.log(new RecycleRecord(cacheId, pageId, rotated));
+            wal.log(new RecycleRecord(grpId, pageId, rotated));
 
         return rotated;
     }

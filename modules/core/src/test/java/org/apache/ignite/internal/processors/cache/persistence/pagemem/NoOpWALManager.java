@@ -43,7 +43,7 @@ public class NoOpWALManager implements IgniteWriteAheadLogManager {
 
     /** {@inheritDoc} */
     @Override public void resumeLogging(WALPointer ptr) throws IgniteCheckedException {
-
+        // No-op.
     }
 
     /** {@inheritDoc} */
@@ -83,42 +83,37 @@ public class NoOpWALManager implements IgniteWriteAheadLogManager {
 
     /** {@inheritDoc} */
     @Override public void start(GridCacheSharedContext cctx) throws IgniteCheckedException {
-
+        // No-op.
     }
 
     /** {@inheritDoc} */
     @Override public void stop(boolean cancel) {
-
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onKernalStart(boolean reconnect) throws IgniteCheckedException {
-
+        // No-op.
     }
 
     /** {@inheritDoc} */
     @Override public void onKernalStop(boolean cancel) {
-
+        // No-op.
     }
 
     /** {@inheritDoc} */
     @Override public void onDisconnected(IgniteFuture reconnectFut) {
-
+        // No-op.
     }
 
     /** {@inheritDoc} */
     @Override public void printMemoryStats() {
-
+        // No-op.
     }
 
     /** {@inheritDoc} */
     @Override public void onActivate(GridKernalContext kctx) throws IgniteCheckedException {
-
+        // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void onDeActivate(GridKernalContext kctx) throws IgniteCheckedException {
-
+    @Override public void onDeActivate(GridKernalContext kctx) {
+        // No-op.
     }
 
     /** {@inheritDoc} */

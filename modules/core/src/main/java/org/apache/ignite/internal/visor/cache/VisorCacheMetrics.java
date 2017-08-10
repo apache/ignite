@@ -639,11 +639,6 @@ public class VisorCacheMetrics extends VisorDataTransferObject {
     }
 
     /** {@inheritDoc} */
-    @Override public byte getProtocolVersion() {
-        return V2;
-    }
-
-    /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeString(out, name);
         U.writeEnum(out, mode);
@@ -690,6 +685,7 @@ public class VisorCacheMetrics extends VisorDataTransferObject {
         out.writeLong(heapEntriesCnt);
         out.writeLong(offHeapAllocatedSize);
         out.writeLong(offHeapEntriesCnt);
+        out.writeLong(offHeapPrimaryEntriesCnt);
 
         out.writeInt(totalPartsCnt);
         out.writeInt(rebalancingPartsCnt);
@@ -698,8 +694,6 @@ public class VisorCacheMetrics extends VisorDataTransferObject {
         out.writeLong(rebalancingBytesRate);
 
         out.writeObject(qryMetrics);
-
-        out.writeLong(offHeapPrimaryEntriesCnt);
     }
 
     /** {@inheritDoc} */
@@ -748,6 +742,7 @@ public class VisorCacheMetrics extends VisorDataTransferObject {
         heapEntriesCnt = in.readLong();
         offHeapAllocatedSize = in.readLong();
         offHeapEntriesCnt = in.readLong();
+        offHeapPrimaryEntriesCnt = in.readLong();
 
         totalPartsCnt = in.readInt();
         rebalancingPartsCnt = in.readInt();
@@ -756,9 +751,6 @@ public class VisorCacheMetrics extends VisorDataTransferObject {
         rebalancingBytesRate = in.readLong();
 
         qryMetrics = (VisorQueryMetrics)in.readObject();
-
-        if (protoVer >= V2)
-            offHeapPrimaryEntriesCnt = in.readLong();
     }
 
     /** {@inheritDoc} */

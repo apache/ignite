@@ -36,6 +36,28 @@ namespace ignite
     {
         namespace compute
         {
+            struct ComputeJobResultPolicy
+            {
+                enum Type
+                {
+                    /**
+                    * Wait for results if any are still expected. If all results have been received -
+                    * it will start reducing results.
+                    */
+                    WAIT = 0,
+
+                    /**
+                    * Ignore all not yet received results and start reducing results.
+                    */
+                    REDUCE = 1,
+
+                    /**
+                    * Fail-over job to execute on another node.
+                    */
+                    FAILOVER = 2
+                };
+            };
+
             /**
              * Used to hold compute job result.
              */
@@ -65,13 +87,33 @@ namespace ignite
                 }
 
                 /**
+                 * Get result value.
+                 *
+                 * @return Result.
+                 */
+                const ResultType& GetResult() const
+                {
+                    return res;
+                }
+
+                /**
                  * Set error.
                  *
                  * @param error Error to set.
                  */
-                void SetError(const IgniteError error)
+                void SetError(const IgniteError& error)
                 {
                     err = error;
+                }
+
+                /**
+                 * Get error.
+                 *
+                 * @return Error.
+                 */
+                const IgniteError& GetError() const
+                {
+                    return err;
                 }
 
                 /**
@@ -189,6 +231,16 @@ namespace ignite
                 void SetError(const IgniteError error)
                 {
                     err = error;
+                }
+
+                /**
+                 * Get error.
+                 *
+                 * @return Error.
+                 */
+                const IgniteError& GetError() const
+                {
+                    return err;
                 }
 
                 /**

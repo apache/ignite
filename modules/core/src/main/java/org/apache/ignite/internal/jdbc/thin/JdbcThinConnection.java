@@ -76,6 +76,9 @@ public class JdbcThinConnection implements Connection {
     /** Auto commit flag. */
     private boolean autoCommit;
 
+    /** Read-only flag. */
+    private boolean readOnly;
+
     /** Current transaction holdability. */
     private int holdability;
 
@@ -277,13 +280,15 @@ public class JdbcThinConnection implements Connection {
     /** {@inheritDoc} */
     @Override public void setReadOnly(boolean readOnly) throws SQLException {
         ensureNotClosed();
+
+        this.readOnly = readOnly;
     }
 
     /** {@inheritDoc} */
     @Override public boolean isReadOnly() throws SQLException {
         ensureNotClosed();
 
-        return true;
+        return readOnly;
     }
 
     /** {@inheritDoc} */

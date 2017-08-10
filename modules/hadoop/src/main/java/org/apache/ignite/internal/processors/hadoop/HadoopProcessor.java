@@ -95,8 +95,8 @@ public class HadoopProcessor extends HadoopProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void onKernalStart() throws IgniteCheckedException {
-        super.onKernalStart();
+    @Override public void onKernalStart(boolean active) throws IgniteCheckedException {
+        super.onKernalStart(active);
 
         if (hctx == null)
             return;

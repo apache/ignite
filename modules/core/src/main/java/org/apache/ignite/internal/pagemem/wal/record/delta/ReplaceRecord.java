@@ -35,14 +35,14 @@ public class ReplaceRecord<L> extends PageDeltaRecord {
     private int idx;
 
     /**
-     * @param cacheId Cache ID.
+     * @param grpId Cache group ID.
      * @param pageId  Page ID.
      * @param io IO.
      * @param rowBytes Row bytes.
      * @param idx Index.
      */
-    public ReplaceRecord(int cacheId, long pageId, BPlusIO<L> io, byte[] rowBytes, int idx) {
-        super(cacheId, pageId);
+    public ReplaceRecord(int grpId, long pageId, BPlusIO<L> io, byte[] rowBytes, int idx) {
+        super(grpId, pageId);
 
         this.io = io;
         this.rowBytes = rowBytes;

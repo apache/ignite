@@ -33,6 +33,8 @@ public interface RecordSerializer {
     public int version();
 
     /**
+     * Calculates record size in byte including expected wal pointer, CRC and type field
+     *
      * @param record Record.
      * @return Size in bytes.
      */
@@ -45,7 +47,10 @@ public interface RecordSerializer {
     public void writeRecord(WALRecord record, ByteBuffer buf) throws IgniteCheckedException;
 
     /**
+     * Loads record from input
+     *
      * @param in Data input to read data from.
+     * @param expPtr expected WAL pointer for record. Used to validate actual position against expected from the file
      * @return Read entry.
      */
     public WALRecord readRecord(FileInput in, WALPointer expPtr) throws IOException, IgniteCheckedException;

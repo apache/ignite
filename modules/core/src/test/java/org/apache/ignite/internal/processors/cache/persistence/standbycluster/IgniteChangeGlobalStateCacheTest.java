@@ -62,7 +62,7 @@ public class IgniteChangeGlobalStateCacheTest extends IgniteChangeGlobalStateAbs
     }
 
     /**
-     *
+     * @throws Exception If failed.
      */
     public void testMoreKeyValueAfterActivate() throws Exception {
         String cacheName = "my-cache";

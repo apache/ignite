@@ -28,13 +28,6 @@
         http://www.springframework.org/schema/beans/spring-beans.xsd
         http://www.springframework.org/schema/util
         http://www.springframework.org/schema/util/spring-util.xsd">
-
-    <!-- Datasource for sample in-memory H2 database. -->
-    <bean id="h2-example-db" class="org.h2.jdbcx.JdbcDataSource">
-        <property name="URL" value="jdbc:h2:tcp://localhost/mem:ExampleDb" />
-        <property name="user" value="sa" />
-    </bean>
-
     <bean abstract="true" id="ignite.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
         <!-- Set to true to enable distributed class loading for examples, default is false. -->
         <property name="peerClassLoadingEnabled" value="true"/>

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.tree.io;
 import java.nio.ByteBuffer;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * We use dedicated page for tracking pages updates.
@@ -110,12 +111,12 @@ public class TrackingPageIO extends PageIO {
     /**
      * @param buf Buffer.
      * @param nextSnapshotTag Next snapshot id.
-     * @param lastSuccessfulSnapshotId Last successful snapshot id.
+     * @param lastSuccessfulSnapshotTag Last successful snapshot id.
      * @param pageSize Page size.
      */
-    private void validateSnapshotId(ByteBuffer buf, long nextSnapshotTag, long lastSuccessfulSnapshotId, int pageSize) {
-        assert nextSnapshotTag != lastSuccessfulSnapshotId : "nextSnapshotTag = " + nextSnapshotTag +
-            ", lastSuccessfulSnapshotId = " + lastSuccessfulSnapshotId;
+    private void validateSnapshotId(ByteBuffer buf, long nextSnapshotTag, long lastSuccessfulSnapshotTag, int pageSize) {
+        assert nextSnapshotTag != lastSuccessfulSnapshotTag : "nextSnapshotTag = " + nextSnapshotTag +
+            ", lastSuccessfulSnapshotId = " + lastSuccessfulSnapshotTag;
 
         long last = getLastSnapshotTag(buf);
 
@@ -126,7 +127,7 @@ public class TrackingPageIO extends PageIO {
 
         int cntOfPage = countOfPageToTrack(pageSize);
 
-        if (last <= lastSuccessfulSnapshotId) { //we can drop our data
+        if (last <= lastSuccessfulSnapshotTag) { //we can drop our data
             buf.putLong(LAST_SNAPSHOT_TAG_OFFSET, nextSnapshotTag);
 
             PageHandler.zeroMemory(buf, SIZE_FIELD_OFFSET, buf.capacity() - SIZE_FIELD_OFFSET);
@@ -136,7 +137,7 @@ public class TrackingPageIO extends PageIO {
             int sizeOff = useLeftHalf(nextSnapshotTag) ? SIZE_FIELD_OFFSET : BITMAP_OFFSET + len;
             int sizeOff2 = !useLeftHalf(nextSnapshotTag) ? SIZE_FIELD_OFFSET : BITMAP_OFFSET + len;
 
-            if (last - lastSuccessfulSnapshotId == 1) { //we should keep only data in last half
+            if (last - lastSuccessfulSnapshotTag == 1) { //we should keep only data in last half
                 //new data will be written in the same half, we should move old data to another half
                 if ((nextSnapshotTag - last) % 2 == 0)
                     PageHandler.copyMemory(buf, sizeOff, buf, sizeOff2, len + SIZE_FIELD_SIZE);
@@ -182,6 +183,7 @@ public class TrackingPageIO extends PageIO {
      * @param buf Buffer.
      * @param pageId Page id.
      * @param curSnapshotTag Snapshot tag.
+     * @param lastSuccessfulSnapshotTag Last successful snapshot id.
      * @param pageSize Page size.
      */
     public boolean wasChanged(ByteBuffer buf, long pageId, long curSnapshotTag, long lastSuccessfulSnapshotTag, int pageSize) {
@@ -265,10 +267,12 @@ public class TrackingPageIO extends PageIO {
      * @param buf Buffer.
      * @param start Start.
      * @param curSnapshotTag Snapshot id.
+     * @param lastSuccessfulSnapshotTag  Last successful snapshot id.
      * @param pageSize Page size.
-     * @return set pageId if it was changed or next closest one, if there is no changed page null will be returned
+     * @return set pageId if it was changed or next closest one, if there is no changed page {@code null} will be returned
      */
-    public Long findNextChangedPage(ByteBuffer buf, long start, long curSnapshotTag, long lastSuccessfulSnapshotTag, int pageSize) {
+    @Nullable public Long findNextChangedPage(ByteBuffer buf, long start, long curSnapshotTag,
+        long lastSuccessfulSnapshotTag, int pageSize) {
         validateSnapshotId(buf, curSnapshotTag + 1, lastSuccessfulSnapshotTag, pageSize);
 
         int cntOfPage = countOfPageToTrack(pageSize);

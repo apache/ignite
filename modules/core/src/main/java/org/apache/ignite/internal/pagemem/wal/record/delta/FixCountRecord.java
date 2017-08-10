@@ -30,11 +30,11 @@ public class FixCountRecord extends PageDeltaRecord {
     private int cnt;
 
     /**
-     * @param cacheId Cache ID.
+     * @param grpId Cache group ID.
      * @param pageId  Page ID.
      */
-    public FixCountRecord(int cacheId, long pageId, int cnt) {
-        super(cacheId, pageId);
+    public FixCountRecord(int grpId, long pageId, int cnt) {
+        super(grpId, pageId);
 
         this.cnt = cnt;
     }

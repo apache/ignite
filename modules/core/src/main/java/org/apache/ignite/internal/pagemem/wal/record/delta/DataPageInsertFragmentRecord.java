@@ -32,18 +32,18 @@ public class DataPageInsertFragmentRecord extends PageDeltaRecord {
     private final byte[] payload;
 
     /**
-     * @param cacheId Cache ID.
+     * @param grpId Cache group ID.
      * @param pageId Page ID.
      * @param payload Fragment payload.
      * @param lastLink Link to the last entry fragment.
      */
     public DataPageInsertFragmentRecord(
-        final int cacheId,
+        final int grpId,
         final long pageId,
         final byte[] payload,
         final long lastLink
     ) {
-        super(cacheId, pageId);
+        super(grpId, pageId);
 
         this.lastLink = lastLink;
         this.payload = payload;

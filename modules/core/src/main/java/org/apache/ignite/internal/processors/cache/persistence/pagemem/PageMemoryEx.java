@@ -77,13 +77,13 @@ public interface PageMemoryEx extends PageMemory {
      * @see #acquirePage(int, long)
      * Will not read page from file if it is not present in memory
      *
-     * @param cacheId Cache id.
+     * @param grpId Cache group ID.
      * @param pageId Page id.
      * @param restore Get page for restore
      * @throws IgniteCheckedException If failed.
      * @return Page.
      */
-    public long acquirePage(int cacheId, long pageId, boolean restore) throws IgniteCheckedException;
+    public long acquirePage(int grpId, long pageId, boolean restore) throws IgniteCheckedException;
 
     /**
      * Heuristic method which allows a thread to check if it safe to start memory struture modifications
@@ -115,19 +115,19 @@ public interface PageMemoryEx extends PageMemory {
      *
      * @param pageId Page ID to get byte buffer for. The page ID must be present in the collection returned by
      *      the {@link #beginCheckpoint()} method call.
-     * @param tmpBuf Temporary buffer to write changes into.
+     * @param outBuf Temporary buffer to write changes into.
      * @param tracker Checkpoint metrics tracker.
-     * @return {@code True} if data were read, {@code false} otherwise (data already saved to storage).
+     * @return {@code Partition tag} if data was read, {@code null} otherwise (data already saved to storage).
      * @throws IgniteException If failed to obtain page data.
      */
-    @Nullable public Integer getForCheckpoint(FullPageId pageId, ByteBuffer tmpBuf, CheckpointMetricsTracker tracker);
+    @Nullable public Integer getForCheckpoint(FullPageId pageId, ByteBuffer outBuf, CheckpointMetricsTracker tracker);
 
     /**
      * Marks partition as invalid / outdated.
      *
      * @param cacheId Cache ID.
      * @param partId Partition ID.
-     * @return New partition tag.
+     * @return New partition tag (growing 1-based partition file version).
      */
     public int invalidate(int cacheId, int partId);
 
