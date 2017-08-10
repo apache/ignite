@@ -326,7 +326,7 @@ public class GridAffinityAssignmentCache {
 
         for (int i = 0; i < nodesCnt; i++) {
             for (List<ClusterNode> partitionByNodes : assignment) {
-                if (partitionByNodes.get(i).isLocal())
+                if (partitionByNodes.get(i) != null && partitionByNodes.get(i).isLocal())
                     partitionsByLocalNode[i] += 1;
 
                 if (i == 0)
@@ -353,15 +353,10 @@ public class GridAffinityAssignmentCache {
         float deltaBackup = Math.abs(1 - (float)localBackupCnt * nodesCnt / totalBackupCnt);
 
         if (deltaPrimary > ignitePartDistribution || deltaBackup > ignitePartDistribution) {
-            log.info("Local node affinity assignment distribution is not ideal [cache=" + cacheOrGrpName +
-                ", expectedPrimary=" + String.format("%.2f", expectedCnt) +
-                "(" + String.format("%.2f", expectedPercent) +
-                "%), expectedBackups=" + String.format("%.2f", expectedCnt * this.backups) +
-                "(" + String.format("%.2f", expectedPercent * this.backups) +
-                "%), primary=" + localPrimaryCnt + "(" + String.format("%.2f", primaryPerNodePercent) +
-                "%), backups=" + localBackupCnt + "(" + String.format("%.2f", localBackupPercent) + "%)]");
-            log.info( String.format("Local node affinity assignment distribution is not ideal " +
-                "[cache=%s, expectedPrimary=%.2f](%.2f%%)]", cacheOrGrpName, expectedCnt, expectedPercent) );
+            log.info(String.format("Local node affinity assignment distribution is not ideal " +
+                    "[cache=%s, expectedPrimary=%.2f(%.2f%%), expectedBackups=%.2f(%.2f%%), " +
+                    "primary=%d(%.2f%%), backups=%d(%.2f%%)]", cacheOrGrpName, expectedCnt, expectedPercent, expectedCnt * this.backups,
+                expectedPercent * this.backups, localPrimaryCnt, primaryPerNodePercent, localBackupCnt, localBackupPercent));
         }
     }
 
