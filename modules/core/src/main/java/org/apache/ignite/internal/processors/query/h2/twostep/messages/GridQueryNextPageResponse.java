@@ -67,6 +67,7 @@ public class GridQueryNextPageResponse implements Message {
     /** */
     private AffinityTopologyVersion retry;
 
+    /** Last page flag. */
     private boolean last;
 
     /**
