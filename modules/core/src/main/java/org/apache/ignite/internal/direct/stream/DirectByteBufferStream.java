@@ -23,10 +23,8 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.*;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Direct marshalling I/O stream.
@@ -171,8 +169,10 @@ public interface DirectByteBufferStream {
      * @param col Collection.
      * @param itemType Component type.
      * @param writer Writer.
+     * @param converter Optional converter.
      */
-    public <T> void writeCollection(Collection<T> col, MessageCollectionItemType itemType, MessageWriter writer);
+    public <T> void writeCollection(Collection<T> col, MessageCollectionItemType itemType, MessageWriter writer,
+        @Nullable MessageWriterConverter converter);
 
     /**
      * @param map Map.

@@ -34,11 +34,8 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
-import org.apache.ignite.plugin.extensions.communication.MessageFactory;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.*;
+import org.jetbrains.annotations.Nullable;
 import sun.nio.ch.DirectBuffer;
 
 import static org.apache.ignite.internal.util.GridUnsafe.BIG_ENDIAN;
@@ -700,11 +697,12 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public <T> void writeCollection(Collection<T> col, MessageCollectionItemType itemType,
-        MessageWriter writer) {
+        MessageWriter writer, @Nullable MessageWriterConverter converter) {
         if (col != null) {
             if (col instanceof List && col instanceof RandomAccess)
-                writeRandomAccessList((List<T>)col, itemType, writer);
+                writeRandomAccessList((List<T>)col, itemType, writer, converter);
             else {
                 if (it == null) {
                     writeInt(col.size());
@@ -716,8 +714,12 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
                 }
 
                 while (it.hasNext() || cur != NULL) {
-                    if (cur == NULL)
+                    if (cur == NULL) {
                         cur = it.next();
+
+                        if (converter != null)
+                            cur = converter.convert(cur);
+                    }
 
                     write(itemType, cur, writer);
 
@@ -738,8 +740,11 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
      * @param list List.
      * @param itemType Component type.
      * @param writer Writer.
+     * @param converter Optional message converter.
      */
-    private <T> void writeRandomAccessList(List<T> list, MessageCollectionItemType itemType, MessageWriter writer) {
+    @SuppressWarnings("unchecked")
+    private <T> void writeRandomAccessList(List<T> list, MessageCollectionItemType itemType, MessageWriter writer,
+        @Nullable MessageWriterConverter converter) {
         assert list instanceof RandomAccess;
 
         int size = list.size();
@@ -754,8 +759,12 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
         }
 
         while (arrPos < size || arrCur != NULL) {
-            if (arrCur == NULL)
+            if (arrCur == NULL) {
                 arrCur = list.get(arrPos++);
+
+                if (converter != null)
+                    arrCur = converter.convert(arrCur);
+            }
 
             write(itemType, arrCur, writer);
 

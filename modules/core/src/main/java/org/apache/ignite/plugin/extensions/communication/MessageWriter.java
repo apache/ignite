@@ -274,6 +274,18 @@ public interface MessageWriter {
     public <T> boolean writeCollection(String name, Collection<T> col, MessageCollectionItemType itemType);
 
     /**
+     * Writes collection.
+     *
+     * @param name Field name.
+     * @param col Collection.
+     * @param itemType Collection item type.
+     * @param itemConverter Item converter.
+     * @return Whether value was fully written.
+     */
+    public <T1, T2> boolean writeCollection(String name, Collection<T1> col, MessageCollectionItemType itemType,
+        MessageWriterConverter<T1, T2> itemConverter);
+
+    /**
      * Writes map.
      *
      * @param name Field name.

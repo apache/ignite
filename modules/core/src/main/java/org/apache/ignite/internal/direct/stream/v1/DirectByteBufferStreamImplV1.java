@@ -32,11 +32,8 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
-import org.apache.ignite.plugin.extensions.communication.MessageFactory;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.*;
+import org.jetbrains.annotations.Nullable;
 import sun.nio.ch.DirectBuffer;
 
 /**
@@ -540,8 +537,9 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public <T> void writeCollection(Collection<T> col, MessageCollectionItemType itemType,
-        MessageWriter writer) {
+                                              MessageWriter writer, @Nullable MessageWriterConverter converter) {
         if (col != null) {
             if (it == null) {
                 writeInt(col.size());
@@ -553,8 +551,12 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
             }
 
             while (it.hasNext() || cur != NULL) {
-                if (cur == NULL)
+                if (cur == NULL) {
                     cur = it.next();
+
+                    if (converter != null)
+                        cur = converter.convert(cur);
+                }
 
                 write(itemType, cur, writer);
 
