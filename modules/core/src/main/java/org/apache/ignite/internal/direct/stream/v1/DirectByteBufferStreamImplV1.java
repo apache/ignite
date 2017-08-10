@@ -27,9 +27,8 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageReaderConverter;
+import org.apache.ignite.plugin.extensions.communication.MessageConverter;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
-import org.apache.ignite.plugin.extensions.communication.MessageWriterConverter;
 import org.jetbrains.annotations.Nullable;
 import sun.nio.ch.DirectBuffer;
 
@@ -546,7 +545,7 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public <T> void writeCollection(Collection<T> col, MessageCollectionItemType itemType,
-        MessageWriter writer, @Nullable MessageWriterConverter converter) {
+        MessageWriter writer, @Nullable MessageConverter converter) {
         if (col != null) {
             if (it == null) {
                 writeInt(col.size());
@@ -562,7 +561,7 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
                     cur = it.next();
 
                     if (converter != null)
-                        cur = converter.convert(cur);
+                        cur = converter.convertOnWrite(cur);
                 }
 
                 write(itemType, cur, writer);
@@ -905,7 +904,7 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
 
     @SuppressWarnings("unchecked")
     @Override public <C extends Collection<?>> C readCollection(MessageCollectionItemType itemType,
-        MessageReader reader, @Nullable MessageReaderConverter converter) {
+        MessageReader reader, @Nullable MessageConverter converter) {
         if (readSize == -1) {
             int size = readInt();
 
@@ -926,7 +925,7 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
                     return null;
 
                 if (converter != null)
-                    item = converter.convert(item);
+                    item = converter.convertOnRead(item);
 
                 col.add(item);
 

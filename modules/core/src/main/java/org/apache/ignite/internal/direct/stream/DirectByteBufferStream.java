@@ -21,9 +21,8 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageReaderConverter;
+import org.apache.ignite.plugin.extensions.communication.MessageConverter;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
-import org.apache.ignite.plugin.extensions.communication.MessageWriterConverter;
 import org.jetbrains.annotations.Nullable;
 
 import java.nio.ByteBuffer;
@@ -178,7 +177,7 @@ public interface DirectByteBufferStream {
      * @param converter Optional converter.
      */
     public <T> void writeCollection(Collection<T> col, MessageCollectionItemType itemType, MessageWriter writer,
-        @Nullable MessageWriterConverter converter);
+        @Nullable MessageConverter converter);
 
     /**
      * @param map Map.
@@ -318,7 +317,7 @@ public interface DirectByteBufferStream {
      * @return Collection.
      */
     public <C extends Collection<?>> C readCollection(MessageCollectionItemType itemType, MessageReader reader,
-        @Nullable MessageReaderConverter converter);
+        @Nullable MessageConverter converter);
 
     /**
      * @param keyType Key type.

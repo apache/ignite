@@ -29,7 +29,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageReaderConverter;
+import org.apache.ignite.plugin.extensions.communication.MessageConverter;
 import org.jetbrains.annotations.Nullable;
 
 import java.nio.ByteBuffer;
@@ -335,7 +335,7 @@ public class DirectMessageReader implements MessageReader {
 
     /** {@inheritDoc} */
     @Override public <C extends Collection<?>> C readCollection(String name, MessageCollectionItemType itemType,
-        @Nullable MessageReaderConverter converter) {
+        @Nullable MessageConverter converter) {
         DirectByteBufferStream stream = state.item().stream;
 
         C col = stream.readCollection(itemType, this, converter);

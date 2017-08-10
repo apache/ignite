@@ -28,8 +28,8 @@ import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
+import org.apache.ignite.plugin.extensions.communication.MessageConverter;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
-import org.apache.ignite.plugin.extensions.communication.MessageWriterConverter;
 import org.jetbrains.annotations.Nullable;
 
 import java.nio.ByteBuffer;
@@ -290,7 +290,7 @@ public class DirectMessageWriter implements MessageWriter {
 
     /** {@inheritDoc} */
     @Override public <T> boolean writeCollection(String name, Collection<T> col, MessageCollectionItemType itemType,
-        @Nullable MessageWriterConverter itemConverter) {
+        @Nullable MessageConverter itemConverter) {
         DirectByteBufferStream stream = state.item().stream;
 
         stream.writeCollection(col, itemType, this, itemConverter);

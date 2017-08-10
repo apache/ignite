@@ -18,14 +18,22 @@
 package org.apache.ignite.plugin.extensions.communication;
 
 /**
- * Message reader converter.
+ * Message converter.
  */
-public interface MessageReaderConverter<FROM, TO> {
+public interface MessageConverter{
     /**
-     * Convert object from one form to another.
+     * Convert object on write (from real object to object for the stream).
      *
      * @param obj Object.
      * @return Converted object.
      */
-    TO convert(FROM obj);
+    Object convertOnWrite(Object obj);
+
+    /**
+     * Convert object on read (from object for the stream to real object).
+     *
+     * @param obj Object.
+     * @return Converted object.
+     */
+    Object convertOnRead(Object obj);
 }

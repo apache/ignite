@@ -285,7 +285,7 @@ public interface MessageWriter {
      * @return Whether value was fully written.
      */
     public <T> boolean writeCollection(String name, Collection<T> col, MessageCollectionItemType itemType,
-        @Nullable MessageWriterConverter itemConverter);
+        @Nullable MessageConverter itemConverter);
 
     /**
      * Writes map.

@@ -28,9 +28,8 @@ package org.apache.ignite.internal.direct.stream.v2;
  import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
  import org.apache.ignite.plugin.extensions.communication.MessageFactory;
  import org.apache.ignite.plugin.extensions.communication.MessageReader;
- import org.apache.ignite.plugin.extensions.communication.MessageReaderConverter;
+ import org.apache.ignite.plugin.extensions.communication.MessageConverter;
  import org.apache.ignite.plugin.extensions.communication.MessageWriter;
- import org.apache.ignite.plugin.extensions.communication.MessageWriterConverter;
  import org.jetbrains.annotations.Nullable;
  import sun.nio.ch.DirectBuffer;
 
@@ -706,7 +705,7 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public <T> void writeCollection(Collection<T> col, MessageCollectionItemType itemType,
-        MessageWriter writer, @Nullable MessageWriterConverter converter) {
+        MessageWriter writer, @Nullable MessageConverter converter) {
         if (col != null) {
             if (col instanceof List && col instanceof RandomAccess)
                 writeRandomAccessList((List<T>)col, itemType, writer, converter);
@@ -725,7 +724,7 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
                         cur = it.next();
 
                         if (converter != null)
-                            cur = converter.convert(cur);
+                            cur = converter.convertOnWrite(cur);
                     }
 
                     write(itemType, cur, writer);
@@ -751,7 +750,7 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
      */
     @SuppressWarnings("unchecked")
     private <T> void writeRandomAccessList(List<T> list, MessageCollectionItemType itemType, MessageWriter writer,
-        @Nullable MessageWriterConverter converter) {
+        @Nullable MessageConverter converter) {
         assert list instanceof RandomAccess;
 
         int size = list.size();
@@ -770,7 +769,7 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
                 arrCur = list.get(arrPos++);
 
                 if (converter != null)
-                    arrCur = converter.convert(arrCur);
+                    arrCur = converter.convertOnWrite(arrCur);
             }
 
             write(itemType, arrCur, writer);
@@ -1248,7 +1247,7 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public <C extends Collection<?>> C readCollection(MessageCollectionItemType itemType,
-        MessageReader reader, @Nullable MessageReaderConverter converter) {
+        MessageReader reader, @Nullable MessageConverter converter) {
         if (readSize == -1) {
             int size = readInt();
 
@@ -1269,7 +1268,7 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
                     return null;
 
                 if (converter != null)
-                    item = converter.convert(item);
+                    item = converter.convertOnRead(item);
 
                 col.add(item);
 

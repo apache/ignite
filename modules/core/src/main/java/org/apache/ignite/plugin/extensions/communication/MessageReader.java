@@ -266,7 +266,7 @@ public interface MessageReader {
      * @return Collection.
      */
     public <C extends Collection<?>> C readCollection(String name, MessageCollectionItemType itemType,
-        @Nullable MessageReaderConverter converter);
+        @Nullable MessageConverter converter);
 
     /**
      * Reads map.
