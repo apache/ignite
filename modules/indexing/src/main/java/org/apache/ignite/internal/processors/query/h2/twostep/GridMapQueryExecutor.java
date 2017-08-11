@@ -735,7 +735,8 @@ public class GridMapQueryExecutor {
                 page,
                 page == 0 ? res.rowCount() : -1,
                 res.columnCount(),
-                vals);
+                vals,
+                last);
 
             if (loc)
                 h2.reduceQueryExecutor().onMessage(ctx.localNodeId(), msg);
@@ -760,7 +761,7 @@ public class GridMapQueryExecutor {
 
             GridQueryNextPageResponse msg = new GridQueryNextPageResponse(ctx, reqId, segmentId,
                 /*qry*/0, /*page*/0, /*allRows*/0, /*cols*/1,
-                Collections.<Value[]>emptyList());
+                Collections.<Value>emptyList(), false);
 
             msg.retry(h2.readyTopologyVersion());
 

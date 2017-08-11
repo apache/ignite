@@ -69,6 +69,9 @@ public class GridQueryNextPageResponse implements MessageEx {
     /** */
     private AffinityTopologyVersion retry;
 
+    /** Last page flag. */
+    private boolean last;
+
     /**
      * For {@link Externalizable}.
      */
@@ -87,9 +90,10 @@ public class GridQueryNextPageResponse implements MessageEx {
      * @param allRows All rows count.
      * @param cols Number of columns in row.
      * @param vals Values.
+     * @param last Last page flag.
      */
     public GridQueryNextPageResponse(GridKernalContext ctx, long qryReqId, int segmentId, int qry, int page,
-        int allRows, int cols, Collection<?> vals) {
+        int allRows, int cols, Collection<?> vals, , boolean last) {
         assert vals != null;
         assert cols > 0 : cols;
 
@@ -101,6 +105,7 @@ public class GridQueryNextPageResponse implements MessageEx {
         this.allRows = allRows;
         this.cols = cols;
         this.vals = vals;
+        this.last = last;
     }
 
     /**
@@ -223,6 +228,11 @@ public class GridQueryNextPageResponse implements MessageEx {
 
                 writer.incrementState();
 
+            case 8:
+                if (!writer.writeBoolean("last", last))
+                    return false;
+
+                writer.incrementState();
         }
 
         return true;
@@ -299,6 +309,14 @@ public class GridQueryNextPageResponse implements MessageEx {
                     return false;
 
                 reader.incrementState();
+
+            case 8:
+                last = reader.readBoolean("last");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
         }
 
         return reader.afterMessageRead(GridQueryNextPageResponse.class);
@@ -311,7 +329,7 @@ public class GridQueryNextPageResponse implements MessageEx {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 8;
+        return 9;
     }
 
     /**
@@ -326,6 +344,20 @@ public class GridQueryNextPageResponse implements MessageEx {
      */
     public void retry(AffinityTopologyVersion retry) {
         this.retry = retry;
+    }
+
+    /**
+     * @return Last page flag.
+     */
+    public boolean last() {
+        return last;
+    }
+
+    /**
+     * @param last Last page flag.
+     */
+    public void last(boolean last) {
+        this.last = last;
     }
 
     /** {@inheritDoc} */
