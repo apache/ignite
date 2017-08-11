@@ -1246,14 +1246,27 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         final boolean backup,
         final boolean keepBinary,
         final AffinityTopologyVersion topVer) {
+
+        return iterator(localEntriesIteratorEx(primary, backup, topVer), !keepBinary);
+    }
+
+    /**
+     * @param primary If {@code true} includes primary entries.
+     * @param backup If {@code true} includes backup entries.
+     * @param topVer Specified affinity topology version.
+     * @return Local entries iterator.
+     */
+    public Iterator<? extends GridCacheEntryEx> localEntriesIteratorEx(final boolean primary,
+        final boolean backup,
+        final AffinityTopologyVersion topVer) {
         assert primary || backup;
 
         if (primary && backup)
-            return iterator(entries().iterator(), !keepBinary);
+            return entries().iterator();
         else {
             final Iterator<GridDhtLocalPartition> partIt = topology().currentLocalPartitions().iterator();
 
-            Iterator<GridCacheMapEntry> it = new Iterator<GridCacheMapEntry>() {
+            return new Iterator<GridCacheMapEntry>() {
                 private GridCacheMapEntry next;
 
                 private Iterator<GridCacheMapEntry> curIt;
@@ -1310,8 +1323,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                     while (partIt.hasNext());
                 }
             };
-
-            return iterator(it, !keepBinary);
         }
     }
 
