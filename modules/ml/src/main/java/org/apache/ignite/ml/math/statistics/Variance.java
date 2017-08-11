@@ -30,6 +30,7 @@ public class Variance {
     /** */
     private double m2;
 
+    /** */
     public Variance() {
         mean = 0;
         n = 0;

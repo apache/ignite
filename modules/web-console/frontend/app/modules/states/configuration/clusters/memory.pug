@@ -58,12 +58,12 @@ include /app/helpers/jade/mixins
                             | Memory policies configuration
                         .group-content
                             .details-row
-                                +text('Default region name:', model + '.defaultMemoryPolicyName', '"defaultMemoryPolicyName"',
-                                'false', 'default', 'Name of the memory policy that defines the default memory region')
+                                +text('Default memory policy name:', model + '.defaultMemoryPolicyName', '"defaultMemoryPolicyName"',
+                                'false', 'default', 'Name of a memory policy to be used as default one')
                             .details-row(ng-hide='(' + model + '.defaultMemoryPolicyName || "default") !== "default"')
-                                +number('Default region size:', model + '.defaultMemoryPolicySize', '"defaultMemoryPolicySize"',
+                                +number('Default memory policy size:', model + '.defaultMemoryPolicySize', '"defaultMemoryPolicySize"',
                                 'true', '0.8 * totalMemoryAvailable', '10485760',
-                                'Size of the memory policy that defines the default memory region')
+                                'Specify desired size of default memory policy without having to use more verbose syntax of MemoryPolicyConfiguration elements')
                             .details-row(ng-init='memoryPoliciesTbl={type: "memoryPolicies", model: "memoryPolicies", focusId: "name", ui: "memory-policies-table"}')
                                 +ignite-form-group()
                                     ignite-form-field-label

@@ -2129,14 +2129,16 @@ public class GridNioServer<T> {
 
                     int cnt = 0;
 
-                for (SessionWriteRequest req : ses.writeQueue()) {
-                    Object msg = req.message();
+                    for (SessionWriteRequest req : ses.writeQueue()) {
+                        Object msg = req.message();
 
                         if (shortInfo && msg instanceof GridIoMessage)
-                            msg = ((GridIoMessage)msg).message().getClass().getSimpleName();if (cnt == 0)
-                        sb.append(",\n opQueue=[").append(msg);
-                    else
-                        sb.append(',').append(msg);
+                            msg = ((GridIoMessage)msg).message().getClass().getSimpleName();
+
+                        if (cnt == 0)
+                            sb.append(",\n opQueue=[").append(msg);
+                        else
+                            sb.append(',').append(msg);
 
                         if (++cnt == 5) {
                             sb.append(']');
@@ -3878,9 +3880,10 @@ public class GridNioServer<T> {
             GridNioSession ses = randomSession(clientWorkers.get(w1));
 
             if (ses != null) {
-                log.info("Move session [from=" + w1 +
-                    ", to=" + w2 +
-                    ", ses=" + ses + ']');
+                if (log.isInfoEnabled())
+                    log.info("Move session [from=" + w1 +
+                        ", to=" + w2 +
+                        ", ses=" + ses + ']');
 
                 moveSession(ses, w1, w2);
             }

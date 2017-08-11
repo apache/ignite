@@ -112,7 +112,12 @@ namespace ignite
                 }
 
                 if (dataRetrieved)
-                    return SqlResult::AI_NO_DATA;
+                {
+                    diag.AddStatusRecord(SqlState::S24000_INVALID_CURSOR_STATE,
+                        "Cursor has reached end of the result set.");
+
+                    return SqlResult::AI_ERROR;
+                }
 
                 if (columnIdx != 1)
                 {

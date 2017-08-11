@@ -39,7 +39,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 /** See also: {@link AbstractVectorTest} and {@link VectorToMatrixTest}. */
-public class VectorImplementationsTest { // todo split this to smaller cohesive test classes
+public class VectorImplementationsTest { // TODO: IGNTIE-5723, split this to smaller cohesive test classes
     /** */
     @Test
     public void vectorImplementationsFixturesTest() {
@@ -95,7 +95,7 @@ public class VectorImplementationsTest { // todo split this to smaller cohesive 
     public void operateXOutOfBoundsTest() {
         consumeSampleVectors((v, desc) -> {
             if (v instanceof DenseLocalOffHeapVector || v instanceof SparseLocalVector || v instanceof SparseLocalOffHeapVector)
-                return; // todo find out if it's OK to skip by instances here
+                return; // TODO: IGNTIE-5723, find out if it's OK to skip by instances here
 
             boolean expECaught = false;
 
@@ -485,7 +485,7 @@ public class VectorImplementationsTest { // todo split this to smaller cohesive 
             @Override public void externalizeTest() {
                 consumeSampleVectors((v, desc) -> {
                     if (v instanceof SparseLocalOffHeapVector)
-                        return; //TODO: wait till SparseLocalOffHeapVector externalization support.
+                        return; //TODO: IGNITE-5801, wait till SparseLocalOffHeapVector externalization support.
 
                     externalizeTest(v);
                 });
@@ -501,7 +501,7 @@ public class VectorImplementationsTest { // todo split this to smaller cohesive 
 
     /** */
     private boolean getXOutOfBoundsOK(Vector v) {
-        // todo find out if this is indeed OK
+        // TODO: IGNTIE-5723, find out if this is indeed OK
         return v instanceof RandomVector || v instanceof ConstantVector
             || v instanceof SingleElementVector || v instanceof SingleElementVectorView;
     }
@@ -569,7 +569,7 @@ public class VectorImplementationsTest { // todo split this to smaller cohesive 
     private void operationVectorTest(BiFunction<Double, Double, Double> operation,
         BiFunction<Vector, Vector, Vector> vecOperation) {
         consumeSampleVectors((v, desc) -> {
-            // TODO find out if more elaborate testing scenario is needed or it's okay as is.
+            // TODO : IGNTIE-5723, find out if more elaborate testing scenario is needed or it's okay as is.
             final int size = v.size();
             final double[] ref = new double[size];
 
@@ -827,7 +827,7 @@ public class VectorImplementationsTest { // todo split this to smaller cohesive 
     }
 
     /** */
-    static class Metric { // todo consider if softer tolerance (like say 0.1 or 0.01) would make sense here
+    static class Metric { //TODO: IGNITE-5824, consider if softer tolerance (like say 0.1 or 0.01) would make sense here
         /** */
         private final double exp;
 

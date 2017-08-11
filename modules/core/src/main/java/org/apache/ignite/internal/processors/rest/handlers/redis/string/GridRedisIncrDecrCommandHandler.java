@@ -93,7 +93,7 @@ public class GridRedisIncrDecrCommandHandler extends GridRedisRestCommandHandler
             restReq.initial(0L);
         else {
             if (getResp.getResponse() instanceof String) {
-                Long init;
+                long init;
 
                 try {
                     init = Long.parseLong((String)getResp.getResponse());

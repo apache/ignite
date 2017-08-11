@@ -92,6 +92,7 @@ class VisorConsole {
             println("        -cfg=<path>          - connect with specified configuration.")
             println("        -b=<path>            - batch mode with file.")
             println("        -e=cmd1;cmd2;...     - batch mode with commands.")
+            println("        -nq                  - batch mode will not quit after execution (useful for alerts monitoring).")
 
             visor.quit()
         }
@@ -103,6 +104,10 @@ class VisorConsole {
         val cfgFile = argValue("cfg", argLst)
         val batchFile = argValue("b", argLst)
         val batchCommand = argValue("e", argLst)
+        val noBatchQuit = hasArgName("nq", argLst)
+
+        if (noBatchQuit && batchFile.isEmpty && batchCommand.isEmpty)
+            visor.warn("Option \"-nq\" will be ignored because batch mode options \"-b\" or \"-e\" were not specified.")
 
         cfgFile.foreach(cfg => {
             if (cfg.trim.isEmpty) {
@@ -149,7 +154,10 @@ class VisorConsole {
             case Some(cmd) =>
                 visor.batchMode = true
 
-                new ByteArrayInputStream((cmd + "\nquit\n").getBytes("UTF-8"))
+                val script = if (noBatchQuit) cmd else cmd + "\nquit\n"
+
+                new ByteArrayInputStream(script.getBytes("UTF-8"))
+
             case None => new FileInputStream(FileDescriptor.in)
         }
 
@@ -159,7 +167,7 @@ class VisorConsole {
 
             new TerminalSupport(false) {}
         } catch {
-            case ignored: ClassNotFoundException => null
+            case _: ClassNotFoundException => null
         }
 
         val reader = new ConsoleReader(inputStream, System.out, term)

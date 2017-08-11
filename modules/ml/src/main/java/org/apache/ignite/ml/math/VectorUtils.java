@@ -21,6 +21,9 @@ import java.util.Map;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.math.impls.vector.MapWrapperVector;
 
+/**
+ * Some utils for {@link Vector}.
+ */
 public class VectorUtils {
     /** Create new vector like given vector initialized by zeroes. */
     public static Vector zeroesLike(Vector v) {
@@ -33,7 +36,7 @@ public class VectorUtils {
     }
 
     /** */
-    public static Vector fromMap(Map<Integer, Double> value, boolean copy) {
-        return new MapWrapperVector(value);
+    public static Vector fromMap(Map<Integer, Double> val, boolean cp) {
+        return new MapWrapperVector(val);
     }
 }
