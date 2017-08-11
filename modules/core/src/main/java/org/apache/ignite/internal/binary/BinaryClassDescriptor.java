@@ -818,6 +818,7 @@ public class BinaryClassDescriptor {
         try {
             assert reader != null;
             assert mode != BinaryWriteMode.OPTIMIZED : "OptimizedMarshaller should not be used here: " + cls.getName();
+            assert mode != BinaryWriteMode.COMPRESSED : "Compressed type isn't allowed here: " + mode;
 
             Object res;
 
