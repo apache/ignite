@@ -15,11 +15,10 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2.twostep.lazy;
+package org.apache.ignite.internal.processors.query.h2.twostep;
 
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.processors.query.h2.twostep.GridMapQueryExecutor;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.jetbrains.annotations.Nullable;
 

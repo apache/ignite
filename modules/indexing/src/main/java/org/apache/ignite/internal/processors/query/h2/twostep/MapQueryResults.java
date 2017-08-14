@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.query.h2.twostep;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
-import org.apache.ignite.internal.processors.query.h2.twostep.lazy.MapQueryLazyWorker;
 import org.jetbrains.annotations.Nullable;
 
 import java.sql.ResultSet;
