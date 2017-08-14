@@ -18,12 +18,13 @@ public class TestExample {
             IgniteCache<Long, Person> srvCache = srv.createCache(
                 new CacheConfiguration<Long, Person>().setName(CACHE_NAME).setIndexedTypes(Long.class, Person.class));
 
-            for (long i = 0; i < 1_000; i++)
+            for (long i = 0; i < 2_000; i++)
                 srvCache.put(i, new Person(i, "First" + i, "Last" + i));
 
             System.out.println("PUT FINISHED");
 
-            try (Ignite cli = Ignition.start(new IgniteConfiguration().setIgniteInstanceName("client").setLocalHost("127.0.0.1").setClientMode(true))) {
+            try (Ignite cli = Ignition.start(new IgniteConfiguration()
+                .setIgniteInstanceName("client").setLocalHost("127.0.0.1").setClientMode(true))) {
                 System.out.println("CLIENT STARTED");
 
                 IgniteCache<Long, Person> cliCache = cli.cache(CACHE_NAME);
@@ -41,7 +42,7 @@ public class TestExample {
                 System.out.println("DONE: " + cnt);
             }
             catch (Exception e) {
-                System.out.println(e);
+                System.out.println(e.toString());
             }
         }
     }

@@ -585,7 +585,8 @@ public class GridMapQueryExecutor {
                 }
             }
 
-            qr = new MapQueryResults(h2, node.id(), reqId, qrys.size(), mainCctx != null ? mainCctx.name() : null);
+            qr = new MapQueryResults(h2, reqId, qrys.size(), mainCctx != null ? mainCctx.name() : null,
+                MapQueryLazyWorker.currentWorker());
 
             if (nodeRess.put(reqId, segmentId, qr) != null)
                 throw new IllegalStateException();
@@ -655,7 +656,7 @@ public class GridMapQueryExecutor {
                         assert rs instanceof JdbcResultSet : rs.getClass();
                     }
 
-                    qr.addResult(qryIdx, qry, node.id(), rs, params, MapQueryLazyWorker.currentWorker());
+                    qr.addResult(qryIdx, qry, node.id(), rs, params);
 
                     if (qr.cancelled()) {
                         qr.result(qryIdx).close();
@@ -755,10 +756,7 @@ public class GridMapQueryExecutor {
         else if (qr.cancelled())
             sendError(node, req.queryRequestId(), new QueryCancelledException());
         else {
-            MapQueryLazyWorkerKey lazyWorkerKey =
-                new MapQueryLazyWorkerKey(node.id(), req.queryRequestId(), req.segmentId());
-
-            MapQueryLazyWorker lazyWorker = lazyWorkers.get(lazyWorkerKey);
+            MapQueryLazyWorker lazyWorker = qr.lazyWorker();
 
             if (lazyWorker != null) {
                 lazyWorker.submit(new Runnable() {
