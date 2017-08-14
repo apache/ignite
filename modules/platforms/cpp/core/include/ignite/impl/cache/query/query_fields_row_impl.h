@@ -143,7 +143,7 @@ namespace ignite
 
                             int32_t actualLen = reader.ReadInt8Array(dst, len);
 
-                            if (actualLen == 0 || dst && len >= actualLen)
+                            if (actualLen == 0 || (dst && len >= actualLen))
                                 ++processed;
 
                             return actualLen;
