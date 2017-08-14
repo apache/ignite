@@ -75,8 +75,11 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
+/**
+ * Record data V1 serializer.
+ */
 public class RecordDataV1Serializer implements RecordDataSerializer {
-    /** */
+    /** Length of HEADER record data. */
     static final int HEADER_RECORD_DATA_SIZE = /*Magic*/8 + /*Version*/4;
 
     /** Cache shared context */

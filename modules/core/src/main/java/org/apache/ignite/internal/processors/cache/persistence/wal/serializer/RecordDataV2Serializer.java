@@ -12,27 +12,30 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.RecordDataSer
  */
 public class RecordDataV2Serializer implements RecordDataSerializer {
 
+    /** V1 data serializer delegate. */
     private final RecordDataV1Serializer delegateSerializer;
 
+    /**
+     * Create an instance of V2 data serializer.
+     *
+     * @param delegateSerializer V1 data serializer.
+     */
     public RecordDataV2Serializer(RecordDataV1Serializer delegateSerializer) {
         this.delegateSerializer = delegateSerializer;
     }
 
-    @Override
-    public int size(WALRecord record) throws IgniteCheckedException {
-        //TODO: Implementation will be changed.
+    /** {@inheritDoc} */
+    @Override public int size(WALRecord record) throws IgniteCheckedException {
         return delegateSerializer.size(record);
     }
 
-    @Override
-    public WALRecord readRecord(WALRecord.RecordType type, ByteBufferBackedDataInput in) throws IOException, IgniteCheckedException {
-        //TODO: Implementation will be changed.
+    /** {@inheritDoc} */
+    @Override public WALRecord readRecord(WALRecord.RecordType type, ByteBufferBackedDataInput in) throws IOException, IgniteCheckedException {
         return delegateSerializer.readRecord(type, in);
     }
 
-    @Override
-    public void writeRecord(WALRecord record, ByteBuffer buf) throws IgniteCheckedException {
-        //TODO: Implementation will be changed.
+    /** {@inheritDoc} */
+    @Override public void writeRecord(WALRecord record, ByteBuffer buf) throws IgniteCheckedException {
         delegateSerializer.writeRecord(record, buf);
     }
 }

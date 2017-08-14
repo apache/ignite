@@ -13,28 +13,31 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferBac
  */
 public interface RecordIO {
     /**
+     * Calculates and returns size of record data and headers.
      *
-     * @param record
-     * @return
-     * @throws IgniteCheckedException
+     * @param record WAL record.
+     * @return Size in bytes.
+     * @throws IgniteCheckedException If it's unable to calculate size of record.
      */
-    int size(WALRecord record) throws IgniteCheckedException;
+    int sizeWithHeaders(WALRecord record) throws IgniteCheckedException;
 
     /**
+     * Reads record data with headers from {@code in}.
      *
-     * @param in
-     * @param expPtr
-     * @return
-     * @throws IOException
-     * @throws IgniteCheckedException
+     * @param in Buffer to read.
+     * @param expPtr Expected WAL pointer for record. Used to validate actual position against expected from the file.
+     * @return WAL record.
+     * @throws IOException In case of I/O problems.
+     * @throws IgniteCheckedException If it's unable to read record.
      */
-    WALRecord read(ByteBufferBackedDataInput in, WALPointer expPtr) throws IOException, IgniteCheckedException;
+    WALRecord readWithHeaders(ByteBufferBackedDataInput in, WALPointer expPtr) throws IOException, IgniteCheckedException;
 
     /**
+     * Writes record data with headers to {@code buf}.
      *
-     * @param record
-     * @param buf
-     * @throws IgniteCheckedException
+     * @param record WAL record.
+     * @param buf Buffer to write.
+     * @throws IgniteCheckedException If it's unable to write record.
      */
-    void write(WALRecord record, ByteBuffer buf) throws IgniteCheckedException;
+    void writeWithHeaders(WALRecord record, ByteBuffer buf) throws IgniteCheckedException;
 }

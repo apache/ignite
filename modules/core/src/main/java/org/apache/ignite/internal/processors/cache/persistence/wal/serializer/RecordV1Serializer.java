@@ -57,30 +57,25 @@ public class RecordV1Serializer implements RecordSerializer {
     /** Length of CRC value */
     private static final int CRC_SIZE = 4;
 
-    /** */
+    /** Total length of HEADER record. */
     public static final int HEADER_RECORD_SIZE = REC_TYPE_SIZE + FILE_WAL_POINTER_SIZE + CRC_SIZE + RecordDataV1Serializer.HEADER_RECORD_DATA_SIZE;
 
     /** Skip CRC calculation/check flag */
     public static boolean SKIP_CRC = IgniteSystemProperties.getBoolean(IGNITE_PDS_SKIP_CRC, false);
 
-    /** */
+    /** V1 data serializer. */
     private final RecordDataV1Serializer dataSerializer;
 
     /** Record read/write functional interface. */
     private final RecordIO recordIO = new RecordIO() {
 
-        @Override public int size(WALRecord record) throws IgniteCheckedException {
+        /** {@inheritDoc} */
+        @Override public int sizeWithHeaders(WALRecord record) throws IgniteCheckedException {
             return dataSerializer.size(record);
         }
 
-        /**
-         * Reads record from input, does not read CRC value.
-         *
-         * @param in Input to read record from
-         * @param expPtr expected WAL pointer for record. Used to validate actual position against expected from the file
-         * @throws SegmentEofException if end of WAL segment reached
-         */
-        @Override public WALRecord read(ByteBufferBackedDataInput in, WALPointer expPtr) throws IOException, IgniteCheckedException {
+        /** {@inheritDoc} */
+        @Override public WALRecord readWithHeaders(ByteBufferBackedDataInput in, WALPointer expPtr) throws IOException, IgniteCheckedException {
             RecordType recType = readRecordType(in);
 
             FileWALPointer ptr = readPosition(in);
@@ -92,14 +87,8 @@ public class RecordV1Serializer implements RecordSerializer {
             return dataSerializer.readRecord(recType, in);
         }
 
-        /**
-         * Writes record to output, does not write CRC value.
-         *
-         * @param record
-         * @param buf
-         * @throws IgniteCheckedException
-         */
-        @Override public void write(WALRecord record, ByteBuffer buf) throws IgniteCheckedException {
+        /** {@inheritDoc} */
+        @Override public void writeWithHeaders(WALRecord record, ByteBuffer buf) throws IgniteCheckedException {
             // Write record type.
             putRecordType(buf, record);
 
@@ -112,8 +101,9 @@ public class RecordV1Serializer implements RecordSerializer {
     };
 
     /**
+     * Create an instance of V1 serializer.
      *
-     * @param dataSerializer
+     * @param dataSerializer V1 data serializer.
      */
     public RecordV1Serializer(RecordDataV1Serializer dataSerializer) {
         this.dataSerializer = dataSerializer;
@@ -163,14 +153,34 @@ public class RecordV1Serializer implements RecordSerializer {
         return new FileWALPointer(idx, fileOffset, 0);
     }
 
+    /**
+     * Writes record file position to given {@code buf}.
+     *
+     * @param buf Buffer to write record file position.
+     * @param record WAL record.
+     */
     public static void putPositionOfRecord(ByteBuffer buf, WALRecord record) {
         putPosition(buf, (FileWALPointer) record.position());
     }
 
+    /**
+     * Writes record type to given {@code buf}.
+     *
+     * @param buf Buffer to write record type.
+     * @param record WAL record.
+     */
     public static void putRecordType(ByteBuffer buf, WALRecord record) {
         buf.put((byte)(record.type().ordinal() + 1));
     }
 
+    /**
+     * Reads record type from given {@code in}.
+     *
+     * @param in Buffer to read record type.
+     * @return Record type.
+     * @throws IgniteCheckedException If logical end of segment is reached.
+     * @throws IOException In case of I/O problems.
+     */
     public static RecordType readRecordType(DataInput in) throws IgniteCheckedException, IOException {
         int type = in.readUnsignedByte();
 
@@ -185,13 +195,23 @@ public class RecordV1Serializer implements RecordSerializer {
         return recType;
     }
 
+    /**
+     * Reads record from file {@code in0} and validates CRC of record.
+     *
+     * @param in0 File input.
+     * @param expPtr Expected WAL pointer for record. Used to validate actual position against expected from the file.
+     * @param reader Record reader I/O interface.
+     * @return WAL record.
+     * @throws EOFException In case of end of file.
+     * @throws IgniteCheckedException If it's unable to read record.
+     */
     public static WALRecord readWithCrc(FileInput in0, WALPointer expPtr, RecordIO reader) throws EOFException, IgniteCheckedException {
         long startPos = -1;
 
         try (FileInput.Crc32CheckingFileInput in = in0.startRead(SKIP_CRC)) {
             startPos = in0.position();
 
-            WALRecord res = reader.read(in, expPtr);
+            WALRecord res = reader.readWithHeaders(in, expPtr);
 
             assert res != null;
 
@@ -207,12 +227,20 @@ public class RecordV1Serializer implements RecordSerializer {
         }
     }
 
+    /**
+     * Writes record with calculated CRC to buffer {@code buf}.
+     *
+     * @param record WAL record.
+     * @param buf Buffer to write.
+     * @param writer Record write I/O interface.
+     * @throws IgniteCheckedException If it's unable to write record.
+     */
     public static void writeWithCrc(WALRecord record, ByteBuffer buf, RecordIO writer) throws IgniteCheckedException {
         assert record.size() > 0 && buf.remaining() >= record.size() : record.size();
 
         int startPos = buf.position();
 
-        writer.write(record, buf);
+        writer.writeWithHeaders(record, buf);
 
         if (!SKIP_CRC) {
             int curPos = buf.position();
@@ -228,10 +256,18 @@ public class RecordV1Serializer implements RecordSerializer {
             buf.putInt(0);
     }
 
+    /**
+     * Calculates size of record with headers and CRC.
+     *
+     * @param record WAL record to calculate size.
+     * @param io Record size I/O interface.
+     * @return Size of record, header and CRC in bytes.
+     * @throws IgniteCheckedException If it's unable to calculate size of record.
+     */
     public static int sizeWithHeadersAndCrc(WALRecord record, RecordIO io) throws IgniteCheckedException {
         int commonFields = REC_TYPE_SIZE + FILE_WAL_POINTER_SIZE + CRC_SIZE;
 
-        int recordSize = io.size(record);
+        int recordSize = io.sizeWithHeaders(record);
 
         switch (record.type()) {
             case SWITCH_SEGMENT_RECORD:

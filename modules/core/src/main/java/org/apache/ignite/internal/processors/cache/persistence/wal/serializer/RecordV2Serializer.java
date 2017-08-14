@@ -28,25 +28,20 @@ public class RecordV2Serializer implements RecordSerializer {
     // TODO: Define additional header size here
     // public static final int RECORD_LENGTH_HEADER_SIZE = 4;
 
-    /** */
+    /** V2 data serializer. */
     private final RecordDataV2Serializer dataSerializer;
 
     /** Record read/write functional interface. */
     private final RecordIO recordIO = new RecordIO() {
 
-        @Override public int size(WALRecord record) throws IgniteCheckedException {
+        /** {@inheritDoc} */
+        @Override public int sizeWithHeaders(WALRecord record) throws IgniteCheckedException {
             // TODO: Add to size the record length header size
             return dataSerializer.size(record);
         }
 
-        /**
-         * Reads record from input, does not read CRC value.
-         *
-         * @param in Input to read record from
-         * @param expPtr expected WAL pointer for record. Used to validate actual position against expected from the file
-         * @throws SegmentEofException if end of WAL segment reached
-         */
-        @Override public WALRecord read(ByteBufferBackedDataInput in, WALPointer expPtr) throws IOException, IgniteCheckedException {
+        /** {@inheritDoc} */
+        @Override public WALRecord readWithHeaders(ByteBufferBackedDataInput in, WALPointer expPtr) throws IOException, IgniteCheckedException {
             WALRecord.RecordType recType = RecordV1Serializer.readRecordType(in);
 
             FileWALPointer ptr = RecordV1Serializer.readPosition(in);
@@ -60,14 +55,8 @@ public class RecordV2Serializer implements RecordSerializer {
             return dataSerializer.readRecord(recType, in);
         }
 
-        /**
-         * Writes record to output, does not write CRC value.
-         *
-         * @param record
-         * @param buf
-         * @throws IgniteCheckedException
-         */
-        @Override public void write(WALRecord record, ByteBuffer buf) throws IgniteCheckedException {
+        /** {@inheritDoc} */
+        @Override public void writeWithHeaders(WALRecord record, ByteBuffer buf) throws IgniteCheckedException {
             // Write record type.
             RecordV1Serializer.putRecordType(buf, record);
 
@@ -84,7 +73,7 @@ public class RecordV2Serializer implements RecordSerializer {
     /**
      * Create an instance of Record V2 serializer.
      *
-     * @param dataSerializer Record data V2 serializer.
+     * @param dataSerializer V2 data serializer.
      */
     public RecordV2Serializer(RecordDataV2Serializer dataSerializer) {
         this.dataSerializer = dataSerializer;
