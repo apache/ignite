@@ -259,7 +259,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
 
             DatabaseMetaData meta = conn.getMetaData();
 
-            ResultSet rs = meta.getColumns("", "pers", "Person", "%");
+            ResultSet rs = meta.getColumns("", "pers", "PERSON", "%");
 
             assert rs != null;
 
@@ -302,7 +302,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
             assert names.isEmpty();
             assert cnt == 3;
 
-            rs = meta.getColumns("", "org", "Organization", "%");
+            rs = meta.getColumns("", "org", "ORGANIZATION", "%");
 
             assert rs != null;
 
@@ -383,7 +383,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
      */
     public void testIndexMetadata() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL);
-             ResultSet rs = conn.getMetaData().getIndexInfo(null, "pers", "Person", false, false)) {
+             ResultSet rs = conn.getMetaData().getIndexInfo(null, "pers", "PERSON", false, false)) {
 
             int cnt = 0;
 
@@ -449,7 +449,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
      */
     public void testPrimaryKeyMetadata() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL);
-             ResultSet rs = conn.getMetaData().getPrimaryKeys(null, "pers", "Person")) {
+             ResultSet rs = conn.getMetaData().getPrimaryKeys(null, "pers", "PERSON")) {
 
             int cnt = 0;
 

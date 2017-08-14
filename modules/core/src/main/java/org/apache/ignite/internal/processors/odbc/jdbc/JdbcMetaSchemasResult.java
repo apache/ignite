@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.odbc.jdbc;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
@@ -29,7 +30,7 @@ import org.apache.ignite.internal.binary.BinaryWriterExImpl;
  */
 public class JdbcMetaSchemasResult extends JdbcResult {
     /** Query result rows. */
-    private List<String> schemas;
+    private Collection<String> schemas;
 
     /**
      * Default constructor is used for deserialization.
@@ -41,7 +42,7 @@ public class JdbcMetaSchemasResult extends JdbcResult {
     /**
      * @param schemas Found schemas.
      */
-    JdbcMetaSchemasResult(List<String> schemas) {
+    JdbcMetaSchemasResult(Collection<String> schemas) {
         super(META_SCHEMAS);
         this.schemas = schemas;
     }
@@ -63,7 +64,7 @@ public class JdbcMetaSchemasResult extends JdbcResult {
     /**
      * @return Query result rows.
      */
-    public List<String> schemas() {
+    public Collection<String> schemas() {
         return schemas;
     }
 }

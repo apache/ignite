@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
@@ -419,44 +420,37 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
      */
     private JdbcResponse getTablesMeta(JdbcMetaTablesRequest req) {
         try {
+            boolean tblTypeMatch = false;
+
+            if (req.tableTypes() == null)
+                tblTypeMatch = true;
+            else {
+                for (String type : req.tableTypes()) {
+                    if (matches("TABLE", type)) {
+                        tblTypeMatch = true;
+
+                        break;
+                    }
+                }
+            }
+
+            if (!tblTypeMatch)
+                return new JdbcResponse(new JdbcMetaTablesResult(Collections.<JdbcTableMeta>emptyList()));
+
             List<JdbcTableMeta> meta = new ArrayList<>();
 
-            String realSchema = req.schemaName();
-
-            for (String cacheName : ctx.cache().publicCacheNames())
-            {
-                if (!matches(cacheName, realSchema))
-                    continue;
-
-                Collection<GridQueryTypeDescriptor> tablesMeta = ctx.query().types(cacheName);
-
-                for (GridQueryTypeDescriptor table : tablesMeta) {
-                    if (!matches(table.name(), req.tableName()))
+            for (String cacheName : ctx.cache().publicCacheNames()) {
+                for (GridQueryTypeDescriptor table : ctx.query().types(cacheName)) {
+                    if (!matches(table.schemaName(), req.schemaName()))
                         continue;
 
-                    boolean tblTypeMatch = false;
+                    if (!matches(table.tableName(), req.tableName()))
+                        continue;
 
-                    if (req.tableTypes() == null)
-                        tblTypeMatch = true;
-                    else {
-                        for (String type : req.tableTypes()) {
-                            if (matches("TABLE", type)) {
-                                tblTypeMatch = true;
+                    JdbcTableMeta tableMeta = new JdbcTableMeta(table.schemaName(), table.tableName(), "TABLE");
 
-                                break;
-                            }
-                        }
-                    }
-
-                    if (tblTypeMatch) {
-                        String schemaName =
-                            ctx.cache().cacheDescriptor(cacheName).sql() ? QueryUtils.DFLT_SCHEMA : cacheName;
-
-                        JdbcTableMeta tableMeta = new JdbcTableMeta(schemaName, table.tableName(), "TABLE");
-
-                        if (!meta.contains(tableMeta))
-                            meta.add(tableMeta);
-                    }
+                    if (!meta.contains(tableMeta))
+                        meta.add(tableMeta);
                 }
             }
 
@@ -479,29 +473,21 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
      */
     private JdbcResponse getColumnsMeta(JdbcMetaColumnsRequest req) {
         try {
-            Collection<String> cacheNames;
-
-            if (req.schemaName() == null)
-                cacheNames = ctx.cache().publicCacheNames();
-            else
-                cacheNames = Collections.singleton(req.schemaName());
-
             Collection<JdbcColumnMeta> meta = new HashSet<>();
 
-            for (String cacheName : cacheNames) {
-                Collection<GridQueryTypeDescriptor> tablesMeta = ctx.query().types(cacheName);
+            for (String cacheName : ctx.cache().publicCacheNames()) {
+                for (GridQueryTypeDescriptor table : ctx.query().types(cacheName)) {
+                    if (!matches(table.schemaName(), req.schemaName()))
+                        continue;
 
-                String schemaName = ctx.cache().cacheDescriptor(cacheName).sql() ? QueryUtils.DFLT_SCHEMA : cacheName;
-
-                for (GridQueryTypeDescriptor table : tablesMeta) {
-                    if (!matches(table.name(), req.tableName()))
+                    if (!matches(table.tableName(), req.tableName()))
                         continue;
 
                     for (Map.Entry<String, Class<?>> field : table.fields().entrySet()) {
                         if (!matches(field.getKey(), req.columnName()))
                             continue;
 
-                        JdbcColumnMeta columnMeta = new JdbcColumnMeta(schemaName, table.tableName(),
+                        JdbcColumnMeta columnMeta = new JdbcColumnMeta(table.schemaName(), table.tableName(),
                             field.getKey(), field.getValue());
 
                         if (!meta.contains(columnMeta))
@@ -527,26 +513,18 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
      */
     private SqlListenerResponse getIndexesMeta(JdbcMetaIndexesRequest req) {
         try {
-            Collection<String> cacheNames;
-
-            if (req.schemaName() == null)
-                cacheNames = ctx.cache().publicCacheNames();
-            else
-                cacheNames = Collections.singleton(req.schemaName());
-
             Collection<JdbcIndexMeta> meta = new HashSet<>();
 
-            for (String cacheName : cacheNames) {
-                Collection<GridQueryTypeDescriptor> tablesMeta = ctx.query().types(cacheName);
+            for (String cacheName : ctx.cache().publicCacheNames()) {
+                for (GridQueryTypeDescriptor table : ctx.query().types(cacheName)) {
+                    if (!matches(table.schemaName(), req.schemaName()))
+                        continue;
 
-                String schemaName = ctx.cache().cacheDescriptor(cacheName).sql() ? QueryUtils.DFLT_SCHEMA : cacheName;
-
-                for (GridQueryTypeDescriptor table : tablesMeta) {
-                    if (!matches(table.name(), req.tableName()))
+                    if (!matches(table.tableName(), req.tableName()))
                         continue;
 
                     for (GridQueryIndexDescriptor idxDesc : table.indexes().values())
-                        meta.add(new JdbcIndexMeta(schemaName, table.tableName(), idxDesc));
+                        meta.add(new JdbcIndexMeta(table.schemaName(), table.tableName(), idxDesc));
                 }
             }
 
@@ -592,22 +570,14 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
      */
     private SqlListenerResponse getPrimaryKeys(JdbcMetaPrimaryKeysRequest req) {
         try {
-            Collection<String> cacheNames;
-
-            if (req.schemaName() == null)
-                cacheNames = ctx.cache().publicCacheNames();
-            else
-                cacheNames = Collections.singleton(req.schemaName());
-
             Collection<JdbcPrimaryKeyMeta> meta = new HashSet<>();
 
-            for (String cacheName : cacheNames) {
-                Collection<GridQueryTypeDescriptor> tablesMeta = ctx.query().types(cacheName);
+            for (String cacheName : ctx.cache().publicCacheNames()) {
+                for (GridQueryTypeDescriptor table : ctx.query().types(cacheName)) {
+                    if (!matches(table.schemaName(), req.schemaName()))
+                        continue;
 
-                String schemaName = ctx.cache().cacheDescriptor(cacheName).sql() ? QueryUtils.DFLT_SCHEMA : cacheName;
-
-                for (GridQueryTypeDescriptor table : tablesMeta) {
-                    if (!matches(table.name(), req.tableName()))
+                    if (!matches(table.tableName(), req.tableName()))
                         continue;
 
                     List<String> fields = new ArrayList<>();
@@ -620,11 +590,11 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
                     final String keyName = table.keyFieldName() == null ? "_KEY" : table.keyFieldName();
 
                     if (fields.isEmpty()) {
-                        meta.add(new JdbcPrimaryKeyMeta(schemaName, table.tableName(), keyName,
+                        meta.add(new JdbcPrimaryKeyMeta(table.schemaName(), table.tableName(), keyName,
                             new String[] {keyName}));
                     }
                     else {
-                        meta.add(new JdbcPrimaryKeyMeta(schemaName, table.tableName(), keyName,
+                        meta.add(new JdbcPrimaryKeyMeta(table.schemaName(), table.tableName(), keyName,
                             fields.toArray(new String[fields.size()])));
                     }
                 }
@@ -647,14 +617,13 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
         try {
             String schemaPtrn = req.schemaName();
 
-            List<String> schemas = new ArrayList<>();
-
-            if (matches(QueryUtils.DFLT_SCHEMA, schemaPtrn))
-                schemas.add(QueryUtils.DFLT_SCHEMA);
+            Set<String> schemas = new HashSet<>();
 
             for (String cacheName : ctx.cache().publicCacheNames()) {
-                if (!ctx.cache().cacheDescriptor(cacheName).sql() && matches(cacheName, schemaPtrn))
-                    schemas.add(cacheName);
+                for (GridQueryTypeDescriptor table : ctx.query().types(cacheName)) {
+                    if (matches(table.schemaName(), schemaPtrn))
+                        schemas.add(table.schemaName());
+                }
             }
 
             return new JdbcResponse(new JdbcMetaSchemasResult(schemas));

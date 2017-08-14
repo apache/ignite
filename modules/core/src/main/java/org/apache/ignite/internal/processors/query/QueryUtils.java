@@ -343,6 +343,7 @@ public class QueryUtils {
      * Create type candidate for query entity.
      *
      * @param cacheName Cache name.
+     * @param schemaName Schema name.
      * @param cctx Cache context.
      * @param qryEntity Query entity.
      * @param mustDeserializeClss Classes which must be deserialized.
@@ -350,8 +351,8 @@ public class QueryUtils {
      * @return Type candidate.
      * @throws IgniteCheckedException If failed.
      */
-    public static QueryTypeCandidate typeForQueryEntity(String cacheName, GridCacheContext cctx, QueryEntity qryEntity,
-        List<Class<?>> mustDeserializeClss, boolean escape) throws IgniteCheckedException {
+    public static QueryTypeCandidate typeForQueryEntity(String cacheName, String schemaName, GridCacheContext cctx,
+        QueryEntity qryEntity, List<Class<?>> mustDeserializeClss, boolean escape) throws IgniteCheckedException {
         GridKernalContext ctx = cctx.kernalContext();
         CacheConfiguration<?,?> ccfg = cctx.config();
 
@@ -360,6 +361,8 @@ public class QueryUtils {
         CacheObjectContext coCtx = binaryEnabled ? ctx.cacheObjects().contextForCache(ccfg) : null;
 
         QueryTypeDescriptorImpl desc = new QueryTypeDescriptorImpl(cacheName);
+
+        desc.schemaName(schemaName);
 
         desc.aliases(qryEntity.getAliases());
 

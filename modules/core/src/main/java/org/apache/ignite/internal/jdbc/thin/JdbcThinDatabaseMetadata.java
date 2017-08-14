@@ -41,6 +41,7 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaSchemasResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaTablesResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcPrimaryKeyMeta;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcTableMeta;
+import org.apache.ignite.internal.util.typedef.F;
 
 import static java.sql.Connection.TRANSACTION_NONE;
 import static java.sql.ResultSet.CONCUR_READ_ONLY;
@@ -700,10 +701,25 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
     /** {@inheritDoc} */
     @Override public ResultSet getTables(String catalog, String schemaPtrn, String tblNamePtrn,
         String[] tblTypes) throws SQLException {
-        try {
-            if (conn.isClosed())
-                throw new SQLException("Connection is closed.");
+        if (conn.isClosed())
+            throw new SQLException("Connection is closed.");
 
+        final List<JdbcColumnMeta> meta = Arrays.asList(
+            new JdbcColumnMeta(null, null, "TABLE_CAT", String.class),
+            new JdbcColumnMeta(null, null, "TABLE_SCHEM", String.class),
+            new JdbcColumnMeta(null, null, "TABLE_NAME", String.class),
+            new JdbcColumnMeta(null, null, "TABLE_TYPE", String.class),
+            new JdbcColumnMeta(null, null, "REMARKS", String.class),
+            new JdbcColumnMeta(null, null, "TYPE_CAT", String.class),
+            new JdbcColumnMeta(null, null, "TYPE_SCHEM", String.class),
+            new JdbcColumnMeta(null, null, "TYPE_NAME", String.class),
+            new JdbcColumnMeta(null, null, "SELF_REFERENCING_COL_NAME", String.class),
+            new JdbcColumnMeta(null, null, "REF_GENERATION", String.class));
+
+        if (!validCatalogPattern(catalog))
+            return new JdbcThinResultSet(Collections.<List<Object>>emptyList(), meta);
+
+        try {
             JdbcMetaTablesResult res = conn.io().tablesMeta(schemaPtrn, tblNamePtrn, tblTypes);
 
             List<List<Object>> rows = new LinkedList<>();
@@ -711,17 +727,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
             for (JdbcTableMeta tblMeta : res.meta())
                 rows.add(tableRow(tblMeta));
 
-            return new JdbcThinResultSet(rows, Arrays.asList(
-                new JdbcColumnMeta(null, null, "TABLE_CAT", String.class),
-                new JdbcColumnMeta(null, null, "TABLE_SCHEM", String.class),
-                new JdbcColumnMeta(null, null, "TABLE_NAME", String.class),
-                new JdbcColumnMeta(null, null, "TABLE_TYPE", String.class),
-                new JdbcColumnMeta(null, null, "REMARKS", String.class),
-                new JdbcColumnMeta(null, null, "TYPE_CAT", String.class),
-                new JdbcColumnMeta(null, null, "TYPE_SCHEM", String.class),
-                new JdbcColumnMeta(null, null, "TYPE_NAME", String.class),
-                new JdbcColumnMeta(null, null, "SELF_REFERENCING_COL_NAME", String.class),
-                new JdbcColumnMeta(null, null, "REF_GENERATION", String.class)));
+            return new JdbcThinResultSet(rows, meta);
         }
         catch (IOException e) {
             conn.close();
@@ -774,10 +780,35 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
     /** {@inheritDoc} */
     @Override public ResultSet getColumns(String catalog, String schemaPtrn, String tblNamePtrn,
         String colNamePtrn) throws SQLException {
-        try {
-            if (conn.isClosed())
-                throw new SQLException("Connection is closed.");
+        if (conn.isClosed())
+            throw new SQLException("Connection is closed.");
 
+        final List<JdbcColumnMeta> meta = Arrays.asList(
+            new JdbcColumnMeta(null, null, "TABLE_CAT", String.class),
+            new JdbcColumnMeta(null, null, "TABLE_SCHEM", String.class),
+            new JdbcColumnMeta(null, null, "TABLE_NAME", String.class),
+            new JdbcColumnMeta(null, null, "COLUMN_NAME", String.class),
+            new JdbcColumnMeta(null, null, "DATA_TYPE", Short.class),
+            new JdbcColumnMeta(null, null, "TYPE_NAME", String.class),
+            new JdbcColumnMeta(null, null, "COLUMN_SIZE", Integer.class),
+            new JdbcColumnMeta(null, null, "DECIMAL_DIGITS", Integer.class),
+            new JdbcColumnMeta(null, null, "NUM_PREC_RADIX", Short.class),
+            new JdbcColumnMeta(null, null, "NULLABLE", Short.class),
+            new JdbcColumnMeta(null, null, "REMARKS", String.class),
+            new JdbcColumnMeta(null, null, "COLUMN_DEF", String.class),
+            new JdbcColumnMeta(null, null, "CHAR_OCTET_LENGTH", Integer.class),
+            new JdbcColumnMeta(null, null, "ORDINAL_POSITION", Integer.class),
+            new JdbcColumnMeta(null, null, "IS_NULLABLE", String.class),
+            new JdbcColumnMeta(null, null, "SCOPE_CATLOG", String.class),
+            new JdbcColumnMeta(null, null, "SCOPE_SCHEMA", String.class),
+            new JdbcColumnMeta(null, null, "SCOPE_TABLE", String.class),
+            new JdbcColumnMeta(null, null, "SOURCE_DATA_TYPE", Short.class),
+            new JdbcColumnMeta(null, null, "IS_AUTOINCREMENT", String.class));
+
+        if (!validCatalogPattern(catalog))
+            return new JdbcThinResultSet(Collections.<List<Object>>emptyList(), meta);
+
+        try {
             JdbcMetaColumnsResult res = conn.io().columnsMeta(schemaPtrn, tblNamePtrn, colNamePtrn);
 
             List<List<Object>> rows = new LinkedList<>();
@@ -785,27 +816,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
             for (int i = 0; i < res.meta().size(); ++i)
                 rows.add(columnRow(res.meta().get(i), i + 1));
 
-            return new JdbcThinResultSet(rows, Arrays.asList(
-                new JdbcColumnMeta(null, null, "TABLE_CAT", String.class),
-                new JdbcColumnMeta(null, null, "TABLE_SCHEM", String.class),
-                new JdbcColumnMeta(null, null, "TABLE_NAME", String.class),
-                new JdbcColumnMeta(null, null, "COLUMN_NAME", String.class),
-                new JdbcColumnMeta(null, null, "DATA_TYPE", Short.class),
-                new JdbcColumnMeta(null, null, "TYPE_NAME", String.class),
-                new JdbcColumnMeta(null, null, "COLUMN_SIZE", Integer.class),
-                new JdbcColumnMeta(null, null, "DECIMAL_DIGITS", Integer.class),
-                new JdbcColumnMeta(null, null, "NUM_PREC_RADIX", Short.class),
-                new JdbcColumnMeta(null, null, "NULLABLE", Short.class),
-                new JdbcColumnMeta(null, null, "REMARKS", String.class),
-                new JdbcColumnMeta(null, null, "COLUMN_DEF", String.class),
-                new JdbcColumnMeta(null, null, "CHAR_OCTET_LENGTH", Integer.class),
-                new JdbcColumnMeta(null, null, "ORDINAL_POSITION", Integer.class),
-                new JdbcColumnMeta(null, null, "IS_NULLABLE", String.class),
-                new JdbcColumnMeta(null, null, "SCOPE_CATLOG", String.class),
-                new JdbcColumnMeta(null, null, "SCOPE_SCHEMA", String.class),
-                new JdbcColumnMeta(null, null, "SCOPE_TABLE", String.class),
-                new JdbcColumnMeta(null, null, "SOURCE_DATA_TYPE", Short.class),
-                new JdbcColumnMeta(null, null, "IS_AUTOINCREMENT", String.class)));
+            return new JdbcThinResultSet(rows, meta);
         }
         catch (IOException e) {
             conn.close();
@@ -909,10 +920,21 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
 
     /** {@inheritDoc} */
     @Override public ResultSet getPrimaryKeys(String catalog, String schema, String tbl) throws SQLException {
-        try {
-            if (conn.isClosed())
-                throw new SQLException("Connection is closed.");
+        if (conn.isClosed())
+            throw new SQLException("Connection is closed.");
 
+        final List<JdbcColumnMeta> meta = Arrays.asList(
+            new JdbcColumnMeta(null, null, "TABLE_CAT", String.class),
+            new JdbcColumnMeta(null, null, "TABLE_SCHEM", String.class),
+            new JdbcColumnMeta(null, null, "TABLE_NAME", String.class),
+            new JdbcColumnMeta(null, null, "COLUMN_NAME", String.class),
+            new JdbcColumnMeta(null, null, "KEY_SEQ", Short.class),
+            new JdbcColumnMeta(null, null, "PK_NAME", String.class));
+
+        if (!validCatalogPattern(catalog))
+            return new JdbcThinResultSet(Collections.<List<Object>>emptyList(), meta);
+
+        try {
             JdbcMetaPrimaryKeysResult res = conn.io().primaryKeysMeta(schema, tbl);
 
             List<List<Object>> rows = new LinkedList<>();
@@ -920,13 +942,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
             for (JdbcPrimaryKeyMeta pkMeta : res.meta())
                 rows.addAll(primaryKeyRows(pkMeta));
 
-            return new JdbcThinResultSet(rows, Arrays.asList(
-                new JdbcColumnMeta(null, null, "TABLE_CAT", String.class),
-                new JdbcColumnMeta(null, null, "TABLE_SCHEM", String.class),
-                new JdbcColumnMeta(null, null, "TABLE_NAME", String.class),
-                new JdbcColumnMeta(null, null, "COLUMN_NAME", String.class),
-                new JdbcColumnMeta(null, null, "KEY_SEQ", Short.class),
-                new JdbcColumnMeta(null, null, "PK_NAME", String.class)));
+            return new JdbcThinResultSet(rows, meta);
         }
         catch (IOException e) {
             conn.close();
@@ -1135,10 +1151,28 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
     /** {@inheritDoc} */
     @Override public ResultSet getIndexInfo(String catalog, String schema, String tbl, boolean unique,
         boolean approximate) throws SQLException {
-        try {
-            if (conn.isClosed())
-                throw new SQLException("Connection is closed.");
+        if (conn.isClosed())
+            throw new SQLException("Connection is closed.");
 
+        final List<JdbcColumnMeta> meta = Arrays.asList(
+            new JdbcColumnMeta(null, null, "TABLE_CAT", String.class),
+            new JdbcColumnMeta(null, null, "TABLE_SCHEM", String.class),
+            new JdbcColumnMeta(null, null, "TABLE_NAME", String.class),
+            new JdbcColumnMeta(null, null, "NON_UNIQUE", Boolean.class),
+            new JdbcColumnMeta(null, null, "INDEX_QUALIFIER", String.class),
+            new JdbcColumnMeta(null, null, "INDEX_NAME", String.class),
+            new JdbcColumnMeta(null, null, "TYPE", Short.class),
+            new JdbcColumnMeta(null, null, "ORDINAL_POSITION", Short.class),
+            new JdbcColumnMeta(null, null, "COLUMN_NAME", String.class),
+            new JdbcColumnMeta(null, null, "ASC_OR_DESC", String.class),
+            new JdbcColumnMeta(null, null, "CARDINALITY", Integer.class),
+            new JdbcColumnMeta(null, null, "PAGES", Integer.class),
+            new JdbcColumnMeta(null, null, "FILTER_CONDITION", String.class));
+
+        if (!validCatalogPattern(catalog))
+            return new JdbcThinResultSet(Collections.<List<Object>>emptyList(), meta);
+
+        try {
             JdbcMetaIndexesResult res = conn.io().indexMeta(schema, tbl);
 
             List<List<Object>> rows = new LinkedList<>();
@@ -1146,20 +1180,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
             for (JdbcIndexMeta idxMeta : res.meta())
                 rows.addAll(indexRows(idxMeta));
 
-            return new JdbcThinResultSet(rows, Arrays.asList(
-                new JdbcColumnMeta(null, null, "TABLE_CAT", String.class),
-                new JdbcColumnMeta(null, null, "TABLE_SCHEM", String.class),
-                new JdbcColumnMeta(null, null, "TABLE_NAME", String.class),
-                new JdbcColumnMeta(null, null, "NON_UNIQUE", Boolean.class),
-                new JdbcColumnMeta(null, null, "INDEX_QUALIFIER", String.class),
-                new JdbcColumnMeta(null, null, "INDEX_NAME", String.class),
-                new JdbcColumnMeta(null, null, "TYPE", Short.class),
-                new JdbcColumnMeta(null, null, "ORDINAL_POSITION", Short.class),
-                new JdbcColumnMeta(null, null, "COLUMN_NAME", String.class),
-                new JdbcColumnMeta(null, null, "ASC_OR_DESC", String.class),
-                new JdbcColumnMeta(null, null, "CARDINALITY", Integer.class),
-                new JdbcColumnMeta(null, null, "PAGES", Integer.class),
-                new JdbcColumnMeta(null, null, "FILTER_CONDITION", String.class)));
+            return new JdbcThinResultSet(rows, meta);
         }
         catch (IOException e) {
             conn.close();
@@ -1404,10 +1425,18 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
 
     /** {@inheritDoc} */
     @Override public ResultSet getSchemas(String catalog, String schemaPtrn) throws SQLException {
-        try {
-            if (conn.isClosed())
-                throw new SQLException("Connection is closed.");
+        if (conn.isClosed())
+            throw new SQLException("Connection is closed.");
 
+        final List<JdbcColumnMeta> meta = Arrays.asList(
+            new JdbcColumnMeta(null, null, "TABLE_SCHEM", String.class),
+            new JdbcColumnMeta(null, null, "TABLE_CATALOG", String.class)
+        );
+
+        if (!validCatalogPattern(catalog))
+            return new JdbcThinResultSet(Collections.<List<Object>>emptyList(), meta);
+
+        try {
             JdbcMetaSchemasResult res = conn.io().schemasMeta(schemaPtrn);
 
             List<List<Object>> rows = new LinkedList<>();
@@ -1421,10 +1450,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
                 rows.add(row);
             }
 
-            return new JdbcThinResultSet(rows, Arrays.asList(
-                new JdbcColumnMeta(null, null, "TABLE_SCHEM", String.class),
-                new JdbcColumnMeta(null, null, "TABLE_CATALOG", String.class)
-            ));
+            return new JdbcThinResultSet(rows, meta);
         }
         catch (IOException e) {
             conn.close();
@@ -1526,6 +1552,15 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
             new JdbcColumnMeta(null, null, "CHAR_OCTET_LENGTH", Integer.class),
             new JdbcColumnMeta(null, null, "IS_NULLABLE", String.class)
         ));
+    }
+
+    /**
+     * @param catalog Catalog pattern.
+     * @return {@code true} If patter is valid for Ignite (null, empty, or '%' wildcard).
+     *  Otherwise returns {@code false}.
+     */
+    private static boolean validCatalogPattern(String catalog) {
+        return F.isEmpty(catalog) || "%".equals(catalog);
     }
 
     /** {@inheritDoc} */
