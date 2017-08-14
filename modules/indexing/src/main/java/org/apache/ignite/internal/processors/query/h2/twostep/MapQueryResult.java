@@ -23,6 +23,8 @@ import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueCacheObject;
+import org.apache.ignite.internal.processors.query.h2.twostep.lazy.MapQueryLazyWorker;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.jdbc.JdbcResultSet;
@@ -42,7 +44,7 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_OBJECT_READ;
 /**
  * Mapper result for a single part of the query.
  */
-class MapQueryResult implements AutoCloseable {
+class MapQueryResult {
     /** */
     private static final Field RESULT_FIELD;
 
@@ -96,24 +98,30 @@ class MapQueryResult implements AutoCloseable {
     /** */
     private final Object[] params;
 
+    /** Lazy worker. */
+    private final MapQueryLazyWorker lazyWorker;
+
     /**
      * @param rs Result set.
      * @param cacheName Cache name.
      * @param qrySrcNodeId Query source node.
      * @param qry Query.
      * @param params Query params.
+     * @param lazyWorker Lazy worker.
      */
     MapQueryResult(IgniteH2Indexing h2, ResultSet rs, @Nullable String cacheName,
-        UUID qrySrcNodeId, GridCacheSqlQuery qry, Object[] params) {
+        UUID qrySrcNodeId, GridCacheSqlQuery qry, Object[] params, @Nullable MapQueryLazyWorker lazyWorker) {
         this.h2 = h2;
         this.cacheName = cacheName;
         this.qry = qry;
         this.params = params;
         this.qrySrcNodeId = qrySrcNodeId;
         this.cpNeeded = F.eq(h2.kernalContext().localNodeId(), qrySrcNodeId);
+        this.lazyWorker = lazyWorker;
 
         if (rs != null) {
             this.rs = rs;
+
             try {
                 res = (ResultInterface)RESULT_FIELD.get(rs);
             }
@@ -168,6 +176,8 @@ class MapQueryResult implements AutoCloseable {
      * @return {@code true} If there are no more rows available.
      */
     synchronized boolean fetchNextPage(List<Value[]> rows, int pageSize) {
+        assert lazyWorker == null || MapQueryLazyWorker.currentWorker() != null;
+
         if (closed)
             return true;
 
@@ -247,8 +257,37 @@ class MapQueryResult implements AutoCloseable {
         return res;
     }
 
-    /** {@inheritDoc} */
-    @Override public synchronized void close() {
+    /**
+     * Close the result.
+     */
+    public synchronized void close() {
+        if (lazyWorker != null && MapQueryLazyWorker.currentWorker() == null) {
+            final GridFutureAdapter closeFut = new GridFutureAdapter();
+
+            lazyWorker.submit(new Runnable() {
+                @Override public void run() {
+                    try {
+                        close();
+                    }
+                    finally {
+                        closeFut.onDone();
+                    }
+                }
+            });
+
+            lazyWorker.stop();
+
+            try {
+                // Wait for close synchronously to maintain consistent semantics.
+                closeFut.get();
+            }
+            catch (Exception e) {
+                // No-op.
+            }
+
+            return;
+        }
+
         if (closed)
             return;
 

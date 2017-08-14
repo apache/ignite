@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.h2.twostep;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.processors.query.h2.twostep.lazy.MapQueryLazyWorker;
 import org.jetbrains.annotations.Nullable;
 
 import java.sql.ResultSet;
@@ -96,13 +97,17 @@ class MapQueryResults {
     }
 
     /**
+     * Add result.
+     *
      * @param qry Query result index.
      * @param q Query object.
      * @param qrySrcNodeId Query source node.
      * @param rs Result set.
+     * @param lazyWorker Lazy worker.
      */
-    void addResult(int qry, GridCacheSqlQuery q, UUID qrySrcNodeId, ResultSet rs, Object[] params) {
-        MapQueryResult res = new MapQueryResult(h2, rs, cacheName, qrySrcNodeId, q, params);
+    void addResult(int qry, GridCacheSqlQuery q, UUID qrySrcNodeId, ResultSet rs, Object[] params,
+        @Nullable MapQueryLazyWorker lazyWorker) {
+        MapQueryResult res = new MapQueryResult(h2, rs, cacheName, qrySrcNodeId, q, params, lazyWorker);
 
         if (!results.compareAndSet(qry, null, res))
             throw new IllegalStateException();
@@ -141,6 +146,7 @@ class MapQueryResults {
                 continue;
             }
 
+            // NB: Cancel is already safe even for lazy queries (see implementation of passed Runnable).
             if (forceQryCancel) {
                 GridQueryCancel cancel = cancels[i];
 
