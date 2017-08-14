@@ -616,7 +616,7 @@ public class GridReduceQueryExecutor {
 
             final boolean skipMergeTbl = !qry.explain() && qry.skipMergeTable();
 
-            final int segmentsPerIdx = qry.explain() || isReplicatedOnly ? 1 :
+            final int segmentsPerIndex = qry.explain() || isReplicatedOnly ? 1 :
                 findFirstPartitioned(cacheIds).config().getQueryParallelism();
 
             int replicatedQrysCnt = 0;
@@ -667,7 +667,7 @@ public class GridReduceQueryExecutor {
                     idx.setSources(singletonList(node), 1); // Replicated tables can have only 1 segment.
                 }
                 else
-                    idx.setSources(nodes, segmentsPerIdx);
+                    idx.setSources(nodes, segmentsPerIndex);
 
                 idx.setPageSize(r.pageSize());
 
@@ -675,7 +675,7 @@ public class GridReduceQueryExecutor {
             }
 
             r.latch(new CountDownLatch(isReplicatedOnly ? 1 :
-                (r.indexes().size() - replicatedQrysCnt) * nodes.size() * segmentsPerIdx + replicatedQrysCnt));
+                (r.indexes().size() - replicatedQrysCnt) * nodes.size() * segmentsPerIndex + replicatedQrysCnt));
 
             runs.put(qryReqId, r);
 
