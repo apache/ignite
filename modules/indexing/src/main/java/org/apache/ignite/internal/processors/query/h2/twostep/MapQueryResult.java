@@ -175,7 +175,7 @@ class MapQueryResult {
      * @return {@code true} If there are no more rows available.
      */
     synchronized boolean fetchNextPage(List<Value[]> rows, int pageSize) {
-        assert lazyWorker == null || MapQueryLazyWorker.currentWorker() != null;
+        assert lazyWorker == null || lazyWorker == MapQueryLazyWorker.currentWorker();
 
         if (closed)
             return true;
@@ -274,8 +274,6 @@ class MapQueryResult {
                 }
             });
 
-            lazyWorker.stop();
-
             try {
                 // Wait for close synchronously to maintain consistent semantics.
                 closeFut.get();
@@ -287,11 +285,16 @@ class MapQueryResult {
             return;
         }
 
+        assert lazyWorker == null || lazyWorker == MapQueryLazyWorker.currentWorker();
+
         if (closed)
             return;
 
         closed = true;
 
         U.closeQuiet(rs);
+
+        if (lazyWorker != null)
+            lazyWorker.stop();
     }
 }
