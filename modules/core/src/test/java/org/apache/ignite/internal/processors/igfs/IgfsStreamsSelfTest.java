@@ -215,6 +215,7 @@ public class IgfsStreamsSelfTest extends IgfsCommonAbstractTest {
 
     /** @throws Exception If failed. */
     public void testCreateFileFragmented() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-6017");
         IgfsEx impl = (IgfsEx)grid(0).fileSystem("igfs");
         String metaCacheName = grid(0).igfsx("igfs").configuration().getMetaCacheConfiguration().getName();
         final String dataCacheName = grid(0).igfsx("igfs").configuration().getDataCacheConfiguration()
