@@ -2005,7 +2005,21 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (!F.isEmpty(reqs) && err == null) {
             Collection<IgniteBiTuple<GridCacheContext, Boolean>> stopped = null;
 
+            boolean checkpointForced = false;
+
             for (DynamicCacheChangeRequest req : reqs) {
+                // Force checkpoint if there is any cache stop request.
+                if (req.stop() && !checkpointForced) {
+                    try {
+                        sharedCtx.database().waitForCheckpoint("caches stop");
+                    }
+                    catch (IgniteCheckedException e) {
+                        U.error(log, "Failed to wait for checkpoint finish during cache stop.", e);
+                    }
+
+                    checkpointForced = true;
+                }
+
                 String masked = maskNull(req.cacheName());
 
                 GridCacheContext<?, ?> stopCtx = null;
