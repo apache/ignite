@@ -30,7 +30,7 @@ import org.apache.ignite.internal.util.typedef.F;
  * JDBC columns metadata result.
  */
 public class JdbcMetaColumnsResult extends JdbcResult {
-    /** Query result rows. */
+    /** Columns metadata. */
     private List<JdbcColumnMeta> meta;
 
     /**
@@ -41,7 +41,7 @@ public class JdbcMetaColumnsResult extends JdbcResult {
     }
 
     /**
-     * @param meta Column metadata.
+     * @param meta Columns metadata.
      */
     JdbcMetaColumnsResult(Collection<JdbcColumnMeta> meta) {
         super(META_COLUMNS);
@@ -49,7 +49,7 @@ public class JdbcMetaColumnsResult extends JdbcResult {
     }
 
     /**
-     * @return Query result rows.
+     * @return Columns metadata.
      */
     public List<JdbcColumnMeta> meta() {
         return meta;

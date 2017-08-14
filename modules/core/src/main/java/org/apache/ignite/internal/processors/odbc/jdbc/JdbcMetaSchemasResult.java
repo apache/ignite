@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.odbc.jdbc;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.List;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
@@ -29,7 +28,7 @@ import org.apache.ignite.internal.binary.BinaryWriterExImpl;
  * JDBC tables metadata result.
  */
 public class JdbcMetaSchemasResult extends JdbcResult {
-    /** Query result rows. */
+    /** Found schemas. */
     private Collection<String> schemas;
 
     /**
@@ -62,7 +61,7 @@ public class JdbcMetaSchemasResult extends JdbcResult {
     }
 
     /**
-     * @return Query result rows.
+     * @return Found schemas.
      */
     public Collection<String> schemas() {
         return schemas;

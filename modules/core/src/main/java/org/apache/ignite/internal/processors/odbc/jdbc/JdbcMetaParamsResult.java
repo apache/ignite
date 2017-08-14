@@ -83,7 +83,7 @@ public class JdbcMetaParamsResult extends JdbcResult {
     }
 
     /**
-     * @return Query result rows.
+     * @return SQL query parameters metadata.
      */
     public List<JdbcParameterMeta> meta() {
         return meta;

@@ -29,7 +29,7 @@ import org.apache.ignite.internal.util.typedef.F;
  * JDBC tables metadata result.
  */
 public class JdbcMetaTablesResult extends JdbcResult {
-    /** Query result rows. */
+    /** Tables metadata. */
     private List<JdbcTableMeta> meta;
 
     /**
@@ -40,7 +40,7 @@ public class JdbcMetaTablesResult extends JdbcResult {
     }
 
     /**
-     * @param meta Column metadata.
+     * @param meta Tables metadata.
      */
     JdbcMetaTablesResult(List<JdbcTableMeta> meta) {
         super(META_TABLES);
@@ -83,7 +83,7 @@ public class JdbcMetaTablesResult extends JdbcResult {
     }
 
     /**
-     * @return Query result rows.
+     * @return Tables metadata.
      */
     public List<JdbcTableMeta> meta() {
         return meta;

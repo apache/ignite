@@ -55,7 +55,7 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
     /** Query arguments. */
     protected ArrayList<Object> args;
 
-    /** Parameters meta data. */
+    /** Parameters metadata. */
     private JdbcThinParameterMetadata metaData;
 
     /**

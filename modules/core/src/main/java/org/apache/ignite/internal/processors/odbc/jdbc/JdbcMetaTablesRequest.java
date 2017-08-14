@@ -70,7 +70,7 @@ public class JdbcMetaTablesRequest extends JdbcRequest {
     }
 
     /**
-     * @return Table type search pattern.
+     * @return Table types.
      */
     public String[] tableTypes() {
         return tableTypes;

@@ -50,7 +50,7 @@ public class JdbcQueryMetadataResult extends JdbcResult {
     }
 
     /**
-     * @return Query result rows.
+     * @return Query result metadata.
      */
     public List<JdbcColumnMeta> meta() {
         return meta;

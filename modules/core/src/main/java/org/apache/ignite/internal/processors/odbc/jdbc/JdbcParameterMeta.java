@@ -32,7 +32,7 @@ public class JdbcParameterMeta implements JdbcRawBinarylizable {
     /** Null value is allow for the param. */
     private int isNullable;
 
-    /** Signed. */
+    /** Signed flag. */
     private boolean signed;
 
     /** Precision. */
@@ -41,13 +41,13 @@ public class JdbcParameterMeta implements JdbcRawBinarylizable {
     /** Scale. */
     private int scale;
 
-    /** SQL type. */
+    /** SQL type ID. */
     private int type;
 
-    /** SQL type. */
+    /** SQL type name. */
     private String typeName;
 
-    /** SQL type. */
+    /** Java type class name. */
     private String typeClass;
 
     /** Mode. */
@@ -120,7 +120,7 @@ public class JdbcParameterMeta implements JdbcRawBinarylizable {
     }
 
     /**
-     * @return Type class name.
+     * @return Java type class name.
      */
     public String typeClass() {
         return typeClass;

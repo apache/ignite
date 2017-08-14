@@ -20,12 +20,13 @@ package org.apache.ignite.internal.processors.odbc.jdbc;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.util.typedef.F;
 
 /**
  * JDBC primary key metadata.
  */
 public class JdbcPrimaryKeyMeta implements JdbcRawBinarylizable {
-    /** Cache name. */
+    /** Schema name. */
     private String schemaName;
 
     /** Table name. */
@@ -79,7 +80,7 @@ public class JdbcPrimaryKeyMeta implements JdbcRawBinarylizable {
     }
 
     /**
-     * @return Index fields
+     * @return Key fields.
      */
     public String[] fields() {
         return fields;
@@ -112,13 +113,13 @@ public class JdbcPrimaryKeyMeta implements JdbcRawBinarylizable {
 
         JdbcPrimaryKeyMeta meta = (JdbcPrimaryKeyMeta)o;
 
-        if (schemaName != null ? !schemaName.equals(meta.schemaName) : meta.schemaName != null)
+        if (!F.eq(schemaName, meta.schemaName))
             return false;
 
-        if (!tblName.equals(meta.tblName))
+        if (!F.eq(tblName, meta.tblName))
             return false;
 
-        return name.equals(meta.name);
+        return F.eq(name, meta.name);
     }
 
     /** {@inheritDoc} */

@@ -157,7 +157,7 @@ public class JdbcIndexMeta implements JdbcRawBinarylizable {
         if (!F.eq(tblName, meta.tblName))
             return false;
 
-        return idxName.equals(meta.idxName);
+        return F.eq(idxName, meta.idxName);
     }
 
     /** {@inheritDoc} */

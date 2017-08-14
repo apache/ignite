@@ -51,17 +51,17 @@ public class JdbcMetaParamsRequest extends JdbcRequest {
     }
 
     /**
-     * @return SQL Query.
-     */
-    public String sql() {
-        return sql;
-    }
-
-    /**
      * @return Schema name.
      */
     public String schemaName() {
         return schemaName;
+    }
+
+    /**
+     * @return SQL Query.
+     */
+    public String sql() {
+        return sql;
     }
 
     /** {@inheritDoc} */

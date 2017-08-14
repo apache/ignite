@@ -162,7 +162,7 @@ public class JdbcColumnMeta implements JdbcRawBinarylizable {
         if (!F.eq(tblName, meta.tblName))
             return false;
 
-        return colName.equals(meta.colName);
+        return F.eq(colName, meta.colName);
     }
 
     /** {@inheritDoc} */

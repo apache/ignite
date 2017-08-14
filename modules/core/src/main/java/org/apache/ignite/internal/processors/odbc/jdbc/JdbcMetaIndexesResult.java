@@ -30,7 +30,7 @@ import org.apache.ignite.internal.util.typedef.F;
  * JDBC indexes metadata result.
  */
 public class JdbcMetaIndexesResult extends JdbcResult {
-    /** Query result rows. */
+    /** Indexes metadata. */
     private List<JdbcIndexMeta> meta;
 
     /**
@@ -41,7 +41,7 @@ public class JdbcMetaIndexesResult extends JdbcResult {
     }
 
     /**
-     * @param meta Column metadata.
+     * @param meta Indexes metadata.
      */
     JdbcMetaIndexesResult(Collection<JdbcIndexMeta> meta) {
         super(META_INDEXES);
@@ -49,7 +49,7 @@ public class JdbcMetaIndexesResult extends JdbcResult {
     }
 
     /**
-     * @return Query result rows.
+     * @return Indexes metadata.
      */
     public List<JdbcIndexMeta> meta() {
         return meta;

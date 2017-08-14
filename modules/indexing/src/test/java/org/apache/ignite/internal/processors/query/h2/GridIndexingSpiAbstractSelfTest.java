@@ -467,6 +467,9 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         private final String cacheName;
 
         /** */
+        private final String schemaName;
+
+        /** */
         private final Map<String, Class<?>> valFields;
 
         /** */
@@ -474,7 +477,7 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
 
         /**
          * @param cacheName Cache name.
-         * @param schema Schema name.
+         * @param schemaName Schema name.
          * @param name Type name.
          * @param valFields Fields.
          * @param textIdx Fulltext index.
@@ -482,6 +485,7 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         private TypeDesc(String cacheName, String schemaName, String name, Map<String, Class<?>> valFields, GridQueryIndexDescriptor textIdx) {
             this.name = name;
             this.cacheName = cacheName;
+            this.schemaName = schemaName;
             this.valFields = Collections.unmodifiableMap(valFields);
             this.textIdx = textIdx;
         }
@@ -498,7 +502,7 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
 
         /** {@inheritDoc} */
         @Override public String schemaName() {
-            return null;
+            return schemaName;
         }
 
         /** {@inheritDoc} */

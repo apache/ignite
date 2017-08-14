@@ -85,7 +85,7 @@ public class JdbcMetaPrimaryKeysResult extends JdbcResult {
     }
 
     /**
-     * @return Primary keys meta.
+     * @return Primary keys metadata.
      */
     public List<JdbcPrimaryKeyMeta> meta() {
         return meta;

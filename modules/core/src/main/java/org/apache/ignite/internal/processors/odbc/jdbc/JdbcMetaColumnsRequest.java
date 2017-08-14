@@ -57,21 +57,21 @@ public class JdbcMetaColumnsRequest extends JdbcRequest {
     }
 
     /**
-     * @return Cache name.
+     * @return Schema name pattern.
      */
     @Nullable public String schemaName() {
         return schemaName;
     }
 
     /**
-     * @return Table name.
+     * @return Table name pattern.
      */
     public String tableName() {
         return tblName;
     }
 
     /**
-     * @return Column name.
+     * @return Column name pattern.
      */
     public String columnName() {
         return colName;
