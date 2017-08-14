@@ -30,9 +30,9 @@ import org.h2.index.Cursor;
 import org.h2.result.Row;
 
 /**
- * Iterator that transparently and sequentially traverses a bunch of {@link GridMergeIndex}es.
+ * Iterator that transparently and sequentially traverses a bunch of {@link GridMergeIndex} objects.
  */
-class GridMergeIndexesIterator extends GridCloseableIteratorAdapterEx<List<?>> {
+class GridMergeIndexeIterator extends GridCloseableIteratorAdapterEx<List<?>> {
     /** Reduce query executor. */
     private final GridReduceQueryExecutor rdcExec;
 
@@ -57,8 +57,8 @@ class GridMergeIndexesIterator extends GridCloseableIteratorAdapterEx<List<?>> {
     /** Next row to return. */
     private List<Object> next;
 
-    /** Close flag. */
-    private boolean closed;
+    /** Whether remote resources were released. */
+    private boolean released;
 
     /**
      * Constructor.
@@ -70,7 +70,7 @@ class GridMergeIndexesIterator extends GridCloseableIteratorAdapterEx<List<?>> {
      * @param distributedJoins Distributed joins.
      * @throws IgniteCheckedException if failed.
      */
-    GridMergeIndexesIterator(GridReduceQueryExecutor rdcExec, Collection<ClusterNode> nodes, ReduceQueryRun run,
+    GridMergeIndexeIterator(GridReduceQueryExecutor rdcExec, Collection<ClusterNode> nodes, ReduceQueryRun run,
         long qryReqId, boolean distributedJoins)
         throws IgniteCheckedException {
         this.rdcExec = rdcExec;
@@ -81,7 +81,7 @@ class GridMergeIndexesIterator extends GridCloseableIteratorAdapterEx<List<?>> {
 
         this.idxs = run.indexes().iterator();
 
-        next0();
+        advance();
     }
 
     /** {@inheritDoc} */
@@ -96,16 +96,17 @@ class GridMergeIndexesIterator extends GridCloseableIteratorAdapterEx<List<?>> {
         if (res == null)
             throw new NoSuchElementException();
 
-        next0();
+        advance();
 
         return res;
     }
 
     /**
-     * Retrieve next row.
+     * Advance iterator.
+     *
      * @throws IgniteCheckedException if failed.
      */
-    private void next0() throws IgniteCheckedException {
+    private void advance() throws IgniteCheckedException {
         next = null;
 
         try {
@@ -134,10 +135,10 @@ class GridMergeIndexesIterator extends GridCloseableIteratorAdapterEx<List<?>> {
                 next = res;
             }
         }
-        catch (Throwable e) {
+        catch (Exception e) {
             close0();
 
-            throw new IgniteCheckedException(e);
+            throw e;
         }
     }
 
@@ -145,17 +146,10 @@ class GridMergeIndexesIterator extends GridCloseableIteratorAdapterEx<List<?>> {
      * Close routine.
      */
     private void close0() {
-        if (!closed) {
+        if (!released) {
             rdcExec.releaseRemoteResources(nodes, run, qryReqId, distributedJoins);
 
-            closed = true;
+            released = true;
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void onClose() throws IgniteCheckedException {
-        close0();
-
-        super.onClose();
     }
 }

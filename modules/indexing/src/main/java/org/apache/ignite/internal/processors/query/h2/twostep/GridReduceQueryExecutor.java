@@ -758,7 +758,7 @@ public class GridReduceQueryExecutor {
 
                 if (!retry) {
                     if (skipMergeTbl) {
-                        resIter = new GridMergeIndexesIterator(this, finalNodes, r, qryReqId, qry.distributedJoins());
+                        resIter = new GridMergeIndexeIterator(this, finalNodes, r, qryReqId, qry.distributedJoins());
 
                         release = false;
                     }
