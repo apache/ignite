@@ -36,6 +36,7 @@ public class GridQueryCancel {
         AtomicReferenceFieldUpdater.newUpdater(GridQueryCancel.class, Runnable.class, "clo");
 
     /** */
+    @SuppressWarnings("unused")
     private volatile Runnable clo;
 
     /**

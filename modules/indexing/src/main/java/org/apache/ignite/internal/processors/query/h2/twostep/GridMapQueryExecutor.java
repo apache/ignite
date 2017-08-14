@@ -58,7 +58,6 @@ import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RetryException;
-import org.apache.ignite.internal.processors.query.h2.twostep.lazy.MapQueryLazyIgniteThread;
 import org.apache.ignite.internal.processors.query.h2.twostep.lazy.MapQueryLazyWorker;
 import org.apache.ignite.internal.processors.query.h2.twostep.lazy.MapQueryLazyWorkerKey;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryCancelRequest;
@@ -110,6 +109,9 @@ public class GridMapQueryExecutor {
 
     /** */
     private final ConcurrentMap<MapReservationKey, GridReservable> reservations = new ConcurrentHashMap8<>();
+
+    /** Lazy workers. */
+    private final ConcurrentHashMap<MapQueryLazyWorkerKey, MapQueryLazyWorker> lazyWorkers = new ConcurrentHashMap<>();
 
     /**
      * @param busyLock Busy lock.
@@ -201,7 +203,6 @@ public class GridMapQueryExecutor {
      * @param node Node.
      * @param msg Message.
      */
-    // TODO: IGNITE-5991: Correct thread.
     private void onCancel(ClusterNode node, GridQueryCancelRequest msg) {
         long qryReqId = msg.queryRequestId();
 
@@ -500,22 +501,6 @@ public class GridMapQueryExecutor {
             lazy);
     }
 
-    /** Lazy workers. */
-    private final ConcurrentHashMap<MapQueryLazyWorkerKey, MapQueryLazyWorker> lazyWorkers = new ConcurrentHashMap<>();
-
-    /**
-     * Unregister lazy worker if needed (i.e. if we are currently in laze worker thread).
-     */
-    private void unregisterLazyWorkerIfNeeded() {
-        MapQueryLazyWorker worker = MapQueryLazyWorker.currentWorker();
-
-        if (worker != null) {
-            worker.stop();
-
-            lazyWorkers.remove(worker.key(), worker);
-        }
-    }
-
     /**
      * @param node Node authored request.
      * @param reqId Request ID.
@@ -530,7 +515,6 @@ public class GridMapQueryExecutor {
      * @param distributedJoinMode Query distributed join mode.
      * @param lazy Streaming flag.
      */
-    // TODO: IGNITE-5991: Correct thread.
     private void onQueryRequest0(
         final ClusterNode node,
         final long reqId,
@@ -640,12 +624,6 @@ public class GridMapQueryExecutor {
                 }
 
                 // Run queries.
-                if (lazy) {
-                    GridCacheSqlQuery qry = qrys.iterator().next();
-
-                    h2.executeSqlStreaming(conn, qry.query(), F.asList(qry.parameters(params)));
-                }
-
                 int qryIdx = 0;
 
                 boolean evt = mainCctx != null && ctx.event().isRecordable(EVT_CACHE_QUERY_EXECUTED);
@@ -883,6 +861,19 @@ public class GridMapQueryExecutor {
         for (MapReservationKey grpKey : reservations.keySet()) {
             if (F.eq(grpKey.cacheName(), cacheName))
                 reservations.remove(grpKey);
+        }
+    }
+
+    /**
+     * Unregister lazy worker if needed (i.e. if we are currently in laze worker thread).
+     */
+    private void unregisterLazyWorkerIfNeeded() {
+        MapQueryLazyWorker worker = MapQueryLazyWorker.currentWorker();
+
+        if (worker != null) {
+            worker.stop();
+
+            lazyWorkers.remove(worker.key(), worker);
         }
     }
 }
