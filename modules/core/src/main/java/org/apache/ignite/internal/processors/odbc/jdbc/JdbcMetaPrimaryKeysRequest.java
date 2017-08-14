@@ -27,10 +27,10 @@ import org.jetbrains.annotations.Nullable;
  * JDBC get primary keys metadata request.
  */
 public class JdbcMetaPrimaryKeysRequest extends JdbcRequest {
-    /** Cache name. */
+    /** Schema name pattern. */
     private String schemaName;
 
-    /** Table name. */
+    /** Table name pattern. */
     private String tblName;
 
     /**

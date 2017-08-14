@@ -27,10 +27,10 @@ import org.jetbrains.annotations.Nullable;
  * JDBC indexes metadata request.
  */
 public class JdbcMetaIndexesRequest extends JdbcRequest {
-    /** Schema name. */
+    /** Schema name pattern. */
     private String schemaName;
 
-    /** Table name. */
+    /** Table name pattern. */
     private String tblName;
 
     /**

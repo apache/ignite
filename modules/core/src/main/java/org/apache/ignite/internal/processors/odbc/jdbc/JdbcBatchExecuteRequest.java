@@ -31,7 +31,7 @@ import org.jetbrains.annotations.Nullable;
  * JDBC batch execute request.
  */
 public class JdbcBatchExecuteRequest extends JdbcRequest {
-    /** Cache name. */
+    /** Schema name. */
     private String schemaName;
 
     /** Sql query. */
@@ -59,7 +59,7 @@ public class JdbcBatchExecuteRequest extends JdbcRequest {
     }
 
     /**
-     * @return Schema.
+     * @return Schema name.
      */
     @Nullable public String schemaName() {
         return schemaName;

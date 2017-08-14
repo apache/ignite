@@ -321,17 +321,17 @@ public class JdbcThinTcpIo {
     }
 
     /**
-     * @param schema Schema.
+     * @param schemaName Schema.
      * @param batch Batch queries.
      * @return Result.
      * @throws IOException On error.
      * @throws IgniteCheckedException On error.
      */
-    public JdbcBatchExecuteResult batchExecute(String schema, List<JdbcQuery> batch)
+    public JdbcBatchExecuteResult batchExecute(String schemaName, List<JdbcQuery> batch)
         throws IOException, IgniteCheckedException {
         int cnt = Math.min(MAX_BATCH_QRY_CNT, batch.size());
 
-        return sendRequest(new JdbcBatchExecuteRequest(schema, batch), DYNAMIC_SIZE_MSG_CAP * cnt);
+        return sendRequest(new JdbcBatchExecuteRequest(schemaName, batch), DYNAMIC_SIZE_MSG_CAP * cnt);
     }
 
     /**
@@ -361,40 +361,40 @@ public class JdbcThinTcpIo {
     }
 
     /**
-     * @param schema Schema.
-     * @param tbl Table
+     * @param schemaPtrn Schema name pattern.
+     * @param tablePtrn Table name pattern.
      * @return Result.
      * @throws IOException On error.
      * @throws IgniteCheckedException On error.
      */
-    public JdbcMetaIndexesResult indexMeta(String schema, String tbl) throws IOException, IgniteCheckedException {
-        return sendRequest(new JdbcMetaIndexesRequest(schema, tbl), DYNAMIC_SIZE_MSG_CAP);
+    public JdbcMetaIndexesResult indexMeta(String schemaPtrn, String tablePtrn) throws IOException, IgniteCheckedException {
+        return sendRequest(new JdbcMetaIndexesRequest(schemaPtrn, tablePtrn), DYNAMIC_SIZE_MSG_CAP);
     }
 
     /**
-     * @param schema Schema.
+     * @param schemaPtrn Schema name pattern.
      * @param sql SQL query.
      * @return Result.
      * @throws IOException On error.
      * @throws IgniteCheckedException On error.
      */
-    public JdbcMetaParamsResult parametersMeta(String schema, String sql) throws IOException, IgniteCheckedException {
-        return sendRequest(new JdbcMetaParamsRequest(schema, sql), DYNAMIC_SIZE_MSG_CAP);
+    public JdbcMetaParamsResult parametersMeta(String schemaPtrn, String sql) throws IOException, IgniteCheckedException {
+        return sendRequest(new JdbcMetaParamsRequest(schemaPtrn, sql), DYNAMIC_SIZE_MSG_CAP);
     }
 
     /**
-     * @param schema Schema.
-     * @param tbl Table.
+     * @param schemaPtrn Schema name pattern.
+     * @param tablePtrn Table name pattern.
      * @return Result.
      * @throws IOException On error.
      * @throws IgniteCheckedException On error.
      */
-    public JdbcMetaPrimaryKeysResult primaryKeysMeta(String schema, String tbl) throws IOException, IgniteCheckedException {
-        return sendRequest(new JdbcMetaPrimaryKeysRequest(schema, tbl), DYNAMIC_SIZE_MSG_CAP);
+    public JdbcMetaPrimaryKeysResult primaryKeysMeta(String schemaPtrn, String tablePtrn) throws IOException, IgniteCheckedException {
+        return sendRequest(new JdbcMetaPrimaryKeysRequest(schemaPtrn, tablePtrn), DYNAMIC_SIZE_MSG_CAP);
     }
 
     /**
-     * @param schemaPtrn Schema.
+     * @param schemaPtrn Schema name pattern.
      * @return Result.
      * @throws IOException On error.
      * @throws IgniteCheckedException On error.
@@ -404,7 +404,7 @@ public class JdbcThinTcpIo {
     }
 
     /**
-     * @param req ODBC request.
+     * @param req JDBC request bytes.
      * @throws IOException On error.
      */
     private void send(byte[] req) throws IOException {

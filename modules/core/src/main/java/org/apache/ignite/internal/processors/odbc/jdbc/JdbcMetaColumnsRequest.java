@@ -27,13 +27,13 @@ import org.jetbrains.annotations.Nullable;
  * JDBC get columns metadata request.
  */
 public class JdbcMetaColumnsRequest extends JdbcRequest {
-    /** Schema name. */
+    /** Schema name pattern. */
     private String schemaName;
 
-    /** Table name. */
+    /** Table name pattern. */
     private String tblName;
 
-    /** Column name. */
+    /** Column name pattern. */
     private String colName;
 
     /**

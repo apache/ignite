@@ -26,7 +26,7 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcParameterMeta;
  * JDBC SQL query's parameters metadata.
  */
 public class JdbcThinParameterMetadata implements ParameterMetaData {
-    /** Meta. */
+    /** Parameters metadata. */
     private final List<JdbcParameterMeta> meta;
 
     /**

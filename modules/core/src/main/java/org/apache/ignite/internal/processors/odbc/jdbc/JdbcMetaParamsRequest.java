@@ -58,7 +58,7 @@ public class JdbcMetaParamsRequest extends JdbcRequest {
     }
 
     /**
-     * @return Cache name.
+     * @return Schema name.
      */
     public String schemaName() {
         return schemaName;
