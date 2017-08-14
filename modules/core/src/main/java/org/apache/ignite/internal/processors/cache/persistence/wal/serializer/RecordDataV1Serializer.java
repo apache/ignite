@@ -1,3 +1,20 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.ignite.internal.processors.cache.persistence.wal.serializer;
 
 import java.io.DataInput;
@@ -75,6 +92,8 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
+import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.CRC_SIZE;
+
 /**
  * Record data V1 serializer.
  */
@@ -98,8 +117,8 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
         this.pageSize = cctx.database().pageSize();
     }
 
-    @Override
-    public int size(WALRecord record) throws IgniteCheckedException {
+    /** {@inheritDoc} */
+    @Override public int size(WALRecord record) throws IgniteCheckedException {
         switch (record.type()) {
             case PAGE_RECORD:
                 assert record instanceof PageSnapshot;
@@ -257,15 +276,16 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 return /*cacheId*/ 4 + /*pageId*/ 8;
 
             case SWITCH_SEGMENT_RECORD:
-                return 0;
+                // CRC is not loaded for switch segment.
+                return -CRC_SIZE;
 
             default:
                 throw new UnsupportedOperationException("Type: " + record.type());
         }
     }
 
-    @Override
-    public WALRecord readRecord(WALRecord.RecordType type, ByteBufferBackedDataInput in) throws IOException, IgniteCheckedException {
+    /** {@inheritDoc} */
+    @Override public WALRecord readRecord(WALRecord.RecordType type, ByteBufferBackedDataInput in) throws IOException, IgniteCheckedException {
         WALRecord res;
 
         switch (type) {
@@ -785,8 +805,8 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
         return res;
     }
 
-    @Override
-    public void writeRecord(WALRecord record, ByteBuffer buf) throws IgniteCheckedException {
+    /** {@inheritDoc} */
+    @Override public void writeRecord(WALRecord record, ByteBuffer buf) throws IgniteCheckedException {
         switch (record.type()) {
             case PAGE_RECORD:
                 PageSnapshot snap = (PageSnapshot)record;

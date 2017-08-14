@@ -1021,6 +1021,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             case 2:
                 RecordDataV2Serializer dataV2Serializer = new RecordDataV2Serializer(new RecordDataV1Serializer(cctx));
+
                 return new RecordV2Serializer(dataV2Serializer);
 
             default:

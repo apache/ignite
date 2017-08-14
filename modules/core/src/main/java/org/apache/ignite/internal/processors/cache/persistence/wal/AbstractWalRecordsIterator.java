@@ -141,21 +141,32 @@ public abstract class AbstractWalRecordsIterator
      */
     protected void advance() throws IgniteCheckedException {
         while (true) {
-            curRec = advanceRecord(currWalSegment);
+            try {
+                curRec = advanceRecord(currWalSegment);
 
-            if (curRec != null)
-                return;
-            else {
-                currWalSegment = advanceSegment(currWalSegment);
-
-                if (currWalSegment == null)
+                if (curRec != null)
                     return;
+                else {
+                    currWalSegment = advanceSegment(currWalSegment);
+
+                    if (currWalSegment == null)
+                        return;
+                }
+            }
+            catch (WalSegmentTailReachedException e) {
+                if (log != null)
+                    log.warning(e.getMessage());
+
+                curRec = null;
+
+                return;
             }
         }
     }
 
     /**
      * Closes and returns WAL segment (if any)
+     *
      * @return closed handle
      * @throws IgniteCheckedException if IO failed
      */
@@ -186,7 +197,8 @@ public abstract class AbstractWalRecordsIterator
      * @return next advanced record
      */
     private IgniteBiTuple<WALPointer, WALRecord> advanceRecord(
-        @Nullable final FileWriteAheadLogManager.ReadFileHandle hnd) {
+        @Nullable final FileWriteAheadLogManager.ReadFileHandle hnd
+    ) throws IgniteCheckedException {
         if (hnd == null)
             return null;
 
@@ -204,8 +216,12 @@ public abstract class AbstractWalRecordsIterator
             return new IgniteBiTuple<>((WALPointer)ptr, rec);
         }
         catch (IOException | IgniteCheckedException e) {
+            if (e instanceof WalSegmentTailReachedException)
+                throw (WalSegmentTailReachedException)e;
+
             if (!(e instanceof SegmentEofException))
                 handleRecordException(e, ptr);
+
             return null;
         }
     }

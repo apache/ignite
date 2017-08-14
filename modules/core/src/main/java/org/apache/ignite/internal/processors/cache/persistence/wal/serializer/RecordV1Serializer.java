@@ -52,10 +52,10 @@ public class RecordV1Serializer implements RecordSerializer {
     public static final int REC_TYPE_SIZE = 1;
 
     /** Length of WAL Pointer */
-    public static final int FILE_WAL_POINTER_SIZE = 12;
+    public static final int FILE_WAL_POINTER_SIZE = 8 + 4;
 
     /** Length of CRC value */
-    private static final int CRC_SIZE = 4;
+    public static final int CRC_SIZE = 4;
 
     /** Total length of HEADER record. */
     public static final int HEADER_RECORD_SIZE = REC_TYPE_SIZE + FILE_WAL_POINTER_SIZE + CRC_SIZE + RecordDataV1Serializer.HEADER_RECORD_DATA_SIZE;
@@ -71,7 +71,7 @@ public class RecordV1Serializer implements RecordSerializer {
 
         /** {@inheritDoc} */
         @Override public int sizeWithHeaders(WALRecord record) throws IgniteCheckedException {
-            return dataSerializer.size(record);
+            return dataSerializer.size(record) + REC_TYPE_SIZE + FILE_WAL_POINTER_SIZE + CRC_SIZE;
         }
 
         /** {@inheritDoc} */
@@ -128,7 +128,7 @@ public class RecordV1Serializer implements RecordSerializer {
     /** {@inheritDoc} */
     @SuppressWarnings("CastConflictsWithInstanceof")
     @Override public int size(WALRecord record) throws IgniteCheckedException {
-        return sizeWithHeadersAndCrc(record, recordIO);
+        return recordIO.sizeWithHeaders(record);
     }
 
     /**
@@ -254,27 +254,5 @@ public class RecordV1Serializer implements RecordSerializer {
         }
         else
             buf.putInt(0);
-    }
-
-    /**
-     * Calculates size of record with headers and CRC.
-     *
-     * @param record WAL record to calculate size.
-     * @param io Record size I/O interface.
-     * @return Size of record, header and CRC in bytes.
-     * @throws IgniteCheckedException If it's unable to calculate size of record.
-     */
-    public static int sizeWithHeadersAndCrc(WALRecord record, RecordIO io) throws IgniteCheckedException {
-        int commonFields = REC_TYPE_SIZE + FILE_WAL_POINTER_SIZE + CRC_SIZE;
-
-        int recordSize = io.sizeWithHeaders(record);
-
-        switch (record.type()) {
-            case SWITCH_SEGMENT_RECORD:
-                return commonFields + recordSize - CRC_SIZE; //CRC is not loaded for switch segment, exception is thrown instead
-
-            default:
-                return commonFields + recordSize;
-        }
     }
 }
