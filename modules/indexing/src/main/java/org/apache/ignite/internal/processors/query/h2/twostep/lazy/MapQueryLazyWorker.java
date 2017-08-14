@@ -69,6 +69,15 @@ public class MapQueryLazyWorker extends GridWorker {
     }
 
     /**
+     * Submit task to worker.
+     *
+     * @param task Task to be executed.
+     */
+    public void submit(Runnable task) {
+        tasks.add(task);
+    }
+
+    /**
      * @return Worker key.
      */
     public MapQueryLazyWorkerKey key() {
@@ -79,7 +88,7 @@ public class MapQueryLazyWorker extends GridWorker {
      * Stop the worker.
      */
     public void stop() {
-        tasks.add(new StopTask());
+        submit(new StopTask());
     }
 
     /**

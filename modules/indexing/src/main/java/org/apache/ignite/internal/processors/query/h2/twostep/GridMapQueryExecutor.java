@@ -539,27 +539,34 @@ public class GridMapQueryExecutor {
      */
     // TODO: IGNITE-5991: Correct thread.
     private void onQueryRequest0(
-        ClusterNode node,
-        long reqId,
-        int segmentId,
-        String schemaName,
-        Collection<GridCacheSqlQuery> qrys,
-        List<Integer> cacheIds,
-        AffinityTopologyVersion topVer,
-        Map<UUID, int[]> partsMap,
-        int[] parts,
-        int pageSize,
-        DistributedJoinMode distributedJoinMode,
-        boolean enforceJoinOrder,
-        boolean replicated,
-        int timeout,
-        Object[] params,
+        final ClusterNode node,
+        final long reqId,
+        final int segmentId,
+        final String schemaName,
+        final Collection<GridCacheSqlQuery> qrys,
+        final List<Integer> cacheIds,
+        final AffinityTopologyVersion topVer,
+        final Map<UUID, int[]> partsMap,
+        final int[] parts,
+        final int pageSize,
+        final DistributedJoinMode distributedJoinMode,
+        final boolean enforceJoinOrder,
+        final boolean replicated,
+        final int timeout,
+        final Object[] params,
         boolean lazy
     ) {
         if (lazy && MapQueryLazyWorker.currentWorker() == null) {
             // Lazy queries must be re-submitted to dedicated workers.
             MapQueryLazyWorkerKey key = new MapQueryLazyWorkerKey(node.id(), reqId, segmentId);
             MapQueryLazyWorker worker = new MapQueryLazyWorker(ctx.igniteInstanceName(), key, log);
+
+            worker.submit(new Runnable() {
+                @Override public void run() {
+                    onQueryRequest0(node, reqId, segmentId, schemaName, qrys, cacheIds, topVer, partsMap, parts,
+                        pageSize, distributedJoinMode, enforceJoinOrder, replicated, timeout, params, true);
+                }
+            });
 
             if (busyLock.enterBusy()) {
                 try {
