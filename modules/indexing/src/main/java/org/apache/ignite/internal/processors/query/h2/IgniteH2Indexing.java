@@ -111,7 +111,6 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuerySplitter;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridMapQueryExecutor;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridReduceQueryExecutor;
-import org.apache.ignite.internal.processors.query.h2.twostep.MapQueryStreamingResultTarget;
 import org.apache.ignite.internal.processors.query.h2.twostep.MapQueryLazyWorker;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
@@ -139,10 +138,8 @@ import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.h2.api.ErrorCode;
 import org.h2.api.JavaObjectSerializer;
-import org.h2.command.CommandContainer;
 import org.h2.command.Prepared;
 import org.h2.command.dml.Insert;
-import org.h2.command.dml.Select;
 import org.h2.engine.Session;
 import org.h2.engine.SysProperties;
 import org.h2.index.Index;
@@ -985,25 +982,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         boolean useStmtCache, int timeoutMillis, @Nullable GridQueryCancel cancel) throws IgniteCheckedException {
         return executeSqlQueryWithTimer(preparedStatementWithParams(conn, sql, params, useStmtCache),
             conn, sql, params, timeoutMillis, cancel);
-    }
-
-    /**
-     * Execute SQL in streaming mode, trying to avoid loading everything to memory.
-     *
-     * @param conn Connection.
-     * @param sql SQL statement.
-     * @param params Parameters.
-     * @throws IgniteCheckedException If failed.
-     */
-    public void executeSqlStreaming(Connection conn, String sql, @Nullable Collection<Object> params)
-        throws IgniteCheckedException {
-        JdbcPreparedStatement stmt = (JdbcPreparedStatement) preparedStatementWithParams(conn, sql, params, false);
-
-        CommandContainer cmd = U.field(stmt, "command");
-
-        Select select = U.field(cmd, "prepared");
-
-        select.query(0, new MapQueryStreamingResultTarget(1, false));
     }
 
     /**
