@@ -256,6 +256,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
     /** {@inheritDoc} */
     @Override protected void onClose() throws IgniteCheckedException {
         super.onClose();
+
         curRec = null;
 
         closeCurrentWalSegment();

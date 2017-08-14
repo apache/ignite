@@ -2350,9 +2350,12 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         /** {@inheritDoc} */
         @Override protected void onClose() throws IgniteCheckedException {
+            super.onClose();
+
             curRec = null;
 
             final ReadFileHandle handle = closeCurrentWalSegment();
+
             if (handle != null && handle.workDir)
                 releaseWorkSegment(curWalSegmIdx);
 

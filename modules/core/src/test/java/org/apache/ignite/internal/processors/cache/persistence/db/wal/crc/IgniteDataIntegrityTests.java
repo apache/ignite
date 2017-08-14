@@ -119,6 +119,45 @@ public class IgniteDataIntegrityTests extends TestCase {
     }
 
     /**
+     *
+     */
+    public void testExpandBuffer() {
+        ByteBufferExpander expBuf = new ByteBufferExpander(16, ByteOrder.nativeOrder());
+
+        ByteBuffer b1 = expBuf.buffer();
+
+        b1.put((byte)1);
+        b1.putInt(2);
+        b1.putLong(3L);
+
+        assertEquals(13, b1.position());
+        assertEquals(16, b1.limit());
+
+        ByteBuffer b2 = expBuf.expand(32);
+
+        assertEquals(0, b2.position());
+        assertEquals((byte)1, b2.get());
+        assertEquals(2, b2.getInt());
+        assertEquals(3L, b2.getLong());
+        assertEquals(13, b2.position());
+        assertEquals(32, b2.limit());
+
+        b2.putInt(4);
+
+        assertEquals(17, b2.position());
+        assertEquals(32, b2.limit());
+
+        b2.flip();
+
+        assertEquals(0, b2.position());
+        assertEquals((byte)1, b2.get());
+        assertEquals(2, b2.getInt());
+        assertEquals(3L, b2.getLong());
+        assertEquals(4, b2.getInt());
+        assertEquals(17, b2.limit());
+    }
+
+    /**
      * @param rangeFrom Range from.
      * @param rangeTo Range to.
      */
