@@ -35,6 +35,9 @@ public class MapQueryLazyWorker extends GridWorker {
     /** Task to be executed. */
     private final BlockingQueue<Runnable> tasks = new LinkedBlockingDeque<>();
 
+    /** Key. */
+    private final MapQueryLazyWorkerKey key;
+
     /**
      * Constructor.
      *
@@ -44,6 +47,8 @@ public class MapQueryLazyWorker extends GridWorker {
      */
     public MapQueryLazyWorker(@Nullable String instanceName, MapQueryLazyWorkerKey key, IgniteLogger log) {
         super(instanceName, workerName(key), log);
+
+        this.key = key;
     }
 
     /** {@inheritDoc} */
@@ -64,6 +69,13 @@ public class MapQueryLazyWorker extends GridWorker {
     }
 
     /**
+     * @return Worker key.
+     */
+    public MapQueryLazyWorkerKey key() {
+        return key;
+    }
+
+    /**
      * Stop the worker.
      */
     public void stop() {
@@ -78,12 +90,10 @@ public class MapQueryLazyWorker extends GridWorker {
     }
 
     /**
-     * @return Lazy worker thread flag.
+     * @return Current worker or {@code null} if call is performed not from lazy worker thread.
      */
-    public static boolean isLazyWorkerThread() {
-        MapQueryLazyWorker worker = LAZY_WORKER.get();
-
-        return worker != null;
+    @Nullable public static MapQueryLazyWorker currentWorker() {
+        return LAZY_WORKER.get();
     }
 
     /**

@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
@@ -59,6 +60,7 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RetryException;
 import org.apache.ignite.internal.processors.query.h2.twostep.lazy.MapQueryLazyIgniteThread;
 import org.apache.ignite.internal.processors.query.h2.twostep.lazy.MapQueryLazyWorker;
+import org.apache.ignite.internal.processors.query.h2.twostep.lazy.MapQueryLazyWorkerKey;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryCancelRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryFailResponse;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageRequest;
@@ -70,6 +72,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.thread.IgniteThread;
 import org.h2.jdbc.JdbcResultSet;
 import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
@@ -504,6 +507,22 @@ public class GridMapQueryExecutor {
             lazy);
     }
 
+    /** Lazy workers. */
+    private final ConcurrentHashMap<MapQueryLazyWorkerKey, MapQueryLazyWorker> lazyWorkers = new ConcurrentHashMap<>();
+
+    /**
+     * Unregister lazy worker if needed (i.e. if we are currently in laze worker thread).
+     */
+    private void unregisterLazyWorkerIfNeeded() {
+        MapQueryLazyWorker worker = MapQueryLazyWorker.currentWorker();
+
+        if (worker != null) {
+            worker.stop();
+
+            lazyWorkers.remove(worker.key(), worker);
+        }
+    }
+
     /**
      * @param node Node authored request.
      * @param reqId Request ID.
@@ -537,6 +556,30 @@ public class GridMapQueryExecutor {
         Object[] params,
         boolean lazy
     ) {
+        if (lazy && MapQueryLazyWorker.currentWorker() == null) {
+            // Lazy queries must be re-submitted to dedicated workers.
+            MapQueryLazyWorkerKey key = new MapQueryLazyWorkerKey(node.id(), reqId, segmentId);
+            MapQueryLazyWorker worker = new MapQueryLazyWorker(ctx.igniteInstanceName(), key, log);
+
+            if (busyLock.enterBusy()) {
+                try {
+                    MapQueryLazyWorker oldWorker = lazyWorkers.put(key, worker);
+
+                    if (oldWorker != null)
+                        oldWorker.stop();
+
+                    IgniteThread thread = new IgniteThread(worker);
+
+                    thread.start();
+                }
+                finally {
+                    busyLock.leaveBusy();
+                }
+            }
+
+            return;
+        }
+
         // Prepare to run queries.
         GridCacheContext<?, ?> mainCctx =
             !F.isEmpty(cacheIds) ? ctx.cache().context().cacheContext(cacheIds.get(0)) : null;
@@ -551,6 +594,9 @@ public class GridMapQueryExecutor {
             if (topVer != null) {
                 // Reserve primary for topology version or explicit partitions.
                 if (!reservePartitions(cacheIds, topVer, parts, reserved)) {
+                    // Unregister lazy worker because re-try may never reach this node again.
+                    unregisterLazyWorkerIfNeeded();
+
                     sendRetry(node, reqId, segmentId);
 
                     return;
@@ -660,6 +706,9 @@ public class GridMapQueryExecutor {
 
                 qr.cancel(false);
             }
+
+            // Unregister worker after possible cancellation.
+            unregisterLazyWorkerIfNeeded();
 
             if (X.hasCause(e, GridH2RetryException.class))
                 sendRetry(node, reqId, segmentId);
