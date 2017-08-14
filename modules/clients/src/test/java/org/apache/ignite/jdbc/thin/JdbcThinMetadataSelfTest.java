@@ -381,6 +381,35 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    public void testInvalidCatalog() throws Exception {
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            DatabaseMetaData meta = conn.getMetaData();
+
+            ResultSet rs = meta.getSchemas("q", null);
+
+            assert !rs.next() : "Results must be empty";
+
+            rs = meta.getTables("q", null, null, null);
+
+            assert !rs.next() : "Results must be empty";
+
+            rs = meta.getColumns("q", null, null, null);
+
+            assert !rs.next() : "Results must be empty";
+
+            rs = meta.getIndexInfo("q", null, null, false, false);
+
+            assert !rs.next() : "Results must be empty";
+
+            rs = meta.getPrimaryKeys("q", null, null);
+
+            assert !rs.next() : "Results must be empty";
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testIndexMetadata() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL);
              ResultSet rs = conn.getMetaData().getIndexInfo(null, "pers", "PERSON", false, false)) {
