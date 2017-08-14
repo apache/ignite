@@ -18,7 +18,7 @@ public class TestExample {
             IgniteCache<Long, Person> srvCache = srv.createCache(
                 new CacheConfiguration<Long, Person>().setName(CACHE_NAME).setIndexedTypes(Long.class, Person.class));
 
-            for (long i = 0; i < 2_000; i++)
+            for (long i = 0; i < 10_000; i++)
                 srvCache.put(i, new Person(i, "First" + i, "Last" + i));
 
             System.out.println("PUT FINISHED");
