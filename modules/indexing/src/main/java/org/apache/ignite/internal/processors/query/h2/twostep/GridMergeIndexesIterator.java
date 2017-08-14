@@ -18,13 +18,14 @@
 package org.apache.ignite.internal.processors.query.h2.twostep;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.concurrent.atomic.AtomicBoolean;
+
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapterEx;
-import org.apache.ignite.lang.IgniteOutClosure;
 import org.h2.index.Cursor;
 import org.h2.result.Row;
 
@@ -32,6 +33,21 @@ import org.h2.result.Row;
  * Iterator that transparently and sequentially traverses a bunch of {@link GridMergeIndex}es.
  */
 class GridMergeIndexesIterator extends GridCloseableIteratorAdapterEx<List<?>> {
+    /** Reduce query executor. */
+    private final GridReduceQueryExecutor rdcExec;
+
+    /** Participating nodes. */
+    private final Collection<ClusterNode> nodes;
+
+    /** Query run. */
+    private final ReduceQueryRun run;
+
+    /** Query request ID. */
+    private final long qryReqId;
+
+    /** Distributed joins. */
+    private final boolean distributedJoins;
+
     /** Iterator over indexes. */
     private final Iterator<GridMergeIndex> idxs;
 
@@ -41,25 +57,31 @@ class GridMergeIndexesIterator extends GridCloseableIteratorAdapterEx<List<?>> {
     /** Next row to return. */
     private List<Object> next;
 
-    /** Closure to run when this iterator is closed, or when all indexes have been traversed. */
-    private final IgniteOutClosure<?> clo;
-
-    /** Cleanup flag - {@code null} iff {@link #clo} is null. */
-    private final AtomicBoolean cleanupDone;
+    /** Close flag. */
+    private boolean closed;
 
     /**
      * Constructor.
-     * @param idxs Indexes to iterate over.
-     * @param clo Closure to run when this iterator is closed, or when all indexes have been traversed.
+     *
+     * @param rdcExec Reduce query executor.
+     * @param nodes Participating nodes.
+     * @param run Query run.
+     * @param qryReqId Query request ID.
+     * @param distributedJoins Distributed joins.
      * @throws IgniteCheckedException if failed.
      */
-    GridMergeIndexesIterator(Iterable<GridMergeIndex> idxs, IgniteOutClosure<?> clo) throws IgniteCheckedException {
-        this.idxs = idxs.iterator();
-        this.clo = clo;
+    GridMergeIndexesIterator(GridReduceQueryExecutor rdcExec, Collection<ClusterNode> nodes, ReduceQueryRun run,
+        long qryReqId, boolean distributedJoins)
+        throws IgniteCheckedException {
+        this.rdcExec = rdcExec;
+        this.nodes = nodes;
+        this.run = run;
+        this.qryReqId = qryReqId;
+        this.distributedJoins = distributedJoins;
 
-        cleanupDone = (clo != null ? new AtomicBoolean() : null);
+        this.idxs = run.indexes().iterator();
 
-        goNext();
+        next0();
     }
 
     /** {@inheritDoc} */
@@ -74,7 +96,7 @@ class GridMergeIndexesIterator extends GridCloseableIteratorAdapterEx<List<?>> {
         if (res == null)
             throw new NoSuchElementException();
 
-        goNext();
+        next0();
 
         return res;
     }
@@ -83,24 +105,23 @@ class GridMergeIndexesIterator extends GridCloseableIteratorAdapterEx<List<?>> {
      * Retrieve next row.
      * @throws IgniteCheckedException if failed.
      */
-    private void goNext() throws IgniteCheckedException {
+    private void next0() throws IgniteCheckedException {
         next = null;
 
         try {
-            boolean gotNext = false;
+            boolean hasNext = false;
 
-            while (cur == null || !(gotNext = cur.next())) {
+            while (cur == null || !(hasNext = cur.next())) {
                 if (idxs.hasNext())
                     cur = idxs.next().findInStream(null, null);
                 else {
-                    // We're out of records, let's clean up.
-                    doCleanup();
+                    close0();
 
                     break;
                 }
             }
 
-            if (gotNext) {
+            if (hasNext) {
                 Row row = cur.get();
 
                 int cols = row.getColumnCount();
@@ -114,21 +135,26 @@ class GridMergeIndexesIterator extends GridCloseableIteratorAdapterEx<List<?>> {
             }
         }
         catch (Throwable e) {
-            doCleanup();
+            close0();
 
             throw new IgniteCheckedException(e);
         }
     }
 
-    /** Run {@link #clo} if it's present and hasn't been invoked yet. */
-    private void doCleanup() {
-        if (clo != null && cleanupDone.compareAndSet(false, true))
-            clo.apply();
+    /**
+     * Close routine.
+     */
+    private void close0() {
+        if (!closed) {
+            rdcExec.releaseRemoteResources(nodes, run, qryReqId, distributedJoins);
+
+            closed = true;
+        }
     }
 
     /** {@inheritDoc} */
     @Override protected void onClose() throws IgniteCheckedException {
-        doCleanup();
+        close0();
 
         super.onClose();
     }

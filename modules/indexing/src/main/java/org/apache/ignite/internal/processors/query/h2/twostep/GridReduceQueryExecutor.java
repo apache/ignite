@@ -84,7 +84,6 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.h2.command.ddl.CreateTableData;
 import org.h2.engine.Session;
@@ -168,6 +167,7 @@ public class GridReduceQueryExecutor {
         log = ctx.log(GridReduceQueryExecutor.class);
 
         ctx.io().addMessageListener(GridTopic.TOPIC_QUERY, new GridMessageListener() {
+            @SuppressWarnings("deprecation")
             @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
                 if (!busyLock.enterBusy())
                     return;
@@ -623,19 +623,6 @@ public class GridReduceQueryExecutor {
 
             final Collection<ClusterNode> finalNodes = nodes;
 
-            // This will be executed either at the end of lazy iteration or after merge table is filled.
-            final IgniteOutClosure<Void> clo = new IgniteOutClosure<Void>() {
-                @Override public Void apply() {
-                    // Make sure any activity related to current attempt is cancelled.
-                    cancelRemoteQueriesIfNeeded(finalNodes, r, qryReqId, qry.distributedJoins());
-
-                    if (!runs.remove(qryReqId, r))
-                        U.warn(log, "Query run was already removed: " + qryReqId);
-
-                    return null;
-                }
-            };
-
             for (GridCacheSqlQuery mapQry : qry.mapQueries()) {
                 GridMergeIndex idx;
 
@@ -769,7 +756,7 @@ public class GridReduceQueryExecutor {
 
                 if (!retry) {
                     if (skipMergeTbl)
-                        resIter = new GridMergeIndexesIterator(r.indexes(), clo);
+                        resIter = new GridMergeIndexesIterator(this, finalNodes, r, qryReqId, qry.distributedJoins());
                     else {
                         cancel.checkCancelled();
 
@@ -835,7 +822,7 @@ public class GridReduceQueryExecutor {
             finally {
                 // If we have fetched all data to merge table, then let's free all resources here.
                 if (!skipMergeTbl) {
-                    clo.apply();
+                    releaseRemoteResources(finalNodes, r, qryReqId, qry.distributedJoins());
 
                     for (int i = 0, mapQrys = qry.mapQueries().size(); i < mapQrys; i++)
                         fakeTable(null, i).innerTable(null); // Drop all merge tables.
@@ -873,16 +860,15 @@ public class GridReduceQueryExecutor {
     }
 
     /**
+     * Release remote resources if needed.
+     *
      * @param nodes Query nodes.
      * @param r Query run.
      * @param qryReqId Query id.
      * @param distributedJoins Distributed join flag.
      */
-    private void cancelRemoteQueriesIfNeeded(Collection<ClusterNode> nodes,
-        ReduceQueryRun r,
-        long qryReqId,
-        boolean distributedJoins)
-    {
+    public void releaseRemoteResources(Collection<ClusterNode> nodes, ReduceQueryRun r, long qryReqId,
+        boolean distributedJoins) {
         // For distributedJoins need always send cancel request to cleanup resources.
         if (distributedJoins)
             send(nodes, new GridQueryCancelRequest(qryReqId), null, false);
@@ -895,6 +881,9 @@ public class GridReduceQueryExecutor {
                 }
             }
         }
+
+        if (!runs.remove(qryReqId, r))
+            U.warn(log, "Query run was already removed: " + qryReqId);
     }
 
     /**
