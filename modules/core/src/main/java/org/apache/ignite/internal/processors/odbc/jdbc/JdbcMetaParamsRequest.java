@@ -26,7 +26,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  * JDBC SQL query parameters metadata request.
  */
 public class JdbcMetaParamsRequest extends JdbcRequest {
-    /** Schema. */
+    /** Schema name. */
     private String schemaName;
 
     /** Query. */

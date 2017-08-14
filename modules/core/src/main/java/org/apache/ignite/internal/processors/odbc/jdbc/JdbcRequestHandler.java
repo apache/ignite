@@ -365,7 +365,7 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
      * @return Response.
      */
     private SqlListenerResponse executeBatch(JdbcBatchExecuteRequest req) {
-        String schemaName = req.schema();
+        String schemaName = req.schemaName();
 
         if (F.isEmpty(schemaName))
             schemaName = QueryUtils.DFLT_SCHEMA;
@@ -452,7 +452,7 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
                         String schemaName =
                             ctx.cache().cacheDescriptor(cacheName).sql() ? QueryUtils.DFLT_SCHEMA : cacheName;
 
-                        JdbcTableMeta tableMeta = new JdbcTableMeta(null, schemaName, table.tableName(), "TABLE");
+                        JdbcTableMeta tableMeta = new JdbcTableMeta(schemaName, table.tableName(), "TABLE");
 
                         if (!meta.contains(tableMeta))
                             meta.add(tableMeta);

@@ -30,7 +30,7 @@ import org.jetbrains.annotations.Nullable;
  * JDBC query execute request.
  */
 public class JdbcQueryExecuteRequest extends JdbcRequest {
-    /** Cache name. */
+    /** Schema name. */
     private String schemaName;
 
     /** Fetch size. */
@@ -100,7 +100,7 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
     }
 
     /**
-     * @return Cache name.
+     * @return Schema name.
      */
     @Nullable public String schemaName() {
         return schemaName;

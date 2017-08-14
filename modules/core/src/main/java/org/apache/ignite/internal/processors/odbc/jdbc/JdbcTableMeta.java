@@ -25,9 +25,6 @@ import org.apache.ignite.internal.binary.BinaryWriterExImpl;
  * JDBC table metadata.
  */
 public class JdbcTableMeta implements JdbcRawBinarylizable {
-    /** Catalog name. */
-    private String catalog;
-
     /** Schema name. */
     private String schemaName;
 
@@ -44,23 +41,14 @@ public class JdbcTableMeta implements JdbcRawBinarylizable {
     }
 
     /**
-     * @param catalog Catalog name.
      * @param schemaName Schema name.
      * @param tblName Table name.
      * @param tblType Table type.
      */
-    JdbcTableMeta(String catalog, String schemaName, String tblName, String tblType) {
-        this.catalog = catalog;
+    JdbcTableMeta(String schemaName, String tblName, String tblType) {
         this.schemaName = schemaName;
         this.tblName = tblName;
         this.tblType = tblType;
-    }
-
-    /**
-     * @return Table's catalog.
-     */
-    public String catalog() {
-        return catalog;
     }
 
     /**
@@ -86,7 +74,6 @@ public class JdbcTableMeta implements JdbcRawBinarylizable {
 
     /** {@inheritDoc} */
     @Override public void writeBinary(BinaryWriterExImpl writer) throws BinaryObjectException {
-        writer.writeString(catalog);
         writer.writeString(schemaName);
         writer.writeString(tblName);
         writer.writeString(tblType);
@@ -94,7 +81,6 @@ public class JdbcTableMeta implements JdbcRawBinarylizable {
 
     /** {@inheritDoc} */
     @Override public void readBinary(BinaryReaderExImpl reader) throws BinaryObjectException {
-        catalog = reader.readString();
         schemaName = reader.readString();
         tblName = reader.readString();
         tblType = reader.readString();

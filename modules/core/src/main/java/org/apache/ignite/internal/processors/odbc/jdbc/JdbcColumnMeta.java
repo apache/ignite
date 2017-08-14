@@ -21,6 +21,7 @@ import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.jdbc.thin.JdbcThinUtils;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
+import org.apache.ignite.internal.util.typedef.F;
 
 /**
  * JDBC column metadata.
@@ -48,7 +49,7 @@ public class JdbcColumnMeta implements JdbcRawBinarylizable {
      * Default constructor is used for serialization.
      */
     JdbcColumnMeta() {
-        // TODO: add no-op.
+        // No-op.
     }
 
     /**
@@ -66,13 +67,13 @@ public class JdbcColumnMeta implements JdbcRawBinarylizable {
 
     /**
      * @param schemaName Schema.
-     * @param tableName Table.
+     * @param tblName Table.
      * @param colName Column.
      * @param cls Type.
      */
-    public JdbcColumnMeta(String schemaName, String tableName, String colName, Class<?> cls) {
+    public JdbcColumnMeta(String schemaName, String tblName, String colName, Class<?> cls) {
         this.schemaName = schemaName;
-        this.tblName = tableName;
+        this.tblName = tblName;
         this.colName = colName;
 
         String type = cls.getName();
@@ -81,10 +82,9 @@ public class JdbcColumnMeta implements JdbcRawBinarylizable {
         dataTypeClass = type;
     }
 
-    // TODO: Spacing.
-        /**
-         * @return Schema name.
-         */
+    /**
+     * @return Schema name.
+     */
     public String schemaName() {
         return schemaName;
     }
@@ -156,11 +156,10 @@ public class JdbcColumnMeta implements JdbcRawBinarylizable {
 
         JdbcColumnMeta meta = (JdbcColumnMeta)o;
 
-        // TODO: What is that? F.eq(schema, meta.schema);
-        if (schemaName != null ? !schemaName.equals(meta.schemaName) : meta.schemaName != null)
+        if (!F.eq(schemaName, meta.schemaName))
             return false;
 
-        if (tblName != null ? !tblName.equals(meta.tblName) : meta.tblName != null)
+        if (!F.eq(tblName, meta.tblName))
             return false;
 
         return colName.equals(meta.colName);

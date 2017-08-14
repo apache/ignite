@@ -27,23 +27,11 @@ import org.jetbrains.annotations.Nullable;
  * JDBC indexes metadata request.
  */
 public class JdbcMetaIndexesRequest extends JdbcRequest {
-    /** Cache name. */
-    // TODO: We do not support catalogs, remove and throw exception (or return empty result) on the client.
-    private String catalog;
-
-    /** Cache name. */
+    /** Schema name. */
     private String schemaName;
 
     /** Table name. */
     private String tblName;
-
-    /** When true, return only indices for unique values. */
-    // TODO: Unused, remove
-    private boolean unique;
-
-    /** When true, result is allowed to reflect approximate or out of data values. */
-    // TODO: Unused, remove
-    private boolean approximate;
 
     /**
      * Default constructor is used for deserialization.
@@ -53,27 +41,14 @@ public class JdbcMetaIndexesRequest extends JdbcRequest {
     }
 
     /**
-     * @param catalog Catalog name.
      * @param schemaName Cache name.
      * @param tblName Table name.
-     * @param unique {@code true} when only indices for unique values are requested.
-     * @param approximate {@code true} when approximate or out of data values indexes are allowed in results.
      */
-    public JdbcMetaIndexesRequest(String catalog, String schemaName, String tblName, boolean unique, boolean approximate) {
+    public JdbcMetaIndexesRequest(String schemaName, String tblName) {
         super(META_INDEXES);
 
-        this.catalog = catalog;
         this.schemaName = schemaName;
         this.tblName = tblName;
-        this.unique = unique;
-        this.approximate = approximate;
-    }
-
-    /**
-     * @return Catalog name.
-     */
-    @Nullable public String catalog() {
-        return catalog;
     }
 
     /**
@@ -90,40 +65,20 @@ public class JdbcMetaIndexesRequest extends JdbcRequest {
         return tblName;
     }
 
-    /**
-     * @return {@code true} when only indices for unique values are requested.
-     */
-    public boolean unique() {
-        return unique;
-    }
-
-    /**
-     * @return {@code true} when approximate or out of data values indexes are allowed in results.
-     */
-    public boolean approximate() {
-        return approximate;
-    }
-
     /** {@inheritDoc} */
     @Override public void writeBinary(BinaryWriterExImpl writer) throws BinaryObjectException {
         super.writeBinary(writer);
 
-        writer.writeString(catalog);
         writer.writeString(schemaName);
         writer.writeString(tblName);
-        writer.writeBoolean(unique);
-        writer.writeBoolean(approximate);
     }
 
     /** {@inheritDoc} */
     @Override public void readBinary(BinaryReaderExImpl reader) throws BinaryObjectException {
         super.readBinary(reader);
 
-        catalog = reader.readString();
         schemaName = reader.readString();
         tblName = reader.readString();
-        unique = reader.readBoolean();
-        approximate = reader.readBoolean();
     }
 
     /** {@inheritDoc} */

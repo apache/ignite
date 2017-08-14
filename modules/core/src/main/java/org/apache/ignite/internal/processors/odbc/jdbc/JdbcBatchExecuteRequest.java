@@ -32,7 +32,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public class JdbcBatchExecuteRequest extends JdbcRequest {
     /** Cache name. */
-    private String schema;
+    private String schemaName;
 
     /** Sql query. */
     @GridToStringInclude(sensitive = true)
@@ -46,23 +46,23 @@ public class JdbcBatchExecuteRequest extends JdbcRequest {
     }
 
     /**
-     * @param schema Schema.
+     * @param schemaName Schema name.
      * @param queries Queries.
      */
-    public JdbcBatchExecuteRequest(String schema, List<JdbcQuery> queries) {
+    public JdbcBatchExecuteRequest(String schemaName, List<JdbcQuery> queries) {
         super(BATCH_EXEC);
 
         assert !F.isEmpty(queries);
 
-        this.schema = schema;
+        this.schemaName = schemaName;
         this.queries = queries;
     }
 
     /**
      * @return Schema.
      */
-    @Nullable public String schema() {
-        return schema;
+    @Nullable public String schemaName() {
+        return schemaName;
     }
 
     /**
@@ -76,7 +76,7 @@ public class JdbcBatchExecuteRequest extends JdbcRequest {
     @Override public void writeBinary(BinaryWriterExImpl writer) throws BinaryObjectException {
         super.writeBinary(writer);
 
-        writer.writeString(schema);
+        writer.writeString(schemaName);
         writer.writeInt(queries.size());
 
         for (JdbcQuery q : queries)
@@ -87,7 +87,7 @@ public class JdbcBatchExecuteRequest extends JdbcRequest {
     @Override public void readBinary(BinaryReaderExImpl reader) throws BinaryObjectException {
         super.readBinary(reader);
 
-        schema = reader.readString();
+        schemaName = reader.readString();
 
         int n = reader.readInt();
 

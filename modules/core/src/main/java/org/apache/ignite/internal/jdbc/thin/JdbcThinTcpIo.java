@@ -361,18 +361,14 @@ public class JdbcThinTcpIo {
     }
 
     /**
-     * @param catalog Catalog.
      * @param schema Schema.
      * @param tbl Table
-     * @param unique Is Index unique.
-     * @param approximate Request approximate index.
      * @return Result.
      * @throws IOException On error.
      * @throws IgniteCheckedException On error.
      */
-    public JdbcMetaIndexesResult indexMeta(String catalog, String schema, String tbl,
-        boolean unique, boolean approximate) throws IOException, IgniteCheckedException {
-        return sendRequest(new JdbcMetaIndexesRequest(catalog, schema, tbl, unique, approximate), DYNAMIC_SIZE_MSG_CAP);
+    public JdbcMetaIndexesResult indexMeta(String schema, String tbl) throws IOException, IgniteCheckedException {
+        return sendRequest(new JdbcMetaIndexesRequest(schema, tbl), DYNAMIC_SIZE_MSG_CAP);
     }
 
     /**

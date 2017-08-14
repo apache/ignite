@@ -22,13 +22,13 @@ import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
+import org.apache.ignite.internal.util.typedef.F;
 
 /**
  * JDBC index metadata.
  */
 public class JdbcIndexMeta implements JdbcRawBinarylizable {
-    // TODO: Invalid JavaDocs: table -> schema
-    /** Index table name. */
+    /** Index schema name. */
     private String schemaName;
 
     /** Index table name. */
@@ -79,7 +79,6 @@ public class JdbcIndexMeta implements JdbcRawBinarylizable {
     /**
      * @return Schema name.
      */
-    // TOOD: schemaName()
     public String schemaName() {
         return schemaName;
     }
@@ -152,11 +151,10 @@ public class JdbcIndexMeta implements JdbcRawBinarylizable {
 
         JdbcIndexMeta meta = (JdbcIndexMeta)o;
 
-        // TODO: F.eq(schema, meta.schema)
-        if (schemaName != null ? !schemaName.equals(meta.schemaName) : meta.schemaName != null)
+        if (!F.eq(schemaName, meta.schemaName))
             return false;
 
-        if (!tblName.equals(meta.tblName))
+        if (!F.eq(tblName, meta.tblName))
             return false;
 
         return idxName.equals(meta.idxName);

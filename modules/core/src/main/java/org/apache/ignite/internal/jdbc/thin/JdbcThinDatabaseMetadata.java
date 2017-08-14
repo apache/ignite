@@ -740,7 +740,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
     private List<Object> tableRow(JdbcTableMeta tblMeta) {
         List<Object> row = new ArrayList<>(10);
 
-        row.add(tblMeta.catalog());
+        row.add(null);
         row.add(tblMeta.schemaName());
         row.add(tblMeta.tableName());
         row.add(tblMeta.tableType());
@@ -1139,7 +1139,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
             if (conn.isClosed())
                 throw new SQLException("Connection is closed.");
 
-            JdbcMetaIndexesResult res = conn.io().indexMeta(catalog, schema, tbl, unique, approximate);
+            JdbcMetaIndexesResult res = conn.io().indexMeta(schema, tbl);
 
             List<List<Object>> rows = new LinkedList<>();
 
