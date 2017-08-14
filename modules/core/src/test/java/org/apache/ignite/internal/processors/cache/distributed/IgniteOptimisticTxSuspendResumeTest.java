@@ -32,6 +32,7 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CI2;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
@@ -428,7 +429,10 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
 
                     tx.suspend();
 
-                    Thread.sleep(TX_TIMEOUT * 2);
+                    long start = U.currentTimeMillis();
+
+                    while(TX_TIMEOUT >= U.currentTimeMillis() - start)
+                        Thread.sleep(TX_TIMEOUT * 2);
 
                     GridTestUtils.assertThrowsWithCause(new Callable<Object>() {
                         @Override public Object call() throws Exception {
@@ -459,7 +463,10 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
 
                     cache.put(1, 1);
 
-                    Thread.sleep(TX_TIMEOUT * 2);
+                    long start = U.currentTimeMillis();
+
+                    while(TX_TIMEOUT >= U.currentTimeMillis() - start)
+                        Thread.sleep(TX_TIMEOUT * 2);
 
                     GridTestUtils.assertThrowsWithCause(new Callable<Object>() {
                         @Override public Object call() throws Exception {
