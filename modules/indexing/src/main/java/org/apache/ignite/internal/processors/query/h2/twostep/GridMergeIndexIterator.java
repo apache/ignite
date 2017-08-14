@@ -114,39 +114,33 @@ class GridMergeIndexIterator implements Iterator<List<?>>, AutoCloseable {
      * Advance iterator.
      */
     private void advance() {
+        next = null;
+
         try {
-            while (true) {
-                // Get next index cursor to iterate over.
-                if (cursor == null && idxIter.hasNext())
+            boolean hasNext = false;
+
+            while (cursor == null || !(hasNext = cursor.next())) {
+                if (idxIter.hasNext())
                     cursor = idxIter.next().findInStream(null, null);
                 else {
-                    next = null;
+                    releaseIfNeeded();
 
                     break;
                 }
-
-                assert cursor != null;
-
-                if (cursor.next()) {
-                    Row row = cursor.get();
-
-                    int cols = row.getColumnCount();
-
-                    List<Object> res = new ArrayList<>(cols);
-
-                    for (int c = 0; c < cols; c++)
-                        res.add(row.getValue(c).getObject());
-
-                    next = res;
-
-                    break;
-                }
-                else
-                    cursor = null;
             }
 
-            if (next == null)
-                releaseIfNeeded();
+            if (hasNext) {
+                Row row = cursor.get();
+
+                int cols = row.getColumnCount();
+
+                List<Object> res = new ArrayList<>(cols);
+
+                for (int c = 0; c < cols; c++)
+                    res.add(row.getValue(c).getObject());
+
+                next = res;
+            }
         }
         catch (Exception e) {
             releaseIfNeeded();
