@@ -765,8 +765,8 @@ public class GridMapQueryExecutor {
      * @param node Node.
      * @param req Request.
      */
-    private void onNextPageRequest(ClusterNode node, GridQueryNextPageRequest req) {
-        MapNodeResults nodeRess = qryRess.get(node.id());
+    private void onNextPageRequest(final ClusterNode node, final GridQueryNextPageRequest req) {
+        final MapNodeResults nodeRess = qryRess.get(node.id());
 
         if (nodeRess == null) {
             sendError(node, req.queryRequestId(), new CacheException("No node result found for request: " + req));
@@ -779,14 +779,28 @@ public class GridMapQueryExecutor {
             return;
         }
 
-        MapQueryResults qr = nodeRess.get(req.queryRequestId(), req.segmentId());
+        final MapQueryResults qr = nodeRess.get(req.queryRequestId(), req.segmentId());
 
         if (qr == null)
             sendError(node, req.queryRequestId(), new CacheException("No query result found for request: " + req));
         else if (qr.cancelled())
             sendError(node, req.queryRequestId(), new QueryCancelledException());
-        else
-            sendNextPage(nodeRess, node, qr, req.query(), req.segmentId(), req.pageSize());
+        else {
+            MapQueryLazyWorkerKey lazyWorkerKey =
+                new MapQueryLazyWorkerKey(node.id(), req.queryRequestId(), req.segmentId());
+
+            MapQueryLazyWorker lazyWorker = lazyWorkers.get(lazyWorkerKey);
+
+            if (lazyWorker != null) {
+                lazyWorker.submit(new Runnable() {
+                    @Override public void run() {
+                        sendNextPage(nodeRess, node, qr, req.query(), req.segmentId(), req.pageSize());
+                    }
+                });
+            }
+            else
+                sendNextPage(nodeRess, node, qr, req.query(), req.segmentId(), req.pageSize());
+        }
     }
 
     /**
