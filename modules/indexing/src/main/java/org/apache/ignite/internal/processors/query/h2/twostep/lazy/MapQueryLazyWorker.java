@@ -39,11 +39,11 @@ public class MapQueryLazyWorker extends GridWorker {
      * Constructor.
      *
      * @param instanceName Instance name.
-     * @param name Worker name.
+     * @param key Lazy worker key.
      * @param log Logger.
      */
-    public MapQueryLazyWorker(@Nullable String instanceName , String name, IgniteLogger log) {
-        super(instanceName, name, log);
+    public MapQueryLazyWorker(@Nullable String instanceName, MapQueryLazyWorkerKey key, IgniteLogger log) {
+        super(instanceName, workerName(key), log);
     }
 
     /** {@inheritDoc} */
@@ -78,12 +78,22 @@ public class MapQueryLazyWorker extends GridWorker {
     }
 
     /**
-     * @return Lazy worker flag.
+     * @return Lazy worker thread flag.
      */
-    private static boolean inLazyWorkerThread() {
+    public static boolean isLazyWorkerThread() {
         MapQueryLazyWorker worker = LAZY_WORKER.get();
 
         return worker != null;
+    }
+
+    /**
+     * Construct worker name.
+     *
+     * @param key Key.
+     * @return Name.
+     */
+    private static String workerName(MapQueryLazyWorkerKey key) {
+        return "query-lazy-worker_" + key.nodeId() + "_" + key.queryRequestId() + "_" + key.segment();
     }
 
     /**

@@ -58,6 +58,7 @@ import org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RetryException;
 import org.apache.ignite.internal.processors.query.h2.twostep.lazy.MapQueryLazyIgniteThread;
+import org.apache.ignite.internal.processors.query.h2.twostep.lazy.MapQueryLazyWorker;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryCancelRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryFailResponse;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageRequest;
@@ -441,7 +442,7 @@ public class GridMapQueryExecutor {
             if (lazy) {
                 onQueryRequest0(node,
                     req.requestId(),
-                    0,
+                    segment,
                     req.schemaName(),
                     req.queries(),
                     cacheIds,
