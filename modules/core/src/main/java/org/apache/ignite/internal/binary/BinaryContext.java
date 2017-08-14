@@ -64,6 +64,7 @@ import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.igfs.IgfsPath;
+import org.apache.ignite.internal.DuplicateTypeIdException;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.internal.processors.cache.binary.BinaryMetadataKey;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
@@ -1172,22 +1173,37 @@ public class BinaryContext {
     }
 
     /**
-     * Register "type ID to type name" mapping on all nodes to allow for mapping requests resolution form client.
+     * Register "type ID to class name" mapping on all nodes to allow for mapping requests resolution form client.
      * Other {@link BinaryContext}'s "register" methods and method
      * {@link BinaryContext#descriptorForClass(Class, boolean)} already call this functionality so use this method
-     * only when registering types names whose {@link Class} is unknown.
+     * only when registering class names whose {@link Class} is unknown.
      *
      * @param typeId Type ID
      * @param clsName Class Name
      * @return {@code True} if the mapping was registered successfully
      */
-    public boolean registerUserTypeName(int typeId, String clsName) {
+    public boolean registerUserClassName(int typeId, String clsName) {
+        IgniteCheckedException e = null;
+        boolean res = false;
+
         try {
-            return marshCtx.registerClassName(JAVA_ID, typeId, clsName);
+            res = marshCtx.registerClassName(JAVA_ID, typeId, clsName);
         }
-        catch (IgniteCheckedException e) {
+        catch (DuplicateTypeIdException dupEx) {
+            // Ignore if full class name is already registered for the type
+            BinaryInternalMapper mapper = userTypeMapper(typeId);
+
+            if (!mapper.typeName(dupEx.getRegisteredClassName()).equals(clsName))
+                e = dupEx;
+        }
+        catch (IgniteCheckedException igniteEx) {
+            e = igniteEx;
+        }
+
+        if (e != null)
             throw new BinaryObjectException("Failed to register user type name.", e);
-        }
+
+        return res;
     }
 
     /**
