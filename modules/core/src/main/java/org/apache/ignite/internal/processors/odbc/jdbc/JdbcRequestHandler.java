@@ -421,7 +421,7 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
         try {
             List<JdbcTableMeta> meta = new ArrayList<>();
 
-            String realSchema = req.schema();
+            String realSchema = req.schemaName();
 
             for (String cacheName : ctx.cache().publicCacheNames())
             {
@@ -431,7 +431,7 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
                 Collection<GridQueryTypeDescriptor> tablesMeta = ctx.query().types(cacheName);
 
                 for (GridQueryTypeDescriptor table : tablesMeta) {
-                    if (!matches(table.name(), req.table()))
+                    if (!matches(table.name(), req.tableName()))
                         continue;
 
                     boolean tblTypeMatch = false;
@@ -481,10 +481,10 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
         try {
             Collection<String> cacheNames;
 
-            if (req.schema() == null)
+            if (req.schemaName() == null)
                 cacheNames = ctx.cache().publicCacheNames();
             else
-                cacheNames = Collections.singleton(req.schema());
+                cacheNames = Collections.singleton(req.schemaName());
 
             Collection<JdbcColumnMeta> meta = new HashSet<>();
 
@@ -529,10 +529,10 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
         try {
             Collection<String> cacheNames;
 
-            if (req.schema() == null)
+            if (req.schemaName() == null)
                 cacheNames = ctx.cache().publicCacheNames();
             else
-                cacheNames = Collections.singleton(req.schema());
+                cacheNames = Collections.singleton(req.schemaName());
 
             Collection<JdbcIndexMeta> meta = new HashSet<>();
 
@@ -565,7 +565,7 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
      */
     private SqlListenerResponse getParametersMeta(JdbcMetaParamsRequest req) {
         try {
-            ParameterMetaData paramMeta = ctx.query().prepareNativeStatement(req.schema(), req.sql())
+            ParameterMetaData paramMeta = ctx.query().prepareNativeStatement(req.schemaName(), req.sql())
                 .getParameterMetaData();
 
             int size = paramMeta.getParameterCount();
@@ -594,10 +594,10 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
         try {
             Collection<String> cacheNames;
 
-            if (req.schema() == null)
+            if (req.schemaName() == null)
                 cacheNames = ctx.cache().publicCacheNames();
             else
-                cacheNames = Collections.singleton(req.schema());
+                cacheNames = Collections.singleton(req.schemaName());
 
             Collection<JdbcPrimaryKeyMeta> meta = new HashSet<>();
 
@@ -645,7 +645,7 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
      */
     private SqlListenerResponse getSchemas(JdbcMetaSchemasRequest req) {
         try {
-            String schemaPtrn = req.schema();
+            String schemaPtrn = req.schemaName();
 
             List<String> schemas = new ArrayList<>();
 

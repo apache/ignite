@@ -26,10 +26,10 @@ import org.apache.ignite.internal.binary.BinaryWriterExImpl;
  */
 public class JdbcPrimaryKeyMeta implements JdbcRawBinarylizable {
     /** Cache name. */
-    private String schema;
+    private String schemaName;
 
     /** Table name. */
-    private String tbl;
+    private String tblName;
 
     /** Primary key name. */
     private String name;
@@ -45,14 +45,14 @@ public class JdbcPrimaryKeyMeta implements JdbcRawBinarylizable {
     }
 
     /**
-     * @param schema Schema.
-     * @param tbl Table.
+     * @param schemaName Schema.
+     * @param tblName Table.
      * @param name Name.
      * @param fields Primary key fields.
      */
-    JdbcPrimaryKeyMeta(String schema, String tbl, String name, String [] fields) {
-        this.schema = schema;
-        this.tbl = tbl;
+    JdbcPrimaryKeyMeta(String schemaName, String tblName, String name, String [] fields) {
+        this.schemaName = schemaName;
+        this.tblName = tblName;
         this.name = name;
         this.fields = fields;
     }
@@ -60,15 +60,15 @@ public class JdbcPrimaryKeyMeta implements JdbcRawBinarylizable {
     /**
      * @return Schema name.
      */
-    public String schema() {
-        return schema;
+    public String schemaName() {
+        return schemaName;
     }
 
     /**
      * @return Table name.
      */
     public String tableName() {
-        return tbl;
+        return tblName;
     }
 
     /**
@@ -88,16 +88,16 @@ public class JdbcPrimaryKeyMeta implements JdbcRawBinarylizable {
 
     /** {@inheritDoc} */
     @Override public void writeBinary(BinaryWriterExImpl writer) throws BinaryObjectException {
-        writer.writeString(schema);
-        writer.writeString(tbl);
+        writer.writeString(schemaName);
+        writer.writeString(tblName);
         writer.writeString(name);
         writer.writeStringArray(fields);
     }
 
     /** {@inheritDoc} */
     @Override public void readBinary(BinaryReaderExImpl reader) throws BinaryObjectException {
-        schema = reader.readString();
-        tbl = reader.readString();
+        schemaName = reader.readString();
+        tblName = reader.readString();
         name = reader.readString();
         fields = reader.readStringArray();
     }
@@ -112,10 +112,10 @@ public class JdbcPrimaryKeyMeta implements JdbcRawBinarylizable {
 
         JdbcPrimaryKeyMeta meta = (JdbcPrimaryKeyMeta)o;
 
-        if (schema != null ? !schema.equals(meta.schema) : meta.schema != null)
+        if (schemaName != null ? !schemaName.equals(meta.schemaName) : meta.schemaName != null)
             return false;
 
-        if (!tbl.equals(meta.tbl))
+        if (!tblName.equals(meta.tblName))
             return false;
 
         return name.equals(meta.name);
@@ -123,8 +123,8 @@ public class JdbcPrimaryKeyMeta implements JdbcRawBinarylizable {
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        int result = schema != null ? schema.hashCode() : 0;
-        result = 31 * result + tbl.hashCode();
+        int result = schemaName != null ? schemaName.hashCode() : 0;
+        result = 31 * result + tblName.hashCode();
         result = 31 * result + name.hashCode();
         return result;
     }

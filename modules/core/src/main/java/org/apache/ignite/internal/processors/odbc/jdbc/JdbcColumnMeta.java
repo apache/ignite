@@ -27,13 +27,13 @@ import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
  */
 public class JdbcColumnMeta implements JdbcRawBinarylizable {
     /** Cache name. */
-    private String schema;
+    private String schemaName;
 
     /** Table name. */
-    private String tbl;
+    private String tblName;
 
     /** Column name. */
-    private String col;
+    private String colName;
 
     /** Data type. */
     private int dataType;
@@ -48,15 +48,16 @@ public class JdbcColumnMeta implements JdbcRawBinarylizable {
      * Default constructor is used for serialization.
      */
     JdbcColumnMeta() {
+        // TODO: add no-op.
     }
 
     /**
      * @param info Field metadata.
      */
     JdbcColumnMeta(GridQueryFieldMetadata info) {
-        this.schema = info.schemaName();
-        this.tbl = info.typeName();
-        this.col = info.fieldName();
+        this.schemaName = info.schemaName();
+        this.tblName = info.typeName();
+        this.colName = info.fieldName();
 
         dataType = JdbcThinUtils.type(info.fieldTypeName());
         dataTypeName = JdbcThinUtils.typeName(info.fieldTypeName());
@@ -64,15 +65,15 @@ public class JdbcColumnMeta implements JdbcRawBinarylizable {
     }
 
     /**
-     * @param schema Schema.
+     * @param schemaName Schema.
      * @param tableName Table.
-     * @param col Column.
+     * @param colName Column.
      * @param cls Type.
      */
-    public JdbcColumnMeta(String schema, String tableName, String col, Class<?> cls) {
-        this.schema = schema;
-        this.tbl = tableName;
-        this.col = col;
+    public JdbcColumnMeta(String schemaName, String tableName, String colName, Class<?> cls) {
+        this.schemaName = schemaName;
+        this.tblName = tableName;
+        this.colName = colName;
 
         String type = cls.getName();
         dataType = JdbcThinUtils.type(type);
@@ -80,26 +81,26 @@ public class JdbcColumnMeta implements JdbcRawBinarylizable {
         dataTypeClass = type;
     }
 
-
+    // TODO: Spacing.
         /**
          * @return Schema name.
          */
-    public String schema() {
-        return schema;
+    public String schemaName() {
+        return schemaName;
     }
 
     /**
      * @return Table name.
      */
     public String tableName() {
-        return tbl;
+        return tblName;
     }
 
     /**
      * @return Column name.
      */
     public String columnName() {
-        return col;
+        return colName;
     }
 
     /**
@@ -125,9 +126,9 @@ public class JdbcColumnMeta implements JdbcRawBinarylizable {
 
     /** {@inheritDoc} */
     @Override public void writeBinary(BinaryWriterExImpl writer) {
-        writer.writeString(schema);
-        writer.writeString(tbl);
-        writer.writeString(col);
+        writer.writeString(schemaName);
+        writer.writeString(tblName);
+        writer.writeString(colName);
 
         writer.writeInt(dataType);
         writer.writeString(dataTypeName);
@@ -136,9 +137,9 @@ public class JdbcColumnMeta implements JdbcRawBinarylizable {
 
     /** {@inheritDoc} */
     @Override public void readBinary(BinaryReaderExImpl reader) {
-        schema = reader.readString();
-        tbl = reader.readString();
-        col = reader.readString();
+        schemaName = reader.readString();
+        tblName = reader.readString();
+        colName = reader.readString();
 
         dataType = reader.readInt();
         dataTypeName = reader.readString();
@@ -155,20 +156,21 @@ public class JdbcColumnMeta implements JdbcRawBinarylizable {
 
         JdbcColumnMeta meta = (JdbcColumnMeta)o;
 
-        if (schema != null ? !schema.equals(meta.schema) : meta.schema != null)
+        // TODO: What is that? F.eq(schema, meta.schema);
+        if (schemaName != null ? !schemaName.equals(meta.schemaName) : meta.schemaName != null)
             return false;
 
-        if (tbl != null ? !tbl.equals(meta.tbl) : meta.tbl!= null)
+        if (tblName != null ? !tblName.equals(meta.tblName) : meta.tblName != null)
             return false;
 
-        return col.equals(meta.col);
+        return colName.equals(meta.colName);
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        int result = schema != null ? schema.hashCode() : 0;
-        result = 31 * result + (tbl != null ? tbl.hashCode() : 0);
-        result = 31 * result + col.hashCode();
+        int result = schemaName != null ? schemaName.hashCode() : 0;
+        result = 31 * result + (tblName != null ? tblName.hashCode() : 0);
+        result = 31 * result + colName.hashCode();
         return result;
     }
 }

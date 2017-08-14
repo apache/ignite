@@ -27,7 +27,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  */
 public class JdbcMetaSchemasRequest extends JdbcRequest {
     /** Schema search pattern. */
-    private String schema;
+    private String schemaName;
 
     /**
      * Default constructor is used for deserialization.
@@ -37,33 +37,33 @@ public class JdbcMetaSchemasRequest extends JdbcRequest {
     }
 
     /**
-     * @param schema Schema search pattern.
+     * @param schemaName Schema search pattern.
      */
-    public JdbcMetaSchemasRequest(String schema) {
+    public JdbcMetaSchemasRequest(String schemaName) {
         super(META_SCHEMAS);
 
-        this.schema = schema;
+        this.schemaName = schemaName;
     }
 
     /**
      * @return Schema search pattern.
      */
-    public String schema() {
-        return schema;
+    public String schemaName() {
+        return schemaName;
     }
 
     /** {@inheritDoc} */
     @Override public void writeBinary(BinaryWriterExImpl writer) throws BinaryObjectException {
         super.writeBinary(writer);
 
-        writer.writeString(schema);
+        writer.writeString(schemaName);
     }
 
     /** {@inheritDoc} */
     @Override public void readBinary(BinaryReaderExImpl reader) throws BinaryObjectException {
         super.readBinary(reader);
 
-        this.schema = reader.readString();
+        this.schemaName = reader.readString();
     }
 
     /** {@inheritDoc} */

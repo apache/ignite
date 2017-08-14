@@ -27,14 +27,15 @@ import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
  * JDBC index metadata.
  */
 public class JdbcIndexMeta implements JdbcRawBinarylizable {
+    // TODO: Invalid JavaDocs: table -> schema
     /** Index table name. */
-    private String schema;
+    private String schemaName;
 
     /** Index table name. */
-    private String tbl;
+    private String tblName;
 
     /** Index name. */
-    private String name;
+    private String idxName;
 
     /** Index type. */
     private QueryIndexType type;
@@ -53,19 +54,19 @@ public class JdbcIndexMeta implements JdbcRawBinarylizable {
     }
 
     /**
-     * @param schema Schema name.
-     * @param tbl Table name.
+     * @param schemaName Schema name.
+     * @param tblName Table name.
      * @param idx Index info.
      */
-    JdbcIndexMeta(String schema, String tbl, GridQueryIndexDescriptor idx) {
-        assert tbl != null;
+    JdbcIndexMeta(String schemaName, String tblName, GridQueryIndexDescriptor idx) {
+        assert tblName != null;
         assert idx != null;
         assert idx.fields() != null;
 
-        this.schema = schema;
-        this.tbl = tbl;
+        this.schemaName = schemaName;
+        this.tblName = tblName;
 
-        name = idx.name();
+        idxName = idx.name();
         type = idx.type();
         fields = idx.fields().toArray(new String[idx.fields().size()]);
 
@@ -78,22 +79,23 @@ public class JdbcIndexMeta implements JdbcRawBinarylizable {
     /**
      * @return Schema name.
      */
-    public String schema() {
-        return schema;
+    // TOOD: schemaName()
+    public String schemaName() {
+        return schemaName;
     }
 
     /**
      * @return Table name.
      */
     public String tableName() {
-        return tbl;
+        return tblName;
     }
 
     /**
      * @return Index name.
      */
-    public String name() {
-        return name;
+    public String indexName() {
+        return idxName;
     }
 
     /**
@@ -119,9 +121,9 @@ public class JdbcIndexMeta implements JdbcRawBinarylizable {
 
     /** {@inheritDoc} */
     @Override public void writeBinary(BinaryWriterExImpl writer) throws BinaryObjectException {
-        writer.writeString(schema);
-        writer.writeString(tbl);
-        writer.writeString(name);
+        writer.writeString(schemaName);
+        writer.writeString(tblName);
+        writer.writeString(idxName);
         writer.writeByte((byte)type.ordinal());
         writer.writeStringArray(fields);
         writer.writeBooleanArray(fieldsAsc);
@@ -129,9 +131,9 @@ public class JdbcIndexMeta implements JdbcRawBinarylizable {
 
     /** {@inheritDoc} */
     @Override public void readBinary(BinaryReaderExImpl reader) throws BinaryObjectException {
-        schema = reader.readString();
-        tbl = reader.readString();
-        name = reader.readString();
+        schemaName = reader.readString();
+        tblName = reader.readString();
+        idxName = reader.readString();
         type = QueryIndexType.fromOrdinal(reader.readByte());
         fields = reader.readStringArray();
         fieldsAsc = reader.readBooleanArray();
@@ -150,20 +152,21 @@ public class JdbcIndexMeta implements JdbcRawBinarylizable {
 
         JdbcIndexMeta meta = (JdbcIndexMeta)o;
 
-        if (schema != null ? !schema.equals(meta.schema) : meta.schema != null)
+        // TODO: F.eq(schema, meta.schema)
+        if (schemaName != null ? !schemaName.equals(meta.schemaName) : meta.schemaName != null)
             return false;
 
-        if (!tbl.equals(meta.tbl))
+        if (!tblName.equals(meta.tblName))
             return false;
 
-        return name.equals(meta.name);
+        return idxName.equals(meta.idxName);
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        int result = schema != null ? schema.hashCode() : 0;
-        result = 31 * result + tbl.hashCode();
-        result = 31 * result + name.hashCode();
+        int result = schemaName != null ? schemaName.hashCode() : 0;
+        result = 31 * result + tblName.hashCode();
+        result = 31 * result + idxName.hashCode();
         return result;
     }
 }

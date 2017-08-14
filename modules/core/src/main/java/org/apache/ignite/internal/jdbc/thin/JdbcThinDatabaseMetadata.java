@@ -741,8 +741,8 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
         List<Object> row = new ArrayList<>(10);
 
         row.add(tblMeta.catalog());
-        row.add(tblMeta.schema());
-        row.add(tblMeta.table());
+        row.add(tblMeta.schemaName());
+        row.add(tblMeta.tableName());
         row.add(tblMeta.tableType());
         row.add(null);
         row.add(null);
@@ -826,7 +826,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
         List<Object> row = new ArrayList<>(20);
 
         row.add((String)null);
-        row.add(colMeta.schema());
+        row.add(colMeta.schemaName());
         row.add(colMeta.tableName());
         row.add(colMeta.columnName());
         row.add(colMeta.dataType());
@@ -949,7 +949,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
             List<Object> row = new ArrayList<>(6);
 
             row.add((String)null); // table catalog
-            row.add(pkMeta.schema());
+            row.add(pkMeta.schemaName());
             row.add(pkMeta.tableName());
             row.add(pkMeta.fields()[i]);
             row.add((Integer)i + 1); // sequence number
@@ -1182,11 +1182,11 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
             List<Object> row = new ArrayList<>(13);
 
             row.add((String)null); // table catalog
-            row.add(idxMeta.schema());
+            row.add(idxMeta.schemaName());
             row.add(idxMeta.tableName());
             row.add(true); // non unique
             row.add(null); // index qualifier (index catalog)
-            row.add(idxMeta.name());
+            row.add(idxMeta.indexName());
             row.add((short)tableIndexOther); // type
             row.add((Integer)i); // field ordinal position in index
             row.add(idxMeta.fields()[i]);

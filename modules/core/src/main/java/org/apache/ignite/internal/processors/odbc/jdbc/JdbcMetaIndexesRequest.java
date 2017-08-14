@@ -28,18 +28,21 @@ import org.jetbrains.annotations.Nullable;
  */
 public class JdbcMetaIndexesRequest extends JdbcRequest {
     /** Cache name. */
+    // TODO: We do not support catalogs, remove and throw exception (or return empty result) on the client.
     private String catalog;
 
     /** Cache name. */
-    private String schema;
+    private String schemaName;
 
     /** Table name. */
     private String tblName;
 
     /** When true, return only indices for unique values. */
+    // TODO: Unused, remove
     private boolean unique;
 
     /** When true, result is allowed to reflect approximate or out of data values. */
+    // TODO: Unused, remove
     private boolean approximate;
 
     /**
@@ -51,16 +54,16 @@ public class JdbcMetaIndexesRequest extends JdbcRequest {
 
     /**
      * @param catalog Catalog name.
-     * @param schema Cache name.
+     * @param schemaName Cache name.
      * @param tblName Table name.
      * @param unique {@code true} when only indices for unique values are requested.
      * @param approximate {@code true} when approximate or out of data values indexes are allowed in results.
      */
-    public JdbcMetaIndexesRequest(String catalog, String schema, String tblName, boolean unique, boolean approximate) {
+    public JdbcMetaIndexesRequest(String catalog, String schemaName, String tblName, boolean unique, boolean approximate) {
         super(META_INDEXES);
 
         this.catalog = catalog;
-        this.schema = schema;
+        this.schemaName = schemaName;
         this.tblName = tblName;
         this.unique = unique;
         this.approximate = approximate;
@@ -76,8 +79,8 @@ public class JdbcMetaIndexesRequest extends JdbcRequest {
     /**
      * @return Schema name.
      */
-    @Nullable public String schema() {
-        return schema;
+    @Nullable public String schemaName() {
+        return schemaName;
     }
 
     /**
@@ -106,7 +109,7 @@ public class JdbcMetaIndexesRequest extends JdbcRequest {
         super.writeBinary(writer);
 
         writer.writeString(catalog);
-        writer.writeString(schema);
+        writer.writeString(schemaName);
         writer.writeString(tblName);
         writer.writeBoolean(unique);
         writer.writeBoolean(approximate);
@@ -117,7 +120,7 @@ public class JdbcMetaIndexesRequest extends JdbcRequest {
         super.readBinary(reader);
 
         catalog = reader.readString();
-        schema = reader.readString();
+        schemaName = reader.readString();
         tblName = reader.readString();
         unique = reader.readBoolean();
         approximate = reader.readBoolean();

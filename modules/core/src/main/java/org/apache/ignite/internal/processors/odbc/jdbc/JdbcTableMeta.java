@@ -29,10 +29,10 @@ public class JdbcTableMeta implements JdbcRawBinarylizable {
     private String catalog;
 
     /** Schema name. */
-    private String schema;
+    private String schemaName;
 
     /** Table name. */
-    private String tbl;
+    private String tblName;
 
     /** Table type. */
     private String tblType;
@@ -45,14 +45,14 @@ public class JdbcTableMeta implements JdbcRawBinarylizable {
 
     /**
      * @param catalog Catalog name.
-     * @param schema Schema name.
-     * @param tbl Table name.
+     * @param schemaName Schema name.
+     * @param tblName Table name.
      * @param tblType Table type.
      */
-    JdbcTableMeta(String catalog, String schema, String tbl, String tblType) {
+    JdbcTableMeta(String catalog, String schemaName, String tblName, String tblType) {
         this.catalog = catalog;
-        this.schema = schema;
-        this.tbl = tbl;
+        this.schemaName = schemaName;
+        this.tblName = tblName;
         this.tblType = tblType;
     }
 
@@ -66,15 +66,15 @@ public class JdbcTableMeta implements JdbcRawBinarylizable {
     /**
      * @return Schema name.
      */
-    public String schema() {
-        return schema;
+    public String schemaName() {
+        return schemaName;
     }
 
     /**
      * @return Table name.
      */
-    public String table() {
-        return tbl;
+    public String tableName() {
+        return tblName;
     }
 
     /**
@@ -87,16 +87,16 @@ public class JdbcTableMeta implements JdbcRawBinarylizable {
     /** {@inheritDoc} */
     @Override public void writeBinary(BinaryWriterExImpl writer) throws BinaryObjectException {
         writer.writeString(catalog);
-        writer.writeString(schema);
-        writer.writeString(tbl);
+        writer.writeString(schemaName);
+        writer.writeString(tblName);
         writer.writeString(tblType);
     }
 
     /** {@inheritDoc} */
     @Override public void readBinary(BinaryReaderExImpl reader) throws BinaryObjectException {
         catalog = reader.readString();
-        schema = reader.readString();
-        tbl = reader.readString();
+        schemaName = reader.readString();
+        tblName = reader.readString();
         tblType = reader.readString();
     }
 }

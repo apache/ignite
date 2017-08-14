@@ -27,10 +27,10 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  */
 public class JdbcMetaTablesRequest extends JdbcRequest {
     /** Schema search pattern. */
-    private String schema;
+    private String schemaName;
 
     /** Table search pattern. */
-    private String table;
+    private String tblName;
 
     /** Table types. */
     private String[] tableTypes;
@@ -43,30 +43,30 @@ public class JdbcMetaTablesRequest extends JdbcRequest {
     }
 
     /**
-     * @param schema Schema search pattern.
-     * @param table Table search pattern.
+     * @param schemaName Schema search pattern.
+     * @param tblName Table search pattern.
      * @param tableTypes Table types.
      */
-    public JdbcMetaTablesRequest(String schema, String table, String[] tableTypes) {
+    public JdbcMetaTablesRequest(String schemaName, String tblName, String[] tableTypes) {
         super(META_TABLES);
 
-        this.schema = schema;
-        this.table = table;
+        this.schemaName = schemaName;
+        this.tblName = tblName;
         this.tableTypes = tableTypes;
     }
 
     /**
      * @return Schema search pattern.
      */
-    public String schema() {
-        return schema;
+    public String schemaName() {
+        return schemaName;
     }
 
     /**
      * @return Table search pattern.
      */
-    public String table() {
-        return table;
+    public String tableName() {
+        return tblName;
     }
 
     /**
@@ -80,8 +80,8 @@ public class JdbcMetaTablesRequest extends JdbcRequest {
     @Override public void writeBinary(BinaryWriterExImpl writer) throws BinaryObjectException {
         super.writeBinary(writer);
 
-        writer.writeString(schema);
-        writer.writeString(table);
+        writer.writeString(schemaName);
+        writer.writeString(tblName);
         writer.writeStringArray(tableTypes);
     }
 
@@ -89,8 +89,8 @@ public class JdbcMetaTablesRequest extends JdbcRequest {
     @Override public void readBinary(BinaryReaderExImpl reader) throws BinaryObjectException {
         super.readBinary(reader);
 
-        this.schema = reader.readString();
-        this.table = reader.readString();
+        this.schemaName = reader.readString();
+        this.tblName = reader.readString();
         this.tableTypes = reader.readStringArray();
     }
 

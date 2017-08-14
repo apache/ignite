@@ -28,13 +28,13 @@ import org.jetbrains.annotations.Nullable;
  */
 public class JdbcMetaColumnsRequest extends JdbcRequest {
     /** Schema name. */
-    private String schema;
+    private String schemaName;
 
     /** Table name. */
-    private String tableName;
+    private String tblName;
 
     /** Column name. */
-    private String columnName;
+    private String colName;
 
     /**
      * Default constructor is used for deserialization.
@@ -44,55 +44,55 @@ public class JdbcMetaColumnsRequest extends JdbcRequest {
     }
 
     /**
-     * @param schema Schema name.
-     * @param tableName Table name.
-     * @param columnName Column name.
+     * @param schemaName Schema name.
+     * @param tblName Table name.
+     * @param colName Column name.
      */
-    public JdbcMetaColumnsRequest(String schema, String tableName, String columnName) {
+    public JdbcMetaColumnsRequest(String schemaName, String tblName, String colName) {
         super(META_COLUMNS);
 
-        this.schema = schema;
-        this.tableName = tableName;
-        this.columnName = columnName;
+        this.schemaName = schemaName;
+        this.tblName = tblName;
+        this.colName = colName;
     }
 
     /**
      * @return Cache name.
      */
-    @Nullable public String schema() {
-        return schema;
+    @Nullable public String schemaName() {
+        return schemaName;
     }
 
     /**
      * @return Table name.
      */
     public String tableName() {
-        return tableName;
+        return tblName;
     }
 
     /**
      * @return Column name.
      */
     public String columnName() {
-        return columnName;
+        return colName;
     }
 
     /** {@inheritDoc} */
     @Override public void writeBinary(BinaryWriterExImpl writer) throws BinaryObjectException {
         super.writeBinary(writer);
 
-        writer.writeString(schema);
-        writer.writeString(tableName);
-        writer.writeString(columnName);
+        writer.writeString(schemaName);
+        writer.writeString(tblName);
+        writer.writeString(colName);
     }
 
     /** {@inheritDoc} */
     @Override public void readBinary(BinaryReaderExImpl reader) throws BinaryObjectException {
         super.readBinary(reader);
 
-        schema = reader.readString();
-        tableName = reader.readString();
-        columnName = reader.readString();
+        schemaName = reader.readString();
+        tblName = reader.readString();
+        colName = reader.readString();
     }
 
     /** {@inheritDoc} */
