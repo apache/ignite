@@ -48,10 +48,10 @@ class GridMergeIndexeIterator implements Iterator<List<?>> {
     private final boolean distributedJoins;
 
     /** Iterator over indexes. */
-    private final Iterator<GridMergeIndex> idxs;
+    private final Iterator<GridMergeIndex> idxIter;
 
     /** Current cursor. */
-    private Cursor cur;
+    private Cursor cursor;
 
     /** Next row to return. */
     private List<Object> next;
@@ -78,7 +78,7 @@ class GridMergeIndexeIterator implements Iterator<List<?>> {
         this.qryReqId = qryReqId;
         this.distributedJoins = distributedJoins;
 
-        this.idxs = run.indexes().iterator();
+        this.idxIter = run.indexes().iterator();
 
         advance();
     }
@@ -109,36 +109,42 @@ class GridMergeIndexeIterator implements Iterator<List<?>> {
      * Advance iterator.
      */
     private void advance() {
-        next = null;
-
         try {
-            boolean hasNext = false;
-
-            while (cur == null || !(hasNext = cur.next())) {
-                if (idxs.hasNext())
-                    cur = idxs.next().findInStream(null, null);
+            while (true) {
+                // Get next index cursor to iterate over.
+                if (cursor == null && idxIter.hasNext())
+                    cursor = idxIter.next().findInStream(null, null);
                 else {
-                    close0();
+                    next = null;
 
                     break;
                 }
+
+                assert cursor != null;
+
+                if (cursor.next()) {
+                    Row row = cursor.get();
+
+                    int cols = row.getColumnCount();
+
+                    List<Object> res = new ArrayList<>(cols);
+
+                    for (int c = 0; c < cols; c++)
+                        res.add(row.getValue(c).getObject());
+
+                    next = res;
+
+                    break;
+                }
+                else
+                    cursor = null;
             }
 
-            if (hasNext) {
-                Row row = cur.get();
-
-                int cols = row.getColumnCount();
-
-                List<Object> res = new ArrayList<>(cols);
-
-                for (int c = 0; c < cols; c++)
-                    res.add(row.getValue(c).getObject());
-
-                next = res;
-            }
+            if (next == null)
+                releaseIfNeeded();
         }
         catch (Exception e) {
-            close0();
+            releaseIfNeeded();
 
             throw e;
         }
@@ -147,11 +153,14 @@ class GridMergeIndexeIterator implements Iterator<List<?>> {
     /**
      * Close routine.
      */
-    private void close0() {
+    private void releaseIfNeeded() {
         if (!released) {
-            rdcExec.releaseRemoteResources(nodes, run, qryReqId, distributedJoins);
-
-            released = true;
+            try {
+                rdcExec.releaseRemoteResources(nodes, run, qryReqId, distributedJoins);
+            }
+            finally {
+                released = true;
+            }
         }
     }
 }
