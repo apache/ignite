@@ -46,6 +46,8 @@ import static org.apache.ignite.ml.math.util.MatrixUtil.localCopyOf;
 /**
  * Clustering algorithm based on Bahmani et al. paper and Apache Spark class with corresponding functionality.
  *
+ * TODO: IGNITE-6059, add block matrix support.
+ *
  * @see <a href="http://theory.stanford.edu/~sergei/papers/vldb12-kmpar.pdf">Scalable K-Means++(wikipedia)</a>
  */
 public class KMeansDistributedClusterer extends BaseKMeansClusterer<SparseDistributedMatrix> {
@@ -80,6 +82,8 @@ public class KMeansDistributedClusterer extends BaseKMeansClusterer<SparseDistri
         MathIllegalArgumentException, ConvergenceException {
         SparseDistributedMatrix pointsCp = (SparseDistributedMatrix)points.like(points.rowSize(), points.columnSize());
 
+        String cacheName = ((SparseDistributedMatrixStorage)points.getStorage()).cacheName();
+
         // TODO: IGNITE-5825, this copy is very ineffective, just for POC. Immutability of data should be guaranteed by other methods
         // such as logical locks for example.
         pointsCp.assign(points);
@@ -93,7 +97,7 @@ public class KMeansDistributedClusterer extends BaseKMeansClusterer<SparseDistri
 
         // Execute iterations of Lloyd's algorithm until converged
         while (iteration < maxIterations && !converged) {
-            SumsAndCounts stats = getSumsAndCounts(centers, dim, uid);
+            SumsAndCounts stats = getSumsAndCounts(centers, dim, uid, cacheName);
 
             converged = true;
 
@@ -119,6 +123,8 @@ public class KMeansDistributedClusterer extends BaseKMeansClusterer<SparseDistri
         // Initialize empty centers and point costs.
         int ptsCnt = points.rowSize();
 
+        String cacheName = ((SparseDistributedMatrixStorage)points.getStorage()).cacheName();
+
         // Initialize the first center to a random point.
         Vector sample = localCopyOf(points.viewRow(rnd.nextInt(ptsCnt)));
 
@@ -137,7 +143,7 @@ public class KMeansDistributedClusterer extends BaseKMeansClusterer<SparseDistri
 
         while (step < initSteps) {
             // We assume here that costs can fit into memory of one node.
-            ConcurrentHashMap<Integer, Double> newCosts = getNewCosts(points, newCenters);
+            ConcurrentHashMap<Integer, Double> newCosts = getNewCosts(points, newCenters, cacheName);
 
             // Merge costs with new costs.
             for (Integer ind : newCosts.keySet())
@@ -145,7 +151,7 @@ public class KMeansDistributedClusterer extends BaseKMeansClusterer<SparseDistri
 
             double sumCosts = costs.values().stream().mapToDouble(Double::valueOf).sum();
 
-            newCenters = getNewCenters(k, costs, uid, sumCosts);
+            newCenters = getNewCenters(k, costs, uid, sumCosts, cacheName);
             centers.addAll(newCenters);
 
             step++;
@@ -159,7 +165,7 @@ public class KMeansDistributedClusterer extends BaseKMeansClusterer<SparseDistri
             // Finally, we might have a set of more than k distinct candidate centers; weight each
             // candidate by the number of points in the dataset mapping to it and run a local k-means++
             // on the weighted centers to pick k of them
-            ConcurrentHashMap<Integer, Integer> centerInd2Weight = weightCenters(uid, distinctCenters);
+            ConcurrentHashMap<Integer, Integer> centerInd2Weight = weightCenters(uid, distinctCenters, cacheName);
 
             List<Double> weights = new ArrayList<>(centerInd2Weight.size());
 
@@ -174,8 +180,8 @@ public class KMeansDistributedClusterer extends BaseKMeansClusterer<SparseDistri
 
     /** */
     private List<Vector> getNewCenters(int k, ConcurrentHashMap<Integer, Double> costs, IgniteUuid uid,
-        double sumCosts) {
-        return distributedFold(SparseDistributedMatrixStorage.ML_CACHE_NAME,
+        double sumCosts, String cacheName) {
+        return distributedFold(cacheName,
             (IgniteBiFunction<Cache.Entry<IgniteBiTuple<Integer, IgniteUuid>, Map<Integer, Double>>,
                 List<Vector>,
                 List<Vector>>)(vectorWithIndex, list) -> {
@@ -198,8 +204,8 @@ public class KMeansDistributedClusterer extends BaseKMeansClusterer<SparseDistri
     }
 
     /** */
-    private ConcurrentHashMap<Integer, Double> getNewCosts(SparseDistributedMatrix points, List<Vector> newCenters) {
-        return distributedFold(SparseDistributedMatrixStorage.ML_CACHE_NAME,
+    private ConcurrentHashMap<Integer, Double> getNewCosts(SparseDistributedMatrix points, List<Vector> newCenters, String cacheName) {
+        return distributedFold(cacheName,
             (IgniteBiFunction<Cache.Entry<IgniteBiTuple<Integer, IgniteUuid>, ConcurrentHashMap<Integer, Double>>,
                 ConcurrentHashMap<Integer, Double>,
                 ConcurrentHashMap<Integer, Double>>)(vectorWithIndex, map) -> {
@@ -216,8 +222,8 @@ public class KMeansDistributedClusterer extends BaseKMeansClusterer<SparseDistri
     }
 
     /** */
-    private ConcurrentHashMap<Integer, Integer> weightCenters(IgniteUuid uid, List<Vector> distinctCenters) {
-        return distributedFold(SparseDistributedMatrixStorage.ML_CACHE_NAME,
+    private ConcurrentHashMap<Integer, Integer> weightCenters(IgniteUuid uid, List<Vector> distinctCenters, String cacheName) {
+        return distributedFold(cacheName,
             (IgniteBiFunction<Cache.Entry<IgniteBiTuple<Integer, IgniteUuid>, Map<Integer, Double>>,
                 ConcurrentHashMap<Integer, Integer>,
                 ConcurrentHashMap<Integer, Integer>>)(vectorWithIndex, countMap) -> {
@@ -251,8 +257,8 @@ public class KMeansDistributedClusterer extends BaseKMeansClusterer<SparseDistri
     }
 
     /** */
-    private SumsAndCounts getSumsAndCounts(Vector[] centers, int dim, IgniteUuid uid) {
-        return CacheUtils.distributedFold(SparseDistributedMatrixStorage.ML_CACHE_NAME,
+    private SumsAndCounts getSumsAndCounts(Vector[] centers, int dim, IgniteUuid uid, String cacheName) {
+        return CacheUtils.distributedFold(cacheName,
             (IgniteBiFunction<Cache.Entry<IgniteBiTuple<Integer, IgniteUuid>, Map<Integer, Double>>, SumsAndCounts, SumsAndCounts>)(entry, counts) -> {
                 Map<Integer, Double> vec = entry.getValue();
 

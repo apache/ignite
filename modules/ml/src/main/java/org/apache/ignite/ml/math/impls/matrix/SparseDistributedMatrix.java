@@ -136,9 +136,13 @@ public class SparseDistributedMatrix extends AbstractMatrix implements StorageCo
             // compute Cij locally on each node
             // TODO: IGNITE:5114, exec in parallel
             locKeys.forEach(key -> {
+
+
                 //TODO:WIP
 
-                cache.put(storageC.getCacheKey(newBlockId), blockC);
+
+
+//                cache.put(storageC.getCacheKey(newBlockId), blockC);
             });
         });
 
@@ -182,24 +186,24 @@ public class SparseDistributedMatrix extends AbstractMatrix implements StorageCo
      * @return Matrix with mapped values.
      */
     private Matrix mapOverValues(IgniteDoubleFunction<Double> mapper) {
-        CacheUtils.sparseMap(getUUID(), mapper, SparseDistributedMatrixStorage.ML_CACHE_NAME);
+        CacheUtils.sparseMap(getUUID(), mapper, storage().cacheName());
 
         return this;
     }
 
     /** {@inheritDoc} */
     @Override public double sum() {
-        return CacheUtils.sparseSum(getUUID(), SparseDistributedMatrixStorage.ML_CACHE_NAME);
+        return CacheUtils.sparseSum(getUUID(), storage().cacheName());
     }
 
     /** {@inheritDoc} */
     @Override public double maxValue() {
-        return CacheUtils.sparseMax(getUUID(), SparseDistributedMatrixStorage.ML_CACHE_NAME);
+        return CacheUtils.sparseMax(getUUID(), storage().cacheName());
     }
 
     /** {@inheritDoc} */
     @Override public double minValue() {
-        return CacheUtils.sparseMin(getUUID(), SparseDistributedMatrixStorage.ML_CACHE_NAME);
+        return CacheUtils.sparseMin(getUUID(), storage().cacheName());
     }
 
     /** {@inheritDoc} */
