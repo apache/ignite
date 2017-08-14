@@ -38,6 +38,7 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.FileInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentEofException;
+import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordDataV1Serializer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.NotNull;
@@ -92,7 +93,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
         @NotNull FileIOFactory ioFactory) throws IgniteCheckedException {
         super(log,
             sharedCtx,
-            new RecordV1Serializer(sharedCtx),
+            new RecordV1Serializer(new RecordDataV1Serializer(sharedCtx)),
             ioFactory,
             BUF_SIZE);
         init(walFilesDir, false, null);
@@ -116,7 +117,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
             @NotNull File... walFiles) throws IgniteCheckedException {
         super(log,
             sharedCtx,
-            new RecordV1Serializer(sharedCtx),
+            new RecordV1Serializer(new RecordDataV1Serializer(sharedCtx)),
             ioFactory,
             BUF_SIZE);
         this.workDir = workDir;
