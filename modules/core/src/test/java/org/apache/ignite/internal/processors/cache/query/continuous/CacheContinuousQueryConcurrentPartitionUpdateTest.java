@@ -82,7 +82,7 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
-    public void testConcurrentUpdatePartitionAtomic() throws Exception {
+    public void _testConcurrentUpdatePartitionAtomic() throws Exception {
         concurrentUpdatePartition(ATOMIC, false);
     }
 
@@ -96,7 +96,7 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
-    public void testConcurrentUpdatePartitionAtomicClient() throws Exception {
+    public void _testConcurrentUpdatePartitionAtomicClient() throws Exception {
         concurrentUpdatePartition(ATOMIC, true);
     }
 
@@ -205,7 +205,7 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
-    public void testConcurrentUpdatesAndQueryStartAtomic() throws Exception {
+    public void _testConcurrentUpdatesAndQueryStartAtomic() throws Exception {
         concurrentUpdatesAndQueryStart(ATOMIC);
     }
 
