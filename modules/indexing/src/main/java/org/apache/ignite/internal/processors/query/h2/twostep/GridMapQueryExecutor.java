@@ -224,7 +224,7 @@ public class GridMapQueryExecutor {
      * @return Results for node.
      */
     private MapNodeResults resultsForNode(UUID nodeId) {
-        MapNodeResults nodeRess = qryRess.get(nodeId);
+        MapNodeResults nodeRess =  qryRess.get(nodeId);
 
         if (nodeRess == null) {
             nodeRess = new MapNodeResults(nodeId);
@@ -536,7 +536,7 @@ public class GridMapQueryExecutor {
         if (lazy && MapQueryLazyWorker.currentWorker() == null) {
             // Lazy queries must be re-submitted to dedicated workers.
             MapQueryLazyWorkerKey key = new MapQueryLazyWorkerKey(node.id(), reqId, segmentId);
-            MapQueryLazyWorker worker = new MapQueryLazyWorker(ctx.igniteInstanceName(), key, log);
+            MapQueryLazyWorker worker = new MapQueryLazyWorker(ctx.igniteInstanceName(), key, log, this);
 
             worker.submit(new Runnable() {
                 @Override public void run() {
@@ -867,7 +867,7 @@ public class GridMapQueryExecutor {
     /**
      * Unregister lazy worker if needed (i.e. if we are currently in laze worker thread).
      */
-    private void unregisterLazyWorkerIfNeeded() {
+    public void unregisterLazyWorkerIfNeeded() {
         MapQueryLazyWorker worker = MapQueryLazyWorker.currentWorker();
 
         if (worker != null) {

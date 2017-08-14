@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.h2.twostep.lazy;
 
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.processors.query.h2.twostep.GridMapQueryExecutor;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.jetbrains.annotations.Nullable;
 
@@ -38,17 +39,23 @@ public class MapQueryLazyWorker extends GridWorker {
     /** Key. */
     private final MapQueryLazyWorkerKey key;
 
+    /** Map query executor. */
+    private final GridMapQueryExecutor exec;
+
     /**
      * Constructor.
      *
      * @param instanceName Instance name.
      * @param key Lazy worker key.
      * @param log Logger.
+     * @param exec Map query executor.
      */
-    public MapQueryLazyWorker(@Nullable String instanceName, MapQueryLazyWorkerKey key, IgniteLogger log) {
+    public MapQueryLazyWorker(@Nullable String instanceName, MapQueryLazyWorkerKey key, IgniteLogger log,
+        GridMapQueryExecutor exec) {
         super(instanceName, workerName(key), log);
 
         this.key = key;
+        this.exec = exec;
     }
 
     /** {@inheritDoc} */
@@ -65,6 +72,8 @@ public class MapQueryLazyWorker extends GridWorker {
         }
         finally {
             LAZY_WORKER.set(null);
+
+            exec.unregisterLazyWorkerIfNeeded();
         }
     }
 
