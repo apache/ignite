@@ -69,7 +69,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheObjectToStringSelfTe
 import org.apache.ignite.internal.processors.cache.GridCacheOffHeapAtomicMultiThreadedUpdateSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheOffHeapMultiThreadedUpdateSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCachePartitionedLocalStoreSelfTest;
-import org.apache.ignite.internal.processors.cache.GridCacheQuerySqlFieldInlineSizeSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheReplicatedLocalStoreSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheReplicatedTxStoreExceptionSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheStopSelfTest;
@@ -312,8 +311,6 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(IgniteDiagnosticMessagesMultipleConnectionsTest.class);
 
         suite.addTestSuite(IgniteIncompleteCacheObjectSelfTest.class);
-
-        suite.addTestSuite(GridCacheQuerySqlFieldInlineSizeSelfTest.class);
 
         return suite;
     }

@@ -22,6 +22,7 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import javax.cache.CacheException;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.internal.processors.cache.query.CacheQuery;
 
@@ -91,8 +92,14 @@ public @interface QuerySqlField {
     /**
      * Index inline size.
      *
-     * The optimization is used for indexed field. The part of the field value is placed (inlined) directly into
+     * Inline size value must be greater or equal than zero or {@link QueryIndex#DFLT_INLINE_SIZE} (default).
+     *
+     * The optimization is used on index creation. The part of the field value is placed (inlined) directly into
      * index page to avoid excessive data page reads when using index.
+     *
+     * In case the inlineSize property is specified with {@link #groups()} or {@link #orderedGroups()} the
+     * {@link CacheException()} is thrown on the processing such type.
+     * Use {@code  @QueryGroupIndex(inlineSize = N)} for composite index.
      *
      * @return The size in bytes of the index inline.
      */
