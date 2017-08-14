@@ -18,7 +18,7 @@ public class TestExample {
             IgniteCache<Long, Person> srvCache = srv.createCache(
                 new CacheConfiguration<Long, Person>().setName(CACHE_NAME).setIndexedTypes(Long.class, Person.class));
 
-            for (long i = 0; i < 10_000; i++)
+            for (long i = 0; i < 1_000; i++)
                 srvCache.put(i, new Person(i, "First" + i, "Last" + i));
 
             System.out.println("PUT FINISHED");
@@ -28,7 +28,7 @@ public class TestExample {
 
                 IgniteCache<Long, Person> cliCache = cli.cache(CACHE_NAME);
 
-                SqlFieldsQuery qry = new SqlFieldsQuery("SELECT firstName FROM Person WHERE 1=1");
+                SqlFieldsQuery qry = new SqlFieldsQuery("SELECT firstName FROM Person WHERE 1=1").setLazy(true);
 
                 int cnt = 0;
 

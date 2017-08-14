@@ -96,14 +96,14 @@ public class MapQueryLazyWorker extends GridWorker {
      * Stop the worker.
      */
     public void stop() {
-        submit(new StopTask());
-    }
-
-    /**
-     * Internal worker stop routine.
-     */
-    private void stop0() {
-        isCancelled = true;
+        if (MapQueryLazyWorker.currentWorker() == null)
+            submit(new Runnable() {
+                @Override public void run() {
+                    stop();
+                }
+            });
+        else
+            isCancelled = true;
     }
 
     /**
@@ -121,18 +121,5 @@ public class MapQueryLazyWorker extends GridWorker {
      */
     private static String workerName(MapQueryLazyWorkerKey key) {
         return "query-lazy-worker_" + key.nodeId() + "_" + key.queryRequestId() + "_" + key.segment();
-    }
-
-    /**
-     * Internal stop task.
-     */
-    private static class StopTask implements Runnable {
-        @Override public void run() {
-            MapQueryLazyWorker worker = LAZY_WORKER.get();
-
-            assert worker != null;
-
-            worker.stop0();
-        }
     }
 }
