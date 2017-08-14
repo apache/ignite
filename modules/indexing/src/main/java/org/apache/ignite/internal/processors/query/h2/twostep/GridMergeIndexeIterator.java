@@ -25,14 +25,13 @@ import java.util.NoSuchElementException;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.util.GridCloseableIteratorAdapterEx;
 import org.h2.index.Cursor;
 import org.h2.result.Row;
 
 /**
  * Iterator that transparently and sequentially traverses a bunch of {@link GridMergeIndex} objects.
  */
-class GridMergeIndexeIterator extends GridCloseableIteratorAdapterEx<List<?>> {
+class GridMergeIndexeIterator implements Iterator<List<?>> {
     /** Reduce query executor. */
     private final GridReduceQueryExecutor rdcExec;
 
@@ -85,13 +84,13 @@ class GridMergeIndexeIterator extends GridCloseableIteratorAdapterEx<List<?>> {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onHasNext() throws IgniteCheckedException {
+    @Override public boolean hasNext() {
         return next != null;
     }
 
     /** {@inheritDoc} */
-    @Override public List<?> onNext() throws IgniteCheckedException {
-        final List<?> res = next;
+    @Override public List<?> next() {
+        List<Object> res = next;
 
         if (res == null)
             throw new NoSuchElementException();
@@ -101,12 +100,15 @@ class GridMergeIndexeIterator extends GridCloseableIteratorAdapterEx<List<?>> {
         return res;
     }
 
+    /** {@inheritDoc} */
+    @Override public void remove() {
+        throw new UnsupportedOperationException("Remove is not supported");
+    }
+
     /**
      * Advance iterator.
-     *
-     * @throws IgniteCheckedException if failed.
      */
-    private void advance() throws IgniteCheckedException {
+    private void advance() {
         next = null;
 
         try {
