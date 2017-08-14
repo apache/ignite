@@ -259,7 +259,7 @@ class MapQueryResult {
     /**
      * Close the result.
      */
-    public synchronized void close() {
+    public void close() {
         if (lazyWorker != null && MapQueryLazyWorker.currentWorker() == null) {
             final GridFutureAdapter closeFut = new GridFutureAdapter();
 
@@ -275,8 +275,7 @@ class MapQueryResult {
             });
 
             try {
-                // Wait for close synchronously to maintain consistent semantics.
-                closeFut.get();
+                closeFut.get(); // Wait for close synchronously to maintain consistent semantics.
             }
             catch (Exception e) {
                 // No-op.
@@ -285,16 +284,18 @@ class MapQueryResult {
             return;
         }
 
-        assert lazyWorker == null || lazyWorker == MapQueryLazyWorker.currentWorker();
+        synchronized (this) {
+            assert lazyWorker == null || lazyWorker == MapQueryLazyWorker.currentWorker();
 
-        if (closed)
-            return;
+            if (closed)
+                return;
 
-        closed = true;
+            closed = true;
 
-        U.closeQuiet(rs);
+            U.closeQuiet(rs);
 
-        if (lazyWorker != null)
-            lazyWorker.stop();
+            if (lazyWorker != null)
+                lazyWorker.stop();
+        }
     }
 }
