@@ -99,7 +99,7 @@ public @interface QuerySqlField {
      * The {@link CacheException} is thrown when inlineSize is invalid.
      *
      * In case the inlineSize property is specified with {@link #groups()} or {@link #orderedGroups()} the
-     * {@link CacheException()} is thrown on the processing such type.
+     * {@link CacheException} is thrown on the processing such type.
      * Use {@code  @QueryGroupIndex(inlineSize = N)} for composite index.
      *
      * @return The size in bytes of the index inline.
