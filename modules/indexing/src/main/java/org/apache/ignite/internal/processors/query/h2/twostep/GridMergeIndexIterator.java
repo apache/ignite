@@ -31,7 +31,7 @@ import org.h2.result.Row;
 /**
  * Iterator that transparently and sequentially traverses a bunch of {@link GridMergeIndex} objects.
  */
-class GridMergeIndexeIterator implements Iterator<List<?>> {
+class GridMergeIndexIterator implements Iterator<List<?>>, AutoCloseable {
     /** Reduce query executor. */
     private final GridReduceQueryExecutor rdcExec;
 
@@ -69,7 +69,7 @@ class GridMergeIndexeIterator implements Iterator<List<?>> {
      * @param distributedJoins Distributed joins.
      * @throws IgniteCheckedException if failed.
      */
-    GridMergeIndexeIterator(GridReduceQueryExecutor rdcExec, Collection<ClusterNode> nodes, ReduceQueryRun run,
+    GridMergeIndexIterator(GridReduceQueryExecutor rdcExec, Collection<ClusterNode> nodes, ReduceQueryRun run,
         long qryReqId, boolean distributedJoins)
         throws IgniteCheckedException {
         this.rdcExec = rdcExec;
@@ -103,6 +103,11 @@ class GridMergeIndexeIterator implements Iterator<List<?>> {
     /** {@inheritDoc} */
     @Override public void remove() {
         throw new UnsupportedOperationException("Remove is not supported");
+    }
+
+    /** {@inheritDoc} */
+    @Override public void close() throws Exception {
+        releaseIfNeeded();
     }
 
     /**
