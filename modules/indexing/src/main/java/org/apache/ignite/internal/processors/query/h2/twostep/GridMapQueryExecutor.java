@@ -26,7 +26,6 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
@@ -59,7 +58,6 @@ import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RetryException;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryCancelRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryFailResponse;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageRequest;
@@ -545,22 +543,6 @@ public class GridMapQueryExecutor {
                 .topologyVersion(topVer)
                 .reservations(reserved);
 
-            List<GridH2Table> snapshotedTbls = null;
-
-            if (!F.isEmpty(tbls)) {
-                snapshotedTbls = new ArrayList<>(tbls.size());
-
-                for (QueryTable tbl : tbls) {
-                    GridH2Table h2Tbl = h2.dataTable(tbl);
-
-                    Objects.requireNonNull(h2Tbl, tbl.toString());
-
-                    h2Tbl.snapshotIndexes(qctx, segmentId);
-
-                    snapshotedTbls.add(h2Tbl);
-                }
-            }
-
             Connection conn = h2.connectionForSchema(schemaName);
 
             H2Utils.setupConnection(conn, distributedJoinMode != OFF, enforceJoinOrder);
@@ -596,8 +578,6 @@ public class GridMapQueryExecutor {
                             qr.queryCancel(qryIdx));
 
                         if (evt) {
-                            assert mainCctx != null;
-
                             ctx.event().record(new CacheQueryExecutedEvent<>(
                                 node,
                                 "SQL query executed.",
@@ -635,11 +615,6 @@ public class GridMapQueryExecutor {
 
                 if (distributedJoinMode == OFF)
                     qctx.clearContext(false);
-
-                if (!F.isEmpty(snapshotedTbls)) {
-                    for (GridH2Table dataTbl : snapshotedTbls)
-                        dataTbl.releaseSnapshots();
-                }
             }
         }
         catch (Throwable e) {
@@ -757,7 +732,8 @@ public class GridMapQueryExecutor {
                 page == 0 ? res.rowCount() : -1,
                 res.columnCount(),
                 loc ? null : toMessages(rows, new ArrayList<Message>(res.columnCount())),
-                loc ? rows : null);
+                loc ? rows : null,
+                last);
 
             if (loc)
                 h2.reduceQueryExecutor().onMessage(ctx.localNodeId(), msg);
@@ -783,7 +759,8 @@ public class GridMapQueryExecutor {
             GridQueryNextPageResponse msg = new GridQueryNextPageResponse(reqId, segmentId,
             /*qry*/0, /*page*/0, /*allRows*/0, /*cols*/1,
                 loc ? null : Collections.<Message>emptyList(),
-                loc ? Collections.<Value[]>emptyList() : null);
+                loc ? Collections.<Value[]>emptyList() : null,
+                false);
 
             msg.retry(h2.readyTopologyVersion());
 
