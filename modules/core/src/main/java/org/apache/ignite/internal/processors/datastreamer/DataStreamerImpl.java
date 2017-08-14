@@ -1391,6 +1391,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
             boolean remap
         ) throws IgniteInterruptedCheckedException {
             List<GridFutureAdapter<?>> res = null;
+            GridFutureAdapter[] futs = new GridFutureAdapter[stripes.length];
 
             for (DataStreamerEntry entry : newEntries) {
                 List<DataStreamerEntry> entries0 = null;
@@ -1405,9 +1406,16 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                 synchronized (b) {
                     curFut0 = b.curFut;
 
-                    // Listener should be added only once per whole entries collection.
-                    // Should we simplify the model and get rid of all futures?
-                    curFut0.listen(lsnr);
+                    if (futs[b.partId] != curFut0) {
+                        curFut0.listen(lsnr);
+
+                        if (res == null)
+                            res = new ArrayList<>();
+
+                        res.add(curFut0);
+
+                        futs[b.partId] = curFut0;
+                    }
 
                     if (b.batchTopVer == null)
                         b.batchTopVer = topVer;
@@ -1422,11 +1430,6 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                         b.renewBatch(remap);
                     }
                 }
-
-                if (res == null)
-                    res = new ArrayList<>();
-
-                res.add(curFut0);
 
                 if (!allowOverwrite() && !topVer.equals(curBatchTopVer)) {
                     b.renewBatch(remap);
