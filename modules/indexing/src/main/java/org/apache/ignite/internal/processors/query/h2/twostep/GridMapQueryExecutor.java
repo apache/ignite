@@ -166,13 +166,6 @@ public class GridMapQueryExecutor {
     }
 
     /**
-     * @return {@code True} if running in lazy mode.
-     */
-    private static boolean lazyThread() {
-        return Thread.currentThread() instanceof MapQueryLazyIgniteThread;
-    }
-
-    /**
      * @param nodeId Node ID.
      * @param msg Message.
      */
