@@ -19,7 +19,7 @@ public class KafkaStreamSingleTupleExtractorBuilder<K,V>
      * @param messageDecoder The decoder instance for the Kafka message
      * @return The StreamSingleTupleExtractor instance
      */
-    public StreamSingleTupleExtractor<MessageAndMetadata<byte[], byte[]>, K, V> build(Decoder<K> keyDecoder, Decoder<V> messageDecoder)
+    public StreamSingleTupleExtractor<MessageAndMetadata<byte[], byte[]>, K, V> build(final Decoder<K> keyDecoder, final Decoder<V> messageDecoder)
     {
         return new StreamSingleTupleExtractor<MessageAndMetadata<byte[], byte[]>, K, V>()
         {
