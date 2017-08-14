@@ -811,7 +811,6 @@ public class GridMapQueryExecutor {
      * @param segmentId Index segment ID.
      * @param pageSize Page size.
      */
-    // TODO: IGNITE-5991: Correct thread.
     private void sendNextPage(MapNodeResults nodeRess, ClusterNode node, MapQueryResults qr, int qry, int segmentId,
         int pageSize) {
         MapQueryResult res = qr.result(qry);
