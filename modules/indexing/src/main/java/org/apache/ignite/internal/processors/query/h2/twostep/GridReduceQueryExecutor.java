@@ -666,6 +666,8 @@ public class GridReduceQueryExecutor {
 
             runs.put(qryReqId, r);
 
+            boolean release = true;
+
             try {
                 cancel.checkCancelled();
 
@@ -755,8 +757,11 @@ public class GridReduceQueryExecutor {
                 Iterator<List<?>> resIter = null;
 
                 if (!retry) {
-                    if (skipMergeTbl)
+                    if (skipMergeTbl) {
                         resIter = new GridMergeIndexesIterator(this, finalNodes, r, qryReqId, qry.distributedJoins());
+
+                        release = false;
+                    }
                     else {
                         cancel.checkCancelled();
 
@@ -798,6 +803,8 @@ public class GridReduceQueryExecutor {
                 return new GridQueryCacheObjectsIterator(resIter, h2.objectContext(), keepBinary);
             }
             catch (IgniteCheckedException | RuntimeException e) {
+                release = true;
+
                 U.closeQuiet(r.connection());
 
                 if (e instanceof CacheException) {
@@ -820,12 +827,13 @@ public class GridReduceQueryExecutor {
                 throw new CacheException("Failed to run reduce query locally.", cause);
             }
             finally {
-                // If we have fetched all data to merge table, then let's free all resources here.
-                if (!skipMergeTbl) {
+                if (release) {
                     releaseRemoteResources(finalNodes, r, qryReqId, qry.distributedJoins());
 
-                    for (int i = 0, mapQrys = qry.mapQueries().size(); i < mapQrys; i++)
-                        fakeTable(null, i).innerTable(null); // Drop all merge tables.
+                    if (!skipMergeTbl) {
+                        for (int i = 0, mapQrys = qry.mapQueries().size(); i < mapQrys; i++)
+                            fakeTable(null, i).innerTable(null); // Drop all merge tables.
+                    }
                 }
             }
         }
