@@ -37,9 +37,6 @@ public class TestExample {
                     cnt += row.size();
 
                     System.out.println("ROW: " + cnt);
-
-                    if (cnt == 1000)
-                        break;
                 }
 
                 System.out.println("DONE: " + cnt);
