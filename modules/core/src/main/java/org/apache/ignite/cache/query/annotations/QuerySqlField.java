@@ -22,7 +22,7 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.internal.processors.cache.query.CacheQuery;
 
 /**
@@ -96,7 +96,7 @@ public @interface QuerySqlField {
      *
      * @return The size in bytes of the index inline.
      */
-    int inlineSize() default QueryEntity.DEFAULT_INLINE_SIZE;
+    int inlineSize() default QueryIndex.DFLT_INLINE_SIZE;
 
     /**
      * Describes group of index and position of field in this group.

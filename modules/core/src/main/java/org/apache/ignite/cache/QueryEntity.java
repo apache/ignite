@@ -52,9 +52,6 @@ public class QueryEntity implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Default index inline size. */
-    public static final int DEFAULT_INLINE_SIZE = -1;
-
     /** Key type. */
     private String keyType;
 
@@ -422,7 +419,6 @@ public class QueryEntity implements Serializable {
                 sortedIdx.setFields(fields);
 
                 sortedIdx.setName(idxEntry.getKey());
-
                 sortedIdx.setInlineSize(idx.inlineSize());
 
                 idxs.add(sortedIdx);
@@ -485,7 +481,7 @@ public class QueryEntity implements Serializable {
                 String idxName = cls.getSimpleName() + "_" + QueryUtils.VAL_FIELD_NAME + "_idx";
 
                 type.addIndex(idxName, QueryUtils.isGeometryClass(cls) ?
-                    QueryIndexType.GEOSPATIAL : QueryIndexType.SORTED, DEFAULT_INLINE_SIZE);
+                    QueryIndexType.GEOSPATIAL : QueryIndexType.SORTED, QueryIndex.DFLT_INLINE_SIZE);
 
                 type.addFieldToIndex(idxName, QueryUtils.VAL_FIELD_NAME, 0, false);
             }
@@ -570,7 +566,7 @@ public class QueryEntity implements Serializable {
             }
 
             if ((!F.isEmpty(sqlAnn.groups()) || !F.isEmpty(sqlAnn.orderedGroups()))
-                && sqlAnn.inlineSize() != DEFAULT_INLINE_SIZE) {
+                && sqlAnn.inlineSize() != QueryIndex.DFLT_INLINE_SIZE) {
                 throw new CacheException("Inline size property is not accepted for field of the composite index. " +
                     "type: " + cls.getName() + ", property: " + prop.fullName());
             }

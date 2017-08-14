@@ -24,7 +24,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import javax.cache.CacheException;
-import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -79,7 +79,7 @@ public class QueryEntityTypeDescriptor {
      * @return Index descriptor.
      */
     public QueryEntityIndexDescriptor addIndex(String idxName, QueryIndexType type, int inlineSize) {
-        if (inlineSize < 0 && inlineSize != QueryEntity.DEFAULT_INLINE_SIZE)
+        if (inlineSize < 0 && inlineSize != QueryIndex.DFLT_INLINE_SIZE)
             throw new CacheException("Invalid inline size [idxName=" + idxName + ", inlineSize=" + inlineSize + ']');
 
         QueryEntityIndexDescriptor idx = new QueryEntityIndexDescriptor(type, inlineSize);
@@ -103,7 +103,7 @@ public class QueryEntityTypeDescriptor {
         QueryEntityIndexDescriptor desc = indexes.get(idxName);
 
         if (desc == null)
-            desc = addIndex(idxName, QueryIndexType.SORTED, QueryEntity.DEFAULT_INLINE_SIZE);
+            desc = addIndex(idxName, QueryIndexType.SORTED, QueryIndex.DFLT_INLINE_SIZE);
 
         desc.addField(field, orderNum, descending);
     }
