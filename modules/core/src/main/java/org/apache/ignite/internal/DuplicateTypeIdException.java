@@ -6,6 +6,9 @@ import org.apache.ignite.IgniteCheckedException;
  * The exception indicates a duplicate type ID was encountered.
  */
 public class DuplicateTypeIdException extends IgniteCheckedException {
+    /** Serialization version */
+    private static final long serialVersionUID = 0L;
+
     /** Platform ID */
     private final byte platformId;
 
