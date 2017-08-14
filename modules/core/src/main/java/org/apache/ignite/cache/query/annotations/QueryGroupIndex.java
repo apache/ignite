@@ -44,10 +44,11 @@ public @interface QueryGroupIndex {
      * index page to avoid excessive data page reads when using index.
      *
      * Inline size value must be greater or equal than zero or {@link QueryIndex#DFLT_INLINE_SIZE} (default).
+     * The {@link CacheException} is thrown when inlineSize is invalid.
      *
      * For composite index all filed are concatenated and the first {@code inlineSize} bytes is used to inline.
      *
-     * Avoid to specify {@link QuerySqlField#inlineSize()} for composite index. The {@link CacheException ()}
+     * Avoid to specify {@link QuerySqlField#inlineSize()} for composite index. The {@link CacheException}
      * is thrown on the processing such types.
      *
      * @return The size in bytes of the index inline.

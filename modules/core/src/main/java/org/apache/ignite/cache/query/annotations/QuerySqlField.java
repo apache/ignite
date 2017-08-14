@@ -92,10 +92,11 @@ public @interface QuerySqlField {
     /**
      * Index inline size.
      *
-     * Inline size value must be greater or equal than zero or {@link QueryIndex#DFLT_INLINE_SIZE} (default).
-     *
      * The optimization is used on index creation. The part of the field value is placed (inlined) directly into
      * index page to avoid excessive data page reads when using index.
+     *
+     * Inline size value must be greater or equal than zero or {@link QueryIndex#DFLT_INLINE_SIZE} (default).
+     * The {@link CacheException} is thrown when inlineSize is invalid.
      *
      * In case the inlineSize property is specified with {@link #groups()} or {@link #orderedGroups()} the
      * {@link CacheException()} is thrown on the processing such type.
