@@ -62,6 +62,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.PersistenceMetrics;
+import org.apache.ignite.configuration.CheckpointWriteOrder;
 import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
@@ -135,6 +136,7 @@ import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.mxbean.PersistenceMetricsMXBean;
 import org.apache.ignite.thread.IgniteThread;
+import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -382,11 +384,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         long cpBufSize = persistenceCfg.getCheckpointingPageBufferSize();
 
         if (persistenceCfg.getCheckpointingThreads() > 1)
-            asyncRunner = new ThreadPoolExecutor(
+            asyncRunner = new IgniteThreadPoolExecutor(
+                "checkpoint-runner",
+                cctx.igniteInstanceName(),
                 persistenceCfg.getCheckpointingThreads(),
                 persistenceCfg.getCheckpointingThreads(),
-                30L,
-                TimeUnit.SECONDS,
+                30_000,
                 new LinkedBlockingQueue<Runnable>()
             );
 
@@ -2154,15 +2157,41 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 IgniteBiTuple<Collection<GridMultiCollectionWrapper<FullPageId>>, Integer> tup = beginAllCheckpoints();
 
-                // Todo it maybe more optimally
-                Collection<FullPageId> cpPagesList = new ArrayList<>(tup.get2());
+                List<FullPageId> cpPagesList = new ArrayList<>(tup.get2());
 
                 for (GridMultiCollectionWrapper<FullPageId> col : tup.get1()) {
                     for (int i = 0; i < col.collectionsSize(); i++)
                         cpPagesList.addAll(col.innerCollection(i));
                 }
 
-                cpPages = new GridMultiCollectionWrapper<>(cpPagesList);
+                if (persistenceCfg.getCheckpointWriteOrder() == CheckpointWriteOrder.SEQUENTIAL) {
+                    cpPagesList.sort(new Comparator<FullPageId>() {
+                        @Override public int compare(FullPageId o1, FullPageId o2) {
+                            int cmp = Long.compare(o1.groupId(), o2.groupId());
+                            if (cmp != 0)
+                                return cmp;
+
+                            return Long.compare(PageIdUtils.effectivePageId(o1.pageId()),
+                                PageIdUtils.effectivePageId(o2.pageId()));
+                        }
+                    });
+                }
+
+                int pagesSubLists = persistenceCfg.getCheckpointingThreads() * 4;
+
+                Collection[] pagesSubListArr = new Collection[pagesSubLists];
+
+                for (int i = 0; i < pagesSubLists; i++) {
+                    int totalSize = cpPagesList.size();
+
+                    int from = totalSize * i / (pagesSubLists);
+
+                    int to = totalSize * (i + 1) / (pagesSubLists);
+
+                    pagesSubListArr[i] = new ArrayList(cpPagesList.subList(from, to));
+                }
+
+                cpPages = new GridMultiCollectionWrapper<FullPageId>(pagesSubListArr);
 
                 if (!F.isEmpty(cpPages)) {
                     // No page updates for this checkpoint are allowed from now on.
