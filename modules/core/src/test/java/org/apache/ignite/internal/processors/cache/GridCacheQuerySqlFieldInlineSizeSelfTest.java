@@ -30,6 +30,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 /**
  * Tests cache configuration with inlineSize property of the QuerySqlField annotation.
  */
+@SuppressWarnings({"ThrowableResultOfMethodCallIgnored", "unchecked", "unused"})
 public class GridCacheQuerySqlFieldInlineSizeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
@@ -46,9 +47,9 @@ public class GridCacheQuerySqlFieldInlineSizeSelfTest extends GridCommonAbstract
         assertEquals(2, ent.getIndexes().size());
 
         for (QueryIndex idx : ent.getIndexes()) {
-            if(idx.getFields().containsValue("val0"))
+            if(idx.getFields().containsKey("val0"))
                 assertEquals(10, idx.getInlineSize());
-            else if(idx.getFields().containsValue("val1"))
+            else if(idx.getFields().containsKey("val1"))
                 assertEquals(20, idx.getInlineSize());
         }
     }
@@ -79,12 +80,12 @@ public class GridCacheQuerySqlFieldInlineSizeSelfTest extends GridCommonAbstract
         final CacheConfiguration ccfg = defaultCacheConfiguration();
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    ccfg.setIndexedTypes(Integer.class, TestValueGroupIndexInvalidAnnotation.class);
+            @Override public Object call() throws Exception {
+                ccfg.setIndexedTypes(Integer.class, TestValueGroupIndexInvalidAnnotation.class);
 
-                    return null;
-                }
-            }, CacheException.class, "Inline size property is not accepted for field of the composite index");
+                return null;
+            }
+        }, CacheException.class, "Inline size cannot be set on a field with group index");
     }
 
     /**
@@ -103,7 +104,8 @@ public class GridCacheQuerySqlFieldInlineSizeSelfTest extends GridCommonAbstract
                 }
             },
             CacheException.class,
-            "Invalid inline size [idxName=TestValueNegativeInlineSize_val_idx, inlineSize=-10]");
+            "Illegal inline size [idxName=TestValueNegativeInlineSize_val_idx, inlineSize=-10]"
+        );
     }
 
     /**

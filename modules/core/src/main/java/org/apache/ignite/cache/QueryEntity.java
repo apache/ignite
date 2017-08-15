@@ -567,8 +567,8 @@ public class QueryEntity implements Serializable {
 
             if ((!F.isEmpty(sqlAnn.groups()) || !F.isEmpty(sqlAnn.orderedGroups()))
                 && sqlAnn.inlineSize() != QueryIndex.DFLT_INLINE_SIZE) {
-                throw new CacheException("Inline size property is not accepted for field of the composite index. " +
-                    "type: " + cls.getName() + ", property: " + prop.fullName());
+                throw new CacheException("Inline size cannot be set on a field with group index [" +
+                    "type=" + cls.getName() + ", property=" + prop.fullName() + ']');
             }
 
             if (!F.isEmpty(sqlAnn.groups())) {

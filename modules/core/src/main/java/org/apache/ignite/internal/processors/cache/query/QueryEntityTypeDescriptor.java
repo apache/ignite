@@ -80,7 +80,7 @@ public class QueryEntityTypeDescriptor {
      */
     public QueryEntityIndexDescriptor addIndex(String idxName, QueryIndexType type, int inlineSize) {
         if (inlineSize < 0 && inlineSize != QueryIndex.DFLT_INLINE_SIZE)
-            throw new CacheException("Invalid inline size [idxName=" + idxName + ", inlineSize=" + inlineSize + ']');
+            throw new CacheException("Illegal inline size [idxName=" + idxName + ", inlineSize=" + inlineSize + ']');
 
         QueryEntityIndexDescriptor idx = new QueryEntityIndexDescriptor(type, inlineSize);
 
