@@ -1430,12 +1430,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      */
     private int readSerializerVersion(FileIO io, File file, long idx)
         throws IOException, IgniteCheckedException {
-        try {
-            ByteBuffer buf = ByteBuffer.allocate(RecordV1Serializer.HEADER_RECORD_SIZE);
-            buf.order(ByteOrder.nativeOrder());
-
-            FileInput in = new FileInput(io,
-                new ByteBufferExpander(RecordV1Serializer.HEADER_RECORD_SIZE, ByteOrder.nativeOrder()));
+        try (ByteBufferExpander buf = new ByteBufferExpander(RecordV1Serializer.HEADER_RECORD_SIZE, ByteOrder.nativeOrder())){
+            FileInput in = new FileInput(io, buf);
 
             // Header record must be agnostic to the serializer version.
             WALRecord rec = serializer.readRecord(in, new FileWALPointer(idx, 0, 0));
@@ -2402,9 +2398,12 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         /** {@inheritDoc} */
         @Override protected void onClose() throws IgniteCheckedException {
+            super.onClose();
+
             curRec = null;
 
             final ReadFileHandle handle = closeCurrentWalSegment();
+
             if (handle != null && handle.workDir)
                 releaseWorkSegment(curWalSegmIdx);
 
