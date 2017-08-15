@@ -41,6 +41,9 @@ public class IgniteDataIntegrityTests extends TestCase {
     /** Random access file. */
     private RandomAccessFile randomAccessFile;
 
+    /** Buffer expander. */
+    private ByteBufferExpander expBuf;
+
     /** {@inheritDoc} */
     @Override protected void setUp() throws Exception {
         super.setUp();
@@ -50,9 +53,11 @@ public class IgniteDataIntegrityTests extends TestCase {
 
         randomAccessFile = new RandomAccessFile(file, "rw");
 
+        expBuf = new ByteBufferExpander(1024, ByteOrder.BIG_ENDIAN);
+
         fileInput = new FileInput(
             new RandomAccessFileIO(randomAccessFile),
-            new ByteBufferExpander(1024, ByteOrder.BIG_ENDIAN)
+            expBuf
         );
 
         ByteBuffer buf = ByteBuffer.allocate(1024);
@@ -68,6 +73,12 @@ public class IgniteDataIntegrityTests extends TestCase {
 
         randomAccessFile.write(buf.array());
         randomAccessFile.getFD().sync();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void tearDown() throws Exception {
+        randomAccessFile.close();
+        expBuf.close();
     }
 
     /**
@@ -105,6 +116,45 @@ public class IgniteDataIntegrityTests extends TestCase {
         } catch (EOFException ex) {
             //success
         }
+    }
+
+    /**
+     *
+     */
+    public void testExpandBuffer() {
+        ByteBufferExpander expBuf = new ByteBufferExpander(16, ByteOrder.nativeOrder());
+
+        ByteBuffer b1 = expBuf.buffer();
+
+        b1.put((byte)1);
+        b1.putInt(2);
+        b1.putLong(3L);
+
+        assertEquals(13, b1.position());
+        assertEquals(16, b1.limit());
+
+        ByteBuffer b2 = expBuf.expand(32);
+
+        assertEquals(0, b2.position());
+        assertEquals((byte)1, b2.get());
+        assertEquals(2, b2.getInt());
+        assertEquals(3L, b2.getLong());
+        assertEquals(13, b2.position());
+        assertEquals(32, b2.limit());
+
+        b2.putInt(4);
+
+        assertEquals(17, b2.position());
+        assertEquals(32, b2.limit());
+
+        b2.flip();
+
+        assertEquals(0, b2.position());
+        assertEquals((byte)1, b2.get());
+        assertEquals(2, b2.getInt());
+        assertEquals(3L, b2.getLong());
+        assertEquals(4, b2.getInt());
+        assertEquals(17, b2.limit());
     }
 
     /**

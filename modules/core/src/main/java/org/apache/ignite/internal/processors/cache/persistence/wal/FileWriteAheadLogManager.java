@@ -1430,12 +1430,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      */
     private int readSerializerVersion(FileIO io, File file, long idx)
         throws IOException, IgniteCheckedException {
-        try {
-            ByteBuffer buf = ByteBuffer.allocate(RecordV1Serializer.HEADER_RECORD_SIZE);
-            buf.order(ByteOrder.nativeOrder());
-
-            FileInput in = new FileInput(io,
-                new ByteBufferExpander(RecordV1Serializer.HEADER_RECORD_SIZE, ByteOrder.nativeOrder()));
+        try (ByteBufferExpander buf = new ByteBufferExpander(RecordV1Serializer.HEADER_RECORD_SIZE, ByteOrder.nativeOrder())){
+            FileInput in = new FileInput(io, buf);
 
             // Header record must be agnostic to the serializer version.
             WALRecord rec = serializer.readRecord(in, new FileWALPointer(idx, 0, 0));
@@ -1800,6 +1796,13 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             if (flush(ptr, stop))
                 return;
+            else if (stop) {
+                FakeRecord fr = (FakeRecord)head.get();
+
+                assert fr.stop : "Invalid fake record on top of the queue: " + fr;
+
+                expWritten = recordOffset(fr);
+            }
 
             // Spin-wait for a while before acquiring the lock.
             for (int i = 0; i < 64; i++) {
@@ -1874,7 +1877,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             if (expHead.previous() == null) {
                 FakeRecord frHead = (FakeRecord)expHead;
 
-                if (stop == frHead.stop)
+                if (!stop || frHead.stop) // Protects from CASing terminal FakeRecord(true) to FakeRecord(false)
                     return false;
             }
 
@@ -1882,6 +1885,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             checkEnvironment();
 
             if (!head.compareAndSet(expHead, new FakeRecord(new FileWALPointer(idx, (int)nextPosition(expHead), 0), stop)))
+                return false;
+
+            if (expHead.chainSize() == 0)
                 return false;
 
             // At this point we grabbed the piece of WAL chain.
@@ -2049,14 +2055,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
          * @throws StorageException If failed.
          */
         private boolean close(boolean rollOver) throws IgniteCheckedException, StorageException {
-            if (mode == WALMode.DEFAULT)
-                fsync(null, true);
-            else
+            if (stop.compareAndSet(false, true)) {
                 flushOrWait(null, true);
 
-            assert stopped() : "Segment is not closed after close flush: " + head.get();
+                assert stopped() : "Segment is not closed after close flush: " + head.get();
 
-            if (stop.compareAndSet(false, true)) {
                 try {
                     int switchSegmentRecSize = RecordV1Serializer.REC_TYPE_SIZE + RecordV1Serializer.FILE_WAL_POINTER_SIZE;
 
@@ -2070,10 +2073,22 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                         buf.rewind();
 
-                        fileIO.write(buf, written);
+                        int rem = buf.remaining();
 
-                        if (mode == WALMode.DEFAULT)
-                            fileIO.force();
+                        while (rem > 0) {
+                            int written0 = fileIO.write(buf, written);
+
+                            written += written0;
+
+                            rem -= written0;
+                        }
+                    }
+
+                    // Do the final fsync.
+                    if (mode == WALMode.DEFAULT) {
+                        fileIO.force();
+
+                        lastFsyncPos = written;
                     }
 
                     fileIO.close();
@@ -2383,9 +2398,12 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         /** {@inheritDoc} */
         @Override protected void onClose() throws IgniteCheckedException {
+            super.onClose();
+
             curRec = null;
 
             final ReadFileHandle handle = closeCurrentWalSegment();
+
             if (handle != null && handle.workDir)
                 releaseWorkSegment(curWalSegmIdx);
 

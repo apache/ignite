@@ -30,6 +30,14 @@ html(ng-app='ignite-console' id='app' ng-strict-di)
 
     body.theme-line.body-overlap
 
+        .splash.splash-max-foreground(hide-on-state-change)
+            .splash-wrapper
+                .spinner
+                    .bounce1
+                    .bounce2
+                    .bounce3
+
+                .splash-wellcome Loading...
 
         .ribbon-wrapper.right(ng-cloak)
             .ribbon(ng-style='IgniteDemoMode && {"background": "#1b6d88"}')

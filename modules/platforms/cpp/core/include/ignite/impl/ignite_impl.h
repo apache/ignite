@@ -63,7 +63,7 @@ namespace ignite
              * @param env Environment.
              */
             IgniteImpl(SP_IgniteEnvironment env);
-            
+
             /**
              * Get name of the Ignite.
              *

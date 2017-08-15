@@ -56,9 +56,6 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import javax.management.InstanceNotFoundException;
-import javax.management.JMException;
-import javax.management.MBeanRegistrationException;
 import javax.management.ObjectName;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -98,6 +95,7 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.PartitionDestroyRecor
 import org.apache.ignite.internal.pagemem.wal.record.delta.PartitionMetaStateRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
+import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -1229,7 +1227,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             if (Files.exists(dir.toPath()))
                 log.warning("Read checkpoint status: cpDir.exists() is false, Files.exists(cpDir) is true.");
 
-            log.info("Read checkpoint status: checkpoint directory is not found.");
+            if (log.isInfoEnabled())
+                log.info("Read checkpoint status: checkpoint directory is not found.");
 
             return new CheckpointStatus(0, startId, startPtr, endId, endPtr);
         }
@@ -1266,8 +1265,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         if (endFile != null)
             endPtr = readPointer(endFile, buf);
 
-        // TODO: remove excessive logging after GG-12116 fix.
-        log.info("Read checkpoint status: start marker = " + startFile + ", end marker = " + endFile);
+        if (log.isInfoEnabled())
+            log.info("Read checkpoint status [startMarker=" + startFile + ", endMarker=" + endFile + ']');
 
         return new CheckpointStatus(lastStartTs, startId, startPtr, endId, endPtr);
     }
@@ -1452,11 +1451,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         // TODO IGNITE-5075: cache descriptor can be removed.
         GridCacheSharedContext sharedCtx = context();
 
-        String memPlcName = sharedCtx
-            .cache()
-            .cacheGroupDescriptors().get(grpId)
-            .config()
-            .getMemoryPolicyName();
+        CacheGroupDescriptor desc = sharedCtx.cache().cacheGroupDescriptors().get(grpId);
+
+        if (desc == null)
+            throw new IgniteCheckedException("Failed to find cache group descriptor [grpId=" + grpId + ']');
+
+        String memPlcName = desc.config().getMemoryPolicyName();
 
         return (PageMemoryEx)sharedCtx.database().memoryPolicy(memPlcName).pageMemory();
     }

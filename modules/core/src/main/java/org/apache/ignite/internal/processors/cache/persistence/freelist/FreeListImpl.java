@@ -193,7 +193,7 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
             io.addRow(pageAddr, row, rowSize, pageSize());
 
             if (needWalDeltaRecord(pageId, page, null)) {
-                // TODO This record must contain only a reference to a logical WAL record with the actual data.
+                // TODO IGNITE-5829 This record must contain only a reference to a logical WAL record with the actual data.
                 byte[] payload = new byte[rowSize];
 
                 DataPagePayload data = io.readPayload(pageAddr, PageIdUtils.itemId(row.link()), pageSize());
@@ -239,7 +239,7 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
             assert payloadSize > 0 : payloadSize;
 
             if (needWalDeltaRecord(pageId, page, null)) {
-                // TODO This record must contain only a reference to a logical WAL record with the actual data.
+                // TODO IGNITE-5829 This record must contain only a reference to a logical WAL record with the actual data.
                 byte[] payload = new byte[payloadSize];
 
                 DataPagePayload data = io.readPayload(pageAddr, PageIdUtils.itemId(row.link()), pageSize());
@@ -406,18 +406,20 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
                     }
                 }
 
-                log.info("Bucket [b=" + b +
-                    ", size=" + size +
-                    ", stripes=" + (stripes != null ? stripes.length : 0) +
-                    ", stripesEmpty=" + empty + ']');
+                if (log.isInfoEnabled())
+                    log.info("Bucket [b=" + b +
+                        ", size=" + size +
+                        ", stripes=" + (stripes != null ? stripes.length : 0) +
+                        ", stripesEmpty=" + empty + ']');
             }
         }
 
         if (dataPages > 0) {
-            log.info("FreeList [name=" + name +
-                ", buckets=" + BUCKETS +
-                ", dataPages=" + dataPages +
-                ", reusePages=" + bucketsSize[REUSE_BUCKET].longValue() + "]");
+            if (log.isInfoEnabled())
+                log.info("FreeList [name=" + name +
+                    ", buckets=" + BUCKETS +
+                    ", dataPages=" + dataPages +
+                    ", reusePages=" + bucketsSize[REUSE_BUCKET].longValue() + "]");
         }
     }
 

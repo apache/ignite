@@ -180,7 +180,7 @@ public class OLSMultipleLinearRegressionTest extends AbstractMultipleLinearRegre
             455.478499142212}, errors, 1E-6);
 
         // Check regression standard error against R
-        Assert.assertEquals(304.8540735619638, mdl.estimateRegressionStandardError(), 1E-10);
+        Assert.assertEquals(304.8540735619638, mdl.estimateRegressionStandardError(), 1E-8);
 
         // Check R-Square statistics against R
         Assert.assertEquals(0.995479004577296, mdl.calculateRSquared(), 1E-12);

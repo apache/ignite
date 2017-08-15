@@ -36,12 +36,10 @@ import org.apache.ignite.ml.math.functions.IgniteTriFunction;
 public class SparseLocalOnHeapMatrixStorage implements MatrixStorage, StorageConstants {
     /** Default zero value. */
     private static final double DEFAULT_VALUE = 0.0;
-
     /** */
     private int rows;
     /** */
     private int cols;
-
     /** */
     private int acsMode;
     /** */
@@ -73,7 +71,7 @@ public class SparseLocalOnHeapMatrixStorage implements MatrixStorage, StorageCon
     /**
      * @return Matrix elements storage mode.
      */
-    public int getStorageMode() {
+    public int storageMode() {
         return stoMode;
     }
 
@@ -202,6 +200,25 @@ public class SparseLocalOnHeapMatrixStorage implements MatrixStorage, StorageCon
     /** {@inheritDoc} */
     @Override public boolean isArrayBased() {
         return false;
+    }
+
+    // TODO: IGNITE-5777, optimize this
+    /** {@inheritDoc} */
+    @Override public double[] data() {
+        double[] res = new double[rows * cols];
+
+        boolean isRowStorage = stoMode == ROW_STORAGE_MODE;
+
+        sto.forEach((fstIdx, map) ->
+            map.forEach((sndIdx, val) -> {
+                if (isRowStorage)
+                    res[sndIdx * rows + fstIdx] = val;
+                else
+                    res[fstIdx * cols + sndIdx] = val;
+
+        }));
+
+        return res;
     }
 
     /** {@inheritDoc} */

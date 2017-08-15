@@ -17,6 +17,7 @@
 ul.bs-select-menu(
     tabindex='-1'
     ng-show='$isVisible()'
+    ng-class=`{ 'bssm-multiple': $isMultiple }`
     role='select'
 )
     li(ng-if='$showAllNoneButtons || ($isMultiple && $matches.length > 2)')
@@ -37,6 +38,7 @@ ul.bs-select-menu(
             role='menuitem'
             tabindex='-1'
             ng-click='$select($index, $event)'
+            ng-class=`{ 'bssm-item-button__active': $isActive($index) }`
             data-placement='right auto'
             title='{{ ::match.label }}'
         )

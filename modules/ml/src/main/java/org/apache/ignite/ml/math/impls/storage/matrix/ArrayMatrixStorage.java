@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Arrays;
+import org.apache.ignite.ml.math.Blas;
 import org.apache.ignite.ml.math.MatrixStorage;
 import org.apache.ignite.ml.math.StorageConstants;
 import org.apache.ignite.ml.math.functions.IgniteIntIntToIntBiFunction;
@@ -37,7 +38,7 @@ public class ArrayMatrixStorage implements MatrixStorage {
     /** Amount of columns in the matrix. */
     private int cols;
     /** Mode specifying if this matrix is row-major or column-major. */
-    private int acsMode;
+    private int stoMode;
     /** Index mapper */
     private IgniteIntIntToIntBiFunction idxMapper;
 
@@ -57,22 +58,22 @@ public class ArrayMatrixStorage implements MatrixStorage {
     }
 
     /** */
-    public ArrayMatrixStorage(int rows, int cols, int acsMode) {
+    public ArrayMatrixStorage(int rows, int cols, int stoMode) {
         assert rows > 0;
         assert cols > 0;
 
         this.data = new double[rows * cols];
         this.rows = rows;
         this.cols = cols;
-        idxMapper = indexMapper(acsMode);
-        this.acsMode = acsMode;
+        idxMapper = indexMapper(stoMode);
+        this.stoMode = stoMode;
     }
 
     /**
      * @param data Backing data array.
      */
-    public ArrayMatrixStorage(double[][] data, int acsMode) {
-        this(MatrixUtil.flatten(data, acsMode), data.length, acsMode);
+    public ArrayMatrixStorage(double[][] data, int stoMode) {
+        this(MatrixUtil.flatten(data, stoMode), data.length, stoMode);
     }
 
     /**
@@ -85,15 +86,15 @@ public class ArrayMatrixStorage implements MatrixStorage {
     /**
      * @param data Backing data array.
      */
-    public ArrayMatrixStorage(double[] data, int rows, int acsMode) {
+    public ArrayMatrixStorage(double[] data, int rows, int stoMode) {
         assert data != null;
         assert data.length % rows == 0;
 
         this.data = data;
         this.rows = rows;
         this.cols = data.length / rows;
-        idxMapper = indexMapper(acsMode);
-        this.acsMode = acsMode;
+        idxMapper = indexMapper(stoMode);
+        this.stoMode = stoMode;
 
         assert rows > 0;
         assert cols > 0;
@@ -156,13 +157,20 @@ public class ArrayMatrixStorage implements MatrixStorage {
         return data;
     }
 
+    /** {@inheritDoc} */
+    @Override public int storageMode() {
+        return stoMode;
+    }
+
     /**
      * Get the index mapper for given access mode.
      *
-     * @param acsMode Access mode.
+     * NB: inverted for {@link Blas}.
+     *
+     * @param stoMode Access mode.
      */
-    private IgniteIntIntToIntBiFunction indexMapper(int acsMode) {
-        return acsMode == StorageConstants.ROW_STORAGE_MODE ? (r, c) -> r * cols + c :
+    private IgniteIntIntToIntBiFunction indexMapper(int stoMode) {
+        return stoMode == StorageConstants.COLUMN_STORAGE_MODE ? (r, c) -> r * cols + c :
             (r, c) -> c * rows + r;
     }
 
@@ -170,7 +178,7 @@ public class ArrayMatrixStorage implements MatrixStorage {
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeInt(rows);
         out.writeInt(cols);
-        out.writeInt(acsMode);
+        out.writeInt(stoMode);
 
         out.writeObject(data);
     }
@@ -179,15 +187,15 @@ public class ArrayMatrixStorage implements MatrixStorage {
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         rows = in.readInt();
         cols = in.readInt();
-        acsMode = in.readInt();
-        idxMapper = indexMapper(acsMode);
+        stoMode = in.readInt();
+        idxMapper = indexMapper(stoMode);
 
         data = (double[])in.readObject();
     }
 
     /** Get the access mode of this storage. */
     public int accessMode() {
-        return acsMode;
+        return stoMode;
     }
 
     /** {@inheritDoc} */
@@ -196,7 +204,7 @@ public class ArrayMatrixStorage implements MatrixStorage {
 
         res += res * 37 + rows;
         res += res * 37 + cols;
-        res += res * 37 + acsMode;
+        res += res * 37 + stoMode;
         res += res * 37 + Arrays.hashCode(data);
 
         return res;
@@ -212,6 +220,6 @@ public class ArrayMatrixStorage implements MatrixStorage {
 
         ArrayMatrixStorage that = (ArrayMatrixStorage)o;
 
-        return acsMode == that.acsMode && Arrays.equals(data, that.data);
+        return stoMode == that.stoMode && Arrays.equals(data, that.data);
     }
 }

@@ -714,7 +714,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 assert cctx.cacheContext(cacheDesc.cacheId()) == null
                     : "Starting cache has not null context: " + cacheDesc.cacheName();
 
-                IgniteCacheProxy cacheProxy = cctx.cache().jcacheProxy(req.cacheName());
+                IgniteCacheProxyImpl cacheProxy = (IgniteCacheProxyImpl) cctx.cache().jcacheProxy(req.cacheName());
 
                 // If it has proxy then try to start it
                 if (cacheProxy != null) {
@@ -731,13 +731,6 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             }
 
             try {
-                // Save configuration before cache started.
-                if (cctx.pageStore() != null && !cctx.kernalContext().clientNode()) {
-                    cctx.pageStore().storeCacheData(
-                        new StoredCacheData(req.startCacheConfiguration())
-                    );
-                }
-
                 if (startCache) {
                     cctx.cache().prepareCacheStart(req.startCacheConfiguration(),
                         cacheDesc,
@@ -783,27 +776,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         for (ExchangeActions.CacheActionData action : exchActions.cacheStopRequests())
             cctx.cache().blockGateway(action.request().cacheName(), true, action.request().restart());
 
-        for (ExchangeActions.CacheGroupActionData action : exchActions.cacheGroupsToStop()) {
+        for (ExchangeActions.CacheGroupActionData action : exchActions.cacheGroupsToStop())
             cctx.exchange().clearClientTopology(action.descriptor().groupId());
-
-            CacheGroupContext gctx = cctx.cache().cacheGroup(action.descriptor().groupId());
-
-            if (gctx != null) {
-                IgniteCheckedException ex;
-
-                String msg = "Failed to wait for topology update, cache group is stopping.";
-
-                // If snapshot operation in progress we must throw CacheStoppedException
-                // for correct cache proxy restart. For more details see
-                // IgniteCacheProxy.cacheException()
-                if (cctx.cache().context().snapshot().snapshotOperationInProgress())
-                    ex = new CacheStoppedException(msg);
-                else
-                    ex = new IgniteCheckedException(msg);
-
-                gctx.affinity().cancelFutures(ex);
-            }
-        }
 
         Set<Integer> stoppedGrps = null;
 
@@ -2208,7 +2182,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     /**
      *
      */
-    static class CachesInfo {
+    class CachesInfo {
         /** Registered cache groups (updated from exchange thread). */
         private final ConcurrentHashMap<Integer, CacheGroupDescriptor> registeredGrps = new ConcurrentHashMap<>();
 
@@ -2221,10 +2195,29 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
          */
         void init(Map<Integer, CacheGroupDescriptor> grps, Map<String, DynamicCacheDescriptor> caches) {
             for (CacheGroupDescriptor grpDesc : grps.values())
-                registeredGrps.put(grpDesc.groupId(), grpDesc);
+                registerGroup(grpDesc);
 
             for (DynamicCacheDescriptor cacheDesc : caches.values())
-                registeredCaches.put(cacheDesc.cacheId(), cacheDesc);
+                registerCache(cacheDesc);
+        }
+
+
+        /**
+         * @param desc Description.
+         */
+        private DynamicCacheDescriptor registerCache(DynamicCacheDescriptor desc) {
+            saveCacheConfiguration(desc.cacheConfiguration());
+
+            return registeredCaches.put(desc.cacheId(), desc);
+        }
+
+        /**
+         * @param grpDesc Group description.
+         */
+        private CacheGroupDescriptor registerGroup(CacheGroupDescriptor grpDesc) {
+            saveCacheConfiguration(grpDesc.config());
+
+            return registeredGrps.put(grpDesc.groupId(), grpDesc);
         }
 
         /**
@@ -2254,10 +2247,10 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 CacheGroupDescriptor grpDesc = desc.groupDescriptor();
 
                 if (!registeredGrps.containsKey(grpDesc.groupId()))
-                    registeredGrps.put(grpDesc.groupId(), grpDesc);
+                    registerGroup(grpDesc);
 
                 if (!registeredCaches.containsKey(desc.cacheId()))
-                    registeredCaches.put(desc.cacheId(), desc);
+                    registerCache(desc);
             }
         }
 
@@ -2272,7 +2265,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             }
 
             for (ExchangeActions.CacheGroupActionData startAction : exchActions.cacheGroupsToStart()) {
-                CacheGroupDescriptor old = registeredGrps.put(startAction.descriptor().groupId(), startAction.descriptor());
+                CacheGroupDescriptor old = registerGroup(startAction.descriptor());
 
                 assert old == null : old;
             }
@@ -2281,7 +2274,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 registeredCaches.remove(req.descriptor().cacheId());
 
             for (ExchangeActions.CacheActionData req : exchActions.cacheStartRequests())
-                registeredCaches.put(req.descriptor().cacheId(), req.descriptor());
+                registerCache(req.descriptor());
         }
 
         /**
@@ -2299,6 +2292,22 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             registeredGrps.clear();
 
             registeredCaches.clear();
+        }
+    }
+
+    /**
+     * @param cfg cache configuration
+     */
+    private void saveCacheConfiguration(CacheConfiguration<?, ?> cfg) {
+        if (cctx.pageStore() != null && cctx.database().persistenceEnabled() && !cctx.kernalContext().clientNode()) {
+            try {
+                cctx.pageStore().storeCacheData(
+                    new StoredCacheData(cfg)
+                );
+            }
+            catch (IgniteCheckedException e) {
+                U.error(log(), "Error while saving cache configuration on disk, cfg = " + cfg, e);
+            }
         }
     }
 }

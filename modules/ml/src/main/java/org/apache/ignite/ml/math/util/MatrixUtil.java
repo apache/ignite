@@ -121,10 +121,9 @@ public class MatrixUtil {
     public static DenseLocalOnHeapMatrix asDense(SparseLocalOnHeapMatrix m, int acsMode) {
         DenseLocalOnHeapMatrix res = new DenseLocalOnHeapMatrix(m.rowSize(), m.columnSize(), acsMode);
 
-        for (Integer row : m.indexesMap().keySet()) {
-            for (Integer col : m.indexesMap().get(row))
+        for (int row : m.indexesMap().keySet())
+            for (int col : m.indexesMap().get(row))
                 res.set(row, col, m.get(row, col));
-        }
 
         return res;
     }
@@ -157,7 +156,7 @@ public class MatrixUtil {
         return res;
     }
 
-    /** TODO: IGNTIE-5723, rewrite in a more optimal way. */
+    /** TODO: IGNITE-5723, rewrite in a more optimal way. */
     public static DenseLocalOnHeapVector localCopyOf(Vector vec) {
         DenseLocalOnHeapVector res = new DenseLocalOnHeapVector(vec.size());
 
@@ -168,35 +167,56 @@ public class MatrixUtil {
     }
 
     /** */
-    public static double[][] unflatten(double[] fArr, int colsCnt) {
+    public static double[][] unflatten(double[] fArr, int colsCnt, int stoMode) {
         int rowsCnt = fArr.length / colsCnt;
+
+        boolean isRowMode = stoMode == StorageConstants.ROW_STORAGE_MODE;
 
         double[][] res = new double[rowsCnt][colsCnt];
 
         for (int i = 0; i < rowsCnt; i++)
             for (int j = 0; j < colsCnt; j++)
-                res[i][j] = fArr[i * colsCnt + j];
+                res[i][j] = fArr[!isRowMode? i * colsCnt + j : j * rowsCnt + i];
 
         return res;
     }
 
     /** */
-    public static double[] flatten(double[][] arr, int acsMode) {
+    public static void unflatten(double[] fArr, Matrix mtx) {
+        assert mtx != null;
+
+        if (fArr.length <= 0)
+            return;
+
+        int rowsCnt = mtx.rowSize();
+        int colsCnt = mtx.columnSize();
+
+        boolean isRowMode = mtx.getStorage().storageMode() == StorageConstants.ROW_STORAGE_MODE;
+
+        for (int i = 0; i < rowsCnt; i++)
+            for (int j = 0; j < colsCnt; j++)
+                mtx.setX(i, j, fArr[!isRowMode? i * colsCnt + j : j * rowsCnt + i]);
+    }
+
+    /** */
+    public static double[] flatten(double[][] arr, int stoMode) {
         assert arr != null;
         assert arr[0] != null;
 
+        boolean isRowMode = stoMode == StorageConstants.ROW_STORAGE_MODE;
+
         int size = arr.length * arr[0].length;
-        int rows = acsMode == StorageConstants.ROW_STORAGE_MODE ? arr.length : arr[0].length;
+        int rows = isRowMode ? arr.length : arr[0].length;
         int cols = size / rows;
 
         double[] res = new double[size];
 
-        int iLim = acsMode == StorageConstants.ROW_STORAGE_MODE ? rows : cols;
-        int jLim = acsMode == StorageConstants.ROW_STORAGE_MODE ? cols : rows;
+        int iLim = isRowMode ? rows : cols;
+        int jLim = isRowMode ? cols : rows;
 
         for (int i = 0; i < iLim; i++)
             for (int j = 0; j < jLim; j++)
-                res[i * jLim + j] = arr[i][j];
+                res[isRowMode? j * iLim + i : i * jLim + j] = arr[i][j];
 
         return res;
     }

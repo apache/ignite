@@ -21,6 +21,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.StorageConstants;
 import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.exceptions.CardinalityException;
 import org.apache.ignite.ml.math.exceptions.UnsupportedOperationException;
 import org.apache.ignite.ml.math.functions.IgniteDoubleFunction;
 import org.apache.ignite.ml.math.impls.CacheUtils;
@@ -90,6 +91,34 @@ public class SparseDistributedMatrix extends AbstractMatrix implements StorageCo
      */
     @Override public Matrix times(double x) {
         return mapOverValues(v -> v * x);
+    }
+
+    /**
+     * TODO: IGNITE-5114, tmp naive implementation, WIP.
+     */
+    @Override public Matrix times(Matrix mtx) {
+        int cols = columnSize();
+
+        if (cols != mtx.rowSize())
+            throw new CardinalityException(cols, mtx.rowSize());
+
+        int rows = rowSize();
+
+        int mtxCols = mtx.columnSize();
+
+        Matrix res = like(rows, mtxCols);
+
+        for (int x = 0; x < rows; x++)
+            for (int y = 0; y < mtxCols; y++) {
+                double sum = 0.0;
+
+                for (int k = 0; k < cols; k++)
+                    sum += getX(x, k) * mtx.getX(k, y);
+
+                res.setX(x, y, sum);
+            }
+
+        return res;
     }
 
     /** {@inheritDoc} */

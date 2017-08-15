@@ -18,15 +18,20 @@
 package org.apache.ignite.internal.jdbc.thin;
 
 import java.io.IOException;
+import java.sql.BatchUpdateException;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 import java.sql.SQLWarning;
 import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.query.SqlQuery;
+import org.apache.ignite.internal.processors.odbc.SqlListenerResponse;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBatchExecuteResult;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQuery;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteResult;
 
 import static java.sql.ResultSet.CONCUR_READ_ONLY;
@@ -61,6 +66,9 @@ public class JdbcThinStatement implements Statement {
 
     /** */
     private boolean alreadyRead;
+
+    /** Batch. */
+    protected List<JdbcQuery> batch;
 
     /**
      * Creates new statement.
@@ -323,21 +331,53 @@ public class JdbcThinStatement implements Statement {
     @Override public void addBatch(String sql) throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Updates are not supported.");
+        if (batch == null)
+            batch = new ArrayList<>();
+
+        batch.add(new JdbcQuery(sql, null));
     }
 
     /** {@inheritDoc} */
     @Override public void clearBatch() throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Updates are not supported.");
+        batch = null;
     }
 
     /** {@inheritDoc} */
     @Override public int[] executeBatch() throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Updates are not supported.");
+        if (rs != null) {
+            rs.close();
+
+            rs = null;
+        }
+
+        alreadyRead = false;
+
+        if (batch == null || batch.isEmpty())
+            throw new SQLException("Batch is empty.");
+
+        try {
+            JdbcBatchExecuteResult res = conn.io().batchExecute(conn.getSchema(), batch);
+
+            if (res.errorCode() != SqlListenerResponse.STATUS_SUCCESS)
+                throw new BatchUpdateException(res.errorMessage(), null, res.errorCode(), res.updateCounts());
+
+            return res.updateCounts();
+        }
+        catch (IOException e) {
+            conn.close();
+
+            throw new SQLException("Failed to query Ignite.", e);
+        }
+        catch (IgniteCheckedException e) {
+            throw new SQLException("Failed to query Ignite.", e);
+        }
+        finally {
+            batch = null;
+        }
     }
 
     /** {@inheritDoc} */
