@@ -190,6 +190,42 @@ public abstract class JdbcAbstractDmlStatementSelfTest extends GridCommonAbstrac
     }
 
     /**
+     * @param str String.
+     */
+    static byte[] getBytes(String str) {
+        try {
+            return str.getBytes(UTF_16);
+        }
+        catch (UnsupportedEncodingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * @param blob Blob.
+     */
+    static byte[] getBytes(Blob blob) {
+        try {
+            return blob.getBytes(1, (int)blob.length());
+        }
+        catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * @param arr Array.
+     */
+    static String str(byte[] arr) {
+        try {
+            return new String(arr, UTF_16);
+        }
+        catch (UnsupportedEncodingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
      * Person.
      */
     @SuppressWarnings("UnusedDeclaration")
