@@ -17,26 +17,28 @@
 
 import angular from 'angular';
 
-import igniteEventGroups from './EventGroups.provider';
+
 import igniteSidebar from './Sidebar.provider';
-import Version from './Version.service';
+import IgniteVersion from './Version.service';
 
-import clusterDefaults from './generator/defaults/cluster.provider';
-import clusterPlatformDefaults from './generator/defaults/cluster.platform.provider';
-import cacheDefaults from './generator/defaults/cache.provider';
-import cachePlatformDefaults from './generator/defaults/cache.platform.provider';
-import igfsDefaults from './generator/defaults/igfs.provider';
+import IgniteClusterDefaults from './generator/defaults/Cluster.service';
+import IgniteClusterPlatformDefaults from './generator/defaults/Cluster.platform.service';
+import IgniteCacheDefaults from './generator/defaults/Cache.service';
+import IgniteCachePlatformDefaults from './generator/defaults/Cache.platform.service';
+import IgniteIGFSDefaults from './generator/defaults/IGFS.service';
+import IgniteEventGroups from './generator/defaults/Event-groups.service';
 
-import ConfigurationGenerator from './generator/ConfigurationGenerator';
-import PlatformGenerator from './generator/PlatformGenerator';
+import IgniteConfigurationGenerator from './generator/ConfigurationGenerator';
+import IgnitePlatformGenerator from './generator/PlatformGenerator';
 
-import SpringTransformer from './generator/SpringTransformer.service';
-import JavaTransformer from './generator/JavaTransformer.service';
+import IgniteSpringTransformer from './generator/SpringTransformer.service';
+import IgniteJavaTransformer from './generator/JavaTransformer.service';
 import SharpTransformer from './generator/SharpTransformer.service';
-import GeneratorDocker from './generator/Docker.service';
-import GeneratorPom from './generator/Pom.service';
-import GeneratorProperties from './generator/Properties.service';
-import GeneratorReadme from './generator/Readme.service';
+import IgniteDockerGenerator from './generator/Docker.service';
+import IgniteMavenGenerator from './generator/Maven.service';
+import IgniteGeneratorProperties from './generator/Properties.service';
+import IgniteReadmeGenerator from './generator/Readme.service';
+import IgniteCustomGenerator from './generator/Custom.service';
 
 import igniteSidebarDirective from './sidebar.directive';
 
@@ -45,21 +47,22 @@ angular
 .module('ignite-console.configuration', [
 
 ])
-.provider('igniteClusterDefaults', clusterDefaults)
-.provider('igniteClusterPlatformDefaults', clusterPlatformDefaults)
-.provider('igniteCacheDefaults', cacheDefaults)
-.provider('igniteCachePlatformDefaults', cachePlatformDefaults)
-.provider('igniteIgfsDefaults', igfsDefaults)
-.provider(...igniteEventGroups)
 .provider(...igniteSidebar)
 .directive(...igniteSidebarDirective)
-.service('IgniteVersion', Version)
-.service('IgniteConfigurationGenerator', ConfigurationGenerator)
-.service('IgnitePlatformGenerator', PlatformGenerator)
-.service('SpringTransformer', SpringTransformer)
-.service('JavaTransformer', JavaTransformer)
+.service('IgniteConfigurationGenerator', () => IgniteConfigurationGenerator)
+.service('IgnitePlatformGenerator', IgnitePlatformGenerator)
+.service('SpringTransformer', () => IgniteSpringTransformer)
+.service('JavaTransformer', () => IgniteJavaTransformer)
 .service('IgniteSharpTransformer', SharpTransformer)
-.service('IgnitePropertiesGenerator', GeneratorProperties)
-.service('IgniteReadmeGenerator', GeneratorReadme)
-.service(...GeneratorDocker)
-.service(...GeneratorPom);
+.service('IgniteVersion', IgniteVersion)
+.service('IgniteEventGroups', IgniteEventGroups)
+.service('IgniteClusterDefaults', IgniteClusterDefaults)
+.service('IgniteClusterPlatformDefaults', IgniteClusterPlatformDefaults)
+.service('IgniteCacheDefaults', IgniteCacheDefaults)
+.service('IgniteCachePlatformDefaults', IgniteCachePlatformDefaults)
+.service('IgniteIGFSDefaults', IgniteIGFSDefaults)
+.service('IgnitePropertiesGenerator', IgniteGeneratorProperties)
+.service('IgniteReadmeGenerator', IgniteReadmeGenerator)
+.service('IgniteDockerGenerator', IgniteDockerGenerator)
+.service('IgniteMavenGenerator', IgniteMavenGenerator)
+.service('IgniteCustomGenerator', IgniteCustomGenerator);
