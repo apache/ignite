@@ -32,11 +32,18 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Tests for lazy query execution.
  */
 public class LazyQuerySelfTest extends GridCommonAbstractTest {
+    /** Keys ocunt. */
+    private static final int KEY_CNT = 200;
+
+    /** Base query argument. */
+    private static final int BASE_QRY_ARG = 50;
+
     /** Size for small pages. */
     private static final int PAGE_SIZE_SMALL = 12;
 
@@ -101,6 +108,33 @@ public class LazyQuerySelfTest extends GridCommonAbstractTest {
         }
 
         assertNoWorkers();
+
+        // Test execution of multiple queries at a time.
+        List<Iterator<List<?>>> iters = new ArrayList<>();
+
+        for (int i = 0; i < 1_000; i++)
+            iters.add(execute(node, randomizedQuery().setPageSize(PAGE_SIZE_SMALL)).iterator());
+
+        while (!iters.isEmpty()) {
+            Iterator<Iterator<List<?>>> iterIter = iters.iterator();
+
+            while (iterIter.hasNext()) {
+                Iterator<List<?>> iter = iterIter.next();
+
+                int i = 0;
+
+                while (iter.hasNext() && i < 20) {
+                    iter.next();
+
+                    i++;
+                }
+
+                if (!iter.hasNext())
+                    iterIter.remove();
+            }
+        }
+
+        assertNoWorkers();
     }
 
     /**
@@ -111,15 +145,32 @@ public class LazyQuerySelfTest extends GridCommonAbstractTest {
     private static void populateBaseQueryData(Ignite node) {
         IgniteCache<Long, Person> cache = cache(node);
 
-        for (long i = 0; i < 100; i++)
+        for (long i = 0; i < KEY_CNT; i++)
             cache.put(i, new Person(i));
+    }
+
+    /**
+     * @return Query with randomized argument.
+     */
+    private static SqlFieldsQuery randomizedQuery() {
+        return query(ThreadLocalRandom.current().nextInt(KEY_CNT / 2));
     }
 
     /**
      * @return Base query.
      */
     private static SqlFieldsQuery baseQuery() {
-        return new SqlFieldsQuery("SELECT id, name FROM Person WHERE id >= 50");
+        return query(BASE_QRY_ARG);
+    }
+
+    /**
+     * Default query.
+     *
+     * @param arg Argument.
+     * @return Query.
+     */
+    private static SqlFieldsQuery query(long arg) {
+        return new SqlFieldsQuery("SELECT id, name FROM Person WHERE id >= ?").setArgs(arg);
     }
 
     /**
@@ -128,13 +179,13 @@ public class LazyQuerySelfTest extends GridCommonAbstractTest {
      * @param rows Result rows.
      */
     private static void assertBaseQueryResults(List<List<?>> rows) {
-        assertEquals(50, rows.size());
+        assertEquals(KEY_CNT - BASE_QRY_ARG, rows.size());
 
         for (List<?> row : rows) {
             Long id = (Long)row.get(0);
             String name = (String)row.get(1);
 
-            assertTrue(id >= 50);
+            assertTrue(id >= BASE_QRY_ARG);
             assertEquals(nameForId(id), name);
         }
     }
