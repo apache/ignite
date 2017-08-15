@@ -1,0 +1,223 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.ignite.internal.processors.query;
+
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.query.FieldsQueryCursor;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.query.h2.twostep.MapQueryLazyWorker;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+
+/**
+ * Tests for lazy query execution.
+ */
+public class LazyQuerySelfTest extends GridCommonAbstractTest {
+    /** Size for small pages. */
+    private static final int PAGE_SIZE_SMALL = 12;
+
+    /** Cache name. */
+    private static final String CACHE_NAME = "cache";
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        stopAllGrids();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        cfg.setCacheConfiguration(new CacheConfiguration<Long, Person>().setName(CACHE_NAME)
+            .setIndexedTypes(Long.class, Person.class));
+
+        return cfg;
+    }
+
+    /**
+     * Test local query execution.
+     *
+     * @throws Exception If failed.
+     */
+    public void testLocal() throws Exception {
+        Ignite node = startGrid();
+
+        // Prepare data.
+        populateBaseQueryData(node);
+
+        // Get full data.
+        List<List<?>> rows = execute(node, baseQuery()).getAll();
+
+        assertBaseQueryResults(rows);
+        assertNoWorkers();
+
+        // Get data in several pages.
+        rows = execute(node, baseQuery().setPageSize(PAGE_SIZE_SMALL)).getAll();
+
+        assertBaseQueryResults(rows);
+        assertNoWorkers();
+
+        // Test full iteration.
+        rows = new ArrayList<>();
+
+        FieldsQueryCursor<List<?>> cursor = execute(node, baseQuery().setPageSize(PAGE_SIZE_SMALL));
+
+        for (List<?> row : cursor)
+            rows.add(row);
+
+        assertBaseQueryResults(rows);
+        assertNoWorkers();
+
+        // Test partial iteration with cursor close.
+        try (FieldsQueryCursor<List<?>> partialCursor = execute(node, baseQuery().setPageSize(PAGE_SIZE_SMALL))) {
+            Iterator<List<?>> iter = partialCursor.iterator();
+
+            for (int i = 0; i < 30; i++)
+                iter.next();
+        }
+
+        assertNoWorkers();
+    }
+
+    /**
+     * Populate base query data.
+     *
+     * @param node Node.
+     */
+    private static void populateBaseQueryData(Ignite node) {
+        IgniteCache<Long, Person> cache = cache(node);
+
+        for (long i = 0; i < 100; i++)
+            cache.put(i, new Person(i));
+    }
+
+    /**
+     * @return Base query.
+     */
+    private static SqlFieldsQuery baseQuery() {
+        return new SqlFieldsQuery("SELECT id, name FROM Person WHERE id >= 50");
+    }
+
+    /**
+     * Assert base query results.
+     *
+     * @param rows Result rows.
+     */
+    private static void assertBaseQueryResults(List<List<?>> rows) {
+        assertEquals(50, rows.size());
+
+        for (List<?> row : rows) {
+            Long id = (Long)row.get(0);
+            String name = (String)row.get(1);
+
+            assertTrue(id >= 50);
+            assertEquals(nameForId(id), name);
+        }
+    }
+
+    /**
+     * Get cache for node.
+     *
+     * @param node Node.
+     * @return Cache.
+     */
+    private static IgniteCache<Long, Person> cache(Ignite node) {
+        return node.cache(CACHE_NAME);
+    }
+
+    /**
+     * Execute query on the given cache.
+     *
+     * @param node Node.
+     * @param qry Query.
+     * @return Cursor.
+     */
+    @SuppressWarnings("unchecked")
+    private static FieldsQueryCursor<List<?>> execute(Ignite node, SqlFieldsQuery qry) {
+        return cache(node).query(qry.setLazy(true));
+    }
+
+    /**
+     * Make sure that are no active lazy workers.
+     *
+     * @throws Exception If failed.
+     */
+    private static void assertNoWorkers() throws Exception {
+        assert GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return MapQueryLazyWorker.activeCount() == 0;
+            }
+        }, 1000L);
+    }
+
+    /**
+     * Get name for ID.
+     *
+     * @param id ID.
+     * @return Name.
+     */
+    private static String nameForId(long id) {
+        return "name-" + id;
+    }
+
+    /**
+     * Person class.
+     */
+    private static class Person {
+        /** ID. */
+        @QuerySqlField(index = true)
+        private long id;
+
+        /** Name. */
+        @QuerySqlField
+        private String name;
+
+        /**
+         * Constructor.
+         *
+         * @param id ID.
+         */
+        public Person(long id) {
+            this.id = id;
+            this.name = nameForId(id);
+        }
+
+        /**
+         * @return ID.
+         */
+        public long id() {
+            return id;
+        }
+
+        /**
+         * @return Name.
+         */
+        public String name() {
+            return name;
+        }
+    }
+}

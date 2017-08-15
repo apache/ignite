@@ -21,6 +21,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.jetbrains.annotations.Nullable;
+import org.jsr166.LongAdder8;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -31,6 +32,9 @@ import java.util.concurrent.LinkedBlockingDeque;
 public class MapQueryLazyWorker extends GridWorker {
     /** Lazy thread flag. */
     private static final ThreadLocal<MapQueryLazyWorker> LAZY_WORKER = new ThreadLocal<>();
+
+    /** Active lazy worker count (for testing purposes). */
+    private static final LongAdder8 ACTIVE_CNT = new LongAdder8();
 
     /** Task to be executed. */
     private final BlockingQueue<Runnable> tasks = new LinkedBlockingDeque<>();
@@ -59,7 +63,11 @@ public class MapQueryLazyWorker extends GridWorker {
 
     /** {@inheritDoc} */
     @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
+        System.out.println("STARTED");
+
         LAZY_WORKER.set(this);
+
+        ACTIVE_CNT.increment();
 
         try {
             while (!isCancelled()) {
@@ -72,7 +80,11 @@ public class MapQueryLazyWorker extends GridWorker {
         finally {
             LAZY_WORKER.set(null);
 
-            exec.unregisterLazyWorkerIfNeeded();
+            ACTIVE_CNT.decrement();
+
+            System.out.println("STOPPED");
+
+            exec.unregisterLazyWorkerIfNeeded(false);
         }
     }
 
@@ -111,6 +123,13 @@ public class MapQueryLazyWorker extends GridWorker {
      */
     @Nullable public static MapQueryLazyWorker currentWorker() {
         return LAZY_WORKER.get();
+    }
+
+    /**
+     * @return Active workers count.
+     */
+    public static int activeCount() {
+        return ACTIVE_CNT.intValue();
     }
 
     /**
