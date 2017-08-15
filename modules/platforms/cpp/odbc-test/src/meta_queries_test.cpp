@@ -337,4 +337,17 @@ BOOST_AUTO_TEST_CASE(TestGetDataWithSelectQuery)
     CheckSingleRowResultSetWithGetData(stmt);
 }
 
+BOOST_AUTO_TEST_CASE(TestGetInfoScrollOptions)
+{
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
+
+    SQLUINTEGER val = 0;
+    SQLRETURN ret = SQLGetInfo(dbc, SQL_SCROLL_OPTIONS, &val, 0, 0);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_DBC, dbc));
+
+    BOOST_CHECK_NE(val, 0);
+}
+
 BOOST_AUTO_TEST_SUITE_END()
