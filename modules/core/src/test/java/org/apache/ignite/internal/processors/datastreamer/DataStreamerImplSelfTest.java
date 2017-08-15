@@ -263,7 +263,9 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
         }
     }
 
-    /** */
+    /**
+     * @throws Exception If failed.
+     */
     public void testAllOperationFinishedBeforeFutureCompletion() throws Exception {
         cnt = 0;
 
@@ -311,6 +313,9 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
         }
     }
 
+    /**
+     * @throws Exception If failed.
+     */
     public void testRemapOnTopologyChangeDuringUpdatePreparation() throws Exception {
         cnt = 0;
 
