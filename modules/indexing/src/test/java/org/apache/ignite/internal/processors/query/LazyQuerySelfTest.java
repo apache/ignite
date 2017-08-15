@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
@@ -70,12 +71,48 @@ public class LazyQuerySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    public void testLocal() throws Exception {
-        Ignite node = startGrid();
+    public void testSingleNode() throws Exception {
+        Ignite srv = startGrid();
 
-        // Prepare data.
-        populateBaseQueryData(node);
+        populateBaseQueryData(srv);
 
+        checkBaseOperations(srv);
+    }
+
+    /**
+     * Test local query execution.
+     *
+     * @throws Exception If failed.
+     */
+    public void testMultipleNodes() throws Exception {
+        Ignite srv1 = startGrid(1);
+        Ignite srv2 = startGrid(2);
+
+        Ignite cli;
+
+        try {
+            Ignition.setClientMode(true);
+
+            cli = startGrid(3);
+        }
+        finally {
+            Ignition.setClientMode(false);
+        }
+
+        populateBaseQueryData(cli);
+
+        checkBaseOperations(srv1);
+        checkBaseOperations(srv2);
+        checkBaseOperations(cli);
+    }
+
+    /**
+     * Check base operations.
+     *
+     * @param node Node.
+     * @throws Exception If failed.
+     */
+    private void checkBaseOperations(Ignite node) throws Exception {
         // Get full data.
         List<List<?>> rows = execute(node, baseQuery()).getAll();
 
