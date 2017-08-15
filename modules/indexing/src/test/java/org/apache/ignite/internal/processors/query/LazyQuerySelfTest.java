@@ -24,7 +24,6 @@ import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.query.h2.twostep.MapQueryLazyWorker;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -56,14 +55,13 @@ public class LazyQuerySelfTest extends GridCommonAbstractTest {
         stopAllGrids();
     }
 
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setCacheConfiguration(new CacheConfiguration<Long, Person>().setName(CACHE_NAME)
-            .setIndexedTypes(Long.class, Person.class));
-
-        return cfg;
+    /**
+     * Test local query execution.
+     *
+     * @throws Exception If failed.
+     */
+    public void testSingleNode() throws Exception {
+        checkSingleNode(1);
     }
 
     /**
@@ -71,8 +69,38 @@ public class LazyQuerySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    public void testSingleNode() throws Exception {
+    public void testSingleNodeWithParallelism() throws Exception {
+        checkSingleNode(4);
+    }
+
+    /**
+     * Test query execution with multiple topology nodes.
+     *
+     * @throws Exception If failed.
+     */
+    public void testMultipleNodes() throws Exception {
+        checkMultipleNodes(1);
+    }
+
+    /**
+     * Test query execution with multiple topology nodes with query parallelism.
+     *
+     * @throws Exception If failed.
+     */
+    public void testMultipleNodesWithParallelism() throws Exception {
+        checkMultipleNodes(4);
+    }
+
+    /**
+     * Check local query execution.
+     *
+     * @param parallelism Query parallelism.
+     * @throws Exception If failed.
+     */
+    public void checkSingleNode(int parallelism) throws Exception {
         Ignite srv = startGrid();
+
+        srv.createCache(cacheConfiguration(parallelism));
 
         populateBaseQueryData(srv);
 
@@ -80,11 +108,12 @@ public class LazyQuerySelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test local query execution.
+     * Check query execution with multiple topology nodes.
      *
+     * @param parallelism Query parallelism.
      * @throws Exception If failed.
      */
-    public void testMultipleNodes() throws Exception {
+    public void checkMultipleNodes(int parallelism) throws Exception {
         Ignite srv1 = startGrid(1);
         Ignite srv2 = startGrid(2);
 
@@ -98,6 +127,8 @@ public class LazyQuerySelfTest extends GridCommonAbstractTest {
         finally {
             Ignition.setClientMode(false);
         }
+
+        cli.createCache(cacheConfiguration(parallelism));
 
         populateBaseQueryData(cli);
 
@@ -161,7 +192,7 @@ public class LazyQuerySelfTest extends GridCommonAbstractTest {
         // Test execution of multiple queries at a time.
         List<Iterator<List<?>>> iters = new ArrayList<>();
 
-        for (int i = 0; i < 1_000; i++)
+        for (int i = 0; i < 100; i++)
             iters.add(execute(node, randomizedQuery().setPageSize(PAGE_SIZE_SMALL)).iterator());
 
         while (!iters.isEmpty()) {
@@ -210,6 +241,15 @@ public class LazyQuerySelfTest extends GridCommonAbstractTest {
      */
     private static SqlFieldsQuery baseQuery() {
         return query(BASE_QRY_ARG);
+    }
+
+    /**
+     * @param parallelism Query parallelism.
+     * @return Default cache configuration.
+     */
+    private static CacheConfiguration<Long, Person> cacheConfiguration(int parallelism) {
+        return new CacheConfiguration<Long, Person>().setName(CACHE_NAME).setIndexedTypes(Long.class, Person.class)
+            .setQueryParallelism(parallelism);
     }
 
     /**
