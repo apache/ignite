@@ -109,6 +109,7 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -299,6 +300,12 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
      */
     public static final int DFLT_SELECTORS_CNT = Math.max(4, Runtime.getRuntime().availableProcessors() / 2);
 
+    /**
+     * Version when client is ready to wait to connect to server (could be needed when client tries to open connection
+     * before it starts being visible for server)
+     */
+    private static final IgniteProductVersion VERSION_SINCE_CLIENT_COULD_WAIT_TO_CONNECT = IgniteProductVersion.fromString("2.1.4");
+
     /** Connection index meta for session. */
     private static final int CONN_IDX_META = GridNioSessionMetaKey.nextUniqueKey();
 
@@ -482,7 +489,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     if (node0 != null) {
                         assert node0.isClient() : node0;
 
-                        if (node0.version().greaterThanEqual(2, 2, 0))
+                        if (node0.version().compareTo(VERSION_SINCE_CLIENT_COULD_WAIT_TO_CONNECT) >= 0)
                             unknownNode = false;
                     }
 
@@ -3133,6 +3140,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         }
                         else if (rcvCnt == NEED_WAIT) {
                             recoveryDesc.release();
+
+                            U.closeQuiet(ch);
 
                             Thread.sleep(Math.min(60000, lastWaitingTimeout *= 2));
 
