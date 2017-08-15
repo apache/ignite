@@ -386,7 +386,7 @@ public class FairAffinityFunction implements AffinityFunction {
         if (F.isEmpty(pending))
             return;
 
-        int idealPartCnt = parts / topSnapshot.size();
+        int idealPartCnt = (int)Math.ceil((double)parts / topSnapshot.size());
 
         Map<UUID, PartitionSet> tierMapping = fullMap.tierMapping(tier);
 
