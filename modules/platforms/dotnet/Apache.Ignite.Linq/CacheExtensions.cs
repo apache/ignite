@@ -206,7 +206,36 @@ namespace Apache.Ignite.Linq
         public static int UpdateAll<TKey, TValue>(this IQueryable<ICacheEntry<TKey, TValue>> query,
             Expression<Func<IUpdateDescriptor<TValue>, IUpdateDescriptor<TValue>>> updateDescription)
         {
-            throw new NotImplementedException();
+            IgniteArgumentCheck.NotNull(query, "query");
+            IgniteArgumentCheck.NotNull(updateDescription, "updateDescription");
+
+            var method = UpdateAllExpressionNode.UpdateAllDescriptorMethodInfo
+                .MakeGenericMethod(typeof(TKey), typeof(TValue)); // TODO: cache?
+
+            return query.Provider.Execute<int>(Expression.Call(null, method, new[] { query.Expression,
+                Expression.Quote(updateDescription)}));
         }
+
+        //public static int UpdateAll<TKey, TValue>(this IQueryable<ICacheEntry<TKey, TValue>> query, Expression<Func<ICacheEntry<TKey,TValue>, string>> func) 
+        //{
+        //    var method = UpdateAllExpressionNode.UpdateAllString
+        //        .MakeGenericMethod(typeof(TKey), typeof(TValue)); // TODO: cache?
+
+        //    return query.Provider.Execute<int>(Expression.Call(null, method, query.Expression,
+        //        Expression.Quote(func)));
+        //}
+
+        //public class UD<T>:IUpdateDescriptor<T>
+        //{
+        //    public IUpdateDescriptor<T> Set<TProp>(Func<T, TProp> selector, TProp value)
+        //    {
+        //        return this;
+        //    }
+
+        //    public IUpdateDescriptor<T> Set<TProp>(Func<T, TProp> selector, Func<T, TProp> valueBuilder)
+        //    {
+        //        return this;
+        //    }
+        //}
     }
 }

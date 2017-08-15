@@ -111,7 +111,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
         public void TestUpdateAll()
         {
             // Use new cache to avoid touching static data.
-            var cache = Ignition.GetIgnite().CreateCache<int, Person>(new CacheConfiguration("deleteAllTest",
+            var cache = Ignition.GetIgnite().CreateCache<int, Person>(new CacheConfiguration("updateAllTest",
                 new QueryEntity(typeof(int), typeof(Person)))
             {
                 SqlEscapeAll = GetSqlEscapeAll()
@@ -123,6 +123,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
 
             queryable.UpdateAll(d => d.Set(p => p.AliasTest, 1)
                 .Set(p => p.Age, p => p.Age + 1));
+
+            //queryable.UpdateAll(entry => "asd");
 
         }
     }

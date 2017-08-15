@@ -109,6 +109,11 @@ namespace Apache.Ignite.Linq.Impl
 
             var hasDelete = VisitRemoveOperator(queryModel);
 
+            if (!hasDelete && queryModel.ResultOperators.LastOrDefault() is UpdateAllResultOperator)
+            {
+                _builder.Append("update ");
+            }
+            else
             if (!hasDelete)
             {
                 // SELECT
@@ -121,7 +126,7 @@ namespace Apache.Ignite.Linq.Impl
             // FROM ... WHERE ... JOIN ...
             base.VisitQueryModel(queryModel);
 
-            if (!hasDelete)
+            if (!hasDelete && queryModel.ResultOperators.LastOrDefault() is UpdateAllResultOperator)
             {
                 // UNION ...
                 ProcessResultOperatorsEnd(queryModel);
@@ -389,8 +394,11 @@ namespace Apache.Ignite.Linq.Impl
         public override void VisitMainFromClause(MainFromClause fromClause, QueryModel queryModel)
         {
             base.VisitMainFromClause(fromClause, queryModel);
+            if (!queryModel.ResultOperators.Any(rOp => rOp is UpdateAllResultOperator))
+            {
+                _builder.AppendFormat("from ");
+            }
 
-            _builder.AppendFormat("from ");
             ValidateFromClause(fromClause);
             _aliases.AppendAsClause(_builder, fromClause).Append(" ");
 
