@@ -341,7 +341,7 @@ BOOST_AUTO_TEST_CASE(TestGetInfoScrollOptions)
 {
     Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
 
-    SQLUINTEGER val;
+    SQLUINTEGER val = 0;
     SQLRETURN ret = SQLGetInfo(dbc, SQL_SCROLL_OPTIONS, &val, 0, 0);
 
     if (!SQL_SUCCEEDED(ret))

@@ -639,8 +639,7 @@ namespace ignite
                 // SQL_SO_MIXED = The driver keeps the keys for every row in the keyset, and the keyset size is greater
                 //     than the rowset size.The cursor is keyset - driven inside the keyset and dynamic outside the
                 //     keyset. (ODBC 1.0)
-
-                intParams[SQL_SCROLL_OPTIONS] = SQL_SO_FORWARD_ONLY;
+                intParams[SQL_SCROLL_OPTIONS] = SQL_SO_FORWARD_ONLY | SQL_SO_STATIC;
 #endif //SQL_SCROLL_OPTIONS
 
                 //======================= Short Params ========================
