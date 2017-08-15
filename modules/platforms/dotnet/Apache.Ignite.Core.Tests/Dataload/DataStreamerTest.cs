@@ -190,7 +190,34 @@ namespace Apache.Ignite.Core.Tests.Dataload
         {
             using (IDataStreamer<int, int> ldr = _grid.GetDataStreamer<int, int>(CacheName))
             {
-                var fut = ldr.AddData(1, 1);
+                var nodes = _grid.GetCluster().ForCacheNodes(CacheName).GetNodes().ToArray();
+                
+                var affinity = _grid.GetAffinity(CacheName);
+                
+                var part1 = affinity.GetPrimaryPartitions(nodes[0]).First();
+                var part2 = affinity.GetPrimaryPartitions(nodes[1]).First();
+
+                int[][] keys = new int[2][];
+                for (int i = 0, k = 0; i < keys.Length; i++)
+                {
+                    keys[i] = new int[4];
+
+                    var cnt = 0;
+                    var part = i == 0 ? part1 : part2;
+
+                    while (cnt < 4)
+                    {
+                        if (affinity.GetPartition(k) == part)
+                        {
+                            keys[i][cnt] = k;
+                            cnt++;
+                        }
+
+                        k++;
+                    }
+                }
+
+                var fut = ldr.AddData(keys[0][0], keys[0][0]);
 
                 Thread.Sleep(100);
 
@@ -198,28 +225,28 @@ namespace Apache.Ignite.Core.Tests.Dataload
 
                 ldr.PerNodeBufferSize = 2;
 
-                ldr.AddData(2, 2);
-                ldr.AddData(3, 3);
-                ldr.AddData(4, 4).Wait();
-                fut.Wait();
+                ldr.AddData(keys[1][0], keys[1][0]);
+                ldr.AddData(keys[0][1], keys[0][1]);
+                Assert.IsTrue(ldr.AddData(keys[1][1], keys[1][1]).Wait(5000));
+                Assert.IsTrue(fut.Wait(5000));
 
-                Assert.AreEqual(1, _cache.Get(1));
-                Assert.AreEqual(2, _cache.Get(2));
-                Assert.AreEqual(3, _cache.Get(3));
-                Assert.AreEqual(4, _cache.Get(4));
+                Assert.AreEqual(keys[0][0], _cache.Get(keys[0][0]));
+                Assert.AreEqual(keys[0][1], _cache.Get(keys[0][1]));
+                Assert.AreEqual(keys[1][0], _cache.Get(keys[1][0]));
+                Assert.AreEqual(keys[1][1], _cache.Get(keys[1][1]));
 
-                ldr.AddData(new List<KeyValuePair<int, int>>
+                Assert.IsTrue(ldr.AddData(new List<KeyValuePair<int, int>>
                 {
-                    new KeyValuePair<int, int>(5, 5), 
-                    new KeyValuePair<int, int>(6, 6),
-                    new KeyValuePair<int, int>(7, 7), 
-                    new KeyValuePair<int, int>(8, 8)
-                }).Wait();
+                    new KeyValuePair<int, int>(keys[0][2], keys[0][2]), 
+                    new KeyValuePair<int, int>(keys[0][3], keys[0][3]),
+                    new KeyValuePair<int, int>(keys[1][2], keys[1][2]), 
+                    new KeyValuePair<int, int>(keys[1][3], keys[1][3])
+                }).Wait(5000));
 
-                Assert.AreEqual(5, _cache.Get(5));
-                Assert.AreEqual(6, _cache.Get(6));
-                Assert.AreEqual(7, _cache.Get(7));
-                Assert.AreEqual(8, _cache.Get(8));
+                Assert.AreEqual(keys[0][2], _cache.Get(keys[0][2]));
+                Assert.AreEqual(keys[0][3], _cache.Get(keys[0][3]));
+                Assert.AreEqual(keys[1][2], _cache.Get(keys[1][2]));
+                Assert.AreEqual(keys[1][3], _cache.Get(keys[1][3]));
             }
         }
 
