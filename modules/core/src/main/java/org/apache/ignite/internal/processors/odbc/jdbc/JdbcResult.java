@@ -107,7 +107,6 @@ public class JdbcResult implements JdbcRawBinarylizable {
             case BATCH_EXEC:
                 res = new JdbcBatchExecuteResult();
 
-
                 break;
 
             case META_TABLES:

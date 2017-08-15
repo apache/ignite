@@ -198,7 +198,6 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
         writer.writeByteArray(IgniteVersionUtils.VER.revisionHash());
     }
 
-
     /**
      * {@link JdbcQueryExecuteRequest} command handler.
      *

@@ -78,6 +78,7 @@ public class JdbcColumnMeta implements JdbcRawBinarylizable {
         this.colName = colName;
 
         String type = cls.getName();
+
         dataType = JdbcThinUtils.type(type);
         dataTypeName = JdbcThinUtils.typeName(type);
         dataTypeClass = type;
@@ -157,20 +158,16 @@ public class JdbcColumnMeta implements JdbcRawBinarylizable {
 
         JdbcColumnMeta meta = (JdbcColumnMeta)o;
 
-        if (!F.eq(schemaName, meta.schemaName))
-            return false;
-
-        if (!F.eq(tblName, meta.tblName))
-            return false;
-
-        return F.eq(colName, meta.colName);
+        return F.eq(schemaName, meta.schemaName) && F.eq(tblName, meta.tblName) && F.eq(colName, meta.colName);
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
         int result = schemaName != null ? schemaName.hashCode() : 0;
+
         result = 31 * result + (tblName != null ? tblName.hashCode() : 0);
         result = 31 * result + colName.hashCode();
+
         return result;
     }
 
