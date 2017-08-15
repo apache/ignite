@@ -34,4 +34,9 @@ public class GridCacheReplicatedNearOnlyMultiJvmFullApiSelfTest extends
         if (isMultiJvm())
             fail("https://issues.apache.org/jira/browse/IGNITE-648");
     }
+
+    /** Remove this overridden method when IGNITE-6058 is fixed. */
+    @Override public void testTransformResourceInjection() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-6058");
+    }
 }

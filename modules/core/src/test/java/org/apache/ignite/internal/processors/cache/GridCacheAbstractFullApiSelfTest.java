@@ -5961,8 +5961,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception If failed.
      */
     public void testTransformResourceInjection() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-6058");
-
         ClusterGroup servers = grid(0).cluster().forServers();
 
         if(F.isEmpty(servers.nodes()))
