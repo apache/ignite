@@ -76,6 +76,7 @@ import static org.apache.ignite.IgniteJdbcDriver.PROP_CACHE;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_CFG;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_COLLOCATED;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_DISTRIBUTED_JOINS;
+import static org.apache.ignite.IgniteJdbcDriver.PROP_ENFORCE_JOIN_ORDER;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_LOCAL;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_NODE_ID;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_TX_ALLOWED;
@@ -132,6 +133,9 @@ public class JdbcConnection implements Connection {
     /** Distributed joins flag. */
     private boolean distributedJoins;
 
+    /** Enforced join order flag. */
+    private boolean enforceJoinOrder;
+
     /** Transactions allowed flag. */
     private boolean txAllowed;
 
@@ -174,6 +178,7 @@ public class JdbcConnection implements Connection {
         locQry = Boolean.parseBoolean(props.getProperty(PROP_LOCAL));
         collocatedQry = Boolean.parseBoolean(props.getProperty(PROP_COLLOCATED));
         distributedJoins = Boolean.parseBoolean(props.getProperty(PROP_DISTRIBUTED_JOINS));
+        enforceJoinOrder = Boolean.parseBoolean(props.getProperty(PROP_ENFORCE_JOIN_ORDER));
         txAllowed = Boolean.parseBoolean(props.getProperty(PROP_TX_ALLOWED));
 
         stream = Boolean.parseBoolean(props.getProperty(PROP_STREAMING));
@@ -826,6 +831,13 @@ public class JdbcConnection implements Connection {
      */
     boolean isDistributedJoins() {
         return distributedJoins;
+    }
+
+    /**
+     * @return Enforce join order flag.
+     */
+    boolean isEnforceJoinOrder() {
+        return enforceJoinOrder;
     }
 
     /**

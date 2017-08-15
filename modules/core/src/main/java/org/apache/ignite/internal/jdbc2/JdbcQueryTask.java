@@ -101,6 +101,9 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
     /** Distributed joins flag. */
     private final boolean distributedJoins;
 
+    /** Enforce join order flag. */
+    private final boolean enforceJoinOrder;
+
     /**
      * @param ignite Ignite.
      * @param cacheName Cache name.
@@ -114,9 +117,11 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
      * @param locQry Local query flag.
      * @param collocatedQry Collocated query flag.
      * @param distributedJoins Distributed joins flag.
+     * @param enforceJoinOrder Enforce joins order falg.
      */
     public JdbcQueryTask(Ignite ignite, String cacheName, String schemaName, String sql, Boolean isQry, boolean loc,
-        Object[] args, int fetchSize, UUID uuid, boolean locQry, boolean collocatedQry, boolean distributedJoins) {
+        Object[] args, int fetchSize, UUID uuid, boolean locQry, boolean collocatedQry, boolean distributedJoins,
+        boolean enforceJoinOrder) {
         this.ignite = ignite;
         this.args = args;
         this.uuid = uuid;
@@ -129,6 +134,7 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
         this.locQry = locQry;
         this.collocatedQry = collocatedQry;
         this.distributedJoins = distributedJoins;
+        this.enforceJoinOrder = enforceJoinOrder;
     }
 
     /** {@inheritDoc} */
@@ -164,6 +170,7 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
             qry.setLocal(locQry);
             qry.setCollocated(collocatedQry);
             qry.setDistributedJoins(distributedJoins);
+            qry.setEnforceJoinOrder(enforceJoinOrder);
             qry.setSchema(schemaName);
 
             QueryCursorImpl<List<?>> qryCursor = (QueryCursorImpl<List<?>>)cache.withKeepBinary().query(qry);

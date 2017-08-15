@@ -304,4 +304,27 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
             conn.rollback();
         }
     }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testSqlHints() throws Exception {
+        try (final Connection conn = DriverManager.getConnection(CFG_URL_PREFIX + "enforceJoinOrder=true@" + configURL())) {
+            assertEquals(Boolean.TRUE, GridTestUtils.getFieldValue(conn, "enforceJoinOrder"));
+            assertEquals(Boolean.FALSE, GridTestUtils.getFieldValue(conn, "distributedJoins"));
+            assertEquals(Boolean.FALSE, GridTestUtils.getFieldValue(conn, "collocatedQry"));
+        }
+
+        try (final Connection conn = DriverManager.getConnection(CFG_URL_PREFIX + "distributedJoins=true@" + configURL())) {
+            assertEquals(Boolean.FALSE, GridTestUtils.getFieldValue(conn, "enforceJoinOrder"));
+            assertEquals(Boolean.TRUE, GridTestUtils.getFieldValue(conn, "distributedJoins"));
+            assertEquals(Boolean.FALSE, GridTestUtils.getFieldValue(conn, "collocatedQry"));
+        }
+
+        try (final Connection conn = DriverManager.getConnection(CFG_URL_PREFIX + "collocated=true@" + configURL())) {
+            assertEquals(Boolean.FALSE, GridTestUtils.getFieldValue(conn, "enforceJoinOrder"));
+            assertEquals(Boolean.FALSE, GridTestUtils.getFieldValue(conn, "distributedJoins"));
+            assertEquals(Boolean.TRUE, GridTestUtils.getFieldValue(conn, "collocatedQry"));
+        }
+    }
 }
