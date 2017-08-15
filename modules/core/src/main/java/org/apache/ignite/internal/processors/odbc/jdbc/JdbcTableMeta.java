@@ -38,6 +38,7 @@ public class JdbcTableMeta implements JdbcRawBinarylizable {
      * Default constructor is used for deserialization.
      */
     JdbcTableMeta() {
+        // No-op.
     }
 
     /**

@@ -45,6 +45,7 @@ public class JdbcMetaColumnsResult extends JdbcResult {
      */
     JdbcMetaColumnsResult(Collection<JdbcColumnMeta> meta) {
         super(META_COLUMNS);
+
         this.meta = new ArrayList<>(meta);
     }
 

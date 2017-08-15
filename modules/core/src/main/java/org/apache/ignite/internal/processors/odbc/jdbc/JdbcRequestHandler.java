@@ -195,7 +195,6 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
         writer.writeByteArray(IgniteVersionUtils.VER.revisionHash());
     }
 
-
     /**
      * {@link JdbcQueryExecuteRequest} command handler.
      *
@@ -587,7 +586,8 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
                             fields.add(field);
                     }
 
-                    final String keyName = table.keyFieldName() == null ? "_KEY" : table.keyFieldName();
+                    final String keyName = table.keyFieldName() == null ?
+                        QueryUtils.KEY_FIELD_NAME : table.keyFieldName();
 
                     if (fields.isEmpty()) {
                         meta.add(new JdbcPrimaryKeyMeta(table.schemaName(), table.tableName(), keyName,

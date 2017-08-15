@@ -136,9 +136,6 @@ public class JdbcIndexMeta implements JdbcRawBinarylizable {
         type = QueryIndexType.fromOrdinal(reader.readByte());
         fields = reader.readStringArray();
         fieldsAsc = reader.readBooleanArray();
-
-        assert fields.length == fieldsAsc.length : "Fields info is broken: [fields.length=" + fields.length +
-            ", fieldsAsc.length=" + fieldsAsc.length + ']';
     }
 
     /** {@inheritDoc} */
@@ -151,20 +148,16 @@ public class JdbcIndexMeta implements JdbcRawBinarylizable {
 
         JdbcIndexMeta meta = (JdbcIndexMeta)o;
 
-        if (!F.eq(schemaName, meta.schemaName))
-            return false;
-
-        if (!F.eq(tblName, meta.tblName))
-            return false;
-
-        return F.eq(idxName, meta.idxName);
+        return F.eq(schemaName, meta.schemaName) && F.eq(tblName, meta.tblName) && F.eq(idxName, meta.idxName);
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
         int result = schemaName != null ? schemaName.hashCode() : 0;
+
         result = 31 * result + tblName.hashCode();
         result = 31 * result + idxName.hashCode();
+
         return result;
     }
 }

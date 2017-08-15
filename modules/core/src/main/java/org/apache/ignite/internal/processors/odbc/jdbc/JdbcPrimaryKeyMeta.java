@@ -113,20 +113,16 @@ public class JdbcPrimaryKeyMeta implements JdbcRawBinarylizable {
 
         JdbcPrimaryKeyMeta meta = (JdbcPrimaryKeyMeta)o;
 
-        if (!F.eq(schemaName, meta.schemaName))
-            return false;
-
-        if (!F.eq(tblName, meta.tblName))
-            return false;
-
-        return F.eq(name, meta.name);
+        return F.eq(schemaName, meta.schemaName) && F.eq(tblName, meta.tblName) && F.eq(name, meta.name);
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
         int result = schemaName != null ? schemaName.hashCode() : 0;
+
         result = 31 * result + tblName.hashCode();
         result = 31 * result + name.hashCode();
+
         return result;
     }
 }
