@@ -104,6 +104,18 @@ public class LazyQuerySelfTest extends GridCommonAbstractTest {
         checkBaseOperations(srv1);
         checkBaseOperations(srv2);
         checkBaseOperations(cli);
+
+        // Test originating node leave.
+        FieldsQueryCursor<List<?>> cursor = execute(cli, baseQuery().setPageSize(PAGE_SIZE_SMALL));
+
+        Iterator<List<?>> iter = cursor.iterator();
+
+        for (int i = 0; i < 30; i++)
+            iter.next();
+
+        stopGrid(3);
+
+        assertNoWorkers();
     }
 
     /**
