@@ -716,11 +716,25 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
             new JdbcColumnMeta(null, null, "SELF_REFERENCING_COL_NAME", String.class),
             new JdbcColumnMeta(null, null, "REF_GENERATION", String.class));
 
-        if (!validCatalogPattern(catalog))
+        boolean tblTypeMatch = false;
+
+        if (tblTypes == null)
+            tblTypeMatch = true;
+        else {
+            for (String type : tblTypes) {
+                if ("TABLE".equals(type)) {
+                    tblTypeMatch = true;
+
+                    break;
+                }
+            }
+        }
+
+        if (!validCatalogPattern(catalog) || !tblTypeMatch)
             return new JdbcThinResultSet(Collections.<List<Object>>emptyList(), meta);
 
         try {
-            JdbcMetaTablesResult res = conn.io().tablesMeta(schemaPtrn, tblNamePtrn, tblTypes);
+            JdbcMetaTablesResult res = conn.io().tablesMeta(schemaPtrn, tblNamePtrn);
 
             List<List<Object>> rows = new LinkedList<>();
 
@@ -749,7 +763,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
         row.add(null);
         row.add(tblMeta.schemaName());
         row.add(tblMeta.tableName());
-        row.add(tblMeta.tableType());
+        row.add("TABLE");
         row.add(null);
         row.add(null);
         row.add(null);
@@ -959,15 +973,15 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
      * @return Result set rows for primary key.
      */
     private List<List<Object>> primaryKeyRows(JdbcPrimaryKeyMeta pkMeta) {
-        List<List<Object>> rows = new ArrayList<>(pkMeta.fields().length);
+        List<List<Object>> rows = new ArrayList<>(pkMeta.fields().size());
 
-        for (int i = 0; i < pkMeta.fields().length; ++i) {
+        for (int i = 0; i < pkMeta.fields().size(); ++i) {
             List<Object> row = new ArrayList<>(6);
 
             row.add((String)null); // table catalog
             row.add(pkMeta.schemaName());
             row.add(pkMeta.tableName());
-            row.add(pkMeta.fields()[i]);
+            row.add(pkMeta.fields().get(i));
             row.add((Integer)i + 1); // sequence number
             row.add(pkMeta.name());
 
@@ -1197,9 +1211,9 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
      * @return List of result rows correspond to index.
      */
     private List<List<Object>> indexRows(JdbcIndexMeta idxMeta) {
-        List<List<Object>> rows = new ArrayList<>(idxMeta.fields().length);
+        List<List<Object>> rows = new ArrayList<>(idxMeta.fields().size());
 
-        for (int i = 0; i < idxMeta.fields().length; ++i) {
+        for (int i = 0; i < idxMeta.fields().size(); ++i) {
             List<Object> row = new ArrayList<>(13);
 
             row.add((String)null); // table catalog
@@ -1210,8 +1224,8 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
             row.add(idxMeta.indexName());
             row.add((short)tableIndexOther); // type
             row.add((Integer)i); // field ordinal position in index
-            row.add(idxMeta.fields()[i]);
-            row.add(idxMeta.fieldsAsc()[i] ? "A" : "D");
+            row.add(idxMeta.fields().get(i));
+            row.add(idxMeta.fieldsAsc().get(i) ? "A" : "D");
             row.add((Integer)0); // cardinality
             row.add((Integer)0); // pages
             row.add((String)null); // filer condition

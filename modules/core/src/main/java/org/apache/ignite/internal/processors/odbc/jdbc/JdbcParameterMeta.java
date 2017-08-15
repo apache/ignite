@@ -22,6 +22,7 @@ import java.sql.SQLException;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * JDBC SQL query parameter metadata.
@@ -155,5 +156,10 @@ public class JdbcParameterMeta implements JdbcRawBinarylizable {
         typeName = reader.readString();
         typeClass = reader.readString();
         mode = reader.readInt();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(JdbcParameterMeta.class, this);
     }
 }

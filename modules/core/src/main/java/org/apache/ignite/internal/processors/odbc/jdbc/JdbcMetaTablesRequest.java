@@ -32,9 +32,6 @@ public class JdbcMetaTablesRequest extends JdbcRequest {
     /** Table search pattern. */
     private String tblName;
 
-    /** Table types. */
-    private String[] tableTypes;
-
     /**
      * Default constructor is used for deserialization.
      */
@@ -45,14 +42,12 @@ public class JdbcMetaTablesRequest extends JdbcRequest {
     /**
      * @param schemaName Schema search pattern.
      * @param tblName Table search pattern.
-     * @param tableTypes Table types.
      */
-    public JdbcMetaTablesRequest(String schemaName, String tblName, String[] tableTypes) {
+    public JdbcMetaTablesRequest(String schemaName, String tblName) {
         super(META_TABLES);
 
         this.schemaName = schemaName;
         this.tblName = tblName;
-        this.tableTypes = tableTypes;
     }
 
     /**
@@ -69,20 +64,12 @@ public class JdbcMetaTablesRequest extends JdbcRequest {
         return tblName;
     }
 
-    /**
-     * @return Table types.
-     */
-    public String[] tableTypes() {
-        return tableTypes;
-    }
-
     /** {@inheritDoc} */
     @Override public void writeBinary(BinaryWriterExImpl writer) throws BinaryObjectException {
         super.writeBinary(writer);
 
         writer.writeString(schemaName);
         writer.writeString(tblName);
-        writer.writeStringArray(tableTypes);
     }
 
     /** {@inheritDoc} */
@@ -91,7 +78,6 @@ public class JdbcMetaTablesRequest extends JdbcRequest {
 
         this.schemaName = reader.readString();
         this.tblName = reader.readString();
-        this.tableTypes = reader.readStringArray();
     }
 
     /** {@inheritDoc} */

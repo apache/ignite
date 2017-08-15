@@ -25,6 +25,7 @@ import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * JDBC primary keys metadata result.
@@ -89,5 +90,10 @@ public class JdbcMetaPrimaryKeysResult extends JdbcResult {
      */
     public List<JdbcPrimaryKeyMeta> meta() {
         return meta;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(JdbcMetaPrimaryKeysResult.class, this);
     }
 }

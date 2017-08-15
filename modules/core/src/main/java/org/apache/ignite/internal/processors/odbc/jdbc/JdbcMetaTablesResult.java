@@ -24,6 +24,7 @@ import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * JDBC tables metadata result.
@@ -87,5 +88,10 @@ public class JdbcMetaTablesResult extends JdbcResult {
      */
     public List<JdbcTableMeta> meta() {
         return meta;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(JdbcMetaTablesResult.class, this);
     }
 }

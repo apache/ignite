@@ -22,6 +22,7 @@ import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.jdbc.thin.JdbcThinUtils;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * JDBC column metadata.
@@ -171,5 +172,10 @@ public class JdbcColumnMeta implements JdbcRawBinarylizable {
         result = 31 * result + (tblName != null ? tblName.hashCode() : 0);
         result = 31 * result + colName.hashCode();
         return result;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(JdbcColumnMeta.class, this);
     }
 }

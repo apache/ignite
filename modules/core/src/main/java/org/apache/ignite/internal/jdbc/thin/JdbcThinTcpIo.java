@@ -337,14 +337,13 @@ public class JdbcThinTcpIo {
     /**
      * @param schemaPtrn Schema name pattern.
      * @param tablePtrn Table name pattern.
-     * @param types Table types
      * @return Result.
      * @throws IOException On error.
      * @throws IgniteCheckedException On error.
      */
-    public JdbcMetaTablesResult tablesMeta(String schemaPtrn, String tablePtrn, String[] types)
+    public JdbcMetaTablesResult tablesMeta(String schemaPtrn, String tablePtrn)
         throws IOException, IgniteCheckedException {
-        return sendRequest(new JdbcMetaTablesRequest(schemaPtrn, tablePtrn, types), DYNAMIC_SIZE_MSG_CAP);
+        return sendRequest(new JdbcMetaTablesRequest(schemaPtrn, tablePtrn), DYNAMIC_SIZE_MSG_CAP);
     }
 
     /**

@@ -24,6 +24,7 @@ import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * JDBC SQL query parameters metadata result.
@@ -87,5 +88,10 @@ public class JdbcMetaParamsResult extends JdbcResult {
      */
     public List<JdbcParameterMeta> meta() {
         return meta;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(JdbcMetaParamsResult.class, this);
     }
 }

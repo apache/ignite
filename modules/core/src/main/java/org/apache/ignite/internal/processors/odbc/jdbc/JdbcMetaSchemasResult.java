@@ -17,12 +17,11 @@
 
 package org.apache.ignite.internal.processors.odbc.jdbc;
 
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * JDBC tables metadata result.
@@ -50,14 +49,14 @@ public class JdbcMetaSchemasResult extends JdbcResult {
     @Override public void writeBinary(BinaryWriterExImpl writer) throws BinaryObjectException {
         super.writeBinary(writer);
 
-        writer.writeStringArray(schemas.toArray(new String[schemas.size()]));
+        JdbcUtils.writeStringCollection(writer, schemas);
     }
 
     /** {@inheritDoc} */
     @Override public void readBinary(BinaryReaderExImpl reader) throws BinaryObjectException {
         super.readBinary(reader);
 
-        schemas = new ArrayList<>(Arrays.asList(reader.readStringArray()));
+        schemas = JdbcUtils.readStringList(reader);
     }
 
     /**
@@ -65,5 +64,10 @@ public class JdbcMetaSchemasResult extends JdbcResult {
      */
     public Collection<String> schemas() {
         return schemas;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(JdbcMetaSchemasResult.class, this);
     }
 }

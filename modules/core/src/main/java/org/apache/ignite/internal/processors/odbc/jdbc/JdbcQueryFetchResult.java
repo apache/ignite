@@ -21,6 +21,7 @@ import java.util.List;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * JDBC query fetch result.
@@ -80,5 +81,10 @@ public class JdbcQueryFetchResult extends JdbcResult {
         last = reader.readBoolean();
 
         items = JdbcUtils.readItems(reader);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(JdbcQueryFetchResult.class, this);
     }
 }

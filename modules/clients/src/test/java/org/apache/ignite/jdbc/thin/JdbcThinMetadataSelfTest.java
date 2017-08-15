@@ -500,17 +500,18 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
             ResultSet rs = conn.getMetaData().getPrimaryKeys(null, null, null);
 
             Set<String> expectedPks = new HashSet<>(Arrays.asList(
-                "org.ORGANIZATION._KEY",
-                "pers.PERSON._KEY",
-                "PUBLIC.TEST.ID",
-                "PUBLIC.TEST.NAME",
-                "PUBLIC.Quoted.Id"));
+                "org.ORGANIZATION.PK_org_ORGANIZATION._KEY",
+                "pers.PERSON.PK_pers_PERSON._KEY",
+                "PUBLIC.TEST.PK_PUBLIC_TEST.ID",
+                "PUBLIC.TEST.PK_PUBLIC_TEST.NAME",
+                "PUBLIC.Quoted.PK_PUBLIC_Quoted.Id"));
 
             Set<String> actualPks = new HashSet<>(expectedPks.size());
 
             while(rs.next()) {
                 actualPks.add(rs.getString("TABLE_SCHEM") +
                     '.' + rs.getString("TABLE_NAME") +
+                    '.' + rs.getString("PK_NAME") +
                     '.' + rs.getString("COLUMN_NAME"));
             }
 

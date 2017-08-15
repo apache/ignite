@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.odbc.jdbc;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * JDBC table metadata.
@@ -30,9 +31,6 @@ public class JdbcTableMeta implements JdbcRawBinarylizable {
 
     /** Table name. */
     private String tblName;
-
-    /** Table type. */
-    private String tblType;
 
     /**
      * Default constructor is used for deserialization.
@@ -48,7 +46,6 @@ public class JdbcTableMeta implements JdbcRawBinarylizable {
     JdbcTableMeta(String schemaName, String tblName, String tblType) {
         this.schemaName = schemaName;
         this.tblName = tblName;
-        this.tblType = tblType;
     }
 
     /**
@@ -65,24 +62,20 @@ public class JdbcTableMeta implements JdbcRawBinarylizable {
         return tblName;
     }
 
-    /**
-     * @return Table type.
-     */
-    public String tableType() {
-        return tblType;
-    }
-
     /** {@inheritDoc} */
     @Override public void writeBinary(BinaryWriterExImpl writer) throws BinaryObjectException {
         writer.writeString(schemaName);
         writer.writeString(tblName);
-        writer.writeString(tblType);
     }
 
     /** {@inheritDoc} */
     @Override public void readBinary(BinaryReaderExImpl reader) throws BinaryObjectException {
         schemaName = reader.readString();
         tblName = reader.readString();
-        tblType = reader.readString();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(JdbcTableMeta.class, this);
     }
 }

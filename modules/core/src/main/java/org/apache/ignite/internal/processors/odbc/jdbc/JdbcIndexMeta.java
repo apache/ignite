@@ -17,12 +17,16 @@
 
 package org.apache.ignite.internal.processors.odbc.jdbc;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * JDBC index metadata.
@@ -41,10 +45,10 @@ public class JdbcIndexMeta implements JdbcRawBinarylizable {
     private QueryIndexType type;
 
     /** Index fields */
-    private String[] fields;
+    private List<String> fields;
 
     /** Index fields is ascending. */
-    private boolean[] fieldsAsc;
+    private List<Boolean> fieldsAsc;
 
     /**
      * Default constructor is used for binary serialization.
@@ -68,12 +72,12 @@ public class JdbcIndexMeta implements JdbcRawBinarylizable {
 
         idxName = idx.name();
         type = idx.type();
-        fields = idx.fields().toArray(new String[idx.fields().size()]);
+        fields = new ArrayList(idx.fields());
 
-        fieldsAsc = new boolean[fields.length];
+        fieldsAsc = new ArrayList<>(fields.size());
 
-        for (int i = 0; i < fields.length; ++i)
-            fieldsAsc[i] = !idx.descending(fields[i]);
+        for (int i = 0; i < fields.size(); ++i)
+            fieldsAsc.add(!idx.descending(fields.get(i)));
     }
 
     /**
@@ -107,14 +111,14 @@ public class JdbcIndexMeta implements JdbcRawBinarylizable {
     /**
      * @return Index fields
      */
-    public String[] fields() {
+    public List<String> fields() {
         return fields;
     }
 
     /**
      * @return Index fields is ascending.
      */
-    public boolean[] fieldsAsc() {
+    public List<Boolean> fieldsAsc() {
         return fieldsAsc;
     }
 
@@ -124,8 +128,17 @@ public class JdbcIndexMeta implements JdbcRawBinarylizable {
         writer.writeString(tblName);
         writer.writeString(idxName);
         writer.writeByte((byte)type.ordinal());
-        writer.writeStringArray(fields);
-        writer.writeBooleanArray(fieldsAsc);
+
+        JdbcUtils.writeStringCollection(writer, fields);
+
+        if (fieldsAsc == null)
+            writer.writeInt(0);
+        else {
+            writer.writeInt(fieldsAsc.size());
+
+            for (Boolean b : fieldsAsc)
+                writer.writeBoolean(b.booleanValue());
+        }
     }
 
     /** {@inheritDoc} */
@@ -134,11 +147,22 @@ public class JdbcIndexMeta implements JdbcRawBinarylizable {
         tblName = reader.readString();
         idxName = reader.readString();
         type = QueryIndexType.fromOrdinal(reader.readByte());
-        fields = reader.readStringArray();
-        fieldsAsc = reader.readBooleanArray();
 
-        assert fields.length == fieldsAsc.length : "Fields info is broken: [fields.length=" + fields.length +
-            ", fieldsAsc.length=" + fieldsAsc.length + ']';
+        fields = JdbcUtils.readStringList(reader);
+
+        int size = reader.readInt();
+
+        if (size > 0) {
+            fieldsAsc = new ArrayList<>(size);
+
+            for (int i = 0; i < size; ++i)
+                fieldsAsc .add(reader.readBoolean());
+        }
+        else
+            fieldsAsc = Collections.emptyList();
+
+        assert fields.size() == fieldsAsc.size() : "Fields info is broken: [fields.length=" + fields.size() +
+            ", fieldsAsc.length=" + fieldsAsc.size() + ']';
     }
 
     /** {@inheritDoc} */
@@ -166,5 +190,10 @@ public class JdbcIndexMeta implements JdbcRawBinarylizable {
         result = 31 * result + tblName.hashCode();
         result = 31 * result + idxName.hashCode();
         return result;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(JdbcIndexMeta.class, this);
     }
 }

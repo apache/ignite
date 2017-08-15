@@ -185,7 +185,10 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public void handshakeAdditionalResponse(BinaryWriterExImpl writer) {
+    @Override public void writeHandshake(BinaryWriterExImpl writer) {
+        // Handshake OK.
+        writer.writeBoolean(true);
+
         // Write server version.
         writer.writeByte(IgniteVersionUtils.VER.major());
         writer.writeByte(IgniteVersionUtils.VER.minor());
@@ -420,23 +423,6 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
      */
     private JdbcResponse getTablesMeta(JdbcMetaTablesRequest req) {
         try {
-            boolean tblTypeMatch = false;
-
-            if (req.tableTypes() == null)
-                tblTypeMatch = true;
-            else {
-                for (String type : req.tableTypes()) {
-                    if (matches("TABLE", type)) {
-                        tblTypeMatch = true;
-
-                        break;
-                    }
-                }
-            }
-
-            if (!tblTypeMatch)
-                return new JdbcResponse(new JdbcMetaTablesResult(Collections.<JdbcTableMeta>emptyList()));
-
             List<JdbcTableMeta> meta = new ArrayList<>();
 
             for (String cacheName : ctx.cache().publicCacheNames()) {
@@ -587,16 +573,17 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
                             fields.add(field);
                     }
 
-                    final String keyName = table.keyFieldName() == null ? "_KEY" : table.keyFieldName();
+
+                    final String keyName = table.keyFieldName() == null ?
+                        "PK_" + table.schemaName() + "_" + table.tableName() :
+                        table.keyFieldName();
 
                     if (fields.isEmpty()) {
                         meta.add(new JdbcPrimaryKeyMeta(table.schemaName(), table.tableName(), keyName,
-                            new String[] {keyName}));
+                            Collections.singletonList("_KEY")));
                     }
-                    else {
-                        meta.add(new JdbcPrimaryKeyMeta(table.schemaName(), table.tableName(), keyName,
-                            fields.toArray(new String[fields.size()])));
-                    }
+                    else
+                        meta.add(new JdbcPrimaryKeyMeta(table.schemaName(), table.tableName(), keyName, fields));
                 }
             }
 

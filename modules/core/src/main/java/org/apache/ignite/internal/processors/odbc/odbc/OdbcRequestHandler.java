@@ -158,8 +158,8 @@ public class OdbcRequestHandler implements SqlListenerRequestHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public void handshakeAdditionalResponse(BinaryWriterExImpl writer) {
-        // No-op.
+    @Override public void writeHandshake(BinaryWriterExImpl writer) {
+        writer.writeBoolean(true);
     }
 
     /**
