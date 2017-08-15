@@ -2165,7 +2165,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 }
 
                 if (persistenceCfg.getCheckpointWriteOrder() == CheckpointWriteOrder.SEQUENTIAL) {
-                    cpPagesList.sort(new Comparator<FullPageId>() {
+                    Collections.sort(cpPagesList, new Comparator<FullPageId>() {
                         @Override public int compare(FullPageId o1, FullPageId o2) {
                             int cmp = Long.compare(o1.groupId(), o2.groupId());
                             if (cmp != 0)
