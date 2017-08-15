@@ -22,8 +22,8 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-import javax.cache.CacheException;
 import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.query.CacheQuery;
 
 /**
@@ -90,19 +90,23 @@ public @interface QuerySqlField {
     String name() default "";
 
     /**
-     * Index inline size.
+     * Index inline size in bytes. When enabled part of indexed value will be placed directly to index pages,
+     * thus minimizing data page accesses, thus incraesing query performance.
+     * <p>
+     * Allowed values:
+     * <ul>
+     *     <li>{@code -1} (default) - determine inline size automatically (see below)</li>
+     *     <li>{@code 0} - index inline is disabled (not recommended)</li>
+     *     <li>positive value - fixed index inline</li>
+     * </ul>
+     * When set to {@code -1}, Ignite will try to detect inline size automatically. It will be no more than
+     * {@link CacheConfiguration#getSqlIndexMaxInlineSize()}. Index inline will be enabled for all fixed-length types,
+     * but <b>will not be enabled</b> for {@code String}.
+     * <p>
+     * When index group is used, inline size must be defined in {@link QueryGroupIndex#inlineSize()}. Any value
+     * except of {@code -1} defined on a specific column will lead to exception.
      *
-     * The optimization is used on index creation. The part of the field value is placed (inlined) directly into
-     * index page to avoid excessive data page reads when using index.
-     *
-     * Inline size value must be greater or equal than zero or {@link QueryIndex#DFLT_INLINE_SIZE} (default).
-     * The {@link CacheException} is thrown when inlineSize is invalid.
-     *
-     * In case the inlineSize property is specified with {@link #groups()} or {@link #orderedGroups()} the
-     * {@link CacheException} is thrown on the processing such type.
-     * Use {@code  @QueryGroupIndex(inlineSize = N)} for composite index.
-     *
-     * @return The size in bytes of the index inline.
+     * @return Index inline size in bytes.
      */
     int inlineSize() default QueryIndex.DFLT_INLINE_SIZE;
 
