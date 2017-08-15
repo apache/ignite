@@ -1137,7 +1137,12 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @return Future.
      */
     private IgniteInternalFuture<?> executeClearTask(@Nullable Set<? extends K> keys, boolean near) {
-        Collection<ClusterNode> srvNodes = ctx.grid().cluster().forCacheNodes(name(), !near, near, false).nodes();
+        Collection<ClusterNode> srvNodes;
+
+        if (isLocal())
+            srvNodes = ctx.grid().cluster().forLocal().nodes();
+        else
+            srvNodes = ctx.grid().cluster().forCacheNodes(name(), !near, near, false).nodes();
 
         if (!srvNodes.isEmpty()) {
             ctx.kernalContext().task().setThreadContext(TC_SUBGRID, srvNodes);

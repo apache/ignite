@@ -79,4 +79,37 @@ public class GridCacheLocalFullApiSelfTest extends GridCacheAbstractFullApiSelfT
         for (String key : keys)
             assert "key1".equals(key) || "key2".equals(key);
     }
+
+    /**
+     * @throws Exception In case of error.
+     */
+    public void testLocalCacheClear() throws Exception {
+        // In addition to the existing tests, it confirms the data is cleared only on one node,
+        // not on all nodes that have local caches with same names.
+        try {
+            startGrid(1);
+
+            IgniteCache<String, Integer> cache = jcache();
+
+            for (int i = 0; i < 3; i++) {
+                cache.put(String.valueOf(i), i);
+                jcache(1).put(String.valueOf(i), i);
+            }
+
+            cache.clear();
+
+            for (int i = 0; i < 3; i++) {
+                assertNull(peek(cache, String.valueOf(i)));
+                assertNotNull(peek(jcache(1), String.valueOf(i)));
+            }
+
+            jcache(1).clear();
+
+            for (int i = 0; i < 2; i++)
+                assert jcache(i).localSize() == 0;
+        }
+        finally {
+            stopGrid(1);
+        }
+    }
 }
