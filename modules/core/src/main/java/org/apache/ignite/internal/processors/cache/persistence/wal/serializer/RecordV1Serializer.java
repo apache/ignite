@@ -51,7 +51,7 @@ public class RecordV1Serializer implements RecordSerializer {
     /** Length of Type */
     public static final int REC_TYPE_SIZE = 1;
 
-    /** Length of WAL Pointer */
+    /** Length of WAL Pointer: Index (8) + File offset (4). */
     public static final int FILE_WAL_POINTER_SIZE = 8 + 4;
 
     /** Length of CRC value */

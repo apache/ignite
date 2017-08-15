@@ -23,6 +23,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferBackedDataInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.RecordDataSerializer;
+import org.apache.ignite.internal.processors.cache.persistence.wal.record.HeaderRecord;
 
 /**
  * Record data V2 serializer.
@@ -42,6 +43,9 @@ public class RecordDataV2Serializer implements RecordDataSerializer {
 
     /** {@inheritDoc} */
     @Override public int size(WALRecord record) throws IgniteCheckedException {
+        if (record instanceof HeaderRecord)
+            throw new UnsupportedOperationException("Getting size of header records is forbidden since version 2 of serializer");
+
         return delegateSerializer.size(record);
     }
 
@@ -52,6 +56,9 @@ public class RecordDataV2Serializer implements RecordDataSerializer {
 
     /** {@inheritDoc} */
     @Override public void writeRecord(WALRecord record, ByteBuffer buf) throws IgniteCheckedException {
+        if (record instanceof HeaderRecord)
+            throw new UnsupportedOperationException("Writing header records is forbidden since version 2 of serializer");
+
         delegateSerializer.writeRecord(record, buf);
     }
 }

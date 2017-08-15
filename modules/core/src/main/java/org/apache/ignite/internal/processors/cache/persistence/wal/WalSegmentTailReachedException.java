@@ -20,9 +20,9 @@ package org.apache.ignite.internal.processors.cache.persistence.wal;
 import org.apache.ignite.IgniteCheckedException;
 import org.jetbrains.annotations.Nullable;
 
-//todo class description
 /**
- *
+ * An exception is thrown when we reached tail of WAL segment cyclic buffer
+ * during reading from WAL.
  */
 public class WalSegmentTailReachedException extends IgniteCheckedException {
     /** */

@@ -30,7 +30,6 @@ import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
-import org.apache.ignite.internal.processors.cache.persistence.wal.record.HeaderRecord;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.NotNull;
@@ -253,24 +252,18 @@ public abstract class AbstractWalRecordsIterator
             FileIO fileIO = ioFactory.create(desc.file, "r");
 
             try {
+                int serVer = FileWriteAheadLogManager.readSerializerVersion(fileIO, desc.file);
+
+                RecordSerializer ser = FileWriteAheadLogManager.forVersion(sharedCtx, serVer);
+
                 FileInput in = new FileInput(fileIO, buf);
 
-                // Header record must be agnostic to the serializer version.
-                WALRecord rec = serializer.readRecord(in,
-                    new FileWALPointer(desc.idx, (int)fileIO.position(), 0));
+                if (start != null && desc.idx == start.index()) {
+                    // Make sure we skip header with serializer version.
+                    long startOffset = Math.max(start.fileOffset(), fileIO.position());
 
-                if (rec == null)
-                    return null;
-
-                if (rec.type() != WALRecord.RecordType.HEADER_RECORD)
-                    throw new IOException("Missing file header record: " + desc.file.getAbsoluteFile());
-
-                int ver = ((HeaderRecord)rec).version();
-
-                RecordSerializer ser = FileWriteAheadLogManager.forVersion(sharedCtx, ver);
-
-                if (start != null && desc.idx == start.index())
-                    in.seek(start.fileOffset());
+                    in.seek(startOffset);
+                }
 
                 return new FileWriteAheadLogManager.ReadFileHandle(fileIO, desc.idx, sharedCtx.igniteInstanceName(), ser, in);
             }

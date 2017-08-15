@@ -46,7 +46,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.serial
  * </ul>
  */
 public class RecordV2Serializer implements RecordSerializer {
-    /** */
+    /** Length of WAL Pointer: Index (8) + File offset (4) + Record length (4) */
     public static final int FILE_WAL_POINTER_SIZE = 8 + 4 + 4;
 
     /** V2 data serializer. */
@@ -132,10 +132,11 @@ public class RecordV2Serializer implements RecordSerializer {
 
         FileWALPointer p = (FileWALPointer)expPtr;
 
-        //todo msg rework
         if (!F.eq(idx, p.index()) || !F.eq(fileOffset, p.fileOffset()))
             throw new WalSegmentTailReachedException(
-                "WAL segment rollover detected (will end iteration) [expPtr=" + expPtr + ", readPtr=" + null + ']', null);
+                "WAL segment tail is reached. [ " +
+                        "Expected next state: {Index=" + p.index() + ",Offset=" + p.fileOffset() + "}, " +
+                        "Actual state : {Index=" + idx + ",Offset=" + fileOffset + "} ]", null);
 
         return new FileWALPointer(idx, fileOffset, length);
     }
