@@ -46,7 +46,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_BUILD_VER;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_SUCCESS;
 
 /**
- * API to retranslate topology from Ignite cluster available by node-uri.
+ * API to transfer topology from Ignite cluster available by node-uri.
  */
 public class ClusterListener {
     /** */
@@ -65,7 +65,7 @@ public class ClusterListener {
     private static final long DFLT_TIMEOUT = 3000L;
 
     /** JSON object mapper. */
-    private static final ObjectMapper mapper = new GridJettyObjectMapper();
+    private static final ObjectMapper MAPPER = new GridJettyObjectMapper();
 
     /** Latest topology snapshot. */
     private TopologySnapshot top;
@@ -234,10 +234,7 @@ public class ClusterListener {
 
         /**  */
         boolean differentCluster(TopologySnapshot old) {
-            if (old == null || F.isEmpty(old.nids))
-                return true;
-
-            return Collections.disjoint(nids, old.nids);
+            return old == null || F.isEmpty(old.nids) || Collections.disjoint(nids, old.nids);
         }
     }
 
@@ -250,7 +247,7 @@ public class ClusterListener {
 
                 switch (res.getStatus()) {
                     case STATUS_SUCCESS:
-                        List<GridClientNodeBean> nodes = mapper.readValue(res.getData(),
+                        List<GridClientNodeBean> nodes = MAPPER.readValue(res.getData(),
                             new TypeReference<List<GridClientNodeBean>>() {});
 
                         TopologySnapshot newTop = new TopologySnapshot(nodes);
@@ -290,7 +287,7 @@ public class ClusterListener {
 
                 switch (res.getStatus()) {
                     case STATUS_SUCCESS:
-                        List<GridClientNodeBean> nodes = mapper.readValue(res.getData(),
+                        List<GridClientNodeBean> nodes = MAPPER.readValue(res.getData(),
                             new TypeReference<List<GridClientNodeBean>>() {});
 
                         TopologySnapshot newTop = new TopologySnapshot(nodes);

@@ -495,7 +495,7 @@ public class InlineIndexHelperTest extends GridCommonAbstractTest {
         Value v1 = s1 == null ? ValueNull.INSTANCE : ValueString.get(s1);
         Value v2 = s2 == null ? ValueNull.INSTANCE : ValueString.get(s2);
 
-        int c = v1.compareTypeSafe(v2, CompareMode.getInstance(CompareMode.DEFAULT, 0));
+        int c = v1.compareTypeSafe(v2, CompareMode.getInstance(null, 0));
 
         return ha.canRelyOnCompare(c, v1, v2);
     }
@@ -505,7 +505,7 @@ public class InlineIndexHelperTest extends GridCommonAbstractTest {
         Value v1 = b1 == null ? ValueNull.INSTANCE : ValueBytes.get(b1);
         Value v2 = b2 == null ? ValueNull.INSTANCE : ValueBytes.get(b2);
 
-        int c = v1.compareTypeSafe(v2, CompareMode.getInstance(CompareMode.DEFAULT, 0));
+        int c = v1.compareTypeSafe(v2, CompareMode.getInstance(null, 0));
 
         return ha.canRelyOnCompare(c, v1, v2);
     }

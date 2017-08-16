@@ -1442,38 +1442,39 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      */
     public static int readSerializerVersion(FileIO io)
             throws IgniteCheckedException, IOException {
-        FileInput in = new FileInput(io,
-            new ByteBufferExpander(RecordV1Serializer.HEADER_RECORD_SIZE, ByteOrder.nativeOrder()));
+        try (ByteBufferExpander buf = new ByteBufferExpander(RecordV1Serializer.HEADER_RECORD_SIZE, ByteOrder.nativeOrder())) {
+            FileInput in = new FileInput(io, buf);
 
-        in.ensure(RecordV1Serializer.HEADER_RECORD_SIZE);
+            in.ensure(RecordV1Serializer.HEADER_RECORD_SIZE);
 
-        int recordType = in.readUnsignedByte();
+            int recordType = in.readUnsignedByte();
 
-        if (recordType == WALRecord.RecordType.STOP_ITERATION_RECORD_TYPE)
-            throw new SegmentEofException("Reached logical end of the segment", null);
+            if (recordType == WALRecord.RecordType.STOP_ITERATION_RECORD_TYPE)
+                throw new SegmentEofException("Reached logical end of the segment", null);
 
-        WALRecord.RecordType type = WALRecord.RecordType.fromOrdinal(recordType - 1);
+            WALRecord.RecordType type = WALRecord.RecordType.fromOrdinal(recordType - 1);
 
-        if (type != WALRecord.RecordType.HEADER_RECORD)
-            throw new IOException("Can't read serializer version", null);
+            if (type != WALRecord.RecordType.HEADER_RECORD)
+                throw new IOException("Can't read serializer version", null);
 
-        // Read and skip file pointer.
-        in.readLong();
-        in.readInt();
+            // Read and skip file pointer.
+            in.readLong();
+            in.readInt();
 
-        long headerMagicNumber = in.readLong();
+            long headerMagicNumber = in.readLong();
 
-        if (headerMagicNumber != HeaderRecord.MAGIC)
-            throw new IOException("Magic is corrupted [exp=" + U.hexLong(HeaderRecord.MAGIC) +
-                    ", actual=" + U.hexLong(headerMagicNumber) + ']');
+            if (headerMagicNumber != HeaderRecord.MAGIC)
+                throw new IOException("Magic is corrupted [exp=" + U.hexLong(HeaderRecord.MAGIC) +
+                        ", actual=" + U.hexLong(headerMagicNumber) + ']');
 
-        // Read serializer version.
-        int version = in.readInt();
+            // Read serializer version.
+            int version = in.readInt();
 
-        // Read and skip CRC.
-        in.readInt();
+            // Read and skip CRC.
+            in.readInt();
 
-        return version;
+            return version;
+        }
     }
 
     /**
@@ -2504,9 +2505,12 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         /** {@inheritDoc} */
         @Override protected void onClose() throws IgniteCheckedException {
+            super.onClose();
+
             curRec = null;
 
             final ReadFileHandle handle = closeCurrentWalSegment();
+
             if (handle != null && handle.workDir)
                 releaseWorkSegment(curWalSegmIdx);
 

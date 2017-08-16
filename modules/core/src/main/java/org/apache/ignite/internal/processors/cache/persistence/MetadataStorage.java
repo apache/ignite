@@ -39,7 +39,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  */
 public class MetadataStorage implements MetaStore {
     /** Max index name length (bytes num) */
-    public static final int MAX_IDX_NAME_LEN = 768;
+    public static final int MAX_IDX_NAME_LEN = 255;
 
     /** Bytes in byte. */
     private static final int BYTE_LEN = 1;
@@ -197,7 +197,7 @@ public class MetadataStorage implements MetaStore {
             int shift = 0;
 
             // Compare index names.
-            final byte len = PageUtils.getByte(pageAddr, off + shift);
+            final int len = PageUtils.getUnsignedByte(pageAddr, off + shift);
 
             shift += BYTE_LEN;
 
@@ -256,7 +256,7 @@ public class MetadataStorage implements MetaStore {
         final IndexItem row
     ) {
         // Index name length.
-        PageUtils.putByte(pageAddr, off, (byte)row.idxName.length);
+        PageUtils.putUnsignedByte(pageAddr, off, row.idxName.length);
         off++;
 
         // Index name.
@@ -282,10 +282,10 @@ public class MetadataStorage implements MetaStore {
         int srcOff
     ) {
         // Index name length.
-        final byte len = PageUtils.getByte(srcPageAddr, srcOff);
+        final int len = PageUtils.getUnsignedByte(srcPageAddr, srcOff);
         srcOff++;
 
-        PageUtils.putByte(dstPageAddr, dstOff, len);
+        PageUtils.putUnsignedByte(dstPageAddr, dstOff, len);
         dstOff++;
 
         PageHandler.copyMemory(srcPageAddr, dstPageAddr, srcOff, dstOff, len);
@@ -305,7 +305,7 @@ public class MetadataStorage implements MetaStore {
      */
     private static IndexItem readRow(final long pageAddr, int off) {
         // Index name length.
-        final int len = PageUtils.getByte(pageAddr, off) & 0xFF;
+        final int len = PageUtils.getUnsignedByte(pageAddr, off) & 0xFF;
         off++;
 
         // Index name.
