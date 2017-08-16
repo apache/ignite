@@ -114,6 +114,7 @@ public class IgniteSqlQueryJoinBenchmark extends IgniteCacheAbstractBenchmark<In
             "where salary >= ? and salary <= ?");
 
         qry.setArgs(minSalary, maxSalary);
+        qry.setLazy(true);
 
         return cache.query(qry).getAll();
     }
