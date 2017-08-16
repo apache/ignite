@@ -698,7 +698,9 @@ public abstract class GridAbstractTest extends TestCase {
 
         if (cnt > 1) {
             startGridsMultiThreaded(1, cnt - 1);
-            checkTopology(cnt);
+
+            if (checkTopology())
+                checkTopology(cnt);
         }
 
         return ignite;

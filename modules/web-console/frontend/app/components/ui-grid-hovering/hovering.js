@@ -15,21 +15,17 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Tests.Cache.Query
-{
-    using Apache.Ignite.Core.Binary;
-    using NUnit.Framework;
-
-    /// <summary>
-    /// LINQ test with simple name mapper.
-    /// </summary>
-    [TestFixture]
-    public class CacheLinqTestSimpleName : CacheLinqTest
-    {
-        /** <inheritdoc /> */
-        protected override IBinaryNameMapper GetNameMapper()
-        {
-            return BinaryBasicNameMapper.SimpleNameInstance;
+export default function() {
+    return {
+        priority: 0,
+        require: '^uiGrid',
+        compile() {
+            return {
+                pre($scope, $element, attrs, uiGridCtrl) {
+                    uiGridCtrl.grid.options.enableHovering = true;
+                },
+                post() { }
+            };
         }
-    }
+    };
 }

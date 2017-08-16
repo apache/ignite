@@ -53,6 +53,7 @@ public class GridCachePartitionEvictionDuringReadThroughSelfTest extends GridCom
                 .setAtomicityMode(CacheAtomicityMode.ATOMIC)
                 .setBackups(0) // No need for backup, just load from the store if needed
                 .setCacheStoreFactory(new CacheStoreFactory())
+                .setOnheapCacheEnabled(true)
                 .setEvictionPolicy(new LruEvictionPolicy(100))
                 .setNearConfiguration(new NearCacheConfiguration<Integer, Integer>()
                 .setNearEvictionPolicy(new LruEvictionPolicy<Integer, Integer>()));

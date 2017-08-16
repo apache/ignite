@@ -18,7 +18,7 @@
 web-console-header {
     @import "./../../../public/stylesheets/variables.scss";
 
-    $nav-item-margin: 42px;
+    $nav-item-margin: 40px;
     $bottom-border-width: 4px;
 
     display: block;
@@ -51,7 +51,7 @@ web-console-header {
         }
 
         &.wch-slot-left {
-            margin-left: 105px;
+            margin-left: 80px;
         }
 
         &.wch-slot-right {
@@ -73,7 +73,7 @@ web-console-header {
     }
 
     .wch-nav-item,
-    a.wch-nav-item {
+    .wch-nav-item > a {
         cursor: pointer;
         white-space: nowrap;
 

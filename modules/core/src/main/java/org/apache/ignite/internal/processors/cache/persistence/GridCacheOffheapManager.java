@@ -363,7 +363,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                                 rmvId,
                                 size,
                                 cntrsPageId,
-                                (byte)state.ordinal(),
+                                state == null ? -1 : (byte)state.ordinal(),
                                 pageCnt
                             ));
                     }

@@ -107,9 +107,6 @@ public class H2RowDescriptor implements GridH2RowDescriptor {
     private final GridUnsafeGuard guard;
 
     /** */
-    private final boolean snapshotableIdx;
-
-    /** */
     private final GridQueryProperty[] props;
 
     /** Id of user-defined key column */
@@ -170,9 +167,6 @@ public class H2RowDescriptor implements GridH2RowDescriptor {
 
         valueAliasColumnId =
             (type.valueFieldName() != null) ? DEFAULT_COLUMNS_COUNT + fieldsList.indexOf(type.valueFieldAlias()) : -1;
-
-        // Index is not snapshotable in db-x.
-        snapshotableIdx = false;
     }
 
     /** {@inheritDoc} */
@@ -379,11 +373,6 @@ public class H2RowDescriptor implements GridH2RowDescriptor {
     /** {@inheritDoc} */
     @Override public GridH2Row cachedRow(long link) {
         return rowCache().get(link);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean snapshotableIndex() {
-        return snapshotableIdx;
     }
 
     /** {@inheritDoc} */

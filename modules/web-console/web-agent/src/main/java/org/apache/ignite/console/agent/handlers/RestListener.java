@@ -61,11 +61,6 @@ public class RestListener extends AbstractListener {
 
         boolean demo = (boolean)args.get("demo");
 
-        if (!args.containsKey("method"))
-            throw new IllegalArgumentException("Missing method in arguments: " + args);
-
-        String mtd = args.get("method").toString();
-
         Map<String, Object> headers = null;
 
         if (args.containsKey("headers"))
@@ -76,6 +71,6 @@ public class RestListener extends AbstractListener {
         if (args.containsKey("body"))
             body = args.get("body").toString();
 
-        return restExecutor.execute(demo, path, params, mtd, headers, body);
+        return restExecutor.execute(demo, path, params, headers, body);
     }
 }

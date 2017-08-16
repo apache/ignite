@@ -41,21 +41,19 @@ catch (ignore) {
 /**
  * Event listener for HTTP server "error" event.
  */
-const _onError = (port, error) => {
+const _onError = (addr, error) => {
     if (error.syscall !== 'listen')
         throw error;
-
-    const bind = typeof port === 'string' ? 'Pipe ' + port : 'Port ' + port;
 
     // Handle specific listen errors with friendly messages.
     switch (error.code) {
         case 'EACCES':
-            console.error(bind + ' requires elevated privileges');
+            console.error(`Requires elevated privileges for bind to ${addr}`);
             process.exit(1);
 
             break;
         case 'EADDRINUSE':
-            console.error(bind + ' is already in use');
+            console.error(`${addr} is already in use`);
             process.exit(1);
 
             break;
@@ -83,10 +81,12 @@ const init = ([settings, apiSrv, agentsHnd, browsersHnd]) => {
     // Start rest server.
     const srv = settings.server.SSLOptions ? https.createServer(settings.server.SSLOptions) : http.createServer();
 
-    srv.listen(settings.server.port);
+    srv.listen(settings.server.port, settings.server.host);
 
-    srv.on('error', _onError.bind(null, settings.server.port));
-    srv.on('listening', _onListening.bind(null, srv.address()));
+    const addr = `${settings.server.host}:${settings.server.port}`;
+
+    srv.on('error', _onError.bind(null, addr));
+    srv.on('listening', () => console.log(`Start listening on ${addr}`));
 
     apiSrv.attach(srv);
 
