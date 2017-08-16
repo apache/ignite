@@ -575,13 +575,19 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
                     T2<T, ? extends AtomicDataStructureValue> ret;
 
+                    T old;
                     try {
-                        ret = c.get(key, val, cache);
+                        synchronized (dsMap) {
+                            ret = c.get(key, val, cache);
 
-                        dsMap.put(key, ret.get1());
+                            old = cast(dsMap.putIfAbsent(key, ret.get1()), cls);
+                        }
 
-                        if (ret.get2() != null)
-                            cache.putIfAbsent(key, ret.get2());
+                        if (old == null) {
+                            if (ret.get2() != null)
+                                cache.putIfAbsent(key, ret.get2());
+                            old = ret.get1();
+                        }
                     }
                     catch (Error | Exception e) {
                         dsMap.remove(key);
@@ -591,7 +597,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                         throw e;
                     }
 
-                    return ret.get1();
+                    return old;
                 }
                 finally {
                     cache.context().gate().leave();

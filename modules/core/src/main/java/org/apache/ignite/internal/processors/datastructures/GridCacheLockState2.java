@@ -221,8 +221,8 @@ public final class GridCacheLockState2 extends VolatileAtomicDataStructureValue 
 
     /** Simple tuple for result. */
     public static class LockedModified {
-        boolean locked;
-        boolean modified;
+        public boolean locked;
+        public boolean modified;
 
         public LockedModified(boolean locked, boolean modified) {
             this.locked = locked;

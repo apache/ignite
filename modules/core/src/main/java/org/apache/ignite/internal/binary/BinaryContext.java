@@ -67,8 +67,12 @@ import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.internal.processors.cache.binary.BinaryMetadataKey;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
+import org.apache.ignite.internal.processors.datastructures.AcquireProcessor;
 import org.apache.ignite.internal.processors.datastructures.CollocatedQueueItemKey;
 import org.apache.ignite.internal.processors.datastructures.CollocatedSetItemKey;
+import org.apache.ignite.internal.processors.datastructures.LockIfFreeProcessor;
+import org.apache.ignite.internal.processors.datastructures.LockOrRemoveProcessor;
+import org.apache.ignite.internal.processors.datastructures.ReleaseProcessor;
 import org.apache.ignite.internal.processors.igfs.IgfsBlockKey;
 import org.apache.ignite.internal.processors.igfs.IgfsDirectoryInfo;
 import org.apache.ignite.internal.processors.igfs.IgfsFileAffinityRange;
@@ -203,6 +207,14 @@ public class BinaryContext {
             sysClss.add(TreeMap.class.getName());
             sysClss.add(TreeSet.class.getName());
         }
+
+        // EntryProcessor for Ignite.reentrantlock
+
+        sysClss.add(AcquireProcessor.class.getName());
+        sysClss.add(ReleaseProcessor.class.getName());
+        sysClss.add(LockIfFreeProcessor.class.getName());
+        sysClss.add(LockOrRemoveProcessor.class.getName());
+
 
         BINARYLIZABLE_SYS_CLSS = Collections.unmodifiableSet(sysClss);
     }

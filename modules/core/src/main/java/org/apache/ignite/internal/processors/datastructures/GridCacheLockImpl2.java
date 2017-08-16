@@ -19,16 +19,13 @@ package org.apache.ignite.internal.processors.datastructures;
 
 import java.util.LinkedList;
 import java.util.UUID;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-import javax.cache.processor.EntryProcessor;
-import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.EntryProcessorResult;
-import javax.cache.processor.MutableEntry;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCondition;
 import org.apache.ignite.IgniteException;
@@ -38,7 +35,7 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.GridCacheGroupIdMessage;
+import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteBiInClosure;
@@ -110,13 +107,26 @@ public final class GridCacheLockImpl2 implements GridCacheLockEx2 {
 
     /** {@inheritDoc} */
     @Override public void needCheckNotRemoved() {
-        //No-op.
+        // No-op.
     }
 
     /**
      *
      */
-    public static class ReleasedMessage extends GridCacheGroupIdMessage {
+    public static class ReleasedMessage extends GridCacheIdMessage {
+        /** */
+        public ReleasedMessage() {
+            // No-op.
+        }
+
+        /** */
+        public ReleasedMessage(int id) {
+            cacheId(id);
+        }
+
+        /** Message index. */
+        public static final int CACHE_MSG_IDX = nextIndexId();
+
         /** */
         private static final long serialVersionUID = 181741851451L;
 
@@ -128,6 +138,11 @@ public final class GridCacheLockImpl2 implements GridCacheLockEx2 {
         /** {@inheritDoc} */
         @Override public short directType() {
             return -62;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int lookupIndex() {
+            return CACHE_MSG_IDX;
         }
     }
 
@@ -293,7 +308,13 @@ public final class GridCacheLockImpl2 implements GridCacheLockEx2 {
     /** */
     private static class UpdateListener implements GridLocalEventListener {
         /** */
-        private volatile CountDownLatch latch = new CountDownLatch(1);
+        private final ReentrantLock lock  = new ReentrantLock();
+
+        /** */
+        private final Condition latch = lock.newCondition();
+
+        /** */
+        private final AtomicInteger count = new AtomicInteger(0);
 
         /** */
         @Override public void onEvent(Event evt) {
@@ -302,155 +323,43 @@ public final class GridCacheLockImpl2 implements GridCacheLockEx2 {
 
         /** */
         public void release() {
-            latch.countDown();
+            lock.lock();
+            try {
+                count.incrementAndGet();
 
-            latch = new CountDownLatch(1);
+                latch.signal();
+            }
+            finally {
+                lock.unlock();
+            }
         }
 
         /** */
         public void await() throws InterruptedException {
-            latch.await();
+            lock.lock();
+            try {
+                if (count.getAndDecrement()<=0) {
+                    latch.await();
+                }
+            }
+            finally {
+                lock.unlock();
+            }
         }
 
         /** */
         public boolean await(long timeout, TimeUnit unit) throws InterruptedException {
-            return latch.await(timeout, unit);
-        }
-    }
-
-    /** EntryProcessor for release lock by timeout, but acquire it if lock has released. */
-    private static class LockOrRemoveProcessor implements EntryProcessor<GridCacheInternalKey, GridCacheLockState2, Boolean> {
-        /** */
-        final UUID nodeId;
-
-        /** */
-        public LockOrRemoveProcessor(UUID nodeId) {
-            assert nodeId != null;
-
-            this.nodeId = nodeId;
-        }
-
-        /** */
-        @Override public Boolean process(MutableEntry<GridCacheInternalKey, GridCacheLockState2> entry,
-            Object... objects) throws EntryProcessorException {
-
-            assert entry != null;
-
-            if (entry.exists()) {
-                GridCacheLockState2 state = entry.getValue();
-
-                GridCacheLockState2.LockedModified result = state.lockOrRemove(nodeId);
-
-                // Write result if necessary.
-                if (result.modified)
-                    entry.setValue(state);
-
-                return result.locked;
-            }
-
-            return false;
-        }
-    }
-
-    /** EntryProcessor for lock acquire operation. */
-    private static class LockIfFree implements EntryProcessor<GridCacheInternalKey, GridCacheLockState2, Boolean> {
-        /** */
-        final UUID nodeId;
-
-        /** */
-        public LockIfFree(UUID nodeId) {
-            assert nodeId != null;
-
-            this.nodeId = nodeId;
-        }
-
-        /** */
-        @Override public Boolean process(MutableEntry<GridCacheInternalKey, GridCacheLockState2> entry,
-            Object... objects) throws EntryProcessorException {
-
-            assert entry != null;
-
-            if (entry.exists()) {
-                GridCacheLockState2 state = entry.getValue();
-
-                GridCacheLockState2.LockedModified result = state.lockIfFree(nodeId);
-
-                // Write result if necessary
-                if (result.modified)
-                    entry.setValue(state);
-
-                return result.locked;
-            }
-
-            return false;
-        }
-    }
-
-    /** EntryProcessor for lock acquire operation. */
-    private static class AcquireProcessor implements EntryProcessor<GridCacheInternalKey, GridCacheLockState2, Boolean> {
-        /** */
-        final UUID nodeId;
-
-        /** */
-        public AcquireProcessor(UUID nodeId) {
-            assert nodeId != null;
-
-            this.nodeId = nodeId;
-        }
-
-        /** */
-        @Override public Boolean process(MutableEntry<GridCacheInternalKey, GridCacheLockState2> entry,
-            Object... objects) throws EntryProcessorException {
-
-            assert entry != null;
-
-            if (entry.exists()) {
-                GridCacheLockState2 state = entry.getValue();
-
-                GridCacheLockState2.LockedModified result = state.lockOrAdd(nodeId);
-
-                // Write result if necessary
-                if (result.modified) {
-                    entry.setValue(state);
+            lock.lock();
+            try {
+                if (count.getAndDecrement()<=0) {
+                    return latch.await(timeout, unit);
                 }
 
-                return result.locked;
+                return true;
             }
-
-            return false;
-        }
-    }
-
-    /** EntryProcessor for lock release operation. */
-    private static class ReleaseProcessor implements EntryProcessor<GridCacheInternalKey, GridCacheLockState2, UUID> {
-        /** */
-        final UUID nodeId;
-
-        /** */
-        public ReleaseProcessor(UUID nodeId) {
-            assert nodeId != null;
-
-            this.nodeId = nodeId;
-        }
-
-        /** */
-        @Override public UUID process(MutableEntry<GridCacheInternalKey, GridCacheLockState2> entry,
-            Object... objects) throws EntryProcessorException {
-
-            assert entry != null;
-
-            if (entry.exists()) {
-                GridCacheLockState2 state = entry.getValue();
-
-                UUID nextNode = state.unlock(nodeId);
-
-                // Always update value in right using.
-                entry.setValue(state);
-
-                return nextNode;
+            finally {
+                lock.unlock();
             }
-
-            return null;
         }
     }
 
@@ -465,7 +374,7 @@ public final class GridCacheLockImpl2 implements GridCacheLockEx2 {
         private final ReleaseProcessor releaseProcessor;
 
         /** */
-        private final LockIfFree lockIfFree;
+        private final LockIfFreeProcessor lockIfFreeProcessor;
 
         /** */
         private final LockOrRemoveProcessor lockOrRemoveProcessor;
@@ -483,24 +392,29 @@ public final class GridCacheLockImpl2 implements GridCacheLockEx2 {
         private final GridCacheContext<GridCacheInternalKey, GridCacheLockState2> ctx;
 
         /** */
+        private final UUID nodeId;
+
+        /** */
         private GlobalSync(UUID nodeId, GridCacheInternalKey key,
-            IgniteInternalCache<GridCacheInternalKey, GridCacheLockState2> view, UpdateListener listener,
+            IgniteInternalCache<GridCacheInternalKey, GridCacheLockState2> lockView, UpdateListener listener,
             GridCacheContext<GridCacheInternalKey, GridCacheLockState2> ctx) {
 
             assert nodeId != null;
             assert key != null;
-            assert view != null;
+            assert lockView != null;
             assert listener != null;
             assert ctx != null;
 
             acquireProcessor = new AcquireProcessor(nodeId);
             releaseProcessor = new ReleaseProcessor(nodeId);
-            lockIfFree = new LockIfFree(nodeId);
+            lockIfFreeProcessor = new LockIfFreeProcessor(nodeId);
             lockOrRemoveProcessor = new LockOrRemoveProcessor(nodeId);
+
             this.key = key;
-            lockView = view;
+            this.lockView = lockView;
             this.listener = listener;
             this.ctx = ctx;
+            this.nodeId = nodeId;
         }
 
         /** */
@@ -514,6 +428,7 @@ public final class GridCacheLockImpl2 implements GridCacheLockEx2 {
                 return lockView.invoke(key, acquireProcessor).get();
             }
             catch (IgniteCheckedException ignored) {
+                ignored.printStackTrace();
                 return false;
             }
         }
@@ -521,9 +436,10 @@ public final class GridCacheLockImpl2 implements GridCacheLockEx2 {
         /** */
         private final boolean tryAcquire() {
             try {
-                return lockView.invoke(key, lockIfFree).get();
+                return lockView.invoke(key, lockIfFreeProcessor).get();
             }
             catch (IgniteCheckedException ignored) {
+                ignored.printStackTrace();
                 return false;
             }
         }
@@ -534,19 +450,14 @@ public final class GridCacheLockImpl2 implements GridCacheLockEx2 {
                 return lockView.invoke(key, lockOrRemoveProcessor).get();
             }
             catch (IgniteCheckedException ignored) {
+                ignored.printStackTrace();
                 return false;
             }
         }
 
         /** */
         private final boolean waitForUpdate() {
-            try {
-                listener.await();
-                return true;
-            }
-            catch (InterruptedException e) {
-                return false;
-            }
+            return waitForUpdate(30, TimeUnit.SECONDS);
         }
 
         /**
@@ -605,12 +516,13 @@ public final class GridCacheLockImpl2 implements GridCacheLockEx2 {
                             if (result != null) {
                                 final UUID nextNode = future.result().get();
 
-                                if (nextNode != null)
-                                    ctx.io().send(nextNode, new ReleasedMessage(), SYSTEM_POOL);
+                                if (nextNode != null && !nodeId.equals(nextNode))
+                                    ctx.io().send(nextNode, new ReleasedMessage(ctx.cacheId()), SYSTEM_POOL);
                             }
                         }
                         catch (IgniteCheckedException ignored) {
-                            //No-op.
+                            ignored.printStackTrace();
+                            // No-op.
                         }
                     }
                 });
@@ -768,6 +680,7 @@ public final class GridCacheLockImpl2 implements GridCacheLockEx2 {
                     }
                 }
             }
+
             return false;
         }
 
