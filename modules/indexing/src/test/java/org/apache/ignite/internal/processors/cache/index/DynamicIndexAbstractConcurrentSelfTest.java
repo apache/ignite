@@ -49,6 +49,7 @@ import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
 import org.apache.ignite.internal.util.typedef.T3;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.jetbrains.annotations.NotNull;
 
 import static org.apache.ignite.internal.IgniteClientReconnectAbstractTest.TestTcpDiscoverySpi;
@@ -120,7 +121,15 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration commonConfiguration(int idx) throws Exception {
-        return super.commonConfiguration(idx).setDiscoverySpi(new TestTcpDiscoverySpi());
+        IgniteConfiguration cfg = super.commonConfiguration(idx);
+
+        TestTcpDiscoverySpi testSpi = new TestTcpDiscoverySpi();
+
+        if (cfg.getDiscoverySpi() instanceof TcpDiscoverySpi &&
+            ((TcpDiscoverySpi)cfg.getDiscoverySpi()).getIpFinder() != null)
+            testSpi.setIpFinder(((TcpDiscoverySpi)cfg.getDiscoverySpi()).getIpFinder());
+
+        return cfg.setDiscoverySpi(testSpi);
     }
 
     /**

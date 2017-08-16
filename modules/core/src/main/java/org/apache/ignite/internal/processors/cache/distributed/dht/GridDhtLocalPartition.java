@@ -953,24 +953,26 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
                         ctx.database().checkpointReadLock();
 
-                        try {if (cached instanceof GridDhtCacheEntry && ((GridDhtCacheEntry)cached).clearInternal(clearVer, extras)) {
-                            removeEntry(cached);
+                        try {
+                            if (cached instanceof GridDhtCacheEntry && ((GridDhtCacheEntry)cached).clearInternal(clearVer, extras)) {
+                                removeEntry(cached);
 
-                            if (rec) {
-                                hld.cctx.events().addEvent(cached.partition(),
-                                    cached.key(),
-                                    ctx.localNodeId(),
-                                    (IgniteUuid)null,
-                                    null,
-                                    EVT_CACHE_REBALANCE_OBJECT_UNLOADED,
-                                    null,
-                                    false,
-                                    cached.rawGet(),
-                                    cached.hasValue(),
-                                    null,
-                                    null,
-                                    null,
-                                    false);}
+                                if (rec) {
+                                    hld.cctx.events().addEvent(cached.partition(),
+                                        cached.key(),
+                                        ctx.localNodeId(),
+                                        (IgniteUuid)null,
+                                        null,
+                                        EVT_CACHE_REBALANCE_OBJECT_UNLOADED,
+                                        null,
+                                        false,
+                                        cached.rawGet(),
+                                        cached.hasValue(),
+                                        null,
+                                        null,
+                                        null,
+                                        false);
+                                }
                             }
                         }
                         finally {
