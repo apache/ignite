@@ -29,6 +29,7 @@
         <!-- JDBC driver should force true value -->
         <property name="clientMode" value="false"/>
 
+        <property name="igniteInstanceName" value="SqlGrid"/>
         <property name="localHost" value="127.0.0.1"/>
 
         <property name="discoverySpi">
