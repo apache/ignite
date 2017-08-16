@@ -21,7 +21,8 @@ const DEMO_NOTEBOOK = {
         {
             name: 'Query with refresh rate',
             cacheName: 'CarCache',
-            pageSize: 50,
+            pageSize: 100,
+            limit: 0,
             query: [
                 'SELECT count(*)',
                 'FROM "CarCache".Car'
@@ -37,7 +38,8 @@ const DEMO_NOTEBOOK = {
         {
             name: 'Simple query',
             cacheName: 'CarCache',
-            pageSize: 50,
+            pageSize: 100,
+            limit: 0,
             query: 'SELECT * FROM "CarCache".Car',
             result: 'table',
             timeLineSpan: '1',
@@ -49,8 +51,9 @@ const DEMO_NOTEBOOK = {
         },
         {
             name: 'Query with aggregates',
-            cacheName: 'CarCache',
-            pageSize: 50,
+            cacheName: 'ParkingCache',
+            pageSize: 100,
+            limit: 0,
             query: [
                 'SELECT p.name, count(*) AS cnt',
                 'FROM "ParkingCache".Parking p',

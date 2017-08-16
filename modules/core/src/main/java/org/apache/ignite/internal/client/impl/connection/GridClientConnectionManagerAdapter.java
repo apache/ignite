@@ -85,6 +85,9 @@ public abstract class GridClientConnectionManagerAdapter implements GridClientCo
     /** Class logger. */
     private final Logger log;
 
+    /** All local enabled MACs. */
+    private final Collection<String> macs;
+
     /** NIO server. */
     private GridNioServer srv;
 
@@ -166,6 +169,8 @@ public abstract class GridClientConnectionManagerAdapter implements GridClientCo
         if (marshId == null && cfg.getMarshaller() == null)
             throw new GridClientException("Failed to start client (marshaller is not configured).");
 
+        macs = U.allLocalMACs();
+
         if (cfg.getProtocol() == GridClientProtocol.TCP) {
             try {
                 IgniteLogger gridLog = new JavaLogger(false);
@@ -200,6 +205,7 @@ public abstract class GridClientConnectionManagerAdapter implements GridClientCo
                     .socketSendBufferSize(0)
                     .idleTimeout(Long.MAX_VALUE)
                     .gridName(routerClient ? "routerClient" : "gridClient")
+                    .serverName("tcp-client")
                     .daemon(cfg.isDaemon())
                     .build();
 
@@ -315,7 +321,7 @@ public abstract class GridClientConnectionManagerAdapter implements GridClientCo
         }
 
         boolean sameHost = node.attributes().isEmpty() ||
-            F.containsAny(U.allLocalMACs(), node.attribute(ATTR_MACS).toString().split(", "));
+            F.containsAny(macs, node.attribute(ATTR_MACS).toString().split(", "));
 
         Collection<InetSocketAddress> srvs = new LinkedHashSet<>();
 

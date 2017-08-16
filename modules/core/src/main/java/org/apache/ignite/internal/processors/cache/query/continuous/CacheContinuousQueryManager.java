@@ -641,6 +641,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
         hnd.internal(internal);
         hnd.keepBinary(keepBinary);
         hnd.localCache(cctx.isLocal());
+        hnd.localQuery(loc);
 
         IgnitePredicate<ClusterNode> pred = (loc || cctx.config().getCacheMode() == CacheMode.LOCAL) ?
             F.nodeForNodeId(cctx.localNodeId()) : cctx.config().getNodeFilter();
@@ -649,14 +650,14 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
 
         UUID id = cctx.kernalContext().continuous().startRoutine(
             hnd,
-            internal && loc,
+            loc,
             bufSize,
             timeInterval,
             autoUnsubscribe,
             pred).get();
 
         try {
-            if (hnd.isQuery() && cctx.userCache() && !onStart)
+            if (hnd.isQuery() && cctx.userCache() && !onStart && !loc)
                 hnd.waitTopologyFuture(cctx.kernalContext());
         }
         catch (IgniteCheckedException e) {
@@ -1209,11 +1210,11 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
         private static final long serialVersionUID = 0L;
 
         /** */
-        @GridToStringInclude
+        @GridToStringInclude(sensitive = true)
         private Object key;
 
         /** */
-        @GridToStringInclude
+        @GridToStringInclude(sensitive = true)
         private Object val;
 
         /**

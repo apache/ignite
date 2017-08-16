@@ -186,6 +186,7 @@
     <ClCompile Include="..\..\src\utility_test.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\include\complex_type.h" />
     <ClInclude Include="..\..\include\sql_test_suite_fixture.h" />
     <ClInclude Include="..\..\include\teamcity\teamcity_messages.h" />
     <ClInclude Include="..\..\include\test_type.h" />

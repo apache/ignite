@@ -99,9 +99,9 @@ class CacheContinuousQueryEvent<K, V> extends CacheQueryEntryEvent<K, V> {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(CacheContinuousQueryEvent.class, this,
-            "evtType", getEventType(),
-            "key", getKey(),
-            "newVal", getValue(),
-            "oldVal", getOldValue());
+            "evtType", getEventType(), false,
+            "key", getKey(), true,
+            "newVal", getValue(), true,
+            "oldVal", getOldValue(), true);
     }
 }

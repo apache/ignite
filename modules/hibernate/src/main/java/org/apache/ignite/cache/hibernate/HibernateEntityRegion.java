@@ -18,7 +18,6 @@
 package org.apache.ignite.cache.hibernate;
 
 import org.apache.ignite.Ignite;
-import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.hibernate.cache.CacheException;
 import org.hibernate.cache.spi.CacheDataDescription;
 import org.hibernate.cache.spi.EntityRegion;
@@ -62,7 +61,7 @@ public class HibernateEntityRegion extends HibernateTransactionalDataRegion impl
      * @param dataDesc Region data description.
      */
     public HibernateEntityRegion(HibernateRegionFactory factory, String name, Ignite ignite,
-        IgniteInternalCache<Object, Object> cache, CacheDataDescription dataDesc) {
+        HibernateCacheProxy cache, CacheDataDescription dataDesc) {
         super(factory, name, ignite, cache, dataDesc);
     }
 
