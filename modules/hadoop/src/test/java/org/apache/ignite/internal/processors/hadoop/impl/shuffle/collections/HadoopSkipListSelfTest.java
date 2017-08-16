@@ -85,6 +85,9 @@ public class HadoopSkipListSelfTest extends HadoopAbstractMapTest {
         }
     }
 
+    /**
+     * @throws Exception On error.
+     */
     public void testMapSimple() throws Exception {
         GridUnsafeMemory mem = new GridUnsafeMemory(0);
 
@@ -139,7 +142,16 @@ public class HadoopSkipListSelfTest extends HadoopAbstractMapTest {
         assertEquals(0, mem.allocatedSize());
     }
 
-    private void check(HadoopMultimap m, Multimap<Integer, Integer> mm, final Multimap<Integer, Integer> vis, HadoopTaskContext taskCtx)
+    /**
+     * Check.
+     * @param m The multimap.
+     * @param mm The multimap storing expectations.
+     * @param vis The multimap to store visitor results.
+     * @param taskCtx The task context.
+     * @throws Exception On error.
+     */
+    private void check(HadoopMultimap m, Multimap<Integer, Integer> mm, final Multimap<Integer, Integer> vis,
+        HadoopTaskContext taskCtx)
         throws Exception {
         final HadoopTaskInput in = m.input(taskCtx);
 
@@ -202,7 +214,7 @@ public class HadoopSkipListSelfTest extends HadoopAbstractMapTest {
             private void read(long ptr, int size, Writable w) {
                 assert size == 4 : size;
 
-                GridUnsafe.copyMemory(null, ptr, buf, GridUnsafe.BYTE_ARR_OFF, size);
+                GridUnsafe.copyOffheapHeap(ptr, buf, GridUnsafe.BYTE_ARR_OFF, size);
 
                 dataInput.bytes(buf, size);
 

@@ -48,3 +48,52 @@ $fa-font-path: '~font-awesome/fonts';
 
   cursor: default;
 }
+
+.icon-note {
+  @extend .fa;
+  @extend .fa-info-circle;
+
+  cursor: default;
+}
+
+.icon-danger {
+  @extend .fa;
+  @extend .fa-exclamation-triangle;
+
+  cursor: default;
+}
+
+.icon-success {
+  @extend .fa;
+  @extend .fa-check-circle-o;
+
+  cursor: default;
+}
+
+.icon-user {
+  @extend .fa;
+  @extend .fa-user-o;
+
+  cursor: default;
+}
+
+.icon-admin {
+  @extend .fa;
+  @extend .fa-user-secret;
+
+  cursor: default;
+}
+
+.icon-datepicker-left {
+  @extend .fa;
+  @extend .fa-chevron-left;
+
+  margin: 0;
+}
+
+.icon-datepicker-right {
+  @extend .fa;
+  @extend .fa-chevron-right;
+  
+  margin: 0;
+}

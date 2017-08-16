@@ -57,6 +57,8 @@ public class HadoopExternalTaskExecutionSelfTest extends HadoopAbstractSelfTest 
     @Override protected void beforeTest() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-404");
 
+        super.beforeTest();
+
         startGrids(gridCount());
     }
 

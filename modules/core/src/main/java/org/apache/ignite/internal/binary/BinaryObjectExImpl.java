@@ -30,6 +30,7 @@ import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryIdentityResolver;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
@@ -197,8 +198,11 @@ public abstract class BinaryObjectExImpl implements BinaryObjectEx {
             meta = null;
         }
 
-        if (meta == null)
-            return BinaryObject.class.getSimpleName() +  " [idHash=" + idHash + ", hash=" + hash + ", typeId=" + typeId() + ']';
+        if (meta == null || !S.INCLUDE_SENSITIVE)
+            return S.toString(S.INCLUDE_SENSITIVE ? BinaryObject.class.getSimpleName() : "BinaryObject",
+                "idHash", idHash, false,
+                "hash", hash, false,
+                "typeId", typeId(), true);
 
         handles.put(this, idHash);
 

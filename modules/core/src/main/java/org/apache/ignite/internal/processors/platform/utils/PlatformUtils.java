@@ -388,6 +388,34 @@ public class PlatformUtils {
     }
 
     /**
+     * Read linked map.
+     *
+     * @param reader Reader.
+     * @param readClo Reader closure.
+     * @return Map.
+     */
+    public static <K, V> Map<K, V> readLinkedMap(BinaryRawReaderEx reader,
+        @Nullable PlatformReaderBiClosure<K, V> readClo) {
+        int cnt = reader.readInt();
+
+        Map<K, V> map = U.newLinkedHashMap(cnt);
+
+        if (readClo == null) {
+            for (int i = 0; i < cnt; i++)
+                map.put((K)reader.readObjectDetached(), (V)reader.readObjectDetached());
+        }
+        else {
+            for (int i = 0; i < cnt; i++) {
+                IgniteBiTuple<K, V> entry = readClo.read(reader);
+
+                map.put(entry.getKey(), entry.getValue());
+            }
+        }
+
+        return map;
+    }
+
+    /**
      * Read nullable map.
      *
      * @param reader Reader.

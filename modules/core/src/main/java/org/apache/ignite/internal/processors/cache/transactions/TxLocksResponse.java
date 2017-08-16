@@ -181,31 +181,36 @@ public class TxLocksResponse extends GridCacheMessage {
 
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
-        super.finishUnmarshal(ctx, ldr);
+        try {
+            super.finishUnmarshal(ctx, ldr);
 
-        if (nearTxKeysArr != null) {
-            for (int i = 0; i < nearTxKeysArr.length; i++) {
-                IgniteTxKey key = nearTxKeysArr[i];
+            if (nearTxKeysArr != null) {
+                for (int i = 0; i < nearTxKeysArr.length; i++) {
+                    IgniteTxKey txKey = nearTxKeysArr[i];
 
-                key.finishUnmarshal(ctx.cacheContext(key.cacheId()), ldr);
+                    txKey.key().finishUnmarshal(ctx.cacheObjectContext(txKey.cacheId()), ldr);
 
-                txLocks().put(key, locksArr[i]);
+                    txLocks().put(txKey, locksArr[i]);
+                }
+
+                nearTxKeysArr = null;
+                locksArr = null;
             }
 
-            nearTxKeysArr = null;
-            locksArr = null;
+            if (txKeysArr != null) {
+                txKeys = U.newHashSet(txKeysArr.length);
+
+                for (IgniteTxKey txKey : txKeysArr) {
+                    txKey.key().finishUnmarshal(ctx.cacheObjectContext(txKey.cacheId()), ldr);
+
+                    txKeys.add(txKey);
+                }
+
+                txKeysArr = null;
+            }
         }
-
-        if (txKeysArr != null) {
-            txKeys = U.newHashSet(txKeysArr.length);
-
-            for (IgniteTxKey key : txKeysArr) {
-                key.finishUnmarshal(ctx.cacheContext(key.cacheId()), ldr);
-
-                txKeys.add(key);
-            }
-
-            txKeysArr = null;
+        catch (Exception e) {
+            throw new IgniteCheckedException(e);
         }
     }
 
