@@ -1748,6 +1748,20 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Called during exchange rollback in order to stop the given cache
+     * even if it's not fully initialized (e.g. fail on cache init stage).
+     */
+     public void forceCloseCache(DynamicCacheChangeRequest req) {
+        assert req.stop() : req;
+
+        registeredCaches.remove(maskNull(req.cacheName()));
+
+        stopGateway(req);
+
+        prepareCacheStop(req, true);
+    }
+
+    /**
      * @param req Request.
      */
     private void stopGateway(DynamicCacheChangeRequest req) {
@@ -1850,7 +1864,17 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         }
                     }
                 }
+            }
+        }
+    }
 
+    /**
+     * @param reqs Collection of requests to complete future for.
+     * @param err Error to be passed to futures.
+     */
+    public void completeStartFutures(Collection<DynamicCacheChangeRequest> reqs, @Nullable Throwable err) {
+        if (!F.isEmpty(reqs)) {
+            for (DynamicCacheChangeRequest req : reqs) {
                 completeStartFuture(req, err);
             }
         }
@@ -2597,8 +2621,24 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         AffinityTopologyVersion topVer) {
         if (msg instanceof CacheAffinityChangeMessage)
             return sharedCtx.affinity().onCustomEvent(((CacheAffinityChangeMessage)msg));
+        else if (msg instanceof DynamicCacheChangeFailureMessage)
+            return onCacheChangeRequested((DynamicCacheChangeFailureMessage)msg);
 
         return msg instanceof DynamicCacheChangeBatch && onCacheChangeRequested((DynamicCacheChangeBatch)msg, topVer);
+    }
+
+    /**
+     * @param failMsg Dynamic change change request fail message.
+     * @return {@code True} if minor topology version should be increased.
+     */
+    private boolean onCacheChangeRequested(DynamicCacheChangeFailureMessage failMsg) {
+        for (DynamicCacheChangeRequest req : failMsg.requests()) {
+            registeredCaches.remove(maskNull(req.cacheName()));
+
+            ctx.discovery().removeCacheFilter(req.cacheName(), true);
+        }
+
+        return false;
     }
 
     /**
@@ -2738,7 +2778,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                         assert old != null : "Dynamic cache map was concurrently modified [req=" + req + ']';
 
-                        ctx.discovery().removeCacheFilter(req.cacheName());
+                        ctx.discovery().removeCacheFilter(req.cacheName(), false);
 
                         needExchange = true;
                     }

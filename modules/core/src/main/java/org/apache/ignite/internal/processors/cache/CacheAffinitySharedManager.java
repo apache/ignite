@@ -323,6 +323,77 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     }
 
     /**
+     * Called during exchange rollback in order to stop the given cache(s)
+     * even if it's not fully initialized (e.g. fail on cache init stage).
+     *
+     * @param fut Exchange future.
+     * @param crd Coordinator flag.
+     * @param reqs Cache change requests.
+     */
+    public void forceCloseCache(final GridDhtPartitionsExchangeFuture fut, boolean crd,
+        Collection<DynamicCacheChangeRequest> reqs) {
+
+        assert !F.isEmpty(reqs) : fut;
+
+        for (DynamicCacheChangeRequest req : reqs) {
+            assert req.stop() : req;
+
+            Integer cacheId = CU.cacheId(req.cacheName());
+
+            registeredCaches.remove(cacheId);
+        }
+
+        Set<Integer> stoppedCaches = null;
+
+        for (DynamicCacheChangeRequest req : reqs) {
+            Integer cacheId = CU.cacheId(req.cacheName());
+
+            cctx.cache().blockGateway(req);
+
+            if (crd) {
+                CacheHolder cache = caches.remove(cacheId);
+
+                if (cache != null) {
+                    if (stoppedCaches == null)
+                        stoppedCaches = new HashSet<>();
+
+                    stoppedCaches.add(cache.cacheId());
+
+                    cctx.io().removeHandler(cacheId, GridDhtAffinityAssignmentResponse.class);
+                }
+            }
+        }
+
+        if (stoppedCaches != null) {
+            boolean notify = false;
+
+            synchronized (mux) {
+                if (waitInfo != null) {
+                    for (Integer cacheId : stoppedCaches) {
+                        boolean rmv =  waitInfo.waitCaches.remove(cacheId) != null;
+
+                        if (rmv) {
+                            notify = true;
+
+                            waitInfo.assignments.remove(cacheId);
+                        }
+                    }
+                }
+            }
+
+            if (notify) {
+                final AffinityTopologyVersion topVer = affCalcVer;
+
+                cctx.kernalContext().closure().runLocalSafe(new Runnable() {
+                    @Override public void run() {
+                        onCacheStopped(topVer);
+                    }
+                });
+            }
+        }
+    }
+
+    /**
      * Called on exchange initiated for cache start/stop request.
      *
      * @param fut Exchange future.
