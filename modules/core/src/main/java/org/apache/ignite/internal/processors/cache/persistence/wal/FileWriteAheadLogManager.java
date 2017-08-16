@@ -828,7 +828,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     try {
                         serVer = readSerializerVersion(fileIO);
                     }
-                    catch (SegmentEofException | EOFException | WalSegmentTailReachedException ignore) {
+                    catch (SegmentEofException | EOFException ignore) {
                         serVer = serializerVersion;
                     }
                 }

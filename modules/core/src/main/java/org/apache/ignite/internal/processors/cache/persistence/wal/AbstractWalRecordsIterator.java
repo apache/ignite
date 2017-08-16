@@ -267,7 +267,7 @@ public abstract class AbstractWalRecordsIterator
 
                 return new FileWriteAheadLogManager.ReadFileHandle(fileIO, desc.idx, sharedCtx.igniteInstanceName(), ser, in);
             }
-            catch (SegmentEofException | EOFException | WalSegmentTailReachedException ignore) {
+            catch (SegmentEofException | EOFException ignore) {
                 try {
                     fileIO.close();
                 }
