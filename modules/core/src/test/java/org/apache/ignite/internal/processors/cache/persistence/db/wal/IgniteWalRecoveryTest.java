@@ -450,6 +450,8 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
      * @throws Exception if failed.
      */
     public void testWalRolloverMultithreadedDefault() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-6077");
+
         logOnly = false;
 
         checkWalRolloverMultithreaded();
