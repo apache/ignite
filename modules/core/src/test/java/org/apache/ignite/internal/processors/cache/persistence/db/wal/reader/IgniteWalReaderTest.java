@@ -191,7 +191,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         final File walArchiveDirWithConsistentId = new File(walArchive, consistentId);
         final File walWorkDirWithConsistentId = new File(wal, consistentId);
 
-        final IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory(log, fileIOFactory, PAGE_SIZE);
+        final IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory(log, fileIOFactory, FileWriteAheadLogManager.LATEST_SERIALIZER_VERSION, PAGE_SIZE);
         final int cntArchiveDir = iterateAndCount(factory.iteratorArchiveDirectory(walArchiveDirWithConsistentId));
 
         log.info("Total records loaded using directory : " + cntArchiveDir);

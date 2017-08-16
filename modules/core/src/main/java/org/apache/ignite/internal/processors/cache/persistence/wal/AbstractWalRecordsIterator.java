@@ -162,8 +162,7 @@ public abstract class AbstractWalRecordsIterator
                 }
             }
             catch (WalSegmentTailReachedException e) {
-                if (log != null)
-                    log.warning(e.getMessage());
+                log.warning(e.getMessage());
 
                 curRec = null;
 

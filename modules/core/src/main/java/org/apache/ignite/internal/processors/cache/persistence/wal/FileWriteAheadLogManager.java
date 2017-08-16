@@ -116,6 +116,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         }
     };
 
+    /** Latest serializer version to use. */
+    public static final int LATEST_SERIALIZER_VERSION = 2;
+
     /** */
     private final boolean alwaysWriteFullPages;
 
@@ -156,7 +159,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     private RecordSerializer serializer;
 
     /** Serializer latest version to use. */
-    private int serializerVersion = 2;
+    private int serializerVersion = LATEST_SERIALIZER_VERSION;
 
     /** */
     private volatile long oldestArchiveSegmentIdx;
@@ -1015,7 +1018,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      * @param ver Serializer version.
      * @return Entry serializer.
      */
-    static RecordSerializer forVersion(GridCacheSharedContext cctx, int ver) throws IgniteCheckedException {
+    public static RecordSerializer forVersion(GridCacheSharedContext cctx, int ver) throws IgniteCheckedException {
         if (ver <= 0)
             throw new IgniteCheckedException("Failed to create a serializer (corrupted WAL file).");
 
@@ -1457,9 +1460,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             if (type != WALRecord.RecordType.HEADER_RECORD)
                 throw new IOException("Can't read serializer version", null);
 
-            // Read and skip file pointer.
-            in.readLong();
-            in.readInt();
+            // Read file pointer.
+            FileWALPointer ptr = RecordV1Serializer.readPosition(in);
+
+            assert ptr.fileOffset() == 0 : "Header record should be placed at the beginning of file " + ptr;
 
             long headerMagicNumber = in.readLong();
 
@@ -1482,19 +1486,20 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      * NOTE: Method mutates position of {@code io}.
      *
      * @param io I/O interface for file.
+     * @param idx Segment index.
      * @param version Serializer version.
      * @return I/O position after write version.
      * @throws IOException If failed to write serializer version.
      */
-    public static long writeSerializerVersion(FileIO io, int version) throws IOException {
+    public static long writeSerializerVersion(FileIO io, long idx, int version) throws IOException {
         ByteBuffer buffer = ByteBuffer.allocate(RecordV1Serializer.HEADER_RECORD_SIZE);
         buffer.order(ByteOrder.nativeOrder());
 
         // Write record type.
         buffer.put((byte) (WALRecord.RecordType.HEADER_RECORD.ordinal() + 1));
 
-        // Skip file pointer field.
-        buffer.position(buffer.position() + RecordV1Serializer.FILE_WAL_POINTER_SIZE);
+        // Write position.
+        RecordV1Serializer.putPosition(buffer, new FileWALPointer(idx, 0, 0));
 
         // Place magic number.
         buffer.putLong(HeaderRecord.MAGIC);
@@ -1795,7 +1800,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             try {
                 assert fileIO.position() == 0 : "Serializer version can be written only at the begin of file " + fileIO.position();
 
-                long updatedPosition = FileWriteAheadLogManager.writeSerializerVersion(fileIO, serializer.version());
+                long updatedPosition = FileWriteAheadLogManager.writeSerializerVersion(fileIO, idx, serializer.version());
 
                 written = updatedPosition;
                 lastFsyncPos = updatedPosition;
