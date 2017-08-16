@@ -261,25 +261,13 @@ class MapQueryResult {
      */
     public void close() {
         if (lazyWorker != null && MapQueryLazyWorker.currentWorker() == null) {
-            final GridFutureAdapter closeFut = new GridFutureAdapter();
-
             lazyWorker.submit(new Runnable() {
                 @Override public void run() {
-                    try {
-                        close();
-                    }
-                    finally {
-                        closeFut.onDone();
-                    }
+                    close();
                 }
             });
 
-            try {
-                closeFut.get(); // Wait for close synchronously to maintain consistent semantics.
-            }
-            catch (Exception e) {
-                // No-op.
-            }
+            lazyWorker.awaitStop();
 
             return;
         }

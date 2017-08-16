@@ -24,6 +24,8 @@ import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.twostep.MapQueryLazyWorker;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -309,6 +311,13 @@ public class LazyQuerySelfTest extends GridCommonAbstractTest {
     private static void assertNoWorkers() throws Exception {
         assert GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
+                for (Ignite node : Ignition.allGrids()) {
+                    IgniteH2Indexing idx = (IgniteH2Indexing) ((IgniteKernal)node).context().query().getIndexing();
+
+                    if (idx.mapQueryExecutor().registeredLazyWorkers() != 0)
+                        return false;
+                }
+
                 return MapQueryLazyWorker.activeCount() == 0;
             }
         }, 1000L);

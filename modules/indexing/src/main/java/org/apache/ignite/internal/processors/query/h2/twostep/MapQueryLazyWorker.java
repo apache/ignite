@@ -17,13 +17,18 @@
 
 package org.apache.ignite.internal.processors.query.h2.twostep;
 
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.LongAdder8;
 
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingDeque;
 
 /**
@@ -44,6 +49,9 @@ public class MapQueryLazyWorker extends GridWorker {
 
     /** Map query executor. */
     private final GridMapQueryExecutor exec;
+
+    /** Latch decremented when worker finishes. */
+    private final CountDownLatch stopLatch = new CountDownLatch(1);
 
     /**
      * Constructor.
@@ -80,7 +88,7 @@ public class MapQueryLazyWorker extends GridWorker {
 
             ACTIVE_CNT.decrement();
 
-            exec.unregisterLazyWorkerIfNeeded(false);
+            exec.unregisterLazyWorker(this);
         }
     }
 
@@ -110,8 +118,23 @@ public class MapQueryLazyWorker extends GridWorker {
                     stop();
                 }
             });
-        else
+        else {
             isCancelled = true;
+
+            stopLatch.countDown();
+        }
+    }
+
+    /**
+     * Await worker stop.
+     */
+    public void awaitStop() {
+        try {
+            U.await(stopLatch);
+        }
+        catch (IgniteInterruptedCheckedException e) {
+            throw new IgniteException("Failed to wait for lazy worker stop (interrupted): " + name(), e);
+        }
     }
 
     /**

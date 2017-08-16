@@ -577,7 +577,8 @@ public class GridMapQueryExecutor {
                 // Reserve primary for topology version or explicit partitions.
                 if (!reservePartitions(cacheIds, topVer, parts, reserved)) {
                     // Unregister lazy worker because re-try may never reach this node again.
-                    unregisterLazyWorkerIfNeeded(true);
+                    if (lazy)
+                        stopAndUnregisterCurrentLazyWorker();
 
                     sendRetry(node, reqId, segmentId);
 
@@ -685,7 +686,8 @@ public class GridMapQueryExecutor {
             }
 
             // Unregister worker after possible cancellation.
-            unregisterLazyWorkerIfNeeded(true);
+            if (lazy)
+                stopAndUnregisterCurrentLazyWorker();
 
             if (X.hasCause(e, GridH2RetryException.class))
                 sendRetry(node, reqId, segmentId);
@@ -861,18 +863,32 @@ public class GridMapQueryExecutor {
     }
 
     /**
-     * Unregister lazy worker if needed (i.e. if we are currently in laze worker thread).
-     *
-     * @param stop Whether to stop worker.
+     * Unregister lazy worker if needed (i.e. if we are currently in lazy worker thread).
      */
-    public void unregisterLazyWorkerIfNeeded(boolean stop) {
+    public void stopAndUnregisterCurrentLazyWorker() {
         MapQueryLazyWorker worker = MapQueryLazyWorker.currentWorker();
 
         if (worker != null) {
-            if (stop)
-                worker.stop();
+            worker.stop();
 
-            lazyWorkers.remove(worker.key(), worker);
+            // Just stop is not enough as worker may be registered, but not started due to exception.
+            unregisterLazyWorker(worker);
         }
+    }
+
+    /**
+     * Unregister lazy worker.
+     *
+     * @param worker Worker.
+     */
+    public void unregisterLazyWorker(MapQueryLazyWorker worker) {
+        lazyWorkers.remove(worker.key(), worker);
+    }
+
+    /**
+     * @return Number of registered lazy workers.
+     */
+    public int registeredLazyWorkers() {
+        return lazyWorkers.size();
     }
 }
