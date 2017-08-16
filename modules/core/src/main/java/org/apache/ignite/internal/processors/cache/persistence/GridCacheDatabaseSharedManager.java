@@ -2177,7 +2177,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     });
                 }
 
-                int pagesSubLists = persistenceCfg.getCheckpointingThreads() * 4;
+                int cpThreads = persistenceCfg.getCheckpointingThreads();
+
+                int pagesSubLists = cpThreads == 1 ? 1 : cpThreads * 4;
+                // Splitting pages to (threads * 4) subtasks. If any thread will be faster, it will help slower threads.
 
                 Collection[] pagesSubListArr = new Collection[pagesSubLists];
 
@@ -2188,7 +2191,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                     int to = totalSize * (i + 1) / (pagesSubLists);
 
-                    pagesSubListArr[i] = new ArrayList(cpPagesList.subList(from, to));
+                    pagesSubListArr[i] = cpPagesList.subList(from, to);
                 }
 
                 cpPages = new GridMultiCollectionWrapper<FullPageId>(pagesSubListArr);
