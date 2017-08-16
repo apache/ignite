@@ -252,7 +252,7 @@ public abstract class AbstractWalRecordsIterator
             FileIO fileIO = ioFactory.create(desc.file, "r");
 
             try {
-                int serVer = FileWriteAheadLogManager.readSerializerVersion(fileIO, desc.file);
+                int serVer = FileWriteAheadLogManager.readSerializerVersion(fileIO);
 
                 RecordSerializer ser = FileWriteAheadLogManager.forVersion(sharedCtx, serVer);
 
@@ -267,7 +267,7 @@ public abstract class AbstractWalRecordsIterator
 
                 return new FileWriteAheadLogManager.ReadFileHandle(fileIO, desc.idx, sharedCtx.igniteInstanceName(), ser, in);
             }
-            catch (SegmentEofException | EOFException ignore) {
+            catch (SegmentEofException | EOFException | WalSegmentTailReachedException ignore) {
                 try {
                     fileIO.close();
                 }

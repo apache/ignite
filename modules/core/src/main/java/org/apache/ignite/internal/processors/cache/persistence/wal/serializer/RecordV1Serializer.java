@@ -31,6 +31,7 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.FileInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.RecordSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentEofException;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WalSegmentTailReachedException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.PureJavaCrc32;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.io.RecordIO;
 import org.apache.ignite.internal.util.typedef.F;
@@ -77,6 +78,9 @@ public class RecordV1Serializer implements RecordSerializer {
         /** {@inheritDoc} */
         @Override public WALRecord readWithHeaders(ByteBufferBackedDataInput in, WALPointer expPtr) throws IOException, IgniteCheckedException {
             RecordType recType = readRecordType(in);
+
+            if (recType == RecordType.SWITCH_SEGMENT_RECORD)
+                throw new SegmentEofException("Reached end of segment", null);
 
             FileWALPointer ptr = readPosition(in);
 
@@ -219,7 +223,7 @@ public class RecordV1Serializer implements RecordSerializer {
 
             return res;
         }
-        catch (EOFException | SegmentEofException e) {
+        catch (EOFException | SegmentEofException | WalSegmentTailReachedException e) {
             throw e;
         }
         catch (Exception e) {
@@ -236,7 +240,7 @@ public class RecordV1Serializer implements RecordSerializer {
      * @throws IgniteCheckedException If it's unable to write record.
      */
     public static void writeWithCrc(WALRecord record, ByteBuffer buf, RecordIO writer) throws IgniteCheckedException {
-        assert record.size() > 0 && buf.remaining() >= record.size() : record.size();
+        assert record.size() >= 0 && buf.remaining() >= record.size() : record.size();
 
         int startPos = buf.position();
 

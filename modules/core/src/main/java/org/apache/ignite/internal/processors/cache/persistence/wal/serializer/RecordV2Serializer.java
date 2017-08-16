@@ -27,6 +27,7 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferBac
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.RecordSerializer;
+import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentEofException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WalSegmentTailReachedException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.io.RecordIO;
 import org.apache.ignite.internal.util.typedef.F;
@@ -66,6 +67,9 @@ public class RecordV2Serializer implements RecordSerializer {
             WALPointer expPtr
         ) throws IOException, IgniteCheckedException {
             WALRecord.RecordType recType = RecordV1Serializer.readRecordType(in);
+
+            if (recType == WALRecord.RecordType.SWITCH_SEGMENT_RECORD)
+                throw new SegmentEofException("Reached end of segment", null);
 
             FileWALPointer ptr = readPositionAndCheckPoint(in, expPtr);
 

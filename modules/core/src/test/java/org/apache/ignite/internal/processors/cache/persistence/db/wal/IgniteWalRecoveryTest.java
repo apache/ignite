@@ -736,7 +736,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
 
             rmt.run(new AsyncLoadRunnable());
 
-            Thread.sleep(20_000);
+            Thread.sleep(30_000);
 
             info(">>> Killing remote process...");
 
@@ -1147,6 +1147,9 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
                     }
                 }, 10_000);
 
+                if (successfulWaiting == false) {
+                    int k = 2;
+                }
                 assertTrue(successfulWaiting);
             }
             catch (IgniteInterruptedCheckedException e) {

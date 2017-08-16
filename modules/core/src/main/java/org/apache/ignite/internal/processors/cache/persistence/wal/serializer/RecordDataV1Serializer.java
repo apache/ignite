@@ -1290,6 +1290,9 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
                 break;
 
+            case SWITCH_SEGMENT_RECORD:
+                break;
+
             default:
                 throw new UnsupportedOperationException("Type: " + record.type());
         }
