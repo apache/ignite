@@ -29,6 +29,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.CacheInitializationException;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -419,7 +420,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
                     cctx.cache().forceCloseCache(fut.topologyVersion(), req, e);
 
-                    throw e;
+                    throw new CacheInitializationException("Failed to initialize cache.", req.cacheName(), e);
                 }
             }
             else if (req.stop() || req.close()) {

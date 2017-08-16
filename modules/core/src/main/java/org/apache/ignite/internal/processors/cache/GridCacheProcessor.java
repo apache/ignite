@@ -1750,7 +1750,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /**
      * @param req Request.
      */
-    private void stopGateway(DynamicCacheChangeRequest req) {
+    public void stopGateway(DynamicCacheChangeRequest req) {
         assert req.stop() : req;
 
         // Break the proxy before exchange future is done.
@@ -1763,7 +1763,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /**
      * @param req Stop request.
      */
-    private void prepareCacheStop(DynamicCacheChangeRequest req, boolean forceClose) {
+    public void prepareCacheStop(DynamicCacheChangeRequest req, boolean forceClose) {
         assert req.stop() || req.close() || forceClose : req;
 
         GridCacheAdapter<?, ?> cache = caches.remove(maskNull(req.cacheName()));
@@ -1850,7 +1850,17 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         }
                     }
                 }
+            }
+        }
+    }
 
+    /**
+     * @param reqs Collection of requests to complete future for.
+     * @param err Error to be passed to futures.
+     */
+    public void completeStartFutures(Collection<DynamicCacheChangeRequest> reqs, @Nullable Throwable err) {
+        if (!F.isEmpty(reqs)) {
+            for (DynamicCacheChangeRequest req : reqs) {
                 completeStartFuture(req, err);
             }
         }
