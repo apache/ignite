@@ -507,8 +507,10 @@ public class DmlStatementsProcessor {
 
         while (it.hasNext()) {
             List<?> e = it.next();
+
             if (e.size() != 2) {
                 U.warn(log, "Invalid row size on DELETE - expected 2, got " + e.size());
+
                 continue;
             }
 
@@ -528,8 +530,7 @@ public class DmlStatementsProcessor {
                         resEx.setNextException(pageRes.ex);
                 }
 
-                if (it.hasNext())
-                    rows.clear(); // No need to clear after the last batch.
+                rows.clear();
             }
         }
 
@@ -664,8 +665,7 @@ public class DmlStatementsProcessor {
                         resEx.setNextException(pageRes.ex);
                 }
 
-                if (it.hasNext())
-                    rows.clear(); // No need to clear after the last batch.
+                rows.clear();
             }
         }
 
@@ -869,7 +869,7 @@ public class DmlStatementsProcessor {
                 new LinkedHashMap<Object, EntryProcessor<Object, Object, Boolean>>();
 
             // Keys that failed to INSERT due to duplication.
-            List<Object> duplicateKeys = new ArrayList<>();
+            List<Object> failedKeys = new ArrayList<>();
 
             int resCnt = 0;
 
@@ -884,12 +884,12 @@ public class DmlStatementsProcessor {
 
                 rows.put(t.getKey(), new InsertEntryProcessor(t.getValue()));
 
-                if (!it.hasNext() || (pageSize > 0 && rows.size() == pageSize)) {
+                if ((pageSize > 0 && rows.size() == pageSize) || !it.hasNext()) {
                     PageProcessingResult pageRes = processPage(cctx, rows);
 
                     resCnt += pageRes.cnt;
 
-                    duplicateKeys.addAll(F.asList(pageRes.errKeys));
+                    failedKeys.addAll(F.asList(pageRes.errKeys));
 
                     if (pageRes.ex != null) {
                         if (resEx == null)
@@ -902,9 +902,9 @@ public class DmlStatementsProcessor {
                 }
             }
 
-            if (!F.isEmpty(duplicateKeys)) {
+            if (!F.isEmpty(failedKeys)) {
                 String msg = "Failed to INSERT some keys because they are already in cache " +
-                    "[keys=" + duplicateKeys + ']';
+                    "[keys=" + failedKeys + ']';
 
                 SQLException dupEx = new SQLException(msg, null, IgniteQueryErrorCode.DUPLICATE_KEY);
 
