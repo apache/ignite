@@ -58,7 +58,10 @@ public enum DataStructureType {
     SEMAPHORE(IgniteSemaphore.class.getSimpleName()),
 
     /** */
-    REENTRANT_LOCK(IgniteLock.class.getSimpleName());
+    REENTRANT_LOCK(IgniteLock.class.getSimpleName()),
+
+    /** */
+    REENTRANT_LOCK2(IgniteLock.class.getSimpleName());
 
     /** */
     private static final DataStructureType[] VALS = values();
@@ -84,7 +87,7 @@ public enum DataStructureType {
      * @return {@code True} if this data structure type is volatile.
      */
     public boolean isVolatile() {
-        return this == REENTRANT_LOCK || this == SEMAPHORE || this == COUNT_DOWN_LATCH;
+        return this == REENTRANT_LOCK || this == REENTRANT_LOCK2 || this == SEMAPHORE || this == COUNT_DOWN_LATCH;
     }
 
     /**

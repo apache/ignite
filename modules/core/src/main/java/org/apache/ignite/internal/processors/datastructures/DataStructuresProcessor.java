@@ -99,6 +99,7 @@ import static org.apache.ignite.internal.processors.datastructures.DataStructure
 import static org.apache.ignite.internal.processors.datastructures.DataStructureType.COUNT_DOWN_LATCH;
 import static org.apache.ignite.internal.processors.datastructures.DataStructureType.QUEUE;
 import static org.apache.ignite.internal.processors.datastructures.DataStructureType.REENTRANT_LOCK;
+import static org.apache.ignite.internal.processors.datastructures.DataStructureType.REENTRANT_LOCK2;
 import static org.apache.ignite.internal.processors.datastructures.DataStructureType.SEMAPHORE;
 import static org.apache.ignite.internal.processors.datastructures.DataStructureType.SET;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -503,7 +504,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
         final String grpName;
 
-        if (type.equals(REENTRANT_LOCK))
+        if (type.equals(REENTRANT_LOCK2))
             grpName = DEFAULT_REENTRANT_LOCK_GROUP_NAME;
         else if (type.isVolatile())
             grpName = DEFAULT_VOLATILE_DS_GROUP_NAME;
@@ -522,7 +523,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
             CacheConfiguration tcfg = cacheConfiguration(cfg, cacheName, grpName);
 
-            if (type.equals(REENTRANT_LOCK)) {
+            if (type.equals(REENTRANT_LOCK2)) {
                 tcfg.setAtomicityMode(ATOMIC);
             }
 
@@ -1245,7 +1246,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
                 return new T2<>(reentrantLock0, retVal);
             }
-        }, null, name, REENTRANT_LOCK, create, GridCacheLockEx2.class);
+        }, null, name, REENTRANT_LOCK2, create, GridCacheLockEx2.class);
 
     }
 

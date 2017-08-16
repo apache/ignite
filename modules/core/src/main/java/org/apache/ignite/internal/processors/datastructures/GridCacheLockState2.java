@@ -80,7 +80,7 @@ public final class GridCacheLockState2 extends VolatileAtomicDataStructureValue 
 
     /** {@inheritDoc} */
     @Override public DataStructureType type() {
-        return DataStructureType.REENTRANT_LOCK;
+        return DataStructureType.REENTRANT_LOCK2;
     }
 
     /** {@inheritDoc} */
