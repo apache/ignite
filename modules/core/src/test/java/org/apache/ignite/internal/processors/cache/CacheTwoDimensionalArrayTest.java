@@ -74,6 +74,24 @@ public class CacheTwoDimensionalArrayTest extends GridCommonAbstractTest {
 
         int n = size, m = size -1;
 
+        // Object array with primitives.
+        {
+            IgniteCache<Integer, Object[]> cache = ignite(0).cache(ccfg.getName());
+
+            for (int key = 0; key < KEYS; key++)
+                cache.put(key, new Object[]{1});
+
+            for (int key = 0; key < KEYS; key++) {
+                Object[] exp = new Object[]{1};
+
+                Object[] act = cache.get(key);
+
+                assertArrayEquals(exp, act);
+            }
+
+            cache.removeAll();
+        }
+
         // Primitive empty array.
         {
             IgniteCache<Integer, int[][]> cache = ignite(0).cache(ccfg.getName());
