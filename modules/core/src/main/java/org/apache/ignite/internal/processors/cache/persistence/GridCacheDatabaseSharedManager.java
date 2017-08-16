@@ -1548,6 +1548,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     if (storeMgr.pages(grpId, i) <= 1)
                         continue;
 
+                    // TODO: https://ggsystems.atlassian.net/browse/GG-12487
                     grp.offheap().onPartitionInitialCounterUpdated(i, 0);
 
                     long partMetaId = pageMem.partitionMetaPageId(grpId, i);
