@@ -69,7 +69,7 @@ public class MapQueryLazyWorker extends GridWorker {
 
         try {
             while (!isCancelled()) {
-                Runnable task = tasks.poll();
+                Runnable task = tasks.take();
 
                 if (task != null)
                     task.run();

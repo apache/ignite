@@ -192,7 +192,7 @@ public class LazyQuerySelfTest extends GridCommonAbstractTest {
         // Test execution of multiple queries at a time.
         List<Iterator<List<?>>> iters = new ArrayList<>();
 
-        for (int i = 0; i < 100; i++)
+        for (int i = 0; i < 200; i++)
             iters.add(execute(node, randomizedQuery().setPageSize(PAGE_SIZE_SMALL)).iterator());
 
         while (!iters.isEmpty()) {
