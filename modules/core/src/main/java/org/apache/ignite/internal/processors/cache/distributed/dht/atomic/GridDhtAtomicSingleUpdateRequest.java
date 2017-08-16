@@ -365,6 +365,11 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
         return isFlag(KEEP_BINARY_FLAG_MASK);
     }
 
+    /** {@inheritDoc} */
+    @Override public AffinityTopologyVersion topologyVersion() {
+        return topVer;
+    }
+
     /**
      *
      */

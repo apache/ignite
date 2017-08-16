@@ -31,7 +31,6 @@ import com.datastax.driver.core.policies.LoadBalancingPolicy;
 import com.datastax.driver.core.policies.ReconnectionPolicy;
 import com.datastax.driver.core.policies.RetryPolicy;
 import com.datastax.driver.core.policies.SpeculativeExecutionPolicy;
-
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
@@ -42,14 +41,13 @@ import java.net.InetSocketAddress;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.UUID;
-
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.store.cassandra.session.CassandraSession;
 import org.apache.ignite.cache.store.cassandra.session.CassandraSessionImpl;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Data source abstraction to specify configuration of the Cassandra session to be used.
@@ -63,6 +61,9 @@ public class DataSource implements Externalizable {
      * don't support serialization (RetryPolicy, LoadBalancingPolicy and etc).
      */
     private static final UUID NULL_OBJECT = UUID.fromString("45ffae47-3193-5910-84a2-048fe65735d9");
+
+    /** Default expiration timeout for Cassandra driver session. */
+    public static final long DFLT_SESSION_EXPIRATION_TIMEOUT = 300000; // 5 minutes.
 
     /** Number of rows to immediately fetch in CQL statement execution. */
     private Integer fetchSize;
@@ -140,6 +141,9 @@ public class DataSource implements Externalizable {
 
     /** Netty options to use for connection. */
     private NettyOptions nettyOptions;
+
+    /** Expiration timeout for Cassandra driver session. */
+    private long sessionExpirationTimeout = DFLT_SESSION_EXPIRATION_TIMEOUT;
 
     /** Cassandra session wrapper instance. */
     private volatile CassandraSession ses;
@@ -346,7 +350,7 @@ public class DataSource implements Externalizable {
      * @param plc Load balancing policy.
      */
     public void setLoadBalancingPolicy(LoadBalancingPolicy plc) {
-        loadBalancingPlc = plc;
+        this.loadBalancingPlc = plc;
 
         invalidate();
     }
@@ -358,7 +362,7 @@ public class DataSource implements Externalizable {
      */
     @SuppressWarnings("UnusedDeclaration")
     public void setReconnectionPolicy(ReconnectionPolicy plc) {
-        reconnectionPlc = plc;
+        this.reconnectionPlc = plc;
 
         invalidate();
     }
@@ -370,7 +374,7 @@ public class DataSource implements Externalizable {
      */
     @SuppressWarnings("UnusedDeclaration")
     public void setRetryPolicy(RetryPolicy plc) {
-        retryPlc = plc;
+        this.retryPlc = plc;
 
         invalidate();
     }
@@ -382,7 +386,7 @@ public class DataSource implements Externalizable {
      */
     @SuppressWarnings("UnusedDeclaration")
     public void setAddressTranslator(AddressTranslator translator) {
-        addrTranslator = translator;
+        this.addrTranslator = translator;
 
         invalidate();
     }
@@ -394,7 +398,7 @@ public class DataSource implements Externalizable {
      */
     @SuppressWarnings("UnusedDeclaration")
     public void setSpeculativeExecutionPolicy(SpeculativeExecutionPolicy plc) {
-        speculativeExecutionPlc = plc;
+        this.speculativeExecutionPlc = plc;
 
         invalidate();
     }
@@ -406,7 +410,7 @@ public class DataSource implements Externalizable {
      */
     @SuppressWarnings("UnusedDeclaration")
     public void setAuthProvider(AuthProvider provider) {
-        authProvider = provider;
+        this.authProvider = provider;
 
         invalidate();
     }
@@ -418,7 +422,7 @@ public class DataSource implements Externalizable {
      */
     @SuppressWarnings("UnusedDeclaration")
     public void setSslOptions(SSLOptions options) {
-        sslOptions = options;
+        this.sslOptions = options;
 
         invalidate();
     }
@@ -430,7 +434,7 @@ public class DataSource implements Externalizable {
      */
     @SuppressWarnings("UnusedDeclaration")
     public void setPoolingOptions(PoolingOptions options) {
-        poolingOptions = options;
+        this.poolingOptions = options;
 
         invalidate();
     }
@@ -442,7 +446,7 @@ public class DataSource implements Externalizable {
      */
     @SuppressWarnings("UnusedDeclaration")
     public void setSocketOptions(SocketOptions options) {
-        sockOptions = options;
+        this.sockOptions = options;
 
         invalidate();
     }
@@ -454,7 +458,24 @@ public class DataSource implements Externalizable {
      */
     @SuppressWarnings("UnusedDeclaration")
     public void setNettyOptions(NettyOptions options) {
-        nettyOptions = options;
+        this.nettyOptions = options;
+
+        invalidate();
+    }
+
+    /**
+     * Sets expiration timeout for Cassandra driver session. Idle sessions that are not
+     * used during this timeout value will be automatically closed and recreated later
+     * on demand.
+     * <p>
+     * If set to {@code 0}, timeout is disabled.
+     * <p>
+     * Default value is {@link #DFLT_SESSION_EXPIRATION_TIMEOUT}.
+     *
+     * @param sessionExpirationTimeout Expiration timeout for Cassandra driver session.
+     */
+    public void setSessionExpirationTimeout(long sessionExpirationTimeout) {
+        this.sessionExpirationTimeout = sessionExpirationTimeout;
 
         invalidate();
     }
@@ -541,7 +562,8 @@ public class DataSource implements Externalizable {
         if (nettyOptions != null)
             builder = builder.withNettyOptions(nettyOptions);
 
-        return ses = new CassandraSessionImpl(builder, fetchSize, readConsistency, writeConsistency, log);
+        return ses = new CassandraSessionImpl(
+            builder, fetchSize, readConsistency, writeConsistency, sessionExpirationTimeout, log);
     }
 
     /** {@inheritDoc} */
@@ -603,6 +625,7 @@ public class DataSource implements Externalizable {
 
     /**
      * Helper method used to serialize class members
+     *
      * @param out the stream to write the object to
      * @param obj the object to be written
      * @throws IOException Includes any I/O exceptions that may occur
@@ -613,10 +636,11 @@ public class DataSource implements Externalizable {
 
     /**
      * Helper method used to deserialize class members
+     *
      * @param in the stream to read data from in order to restore the object
+     * @return deserialized object
      * @throws IOException Includes any I/O exceptions that may occur
      * @throws ClassNotFoundException If the class for an object being restored cannot be found
-     * @return deserialized object
      */
     private Object readObject(ObjectInput in) throws IOException, ClassNotFoundException {
         Object obj = in.readObject();
@@ -627,7 +651,6 @@ public class DataSource implements Externalizable {
      * Parses consistency level provided as string.
      *
      * @param level consistency level string.
-     *
      * @return consistency level.
      */
     private ConsistencyLevel parseConsistencyLevel(String level) {

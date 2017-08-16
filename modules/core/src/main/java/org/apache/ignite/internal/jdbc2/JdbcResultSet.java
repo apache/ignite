@@ -1012,9 +1012,7 @@ public class JdbcResultSet implements ResultSet {
 
     /** {@inheritDoc} */
     @Override public Blob getBlob(int colIdx) throws SQLException {
-        ensureNotClosed();
-
-        throw new SQLFeatureNotSupportedException("SQL-specific types are not supported.");
+        return new JdbcBlob(getBytes(colIdx));
     }
 
     /** {@inheritDoc} */
@@ -1045,9 +1043,7 @@ public class JdbcResultSet implements ResultSet {
 
     /** {@inheritDoc} */
     @Override public Blob getBlob(String colLb) throws SQLException {
-        ensureNotClosed();
-
-        throw new SQLFeatureNotSupportedException("SQL-specific types are not supported.");
+        return new JdbcBlob(getBytes(colLb));
     }
 
     /** {@inheritDoc} */

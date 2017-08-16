@@ -31,10 +31,13 @@ import javax.cache.Cache;
 import javax.cache.integration.CacheLoaderException;
 import javax.cache.integration.CacheWriterException;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreSession;
 import org.apache.ignite.cache.store.CacheStoreSessionListener;
+import org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStore;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
@@ -113,6 +116,9 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
     /** */
     private boolean globalSesLsnrs;
 
+    /** Always keep binary. */
+    protected boolean alwaysKeepBinary;
+
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public void initialize(@Nullable CacheStore cfgStore, Map sesHolders) throws IgniteCheckedException {
@@ -148,6 +154,9 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
         sesHolder = sesHolder0;
 
         locStore = U.hasAnnotation(cfgStore, CacheLocalStore.class);
+
+        if (cfgStore instanceof CacheJdbcPojoStore)
+            alwaysKeepBinary = true;
     }
 
     /** {@inheritDoc} */
@@ -181,6 +190,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
         store.setFlushThreadCount(cfg.getWriteBehindFlushThreadCount());
         store.setFlushFrequency(cfg.getWriteBehindFlushFrequency());
         store.setBatchSize(cfg.getWriteBehindBatchSize());
+        store.setWriteCoalescing(cfg.getWriteBehindCoalescing());
 
         return store;
     }
@@ -338,7 +348,12 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
                 throw new IgniteCheckedException(new CacheLoaderException(e));
             }
             finally {
-                sessionEnd0(tx, threwEx);
+                IgniteInternalTx tx0 = tx;
+
+                if (tx0 != null && (tx0.dht() && tx0.local()))
+                    tx0 = null;
+
+                sessionEnd0(tx0, threwEx);
             }
 
             if (log.isDebugEnabled())
@@ -872,8 +887,6 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
                     for (CacheStoreSessionListener lsnr : sesLsnrs)
                         lsnr.onSessionEnd(locSes, !threwEx);
                 }
-
-                assert !sesHolder.get().ended(store);
 
                 store.sessionEnd(!threwEx);
             }

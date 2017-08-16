@@ -96,15 +96,14 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
                 GridCacheContext ctx,
                 AffinityTopologyVersion topVer,
                 KeyCacheObject key,
-                int hash,
-                CacheObject val
+                int hash
             ) {
                 // Can't hold any locks here - this method is invoked when
                 // holding write-lock on the whole cache map.
                 if (ctx.useOffheapEntry())
-                    return new GridNearOffHeapCacheEntry(ctx, key, hash, val);
+                    return new GridNearOffHeapCacheEntry(ctx, key, hash);
 
-                return new GridNearCacheEntry(ctx, key, hash, val);
+                return new GridNearCacheEntry(ctx, key, hash);
             }
         };
     }
@@ -308,7 +307,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
 
     /** {@inheritDoc} */
     @Override public int size() {
-        return nearEntries().size() + dht().size();
+        return dht().size();
     }
 
     /** {@inheritDoc} */
