@@ -117,6 +117,10 @@ public class IgniteCacheFullTextQueryNodeJoiningSelfTest extends GridCommonAbstr
 
                 Ignite started = startGrid(GRID_CNT);
 
+                //TODO: remove next line when IGNITE-2229 issue will be fixed.
+                // see https://issues.apache.org/jira/browse/IGNITE-2229
+                awaitPartitionMapExchange();
+
                 for (int i = 0; i < 100; i++) {
                     QueryCursor<Cache.Entry<AffinityKey<Integer>, IndexedEntity>> res = started.cache(null)
                         .query(new TextQuery<AffinityKey<Integer>, IndexedEntity>(IndexedEntity.class, "indexed"));

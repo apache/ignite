@@ -569,6 +569,10 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
                         ctx.timeout().removeTimeoutObject(new GridSpiTimeoutObject(obj));
                     }
 
+                    @Override public Map<String, Object> nodeAttributes() {
+                        return ctx.nodeAttributes();
+                    }
+
                     /**
                      * @param e Exception to handle.
                      * @return GridSpiException Converted exception.

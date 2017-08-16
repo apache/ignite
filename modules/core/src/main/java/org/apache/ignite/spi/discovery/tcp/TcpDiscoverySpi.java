@@ -409,6 +409,9 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
     /** */
     private boolean clientReconnectDisabled;
 
+    /** */
+    protected IgniteSpiContext spiCtx;
+
     /** {@inheritDoc} */
     @Override public String getSpiState() {
         return impl.getSpiState();
@@ -1158,8 +1161,15 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
     }
 
     /** {@inheritDoc} */
+    @Override public void checkRingLatency(int maxHops) {
+        impl.checkRingLatency(maxHops);
+    }
+
+    /** {@inheritDoc} */
     @Override protected void onContextInitialized0(IgniteSpiContext spiCtx) throws IgniteSpiException {
         super.onContextInitialized0(spiCtx);
+
+        this.spiCtx = spiCtx;
 
         ctxInitLatch.countDown();
 
@@ -1484,7 +1494,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
         catch (IOException | IgniteCheckedException e) {
             if (X.hasCause(e, SocketTimeoutException.class))
                 LT.warn(log, "Timed out waiting for message to be read (most probably, the reason is " +
-                    "in long GC pauses on remote node) [curTimeout=" + timeout + ']');
+                    "long GC pauses on remote node) [curTimeout=" + timeout +
+                    ", rmtAddr=" + sock.getRemoteSocketAddress() + ", rmtPort=" + sock.getPort() + ']');
 
             throw e;
         }
@@ -1525,8 +1536,9 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
         catch (SocketTimeoutException e) {
             LT.warn(log, "Timed out waiting for message delivery receipt (most probably, the reason is " +
                 "in long GC pauses on remote node; consider tuning GC and increasing 'ackTimeout' " +
-                "configuration property). Will retry to send message with increased timeout. " +
-                "Current timeout: " + timeout + '.');
+                "configuration property). Will retry to send message with increased timeout " +
+                "[currentTimeout=" + timeout + ", rmtAddr=" + sock.getRemoteSocketAddress() +
+                ", rmtPort=" + sock.getPort() + ']');
 
             stats.onAckTimeout();
 
@@ -1934,6 +1946,15 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
     }
 
     /**
+     * Force reconnect to cluster.
+     *
+     * @throws IgniteSpiException If failed.
+     */
+    public void reconnect() throws IgniteSpiException {
+        impl.reconnect();
+    }
+
+    /**
      * <strong>FOR TEST ONLY!!!</strong>
      */
     public int clientWorkerCount() {
@@ -2059,9 +2080,11 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
 
                 LT.warn(log, "Socket write has timed out (consider increasing " +
                     (failureDetectionTimeoutEnabled() ?
-                    "'IgniteConfiguration.failureDetectionTimeout' configuration property) [" +
-                    "failureDetectionTimeout=" + failureDetectionTimeout() + ']' :
-                    "'sockTimeout' configuration property) [sockTimeout=" + sockTimeout + ']'));
+                        "'IgniteConfiguration.failureDetectionTimeout' configuration property) [" +
+                        "failureDetectionTimeout=" + failureDetectionTimeout() :
+                        "'sockTimeout' configuration property) [sockTimeout=" + sockTimeout) +
+                    ", rmtAddr=" + sock.getRemoteSocketAddress() + ", rmtPort=" + sock.getPort() +
+                    ", sockTimeout=" + sockTimeout + ']');
 
                 stats.onSocketTimeout();
             }

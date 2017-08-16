@@ -80,6 +80,7 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.compute.ComputeJobResultPolicy.FAILOVER;
 import static org.apache.ignite.compute.ComputeJobResultPolicy.REDUCE;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_NO_FAILOVER;
+import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SKIP_AUTH;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SUBGRID;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_TIMEOUT;
 
@@ -514,11 +515,12 @@ public class GridClosureProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * @param <R> Type.
      * @param mode Distribution mode.
      * @param job Closure to execute.
      * @param nodes Grid nodes.
      * @param sys If {@code true}, then system pool will be used.
-     * @param <R> Type.
+     * @param skipAuth Skip authorization check.
      * @return Grid future for collection of closure results.
      */
     public <R> IgniteInternalFuture<R> callAsyncNoFailover(
@@ -526,8 +528,8 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         @Nullable Callable<R> job,
         @Nullable Collection<ClusterNode> nodes,
         boolean sys,
-        long timeout
-    ) {
+        long timeout,
+        boolean skipAuth) {
         assert mode != null;
         assert timeout >= 0 : timeout;
 
@@ -542,6 +544,9 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
             ctx.task().setThreadContext(TC_NO_FAILOVER, true);
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
+
+            if (skipAuth)
+                ctx.task().setThreadContext(TC_SKIP_AUTH, true);
 
             if (timeout > 0)
                 ctx.task().setThreadContext(TC_TIMEOUT, timeout);

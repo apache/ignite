@@ -33,6 +33,7 @@ import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.console.demo.AgentDemoUtils;
 import org.apache.ignite.console.demo.model.Car;
@@ -209,6 +210,7 @@ public class DemoCachesLoadService implements Service {
         ccfg.setQueryDetailMetricsSize(10);
         ccfg.setStartSize(100);
         ccfg.setStatisticsEnabled(true);
+        ccfg.setSqlFunctionClasses(SQLFunctions.class);
 
         return ccfg;
     }
@@ -452,5 +454,29 @@ public class DemoCachesLoadService implements Service {
 
         if (ignite.log().isDebugEnabled())
             ignite.log().debug("DEMO: Finished cars population.");
+    }
+
+    /**
+     * Utility class with custom SQL functions.
+     */
+    public static class SQLFunctions {
+        /**
+         * Sleep function to simulate long running queries.
+         *
+         * @param x Time to sleep.
+         * @return Return specified argument.
+         */
+        @QuerySqlFunction
+        public static long sleep(long x) {
+            if (x >= 0)
+                try {
+                    Thread.sleep(x);
+                }
+                catch (InterruptedException ignored) {
+                    // No-op.
+                }
+
+            return x;
+        }
     }
 }

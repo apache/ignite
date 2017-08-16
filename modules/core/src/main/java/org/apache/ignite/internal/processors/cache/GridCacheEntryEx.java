@@ -363,9 +363,8 @@ public interface GridCacheEntryEx {
 
     /**
      * @param ver Expected entry version.
-     * @throws IgniteCheckedException If failed.
      */
-    public void clearReserveForLoad(GridCacheVersion ver) throws IgniteCheckedException;
+    public void clearReserveForLoad(GridCacheVersion ver);
 
     /**
      * Reloads entry from underlying storage.
