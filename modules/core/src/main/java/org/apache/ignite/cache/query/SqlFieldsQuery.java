@@ -272,7 +272,19 @@ public class SqlFieldsQuery extends Query<List<?>> {
     }
 
     /**
-     * @param lazy Lazy flag.
+     * Sets lazy query execution flag.
+     * <p>
+     * By default Ignite attempts to fetch the whole query result set to memory and send it to the client. For small
+     * and medium result sets this provides optimal performance and minimize duration of internal database locks, thus
+     * increasing concurrency.
+     * <p>
+     * If result set is too big to fit in available memory this could lead to excessive GC pauses and even
+     * OutOfMemoryError. Use this flag as a hint for Ignite to fetch result set lazily, thus minimizing memory
+     * consumption at the cost of moderate performance hit.
+     * <p>
+     * Defaults to {@code false}, meaning that the whole result set is fetched to memory eagerly.
+     *
+     * @param lazy Lazy query execution flag.
      * @return {@code this} For chaining.
      */
     public SqlFieldsQuery setLazy(boolean lazy) {
@@ -282,6 +294,10 @@ public class SqlFieldsQuery extends Query<List<?>> {
     }
 
     /**
+     * Gets lazy query execution flag.
+     * <p>
+     * See {@link #setLazy(boolean)} for more information.
+     *
      * @return Lazy flag.
      */
     public boolean isLazy() {
