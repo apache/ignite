@@ -17,71 +17,57 @@
 
 package org.apache.ignite.internal.processors.odbc.jdbc;
 
+import java.util.Collection;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * JDBC query fetch request.
+ * JDBC tables metadata result.
  */
-public class JdbcQueryFetchRequest extends JdbcRequest {
-    /** Query ID. */
-    private long queryId;
-
-    /** Fetch size. */
-    private int pageSize;
+public class JdbcMetaSchemasResult extends JdbcResult {
+    /** Found schemas. */
+    private Collection<String> schemas;
 
     /**
-     * Constructor.
+     * Default constructor is used for deserialization.
      */
-    JdbcQueryFetchRequest() {
-        super(QRY_FETCH);
+    JdbcMetaSchemasResult() {
+        super(META_SCHEMAS);
     }
 
     /**
-     * @param queryId Query ID.
-     * @param pageSize Fetch size.
+     * @param schemas Found schemas.
      */
-    public JdbcQueryFetchRequest(long queryId, int pageSize) {
-        super(QRY_FETCH);
-
-        this.queryId = queryId;
-        this.pageSize = pageSize;
-    }
-
-    /**
-     * @return Query ID.
-     */
-    public long queryId() {
-        return queryId;
-    }
-
-    /**
-     * @return Fetch page size.
-     */
-    public int pageSize() {
-        return pageSize;
+    JdbcMetaSchemasResult(Collection<String> schemas) {
+        super(META_SCHEMAS);
+        this.schemas = schemas;
     }
 
     /** {@inheritDoc} */
     @Override public void writeBinary(BinaryWriterExImpl writer) throws BinaryObjectException {
         super.writeBinary(writer);
 
-        writer.writeLong(queryId);
-        writer.writeInt(pageSize);
+        JdbcUtils.writeStringCollection(writer, schemas);
     }
 
     /** {@inheritDoc} */
     @Override public void readBinary(BinaryReaderExImpl reader) throws BinaryObjectException {
         super.readBinary(reader);
 
-        queryId = reader.readLong();
-        pageSize = reader.readInt();
-   }
+        schemas = JdbcUtils.readStringList(reader);
+    }
+
+    /**
+     * @return Found schemas.
+     */
+    public Collection<String> schemas() {
+        return schemas;
+    }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(JdbcQueryFetchRequest.class, this);
+        return S.toString(JdbcMetaSchemasResult.class, this);
     }
 }

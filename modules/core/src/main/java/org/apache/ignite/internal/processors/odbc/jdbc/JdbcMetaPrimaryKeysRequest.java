@@ -17,59 +17,52 @@
 
 package org.apache.ignite.internal.processors.odbc.jdbc;
 
-import java.util.ArrayList;
-import java.util.List;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
-import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * JDBC batch execute request.
+ * JDBC get primary keys metadata request.
  */
-public class JdbcBatchExecuteRequest extends JdbcRequest {
-    /** Schema name. */
+public class JdbcMetaPrimaryKeysRequest extends JdbcRequest {
+    /** Schema name pattern. */
     private String schemaName;
 
-    /** Sql query. */
-    @GridToStringInclude(sensitive = true)
-    private List<JdbcQuery> queries;
+    /** Table name pattern. */
+    private String tblName;
 
     /**
-     * Default constructor.
+     * Default constructor is used for deserialization.
      */
-    public JdbcBatchExecuteRequest() {
-        super(BATCH_EXEC);
+    JdbcMetaPrimaryKeysRequest() {
+        super(META_PRIMARY_KEYS);
     }
 
     /**
-     * @param schemaName Schema name.
-     * @param queries Queries.
+     * @param schemaName Cache name.
+     * @param tblName Table name.
      */
-    public JdbcBatchExecuteRequest(String schemaName, List<JdbcQuery> queries) {
-        super(BATCH_EXEC);
-
-        assert !F.isEmpty(queries);
+    public JdbcMetaPrimaryKeysRequest(String schemaName, String tblName) {
+        super(META_PRIMARY_KEYS);
 
         this.schemaName = schemaName;
-        this.queries = queries;
+        this.tblName = tblName;
     }
 
     /**
-     * @return Schema name.
+     * @return Schema name pattern.
      */
     @Nullable public String schemaName() {
         return schemaName;
     }
 
     /**
-     * @return Queries.
+     * @return Table name pattern.
      */
-    public List<JdbcQuery> queries() {
-        return queries;
+    public String tableName() {
+        return tblName;
     }
 
     /** {@inheritDoc} */
@@ -77,10 +70,7 @@ public class JdbcBatchExecuteRequest extends JdbcRequest {
         super.writeBinary(writer);
 
         writer.writeString(schemaName);
-        writer.writeInt(queries.size());
-
-        for (JdbcQuery q : queries)
-            q.writeBinary(writer);
+        writer.writeString(tblName);
     }
 
     /** {@inheritDoc} */
@@ -88,22 +78,11 @@ public class JdbcBatchExecuteRequest extends JdbcRequest {
         super.readBinary(reader);
 
         schemaName = reader.readString();
-
-        int n = reader.readInt();
-
-        queries = new ArrayList<>(n);
-
-        for (int i = 0; i < n; ++i) {
-            JdbcQuery qry = new JdbcQuery();
-
-            qry.readBinary(reader);
-
-            queries.add(qry);
-        }
+        tblName = reader.readString();
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(JdbcBatchExecuteRequest.class, this);
+        return S.toString(JdbcMetaPrimaryKeysRequest.class, this);
     }
 }
