@@ -46,8 +46,8 @@ public class JdbcThinStatement implements Statement {
     /** Default queryPage size. */
     private static final int DFLT_PAGE_SIZE = SqlQuery.DFLT_PAGE_SIZE;
 
-    /** Ignite endpoint and I/O protocol implementation. */
-    private JdbcThinConnection conn;
+    /** JDBC Connection implementation. */
+    protected JdbcThinConnection conn;
 
     /** Closed flag. */
     private boolean closed;
