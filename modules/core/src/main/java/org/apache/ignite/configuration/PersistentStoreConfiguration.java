@@ -47,6 +47,9 @@ public class PersistentStoreConfiguration implements Serializable {
     /** Default number of checkpointing threads. */
     public static final int DFLT_CHECKPOINTING_THREADS = 1;
 
+    /** Default checkpoint write order. */
+    public static final CheckpointWriteOrder DFLT_CHECKPOINT_WRITE_ORDER = CheckpointWriteOrder.RANDOM;
+
     /** Default number of checkpoints to be kept in WAL after checkpoint is finished */
     public static final int DFLT_WAL_HISTORY_SIZE = 20;
 
@@ -94,6 +97,9 @@ public class PersistentStoreConfiguration implements Serializable {
 
     /** */
     private int checkpointingThreads = DFLT_CHECKPOINTING_THREADS;
+
+    /** Checkpoint write order. */
+    private CheckpointWriteOrder checkpointWriteOrder = DFLT_CHECKPOINT_WRITE_ORDER;
 
     /** Number of checkpoints to keep */
     private int walHistSize = DFLT_WAL_HISTORY_SIZE;
@@ -585,6 +591,26 @@ public class PersistentStoreConfiguration implements Serializable {
      */
     public long getWalAutoArchiveAfterInactivity() {
         return walAutoArchiveAfterInactivity;
+    }
+
+    /**
+     * This property defines order of writing pages to disk storage during checkpoint.
+     *
+     * @return Checkpoint write order.
+     */
+    public CheckpointWriteOrder getCheckpointWriteOrder() {
+        return checkpointWriteOrder;
+    }
+
+    /**
+     * This property defines order of writing pages to disk storage during checkpoint.
+     *
+     * @param checkpointWriteOrder Checkpoint write order.
+     */
+    public PersistentStoreConfiguration setCheckpointWriteOrder(CheckpointWriteOrder checkpointWriteOrder) {
+        this.checkpointWriteOrder = checkpointWriteOrder;
+
+        return this;
     }
 
     /** {@inheritDoc} */
