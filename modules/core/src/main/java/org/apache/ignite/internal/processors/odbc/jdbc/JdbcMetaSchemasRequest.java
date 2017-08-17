@@ -17,59 +17,39 @@
 
 package org.apache.ignite.internal.processors.odbc.jdbc;
 
-import java.util.ArrayList;
-import java.util.List;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
-import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.jetbrains.annotations.Nullable;
 
 /**
- * JDBC batch execute request.
+ * JDBC tables metadata request.
  */
-public class JdbcBatchExecuteRequest extends JdbcRequest {
-    /** Schema name. */
+public class JdbcMetaSchemasRequest extends JdbcRequest {
+    /** Schema search pattern. */
     private String schemaName;
 
-    /** Sql query. */
-    @GridToStringInclude(sensitive = true)
-    private List<JdbcQuery> queries;
-
     /**
-     * Default constructor.
+     * Default constructor is used for deserialization.
      */
-    public JdbcBatchExecuteRequest() {
-        super(BATCH_EXEC);
+    JdbcMetaSchemasRequest() {
+        super(META_SCHEMAS);
     }
 
     /**
-     * @param schemaName Schema name.
-     * @param queries Queries.
+     * @param schemaName Schema search pattern.
      */
-    public JdbcBatchExecuteRequest(String schemaName, List<JdbcQuery> queries) {
-        super(BATCH_EXEC);
-
-        assert !F.isEmpty(queries);
+    public JdbcMetaSchemasRequest(String schemaName) {
+        super(META_SCHEMAS);
 
         this.schemaName = schemaName;
-        this.queries = queries;
     }
 
     /**
-     * @return Schema name.
+     * @return Schema search pattern.
      */
-    @Nullable public String schemaName() {
+    public String schemaName() {
         return schemaName;
-    }
-
-    /**
-     * @return Queries.
-     */
-    public List<JdbcQuery> queries() {
-        return queries;
     }
 
     /** {@inheritDoc} */
@@ -77,33 +57,17 @@ public class JdbcBatchExecuteRequest extends JdbcRequest {
         super.writeBinary(writer);
 
         writer.writeString(schemaName);
-        writer.writeInt(queries.size());
-
-        for (JdbcQuery q : queries)
-            q.writeBinary(writer);
     }
 
     /** {@inheritDoc} */
     @Override public void readBinary(BinaryReaderExImpl reader) throws BinaryObjectException {
         super.readBinary(reader);
 
-        schemaName = reader.readString();
-
-        int n = reader.readInt();
-
-        queries = new ArrayList<>(n);
-
-        for (int i = 0; i < n; ++i) {
-            JdbcQuery qry = new JdbcQuery();
-
-            qry.readBinary(reader);
-
-            queries.add(qry);
-        }
+        this.schemaName = reader.readString();
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(JdbcBatchExecuteRequest.class, this);
+        return S.toString(JdbcMetaSchemasRequest.class, this);
     }
 }
