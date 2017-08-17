@@ -344,7 +344,7 @@ public class MetadataStorage implements MetaStore {
          */
         private MetaStoreInnerIO(final int ver) {
             // name bytes and 1 byte for length, 8 bytes pageId
-            super(T_METASTORE_INNER, ver, false, MAX_IDX_NAME_LEN + 1 + 8);
+            super(T_METASTORE_INNER, ver, false, 768 + 1 + 8);
         }
 
         /** {@inheritDoc} */
@@ -385,7 +385,7 @@ public class MetadataStorage implements MetaStore {
          */
         private MetaStoreLeafIO(final int ver) {
             // 4 byte cache ID, UTF-16 symbols and 1 byte for length, 8 bytes pageId
-            super(T_METASTORE_LEAF, ver, MAX_IDX_NAME_LEN + 1 + 8);
+            super(T_METASTORE_LEAF, ver, 768 + 1 + 8);
         }
 
         /** {@inheritDoc} */
