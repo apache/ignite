@@ -72,7 +72,7 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
 
     /**
      * @param memPlcCfg DataRegionConfiguration.
-    */
+     */
     public DataRegionMetricsImpl(DataRegionConfiguration memPlcCfg) {
         this(memPlcCfg, null);
     }
