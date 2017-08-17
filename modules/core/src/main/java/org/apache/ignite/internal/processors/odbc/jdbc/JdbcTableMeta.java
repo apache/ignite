@@ -17,93 +17,66 @@
 
 package org.apache.ignite.internal.processors.odbc.jdbc;
 
-import java.util.ArrayList;
-import java.util.List;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
-import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.jetbrains.annotations.Nullable;
 
 /**
- * JDBC batch execute request.
+ * JDBC table metadata.
  */
-public class JdbcBatchExecuteRequest extends JdbcRequest {
+public class JdbcTableMeta implements JdbcRawBinarylizable {
     /** Schema name. */
     private String schemaName;
 
-    /** Sql query. */
-    @GridToStringInclude(sensitive = true)
-    private List<JdbcQuery> queries;
+    /** Table name. */
+    private String tblName;
 
     /**
-     * Default constructor.
+     * Default constructor is used for deserialization.
      */
-    public JdbcBatchExecuteRequest() {
-        super(BATCH_EXEC);
+    JdbcTableMeta() {
+        // No-op.
     }
 
     /**
      * @param schemaName Schema name.
-     * @param queries Queries.
+     * @param tblName Table name.
+     * @param tblType Table type.
      */
-    public JdbcBatchExecuteRequest(String schemaName, List<JdbcQuery> queries) {
-        super(BATCH_EXEC);
-
-        assert !F.isEmpty(queries);
-
+    JdbcTableMeta(String schemaName, String tblName, String tblType) {
         this.schemaName = schemaName;
-        this.queries = queries;
+        this.tblName = tblName;
     }
 
     /**
      * @return Schema name.
      */
-    @Nullable public String schemaName() {
+    public String schemaName() {
         return schemaName;
     }
 
     /**
-     * @return Queries.
+     * @return Table name.
      */
-    public List<JdbcQuery> queries() {
-        return queries;
+    public String tableName() {
+        return tblName;
     }
 
     /** {@inheritDoc} */
     @Override public void writeBinary(BinaryWriterExImpl writer) throws BinaryObjectException {
-        super.writeBinary(writer);
-
         writer.writeString(schemaName);
-        writer.writeInt(queries.size());
-
-        for (JdbcQuery q : queries)
-            q.writeBinary(writer);
+        writer.writeString(tblName);
     }
 
     /** {@inheritDoc} */
     @Override public void readBinary(BinaryReaderExImpl reader) throws BinaryObjectException {
-        super.readBinary(reader);
-
         schemaName = reader.readString();
-
-        int n = reader.readInt();
-
-        queries = new ArrayList<>(n);
-
-        for (int i = 0; i < n; ++i) {
-            JdbcQuery qry = new JdbcQuery();
-
-            qry.readBinary(reader);
-
-            queries.add(qry);
-        }
+        tblName = reader.readString();
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(JdbcBatchExecuteRequest.class, this);
+        return S.toString(JdbcTableMeta.class, this);
     }
 }
