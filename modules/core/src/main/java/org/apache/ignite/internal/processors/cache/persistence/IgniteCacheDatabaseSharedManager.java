@@ -72,6 +72,9 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     /** MemoryPolicyConfiguration name reserved for internal caches. */
     static final String SYSTEM_MEMORY_POLICY_NAME = "sysMemPlc";
 
+    /** MemoryPolicyConfiguration name reserved for meta store. */
+    static final String METASTORE_MEMORY_POLICY_NAME = "metastoreMemPlc";
+
     /** Minimum size of memory chunk */
     private static final long MIN_PAGE_MEMORY_SIZE = 10 * 1024 * 1024;
 
@@ -210,8 +213,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
         if (memPlcsCfgs == null) {
             //reserve place for default and system memory policies
-            memPlcMap = U.newHashMap(2);
-            memMetricsMap = U.newHashMap(2);
+            memPlcMap = U.newHashMap(3);
+            memMetricsMap = U.newHashMap(3);
 
             addMemoryPolicy(
                 memCfg,
@@ -226,8 +229,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
             if (DFLT_MEM_PLC_DEFAULT_NAME.equals(dfltMemPlcName) && !hasCustomDefaultMemoryPolicy(memPlcsCfgs)) {
                 //reserve additional place for default and system memory policies
-                memPlcMap = U.newHashMap(memPlcsCfgs.length + 2);
-                memMetricsMap = U.newHashMap(memPlcsCfgs.length + 2);
+                memPlcMap = U.newHashMap(memPlcsCfgs.length + 3);
+                memMetricsMap = U.newHashMap(memPlcsCfgs.length + 3);
 
                 addMemoryPolicy(
                     memCfg,
@@ -254,6 +257,12 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
                 memCfg.getSystemCacheMaxSize()
             ),
             SYSTEM_MEMORY_POLICY_NAME
+        );
+
+        addMemoryPolicy(
+            memCfg,
+            createStoreMemoryPolicy(memCfg),
+            METASTORE_MEMORY_POLICY_NAME
         );
     }
 
@@ -312,6 +321,19 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         res.setName(SYSTEM_MEMORY_POLICY_NAME);
         res.setInitialSize(sysCacheInitSize);
         res.setMaxSize(sysCacheMaxSize);
+
+        return res;
+    }
+
+    /**
+     * @return {@link MemoryPolicyConfiguration configuration} of MemoryPolicy for system cache.
+     */
+    protected MemoryPolicyConfiguration createStoreMemoryPolicy(MemoryConfiguration memCfg) {
+        MemoryPolicyConfiguration res = new MemoryPolicyConfiguration();
+
+        res.setName(METASTORE_MEMORY_POLICY_NAME);
+        res.setInitialSize(memCfg.getSystemCacheInitialSize());
+        res.setMaxSize(memCfg.getSystemCacheMaxSize());
 
         return res;
     }
@@ -870,7 +892,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @param plc Memory Policy Configuration.
      * @param pageMem Page memory.
      */
-    private PageEvictionTracker createPageEvictionTracker(MemoryPolicyConfiguration plc, PageMemory pageMem) {
+    protected PageEvictionTracker createPageEvictionTracker(MemoryPolicyConfiguration plc, PageMemory pageMem) {
         if (plc.getPageEvictionMode() == DataPageEvictionMode.DISABLED)
             return new NoOpPageEvictionTracker();
 

@@ -15,36 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.persistence.freelist;
-
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteLogger;
+package org.apache.ignite.internal.processors.cache.persistence;
 
 /**
+ *
  */
-public interface FreeList<T> {
+public interface Storeable {
     /**
-     * @param row Row.
-     * @throws IgniteCheckedException If failed.
+     * @param link Link for this row.
      */
-    public void insertDataRow(T row) throws IgniteCheckedException;
+    public void link(long link);
 
     /**
-     * @param link Row link.
-     * @param row New row data.
-     * @return {@code True} if was able to update row.
-     * @throws IgniteCheckedException If failed.
+     * @return Link for this row.
      */
-    public boolean updateDataRow(long link, T row) throws IgniteCheckedException;
+    public long link();
 
     /**
-     * @param link Row link.
-     * @throws IgniteCheckedException If failed.
+     * @return Partition.
      */
-    public void removeDataRowByLink(long link) throws IgniteCheckedException;
-
-    /**
-     * @param log Logger.
-     */
-    public void dumpStatistics(IgniteLogger log);
+    public int partition();
 }
