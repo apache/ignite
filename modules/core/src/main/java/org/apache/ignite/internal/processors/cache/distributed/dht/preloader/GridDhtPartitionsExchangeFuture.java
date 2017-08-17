@@ -33,8 +33,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.cache.CacheInitializationException;
 import org.apache.ignite.internal.IgniteNeedReconnectException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
@@ -53,6 +51,7 @@ import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
 import org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessage;
+import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -200,11 +199,11 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     /** */
     private boolean centralizedAff;
 
-    /** Change global state exception. */
-    private Exception changeGlobalStateExc;
+    /** Exception that was thrown during init phase on local node. */
+    private IgniteCheckedException exchangeLocalException;
 
-    /** Change global state exceptions. */
-    private final Map<UUID, Exception> changeGlobalStateExceptions = new ConcurrentHashMap8<>();
+    /** Exchange exceptions from all participating nodes. */
+    private final Map<UUID, Exception> exchangeGlobalExceptions = new ConcurrentHashMap8<>();
 
     /** Forced Rebalance future. */
     private GridCompoundFuture<Boolean, Boolean> forcedRebFut;
@@ -544,18 +543,25 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         catch (IgniteNeedReconnectException e) {
             onDone(e);
         }
-        catch (CacheInitializationException e) {
-            U.error(log, "Failed to initialize cache. [cacheName=" + e.cacheName() + ']', e);
+        catch (Exception e) {
+            if (reconnectOnError(e)) {
+                onDone(new IgniteNeedReconnectException(cctx.localNode(), e));
 
-            changeGlobalStateExc = e;
+                return;
+            }
 
-            changeGlobalStateExceptions.put(cctx.localNode().id(), e);
+            U.error(log, "Failed to reinitialize local partitions (preloading will be stopped): " + exchId, e);
 
-            if (cctx.kernalContext().clientNode()) {
+            if (cctx.kernalContext().clientNode() || !isRollbackSupported()) {
                 onDone(e);
 
                 return;
             }
+
+            exchangeLocalException = new IgniteCheckedException(
+                "Failed to initialize exchange. Node Id: " + cctx.localNodeId(), e);
+
+            exchangeGlobalExceptions.put(cctx.localNodeId(), exchangeLocalException);
 
             if (crd.isLocal()) {
                 boolean isRemainingEmpty = false;
@@ -1013,8 +1019,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             clientOnlyExchange,
             true);
 
-        if (changeGlobalStateExc != null) {
-            m.setError(changeGlobalStateExc);
+        if (exchangeLocalException != null) {
+            m.setError(exchangeLocalException);
         }
 
         if (log.isDebugEnabled())
@@ -1042,8 +1048,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             last != null ? last : cctx.versions().last(),
             compress);
 
-        if (!F.isEmpty(changeGlobalStateExceptions))
-            m.setErrorsMap(changeGlobalStateExceptions);
+        if (!F.isEmpty(exchangeGlobalExceptions))
+            m.setErrorsMap(exchangeGlobalExceptions);
 
         return m;
     }
@@ -1181,8 +1187,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         fullMsgs.clear();
         crd = null;
         partReleaseFut = null;
-        changeGlobalStateExc = null;
-        changeGlobalStateExceptions.clear();
+        exchangeLocalException = null;
+        exchangeGlobalExceptions.clear();
     }
 
     /**
@@ -1260,7 +1266,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                     pendingSingleUpdates++;
 
                     if (msg.getError() != null)
-                        changeGlobalStateExceptions.put(node.id(), msg.getError());
+                        exchangeGlobalExceptions.put(node.id(), msg.getError());
 
                     allReceived = remaining.isEmpty();
                 }
@@ -1330,21 +1336,63 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         }
     }
 
-    private void rollbackCreatedCaches() {
-        assert !F.isEmpty(reqs): "nothing to rollback";
+    private IgniteCheckedException createExchangeException(Map<UUID, Exception> globalExceptions) {
+        IgniteCheckedException ex;
 
-        for (DynamicCacheChangeRequest req : reqs) {
-            assert req.start();
+        if (exchangeLocalException != null)
+            ex = exchangeLocalException;
+        else
+            ex = new IgniteCheckedException();
 
-            DynamicCacheChangeRequest stopRequest = new DynamicCacheChangeRequest(req.cacheName(), cctx.localNodeId());
+        for (Map.Entry<UUID, Exception> entry : exchangeGlobalExceptions.entrySet()) {
+            // avoid self-suppression
+            if (ex != entry.getValue())
+                ex.addSuppressed(entry.getValue());
+        }
 
-            stopRequest.stop(true);
+        return ex;
+    }
 
-            stopRequest.deploymentId(req.deploymentId());
+    private boolean isRollbackSupported() {
+        boolean rollbackSupported = false;
 
-            cctx.cache().stopGateway(stopRequest);
+        // Currently the rollback process is supported for dynamically started caches.
+        if (discoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT && !F.isEmpty(reqs)) {
+            for (DynamicCacheChangeRequest req : reqs) {
+                if (req.start()) {
+                    rollbackSupported = true;
 
-            cctx.cache().prepareCacheStop(stopRequest, true);
+                    break;
+                }
+            }
+        }
+
+        return rollbackSupported;
+    }
+
+    private void rollbackExchange() {
+        if (discoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT && !F.isEmpty(reqs)) {
+            for (DynamicCacheChangeRequest req : reqs) {
+                if (req.start()) {
+                    DynamicCacheChangeRequest stopRequest = new DynamicCacheChangeRequest(req.cacheName(), cctx.localNodeId());
+
+                    stopRequest.stop(true);
+
+                    stopRequest.deploymentId(req.deploymentId());
+
+                    Collection<DynamicCacheChangeRequest> requests = Collections.singletonList(stopRequest);
+
+                    // cleanup GridCacheProcessor and DiscoveryManager
+                    cctx.cache().onCustomEvent(new DynamicCacheChangeBatch(requests), topologyVersion());
+
+                    cctx.cache().stopGateway(stopRequest);
+
+                    cctx.cache().prepareCacheStop(stopRequest, true);
+
+                    // cleanup CacheAffinitySharedManager
+                    cctx.affinity().forceCloseCache(this, crd.isLocal(), Collections.singletonList(stopRequest));
+                }
+            }
         }
     }
 
@@ -1355,8 +1403,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         try {
             assert crd.isLocal();
 
-            if (!F.isEmpty(reqs) && !F.isEmpty(changeGlobalStateExceptions)) {
-                rollbackCreatedCaches();
+            if (!F.isEmpty(exchangeGlobalExceptions) && isRollbackSupported()) {
+                rollbackExchange();
             }
 
             if (!crd.equals(discoCache.serverNodes().get(0))) {
@@ -1400,17 +1448,10 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 if (!nodes.isEmpty())
                     sendAllPartitions(nodes);
 
-                Exception err = null;
+                IgniteCheckedException err = null;
 
-                if (!F.isEmpty(changeGlobalStateExceptions)) {
-                    if (changeGlobalStateExc != null)
-                        err = changeGlobalStateExc;
-                    else
-                        err = new IgniteException();
-
-                    for (Map.Entry<UUID, Exception> entry : changeGlobalStateExceptions.entrySet())
-                        err.addSuppressed(entry.getValue());
-                }
+                if (!F.isEmpty(exchangeGlobalExceptions))
+                    err = createExchangeException(exchangeGlobalExceptions);
 
                 onDone(exchangeId().topologyVersion(), err);
             }
@@ -1528,19 +1569,13 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
         updatePartitionFullMap(msg);
 
-        Exception err = null;
+        IgniteCheckedException err = null;
 
-        if (changeGlobalStateExc != null || !F.isEmpty(msg.getErrorsMap())) {
-            if (changeGlobalStateExc != null)
-                err = changeGlobalStateExc;
-            else
-                err = new IgniteException();
+        if (exchangeLocalException != null || !F.isEmpty(msg.getErrorsMap())) {
+            err = createExchangeException(msg.getErrorsMap());
 
-            for (Map.Entry<UUID, Exception> entry : msg.getErrorsMap().entrySet())
-                err.addSuppressed(entry.getValue());
-
-            if (!F.isEmpty(reqs))
-                rollbackCreatedCaches();
+            if (isRollbackSupported())
+                rollbackExchange();
         }
 
         onDone(exchId.topologyVersion(), err);

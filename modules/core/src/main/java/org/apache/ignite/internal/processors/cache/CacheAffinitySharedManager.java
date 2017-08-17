@@ -29,7 +29,6 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cache.CacheInitializationException;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -323,6 +322,71 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         }
     }
 
+    public void forceCloseCache(final GridDhtPartitionsExchangeFuture fut,
+        boolean crd,
+        Collection<DynamicCacheChangeRequest> reqs) {
+
+        assert !F.isEmpty(reqs) : fut;
+
+        for (DynamicCacheChangeRequest req : reqs) {
+
+            assert req.stop() : req;
+
+            Integer cacheId = CU.cacheId(req.cacheName());
+
+            registeredCaches.remove(cacheId);
+        }
+
+        Set<Integer> stoppedCaches = null;
+
+        for (DynamicCacheChangeRequest req : reqs) {
+            Integer cacheId = CU.cacheId(req.cacheName());
+
+            cctx.cache().blockGateway(req);
+
+            if (crd) {
+                CacheHolder cache = caches.remove(cacheId);
+
+                if (cache != null) {
+                    if (stoppedCaches == null)
+                        stoppedCaches = new HashSet<>();
+
+                    stoppedCaches.add(cache.cacheId());
+
+                    cctx.io().removeHandler(cacheId, GridDhtAffinityAssignmentResponse.class);
+                }
+            }
+        }
+
+        if (stoppedCaches != null) {
+            boolean notify = false;
+
+            synchronized (mux) {
+                if (waitInfo != null) {
+                    for (Integer cacheId : stoppedCaches) {
+                        boolean rmv =  waitInfo.waitCaches.remove(cacheId) != null;
+
+                        if (rmv) {
+                            notify = true;
+
+                            waitInfo.assignments.remove(cacheId);
+                        }
+                    }
+                }
+            }
+
+            if (notify) {
+                final AffinityTopologyVersion topVer = affCalcVer;
+
+                cctx.kernalContext().closure().runLocalSafe(new Runnable() {
+                    @Override public void run() {
+                        onCacheStopped(topVer);
+                    }
+                });
+            }
+        }
+    }
+
     /**
      * Called on exchange initiated for cache start/stop request.
      *
@@ -420,7 +484,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
                     cctx.cache().forceCloseCache(fut.topologyVersion(), req, e);
 
-                    throw new CacheInitializationException("Failed to initialize cache.", req.cacheName(), e);
+                    throw e;
                 }
             }
             else if (req.stop() || req.close()) {

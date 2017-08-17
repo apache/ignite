@@ -339,8 +339,20 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
         for (int g = 0; g < nodeCount(); g++) {
             IgniteEx kernal0 = grid(g);
 
-            for (IgniteInternalFuture f : kernal0.context().cache().context().exchange().exchangeFutures())
-                f.get();
+            /**
+             * GridCachePartitionExchangeManager#exchangeFutures() returns a list of futures,
+             * that contains already completed exchange futures (successfully completed or not).
+             */
+            for (IgniteInternalFuture f : kernal0.context().cache().context().exchange().exchangeFutures()) {
+                if (!f.isDone()) {
+                    try {
+                        f.get();
+                    }
+                    catch (Exception e) {
+                        // No-op.
+                    }
+                }
+            }
 
             info("Getting cache for node: " + g);
 
@@ -365,8 +377,16 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
 
             final int idx = g;
 
-            for (IgniteInternalFuture f : kernal0.context().cache().context().exchange().exchangeFutures())
-                f.get();
+            for (IgniteInternalFuture f : kernal0.context().cache().context().exchange().exchangeFutures()) {
+                if (!f.isDone()) {
+                    try {
+                        f.get();
+                    }
+                    catch (Exception e) {
+                        // No-op.
+                    }
+                }
+            }
 
             assertNull(kernal0.cache(DYNAMIC_CACHE_NAME));
 
@@ -402,8 +422,16 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
         for (int g = 0; g < nodeCount(); g++) {
             IgniteEx kernal0 = grid(g);
 
-            for (IgniteInternalFuture f : kernal0.context().cache().context().exchange().exchangeFutures())
-                f.get();
+            for (IgniteInternalFuture f : kernal0.context().cache().context().exchange().exchangeFutures()) {
+                if (!f.isDone()) {
+                    try {
+                        f.get();
+                    }
+                    catch (Exception e) {
+                        // No-op.
+                    }
+                }
+            }
 
             info("Getting cache for node: " + g);
 
@@ -445,8 +473,16 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
                 final int idx = g * nodeCount() + i;
                 final int expVal = i;
 
-                for (IgniteInternalFuture f : kernal0.context().cache().context().exchange().exchangeFutures())
-                    f.get();
+                for (IgniteInternalFuture f : kernal0.context().cache().context().exchange().exchangeFutures()) {
+                    if (!f.isDone()) {
+                        try {
+                            f.get();
+                        }
+                        catch (Exception e) {
+                            // No-op.
+                        }
+                    }
+                }
 
                 assertNull(kernal0.cache(DYNAMIC_CACHE_NAME));
 
@@ -500,8 +536,16 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
             for (int g = 0; g < nodeCount() + 2; g++) {
                 final IgniteKernal kernal0 = (IgniteKernal)grid(g);
 
-                for (IgniteInternalFuture f : kernal0.context().cache().context().exchange().exchangeFutures())
-                    f.get();
+                for (IgniteInternalFuture f : kernal0.context().cache().context().exchange().exchangeFutures()) {
+                    if (!f.isDone()) {
+                        try {
+                            f.get();
+                        }
+                        catch (Exception e) {
+                            // No-op.
+                        }
+                    }
+                }
 
                 assertNull(kernal0.cache(DYNAMIC_CACHE_NAME));
             }
@@ -556,8 +600,16 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
             for (int g = 0; g < nodeCount() + 2; g++) {
                 final IgniteKernal kernal0 = (IgniteKernal)grid(g);
 
-                for (IgniteInternalFuture f : kernal0.context().cache().context().exchange().exchangeFutures())
-                    f.get();
+                for (IgniteInternalFuture f : kernal0.context().cache().context().exchange().exchangeFutures()) {
+                    if (!f.isDone()) {
+                        try {
+                            f.get();
+                        }
+                        catch (Exception e) {
+                            // No-op.
+                        }
+                    }
+                }
 
                 if (g < nodeCount())
                     assertNotNull(grid(g).cache(DYNAMIC_CACHE_NAME));
@@ -1344,6 +1396,8 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
 
                     log.info("Stopped cache: " + i);
                 }
+
+                ignite.destroyCache(ccfg.getName());
 
                 return null;
             }
