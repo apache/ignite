@@ -1190,10 +1190,11 @@ public class BinaryContext {
             res = marshCtx.registerClassName(JAVA_ID, typeId, clsName);
         }
         catch (DuplicateTypeIdException dupEx) {
-            // Ignore if full class name is already registered for the type
+            // Ignore if trying to register mapped type name of the already registered class name and vise versa
             BinaryInternalMapper mapper = userTypeMapper(typeId);
+            String oldName = dupEx.getRegisteredClassName();
 
-            if (!mapper.typeName(dupEx.getRegisteredClassName()).equals(clsName))
+            if (!(mapper.typeName(oldName).equals(clsName) || mapper.typeName(clsName).equals(oldName)))
                 e = dupEx;
         }
         catch (IgniteCheckedException igniteEx) {
