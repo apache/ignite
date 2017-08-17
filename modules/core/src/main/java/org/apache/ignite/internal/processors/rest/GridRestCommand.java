@@ -111,6 +111,9 @@ public enum GridRestCommand {
     /** Decrement. */
     ATOMIC_DECREMENT("decr"),
 
+    /** Memory metrics. */
+    MEMORY_METRICS("memory"),
+
     /** Grid topology. */
     TOPOLOGY("top"),
 

@@ -1687,6 +1687,18 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
     /**
      * @throws Exception If failed.
      */
+    public void testMemoryMetrics() throws Exception {
+        String ret = content(F.asMap("cmd", GridRestCommand.MEMORY_METRICS.key()));
+
+        // check response.
+        jsonResponse(ret);
+
+        info(GridRestCommand.MEMORY_METRICS.key() + " command result: " + ret);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testQueryArgs() throws Exception {
         String qry = "salary > ? and salary <= ?";
 

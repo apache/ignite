@@ -533,6 +533,7 @@ public class GridJettyRestHandler extends AbstractHandler {
                 break;
             }
 
+            case MEMORY_METRICS:
             case NAME:
             case VERSION: {
                 restReq = new GridRestRequest();

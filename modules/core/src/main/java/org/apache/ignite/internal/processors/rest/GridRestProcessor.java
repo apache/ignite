@@ -43,10 +43,11 @@ import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientTaskResultBean;
 import org.apache.ignite.internal.processors.rest.handlers.GridRestCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.cache.GridCacheCommandHandler;
+import org.apache.ignite.internal.processors.rest.handlers.cluster.GridChangeStateCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.datastructures.DataStructuresCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.log.GridLogCommandHandler;
+import org.apache.ignite.internal.processors.rest.handlers.memory.GridMemoryMetricsCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.query.QueryCommandHandler;
-import org.apache.ignite.internal.processors.rest.handlers.cluster.GridChangeStateCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.task.GridTaskCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.top.GridTopologyCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.version.GridVersionCommandHandler;
@@ -67,8 +68,6 @@ import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.internal.util.worker.GridWorkerFuture;
-import org.apache.ignite.internal.visor.compute.VisorGatewayTask;
-import org.apache.ignite.internal.visor.misc.VisorChangeGridActiveStateTask;
 import org.apache.ignite.internal.visor.util.VisorClusterGroupEmptyException;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -471,6 +470,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
             addHandler(new QueryCommandHandler(ctx));
             addHandler(new GridLogCommandHandler(ctx));
             addHandler(new GridChangeStateCommandHandler(ctx));
+            addHandler(new GridMemoryMetricsCommandHandler(ctx));
 
             // Start protocols.
             startTcpProtocol();
