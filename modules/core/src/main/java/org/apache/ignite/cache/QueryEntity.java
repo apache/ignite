@@ -419,6 +419,7 @@ public class QueryEntity implements Serializable {
                 sortedIdx.setFields(fields);
 
                 sortedIdx.setName(idxEntry.getKey());
+                sortedIdx.setInlineSize(idx.inlineSize());
 
                 idxs.add(sortedIdx);
             }
@@ -480,7 +481,7 @@ public class QueryEntity implements Serializable {
                 String idxName = cls.getSimpleName() + "_" + QueryUtils.VAL_FIELD_NAME + "_idx";
 
                 type.addIndex(idxName, QueryUtils.isGeometryClass(cls) ?
-                    QueryIndexType.GEOSPATIAL : QueryIndexType.SORTED);
+                    QueryIndexType.GEOSPATIAL : QueryIndexType.SORTED, QueryIndex.DFLT_INLINE_SIZE);
 
                 type.addFieldToIndex(idxName, QueryUtils.VAL_FIELD_NAME, 0, false);
             }
@@ -500,13 +501,13 @@ public class QueryEntity implements Serializable {
             QueryGroupIndex grpIdx = cls.getAnnotation(QueryGroupIndex.class);
 
             if (grpIdx != null)
-                type.addIndex(grpIdx.name(), QueryIndexType.SORTED);
+                type.addIndex(grpIdx.name(), QueryIndexType.SORTED, grpIdx.inlineSize());
 
             QueryGroupIndex.List grpIdxList = cls.getAnnotation(QueryGroupIndex.List.class);
 
             if (grpIdxList != null && !F.isEmpty(grpIdxList.value())) {
                 for (QueryGroupIndex idx : grpIdxList.value())
-                    type.addIndex(idx.name(), QueryIndexType.SORTED);
+                    type.addIndex(idx.name(), QueryIndexType.SORTED, idx.inlineSize());
             }
         }
 
@@ -559,9 +560,15 @@ public class QueryEntity implements Serializable {
                     idxName = cls.getSimpleName() + "_" + idxName;
 
                 desc.addIndex(idxName, QueryUtils.isGeometryClass(prop.type()) ?
-                    QueryIndexType.GEOSPATIAL : QueryIndexType.SORTED);
+                    QueryIndexType.GEOSPATIAL : QueryIndexType.SORTED, sqlAnn.inlineSize());
 
                 desc.addFieldToIndex(idxName, prop.fullName(), 0, sqlAnn.descending());
+            }
+
+            if ((!F.isEmpty(sqlAnn.groups()) || !F.isEmpty(sqlAnn.orderedGroups()))
+                && sqlAnn.inlineSize() != QueryIndex.DFLT_INLINE_SIZE) {
+                throw new CacheException("Inline size cannot be set on a field with group index [" +
+                    "type=" + cls.getName() + ", property=" + prop.fullName() + ']');
             }
 
             if (!F.isEmpty(sqlAnn.groups())) {
