@@ -37,8 +37,8 @@ import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
+import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
@@ -63,7 +63,7 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** Cache name. */
-    private final String cacheName = "cache";
+    private static final String cacheName = "cache";
 
     /** */
     protected boolean explicitTx;
@@ -288,9 +288,9 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
         IgniteEx ignite3 = (IgniteEx)G.start(getConfiguration("test3"));
         IgniteEx ignite4 = (IgniteEx)G.start(getConfiguration("test4"));
 
-        awaitPartitionMapExchange();
-
         ignite1.active(true);
+
+        awaitPartitionMapExchange();
 
         IgniteCache<Integer, Integer> cache1 = ignite1.cache(cacheName);
 
@@ -307,9 +307,9 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
         ignite3 = (IgniteEx)G.start(getConfiguration("test3"));
         ignite4 = (IgniteEx)G.start(getConfiguration("test4"));
 
-        awaitPartitionMapExchange();
-
         ignite1.active(true);
+
+        awaitPartitionMapExchange();
 
         cache1 = ignite1.cache(cacheName);
         IgniteCache<Integer, Integer> cache2 = ignite2.cache(cacheName);
@@ -459,32 +459,35 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
             }
         }, 1, "load-runner");
 
-        for (int i = 0; i < topChanges; i++) {
-            if (U.currentTimeMillis() > timeOut)
-                break;
+        try {
+            for (int i = 0; i < topChanges; i++) {
+                if (U.currentTimeMillis() > timeOut)
+                    break;
 
-            U.sleep(3_000);
+                U.sleep(3_000);
 
-            boolean add;
+                boolean add;
 
-            if (nodesCnt.get() <= maxNodesCount / 2)
-                add = true;
-            else if (nodesCnt.get() > maxNodesCount)
-                add = false;
-            else // More chance that node will be added
-                add = ThreadLocalRandom.current().nextInt(3) <= 1;
+                if (nodesCnt.get() <= maxNodesCount / 2)
+                    add = true;
+                else if (nodesCnt.get() > maxNodesCount)
+                    add = false;
+                else // More chance that node will be added
+                    add = ThreadLocalRandom.current().nextInt(3) <= 1;
 
-            if (add)
-                startGrid(nodesCnt.incrementAndGet());
-            else
-                stopGrid(nodesCnt.getAndDecrement());
+                if (add)
+                    startGrid(nodesCnt.incrementAndGet());
+                else
+                    stopGrid(nodesCnt.getAndDecrement());
 
-            awaitPartitionMapExchange();
+                awaitPartitionMapExchange();
 
-            cache.rebalance().get();
+                cache.rebalance().get();
+            }
         }
-
-        stop.set(true);
+        finally {
+            stop.set(true);
+        }
 
         fut.get();
 

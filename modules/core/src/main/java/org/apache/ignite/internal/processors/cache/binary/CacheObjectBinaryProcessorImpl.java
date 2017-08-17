@@ -442,6 +442,22 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     }
 
     /** {@inheritDoc} */
+    @Override public void addMetaLocally(int typeId, BinaryType newMeta) throws BinaryObjectException {
+        assert newMeta != null;
+        assert newMeta instanceof BinaryTypeImpl;
+
+        BinaryMetadata newMeta0 = ((BinaryTypeImpl)newMeta).metadata();
+
+        BinaryMetadataHolder metaHolder = metadataLocCache.get(typeId);
+
+        BinaryMetadata oldMeta = metaHolder != null ? metaHolder.metadata() : null;
+
+        BinaryMetadata mergedMeta = BinaryUtils.mergeMetadata(oldMeta, newMeta0);
+
+        metadataLocCache.put(typeId, new BinaryMetadataHolder(mergedMeta, 0, 0));
+    }
+
+    /** {@inheritDoc} */
     @Nullable @Override public BinaryType metadata(final int typeId) {
         BinaryMetadata meta = metadata0(typeId);
 
