@@ -177,6 +177,9 @@ public final class IgniteNodeAttributes {
     /** Ignite security compatibility mode. */
     public static final String ATTR_SECURITY_COMPATIBILITY_MODE = ATTR_PREFIX + ".security.compatibility.enabled";
 
+    /** Memory configuration. */
+    public static final String ATTR_MEMORY_CONFIG = ATTR_PREFIX + ".memory";
+
     /**
      * Enforces singleton.
      */
