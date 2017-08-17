@@ -1650,7 +1650,7 @@ BOOST_AUTO_TEST_CASE(TestInsertBatchSelect1000)
 
 BOOST_AUTO_TEST_CASE(TestInsertBatchSelect1023)
 {
-    InsertBatchSelect(1024);
+    InsertBatchSelect(1023);
 }
 
 BOOST_AUTO_TEST_CASE(TestInsertBatchSelect1024)
@@ -1670,7 +1670,7 @@ BOOST_AUTO_TEST_CASE(TestInsertBatchSelect2000)
 
 BOOST_AUTO_TEST_CASE(TestInsertBatchSelect2047)
 {
-    InsertBatchSelect(2048);
+    InsertBatchSelect(2047);
 }
 
 BOOST_AUTO_TEST_CASE(TestInsertBatchSelect2048)
