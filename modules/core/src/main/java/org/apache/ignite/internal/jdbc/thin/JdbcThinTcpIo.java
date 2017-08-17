@@ -222,7 +222,9 @@ public class JdbcThinTcpIo {
             byte maj = reader.readByte();
             byte min = reader.readByte();
             byte maintenance = reader.readByte();
+
             String stage = reader.readString();
+
             long ts = reader.readLong();
             byte[] hash = reader.readByteArray();
 

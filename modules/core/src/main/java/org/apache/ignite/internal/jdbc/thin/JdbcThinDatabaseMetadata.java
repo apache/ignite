@@ -780,15 +780,17 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("ArraysAsListWithZeroOrOneArgument")
     @Override public ResultSet getCatalogs() throws SQLException {
-        return new JdbcThinResultSet(Collections.<List<Object>>emptyList(), Arrays.asList(
-            new JdbcColumnMeta(null, null, "TABLE_CAT", String.class)));
+        return new JdbcThinResultSet(Collections.<List<Object>>emptyList(),
+            Arrays.asList(new JdbcColumnMeta(null, null, "TABLE_CAT", String.class)));
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("ArraysAsListWithZeroOrOneArgument")
     @Override public ResultSet getTableTypes() throws SQLException {
-        return new JdbcThinResultSet(Collections.singletonList(Collections.<Object>singletonList("TABLE")), Arrays.asList(
-            new JdbcColumnMeta(null, null, "TABLE_TYPE", String.class)));
+        return new JdbcThinResultSet(Collections.singletonList(Collections.<Object>singletonList("TABLE")),
+            Arrays.asList(new JdbcColumnMeta(null, null, "TABLE_TYPE", String.class)));
     }
 
     /** {@inheritDoc} */
@@ -1537,6 +1539,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public <T> T unwrap(Class<T> iface) throws SQLException {
         if (!isWrapperFor(iface))
             throw new SQLException("Database meta data is not a wrapper for " + iface.getName());

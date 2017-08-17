@@ -44,6 +44,7 @@ public class JdbcThinParameterMetadata implements ParameterMetaData {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("MagicConstant")
     @Override public int isNullable(int param) throws SQLException {
         return parameter(param).isNullable();
     }
@@ -79,11 +80,13 @@ public class JdbcThinParameterMetadata implements ParameterMetaData {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("MagicConstant")
     @Override public int getParameterMode(int param) throws SQLException {
         return parameter(param).mode();
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public <T> T unwrap(Class<T> iface) throws SQLException {
         if (!isWrapperFor(iface))
             throw new SQLException("Parameters metadata is not a wrapper for " + iface.getName());
