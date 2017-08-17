@@ -52,6 +52,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.events.EventType;
@@ -810,6 +811,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 continue;
 
             checkTransactionConfiguration(n);
+
+            checkMemoryConfiguration(n);
 
             DeploymentMode locDepMode = ctx.config().getDeploymentMode();
             DeploymentMode rmtDepMode = n.attribute(IgniteNodeAttributes.ATTR_DEPLOYMENT_MODE);
@@ -3030,6 +3033,24 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     "system property) [rmtNodeId=" + rmt.id() +
                     ", locTxSerializableEnabled=" + locTxCfg.isTxSerializableEnabled() +
                     ", rmtTxSerializableEnabled=" + txCfg.isTxSerializableEnabled() + ']');
+        }
+    }
+
+    /**
+     * @param rmt Remote node to check.
+     * @throws IgniteCheckedException If check failed.
+     */
+    private void checkMemoryConfiguration(ClusterNode rmt) throws IgniteCheckedException {
+        MemoryConfiguration memCfg = rmt.attribute(IgniteNodeAttributes.ATTR_MEMORY_CONFIG);
+
+        if (memCfg != null) {
+            MemoryConfiguration locMemCfg = ctx.config().getMemoryConfiguration();
+
+            if (memCfg.getPageSize() != locMemCfg.getPageSize()) {
+                throw new IgniteCheckedException("Memory configuration mismatch (fix configuration or set -D" +
+                    IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK + "=true system property) [rmtNodeId=" + rmt.id() +
+                    ", locPageSize = " + locMemCfg.getPageSize() + ", rmtPageSize = " + memCfg.getPageSize() + "]");
+            }
         }
     }
 
