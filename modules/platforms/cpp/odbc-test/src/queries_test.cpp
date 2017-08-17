@@ -30,6 +30,7 @@
 #   define BOOST_TEST_DYN_LINK
 #endif
 
+#include <boost/regex.hpp>
 #include <boost/test/unit_test.hpp>
 
 #include "ignite/ignite.h"
@@ -2096,6 +2097,25 @@ BOOST_AUTO_TEST_CASE(TestBindNullParameter)
         BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
     BOOST_CHECK_EQUAL(strFieldLen, SQL_NULL_DATA);
+}
+
+BOOST_AUTO_TEST_CASE(TestErrorMessage)
+{
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
+
+    // Just selecting everything to make sure everything is OK
+    SQLCHAR selectReq[] = "SELECT a FROM B";
+
+    SQLRETURN ret = SQLExecDirect(stmt, selectReq, sizeof(selectReq));
+
+    BOOST_REQUIRE_EQUAL(ret, SQL_ERROR);
+
+    std::string error = GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt);
+    std::string pattern = "HY000: Table \"B\" not found; SQL statement:\\vSELECT a FROM B.*";
+
+    boost::cmatch what;
+    if (!boost::regex_match(error.c_str(), what, boost::regex(pattern)))
+        BOOST_FAIL("'" + error + "' does not match '" + pattern + "'");
 }
 
 BOOST_AUTO_TEST_SUITE_END()
