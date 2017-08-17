@@ -110,6 +110,9 @@ class MapQueryResults {
     void addResult(int qry, GridCacheSqlQuery q, UUID qrySrcNodeId, ResultSet rs, Object[] params) {
         MapQueryResult res = new MapQueryResult(h2, rs, cacheName, qrySrcNodeId, q, params, lazyWorker);
 
+        if (lazyWorker != null)
+            lazyWorker.result(res);
+
         if (!results.compareAndSet(qry, null, res))
             throw new IllegalStateException();
     }

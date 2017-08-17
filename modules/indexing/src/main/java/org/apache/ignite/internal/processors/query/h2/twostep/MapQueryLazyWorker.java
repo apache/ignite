@@ -51,6 +51,9 @@ public class MapQueryLazyWorker extends GridWorker {
     /** Latch decremented when worker finishes. */
     private final CountDownLatch stopLatch = new CountDownLatch(1);
 
+    /** Map query result. */
+    private volatile MapQueryResult res;
+
     /**
      * Constructor.
      *
@@ -82,6 +85,9 @@ public class MapQueryLazyWorker extends GridWorker {
             }
         }
         finally {
+            if (res != null)
+                res.close();
+
             LAZY_WORKER.set(null);
 
             ACTIVE_CNT.decrement();
@@ -120,8 +126,6 @@ public class MapQueryLazyWorker extends GridWorker {
             isCancelled = true;
 
             stopLatch.countDown();
-
-            System.out.println("WORKER CANCEL: " + name());
         }
     }
 
@@ -135,6 +139,13 @@ public class MapQueryLazyWorker extends GridWorker {
         catch (IgniteInterruptedCheckedException e) {
             throw new IgniteException("Failed to wait for lazy worker stop (interrupted): " + name(), e);
         }
+    }
+
+    /**
+     * @param res Map query result.
+     */
+    public void result(MapQueryResult res) {
+        this.res = res;
     }
 
     /**
