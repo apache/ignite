@@ -48,81 +48,230 @@ namespace ignite
             {
                 switch (type)
                 {
+#ifdef SQL_ACCESSIBLE_PROCEDURES
+                    DBG_STR_CASE(SQL_ACCESSIBLE_PROCEDURES);
+#endif // SQL_ACCESSIBLE_PROCEDURES
+#ifdef SQL_DRIVER_NAME
                     DBG_STR_CASE(SQL_DRIVER_NAME);
+#endif // SQL_DRIVER_NAME
+#ifdef SQL_DBMS_NAME
                     DBG_STR_CASE(SQL_DBMS_NAME);
+#endif // SQL_DBMS_NAME
+#ifdef SQL_DRIVER_ODBC_VER
                     DBG_STR_CASE(SQL_DRIVER_ODBC_VER);
+#endif // SQL_DRIVER_ODBC_VER
+#ifdef SQL_DBMS_VER
                     DBG_STR_CASE(SQL_DBMS_VER);
+#endif // SQL_DBMS_VER
+#ifdef SQL_DRIVER_VER
                     DBG_STR_CASE(SQL_DRIVER_VER);
+#endif // SQL_DRIVER_VER
+#ifdef SQL_COLUMN_ALIAS
                     DBG_STR_CASE(SQL_COLUMN_ALIAS);
+#endif // SQL_COLUMN_ALIAS
+#ifdef SQL_IDENTIFIER_QUOTE_CHAR
                     DBG_STR_CASE(SQL_IDENTIFIER_QUOTE_CHAR);
+#endif // SQL_IDENTIFIER_QUOTE_CHAR
+#ifdef SQL_CATALOG_NAME_SEPARATOR
                     DBG_STR_CASE(SQL_CATALOG_NAME_SEPARATOR);
+#endif // SQL_CATALOG_NAME_SEPARATOR
+#ifdef SQL_SPECIAL_CHARACTERS
                     DBG_STR_CASE(SQL_SPECIAL_CHARACTERS);
+#endif // SQL_SPECIAL_CHARACTERS
+#ifdef SQL_CATALOG_TERM
                     DBG_STR_CASE(SQL_CATALOG_TERM);
+#endif // SQL_CATALOG_TERM
+#ifdef SQL_TABLE_TERM
                     DBG_STR_CASE(SQL_TABLE_TERM);
+#endif // SQL_TABLE_TERM
+#ifdef SQL_SCHEMA_TERM
                     DBG_STR_CASE(SQL_SCHEMA_TERM);
+#endif // SQL_SCHEMA_TERM
+#ifdef SQL_NEED_LONG_DATA_LEN
                     DBG_STR_CASE(SQL_NEED_LONG_DATA_LEN);
-//                    DBG_STR_CASE(SQL_ASYNC_DBC_FUNCTIONS);
+#endif // SQL_NEED_LONG_DATA_LEN
+#ifdef SQL_ASYNC_DBC_FUNCTIONS
+                    DBG_STR_CASE(SQL_ASYNC_DBC_FUNCTIONS);
+#endif // SQL_ASYNC_DBC_FUNCTIONS
+#ifdef SQL_ASYNC_NOTIFICATION
                     DBG_STR_CASE(SQL_ASYNC_NOTIFICATION);
+#endif // SQL_ASYNC_NOTIFICATION
+#ifdef SQL_GETDATA_EXTENSIONS
                     DBG_STR_CASE(SQL_GETDATA_EXTENSIONS);
+#endif // SQL_GETDATA_EXTENSIONS
+#ifdef SQL_ODBC_INTERFACE_CONFORMANCE
                     DBG_STR_CASE(SQL_ODBC_INTERFACE_CONFORMANCE);
+#endif // SQL_ODBC_INTERFACE_CONFORMANCE
+#ifdef SQL_SQL_CONFORMANCE
                     DBG_STR_CASE(SQL_SQL_CONFORMANCE);
+#endif // SQL_SQL_CONFORMANCE
+#ifdef SQL_CATALOG_USAGE
                     DBG_STR_CASE(SQL_CATALOG_USAGE);
+#endif // SQL_CATALOG_USAGE
+#ifdef SQL_SCHEMA_USAGE
                     DBG_STR_CASE(SQL_SCHEMA_USAGE);
+#endif // SQL_SCHEMA_USAGE
+#ifdef SQL_MAX_IDENTIFIER_LEN
                     DBG_STR_CASE(SQL_MAX_IDENTIFIER_LEN);
+#endif // SQL_MAX_IDENTIFIER_LEN
+#ifdef SQL_AGGREGATE_FUNCTIONS
                     DBG_STR_CASE(SQL_AGGREGATE_FUNCTIONS);
+#endif // SQL_AGGREGATE_FUNCTIONS
+#ifdef SQL_NUMERIC_FUNCTIONS
                     DBG_STR_CASE(SQL_NUMERIC_FUNCTIONS);
+#endif // SQL_NUMERIC_FUNCTIONS
+#ifdef SQL_STRING_FUNCTIONS
                     DBG_STR_CASE(SQL_STRING_FUNCTIONS);
+#endif // SQL_STRING_FUNCTIONS
+#ifdef SQL_TIMEDATE_FUNCTIONS
                     DBG_STR_CASE(SQL_TIMEDATE_FUNCTIONS);
+#endif // SQL_TIMEDATE_FUNCTIONS
+#ifdef SQL_TIMEDATE_ADD_INTERVALS
                     DBG_STR_CASE(SQL_TIMEDATE_ADD_INTERVALS);
+#endif // SQL_TIMEDATE_ADD_INTERVALS
+#ifdef SQL_TIMEDATE_DIFF_INTERVALS
                     DBG_STR_CASE(SQL_TIMEDATE_DIFF_INTERVALS);
+#endif // SQL_TIMEDATE_DIFF_INTERVALS
+#ifdef SQL_DATETIME_LITERALS
                     DBG_STR_CASE(SQL_DATETIME_LITERALS);
+#endif // SQL_DATETIME_LITERALS
+#ifdef SQL_SYSTEM_FUNCTIONS
                     DBG_STR_CASE(SQL_SYSTEM_FUNCTIONS);
+#endif // SQL_SYSTEM_FUNCTIONS
+#ifdef SQL_CONVERT_FUNCTIONS
                     DBG_STR_CASE(SQL_CONVERT_FUNCTIONS);
+#endif // SQL_CONVERT_FUNCTIONS
+#ifdef SQL_OJ_CAPABILITIES
                     DBG_STR_CASE(SQL_OJ_CAPABILITIES);
+#endif // SQL_OJ_CAPABILITIES
+#ifdef SQL_POS_OPERATIONS
                     DBG_STR_CASE(SQL_POS_OPERATIONS);
+#endif // SQL_POS_OPERATIONS
+#ifdef SQL_MAX_CONCURRENT_ACTIVITIES
                     DBG_STR_CASE(SQL_MAX_CONCURRENT_ACTIVITIES);
+#endif // SQL_MAX_CONCURRENT_ACTIVITIES
+#ifdef SQL_CURSOR_COMMIT_BEHAVIOR
                     DBG_STR_CASE(SQL_CURSOR_COMMIT_BEHAVIOR);
+#endif // SQL_CURSOR_COMMIT_BEHAVIOR
+#ifdef SQL_CURSOR_ROLLBACK_BEHAVIOR
                     DBG_STR_CASE(SQL_CURSOR_ROLLBACK_BEHAVIOR);
+#endif // SQL_CURSOR_ROLLBACK_BEHAVIOR
+#ifdef SQL_TXN_CAPABLE
                     DBG_STR_CASE(SQL_TXN_CAPABLE);
+#endif // SQL_TXN_CAPABLE
+#ifdef SQL_QUOTED_IDENTIFIER_CASE
                     DBG_STR_CASE(SQL_QUOTED_IDENTIFIER_CASE);
+#endif // SQL_QUOTED_IDENTIFIER_CASE
+#ifdef SQL_SQL92_NUMERIC_VALUE_FUNCTIONS
                     DBG_STR_CASE(SQL_SQL92_NUMERIC_VALUE_FUNCTIONS);
+#endif // SQL_SQL92_NUMERIC_VALUE_FUNCTIONS
+#ifdef SQL_SQL92_STRING_FUNCTIONS
                     DBG_STR_CASE(SQL_SQL92_STRING_FUNCTIONS);
+#endif // SQL_SQL92_STRING_FUNCTIONS
+#ifdef SQL_SQL92_DATETIME_FUNCTIONS
                     DBG_STR_CASE(SQL_SQL92_DATETIME_FUNCTIONS);
+#endif // SQL_SQL92_DATETIME_FUNCTIONS
+#ifdef SQL_SQL92_PREDICATES
                     DBG_STR_CASE(SQL_SQL92_PREDICATES);
+#endif // SQL_SQL92_PREDICATES
+#ifdef SQL_SQL92_RELATIONAL_JOIN_OPERATORS
                     DBG_STR_CASE(SQL_SQL92_RELATIONAL_JOIN_OPERATORS);
+#endif // SQL_SQL92_RELATIONAL_JOIN_OPERATORS
+#ifdef SQL_SQL92_VALUE_EXPRESSIONS
                     DBG_STR_CASE(SQL_SQL92_VALUE_EXPRESSIONS);
+#endif // SQL_SQL92_VALUE_EXPRESSIONS
+#ifdef SQL_STATIC_CURSOR_ATTRIBUTES1
                     DBG_STR_CASE(SQL_STATIC_CURSOR_ATTRIBUTES1);
+#endif // SQL_STATIC_CURSOR_ATTRIBUTES1
+#ifdef SQL_STATIC_CURSOR_ATTRIBUTES2
                     DBG_STR_CASE(SQL_STATIC_CURSOR_ATTRIBUTES2);
+#endif // SQL_STATIC_CURSOR_ATTRIBUTES2
+#ifdef SQL_CONVERT_BIGINT
                     DBG_STR_CASE(SQL_CONVERT_BIGINT);
+#endif // SQL_CONVERT_BIGINT
+#ifdef SQL_CONVERT_BINARY
                     DBG_STR_CASE(SQL_CONVERT_BINARY);
+#endif // SQL_CONVERT_BINARY
+#ifdef SQL_CONVERT_BIT
                     DBG_STR_CASE(SQL_CONVERT_BIT);
+#endif // SQL_CONVERT_BIT
+#ifdef SQL_CONVERT_CHAR
                     DBG_STR_CASE(SQL_CONVERT_CHAR);
+#endif // SQL_CONVERT_CHAR
+#ifdef SQL_CONVERT_DATE
                     DBG_STR_CASE(SQL_CONVERT_DATE);
+#endif // SQL_CONVERT_DATE
+#ifdef SQL_CONVERT_DECIMAL
                     DBG_STR_CASE(SQL_CONVERT_DECIMAL);
+#endif // SQL_CONVERT_DECIMAL
+#ifdef SQL_CONVERT_DOUBLE
                     DBG_STR_CASE(SQL_CONVERT_DOUBLE);
+#endif // SQL_CONVERT_DOUBLE
+#ifdef SQL_CONVERT_FLOAT
                     DBG_STR_CASE(SQL_CONVERT_FLOAT);
+#endif // SQL_CONVERT_FLOAT
+#ifdef SQL_CONVERT_INTEGER
                     DBG_STR_CASE(SQL_CONVERT_INTEGER);
+#endif // SQL_CONVERT_INTEGER
+#ifdef SQL_CONVERT_LONGVARCHAR
                     DBG_STR_CASE(SQL_CONVERT_LONGVARCHAR);
+#endif // SQL_CONVERT_LONGVARCHAR
+#ifdef SQL_CONVERT_NUMERIC
                     DBG_STR_CASE(SQL_CONVERT_NUMERIC);
+#endif // SQL_CONVERT_NUMERIC
+#ifdef SQL_CONVERT_REAL
                     DBG_STR_CASE(SQL_CONVERT_REAL);
+#endif // SQL_CONVERT_REAL
+#ifdef SQL_CONVERT_SMALLINT
                     DBG_STR_CASE(SQL_CONVERT_SMALLINT);
+#endif // SQL_CONVERT_SMALLINT
+#ifdef SQL_CONVERT_TIME
                     DBG_STR_CASE(SQL_CONVERT_TIME);
+#endif // SQL_CONVERT_TIME
+#ifdef SQL_CONVERT_TIMESTAMP
                     DBG_STR_CASE(SQL_CONVERT_TIMESTAMP);
+#endif // SQL_CONVERT_TIMESTAMP
+#ifdef SQL_CONVERT_TINYINT
                     DBG_STR_CASE(SQL_CONVERT_TINYINT);
+#endif // SQL_CONVERT_TINYINT
+#ifdef SQL_CONVERT_VARBINARY
                     DBG_STR_CASE(SQL_CONVERT_VARBINARY);
+#endif // SQL_CONVERT_VARBINARY
+#ifdef SQL_CONVERT_VARCHAR
                     DBG_STR_CASE(SQL_CONVERT_VARCHAR);
+#endif // SQL_CONVERT_VARCHAR
+#ifdef SQL_CONVERT_LONGVARBINARY
                     DBG_STR_CASE(SQL_CONVERT_LONGVARBINARY);
+#endif // SQL_CONVERT_LONGVARBINARY
+#ifdef SQL_CONVERT_WCHAR
                     DBG_STR_CASE(SQL_CONVERT_WCHAR);
+#endif // SQL_CONVERT_WCHAR
+#ifdef SQL_CONVERT_INTERVAL_DAY_TIME
                     DBG_STR_CASE(SQL_CONVERT_INTERVAL_DAY_TIME);
+#endif // SQL_CONVERT_INTERVAL_DAY_TIME
+#ifdef SQL_CONVERT_INTERVAL_YEAR_MONTH
                     DBG_STR_CASE(SQL_CONVERT_INTERVAL_YEAR_MONTH);
+#endif // SQL_CONVERT_INTERVAL_YEAR_MONTH
+#ifdef SQL_CONVERT_WLONGVARCHAR
                     DBG_STR_CASE(SQL_CONVERT_WLONGVARCHAR);
+#endif // SQL_CONVERT_WLONGVARCHAR
+#ifdef SQL_CONVERT_WVARCHAR
                     DBG_STR_CASE(SQL_CONVERT_WVARCHAR);
+#endif // SQL_CONVERT_WVARCHAR
+#ifdef SQL_CONVERT_GUID
                     DBG_STR_CASE(SQL_CONVERT_GUID);
+#endif // SQL_CONVERT_GUID
+#ifdef SQL_SCROLL_OPTIONS
                     DBG_STR_CASE(SQL_SCROLL_OPTIONS);
+#endif // SQL_SCROLL_OPTIONS
+#ifdef SQL_PARAM_ARRAY_ROW_COUNTS
                     DBG_STR_CASE(SQL_PARAM_ARRAY_ROW_COUNTS);
+#endif // SQL_PARAM_ARRAY_ROW_COUNTS
+#ifdef SQL_PARAM_ARRAY_SELECTS
                     DBG_STR_CASE(SQL_PARAM_ARRAY_SELECTS);
-                default:
-                    break;
+#endif // SQL_PARAM_ARRAY_SELECTS
+                    default:
+                        break;
                 }
                 return "<< UNKNOWN TYPE >>";
             }
@@ -134,12 +283,20 @@ namespace ignite
             {
                 //======================= String Params =======================
                 // Driver name.
+#ifdef SQL_DRIVER_NAME
                 strParams[SQL_DRIVER_NAME] = "Apache Ignite";
+#endif // SQL_DRIVER_NAME
+#ifdef SQL_DBMS_NAME
                 strParams[SQL_DBMS_NAME]   = "Apache Ignite";
+#endif // SQL_DBMS_NAME
 
                 // ODBC version.
+#ifdef SQL_DRIVER_ODBC_VER
                 strParams[SQL_DRIVER_ODBC_VER] = "03.00";
+#endif // SQL_DRIVER_ODBC_VER
+#ifdef SQL_DBMS_VER
                 strParams[SQL_DBMS_VER]        = "03.00";
+#endif // SQL_DBMS_VER
 
 #ifdef SQL_DRIVER_VER
                 // Driver version. At a minimum, the version is of the form
@@ -384,7 +541,7 @@ namespace ignite
                 // subset of attributes; for the second subset, see
                 // SQL_STATIC_CURSOR_ATTRIBUTES2.
                 intParams[SQL_STATIC_CURSOR_ATTRIBUTES1] = SQL_CA1_NEXT;
-#endif //SQL_STATIC_CURSOR_ATTRIBUTES1
+#endif // SQL_STATIC_CURSOR_ATTRIBUTES1
 
 #ifdef SQL_STATIC_CURSOR_ATTRIBUTES2
                 // Bitmask that describes the attributes of a static cursor that
@@ -392,7 +549,7 @@ namespace ignite
                 // subset of attributes; for the first subset, see
                 // SQL_STATIC_CURSOR_ATTRIBUTES1.
                 intParams[SQL_STATIC_CURSOR_ATTRIBUTES2] = 0;
-#endif //SQL_STATIC_CURSOR_ATTRIBUTES2
+#endif // SQL_STATIC_CURSOR_ATTRIBUTES2
 
 #ifdef SQL_CONVERT_BIGINT
                 // Bitmask indicates the conversions supported by the CONVERT scalar function for target type BIGINT
@@ -400,7 +557,7 @@ namespace ignite
                     SQL_CVT_WLONGVARCHAR | SQL_CVT_WVARCHAR | SQL_CVT_NUMERIC | SQL_CVT_BIT |
                     SQL_CVT_TINYINT | SQL_CVT_SMALLINT | SQL_CVT_INTEGER | SQL_CVT_BIGINT |
                     SQL_CVT_TIMESTAMP;
-#endif //SQL_CONVERT_BIGINT
+#endif // SQL_CONVERT_BIGINT
 
 #ifdef SQL_CONVERT_BINARY
                 // Bitmask indicates the conversions supported by the CONVERT scalar function for target type BINARY
@@ -409,14 +566,14 @@ namespace ignite
                     SQL_CVT_BIT | SQL_CVT_TINYINT | SQL_CVT_SMALLINT | SQL_CVT_INTEGER | SQL_CVT_BIGINT | SQL_CVT_REAL |
                     SQL_CVT_FLOAT | SQL_CVT_DOUBLE | SQL_CVT_BINARY | SQL_CVT_VARBINARY | SQL_CVT_LONGVARBINARY |
                     SQL_CVT_DATE | SQL_CVT_TIME | SQL_CVT_TIMESTAMP | SQL_CVT_GUID;
-#endif //SQL_CONVERT_BINARY
+#endif // SQL_CONVERT_BINARY
 
 #ifdef SQL_CONVERT_BIT
                 // Bitmask indicates the conversions supported by the CONVERT scalar function for target type BIT
                 intParams[SQL_CONVERT_BIT] = SQL_CVT_CHAR | SQL_CVT_VARCHAR | SQL_CVT_LONGVARCHAR |
                     SQL_CVT_WCHAR | SQL_CVT_WLONGVARCHAR | SQL_CVT_WVARCHAR | SQL_CVT_NUMERIC |
                     SQL_CVT_BIT | SQL_CVT_TINYINT | SQL_CVT_SMALLINT | SQL_CVT_INTEGER | SQL_CVT_BIGINT;
-#endif //SQL_CONVERT_BIT
+#endif // SQL_CONVERT_BIT
 
 #ifdef SQL_CONVERT_CHAR
                 // Bitmask indicates the conversions supported by the CONVERT scalar function for target type CHAR
@@ -425,7 +582,7 @@ namespace ignite
                     SQL_CVT_NUMERIC | SQL_CVT_DECIMAL | SQL_CVT_BIT | SQL_CVT_TINYINT | SQL_CVT_SMALLINT | SQL_CVT_INTEGER |
                     SQL_CVT_BIGINT | SQL_CVT_REAL | SQL_CVT_FLOAT | SQL_CVT_DOUBLE | SQL_CVT_BINARY | SQL_CVT_VARBINARY |
                     SQL_CVT_LONGVARBINARY | SQL_CVT_DATE | SQL_CVT_TIME | SQL_CVT_TIMESTAMP | SQL_CVT_GUID;
-#endif //SQL_CONVERT_CHAR
+#endif // SQL_CONVERT_CHAR
 
 #ifdef SQL_CONVERT_VARCHAR
                 // Bitmask indicates the conversions supported by the CONVERT scalar function for target type VARCHAR
@@ -434,7 +591,7 @@ namespace ignite
                     SQL_CVT_NUMERIC | SQL_CVT_DECIMAL | SQL_CVT_BIT | SQL_CVT_TINYINT | SQL_CVT_SMALLINT | SQL_CVT_INTEGER |
                     SQL_CVT_BIGINT | SQL_CVT_REAL | SQL_CVT_FLOAT | SQL_CVT_DOUBLE | SQL_CVT_BINARY | SQL_CVT_VARBINARY |
                     SQL_CVT_LONGVARBINARY | SQL_CVT_DATE | SQL_CVT_TIME | SQL_CVT_TIMESTAMP | SQL_CVT_GUID;
-#endif //SQL_CONVERT_VARCHAR
+#endif // SQL_CONVERT_VARCHAR
 
 #ifdef SQL_CONVERT_LONGVARCHAR
                 // Bitmask indicates the conversions supported by the CONVERT scalar function for target type LONGVARCHAR
@@ -443,7 +600,7 @@ namespace ignite
                     SQL_CVT_NUMERIC | SQL_CVT_DECIMAL | SQL_CVT_BIT | SQL_CVT_TINYINT | SQL_CVT_SMALLINT | SQL_CVT_INTEGER |
                     SQL_CVT_BIGINT | SQL_CVT_REAL | SQL_CVT_FLOAT | SQL_CVT_DOUBLE | SQL_CVT_BINARY | SQL_CVT_VARBINARY |
                     SQL_CVT_LONGVARBINARY | SQL_CVT_DATE | SQL_CVT_TIME | SQL_CVT_TIMESTAMP | SQL_CVT_GUID;
-#endif //SQL_CONVERT_LONGVARCHAR
+#endif // SQL_CONVERT_LONGVARCHAR
 
 #ifdef SQL_CONVERT_WCHAR
                 // Bitmask indicates the conversions supported by the CONVERT scalar function for target type WCHAR
@@ -452,7 +609,7 @@ namespace ignite
                     SQL_CVT_NUMERIC | SQL_CVT_DECIMAL | SQL_CVT_BIT | SQL_CVT_TINYINT | SQL_CVT_SMALLINT | SQL_CVT_INTEGER |
                     SQL_CVT_BIGINT | SQL_CVT_REAL | SQL_CVT_FLOAT | SQL_CVT_DOUBLE | SQL_CVT_BINARY | SQL_CVT_VARBINARY |
                     SQL_CVT_LONGVARBINARY | SQL_CVT_DATE | SQL_CVT_TIME | SQL_CVT_TIMESTAMP | SQL_CVT_GUID;
-#endif //SQL_CONVERT_WCHAR
+#endif // SQL_CONVERT_WCHAR
 
 #ifdef SQL_CONVERT_WVARCHAR
                 // Bitmask indicates the conversions supported by the CONVERT scalar function for target type WVARCHAR
@@ -461,7 +618,7 @@ namespace ignite
                     SQL_CVT_NUMERIC | SQL_CVT_DECIMAL | SQL_CVT_BIT | SQL_CVT_TINYINT | SQL_CVT_SMALLINT | SQL_CVT_INTEGER |
                     SQL_CVT_BIGINT | SQL_CVT_REAL | SQL_CVT_FLOAT | SQL_CVT_DOUBLE | SQL_CVT_BINARY | SQL_CVT_VARBINARY |
                     SQL_CVT_LONGVARBINARY | SQL_CVT_DATE | SQL_CVT_TIME | SQL_CVT_TIMESTAMP | SQL_CVT_GUID;
-#endif //SQL_CONVERT_WVARCHAR
+#endif // SQL_CONVERT_WVARCHAR
 
 #ifdef SQL_CONVERT_WLONGVARCHAR
                 // Bitmask indicates the conversions supported by the CONVERT scalar function for target type WLONGVARCHAR
@@ -470,7 +627,7 @@ namespace ignite
                     SQL_CVT_NUMERIC | SQL_CVT_DECIMAL | SQL_CVT_BIT | SQL_CVT_TINYINT | SQL_CVT_SMALLINT | SQL_CVT_INTEGER |
                     SQL_CVT_BIGINT | SQL_CVT_REAL | SQL_CVT_FLOAT | SQL_CVT_DOUBLE | SQL_CVT_BINARY | SQL_CVT_VARBINARY |
                     SQL_CVT_LONGVARBINARY | SQL_CVT_DATE | SQL_CVT_TIME | SQL_CVT_TIMESTAMP | SQL_CVT_GUID;
-#endif //SQL_CONVERT_WLONGVARCHAR
+#endif // SQL_CONVERT_WLONGVARCHAR
 
 #ifdef SQL_CONVERT_DATE
                 // Bitmask indicates the conversions supported by the CONVERT scalar function for target type DATE
@@ -478,7 +635,7 @@ namespace ignite
                     SQL_CVT_WCHAR | SQL_CVT_WLONGVARCHAR | SQL_CVT_WVARCHAR |
                     SQL_CVT_NUMERIC | SQL_CVT_INTEGER | SQL_CVT_BIGINT | SQL_CVT_BINARY | SQL_CVT_VARBINARY | SQL_CVT_LONGVARBINARY |
                     SQL_CVT_DATE | SQL_CVT_TIMESTAMP;
-#endif //SQL_CONVERT_DATE
+#endif // SQL_CONVERT_DATE
 
 #ifdef SQL_CONVERT_DECIMAL
                 // Bitmask indicates the conversions supported by the CONVERT scalar function for target type DECIMAL
@@ -486,7 +643,7 @@ namespace ignite
                     SQL_CVT_WCHAR | SQL_CVT_WLONGVARCHAR | SQL_CVT_WVARCHAR |
                     SQL_CVT_NUMERIC | SQL_CVT_DECIMAL | SQL_CVT_BIT | SQL_CVT_TINYINT | SQL_CVT_SMALLINT | SQL_CVT_INTEGER | SQL_CVT_BIGINT |
                     SQL_CVT_REAL | SQL_CVT_FLOAT | SQL_CVT_DOUBLE | SQL_CVT_BINARY | SQL_CVT_VARBINARY | SQL_CVT_LONGVARBINARY | SQL_CVT_TIMESTAMP;
-#endif //SQL_CONVERT_DECIMAL
+#endif // SQL_CONVERT_DECIMAL
 
 #ifdef SQL_CONVERT_DOUBLE
                 // Bitmask indicates the conversions supported by the CONVERT scalar function for target type DOUBLE
@@ -494,7 +651,7 @@ namespace ignite
                     SQL_CVT_NUMERIC | SQL_CVT_DECIMAL | SQL_CVT_BIT | SQL_CVT_TINYINT | SQL_CVT_SMALLINT | SQL_CVT_INTEGER |
                     SQL_CVT_BIGINT | SQL_CVT_REAL | SQL_CVT_FLOAT | SQL_CVT_DOUBLE | SQL_CVT_BINARY | SQL_CVT_VARBINARY |
                     SQL_CVT_LONGVARBINARY | SQL_CVT_TIMESTAMP;
-#endif //SQL_CONVERT_DOUBLE
+#endif // SQL_CONVERT_DOUBLE
 
 #ifdef SQL_CONVERT_FLOAT
                 // Bitmask indicates the conversions supported by the CONVERT scalar function for target type FLOAT
@@ -503,7 +660,7 @@ namespace ignite
                     SQL_CVT_NUMERIC | SQL_CVT_DECIMAL | SQL_CVT_BIT | SQL_CVT_TINYINT | SQL_CVT_SMALLINT | SQL_CVT_INTEGER |
                     SQL_CVT_BIGINT | SQL_CVT_REAL | SQL_CVT_FLOAT | SQL_CVT_DOUBLE | SQL_CVT_BINARY | SQL_CVT_VARBINARY |
                     SQL_CVT_LONGVARBINARY | SQL_CVT_TIMESTAMP;
-#endif //SQL_CONVERT_FLOAT
+#endif // SQL_CONVERT_FLOAT
 
 #ifdef SQL_CONVERT_REAL
                 // Bitmask indicates the conversions supported by the CONVERT scalar function for target type REAL
@@ -512,7 +669,7 @@ namespace ignite
                     SQL_CVT_NUMERIC | SQL_CVT_DECIMAL | SQL_CVT_BIT | SQL_CVT_TINYINT | SQL_CVT_SMALLINT |
                     SQL_CVT_INTEGER | SQL_CVT_BIGINT | SQL_CVT_REAL | SQL_CVT_FLOAT | SQL_CVT_DOUBLE |
                     SQL_CVT_BINARY | SQL_CVT_VARBINARY | SQL_CVT_LONGVARBINARY | SQL_CVT_TIMESTAMP;
-#endif //SQL_CONVERT_REAL
+#endif // SQL_CONVERT_REAL
 
 #ifdef SQL_CONVERT_INTEGER
                 // Bitmask indicates the conversions supported by the CONVERT scalar function for target type INTEGER
@@ -521,7 +678,7 @@ namespace ignite
                     SQL_CVT_NUMERIC | SQL_CVT_DECIMAL | SQL_CVT_BIT | SQL_CVT_TINYINT | SQL_CVT_SMALLINT |
                     SQL_CVT_INTEGER | SQL_CVT_BIGINT | SQL_CVT_REAL | SQL_CVT_FLOAT | SQL_CVT_DOUBLE | SQL_CVT_BINARY |
                     SQL_CVT_VARBINARY | SQL_CVT_LONGVARBINARY | SQL_CVT_TIMESTAMP;
-#endif //SQL_CONVERT_INTEGER
+#endif // SQL_CONVERT_INTEGER
 
 #ifdef SQL_CONVERT_NUMERIC
                 // Bitmask indicates the conversions supported by the CONVERT scalar function for target type NUMERIC
@@ -531,7 +688,7 @@ namespace ignite
                     SQL_CVT_SMALLINT | SQL_CVT_INTEGER | SQL_CVT_BIGINT | SQL_CVT_REAL |
                     SQL_CVT_FLOAT | SQL_CVT_DOUBLE | SQL_CVT_BINARY | SQL_CVT_VARBINARY |
                     SQL_CVT_LONGVARBINARY | SQL_CVT_TIMESTAMP;
-#endif //SQL_CONVERT_NUMERIC
+#endif // SQL_CONVERT_NUMERIC
 
 #ifdef SQL_CONVERT_SMALLINT
                 // Bitmask indicates the conversions supported by the CONVERT scalar function for target type SMALLINT
@@ -541,7 +698,7 @@ namespace ignite
                     SQL_CVT_SMALLINT | SQL_CVT_INTEGER | SQL_CVT_BIGINT | SQL_CVT_REAL |
                     SQL_CVT_FLOAT | SQL_CVT_DOUBLE | SQL_CVT_BINARY | SQL_CVT_VARBINARY |
                     SQL_CVT_LONGVARBINARY | SQL_CVT_TIMESTAMP;
-#endif //SQL_CONVERT_SMALLINT
+#endif // SQL_CONVERT_SMALLINT
 
 #ifdef SQL_CONVERT_TINYINT
                 // Bitmask indicates the conversions supported by the CONVERT scalar function for target type TINYINT
@@ -550,7 +707,7 @@ namespace ignite
                     SQL_CVT_NUMERIC | SQL_CVT_DECIMAL | SQL_CVT_BIT | SQL_CVT_TINYINT | SQL_CVT_SMALLINT |
                     SQL_CVT_INTEGER | SQL_CVT_BIGINT | SQL_CVT_REAL | SQL_CVT_FLOAT | SQL_CVT_DOUBLE |
                     SQL_CVT_BINARY | SQL_CVT_VARBINARY | SQL_CVT_LONGVARBINARY | SQL_CVT_TIMESTAMP;
-#endif //SQL_CONVERT_TINYINT
+#endif // SQL_CONVERT_TINYINT
 
 #ifdef SQL_CONVERT_TIME
                 // Bitmask indicates the conversions supported by the CONVERT scalar function for target type TIME
@@ -558,7 +715,7 @@ namespace ignite
                     SQL_CVT_WCHAR | SQL_CVT_WLONGVARCHAR | SQL_CVT_WVARCHAR |
                     SQL_CVT_BINARY | SQL_CVT_VARBINARY | SQL_CVT_LONGVARBINARY |
                     SQL_CVT_TIME | SQL_CVT_TIMESTAMP;
-#endif //SQL_CONVERT_TIME
+#endif // SQL_CONVERT_TIME
 
 #ifdef SQL_CONVERT_TIMESTAMP
                 // Bitmask indicates the conversions supported by the CONVERT scalar function for target type TIMESTAMP
@@ -566,7 +723,7 @@ namespace ignite
                     SQL_CVT_WCHAR | SQL_CVT_WLONGVARCHAR | SQL_CVT_WVARCHAR |
                     SQL_CVT_NUMERIC | SQL_CVT_DECIMAL | SQL_CVT_INTEGER | SQL_CVT_BIGINT | SQL_CVT_BINARY |
                     SQL_CVT_VARBINARY | SQL_CVT_LONGVARBINARY | SQL_CVT_DATE | SQL_CVT_TIME | SQL_CVT_TIMESTAMP;
-#endif //SQL_CONVERT_TIMESTAMP
+#endif // SQL_CONVERT_TIMESTAMP
 
 #ifdef SQL_CONVERT_VARBINARY
                 // Bitmask indicates the conversions supported by the CONVERT scalar function for target type VARBINARY
@@ -576,7 +733,7 @@ namespace ignite
                     SQL_CVT_INTEGER | SQL_CVT_BIGINT | SQL_CVT_REAL | SQL_CVT_FLOAT | SQL_CVT_DOUBLE |
                     SQL_CVT_BINARY | SQL_CVT_VARBINARY | SQL_CVT_LONGVARBINARY | SQL_CVT_DATE |
                     SQL_CVT_TIME | SQL_CVT_TIMESTAMP | SQL_CVT_GUID;
-#endif //SQL_CONVERT_VARBINARY
+#endif // SQL_CONVERT_VARBINARY
 
 #ifdef SQL_CONVERT_LONGVARBINARY
                 // Bitmask indicates the conversions supported by the CONVERT scalar function for target type LONGVARBINARY
@@ -586,7 +743,7 @@ namespace ignite
                     SQL_CVT_INTEGER | SQL_CVT_BIGINT | SQL_CVT_REAL | SQL_CVT_FLOAT | SQL_CVT_DOUBLE |
                     SQL_CVT_BINARY | SQL_CVT_VARBINARY | SQL_CVT_LONGVARBINARY | SQL_CVT_DATE |
                     SQL_CVT_TIME | SQL_CVT_TIMESTAMP | SQL_CVT_GUID;
-#endif //SQL_CONVERT_LONGVARBINARY
+#endif // SQL_CONVERT_LONGVARBINARY
 
 #ifdef SQL_PARAM_ARRAY_ROW_COUNTS
                 // Enumerating the driver's properties regarding the availability of row counts in a parameterized
@@ -602,7 +759,7 @@ namespace ignite
                 //     conceptually equivalent to treating the statement together with the complete parameter array as
                 //     one atomic unit. Errors are handled the same as if one statement were executed.
                 intParams[SQL_PARAM_ARRAY_ROW_COUNTS] = SQL_PARC_NO_BATCH;
-#endif //SQL_PARAM_ARRAY_ROW_COUNTS
+#endif // SQL_PARAM_ARRAY_ROW_COUNTS
 
 #ifdef SQL_PARAM_ARRAY_SELECTS
                 // Enumerating the driver's properties regarding the availability of result sets in a parameterized
@@ -620,14 +777,14 @@ namespace ignite
                 // SQL_PAS_NO_SELECT = A driver does not allow a result - set generating statement to be executed with
                 //     an array of parameters.
                 intParams[SQL_PARAM_ARRAY_SELECTS] = SQL_PAS_NO_SELECT;
-#endif //SQL_PARAM_ARRAY_SELECTS
+#endif // SQL_PARAM_ARRAY_SELECTS
 
 #ifdef SQL_CONVERT_GUID
                 // Bitmask indicates the conversions supported by the CONVERT scalar function for target type GUID
                 intParams[SQL_CONVERT_GUID] = SQL_CVT_CHAR | SQL_CVT_VARCHAR | SQL_CVT_LONGVARCHAR |
                     SQL_CVT_WCHAR | SQL_CVT_WLONGVARCHAR | SQL_CVT_WVARCHAR |
                     SQL_CVT_BINARY | SQL_CVT_VARBINARY | SQL_CVT_LONGVARBINARY | SQL_CVT_GUID;
-#endif //SQL_CONVERT_GUID
+#endif // SQL_CONVERT_GUID
 
 #ifdef SQL_SCROLL_OPTIONS
                 // Bitmask enumerating the scroll options supported for scrollable cursors
@@ -640,7 +797,7 @@ namespace ignite
                 //     than the rowset size.The cursor is keyset - driven inside the keyset and dynamic outside the
                 //     keyset. (ODBC 1.0)
                 intParams[SQL_SCROLL_OPTIONS] = SQL_SO_FORWARD_ONLY | SQL_SO_STATIC;
-#endif //SQL_SCROLL_OPTIONS
+#endif // SQL_SCROLL_OPTIONS
 
                 //======================= Short Params ========================
 #ifdef SQL_MAX_CONCURRENT_ACTIVITIES
