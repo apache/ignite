@@ -604,26 +604,23 @@ public class JdbcThinStatementFullApiSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void testBatch() throws Exception {
-        assert !conn.getMetaData().supportsBatchUpdates();
+    public void testBatchEmpty() throws Exception {
+        assert conn.getMetaData().supportsBatchUpdates();
 
-        checkNotSupported(new RunnableX() {
-            @Override public void run() throws Exception {
-                stmt.addBatch("");
-            }
-        });
+        stmt.addBatch("");
+        stmt.clearBatch();
 
-        checkNotSupported(new RunnableX() {
-            @Override public void run() throws Exception {
-                stmt.clearBatch();
-            }
-        });
+        GridTestUtils.assertThrows(log,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    stmt.executeBatch();
 
-        checkNotSupported(new RunnableX() {
-            @Override public void run() throws Exception {
-                stmt.executeBatch();
-            }
-        });
+                    return null;
+                }
+            },
+            SQLException.class,
+            "Batch is empty"
+        );
     }
 
     /**

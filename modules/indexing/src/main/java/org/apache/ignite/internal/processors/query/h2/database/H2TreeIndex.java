@@ -145,7 +145,11 @@ public class H2TreeIndex extends GridH2IndexBase {
             if (!InlineIndexHelper.AVAILABLE_TYPES.contains(col.column.getType()))
                 break;
 
-            InlineIndexHelper idx = new InlineIndexHelper(col.column.getType(), col.column.getColumnId(), col.sortType);
+            InlineIndexHelper idx = new InlineIndexHelper(
+                col.column.getType(),
+                col.column.getColumnId(),
+                col.sortType,
+                table.getCompareMode());
 
             res.add(idx);
         }
@@ -205,25 +209,6 @@ public class H2TreeIndex extends GridH2IndexBase {
             H2Tree tree = treeForRead(seg);
 
             return tree.put(row);
-        }
-        catch (IgniteCheckedException e) {
-            throw DbException.convert(e);
-        }
-        finally {
-            InlineIndexHelper.clearCurrentInlineIndexes();
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean putx(GridH2Row row) {
-        try {
-            InlineIndexHelper.setCurrentInlineIndexes(inlineIdxs);
-
-            int seg = segmentForRow(row);
-
-            H2Tree tree = treeForRead(seg);
-
-            return tree.putx(row);
         }
         catch (IgniteCheckedException e) {
             throw DbException.convert(e);
@@ -341,13 +326,6 @@ public class H2TreeIndex extends GridH2IndexBase {
         finally {
             super.destroy();
         }
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override protected IgniteTree<SearchRow, GridH2Row> doTakeSnapshot() {
-        int seg = threadLocalSegment();
-
-        return treeForRead(seg);
     }
 
     /** {@inheritDoc} */

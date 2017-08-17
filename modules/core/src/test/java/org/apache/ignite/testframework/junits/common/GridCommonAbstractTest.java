@@ -503,8 +503,12 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     protected final Ignite startGridsMultiThreaded(int cnt, boolean awaitPartMapExchange) throws Exception {
         Ignite g = super.startGridsMultiThreaded(cnt);
 
-        if (awaitPartMapExchange)
+        if (awaitPartMapExchange) {
+            if (!g.active())
+                g.active(true);
+
             awaitPartitionMapExchange();
+        }
 
         return g;
     }

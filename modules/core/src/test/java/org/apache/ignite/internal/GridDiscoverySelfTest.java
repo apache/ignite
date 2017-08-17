@@ -123,36 +123,6 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testGetTopologyHash() throws Exception {
-        int hashCnt = 5000;
-
-        Random rand = new Random();
-
-        Collection<Long> hashes = new HashSet<>(hashCnt, 1.0f);
-
-        for (int i = 0; i < hashCnt; i++) {
-            // Max topology of 10 nodes.
-            int size = rand.nextInt(10) + 1;
-
-            Collection<ClusterNode> nodes = new ArrayList<>(size);
-
-            for (int j = 0; j < size; j++)
-                nodes.add(new GridDiscoveryTestNode());
-
-            @SuppressWarnings("deprecation")
-            long hash = ((IgniteKernal) ignite).context().discovery().topologyHash(nodes);
-
-            boolean isHashed = hashes.add(hash);
-
-            assert isHashed : "Duplicate hash [hash=" + hash + ", topSize=" + size + ", iteration=" + i + ']';
-        }
-
-        info("No duplicates found among '" + hashCnt + "' hashes.");
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     @SuppressWarnings({"SuspiciousMethodCalls"})
     public void testGetLocalNode() throws Exception {
         ClusterNode node = ignite.cluster().localNode();

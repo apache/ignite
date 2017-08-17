@@ -37,7 +37,6 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.Executor;
 import java.util.logging.Logger;
-import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.typedef.F;
 
 import static java.sql.ResultSet.CLOSE_CURSORS_AT_COMMIT;
@@ -64,8 +63,11 @@ public class JdbcThinConnection implements Connection {
     /** Logger. */
     private static final Logger LOG = Logger.getLogger(JdbcThinConnection.class.getName());
 
+    /** Connection URL. */
+    private String url;
+
     /** Schema name. */
-    private String schema;
+    private String schemaName;
 
     /** Closed flag. */
     private boolean closed;
@@ -88,6 +90,9 @@ public class JdbcThinConnection implements Connection {
     /** Ignite endpoint. */
     private JdbcThinTcpIo cliIo;
 
+    /** Jdbc metadata. Cache the JDBC object on the first access */
+    private JdbcThinDatabaseMetadata metadata;
+
     /**
      * Creates new connection.
      *
@@ -98,6 +103,8 @@ public class JdbcThinConnection implements Connection {
     public JdbcThinConnection(String url, Properties props) throws SQLException {
         assert url != null;
         assert props != null;
+
+        this.url = url;
 
         holdability = HOLD_CURSORS_OVER_COMMIT;
         autoCommit = true;
@@ -286,7 +293,10 @@ public class JdbcThinConnection implements Connection {
     @Override public DatabaseMetaData getMetaData() throws SQLException {
         ensureNotClosed();
 
-        return new JdbcThinDatabaseMetadata(this);
+        if (metadata == null)
+            metadata = new JdbcThinDatabaseMetadata(this);
+
+        return metadata;
     }
 
     /** {@inheritDoc} */
@@ -569,14 +579,14 @@ public class JdbcThinConnection implements Connection {
         if (schema == null)
             throw new SQLException("Invalid schema value.");
 
-        this.schema = schema;
+        this.schemaName = schema;
     }
 
     /** {@inheritDoc} */
     @Override public String getSchema() throws SQLException {
         ensureNotClosed();
 
-        return schema;
+        return schemaName;
     }
 
     /** {@inheritDoc} */
@@ -736,5 +746,12 @@ public class JdbcThinConnection implements Connection {
             throw new SQLException("Failed to parse int property [name=" + JdbcThinUtils.trimPrefix(propName) +
                 ", value=" + strVal + ']');
         }
+    }
+
+    /**
+     * @return Connection URL.
+     */
+    public String url() {
+        return url;
     }
 }
