@@ -26,8 +26,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * JDBC SQL query parameter metadata.
- *
- * {@see java.sql.ParameterMetaData}.
  */
 public class JdbcParameterMeta implements JdbcRawBinarylizable {
     /** Null value is allow for the param. */
