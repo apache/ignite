@@ -45,7 +45,7 @@ import org.jetbrains.annotations.Nullable;
  *
  * @see IgniteCache#query(Query)
  */
-public class SqlFieldsQuery extends Query<List<?>> {
+public class SqlFieldsQuery extends MergeQuery<List<?>> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -247,6 +247,16 @@ public class SqlFieldsQuery extends Query<List<?>> {
     /** {@inheritDoc} */
     @Override public SqlFieldsQuery setLocal(boolean loc) {
         return (SqlFieldsQuery)super.setLocal(loc);
+    }
+
+    /** {@inheritDoc} */
+    @Override public SqlFieldsQuery setSqlMergeTableMaxSize(int sqlMergeTableMaxSize) {
+        return (SqlFieldsQuery)super.setSqlMergeTableMaxSize(sqlMergeTableMaxSize);
+    }
+
+    /** {@inheritDoc} */
+    @Override public SqlFieldsQuery setSqlMergeTablePrefetchSize(int sqlMergeTablePrefetchSize) {
+        return (SqlFieldsQuery)super.setSqlMergeTablePrefetchSize(sqlMergeTablePrefetchSize);
     }
 
     /**

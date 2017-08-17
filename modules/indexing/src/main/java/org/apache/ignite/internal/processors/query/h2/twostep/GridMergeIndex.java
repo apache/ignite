@@ -51,35 +51,14 @@ import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.Objects.requireNonNull;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_SQL_MERGE_TABLE_MAX_SIZE;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_SQL_MERGE_TABLE_PREFETCH_SIZE;
-import static org.apache.ignite.IgniteSystemProperties.getInteger;
 
 /**
  * Merge index.
  */
 public abstract class GridMergeIndex extends BaseIndex {
     /** */
-    private static final int MAX_FETCH_SIZE = getInteger(IGNITE_SQL_MERGE_TABLE_MAX_SIZE, 10_000);
-
-    /** */
-    private static final int PREFETCH_SIZE = getInteger(IGNITE_SQL_MERGE_TABLE_PREFETCH_SIZE, 1024);
-
-    /** */
     private static final AtomicReferenceFieldUpdater<GridMergeIndex, ConcurrentMap> lastPagesUpdater =
         AtomicReferenceFieldUpdater.newUpdater(GridMergeIndex.class, ConcurrentMap.class, "lastPages");
-
-    static {
-        if (!U.isPow2(PREFETCH_SIZE)) {
-            throw new IllegalArgumentException(IGNITE_SQL_MERGE_TABLE_PREFETCH_SIZE + " (" + PREFETCH_SIZE +
-                ") must be positive and a power of 2.");
-        }
-
-        if (PREFETCH_SIZE >= MAX_FETCH_SIZE) {
-            throw new IllegalArgumentException(IGNITE_SQL_MERGE_TABLE_PREFETCH_SIZE + " (" + PREFETCH_SIZE +
-                ") must be less than " + IGNITE_SQL_MERGE_TABLE_MAX_SIZE + " (" + MAX_FETCH_SIZE + ").");
-        }
-    }
 
     /** */
     protected final Comparator<SearchRow> firstRowCmp = new Comparator<SearchRow>() {
@@ -122,31 +101,46 @@ public abstract class GridMergeIndex extends BaseIndex {
     /** */
     private volatile ConcurrentMap<SourceKey, Integer> lastPages;
 
+    /** */
+    private final int maxFetchSize;
+
+    /** */
+    private final int prefetchSize;
+
     /**
-     * @param ctx Context.
+     * @param ctx Kernal Context.
      * @param tbl Table.
      * @param name Index name.
      * @param type Type.
      * @param cols Columns.
+     * @param maxFetchSize Maximum number of SQL result rows which can be fetched into a merge table.
+     * @param prefetchSize Number of SQL result rows that will be fetched into a merge table
+     * at once before applying binary search for the bounds.
      */
     public GridMergeIndex(GridKernalContext ctx,
         GridMergeTable tbl,
         String name,
         IndexType type,
-        IndexColumn[] cols
+        IndexColumn[] cols,
+        int maxFetchSize,
+        int prefetchSize
     ) {
-        this(ctx);
+        this(ctx, maxFetchSize, prefetchSize);
 
         initBaseIndex(tbl, 0, name, cols, type);
     }
 
     /**
      * @param ctx Context.
+     * @param maxFetchSize Maximum number of SQL result rows which can be fetched into a merge table.
+     * @param prefetchSize Number of SQL result rows that will be fetched into a merge table
+     * at once before applying binary search for the bounds.
      */
-    protected GridMergeIndex(GridKernalContext ctx) {
+    protected GridMergeIndex(GridKernalContext ctx, int maxFetchSize, int prefetchSize) {
         this.ctx = ctx;
-
-        fetched = new BlockList<>(PREFETCH_SIZE);
+        this.maxFetchSize = maxFetchSize;
+        this.prefetchSize = prefetchSize;
+        fetched = new BlockList<>(prefetchSize);
     }
 
     /**
@@ -502,7 +496,7 @@ public abstract class GridMergeIndex extends BaseIndex {
      * @param evictedBlock Evicted block.
      */
     private void onBlockEvict(List<Row> evictedBlock) {
-        assert evictedBlock.size() == PREFETCH_SIZE;
+        assert evictedBlock.size() == prefetchSize;
 
         // Remember the last row (it will be max row) from the evicted block.
         lastEvictedRow = requireNonNull(last(evictedBlock));
@@ -614,10 +608,10 @@ public abstract class GridMergeIndex extends BaseIndex {
                     fetched.add(requireNonNull(stream.next()));
 
                     // Evict block if we've fetched too many rows.
-                    if (fetched.size() == MAX_FETCH_SIZE) {
+                    if (fetched.size() == maxFetchSize) {
                         onBlockEvict(fetched.evictFirstBlock());
 
-                        assert fetched.size() < MAX_FETCH_SIZE;
+                        assert fetched.size() < maxFetchSize;
                     }
 
                     // No bounds -> no need to do binary search, can return the fetched row right away.

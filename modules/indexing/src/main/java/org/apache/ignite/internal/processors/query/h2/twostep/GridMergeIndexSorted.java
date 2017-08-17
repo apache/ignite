@@ -92,14 +92,19 @@ public final class GridMergeIndexSorted extends GridMergeIndex {
      * @param tbl Table.
      * @param name Index name,
      * @param cols Columns.
+     * @param maxFetchSize Maximum number of SQL result rows which can be fetched into a merge table.
+     * @param prefetchSize Number of SQL result rows that will be fetched into a merge table
+     * at once before applying binary search for the bounds.
      */
     public GridMergeIndexSorted(
         GridKernalContext ctx,
         GridMergeTable tbl,
         String name,
-        IndexColumn[] cols
+        IndexColumn[] cols,
+        int maxFetchSize,
+        int prefetchSize
     ) {
-        super(ctx, tbl, name, TYPE, cols);
+        super(ctx, tbl, name, TYPE, cols, maxFetchSize, prefetchSize);
     }
 
     /** {@inheritDoc} */

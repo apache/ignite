@@ -31,7 +31,7 @@ import org.jetbrains.annotations.Nullable;
  *
  * @see IgniteCache#query(Query)
  */
-public final class SqlQuery<K, V> extends Query<Cache.Entry<K, V>> {
+public final class SqlQuery<K, V> extends MergeQuery<Cache.Entry<K, V>> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -198,6 +198,16 @@ public final class SqlQuery<K, V> extends Query<Cache.Entry<K, V>> {
     /** {@inheritDoc} */
     @Override public SqlQuery<K, V> setLocal(boolean loc) {
         return (SqlQuery<K, V>)super.setLocal(loc);
+    }
+
+    /** {@inheritDoc} */
+    @Override public SqlQuery<K, V> setSqlMergeTableMaxSize(int sqlMergeTableMaxSize) {
+        return (SqlQuery<K, V>)super.setSqlMergeTableMaxSize(sqlMergeTableMaxSize);
+    }
+
+    /** {@inheritDoc} */
+    @Override public SqlQuery<K, V> setSqlMergeTablePrefetchSize(int sqlMergeTablePrefetchSize) {
+        return (SqlQuery<K, V>)super.setSqlMergeTablePrefetchSize(sqlMergeTablePrefetchSize);
     }
 
     /**

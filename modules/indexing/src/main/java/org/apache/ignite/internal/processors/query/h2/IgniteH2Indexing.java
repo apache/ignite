@@ -156,6 +156,8 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_H2_DEBUG_CONSOLE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_H2_DEBUG_CONSOLE_PORT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_H2_INDEXING_CACHE_CLEANUP_PERIOD;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_H2_INDEXING_CACHE_THREAD_USAGE_TIMEOUT;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_SQL_MERGE_TABLE_MAX_SIZE;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_SQL_MERGE_TABLE_PREFETCH_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
 import static org.apache.ignite.IgniteSystemProperties.getString;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SQL;
@@ -215,12 +217,30 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** */
     private static final int TWO_STEP_QRY_CACHE_SIZE = 1024;
 
+    /** Default maximum number of SQL result rows which can be fetched into a merge table. */
+    public static final int DFLT_SQL_MERGE_TABLE_MAX_SIZE = 10_000;
+
+    /**
+     * Default Number of SQL result rows that will be fetched into a merge table at once before applying binary search
+     * for the bounds.
+     */
+    public static final int DFLT_SQL_MERGE_TABLE_PREFETCH_SIZE = 1024;
+
     /** The period of clean up the {@link #stmtCache}. */
     private final Long CLEANUP_STMT_CACHE_PERIOD = Long.getLong(IGNITE_H2_INDEXING_CACHE_CLEANUP_PERIOD, 10_000);
 
     /** The timeout to remove entry from the {@link #stmtCache} if the thread doesn't perform any queries. */
     private final Long STATEMENT_CACHE_THREAD_USAGE_TIMEOUT =
         Long.getLong(IGNITE_H2_INDEXING_CACHE_THREAD_USAGE_TIMEOUT, 600 * 1000);
+
+    /** Maximum number of SQL result rows which can be fetched into a merge table. */
+    private int sqlMergeTblMaxSize = DFLT_SQL_MERGE_TABLE_MAX_SIZE;
+
+    /**
+     * Number of SQL result rows that will be fetched into a merge table at once before applying binary search for the
+     * bounds.
+     */
+    private int sqlMergeTblPrefetchSize = DFLT_SQL_MERGE_TABLE_PREFETCH_SIZE;
 
     /** */
     private GridTimeoutProcessor.CancelableTask stmtCacheCleanupTask;
@@ -1413,7 +1433,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (log.isDebugEnabled())
             log.debug("Parsed query: `" + sqlQry + "` into two step query: " + twoStepQry);
 
-        twoStepQry.pageSize(qry.getPageSize());
+        copyParamsToTwoStepQuery(qry, twoStepQry);
 
         if (cancel == null)
             cancel = new GridQueryCancel();
@@ -1442,6 +1462,51 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
 
         return cursor;
+    }
+
+    /**
+     * @param qry Query.
+     * @param twoStepQry Two step query.
+     */
+    private void copyParamsToTwoStepQuery(SqlFieldsQuery qry, GridCacheTwoStepQuery twoStepQry) {
+        twoStepQry.pageSize(qry.getPageSize());
+        twoStepQry.sqlMergeTablePrefetchSize(this.sqlMergeTblPrefetchSize);
+        twoStepQry.sqlMergeTableMaxSize(this.sqlMergeTblMaxSize);
+
+        int prefetchSize = qry.getSqlMergeTablePrefetchSize();
+        int tblMaxSize = qry.getSqlMergeTableMaxSize() != 0 ? qry.getSqlMergeTableMaxSize() : this.sqlMergeTblMaxSize;
+
+        if (prefetchSize > 0 && prefetchSize < tblMaxSize) {
+            if (U.isPow2(prefetchSize))
+                twoStepQry.sqlMergeTablePrefetchSize(prefetchSize);
+            else {
+                // Set nearest power of 2 that < prefetchSize.
+                twoStepQry.sqlMergeTablePrefetchSize(Integer.highestOneBit(prefetchSize));
+
+                U.warn(log, "Query parameter sqlMergeTablePrefetchSize (" + prefetchSize + ")" +
+                    " must be a power of 2. The value was changed to nearest power of 2" +
+                    " (" + twoStepQry.sqlMergeTablePrefetchSize() + ").");
+            }
+        }
+        else if (prefetchSize < 0) {
+            U.warn(log, "Query parameter sqlMergeTablePrefetchSize (" + prefetchSize + ") must be positive." +
+                " It remains defaulted " + "(" + this.sqlMergeTblPrefetchSize + ")");
+        }
+        else if (prefetchSize > 0){
+            U.warn(log, "Query parameter sqlMergeTablePrefetchSize (" + prefetchSize + ") " +
+                "must be less than sqlMergeTableMaxSize (" + tblMaxSize + ")." + " It remains defaulted "
+                + "(" + this.sqlMergeTblPrefetchSize + ")");
+        }
+
+        if (qry.getSqlMergeTableMaxSize() != 0) {
+            if (tblMaxSize > twoStepQry.sqlMergeTablePrefetchSize())
+                twoStepQry.sqlMergeTableMaxSize(tblMaxSize);
+            else {
+                U.warn(log, "Query parameter sqlMergeTblMaxSize (" + tblMaxSize + ") must be greater than " +
+                    "sqlMergeTablePrefetchSize (" + twoStepQry.sqlMergeTablePrefetchSize() + ")."
+                    + " It remains defaulted " + "(" + this.sqlMergeTblMaxSize + ")");
+            }
+        }
     }
 
     /**
@@ -1935,6 +2000,40 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             U.warn(log, "Custom H2 serialization is already configured, will override.");
 
         JdbcUtils.serializer = h2Serializer();
+
+        int sqlMergeTblPrefetchSize = getInteger(IGNITE_SQL_MERGE_TABLE_PREFETCH_SIZE, DFLT_SQL_MERGE_TABLE_PREFETCH_SIZE);
+        int sqlMergeTblMaxSize = getInteger(IGNITE_SQL_MERGE_TABLE_MAX_SIZE, DFLT_SQL_MERGE_TABLE_MAX_SIZE);
+
+        if (sqlMergeTblPrefetchSize > 0 && sqlMergeTblPrefetchSize < sqlMergeTblMaxSize) {
+            if (U.isPow2(sqlMergeTblPrefetchSize))
+                this.sqlMergeTblPrefetchSize = sqlMergeTblPrefetchSize;
+            else {
+                // Set nearest power of 2 that < sqlMergeTblPrefetchSize.
+                this.sqlMergeTblPrefetchSize = Integer.highestOneBit(sqlMergeTblPrefetchSize);
+
+                U.warn(log, IGNITE_SQL_MERGE_TABLE_PREFETCH_SIZE + " (" + sqlMergeTblPrefetchSize + ")" +
+                    " must be a power of 2. The value was changed to nearest power of 2" +
+                    " (" + this.sqlMergeTblPrefetchSize + ").");
+            }
+
+            this.sqlMergeTblMaxSize = sqlMergeTblMaxSize;
+        }
+        else {
+            String msg = IGNITE_SQL_MERGE_TABLE_PREFETCH_SIZE + " (" + sqlMergeTblPrefetchSize + ") " +
+                "must be positive and less than " + IGNITE_SQL_MERGE_TABLE_MAX_SIZE + " (" + sqlMergeTblMaxSize + "). ";
+
+            if (sqlMergeTblMaxSize > this.sqlMergeTblPrefetchSize) {
+
+                this.sqlMergeTblMaxSize = sqlMergeTblMaxSize;
+
+                U.warn(log, msg + IGNITE_SQL_MERGE_TABLE_PREFETCH_SIZE + " remains defaulted " +
+                    "(" + this.sqlMergeTblPrefetchSize + ").");
+            }
+            else {
+                U.warn(log, msg + "The values remains defaulted (" + this.sqlMergeTblPrefetchSize + ") and " +
+                    "(" + this.sqlMergeTblMaxSize + ").");
+            }
+        }
 
         // TODO https://issues.apache.org/jira/browse/IGNITE-2139
         // registerMBean(igniteInstanceName, this, GridH2IndexingSpiMBean.class);

@@ -59,24 +59,34 @@ public final class GridMergeIndexUnsorted extends GridMergeIndex {
      * @param ctx Context.
      * @param tbl  Table.
      * @param name Index name.
+     * @param maxFetchSize Maximum number of SQL result rows which can be fetched into a merge table.
+     * @param prefetchSize Number of SQL result rows that will be fetched into a merge table
+     * at once before applying binary search for the bounds.
      */
-    public GridMergeIndexUnsorted(GridKernalContext ctx, GridMergeTable tbl, String name) {
-        super(ctx, tbl, name, TYPE, IndexColumn.wrap(tbl.getColumns()));
+    public GridMergeIndexUnsorted(GridKernalContext ctx,
+        GridMergeTable tbl,
+        String name,
+        int maxFetchSize,
+        int prefetchSize) {
+        super(ctx, tbl, name, TYPE, IndexColumn.wrap(tbl.getColumns()), maxFetchSize, prefetchSize);
     }
 
     /**
      * @param ctx Context.
+     * @param maxFetchSize Maximum number of SQL result rows which can be fetched into a merge table.
+     * @param prefetchSize Number of SQL result rows that will be fetched into a merge table
+     * at once before applying binary search for the bounds.
      * @return Dummy index instance.
      */
-    public static GridMergeIndexUnsorted createDummy(GridKernalContext ctx) {
-        return new GridMergeIndexUnsorted(ctx);
+    public static GridMergeIndexUnsorted createDummy(GridKernalContext ctx, int maxFetchSize, int prefetchSize) {
+        return new GridMergeIndexUnsorted(ctx, maxFetchSize, prefetchSize);
     }
 
     /**
      * @param ctx Context.
      */
-    private GridMergeIndexUnsorted(GridKernalContext ctx) {
-        super(ctx);
+    private GridMergeIndexUnsorted(GridKernalContext ctx, int maxFetchSize, int prefetchSize) {
+        super(ctx, maxFetchSize, prefetchSize);
     }
 
     /** {@inheritDoc} */

@@ -23,6 +23,9 @@ import java.util.Set;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
+import static org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing.DFLT_SQL_MERGE_TABLE_MAX_SIZE;
+import static org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing.DFLT_SQL_MERGE_TABLE_PREFETCH_SIZE;
+
 /**
  * Two step map-reduce style query.
  */
@@ -40,6 +43,15 @@ public class GridCacheTwoStepQuery {
 
     /** */
     private int pageSize = DFLT_PAGE_SIZE;
+
+    /** Maximum number of SQL result rows which can be fetched into a merge table. */
+    private int sqlMergeTblMaxSize = DFLT_SQL_MERGE_TABLE_MAX_SIZE;
+
+    /**
+     * Number of SQL result rows that will be fetched into a merge table at once before applying binary search for the
+     * bounds.
+     */
+    private int sqlMergeTblPrefetchSize = DFLT_SQL_MERGE_TABLE_PREFETCH_SIZE;
 
     /** */
     private boolean explain;
@@ -92,7 +104,6 @@ public class GridCacheTwoStepQuery {
         return distributedJoins;
     }
 
-
     /**
      * @return {@code True} if reduce query can skip merge table creation and get data directly from merge index.
      */
@@ -133,6 +144,38 @@ public class GridCacheTwoStepQuery {
      */
     public int pageSize() {
         return pageSize;
+    }
+
+    /**
+     * @return Maximum number of SQL result rows which can be fetched into a merge table.
+     */
+    public int sqlMergeTableMaxSize() {
+        return sqlMergeTblMaxSize;
+    }
+
+    /**
+     * @param sqlMergeTblMaxSize New maximum number of SQL result rows which can be fetched into a merge table. Must be
+     * positive and greater than {@link GridCacheTwoStepQuery#sqlMergeTblPrefetchSize}.
+     */
+    public void sqlMergeTableMaxSize(int sqlMergeTblMaxSize) {
+        this.sqlMergeTblMaxSize = sqlMergeTblMaxSize;
+    }
+
+    /**
+     * @return Number of SQL result rows that will be fetched into a merge table at once before applying binary search
+     * for the bounds.
+     */
+    public int sqlMergeTablePrefetchSize() {
+        return sqlMergeTblPrefetchSize;
+    }
+
+    /**
+     * @param sqlMergeTblPrefetchSize New number of SQL result rows that will be fetched into a merge table at once
+     * before applying binary search for the bounds. Must be positive and power of 2 and less than {@link
+     * GridCacheTwoStepQuery#sqlMergeTblMaxSize}.
+     */
+    public void sqlMergeTablePrefetchSize(int sqlMergeTblPrefetchSize) {
+        this.sqlMergeTblPrefetchSize = sqlMergeTblPrefetchSize;
     }
 
     /**
