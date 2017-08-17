@@ -34,6 +34,18 @@ import org.apache.ignite.internal.processors.odbc.SqlListenerRequest;
 import org.apache.ignite.internal.processors.odbc.SqlListenerResponse;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBatchExecuteRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBatchExecuteResult;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaColumnsRequest;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaColumnsResult;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaIndexesRequest;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaIndexesResult;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaParamsRequest;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaParamsResult;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaPrimaryKeysRequest;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaPrimaryKeysResult;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaSchemasRequest;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaSchemasResult;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaTablesRequest;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaTablesResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQuery;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryCloseRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteRequest;
@@ -47,6 +59,7 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResponse;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResult;
 import org.apache.ignite.internal.util.ipc.loopback.IpcClientTcpEndpoint;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteProductVersion;
 
 /**
  * JDBC IO layer implementation based on blocking IPC streams.
@@ -59,7 +72,7 @@ public class JdbcThinTcpIo {
     private static final int HANDSHAKE_MSG_SIZE = 13;
 
     /** Initial output for query message. */
-    private static final int QUERY_EXEC_MSG_INIT_CAP = 256;
+    private static final int DYNAMIC_SIZE_MSG_CAP = 256;
 
     /** Maximum batch query count. */
     private static final int MAX_BATCH_QRY_CNT = 32;
@@ -114,6 +127,9 @@ public class JdbcThinTcpIo {
 
     /** Closed flag. */
     private boolean closed;
+
+    /** Ignite server version. */
+    private IgniteProductVersion igniteVer;
 
     /**
      * Constructor.
@@ -202,8 +218,20 @@ public class JdbcThinTcpIo {
 
         boolean accepted = reader.readBoolean();
 
-        if (accepted)
+        if (accepted) {
+            byte maj = reader.readByte();
+            byte min = reader.readByte();
+            byte maintenance = reader.readByte();
+
+            String stage = reader.readString();
+
+            long ts = reader.readLong();
+            byte[] hash = reader.readByteArray();
+
+            igniteVer = new IgniteProductVersion(maj, min, maintenance, stage, ts, hash);
+
             return;
+        }
 
         short maj = reader.readShort();
         short min = reader.readShort();
@@ -231,7 +259,7 @@ public class JdbcThinTcpIo {
         String sql, List<Object> args)
         throws IOException, IgniteCheckedException {
         return sendRequest(new JdbcQueryExecuteRequest(cache, fetchSize, maxRows, sql,
-            args == null ? null : args.toArray(new Object[args.size()])), QUERY_EXEC_MSG_INIT_CAP);
+            args == null ? null : args.toArray(new Object[args.size()])), DYNAMIC_SIZE_MSG_CAP);
     }
 
     /**
@@ -295,21 +323,89 @@ public class JdbcThinTcpIo {
     }
 
     /**
-     * @param schema Schema.
+     * @param schemaName Schema.
      * @param batch Batch queries.
      * @return Result.
      * @throws IOException On error.
      * @throws IgniteCheckedException On error.
      */
-    public JdbcBatchExecuteResult batchExecute(String schema, List<JdbcQuery> batch)
+    public JdbcBatchExecuteResult batchExecute(String schemaName, List<JdbcQuery> batch)
         throws IOException, IgniteCheckedException {
         int cnt = Math.min(MAX_BATCH_QRY_CNT, batch.size());
 
-        return sendRequest(new JdbcBatchExecuteRequest(schema, batch), QUERY_EXEC_MSG_INIT_CAP * cnt);
+        return sendRequest(new JdbcBatchExecuteRequest(schemaName, batch), DYNAMIC_SIZE_MSG_CAP * cnt);
     }
 
     /**
-     * @param req ODBC request.
+     * @param schemaPtrn Schema name pattern.
+     * @param tablePtrn Table name pattern.
+     * @return Result.
+     * @throws IOException On error.
+     * @throws IgniteCheckedException On error.
+     */
+    public JdbcMetaTablesResult tablesMeta(String schemaPtrn, String tablePtrn)
+        throws IOException, IgniteCheckedException {
+        return sendRequest(new JdbcMetaTablesRequest(schemaPtrn, tablePtrn), DYNAMIC_SIZE_MSG_CAP);
+    }
+
+    /**
+     * @param schemaPtrn Schema name pattern.
+     * @param tablePtrn Table name pattern.
+     * @param columnPtrn Column name pattern.
+     * @return Result.
+     * @throws IOException On error.
+     * @throws IgniteCheckedException On error.
+     */
+    public JdbcMetaColumnsResult columnsMeta(String schemaPtrn, String tablePtrn, String columnPtrn)
+        throws IOException, IgniteCheckedException {
+        return sendRequest(new JdbcMetaColumnsRequest(schemaPtrn, tablePtrn, columnPtrn), DYNAMIC_SIZE_MSG_CAP);
+    }
+
+    /**
+     * @param schemaPtrn Schema name pattern.
+     * @param tablePtrn Table name pattern.
+     * @return Result.
+     * @throws IOException On error.
+     * @throws IgniteCheckedException On error.
+     */
+    public JdbcMetaIndexesResult indexMeta(String schemaPtrn, String tablePtrn) throws IOException, IgniteCheckedException {
+        return sendRequest(new JdbcMetaIndexesRequest(schemaPtrn, tablePtrn), DYNAMIC_SIZE_MSG_CAP);
+    }
+
+    /**
+     * @param schemaPtrn Schema name pattern.
+     * @param sql SQL query.
+     * @return Result.
+     * @throws IOException On error.
+     * @throws IgniteCheckedException On error.
+     */
+    public JdbcMetaParamsResult parametersMeta(String schemaPtrn, String sql) throws IOException, IgniteCheckedException {
+        return sendRequest(new JdbcMetaParamsRequest(schemaPtrn, sql), DYNAMIC_SIZE_MSG_CAP);
+    }
+
+    /**
+     * @param schemaPtrn Schema name pattern.
+     * @param tablePtrn Table name pattern.
+     * @return Result.
+     * @throws IOException On error.
+     * @throws IgniteCheckedException On error.
+     */
+    public JdbcMetaPrimaryKeysResult primaryKeysMeta(String schemaPtrn, String tablePtrn) throws IOException, IgniteCheckedException {
+        return sendRequest(new JdbcMetaPrimaryKeysRequest(schemaPtrn, tablePtrn), DYNAMIC_SIZE_MSG_CAP);
+    }
+
+    /**
+     * @param schemaPtrn Schema name pattern.
+     * @return Result.
+     * @throws IOException On error.
+     * @throws IgniteCheckedException On error.
+     */
+    public JdbcMetaSchemasResult schemasMeta(String schemaPtrn) throws IOException, IgniteCheckedException {
+        return sendRequest(new JdbcMetaSchemasRequest(schemaPtrn), DYNAMIC_SIZE_MSG_CAP);
+    }
+
+    /**
+     * @param req JDBC request bytes.
      * @throws IOException On error.
      */
     private void send(byte[] req) throws IOException {
@@ -433,5 +529,12 @@ public class JdbcThinTcpIo {
      */
     public boolean tcpNoDelay() {
         return tcpNoDelay;
+    }
+
+    /**
+     * @return Ignnite server version.
+     */
+    IgniteProductVersion igniteVersion() {
+        return igniteVer;
     }
 }

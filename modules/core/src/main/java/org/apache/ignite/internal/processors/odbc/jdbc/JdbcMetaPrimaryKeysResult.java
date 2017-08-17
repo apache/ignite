@@ -18,92 +18,82 @@
 package org.apache.ignite.internal.processors.odbc.jdbc;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
-import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.jetbrains.annotations.Nullable;
 
 /**
- * JDBC batch execute request.
+ * JDBC primary keys metadata result.
  */
-public class JdbcBatchExecuteRequest extends JdbcRequest {
-    /** Schema name. */
-    private String schemaName;
-
-    /** Sql query. */
-    @GridToStringInclude(sensitive = true)
-    private List<JdbcQuery> queries;
+public class JdbcMetaPrimaryKeysResult extends JdbcResult {
+    /** Query result rows. */
+    private List<JdbcPrimaryKeyMeta> meta;
 
     /**
-     * Default constructor.
+     * Default constructor is used for deserialization.
      */
-    public JdbcBatchExecuteRequest() {
-        super(BATCH_EXEC);
+    JdbcMetaPrimaryKeysResult() {
+        super(META_PRIMARY_KEYS);
     }
 
     /**
-     * @param schemaName Schema name.
-     * @param queries Queries.
+     * @param meta Column metadata.
      */
-    public JdbcBatchExecuteRequest(String schemaName, List<JdbcQuery> queries) {
-        super(BATCH_EXEC);
+    JdbcMetaPrimaryKeysResult(Collection<JdbcPrimaryKeyMeta> meta) {
+        super(META_PRIMARY_KEYS);
 
-        assert !F.isEmpty(queries);
-
-        this.schemaName = schemaName;
-        this.queries = queries;
-    }
-
-    /**
-     * @return Schema name.
-     */
-    @Nullable public String schemaName() {
-        return schemaName;
-    }
-
-    /**
-     * @return Queries.
-     */
-    public List<JdbcQuery> queries() {
-        return queries;
+        this.meta = new ArrayList<>(meta);
     }
 
     /** {@inheritDoc} */
     @Override public void writeBinary(BinaryWriterExImpl writer) throws BinaryObjectException {
         super.writeBinary(writer);
 
-        writer.writeString(schemaName);
-        writer.writeInt(queries.size());
+        if (F.isEmpty(meta))
+            writer.writeInt(0);
+        else {
+            writer.writeInt(meta.size());
 
-        for (JdbcQuery q : queries)
-            q.writeBinary(writer);
+            for(JdbcPrimaryKeyMeta m : meta)
+                m.writeBinary(writer);
+        }
     }
 
     /** {@inheritDoc} */
     @Override public void readBinary(BinaryReaderExImpl reader) throws BinaryObjectException {
         super.readBinary(reader);
 
-        schemaName = reader.readString();
+        int size = reader.readInt();
 
-        int n = reader.readInt();
+        if (size == 0)
+            meta = Collections.emptyList();
+        else {
+            meta = new ArrayList<>(size);
 
-        queries = new ArrayList<>(n);
+            for (int i = 0; i < size; ++i) {
+                JdbcPrimaryKeyMeta m = new JdbcPrimaryKeyMeta();
 
-        for (int i = 0; i < n; ++i) {
-            JdbcQuery qry = new JdbcQuery();
+                m.readBinary(reader);
 
-            qry.readBinary(reader);
-
-            queries.add(qry);
+                meta.add(m);
+            }
         }
+    }
+
+    /**
+     * @return Primary keys metadata.
+     */
+    public List<JdbcPrimaryKeyMeta> meta() {
+        return meta;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(JdbcBatchExecuteRequest.class, this);
+        return S.toString(JdbcMetaPrimaryKeysResult.class, this);
     }
 }
