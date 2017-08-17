@@ -145,21 +145,4 @@ web-console-header {
             border-top: 1px solid darken($brand-warning, 15%);
         }
     }
-
-    .wch-web-agent-download {
-        border-bottom-right-radius: $ignite-button-border-radius;
-        border-bottom-left-radius: $ignite-button-border-radius;
-        position: absolute;
-        top: 100%;
-        right: 0;
-        margin-top: $bottom-border-width;
-        // If defined on button, shadow would conflict with already present
-        // shadows of .btn-ignite, so we shadow wrapper instead.
-        box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.3);
-
-        .btn-ignite--primary {
-            border-top-right-radius: 0;
-            border-top-left-radius: 0;
-        }
-    }
 }
