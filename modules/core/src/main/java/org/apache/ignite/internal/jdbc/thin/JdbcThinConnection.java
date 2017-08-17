@@ -91,7 +91,7 @@ public class JdbcThinConnection implements Connection {
     /** Ignite endpoint. */
     private JdbcThinTcpIo cliIo;
 
-    /** Metadata. */
+    /** Jdbc metadata. Cache the JDBC object on the first access */
     private JdbcThinDatabaseMetadata metadata;
 
     /**

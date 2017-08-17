@@ -100,6 +100,9 @@ public class JdbcThinResultSet implements ResultSet {
     /** Update count. */
     private long updCnt;
 
+    /** Jdbc metadata. Cache the JDBC object on the first access */
+    private JdbcThinResultSetMetadata jdbcMeta;
+
     /**
      * Constructs static result set.
      *
@@ -522,7 +525,10 @@ public class JdbcThinResultSet implements ResultSet {
     @Override public ResultSetMetaData getMetaData() throws SQLException {
         ensureNotClosed();
 
-        return new JdbcThinResultSetMetadata(meta());
+        if (jdbcMeta == null)
+            jdbcMeta = new JdbcThinResultSetMetadata(meta());
+
+        return jdbcMeta;
     }
 
     /** {@inheritDoc} */
