@@ -233,7 +233,7 @@ public class SqlFieldsQuery extends Query<List<?>> {
     /**
      * Check if distributed joins are enabled for this query.
      *
-     * @return {@code true} If distributed joind enabled.
+     * @return {@code true} If distributed joins enabled.
      */
     public boolean isDistributedJoins() {
         return distributedJoins;
