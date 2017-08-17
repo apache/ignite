@@ -1347,22 +1347,25 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
                 }
             }
             else {
-                txSync.listen(new CI1<IgniteInternalFuture<?>>() {
-                    @Override public void apply(IgniteInternalFuture<?> t) {
-                        try {
-                            if (log.isDebugEnabled())
-                                log.debug("Sending near lock request [node=" + node.id() + ", req=" + req + ']');
 
-                            cctx.io().send(node, req, cctx.ioPolicy());
-                        }
-                        catch (ClusterTopologyCheckedException ex) {
-                            fut.onResult(ex);
-                        }
-                        catch (IgniteCheckedException e) {
-                            onError(e);
-                        }
-                    }
-                });
+                throw new RuntimeException("[txSync.listen].GridNearLockFuture= " + this);
+
+//                txSync.listen(new CI1<IgniteInternalFuture<?>>() {
+//                    @Override public void apply(IgniteInternalFuture<?> t) {
+//                        try {
+//                            if (log.isDebugEnabled())
+//                                log.debug("Sending near lock request [node=" + node.id() + ", req=" + req + ']');
+//
+//                            cctx.io().send(node, req, cctx.ioPolicy());
+//                        }
+//                        catch (ClusterTopologyCheckedException ex) {
+//                            fut.onResult(ex);
+//                        }
+//                        catch (IgniteCheckedException e) {
+//                            onError(e);
+//                        }
+//                    }
+//                });
             }
         }
     }
