@@ -640,13 +640,14 @@ public class PageMemoryImpl implements PageMemoryEx {
 
         GridUnsafe.setMemory(absPtr + PAGE_OVERHEAD, pageSize(), (byte)0);
 
+        PageHeader.dirty(absPtr, false);
+
         long tmpBufPtr = PageHeader.tempBufferPointer(absPtr);
 
         if (tmpBufPtr != INVALID_REL_PTR) {
             GridUnsafe.setMemory(checkpointPool.absolute(tmpBufPtr) + PAGE_OVERHEAD, pageSize(), (byte)0);
 
             PageHeader.tempBufferPointer(absPtr, INVALID_REL_PTR);
-            PageHeader.dirty(absPtr, false);
 
             // We pinned the page when allocated the temp buffer, release it now.
             PageHeader.releasePage(absPtr);
@@ -656,6 +657,12 @@ public class PageMemoryImpl implements PageMemoryEx {
 
         if (rmv)
             seg.loadedPages.remove(cacheId, PageIdUtils.effectivePageId(pageId), tag);
+
+        if (seg.segCheckpointPages != null)
+            seg.segCheckpointPages.remove(new FullPageId(pageId, cacheId));
+
+        if (seg.dirtyPages != null)
+            seg.dirtyPages.remove(new FullPageId(pageId, cacheId));
 
         return relPtr;
     }
