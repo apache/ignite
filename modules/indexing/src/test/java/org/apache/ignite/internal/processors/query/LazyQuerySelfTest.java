@@ -149,6 +149,23 @@ public class LazyQuerySelfTest extends GridCommonAbstractTest {
         stopGrid(3);
 
         assertNoWorkers();
+
+        // Test server node leave with active worker.
+        cursor = execute(srv1, baseQuery().setPageSize(PAGE_SIZE_SMALL));
+
+        try {
+            iter = cursor.iterator();
+
+            for (int i = 0; i < 30; i++)
+                iter.next();
+
+            stopGrid(2);
+        }
+        finally {
+            cursor.close();
+        }
+
+        assertNoWorkers();
     }
 
     /**

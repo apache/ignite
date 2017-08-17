@@ -61,7 +61,7 @@ public class MapQueryLazyWorker extends GridWorker {
      */
     public MapQueryLazyWorker(@Nullable String instanceName, MapQueryLazyWorkerKey key, IgniteLogger log,
         GridMapQueryExecutor exec) {
-        super(instanceName, workerName(key), log);
+        super(instanceName, workerName(instanceName, key), log);
 
         this.key = key;
         this.exec = exec;
@@ -120,6 +120,8 @@ public class MapQueryLazyWorker extends GridWorker {
             isCancelled = true;
 
             stopLatch.countDown();
+
+            System.out.println("WORKER CANCEL: " + name());
         }
     }
 
@@ -152,10 +154,12 @@ public class MapQueryLazyWorker extends GridWorker {
     /**
      * Construct worker name.
      *
+     * @param instanceName Instance name.
      * @param key Key.
      * @return Name.
      */
-    private static String workerName(MapQueryLazyWorkerKey key) {
-        return "query-lazy-worker_" + key.nodeId() + "_" + key.queryRequestId() + "_" + key.segment();
+    private static String workerName(String instanceName, MapQueryLazyWorkerKey key) {
+        return "query-lazy-worker_" + instanceName + "_" + key.nodeId() + "_" + key.queryRequestId() + "_" +
+            key.segment();
     }
 }

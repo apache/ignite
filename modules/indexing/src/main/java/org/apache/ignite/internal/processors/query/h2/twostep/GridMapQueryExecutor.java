@@ -30,6 +30,7 @@ import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -111,6 +112,12 @@ public class GridMapQueryExecutor {
     /** Lazy workers. */
     private final ConcurrentHashMap<MapQueryLazyWorkerKey, MapQueryLazyWorker> lazyWorkers = new ConcurrentHashMap<>();
 
+    /** Busy lock for lazy workers. */
+    private final GridSpinBusyLock lazyWorkerBusyLock = new GridSpinBusyLock();
+
+    /** Lazy worker stop guard. */
+    private final AtomicBoolean lazyWorkerStopGuard = new AtomicBoolean();
+
     /**
      * @param busyLock Busy lock.
      */
@@ -163,6 +170,24 @@ public class GridMapQueryExecutor {
                 }
             }
         });
+    }
+
+    /**
+     * Cancel active lazy queries and prevent submit of new queries.
+     */
+    public void cancelLazyWorkers() {
+        if (!lazyWorkerStopGuard.compareAndSet(false, true))
+            return;
+
+        lazyWorkerBusyLock.block();
+
+        for (MapQueryLazyWorker worker : lazyWorkers.values()) {
+            System.out.println("Stopping: " + worker.name());
+
+            worker.stop();
+        }
+
+        lazyWorkers.clear();
     }
 
     /**
@@ -543,7 +568,7 @@ public class GridMapQueryExecutor {
                 }
             });
 
-            if (busyLock.enterBusy()) {
+            if (lazyWorkerBusyLock.enterBusy()) {
                 try {
                     MapQueryLazyWorker oldWorker = lazyWorkers.put(key, worker);
 
@@ -555,9 +580,11 @@ public class GridMapQueryExecutor {
                     thread.start();
                 }
                 finally {
-                    busyLock.leaveBusy();
+                    lazyWorkerBusyLock.leaveBusy();
                 }
             }
+            else
+                log.info("Ignored query request (node is stopping) [nodeId=" + node.id() + ", reqId=" + reqId + ']');
 
             return;
         }
