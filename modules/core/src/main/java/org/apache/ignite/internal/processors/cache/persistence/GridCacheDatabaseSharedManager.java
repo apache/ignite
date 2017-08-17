@@ -300,9 +300,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     private ObjectName persistenceMetricsMbeanName;
 
     /** */
-    private MetaStorage metaStorage;
-
-    /** */
 //    private BPlusTree<String, byte[]> storeTree;
 
     /**
@@ -587,9 +584,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             restoreMemory(status, true, storePageMem);
 
-            metaStorage = new MetaStorage(cctx.wal(), storeMemPlc);
-
-            metaStorage.start();
+//            metaStorage = new MetaStorage(cctx.wal(), storeMemPlc);
+//
+//            metaStorage.start();
 
         }
         catch (StorageException e) {
