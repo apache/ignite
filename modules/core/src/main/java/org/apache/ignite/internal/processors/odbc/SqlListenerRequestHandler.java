@@ -40,9 +40,9 @@ public interface SqlListenerRequestHandler {
     public SqlListenerResponse handleException(Exception e);
 
     /**
-     * Add custom data to handshake response.
+     * Write successful handshake response.
      *
      * @param writer Binary writer.
      */
-    public void handshakeAdditionalResponse(BinaryWriterExImpl writer);
+    public void writeHandshake(BinaryWriterExImpl writer);
 }

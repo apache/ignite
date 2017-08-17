@@ -231,13 +231,10 @@ public class SqlListenerNioListener extends GridNioServerListenerAdapter<byte[]>
         // Send response.
         BinaryWriterExImpl writer = new BinaryWriterExImpl(null, new BinaryHeapOutputStream(8), null, null);
 
-        if (errMsg == null) {
-            writer.writeBoolean(true);
-
-            if (connCtx != null)
-                connCtx.handler().handshakeAdditionalResponse(writer);
-        }
+        if (connCtx != null)
+            connCtx.handler().writeHandshake(writer);
         else {
+            // Failed handshake response
             writer.writeBoolean(false);
             writer.writeShort(CURRENT_VER.major());
             writer.writeShort(CURRENT_VER.minor());
