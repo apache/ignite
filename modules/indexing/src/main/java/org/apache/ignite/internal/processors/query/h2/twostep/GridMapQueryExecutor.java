@@ -222,7 +222,7 @@ public class GridMapQueryExecutor {
      * @return Results for node.
      */
     private MapNodeResults resultsForNode(UUID nodeId) {
-        MapNodeResults nodeRess =  qryRess.get(nodeId);
+        MapNodeResults nodeRess = qryRess.get(nodeId);
 
         if (nodeRess == null) {
             nodeRess = new MapNodeResults(nodeId);
