@@ -3041,6 +3041,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException If check failed.
      */
     private void checkMemoryConfiguration(ClusterNode rmt) throws IgniteCheckedException {
+        ClusterNode locNode = ctx.discovery().localNode();
+
+        if (locNode.isClient() || locNode.isDaemon() || rmt.isClient() || rmt.isDaemon())
+            return;
+
         MemoryConfiguration memCfg = rmt.attribute(IgniteNodeAttributes.ATTR_MEMORY_CONFIG);
 
         if (memCfg != null) {
