@@ -1192,6 +1192,22 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         };
     }
 
+    /** */
+    long runDistributedUpdate(
+        String schemaName,
+        SqlFieldsQuery fieldsQry,
+        List<Integer> cacheIds,
+        byte updateMode,
+        String tgtTable,
+        String[] colNames,
+        String selectQry,
+        GridQueryCancel cancel) {
+
+        return rdcQryExec.update(schemaName, cacheIds, updateMode, tgtTable, colNames, selectQry,
+            fieldsQry.isEnforceJoinOrder(), fieldsQry.getPageSize(), fieldsQry.getTimeout(),
+            fieldsQry.getArgs(), fieldsQry.getPartitions(), cancel);
+    }
+
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public <K, V> QueryCursor<Cache.Entry<K, V>> queryDistributedSql(String schemaName, SqlQuery qry,
@@ -1365,33 +1381,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     }
                 }
 
-                LinkedHashSet<Integer> caches0 = new LinkedHashSet<>();
-
                 assert twoStepQry != null;
 
-                int tblCnt = twoStepQry.tablesCount();
+                List<Integer> cacheIds = collectCacheIds(mainCacheId, twoStepQry);
 
-                if (mainCacheId != null)
-                    caches0.add(mainCacheId);
-
-                if (tblCnt > 0) {
-                    for (QueryTable tblKey : twoStepQry.tables()) {
-                        GridH2Table tbl = dataTable(tblKey);
-
-                        int cacheId = CU.cacheId(tbl.cacheName());
-
-                        caches0.add(cacheId);
-                    }
-                }
-
-                if (caches0.isEmpty())
+                if (F.isEmpty(cacheIds))
                     twoStepQry.local(true);
                 else {
-                    //Prohibit usage indices with different numbers of segments in same query.
-                    List<Integer> cacheIds = new ArrayList<>(caches0);
-
-                    checkCacheIndexSegmentation(cacheIds);
-
                     twoStepQry.cacheIds(cacheIds);
                     twoStepQry.local(qry.isLocal());
                 }
@@ -1442,6 +1438,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
 
         return cursor;
+    }
+
+    /** */
+    public long mapDistributedUpdate(byte mode, String schemaName, String targetTable, String[] colNames,
+        String qry, Object[] params, int pageSize, int timeoutMillis, IndexingQueryFilter filter)
+        throws IgniteCheckedException {
+        return dmlProc.mapDistributedUpdate(mode, schemaName, targetTable, colNames, qry, params, pageSize,
+            timeoutMillis, filter);
     }
 
     /**
@@ -2390,6 +2394,37 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         for (Connection conn : conns)
             U.close(conn, log);
+    }
+
+    /** */
+    public List<Integer> collectCacheIds(@Nullable Integer mainCacheId, GridCacheTwoStepQuery twoStepQry) {
+        LinkedHashSet<Integer> caches0 = new LinkedHashSet<>();
+
+        int tblCnt = twoStepQry.tablesCount();
+
+        if (mainCacheId != null)
+            caches0.add(mainCacheId);
+
+        if (tblCnt > 0) {
+            for (QueryTable tblKey : twoStepQry.tables()) {
+                GridH2Table tbl = dataTable(tblKey);
+
+                int cacheId = CU.cacheId(tbl.cacheName());
+
+                caches0.add(cacheId);
+            }
+        }
+
+        if (caches0.isEmpty())
+            return null;
+        else {
+            //Prohibit usage indices with different numbers of segments in same query.
+            List<Integer> cacheIds = new ArrayList<>(caches0);
+
+            checkCacheIndexSegmentation(cacheIds);
+
+            return cacheIds;
+        }
     }
 
     /**

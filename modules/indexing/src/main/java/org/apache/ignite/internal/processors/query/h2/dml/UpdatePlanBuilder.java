@@ -212,7 +212,8 @@ public final class UpdatePlanBuilder {
      * @return Update plan.
      * @throws IgniteCheckedException if failed.
      */
-    private static UpdatePlan planForUpdate(GridSqlStatement stmt, @Nullable Integer errKeysPos) throws IgniteCheckedException {
+    private static UpdatePlan planForUpdate(GridSqlStatement stmt, @Nullable Integer errKeysPos)
+        throws IgniteCheckedException {
         GridSqlElement target;
 
         FastUpdateArguments fastUpdate;
@@ -297,6 +298,65 @@ public final class UpdatePlanBuilder {
                 return UpdatePlan.forDelete(gridTbl, sel.getSQL());
             }
         }
+    }
+
+    /** */
+    public static UpdatePlan planFromMessage(GridCacheContext cctx, UpdateMode updateMode, GridH2Table tgtTbl,
+        GridH2RowDescriptor desc, String[] colNames, String qry) throws IgniteCheckedException {
+        boolean hasKeyProps = false;
+        boolean hasValProps = false;
+        int keyColIdx = -1;
+        int valColIdx = -1;
+        int[] colTypes = null;
+
+        if (updateMode != UpdateMode.DELETE) {
+            colTypes = new int[colNames.length];
+
+            for (int i = 0; i < colTypes.length; ++i) {
+                String colName = colNames[i];
+
+                Column col = tgtTbl.getColumn(colName);
+
+                colTypes[i] = col.getType();
+
+                int colId = col.getColumnId();
+
+                if (desc.isKeyColumn(colId)) {
+                    keyColIdx = i;
+
+                    continue;
+                }
+
+                if (desc.isValueColumn(colId)) {
+                    valColIdx = i;
+
+                    continue;
+                }
+
+                GridQueryProperty prop = desc.type().property(colName);
+
+                assert prop != null : "Property '" + colName + "' not found.";
+
+                if (prop.key())
+                    hasKeyProps = true;
+                else
+                    hasValProps = true;
+            }
+
+            if (updateMode == UpdateMode.UPDATE)
+                valColIdx = (valColIdx != -1) ? valColIdx + 2 : -1;
+        }
+
+        KeyValueSupplier keySupplier = (updateMode == UpdateMode.INSERT || updateMode == UpdateMode.MERGE) ?
+            createSupplier(cctx, desc.type(), keyColIdx, hasKeyProps, true, false) : null;
+
+        int valSupColIdx = (updateMode == UpdateMode.UPDATE)? ((valColIdx != -1) ? valColIdx : 1) : valColIdx;
+
+        KeyValueSupplier valSupplier = (updateMode == UpdateMode.DELETE) ? null :
+            createSupplier(cctx, desc.type(), valSupColIdx, hasValProps, false, updateMode == UpdateMode.UPDATE);
+
+        return UpdatePlan.fromMessage(updateMode, tgtTbl, colNames, colTypes, qry, keySupplier, valSupplier,
+            keyColIdx, valColIdx);
     }
 
     /**

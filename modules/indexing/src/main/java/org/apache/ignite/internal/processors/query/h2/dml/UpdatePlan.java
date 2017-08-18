@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2.dml;
 
+import java.util.List;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.typedef.F;
 
@@ -64,6 +65,12 @@ public final class UpdatePlan {
     /** Arguments for fast UPDATE or DELETE. */
     public final FastUpdateArguments fastUpdateArgs;
 
+    /** Distributed update flag. */
+    public boolean distributed = false;
+
+    /** */
+    public List<Integer> cacheIds;
+
     /** */
     private UpdatePlan(UpdateMode mode, GridH2Table tbl, String[] colNames, int[] colTypes, KeyValueSupplier keySupplier,
         KeyValueSupplier valSupplier, int keyColIdx, int valColIdx, String selectQry, boolean isLocSubqry,
@@ -97,11 +104,12 @@ public final class UpdatePlan {
 
     /** */
     public static UpdatePlan forInsert(GridH2Table tbl, String[] colNames, int[] colTypes, KeyValueSupplier keySupplier,
-        KeyValueSupplier valSupplier, int keyColIdx, int valColIdx, String selectQry, boolean isLocSubqry, int rowsNum) {
+        KeyValueSupplier valSupplier, int keyColIdx, int valColIdx, String selectQry, boolean isLocSubqry,
+        int rowsNum) {
         assert !F.isEmpty(colNames);
 
-        return new UpdatePlan(UpdateMode.INSERT, tbl, colNames, colTypes, keySupplier, valSupplier, keyColIdx, valColIdx,
-            selectQry, isLocSubqry, rowsNum, null);
+        return new UpdatePlan(UpdateMode.INSERT, tbl, colNames, colTypes, keySupplier, valSupplier, keyColIdx,
+            valColIdx, selectQry, isLocSubqry, rowsNum, null);
     }
 
     /** */
@@ -125,4 +133,10 @@ public final class UpdatePlan {
         return new UpdatePlan(mode, tbl, null, null, null, null, -1, -1, null, false, 0, fastUpdateArgs);
     }
 
+    /** */
+    public static UpdatePlan fromMessage(UpdateMode mode, GridH2Table tbl, String[] colNames, int[] colTypes,
+        String qry, KeyValueSupplier keySupplier, KeyValueSupplier valSupplier, int keyColIdx, int valColIdx) {
+        return new UpdatePlan(mode, tbl, colNames, colTypes, keySupplier, valSupplier, keyColIdx, valColIdx, qry, false,
+            0, null);
+    }
 }

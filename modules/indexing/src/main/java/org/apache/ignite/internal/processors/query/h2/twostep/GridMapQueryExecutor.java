@@ -63,6 +63,8 @@ import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQuery
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryFailResponse;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageResponse;
+import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2DmlRequest;
+import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2DmlResponse;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.typedef.CI1;
@@ -71,6 +73,7 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.thread.IgniteThread;
+import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.h2.jdbc.JdbcResultSet;
 import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
@@ -208,6 +211,8 @@ public class GridMapQueryExecutor {
                 onNextPageRequest(node, (GridQueryNextPageRequest)msg);
             else if (msg instanceof GridQueryCancelRequest)
                 onCancel(node, (GridQueryCancelRequest)msg);
+            else if (msg instanceof GridH2DmlRequest)
+                onDmlRequest(node, (GridH2DmlRequest)msg);
             else
                 processed = false;
 
@@ -726,6 +731,65 @@ public class GridMapQueryExecutor {
         }
         finally {
             if (reserved != null) {
+                // Release reserved partitions.
+                for (int i = 0; i < reserved.size(); i++)
+                    reserved.get(i).release();
+            }
+        }
+    }
+
+    /**
+     * @param node Node.
+     * @param req DML request.
+     */
+    private void onDmlRequest(final ClusterNode node, final GridH2DmlRequest req) throws IgniteCheckedException {
+        int[] qryParts = req.queryPartitions();
+
+        final Map<UUID,int[]> partsMap = req.partitions();
+
+        final int[] parts = qryParts == null ? partsMap == null ? null : partsMap.get(ctx.localNodeId()) : qryParts;
+
+        final List<Integer> cacheIds = req.caches();
+
+        AffinityTopologyVersion topVer = req.topologyVersion();
+
+        List<GridReservable> reserved = new ArrayList<>();
+
+        if (!reservePartitions(cacheIds, topVer, parts, reserved)) {
+            log.error("Failed to reserve partitions for DML request");
+
+            GridH2DmlResponse rsp = new GridH2DmlResponse(req.requestId(), GridH2DmlResponse.STATUS_ERROR, -1, null,
+                "Failed to reserve partitions for DML request");
+
+            // Send response
+            ctx.io().sendToGridTopic(node, GridTopic.TOPIC_QUERY, rsp, QUERY_POOL);
+        }
+
+        try {
+            String query = req.queries().get(0).query();
+
+            IndexingQueryFilter filter = h2.backupFilter(req.topologyVersion(), req.queryPartitions());
+
+            long updCntr = h2.mapDistributedUpdate(req.mode(), req.schemaName(), req.targetTable(),
+                req.columnNames(), query, req.parameters(), req.pageSize(), req.timeout(), filter);
+
+            GridH2DmlResponse rsp = new GridH2DmlResponse(req.requestId(), GridH2DmlResponse.STATUS_OK, updCntr, null,
+                null);
+
+            // Send response
+            ctx.io().sendToGridTopic(node, GridTopic.TOPIC_QUERY, rsp, QUERY_POOL);
+        }
+        catch (Exception e) {
+            log.error("Error processing dml request " + e.toString());
+
+            GridH2DmlResponse rsp = new GridH2DmlResponse(req.requestId(), GridH2DmlResponse.STATUS_ERROR, -1, null,
+                e.getMessage());
+
+            // Send response
+            ctx.io().sendToGridTopic(node, GridTopic.TOPIC_QUERY, rsp, QUERY_POOL);
+        }
+        finally {
+            if (!F.isEmpty(reserved)) {
                 // Release reserved partitions.
                 for (int i = 0; i < reserved.size(); i++)
                     reserved.get(i).release();

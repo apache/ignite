@@ -74,6 +74,8 @@ import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQuery
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryFailResponse;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageResponse;
+import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2DmlRequest;
+import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2DmlResponse;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest;
 import org.apache.ignite.internal.util.GridIntIterator;
 import org.apache.ignite.internal.util.GridIntList;
@@ -83,6 +85,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiClosure;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.h2.command.ddl.CreateTableData;
@@ -129,6 +132,9 @@ public class GridReduceQueryExecutor {
 
     /** */
     private final ConcurrentMap<Long, ReduceQueryRun> runs = new ConcurrentHashMap8<>();
+
+    /** */
+    private final ConcurrentMap<Long, DistributedUpdateRun> updRuns = new ConcurrentHashMap8<>();
 
     /** */
     private volatile List<GridThreadLocalTable> fakeTbls = Collections.emptyList();
@@ -197,6 +203,10 @@ public class GridReduceQueryExecutor {
                         }
                     }
                 }
+
+                for (DistributedUpdateRun r : updRuns.values())
+                    r.handleNodeLeft(nodeId);
+
             }
         }, EventType.EVT_NODE_FAILED, EventType.EVT_NODE_LEFT);
     }
@@ -229,6 +239,8 @@ public class GridReduceQueryExecutor {
                 onNextPage(node, (GridQueryNextPageResponse)msg);
             else if (msg instanceof GridQueryFailResponse)
                 onFail(node, (GridQueryFailResponse)msg);
+            else if (msg instanceof GridH2DmlResponse)
+                onDmlResponse(node, (GridH2DmlResponse)msg);
             else
                 processed = false;
 
@@ -844,6 +856,88 @@ public class GridReduceQueryExecutor {
         }
     }
 
+    /** */
+    public long update(
+        String schemaName,
+        List<Integer> cacheIds,
+        byte updateMode,
+        String tgtTable,
+        String[] colNames,
+        String selectQry,
+        boolean enforceJoinOrder,
+        int pageSize,
+        int timeoutMillis,
+        Object[] params,
+        final int[] parts,
+        GridQueryCancel cancel
+    ) {
+        AffinityTopologyVersion topVer = h2.readyTopologyVersion();
+
+        IgniteBiTuple<Collection<ClusterNode>, Map<ClusterNode, IntArray>> nap =
+            nodesForPartitions(cacheIds, topVer, parts, false);
+
+        Collection<ClusterNode> nodes = nap.get1();
+        Map<ClusterNode, IntArray> partsMap = nap.get2();
+
+        DistributedUpdateRun r = new DistributedUpdateRun(nodes.size());
+
+        final long reqId = qryIdGen.incrementAndGet();
+
+        GridH2DmlRequest req = new GridH2DmlRequest()
+            .requestId(reqId)
+            .topologyVersion(h2.readyTopologyVersion())
+            .mode(updateMode)
+            .schemaName(schemaName)
+            .targetTable(tgtTable)
+            .columnNames(colNames)
+            .queries(Collections.singletonList(new GridCacheSqlQuery(selectQry)))
+            .pageSize(pageSize)
+            .parameters(params)
+            .timeout(timeoutMillis)
+            .flags(enforceJoinOrder ? GridH2QueryRequest.FLAG_ENFORCE_JOIN_ORDER : 0);
+
+        updRuns.put(reqId, r);
+
+        try {
+            if (send(nodes, req, parts == null ? null : new ExplicitPartitionsSpecializer(partsMap), false))
+                awaitAllReplies(r, nodes, cancel);
+
+            return r.updateCounter();
+        }
+        catch (IgniteCheckedException | RuntimeException e) {
+            log.error("Error in update: " + e.toString());
+
+            throw new CacheException("Failed to run update: ", e);
+        }
+        finally {
+            //TODO: cancel remote updates
+
+            if (!updRuns.remove(reqId, r))
+                U.warn(log, "Update run was already removed: " + reqId);
+        }
+    }
+
+    /** */
+    private void onDmlResponse(final ClusterNode node, GridH2DmlResponse msg) {
+        try {
+            long reqId = msg.requestId();
+
+            DistributedUpdateRun r = updRuns.get(reqId);
+
+            if (r == null) {
+                log.error("Unknown dml request with id " + reqId);
+
+                return;
+            }
+
+            if (r.handleResponse(node.id(), msg))
+                updRuns.remove(reqId);
+        }
+        catch (Exception e) {
+            log.error("Error in dml response processing: " + e.toString());
+        }
+    }
+
     /**
      * @param cacheIds Cache IDs.
      * @return The first partitioned cache context.
@@ -914,6 +1008,25 @@ public class GridReduceQueryExecutor {
             for (ClusterNode node : nodes) {
                 if (!ctx.discovery().alive(node)) {
                     handleNodeLeft(r, node.id());
+
+                    assert r.latch().getCount() == 0;
+
+                    return;
+                }
+            }
+        }
+    }
+
+    /** */
+    private void awaitAllReplies(DistributedUpdateRun r, Collection<ClusterNode> nodes, GridQueryCancel cancel)
+        throws IgniteInterruptedCheckedException, QueryCancelledException {
+        while (!U.await(r.latch(), 500, TimeUnit.MILLISECONDS)) {
+
+            cancel.checkCancelled();
+
+            for (ClusterNode node : nodes) {
+                if (!ctx.discovery().alive(node)) {
+                    r.handleNodeLeft(node.id());
 
                     assert r.latch().getCount() == 0;
 
@@ -1308,6 +1421,37 @@ public class GridReduceQueryExecutor {
         return res;
     }
 
+    // TODO: reuse this function in query()
+    /** */
+    private IgniteBiTuple<Collection<ClusterNode>, Map<ClusterNode, IntArray>> nodesForPartitions(
+        List<Integer> cacheIds, AffinityTopologyVersion topVer, int[] parts, boolean isReplicatedOnly) {
+        Collection<ClusterNode> nodes = null;
+        Map<ClusterNode, IntArray> partsMap = null;
+        Map<ClusterNode, IntArray> qryMap = null;
+
+        if (isPreloadingActive(cacheIds)) {
+            if (isReplicatedOnly)
+                nodes = replicatedUnstableDataNodes(cacheIds);
+            else {
+                partsMap = partitionedUnstableDataNodes(cacheIds);
+
+                if (partsMap != null) {
+                    qryMap = narrowForQuery(partsMap, parts);
+
+                    nodes = qryMap == null ? null : qryMap.keySet();
+                }
+            }
+        }
+        else {
+            qryMap = stableDataNodes(isReplicatedOnly, topVer, cacheIds, parts);
+
+            if (qryMap != null)
+                nodes = qryMap.keySet();
+        }
+
+        return new IgniteBiTuple<>(nodes, qryMap == null ? partsMap : qryMap);
+    }
+
     /**
      * @param conn Connection.
      * @param qry Query.
@@ -1403,6 +1547,9 @@ public class GridReduceQueryExecutor {
 
         for (Map.Entry<Long, ReduceQueryRun> e : runs.entrySet())
             e.getValue().disconnected(err);
+
+        for (DistributedUpdateRun r: updRuns.values())
+            r.handleDisconnect(err);
     }
 
     /**
@@ -1436,6 +1583,8 @@ public class GridReduceQueryExecutor {
             if (run != null)
                 run.queryInfo().cancel();
         }
+
+        // TODO: do we need updRuns processed here (and in longRunningQueries) as well?
     }
 
     /** */
@@ -1478,11 +1627,21 @@ public class GridReduceQueryExecutor {
 
         /** {@inheritDoc} */
         @Override public Message apply(ClusterNode node, Message msg) {
-            GridH2QueryRequest rq = new GridH2QueryRequest((GridH2QueryRequest)msg);
+            if (msg instanceof GridH2QueryRequest) {
+                GridH2QueryRequest rq = new GridH2QueryRequest((GridH2QueryRequest)msg);
 
-            rq.queryPartitions(toArray(partsMap.get(node)));
+                rq.queryPartitions(toArray(partsMap.get(node)));
 
-            return rq;
+                return rq;
+            } else if (msg instanceof GridH2DmlRequest) {
+                GridH2DmlRequest rq = new GridH2DmlRequest((GridH2DmlRequest)msg);
+
+                rq.queryPartitions(toArray(partsMap.get(node)));
+
+                return rq;
+            }
+
+            return msg;
         }
     }
 }
