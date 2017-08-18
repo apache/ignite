@@ -1,4 +1,4 @@
-/*
+/*!
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,11 +15,17 @@
  * limitations under the License.
  */
 
-import angular from 'angular';
-import component from './component';
-import componentLinks from './components/web-console-footer-links/component';
+web-console-footer-links {
+    margin-left: auto;
 
-export default angular
-    .module('ignite-console.web-console-footer', [])
-    .component('webConsoleFooter', component)
-    .component('webConsoleFooterLinks', componentLinks);
+    a + a {
+        margin-left: 5px;
+
+        &:before {
+            content: '|';
+            display: inline-block;
+            margin-right: 5px;
+            color: #fafafa;
+        }
+    }
+}

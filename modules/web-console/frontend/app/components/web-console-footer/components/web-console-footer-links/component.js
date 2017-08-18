@@ -15,11 +15,9 @@
  * limitations under the License.
  */
 
-import angular from 'angular';
-import component from './component';
-import componentLinks from './components/web-console-footer-links/component';
+import template from './template.pug';
+import './style.scss';
 
-export default angular
-    .module('ignite-console.web-console-footer', [])
-    .component('webConsoleFooter', component)
-    .component('webConsoleFooterLinks', componentLinks);
+export default {
+    template
+};
