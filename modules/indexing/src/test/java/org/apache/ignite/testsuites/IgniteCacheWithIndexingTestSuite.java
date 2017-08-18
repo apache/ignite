@@ -30,12 +30,14 @@ import org.apache.ignite.internal.processors.cache.GridCacheOffheapIndexEntryEvi
 import org.apache.ignite.internal.processors.cache.GridCacheOffheapIndexGetSelfTest;
 import org.apache.ignite.internal.processors.cache.GridIndexingWithNoopSwapSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheConfigurationPrimitiveTypesSelfTest;
+import org.apache.ignite.internal.processors.cache.IgniteCacheGroupsSqlTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheStarvationOnRebalanceTest;
 import org.apache.ignite.internal.processors.cache.IgniteClientReconnectQueriesTest;
 import org.apache.ignite.internal.processors.cache.ttl.CacheTtlAtomicLocalSelfTest;
 import org.apache.ignite.internal.processors.cache.ttl.CacheTtlAtomicPartitionedSelfTest;
 import org.apache.ignite.internal.processors.cache.ttl.CacheTtlTransactionalLocalSelfTest;
 import org.apache.ignite.internal.processors.cache.ttl.CacheTtlTransactionalPartitionedSelfTest;
+import org.apache.ignite.internal.processors.query.h2.database.InlineIndexHelperTest;
 
 /**
  * Cache tests using indexing.
@@ -47,6 +49,8 @@ public class IgniteCacheWithIndexingTestSuite extends TestSuite {
      */
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Ignite Cache With Indexing Test Suite");
+
+        suite.addTestSuite(InlineIndexHelperTest.class);
 
         suite.addTestSuite(GridIndexingWithNoopSwapSelfTest.class);
         suite.addTestSuite(GridCacheOffHeapSelfTest.class);
@@ -71,6 +75,8 @@ public class IgniteCacheWithIndexingTestSuite extends TestSuite {
         suite.addTestSuite(CacheQueryFilterExpiredTest.class);
 
         suite.addTestSuite(ClientReconnectAfterClusterRestartTest.class);
+
+        suite.addTestSuite(IgniteCacheGroupsSqlTest.class);
 
         return suite;
     }

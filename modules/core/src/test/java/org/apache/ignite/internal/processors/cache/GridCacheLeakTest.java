@@ -24,6 +24,7 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -128,7 +129,7 @@ public class GridCacheLeakTest extends GridCommonAbstractTest {
                         GridCacheConcurrentMap map = ((IgniteKernal)grid(g)).internalCache(CACHE_NAME).map();
 
                         info("Map size for cache [g=" + g + ", size=" + map.internalSize() +
-                            ", pubSize=" + map.publicSize() + ']');
+                            ", pubSize=" + map.publicSize(CU.cacheId(CACHE_NAME)) + ']');
 
                         assertTrue("Wrong map size: " + map.internalSize(), map.internalSize() <= 8192);
                     }

@@ -17,6 +17,8 @@
 
 package org.apache.ignite.console.agent.db;
 
+import org.apache.ignite.internal.util.typedef.internal.S;
+
 /**
  * Database table column.
  */
@@ -54,35 +56,40 @@ public class DbColumn {
     /**
      * @return Column name.
      */
-    public String name() {
+    public String getName() {
         return name;
     }
 
     /**
      * @return Column JDBC type.
      */
-    public int type() {
+    public int getType() {
         return type;
     }
 
     /**
      * @return {@code true} if this column belongs to primary key.
      */
-    public boolean key() {
+    public boolean isKey() {
         return key;
     }
 
     /**
      * @return {@code true} if {@code NULL } allowed for column in database.
      */
-    public boolean nullable() {
+    public boolean isNullable() {
         return nullable;
     }
 
     /**
      * @return {@code true} if column is unsigned.
      */
-    public boolean unsigned() {
+    public boolean isUnsigned() {
         return unsigned;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(DbColumn.class, this);
     }
 }

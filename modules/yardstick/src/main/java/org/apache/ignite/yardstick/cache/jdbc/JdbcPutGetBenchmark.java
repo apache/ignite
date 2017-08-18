@@ -28,8 +28,8 @@ import static org.apache.ignite.yardstick.cache.jdbc.JdbcPutBenchmark.createUpse
 public class JdbcPutGetBenchmark extends JdbcAbstractBenchmark {
     /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
-        int newKey = nextRandom(args.range);
-        int newVal = nextRandom(args.range);
+        int newKey = nextRandom(args.range());
+        int newVal = nextRandom(args.range());
 
         try (PreparedStatement stmt = createUpsertStatement(conn.get(), newKey, newVal)) {
             if (stmt.executeUpdate() <= 0)

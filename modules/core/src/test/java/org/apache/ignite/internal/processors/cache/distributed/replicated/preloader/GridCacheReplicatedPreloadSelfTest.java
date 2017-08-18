@@ -268,7 +268,8 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
                     break;
             }
 
-            assert evts != null && evts.size() == 2 : "Wrong events received: " + evts;
+            assertNotNull(evts);
+            assertEquals("Wrong events received: " + evts, 2, evts.size());
 
             Iterator<Event> iter = evts.iterator();
 

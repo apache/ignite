@@ -317,7 +317,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** */
     @GridToStringExclude
-    private ExecutorService dataStreamExecSvc;
+    private StripedExecutor dataStreamExecSvc;
 
     /** */
     @GridToStringExclude
@@ -423,7 +423,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         ExecutorService p2pExecSvc,
         ExecutorService mgmtExecSvc,
         ExecutorService igfsExecSvc,
-        ExecutorService dataStreamExecSvc,
+        StripedExecutor dataStreamExecSvc,
         ExecutorService restExecSvc,
         ExecutorService affExecSvc,
         @Nullable ExecutorService idxExecSvc,
@@ -976,7 +976,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
-    @Override public ExecutorService getDataStreamerExecutorService() {
+    @Override public StripedExecutor getDataStreamerExecutorService() {
         return dataStreamExecSvc;
     }
 

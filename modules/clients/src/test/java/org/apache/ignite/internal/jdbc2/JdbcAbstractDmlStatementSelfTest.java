@@ -29,6 +29,7 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.IgniteJdbcDriver.CFG_URL_PREFIX;
@@ -60,8 +61,6 @@ public abstract class JdbcAbstractDmlStatementSelfTest extends GridCommonAbstrac
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGridsMultiThreaded(3);
-
-        Class.forName("org.apache.ignite.IgniteJdbcDriver");
     }
 
     /** {@inheritDoc} */
@@ -137,10 +136,21 @@ public abstract class JdbcAbstractDmlStatementSelfTest extends GridCommonAbstrac
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        ((IgniteEx)ignite(0)).context().cache().dynamicDestroyCache(DEFAULT_CACHE_NAME, true, true);
+        ((IgniteEx)ignite(0)).context().cache().dynamicDestroyCache(DEFAULT_CACHE_NAME, true, true, false);
 
         conn.close();
         assertTrue(conn.isClosed());
+
+        cleanUpWorkingDir();
+    }
+
+    /**
+     * Clean up working directory.
+     */
+    private void cleanUpWorkingDir() throws Exception {
+        String workDir = U.defaultWorkDirectory();
+
+        deleteRecursively(U.resolveWorkDirectory(workDir, "marshaller", false));
     }
 
     /**

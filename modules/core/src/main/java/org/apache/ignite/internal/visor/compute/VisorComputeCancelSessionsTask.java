@@ -26,7 +26,7 @@ import org.apache.ignite.compute.ComputeTaskFuture;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.visor.VisorJob;
-import org.apache.ignite.internal.visor.VisorMultiNodeTask;
+import org.apache.ignite.internal.visor.VisorOneNodeTask;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
@@ -34,7 +34,7 @@ import org.jetbrains.annotations.Nullable;
  * Cancels given tasks sessions.
  */
 @GridInternal
-public class VisorComputeCancelSessionsTask extends VisorMultiNodeTask<VisorComputeCancelSessionsTaskArg, Void, Void> {
+public class VisorComputeCancelSessionsTask extends VisorOneNodeTask<VisorComputeCancelSessionsTaskArg, Void> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -66,7 +66,7 @@ public class VisorComputeCancelSessionsTask extends VisorMultiNodeTask<VisorComp
 
         /** {@inheritDoc} */
         @Override protected Void run(VisorComputeCancelSessionsTaskArg arg) {
-            Set<IgniteUuid> sesIds = arg.getSessionIds().get(ignite.localNode().id());
+            Set<IgniteUuid> sesIds = arg.getSessionIds();
 
             if (sesIds != null && !sesIds.isEmpty()) {
                 IgniteCompute compute = ignite.compute(ignite.cluster().forLocal());

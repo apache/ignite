@@ -191,6 +191,7 @@ public class IgniteConfiguration {
     public static final boolean DFLT_CACHE_SANITY_CHECK_ENABLED = true;
 
     /** Default value for late affinity assignment flag. */
+    @Deprecated
     public static final boolean DFLT_LATE_AFF_ASSIGNMENT = true;
 
     /** Default value for active on start flag. */
@@ -419,6 +420,7 @@ public class IgniteConfiguration {
     private ConnectorConfiguration connectorCfg = new ConnectorConfiguration();
 
     /** ODBC configuration. */
+    @Deprecated
     private OdbcConfiguration odbcCfg;
 
     /** Warmup closure. Will be invoked before actual grid start. */
@@ -451,17 +453,20 @@ public class IgniteConfiguration {
     /** Custom executor configurations. */
     private ExecutorConfiguration[] execCfgs;
 
-    /** */
-    private boolean lateAffAssignment = DFLT_LATE_AFF_ASSIGNMENT;
-
     /** Page memory configuration. */
     private MemoryConfiguration memCfg;
+
+    /** Persistence store configuration. */
+    private PersistentStoreConfiguration pstCfg;
 
     /** Active on start flag. */
     private boolean activeOnStart = DFLT_ACTIVE_ON_START;
 
     /** */
     private long longQryWarnTimeout = DFLT_LONG_QRY_WARN_TIMEOUT;
+
+    /** SQL connector configuration. */
+    private SqlConnectorConfiguration sqlConnCfg = new SqlConnectorConfiguration();
 
     /**
      * Creates valid grid configuration with all default values.
@@ -499,6 +504,7 @@ public class IgniteConfiguration {
         atomicCfg = cfg.getAtomicConfiguration();
         binaryCfg = cfg.getBinaryConfiguration();
         memCfg = cfg.getMemoryConfiguration();
+        pstCfg = cfg.getPersistentStoreConfiguration();
         cacheCfg = cfg.getCacheConfiguration();
         cacheKeyCfg = cfg.getCacheKeyConfiguration();
         cacheSanityCheckEnabled = cfg.isCacheSanityCheckEnabled();
@@ -522,7 +528,6 @@ public class IgniteConfiguration {
         igniteWorkDir = cfg.getWorkDirectory();
         inclEvtTypes = cfg.getIncludeEventTypes();
         includeProps = cfg.getIncludeProperties();
-        lateAffAssignment = cfg.isLateAffinityAssignment();
         lifecycleBeans = cfg.getLifecycleBeans();
         locHost = cfg.getLocalHost();
         log = cfg.getGridLogger();
@@ -554,6 +559,7 @@ public class IgniteConfiguration {
         segResolvers = cfg.getSegmentationResolvers();
         sndRetryCnt = cfg.getNetworkSendRetryCount();
         sndRetryDelay = cfg.getNetworkSendRetryDelay();
+        sqlConnCfg = cfg.getSqlConnectorConfiguration();
         sslCtxFactory = cfg.getSslContextFactory();
         storeSesLsnrs = cfg.getCacheStoreSessionListenerFactories();
         stripedPoolSize = cfg.getStripedPoolSize();
@@ -1174,7 +1180,10 @@ public class IgniteConfiguration {
      * without deserialization will be used.
      *
      * @return Marshaller to use in grid.
+     * @deprecated Since 2.1. Some Ignite features will not work if non-null marshaller is set
+     *     (IgniteCache.withKeepBinary(), .NET, CPP, ODBC)
      */
+    @Deprecated
     public Marshaller getMarshaller() {
         return marsh;
     }
@@ -1185,7 +1194,10 @@ public class IgniteConfiguration {
      * @param marsh Marshaller to use within grid.
      * @see IgniteConfiguration#getMarshaller()
      * @return {@code this} for chaining.
+     * @deprecated Since 2.1. Some Ignite features will not work if non-null marshaller is set
+     *     (IgniteCache.withKeepBinary(), .NET, CPP, ODBC)
      */
+    @Deprecated
     public IgniteConfiguration setMarshaller(Marshaller marsh) {
         this.marsh = marsh;
 
@@ -2150,6 +2162,34 @@ public class IgniteConfiguration {
     }
 
     /**
+     * Gets persistence configuration used by Apache Ignite Persistent Store.
+     *
+     * @return Persistence configuration.
+     */
+    public PersistentStoreConfiguration getPersistentStoreConfiguration() {
+        return pstCfg;
+    }
+
+    /**
+     * @return Flag {@code true} if persistent enable, {@code false} if disable.
+     */
+    public boolean isPersistentStoreEnabled() {
+        return pstCfg != null;
+    }
+
+    /**
+     * Sets persistence configuration activating Apache Ignite Persistent Store.
+     *
+     * @param pstCfg Persistence configuration.
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setPersistentStoreConfiguration(PersistentStoreConfiguration pstCfg) {
+        this.pstCfg = pstCfg;
+
+        return this;
+    }
+
+    /**
      * Gets flag indicating whether the cluster will be active on start. If cluster is not active on start,
      * there will be no cache partition map exchanges performed until the cluster is activated. This should
      * significantly speed up large topology startup time.
@@ -2438,7 +2478,9 @@ public class IgniteConfiguration {
      * Gets configuration for ODBC.
      *
      * @return ODBC configuration.
+     * @deprecated Use {@link #getSqlConnectorConfiguration()} instead.
      */
+    @Deprecated
     public OdbcConfiguration getOdbcConfiguration() {
         return odbcCfg;
     }
@@ -2448,7 +2490,9 @@ public class IgniteConfiguration {
      *
      * @param odbcCfg ODBC configuration.
      * @return {@code this} for chaining.
+     * @deprecated Use {@link #setSqlConnectorConfiguration(SqlConnectorConfiguration)} instead.
      */
+    @Deprecated
     public IgniteConfiguration setOdbcConfiguration(OdbcConfiguration odbcCfg) {
         this.odbcCfg = odbcCfg;
 
@@ -2674,14 +2718,14 @@ public class IgniteConfiguration {
      * from assignment calculated by {@link AffinityFunction#assignPartitions}.
      * <p>
      * This property should have the same value for all nodes in cluster.
-     * <p>
-     * If not provided, default value is {@link #DFLT_LATE_AFF_ASSIGNMENT}.
      *
      * @return Late affinity assignment flag.
      * @see AffinityFunction
+     * @deprecated Starting from Ignite 2.1 late affinity assignment is always enabled.
      */
+    @Deprecated
     public boolean isLateAffinityAssignment() {
-        return lateAffAssignment;
+        return true;
     }
 
     /**
@@ -2689,10 +2733,10 @@ public class IgniteConfiguration {
      *
      * @param lateAffAssignment Late affinity assignment flag.
      * @return {@code this} for chaining.
+     * @deprecated Starting from Ignite 2.1 late affinity assignment is always enabled.
      */
+    @Deprecated
     public IgniteConfiguration setLateAffinityAssignment(boolean lateAffAssignment) {
-        this.lateAffAssignment = lateAffAssignment;
-
         return this;
     }
 
@@ -2740,6 +2784,27 @@ public class IgniteConfiguration {
         this.longQryWarnTimeout = longQryWarnTimeout;
 
         return this;
+    }
+
+    /**
+     * Sets SQL connector configuration.
+     *
+     * @param sqlConnCfg SQL connector configuration.
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setSqlConnectorConfiguration(SqlConnectorConfiguration sqlConnCfg) {
+        this.sqlConnCfg = sqlConnCfg;
+
+        return this;
+    }
+
+    /**
+     * Gets SQL connector configuration.
+     *
+     * @return SQL connector configuration.
+     */
+    public SqlConnectorConfiguration getSqlConnectorConfiguration() {
+        return sqlConnCfg;
     }
 
     /** {@inheritDoc} */

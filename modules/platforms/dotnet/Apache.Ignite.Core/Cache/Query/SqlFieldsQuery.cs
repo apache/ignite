@@ -128,6 +128,14 @@ namespace Apache.Ignite.Core.Cache.Query
         public bool Colocated { get; set; }
 
         /// <summary>
+        /// Gets or sets the default schema name for the query.
+        /// <para />
+        /// If not set, current cache name is used,
+        /// which means you can omit schema name for tables within the current cache.
+        /// </summary>
+        public string Schema { get; set; }
+
+        /// <summary>
         /// Returns a <see cref="string" /> that represents this instance.
         /// </summary>
         /// <returns>
@@ -139,9 +147,9 @@ namespace Apache.Ignite.Core.Cache.Query
 
             return string.Format("SqlFieldsQuery [Sql={0}, Arguments=[{1}], Local={2}, PageSize={3}, " +
                                  "EnableDistributedJoins={4}, EnforceJoinOrder={5}, Timeout={6}, ReplicatedOnly={7}" +
-                                 ", Colocated={8}]", Sql, args, Local,
+                                 ", Colocated={8}, Schema={9}]", Sql, args, Local,
                                  PageSize, EnableDistributedJoins, EnforceJoinOrder, Timeout, ReplicatedOnly,
-                                 Colocated);
+                                 Colocated, Schema);
         }
     }
 }

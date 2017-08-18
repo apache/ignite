@@ -861,7 +861,9 @@ namespace Apache.Ignite.Core.Impl.Binary
                 WriteNullField();
             else
             {
-                var type = val.GetType();
+                // Unwrap nullable.
+                var valType = val.GetType();
+                var type = Nullable.GetUnderlyingType(valType) ?? valType;
 
                 if (!type.IsEnum)
                 {
@@ -1199,7 +1201,9 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             // Write type name for unregistered types
             if (!desc.IsRegistered)
-                WriteString(type.AssemblyQualifiedName);
+            {
+                WriteString(Marshaller.GetTypeName(type));
+            }
 
             var headerSize = _stream.Position - pos;
 

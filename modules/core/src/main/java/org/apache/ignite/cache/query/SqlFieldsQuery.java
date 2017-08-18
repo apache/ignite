@@ -71,6 +71,9 @@ public class SqlFieldsQuery extends Query<List<?>> {
     /** */
     private boolean replicatedOnly;
 
+    /** */
+    private boolean lazy;
+
     /** Partitions for query */
     private int[] parts;
 
@@ -230,7 +233,7 @@ public class SqlFieldsQuery extends Query<List<?>> {
     /**
      * Check if distributed joins are enabled for this query.
      *
-     * @return {@code true} If distributed joind enabled.
+     * @return {@code true} If distributed joins enabled.
      */
     public boolean isDistributedJoins() {
         return distributedJoins;
@@ -269,6 +272,39 @@ public class SqlFieldsQuery extends Query<List<?>> {
     }
 
     /**
+     * Sets lazy query execution flag.
+     * <p>
+     * By default Ignite attempts to fetch the whole query result set to memory and send it to the client. For small
+     * and medium result sets this provides optimal performance and minimize duration of internal database locks, thus
+     * increasing concurrency.
+     * <p>
+     * If result set is too big to fit in available memory this could lead to excessive GC pauses and even
+     * OutOfMemoryError. Use this flag as a hint for Ignite to fetch result set lazily, thus minimizing memory
+     * consumption at the cost of moderate performance hit.
+     * <p>
+     * Defaults to {@code false}, meaning that the whole result set is fetched to memory eagerly.
+     *
+     * @param lazy Lazy query execution flag.
+     * @return {@code this} For chaining.
+     */
+    public SqlFieldsQuery setLazy(boolean lazy) {
+        this.lazy = lazy;
+
+        return this;
+    }
+
+    /**
+     * Gets lazy query execution flag.
+     * <p>
+     * See {@link #setLazy(boolean)} for more information.
+     *
+     * @return Lazy flag.
+     */
+    public boolean isLazy() {
+        return lazy;
+    }
+
+    /**
      * Gets partitions for query, in ascending order.
      */
     @Nullable public int[] getPartitions() {
@@ -291,18 +327,22 @@ public class SqlFieldsQuery extends Query<List<?>> {
     }
 
     /**
-     * Get schema.
+     * Get schema for the query.
+     * If not set, current cache name is used, which means you can
+     * omit schema name for tables within the current cache.
      *
-     * @return Schema.
+     * @return Schema. Null if schema is not set.
      */
     @Nullable public String getSchema() {
         return schema;
     }
 
     /**
-     * Set schema.
+     * Set schema for the query.
+     * If not set, current cache name is used, which means you can
+     * omit schema name for tables within the current cache.
      *
-     * @param schema Schema.
+     * @param schema Schema. Null to unset schema.
      * @return {@code this} for chaining.
      */
     public SqlFieldsQuery setSchema(@Nullable String schema) {

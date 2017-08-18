@@ -116,7 +116,6 @@ public class IgfsStreamsSelfTest extends IgfsCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setLateAffinityAssignment(false);
         cfg.setCacheConfiguration();
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();

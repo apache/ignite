@@ -1,12 +1,3 @@
-// @java.file.header
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
- */
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -30,9 +21,9 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.StorageConstants;
 import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.exceptions.CardinalityException;
 import org.apache.ignite.ml.math.exceptions.UnsupportedOperationException;
 import org.apache.ignite.ml.math.functions.IgniteDoubleFunction;
-import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.impls.CacheUtils;
 import org.apache.ignite.ml.math.impls.storage.matrix.SparseDistributedMatrixStorage;
 
@@ -70,10 +61,7 @@ public class SparseDistributedMatrix extends AbstractMatrix implements StorageCo
         setStorage(new SparseDistributedMatrixStorage(rows, cols, stoMode, acsMode));
     }
 
-    /**
-     *
-     *
-     */
+    /** */
     private SparseDistributedMatrixStorage storage() {
         return (SparseDistributedMatrixStorage)getStorage();
     }
@@ -84,7 +72,7 @@ public class SparseDistributedMatrix extends AbstractMatrix implements StorageCo
      * @param d Value to divide to.
      */
     @Override public Matrix divide(double d) {
-        return mapOverValues((Double v) -> v / d);
+        return mapOverValues(v -> v / d);
     }
 
     /**
@@ -93,7 +81,7 @@ public class SparseDistributedMatrix extends AbstractMatrix implements StorageCo
      * @param x Value to add.
      */
     @Override public Matrix plus(double x) {
-        return mapOverValues((Double v) -> v + x);
+        return mapOverValues(v -> v + x);
     }
 
     /**
@@ -102,42 +90,70 @@ public class SparseDistributedMatrix extends AbstractMatrix implements StorageCo
      * @param x Value to multiply.
      */
     @Override public Matrix times(double x) {
-        return mapOverValues((Double v) -> v * x);
+        return mapOverValues(v -> v * x);
+    }
+
+    /**
+     * TODO: IGNITE-5114, tmp naive implementation, WIP.
+     */
+    @Override public Matrix times(Matrix mtx) {
+        int cols = columnSize();
+
+        if (cols != mtx.rowSize())
+            throw new CardinalityException(cols, mtx.rowSize());
+
+        int rows = rowSize();
+
+        int mtxCols = mtx.columnSize();
+
+        Matrix res = like(rows, mtxCols);
+
+        for (int x = 0; x < rows; x++)
+            for (int y = 0; y < mtxCols; y++) {
+                double sum = 0.0;
+
+                for (int k = 0; k < cols; k++)
+                    sum += getX(x, k) * mtx.getX(k, y);
+
+                res.setX(x, y, sum);
+            }
+
+        return res;
     }
 
     /** {@inheritDoc} */
     @Override public Matrix assign(double val) {
-        return mapOverValues((Double v) -> val);
+        return mapOverValues(v -> val);
     }
 
     /** {@inheritDoc} */
     @Override public Matrix map(IgniteDoubleFunction<Double> fun) {
-        return mapOverValues(fun::apply);
+        return mapOverValues(fun);
     }
 
     /**
      * @param mapper Mapping function.
      * @return Matrix with mapped values.
      */
-    private Matrix mapOverValues(IgniteFunction<Double, Double> mapper) {
-        CacheUtils.sparseMap(getUUID(), mapper);
+    private Matrix mapOverValues(IgniteDoubleFunction<Double> mapper) {
+        CacheUtils.sparseMap(getUUID(), mapper, SparseDistributedMatrixStorage.ML_CACHE_NAME);
 
         return this;
     }
 
     /** {@inheritDoc} */
     @Override public double sum() {
-        return CacheUtils.sparseSum(getUUID());
+        return CacheUtils.sparseSum(getUUID(), SparseDistributedMatrixStorage.ML_CACHE_NAME);
     }
 
     /** {@inheritDoc} */
     @Override public double maxValue() {
-        return CacheUtils.sparseMax(getUUID());
+        return CacheUtils.sparseMax(getUUID(), SparseDistributedMatrixStorage.ML_CACHE_NAME);
     }
 
     /** {@inheritDoc} */
     @Override public double minValue() {
-        return CacheUtils.sparseMin(getUUID());
+        return CacheUtils.sparseMin(getUUID(), SparseDistributedMatrixStorage.ML_CACHE_NAME);
     }
 
     /** {@inheritDoc} */
@@ -156,7 +172,7 @@ public class SparseDistributedMatrix extends AbstractMatrix implements StorageCo
     }
 
     /** */
-    public IgniteUuid getUUID(){
-        return ((SparseDistributedMatrixStorage) getStorage()).getUUID();
+    public IgniteUuid getUUID() {
+        return ((SparseDistributedMatrixStorage)getStorage()).getUUID();
     }
 }

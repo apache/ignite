@@ -14,7 +14,7 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-mixin ignite-form-field-datepicker(label, model, name, mindate, maxdate, disabled, required, placeholder, tip)
+mixin ignite-form-field-datepicker(label, model, name, mindate, maxdate, minview = 1, format = 'MMM yyyy', disabled, required, placeholder, tip)
     mixin form-field-input()
         input.form-control(
             id=`{{ ${name} }}Input`
@@ -28,15 +28,16 @@ mixin ignite-form-field-datepicker(label, model, name, mindate, maxdate, disable
             data-ng-disabled=disabled && `${disabled}`
 
             bs-datepicker
-            data-date-format='MMM yyyy'
-            data-start-view='1'
-            data-min-view='1'
 
             data-min-date=mindate ? `{{ ${mindate} }}` : false
             data-max-date=maxdate ? `{{ ${maxdate} }}` : `today`
 
+            data-min-view=minview
+            data-date-format=format
+            data-start-view=minview
+
             data-placement='bottom'
-            data-container='.docs-content'
+            data-container='.ignite-form-field'
 
             tabindex='0'
 

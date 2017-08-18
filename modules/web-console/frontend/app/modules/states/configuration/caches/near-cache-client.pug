@@ -40,7 +40,7 @@ include /app/helpers/jade/mixins
                     +number('Start size:', `${nearCfg}.nearStartSize`, '"clientNearStartSize"', enabled, '375000', '0',
                         'Initial cache size for near cache which will be used to pre-create internal hash table after start')
                 .settings-row
-                    +evictionPolicy(`${nearCfg}.nearEvictionPolic`, '"clientNearCacheEvictionPolicy"', enabled, 'false',
+                    +evictionPolicy(`${nearCfg}.nearEvictionPolicy`, '"clientNearCacheEvictionPolicy"', enabled, 'false',
                         'Near cache eviction policy\
                         <ul>\
                             <li>Least Recently Used (LRU) - Eviction policy based on LRU algorithm and supports batch eviction</li>\

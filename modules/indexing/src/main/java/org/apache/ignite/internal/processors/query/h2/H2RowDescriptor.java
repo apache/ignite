@@ -36,6 +36,7 @@ import org.h2.message.DbException;
 import org.h2.mvstore.cache.CacheLongKeyLIRS;
 import org.h2.result.SearchRow;
 import org.h2.result.SimpleRow;
+import org.h2.util.LocalDateTimeUtils;
 import org.h2.value.DataType;
 import org.h2.value.Value;
 import org.h2.value.ValueArray;
@@ -106,9 +107,6 @@ public class H2RowDescriptor implements GridH2RowDescriptor {
     private final GridUnsafeGuard guard;
 
     /** */
-    private final boolean snapshotableIdx;
-
-    /** */
     private final GridQueryProperty[] props;
 
     /** Id of user-defined key column */
@@ -169,9 +167,6 @@ public class H2RowDescriptor implements GridH2RowDescriptor {
 
         valueAliasColumnId =
             (type.valueFieldName() != null) ? DEFAULT_COLUMNS_COUNT + fieldsList.indexOf(type.valueFieldAlias()) : -1;
-
-        // Index is not snapshotable in db-x.
-        snapshotableIdx = false;
     }
 
     /** {@inheritDoc} */
@@ -246,14 +241,26 @@ public class H2RowDescriptor implements GridH2RowDescriptor {
                 UUID uuid = (UUID)obj;
                 return ValueUuid.get(uuid.getMostSignificantBits(), uuid.getLeastSignificantBits());
             case Value.DATE:
+                if (LocalDateTimeUtils.isLocalDate(obj.getClass()))
+                    return LocalDateTimeUtils.localDateToDateValue(obj);
+
                 return ValueDate.get((Date)obj);
+
             case Value.TIME:
+                if (LocalDateTimeUtils.isLocalTime(obj.getClass()))
+                    return LocalDateTimeUtils.localTimeToTimeValue(obj);
+
                 return ValueTime.get((Time)obj);
+
             case Value.TIMESTAMP:
                 if (obj instanceof java.util.Date && !(obj instanceof Timestamp))
                     obj = new Timestamp(((java.util.Date)obj).getTime());
 
+                if (LocalDateTimeUtils.isLocalDateTime(obj.getClass()))
+                    return LocalDateTimeUtils.localDateTimeToValue(obj);
+
                 return ValueTimestamp.get((Timestamp)obj);
+
             case Value.DECIMAL:
                 return ValueDecimal.get((BigDecimal)obj);
             case Value.STRING:
@@ -366,11 +373,6 @@ public class H2RowDescriptor implements GridH2RowDescriptor {
     /** {@inheritDoc} */
     @Override public GridH2Row cachedRow(long link) {
         return rowCache().get(link);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean snapshotableIndex() {
-        return snapshotableIdx;
     }
 
     /** {@inheritDoc} */

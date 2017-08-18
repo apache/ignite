@@ -20,19 +20,23 @@ package org.apache.ignite.cache.store.cassandra.persistence;
 import com.datastax.driver.core.DataType;
 import java.beans.PropertyDescriptor;
 import java.io.Serializable;
+import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
-import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
+import java.util.LinkedList;
 import java.util.Set;
+import java.util.HashSet;
 import java.util.Collections;
 
+import org.apache.commons.beanutils.PropertyUtils;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cache.store.cassandra.common.CassandraHelper;
 import org.apache.ignite.cache.store.cassandra.common.PropertyMappingHelper;
 import org.apache.ignite.cache.store.cassandra.serializer.JavaSerializer;
 import org.apache.ignite.cache.store.cassandra.serializer.Serializer;
 import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
 
 /**
  * Stores persistence settings, which describes how particular key/value
@@ -327,6 +331,21 @@ public abstract class PersistenceSettings implements Serializable {
     protected abstract String defaultColumnName();
 
     /**
+     * Creates instance of {@link PojoField} based on it's description in XML element.
+     *
+     * @param el XML element describing POJO field
+     * @param clazz POJO java class.
+     */
+    protected abstract PojoField createPojoField(Element el, Class clazz);
+
+    /**
+     * Creates instance of {@link PojoField} from its field accessor.
+     *
+     * @param accessor field accessor.
+     */
+    protected abstract PojoField createPojoField(PojoFieldAccessor accessor);
+
+    /**
      * Class instance initialization.
      */
     protected void init() {
@@ -395,6 +414,63 @@ public abstract class PersistenceSettings implements Serializable {
     }
 
     /**
+     * Extracts POJO fields from a list of corresponding XML field nodes.
+     *
+     * @param fieldNodes Field nodes to process.
+     * @return POJO fields list.
+     */
+    protected List<PojoField> detectPojoFields(NodeList fieldNodes) {
+        List<PojoField> detectedFields = new LinkedList<>();
+
+        if (fieldNodes != null && fieldNodes.getLength() != 0) {
+            int cnt = fieldNodes.getLength();
+
+            for (int i = 0; i < cnt; i++) {
+                PojoField field = createPojoField((Element)fieldNodes.item(i), getJavaClass());
+
+                // Just checking that such field exists in the class
+                PropertyMappingHelper.getPojoFieldAccessor(getJavaClass(), field.getName());
+
+                detectedFields.add(field);
+            }
+
+            return detectedFields;
+        }
+
+        PropertyDescriptor[] descriptors = PropertyUtils.getPropertyDescriptors(getJavaClass());
+
+        // Collecting Java Beans property descriptors
+        if (descriptors != null) {
+            for (PropertyDescriptor desc : descriptors) {
+                // Skip POJO field if it's read-only
+                if (desc.getWriteMethod() != null) {
+                    Field field = null;
+
+                    try {
+                        field = getJavaClass().getDeclaredField(desc.getName());
+                    }
+                    catch (Throwable ignore) {
+                    }
+
+                    detectedFields.add(createPojoField(new PojoFieldAccessor(desc, field)));
+                }
+            }
+        }
+
+        Field[] fields = getJavaClass().getDeclaredFields();
+
+        // Collecting all fields annotated with @QuerySqlField
+        if (fields != null) {
+            for (Field field : fields) {
+                if (field.getAnnotation(QuerySqlField.class) != null && !PojoField.containsField(detectedFields, field.getName()))
+                    detectedFields.add(createPojoField(new PojoFieldAccessor(field)));
+            }
+        }
+
+        return detectedFields;
+    }
+
+    /**
      * Instantiates Class object for particular class
      *
      * @param clazz class name
@@ -442,5 +518,4 @@ public abstract class PersistenceSettings implements Serializable {
             throw new IgniteException("Failed to instantiate class '" + clazz + "' using default constructor", e);
         }
     }
-
 }

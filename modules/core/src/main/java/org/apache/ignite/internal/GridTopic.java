@@ -96,6 +96,7 @@ public enum GridTopic {
     /** */
     TOPIC_TX,
 
+    /** */
     TOPIC_SNAPSHOT,
 
     /** */
@@ -111,7 +112,10 @@ public enum GridTopic {
     TOPIC_METADATA_REQ,
 
     /** */
-    TOPIC_SCHEMA;
+    TOPIC_SCHEMA,
+
+    /** */
+    TOPIC_INTERNAL_DIAGNOSTIC;
 
     /** Enum values. */
     private static final GridTopic[] VALS = values();

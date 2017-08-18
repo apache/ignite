@@ -75,6 +75,7 @@ namespace Apache.Ignite.Core.Impl
 
             // Cluster exceptions.
             Exs["org.apache.ignite.cluster.ClusterGroupEmptyException"] = (c, m, e, i) => new ClusterGroupEmptyException(m, e);
+            Exs["org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException"] = (c, m, e, i) => new ClusterGroupEmptyException(m, e);
             Exs["org.apache.ignite.cluster.ClusterTopologyException"] = (c, m, e, i) => new ClusterTopologyException(m, e);
 
             // Compute exceptions.
@@ -120,9 +121,8 @@ namespace Apache.Ignite.Core.Impl
         public static Exception GetException(Ignite ignite, string clsName, string msg, string stackTrace,
             BinaryReader reader = null, Exception innerException = null)
         {
-            // Set JavaException as inner only if there is no InnerException.
-            if (innerException == null)
-                innerException = new JavaException(clsName, msg, stackTrace);
+            // Set JavaException as immediate inner.
+            innerException = new JavaException(clsName, msg, stackTrace, innerException);
 
             ExceptionFactory ctor;
 

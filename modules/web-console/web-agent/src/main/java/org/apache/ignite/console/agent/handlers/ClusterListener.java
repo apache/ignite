@@ -21,7 +21,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.socket.client.Socket;
 import io.socket.emitter.Emitter;
-import java.io.IOException;
+import java.net.ConnectException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -46,7 +46,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_BUILD_VER;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_SUCCESS;
 
 /**
- * API to retranslate topology from Ignite cluster available by node-uri.
+ * API to transfer topology from Ignite cluster available by node-uri.
  */
 public class ClusterListener {
     /** */
@@ -65,7 +65,7 @@ public class ClusterListener {
     private static final long DFLT_TIMEOUT = 3000L;
 
     /** JSON object mapper. */
-    private static final ObjectMapper mapper = new GridJettyObjectMapper();
+    private static final ObjectMapper MAPPER = new GridJettyObjectMapper();
 
     /** Latest topology snapshot. */
     private TopologySnapshot top;
@@ -190,12 +190,12 @@ public class ClusterListener {
     }
 
     /** */
-    private class TopologySnapshot {
+    private static class TopologySnapshot {
         /** */
         private Collection<UUID> nids;
 
         /** */
-        private String clusterVersion;
+        private String clusterVer;
 
         /**
          * @param nodes Nodes.
@@ -210,7 +210,21 @@ public class ClusterListener {
                     }
                 });
 
-            clusterVersion = Collections.min(vers).toString();
+            clusterVer = Collections.min(vers).toString();
+        }
+
+        /**
+         * @return Cluster version.
+         */
+        public String getClusterVersion() {
+            return clusterVer;
+        }
+
+        /**
+         * @return Cluster nodes IDs.
+         */
+        public Collection<UUID> getNids() {
+            return nids;
         }
 
         /**  */
@@ -219,11 +233,8 @@ public class ClusterListener {
         }
 
         /**  */
-        boolean isSameCluster(TopologySnapshot snapshot) {
-            if (snapshot == null || F.isEmpty(snapshot.nids))
-                return false;
-
-            return Collections.disjoint(nids, snapshot.nids);
+        boolean differentCluster(TopologySnapshot old) {
+            return old == null || F.isEmpty(old.nids) || Collections.disjoint(nids, old.nids);
         }
     }
 
@@ -236,12 +247,12 @@ public class ClusterListener {
 
                 switch (res.getStatus()) {
                     case STATUS_SUCCESS:
-                        List<GridClientNodeBean> nodes = mapper.readValue(res.getData(),
+                        List<GridClientNodeBean> nodes = MAPPER.readValue(res.getData(),
                             new TypeReference<List<GridClientNodeBean>>() {});
 
                         TopologySnapshot newTop = new TopologySnapshot(nodes);
 
-                        if (newTop.isSameCluster(top))
+                        if (newTop.differentCluster(top))
                             log.info("Connection successfully established to cluster with nodes: {}", newTop.nid8());
 
                         top = newTop;
@@ -256,7 +267,12 @@ public class ClusterListener {
                         clusterDisconnect();
                 }
             }
-            catch (IOException ignore) {
+            catch (ConnectException ignored) {
+                clusterDisconnect();
+            }
+            catch (Exception e) {
+                log.error("WatchTask failed", e);
+
                 clusterDisconnect();
             }
         }
@@ -271,12 +287,12 @@ public class ClusterListener {
 
                 switch (res.getStatus()) {
                     case STATUS_SUCCESS:
-                        List<GridClientNodeBean> nodes = mapper.readValue(res.getData(),
+                        List<GridClientNodeBean> nodes = MAPPER.readValue(res.getData(),
                             new TypeReference<List<GridClientNodeBean>>() {});
 
                         TopologySnapshot newTop = new TopologySnapshot(nodes);
 
-                        if (top == null || top.isSameCluster(newTop)) {
+                        if (top.differentCluster(newTop)) {
                             clusterDisconnect();
 
                             log.info("Connection successfully established to cluster with nodes: {}", newTop.nid8());
@@ -296,7 +312,9 @@ public class ClusterListener {
                         clusterDisconnect();
                 }
             }
-            catch (IOException ignore) {
+            catch (Exception e) {
+                log.error("BroadcastTask failed", e);
+
                 clusterDisconnect();
 
                 watch();

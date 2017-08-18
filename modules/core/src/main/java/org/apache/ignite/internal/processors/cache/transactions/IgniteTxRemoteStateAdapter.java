@@ -44,7 +44,7 @@ public abstract class IgniteTxRemoteStateAdapter implements IgniteTxRemoteState 
     }
 
     /** {@inheritDoc} */
-    @Override public void awaitLastFut(GridCacheSharedContext cctx) {
+    @Override public void awaitLastFuture(GridCacheSharedContext cctx) {
         assert false;
     }
 
@@ -64,13 +64,6 @@ public abstract class IgniteTxRemoteStateAdapter implements IgniteTxRemoteState 
         assert false;
 
         return FULL_ASYNC;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean hasNearCache(GridCacheSharedContext cctx) {
-        assert false;
-
-        return false;
     }
 
     /** {@inheritDoc} */

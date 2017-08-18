@@ -315,12 +315,13 @@ public class QueryCommandHandler extends GridRestCommandHandlerAdapter {
                         throw new IgniteException("Incorrect query type [type=" + req.queryType() + "]");
                 }
 
-                IgniteCache<Object, Object> cache = ctx.grid().cache(
-                    req.cacheName() == null ? DFLT_CACHE_NAME : req.cacheName());
+                String cacheName = req.cacheName() == null ? DFLT_CACHE_NAME : req.cacheName();
+
+                IgniteCache<Object, Object> cache = ctx.grid().cache(cacheName);
 
                 if (cache == null)
                     return new GridRestResponse(GridRestResponse.STATUS_FAILED,
-                        "Failed to find cache with name: " + req.cacheName());
+                        "Failed to find cache with name: " + cacheName);
 
                 final QueryCursor qryCur = cache.query(qry);
 

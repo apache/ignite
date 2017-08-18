@@ -41,8 +41,8 @@ public class VisorRunningQuery extends VisorDataTransferObject {
     /** Query type. */
     private GridCacheQueryType qryType;
 
-    /** Cache name for query. */
-    private String cache;
+    /** Schema name. */
+    private String schemaName;
 
     /** */
     private long startTime;
@@ -69,19 +69,19 @@ public class VisorRunningQuery extends VisorDataTransferObject {
      * @param id Query ID.
      * @param qry Query text.
      * @param qryType Query type.
-     * @param cache Cache where query was executed.
+     * @param schemaName Query schema name.
      * @param startTime Query start time.
      * @param duration Query current duration.
      * @param cancellable {@code true} if query can be canceled.
      * @param loc {@code true} if query is local.
      */
-    public VisorRunningQuery(long id, String qry, GridCacheQueryType qryType, String cache,
+    public VisorRunningQuery(long id, String qry, GridCacheQueryType qryType, String schemaName,
         long startTime, long duration,
         boolean cancellable, boolean loc) {
         this.id = id;
         this.qry = qry;
         this.qryType = qryType;
-        this.cache = cache;
+        this.schemaName = schemaName;
         this.startTime = startTime;
         this.duration = duration;
         this.cancellable = cancellable;
@@ -110,10 +110,10 @@ public class VisorRunningQuery extends VisorDataTransferObject {
     }
 
     /**
-     * @return Cache name.
+     * @return Schema name.
      */
-    public String getCache() {
-        return cache;
+    public String getSchemaName() {
+        return schemaName;
     }
 
     /**
@@ -149,7 +149,7 @@ public class VisorRunningQuery extends VisorDataTransferObject {
         out.writeLong(id);
         U.writeString(out, qry);
         U.writeEnum(out, qryType);
-        U.writeString(out, cache);
+        U.writeString(out, schemaName);
         out.writeLong(startTime);
         out.writeLong(duration);
         out.writeBoolean(cancellable);
@@ -161,7 +161,7 @@ public class VisorRunningQuery extends VisorDataTransferObject {
         id = in.readLong();
         qry = U.readString(in);
         qryType = GridCacheQueryType.fromOrdinal(in.readByte());
-        cache = U.readString(in);
+        schemaName = U.readString(in);
         startTime = in.readLong();
         duration = in.readLong();
         cancellable = in.readBoolean();

@@ -68,8 +68,10 @@ public class GridCacheOrderedPreloadingSelfTest extends GridCommonAbstractTest {
     /** Caches rebalance finish times. */
     private ConcurrentHashMap8<Integer, ConcurrentHashMap8<String, Long>> times;
 
+    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTestsStarted();
+
         times = new ConcurrentHashMap8<>();
 
         for (int i = 0; i < GRID_CNT; i++)
@@ -93,8 +95,8 @@ public class GridCacheOrderedPreloadingSelfTest extends GridCommonAbstractTest {
         Map<IgnitePredicate<? extends Event>, int[]> listeners = new HashMap<>();
 
         listeners.put(new IgnitePredicate<CacheRebalancingEvent>() {
-            @Override public boolean apply(CacheRebalancingEvent event) {
-                times.get(gridIdx(event)).putIfAbsent(event.cacheName(), event.timestamp());
+            @Override public boolean apply(CacheRebalancingEvent evt) {
+                times.get(gridIdx(evt)).putIfAbsent(evt.cacheName(), evt.timestamp());
                 return true;
             }
         }, new int[]{EventType.EVT_CACHE_REBALANCE_STOPPED});
@@ -194,7 +196,11 @@ public class GridCacheOrderedPreloadingSelfTest extends GridCommonAbstractTest {
         }
     }
 
-    private int gridIdx(Event event) {
-        return getTestIgniteInstanceIndex((String)event.node().attributes().get(GRID_NAME_ATTR));
+    /**
+     * @param evt Event.
+     * @return Index event node.
+     */
+    private int gridIdx(Event evt) {
+        return getTestIgniteInstanceIndex((String)evt.node().attributes().get(GRID_NAME_ATTR));
     }
 }

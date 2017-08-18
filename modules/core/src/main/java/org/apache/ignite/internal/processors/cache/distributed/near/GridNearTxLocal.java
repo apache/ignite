@@ -105,12 +105,14 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRA
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPDATE;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry.SER_READ_EMPTY_ENTRY_VER;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry.SER_READ_NOT_EMPTY_VER;
+import static org.apache.ignite.transactions.TransactionState.ACTIVE;
 import static org.apache.ignite.transactions.TransactionState.COMMITTED;
 import static org.apache.ignite.transactions.TransactionState.COMMITTING;
 import static org.apache.ignite.transactions.TransactionState.PREPARED;
 import static org.apache.ignite.transactions.TransactionState.PREPARING;
 import static org.apache.ignite.transactions.TransactionState.ROLLED_BACK;
 import static org.apache.ignite.transactions.TransactionState.ROLLING_BACK;
+import static org.apache.ignite.transactions.TransactionState.SUSPENDED;
 import static org.apache.ignite.transactions.TransactionState.UNKNOWN;
 
 /**
@@ -1217,7 +1219,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
                                     drExpireTime,
                                     drVer,
                                     skipStore,
-                                    keepBinary);
+                                    keepBinary,
+                                    CU.isNearEnabled(cacheCtx));
                             }
                             else {
                                 txEntry = addEntry(READ,
@@ -1232,7 +1235,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
                                     -1L,
                                     null,
                                     skipStore,
-                                    keepBinary);
+                                    keepBinary,
+                                    CU.isNearEnabled(cacheCtx));
                             }
 
                             txEntry.markValid();
@@ -1262,7 +1266,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
                         drExpireTime,
                         drVer,
                         skipStore,
-                        keepBinary);
+                        keepBinary,
+                        CU.isNearEnabled(cacheCtx));
 
                     if (enlisted != null)
                         enlisted.add(cacheKey);
@@ -1365,7 +1370,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
                     drExpireTime,
                     drVer,
                     skipStore,
-                    keepBinary);
+                    keepBinary,
+                    CU.isNearEnabled(cacheCtx));
 
                 if (enlisted != null)
                     enlisted.add(cacheKey);
@@ -2201,7 +2207,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
                                 -1L,
                                 null,
                                 skipStore,
-                                !deserializeBinary);
+                                !deserializeBinary,
+                                CU.isNearEnabled(cacheCtx));
 
                             // As optimization, mark as checked immediately
                             // for non-pessimistic if value is not null.
@@ -2320,8 +2327,11 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
                             if (hasFilters) {
                                 success = isAll(e.context(), key, cacheVal, filter);
 
-                                if (!success)
+                                if (!success) {
                                     e.value(cacheVal, false, false);
+
+                                    e.op(READ);
+                                }
                             }
                             else
                                 success = true;
@@ -2843,6 +2853,47 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
     }
 
     /**
+     * Suspends transaction. It could be resumed later. Supported only for optimistic transactions.
+     *
+     * @throws IgniteCheckedException If the transaction is in an incorrect state, or timed out.
+     */
+    public void suspend() throws IgniteCheckedException {
+        if (log.isDebugEnabled())
+            log.debug("Suspend near local tx: " + this);
+
+        if (pessimistic())
+            throw new UnsupportedOperationException("Suspension is not supported for pessimistic transactions.");
+
+        if (threadId() != Thread.currentThread().getId())
+            throw new IgniteCheckedException("Only thread started transaction can suspend it.");
+
+        synchronized (this) {
+            checkValid();
+
+            cctx.tm().suspendTx(this);
+        }
+    }
+
+    /**
+     * Resumes transaction (possibly in another thread) if it was previously suspended.
+     *
+     * @throws IgniteCheckedException If the transaction is in an incorrect state, or timed out.
+     */
+    public void resume() throws IgniteCheckedException {
+        if (log.isDebugEnabled())
+            log.debug("Resume near local tx: " + this);
+
+        if (pessimistic())
+            throw new UnsupportedOperationException("Resume is not supported for pessimistic transactions.");
+
+        synchronized (this) {
+            checkValid();
+
+            cctx.tm().resumeTx(this);
+        }
+    }
+
+    /**
      * @param maps Mappings.
      */
     void addEntryMapping(@Nullable Collection<GridDistributedTxMapping> maps) {
@@ -3112,9 +3163,13 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
     }
 
     /**
+     * @param awaitLastFuture If true - method will wait until transaction finish every action started before.
      * @throws IgniteCheckedException If failed.
      */
-    public final void prepare() throws IgniteCheckedException {
+    public final void prepare(boolean awaitLastFuture) throws IgniteCheckedException {
+        if (awaitLastFuture)
+            txState().awaitLastFuture(cctx);
+
         prepareAsync().get();
     }
 
@@ -3941,6 +3996,14 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
             ((GridFutureAdapter)fut).ignoreInterrupts();
 
         return fut;
+    }
+
+    /**
+     * @param threadId new owner of transaction.
+     * @throws IgniteCheckedException if method executed not in the middle of resume or suspend.
+     */
+    public void threadId(long threadId) {
+        this.threadId = threadId;
     }
 
     /**

@@ -51,7 +51,7 @@ namespace ignite
         BOOST_REQUIRE(dbc != NULL);
 
         // Connect string
-        SQLCHAR connectStr[] = "DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;CACHE=cache";
+        SQLCHAR connectStr[] = "DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache";
 
         SQLCHAR outstr[ODBC_BUFFER_SIZE];
         SQLSMALLINT outstrlen;

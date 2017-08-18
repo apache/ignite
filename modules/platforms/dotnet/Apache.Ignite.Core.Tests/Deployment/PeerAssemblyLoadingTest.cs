@@ -118,6 +118,43 @@ namespace Apache.Ignite.Core.Tests.Deployment
         }
 
         /// <summary>
+        /// Tests the runtime dependency: AssemblyResolve event fires during job execution,
+        /// not during deserialization. This happens with static classes, for example.
+        /// </summary>
+        [Test]
+        public void TestRuntimeDependency()
+        {
+            TestDeployment(remoteCompute =>
+            {
+                Assert.AreEqual("dcba", remoteCompute.Apply(new RuntimeDependencyFunc(), "abcd"));
+            });
+        }
+
+        /// <summary>
+        /// Tests the cache get operation on remote node.
+        /// </summary>
+        [Test]
+        public void TestCacheGetOnRemoteNode()
+        {
+            TestDeployment(remoteCompute =>
+            {
+                var cache = remoteCompute.ClusterGroup.Ignite.GetOrCreateCache<int, Address>("addr");
+                cache[1] = new Address("street", 123);
+
+                // This will fail for <object, object> func, because cache operations are not p2p-enabled.
+                // However, generic nature of the func causes Address to be peer-deployed before cache.Get call.
+                var func = new CacheGetFunc<int, Address>
+                {
+                    CacheName = cache.Name,
+                    Key = 1
+                };
+
+                var res = remoteCompute.Call(func);
+                Assert.AreEqual("street", res.Street);
+            });
+        }
+
+        /// <summary>
         /// Tests the peer deployment.
         /// </summary>
         public static void TestDeployment(Action<ICompute> test, bool enablePeerDeployment = true)

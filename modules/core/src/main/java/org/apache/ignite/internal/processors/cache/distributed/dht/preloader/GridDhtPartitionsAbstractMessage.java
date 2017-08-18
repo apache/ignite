@@ -65,6 +65,11 @@ public abstract class GridDhtPartitionsAbstractMessage extends GridCacheMessage 
     }
 
     /** {@inheritDoc} */
+    @Override public boolean cacheGroupMessage() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
     @Override public int partition() {
         return GridIoMessage.STRIPE_DISABLED_PART;
     }
@@ -87,10 +92,10 @@ public abstract class GridDhtPartitionsAbstractMessage extends GridCacheMessage 
     }
 
     /**
-     * @param cacheId Cache ID.
+     * @param grpId Cache group ID.
      * @return Parition update counters.
      */
-    public abstract Map<Integer, T2<Long, Long>> partitionUpdateCounters(int cacheId);
+    public abstract Map<Integer, T2<Long, Long>> partitionUpdateCounters(int grpId);
 
     /**
      * @return Last used version among all nodes.
@@ -114,6 +119,11 @@ public abstract class GridDhtPartitionsAbstractMessage extends GridCacheMessage 
     }
 
     /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return 5;
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
@@ -128,19 +138,19 @@ public abstract class GridDhtPartitionsAbstractMessage extends GridCacheMessage 
         }
 
         switch (writer.state()) {
-            case 3:
+            case 2:
                 if (!writer.writeMessage("exchId", exchId))
                     return false;
 
                 writer.incrementState();
 
-            case 4:
+            case 3:
                 if (!writer.writeByte("flags", flags))
                     return false;
 
                 writer.incrementState();
 
-            case 5:
+            case 4:
                 if (!writer.writeMessage("lastVer", lastVer))
                     return false;
 
@@ -162,7 +172,7 @@ public abstract class GridDhtPartitionsAbstractMessage extends GridCacheMessage 
             return false;
 
         switch (reader.state()) {
-            case 3:
+            case 2:
                 exchId = reader.readMessage("exchId");
 
                 if (!reader.isLastRead())
@@ -170,7 +180,7 @@ public abstract class GridDhtPartitionsAbstractMessage extends GridCacheMessage 
 
                 reader.incrementState();
 
-            case 4:
+            case 3:
                 flags = reader.readByte("flags");
 
                 if (!reader.isLastRead())
@@ -178,7 +188,7 @@ public abstract class GridDhtPartitionsAbstractMessage extends GridCacheMessage 
 
                 reader.incrementState();
 
-            case 5:
+            case 4:
                 lastVer = reader.readMessage("lastVer");
 
                 if (!reader.isLastRead())

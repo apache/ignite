@@ -155,8 +155,11 @@ public class CacheContinuousQueryEventBuffer {
             batch = initBatch(entry.topologyVersion());
 
             if (batch == null || cntr < batch.startCntr) {
-                if (backup)
+                if (backup) {
                     backupQ.add(entry);
+
+                    return null;
+                }
 
                 return entry;
             }

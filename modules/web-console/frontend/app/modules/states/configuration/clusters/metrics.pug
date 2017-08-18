@@ -40,7 +40,7 @@ include /app/helpers/jade/mixins
                         'Frequency of metrics log print out<br/>\ ' +
                         'When <b>0</b> log print of metrics is disabled')
                 .settings-row
-                    +number('Update frequency:', `${model}.metricsUpdateFrequency`, '"metricsUpdateFrequency"', 'true', '2000', '0',
+                    +number('Update frequency:', `${model}.metricsUpdateFrequency`, '"metricsUpdateFrequency"', 'true', '2000', '-1',
                         'Job metrics update frequency in milliseconds\
                         <ul>\
                             <li>If set to -1 job metrics are never updated</li>\

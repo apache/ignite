@@ -26,6 +26,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerEntry;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -133,8 +134,8 @@ public class GridCacheRawVersionedEntry<K, V> extends DataStreamerEntry implemen
     }
 
     /** {@inheritDoc} */
-    @Override public V value() {
-        return val != null ? val.<V>value(null, false) : null;
+    @Override public V value(CacheObjectValueContext ctx) {
+        return val != null ? val.<V>value(ctx, false) : null;
     }
 
     /**

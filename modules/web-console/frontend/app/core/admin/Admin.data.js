@@ -63,6 +63,8 @@ export default class IgniteAdminData {
         const { Countries } = this;
 
         user.userName = user.firstName + ' ' + user.lastName;
+        user.company = user.company ? user.company.toLowerCase() : '';
+        user.lastActivity = user.lastActivity || user.lastLogin;
         user.countryCode = Countries.getByName(user.country).code;
 
         return user;

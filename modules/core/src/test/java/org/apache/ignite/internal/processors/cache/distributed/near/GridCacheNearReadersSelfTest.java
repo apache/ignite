@@ -253,11 +253,12 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange();
 
-        GridCacheContext ctx = ((IgniteKernal) g1).internalCache(DEFAULT_CACHE_NAME).context();
+        GridCacheContext ctx = ((IgniteKernal)g1).internalCache(DEFAULT_CACHE_NAME).context();
 
         List<KeyCacheObject> cacheKeys = F.asList(ctx.toCacheKeyObject(1), ctx.toCacheKeyObject(2));
 
         IgniteInternalFuture<Object> f1 = ((IgniteKernal)g1).internalCache(DEFAULT_CACHE_NAME).preloader().request(
+            ctx,
             cacheKeys,
             new AffinityTopologyVersion(2));
 
@@ -266,6 +267,7 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
 
 
         IgniteInternalFuture<Object> f2 = ((IgniteKernal)g2).internalCache(DEFAULT_CACHE_NAME).preloader().request(
+            ((IgniteKernal)g2).internalCache(DEFAULT_CACHE_NAME).context(),
             cacheKeys,
             new AffinityTopologyVersion(2));
 

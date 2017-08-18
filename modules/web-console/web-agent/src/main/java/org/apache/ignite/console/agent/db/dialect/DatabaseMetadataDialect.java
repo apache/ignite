@@ -20,16 +20,19 @@ package org.apache.ignite.console.agent.db.dialect;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.console.agent.db.DbColumn;
 import org.apache.ignite.console.agent.db.DbTable;
+import org.apache.ignite.internal.visor.query.VisorQueryIndex;
 
 /**
  * Base class for database metadata dialect.
@@ -81,7 +84,12 @@ public abstract class DatabaseMetadataDialect {
      * @return New {@code DbTable} instance.
      */
     protected DbTable table(String schema, String tbl, Collection<DbColumn> cols, Collection<QueryIndex>idxs) {
-        return new DbTable(schema, tbl, cols, idxs);
+        Collection<VisorQueryIndex> res = new ArrayList<>(idxs.size());
+
+        for (QueryIndex idx : idxs)
+            res.add(new VisorQueryIndex(idx));
+
+        return new DbTable(schema, tbl, cols, res);
     }
 
     /**
@@ -98,5 +106,22 @@ public abstract class DatabaseMetadataDialect {
         idx.setFields(new LinkedHashMap<String, Boolean>());
 
         return idx;
+    }
+
+    /**
+     * Select first shortest index.
+     *
+     * @param uniqueIdxs Unique indexes with columns.
+     * @return Unique index that could be used instead of primary key.
+     */
+    protected Map.Entry<String, Set<String>> uniqueIndexAsPk(Map<String, Set<String>> uniqueIdxs) {
+        Map.Entry<String, Set<String>> uniqueIdxAsPk = null;
+
+        for (Map.Entry<String, Set<String>> uniqueIdx : uniqueIdxs.entrySet()) {
+            if (uniqueIdxAsPk == null || uniqueIdxAsPk.getValue().size() > uniqueIdx.getValue().size())
+                uniqueIdxAsPk = uniqueIdx;
+        }
+
+        return uniqueIdxAsPk;
     }
 }

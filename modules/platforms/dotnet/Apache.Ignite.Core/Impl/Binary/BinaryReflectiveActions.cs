@@ -422,11 +422,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             var type = field.FieldType;
 
-            var genericDef = type.IsGenericType ? type.GetGenericTypeDefinition() : null;
-
-            bool nullable = genericDef == typeof (Nullable<>);
-
-            var nullableType = nullable ? type.GetGenericArguments()[0] : null;
+            var nullableType = Nullable.GetUnderlyingType(type);
 
             if (type == typeof (decimal))
             {
@@ -455,14 +451,15 @@ namespace Apache.Ignite.Core.Impl.Binary
                     ? GetRawReader(field, r => r.ReadObject<Guid>())
                     : GetReader(field, (f, r) => r.ReadObject<Guid>(f));
             }
-            else if (nullable && nullableType == typeof (Guid))
+            else if (nullableType == typeof (Guid))
             {
                 writeAction = raw
                     ? GetRawWriter<Guid?>(field, (w, o) => w.WriteGuid(o))
                     : GetWriter<Guid?>(field, (f, w, o) => w.WriteGuid(f, o));
                 readAction = raw ? GetRawReader(field, r => r.ReadGuid()) : GetReader(field, (f, r) => r.ReadGuid(f));
             }
-            else if (type.IsEnum && !new[] {typeof(long), typeof(ulong)}.Contains(Enum.GetUnderlyingType(type)))
+            else if ((nullableType ?? type).IsEnum && 
+                !new[] {typeof(long), typeof(ulong)}.Contains(Enum.GetUnderlyingType(nullableType ?? type)))
             {
                 writeAction = raw
                     ? GetRawWriter<object>(field, (w, o) => w.WriteEnum(o), true)

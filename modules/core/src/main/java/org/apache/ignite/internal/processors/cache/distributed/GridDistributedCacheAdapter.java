@@ -79,10 +79,9 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
 
     /**
      * @param ctx Cache registry.
-     * @param startSize Start size.
      */
-    protected GridDistributedCacheAdapter(GridCacheContext<K, V> ctx, int startSize) {
-        super(ctx, startSize);
+    protected GridDistributedCacheAdapter(GridCacheContext<K, V> ctx) {
+        super(ctx);
     }
 
     /**
@@ -279,11 +278,11 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
             IgniteCacheOffheapManager offheap = ctx.offheap();
 
             if (modes.offheap)
-                size += offheap.entriesCount(modes.primary, modes.backup, topVer);
+                size += offheap.cacheEntriesCount(ctx.cacheId(), modes.primary, modes.backup, topVer);
             else if (modes.heap) {
                 for (GridDhtLocalPartition locPart : ctx.topology().currentLocalPartitions()) {
                     if ((modes.primary && locPart.primary(topVer)) || (modes.backup && locPart.backup(topVer)))
-                        size += locPart.publicSize();
+                        size += locPart.publicSize(ctx.cacheId());
                 }
             }
         }
@@ -292,7 +291,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public long localSizeLong(int partition, CachePeekMode[] peekModes) throws IgniteCheckedException {
+    @Override public long localSizeLong(int part, CachePeekMode[] peekModes) throws IgniteCheckedException {
         PeekModes modes = parsePeekModes(peekModes, true);
 
         long size = 0;
@@ -306,9 +305,9 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
 
             IgniteCacheOffheapManager offheap = ctx.offheap();
 
-            if (ctx.affinity().primaryByPartition(ctx.localNode(), partition, topVer) && modes.primary ||
-                ctx.affinity().backupByPartition(ctx.localNode(), partition, topVer) && modes.backup)
-                size += offheap.entriesCount(partition);
+            if (ctx.affinity().primaryByPartition(ctx.localNode(), part, topVer) && modes.primary ||
+                ctx.affinity().backupByPartition(ctx.localNode(), part, topVer) && modes.backup)
+                size += offheap.cacheEntriesCount(ctx.cacheId(), part);
         }
 
         return size;
@@ -460,7 +459,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
                             return false;
 
                         try {
-                            GridCloseableIterator<KeyCacheObject> iter = dht.context().offheap().keysIterator(part);
+                            GridCloseableIterator<KeyCacheObject> iter = dht.context().offheap().cacheKeysIterator(ctx.cacheId(), part);
 
                             if (iter != null) {
                                 try {

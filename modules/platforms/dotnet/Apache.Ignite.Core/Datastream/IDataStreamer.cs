@@ -86,7 +86,11 @@ namespace Apache.Ignite.Core.Datastream
         string CacheName { get; }
 
         /// <summary>
-        /// Flag value indicating that this data streamer assumes that there could be concurrent updates to the cache. 
+        /// Gets or sets a value indicating whether existing values can be overwritten by the data streamer.
+        /// Performance is better when this flag is false.
+        /// <para />
+        /// NOTE: When false, cache updates won't be propagated to cache store
+        /// (even if <see cref="SkipStore"/> is false).
         /// <para />
         /// Default is <c>false</c>.
         /// </summary>
@@ -94,6 +98,8 @@ namespace Apache.Ignite.Core.Datastream
 
         /// <summary>
         /// Flag indicating that write-through behavior should be disabled for data loading.
+        /// <para />
+        /// <see cref="AllowOverwrite"/> must be true for write-through to work.
         /// <para />
         /// Default is <c>false</c>.
         /// </summary>

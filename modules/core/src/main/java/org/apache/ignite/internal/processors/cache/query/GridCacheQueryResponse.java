@@ -29,7 +29,7 @@ import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
-import org.apache.ignite.internal.processors.cache.GridCacheMessage;
+import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
@@ -46,7 +46,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Query request.
  */
-public class GridCacheQueryResponse extends GridCacheMessage implements GridCacheDeployable {
+public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCacheDeployable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -130,10 +130,10 @@ public class GridCacheQueryResponse extends GridCacheMessage implements GridCach
         if (err != null && errBytes == null)
             errBytes = U.marshal(ctx, err);
 
-        if (metaDataBytes == null)
+        if (metaDataBytes == null && metadata != null)
             metaDataBytes = marshalCollection(metadata, cctx);
 
-        if (dataBytes == null)
+        if (dataBytes == null && data != null)
             dataBytes = marshalCollection(data, cctx);
 
         if (addDepInfo && !F.isEmpty(data)) {

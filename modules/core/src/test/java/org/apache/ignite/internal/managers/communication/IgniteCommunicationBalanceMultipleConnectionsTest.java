@@ -25,4 +25,9 @@ public class IgniteCommunicationBalanceMultipleConnectionsTest extends IgniteCom
     @Override protected int connectionsPerNode() {
         return 5;
     }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-5689");
+    }
 }

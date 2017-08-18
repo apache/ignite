@@ -47,6 +47,8 @@ public class IgniteGetEntriesPutAllTxBenchmark extends IgniteCacheAbstractBenchm
 
         doInTransaction(txs, args.txConcurrency(), args.txIsolation(), new Callable<Void>() {
             @Override public Void call() throws Exception {
+                IgniteCache<Integer, Integer> cache = cacheForOperation();
+
                 SortedMap<Integer, Integer> vals = new TreeMap<>();
 
                 for (int i = 0; i < args.batch(); i++) {

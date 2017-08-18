@@ -17,6 +17,10 @@
 
 package org.apache.ignite.internal.util.lang;
 
+import java.io.IOException;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -37,6 +41,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -1210,6 +1215,40 @@ public class GridFunc {
      */
     public static boolean isEmpty(@Nullable Map<?, ?> m) {
         return m == null || m.isEmpty();
+    }
+
+    /**
+     * Tests if the given path is not {@code null} and is an empty directory.
+     *
+     * @param dir Path to test.
+     * @return Whether or not the given path is not {@code null} and is an empty directory.
+     */
+    public static boolean isEmptyDirectory(Path dir) {
+        if (dir == null || !Files.isDirectory(dir))
+            return false;
+        try (DirectoryStream<Path> files = Files.newDirectoryStream(dir)) {
+            return !files.iterator().hasNext();
+        }
+        catch (IOException e) {
+            throw new IgniteException(e);
+        }
+    }
+
+    /**
+     * Tests if the given path is not {@code null} and is a not empty directory.
+     *
+     * @param dir Path to test.
+     * @return Whether or not the given path is not {@code null} and is a not empty directory.
+     */
+    public static boolean isNotEmptyDirectory(Path dir) {
+        if (dir == null || !Files.isDirectory(dir))
+            return false;
+        try (DirectoryStream<Path> files = Files.newDirectoryStream(dir)) {
+            return files.iterator().hasNext();
+        }
+        catch (IOException e) {
+            throw new IgniteException(e);
+        }
     }
 
     /**

@@ -487,6 +487,70 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                 onEntryUpdated(evt, primary, false, null);
             }
 
+            @Override public CounterSkipContext skipUpdateCounter(final GridCacheContext cctx,
+                @Nullable CounterSkipContext skipCtx,
+                int part,
+                long cntr,
+                AffinityTopologyVersion topVer,
+                boolean primary) {
+                if (skipCtx == null)
+                    skipCtx = new CounterSkipContext(part, cntr, topVer);
+
+                if (loc) {
+                    assert !locCache;
+
+                    final Collection<CacheEntryEvent<? extends K, ? extends V>> evts = handleEvent(ctx, skipCtx.entry());
+
+                    if (!evts.isEmpty()) {
+                        if (asyncCb) {
+                            ctx.asyncCallbackPool().execute(new Runnable() {
+                                @Override public void run() {
+                                    locLsnr.onUpdated(evts);
+                                }
+                            }, part);
+                        }
+                        else
+                            skipCtx.addProcessClosure(new Runnable() {
+                                @Override public void run() {
+                                    locLsnr.onUpdated(evts);
+                                }
+                            });
+                    }
+
+                    return skipCtx;
+                }
+
+                CacheContinuousQueryEventBuffer buf = partitionBuffer(cctx, part);
+
+                final Object entryOrList = buf.processEntry(skipCtx.entry(), !primary);
+
+                if (entryOrList != null) {
+                    skipCtx.addProcessClosure(new Runnable() {
+                        @Override public void run() {
+                            try {
+                                ctx.continuous().addNotification(nodeId,
+                                    routineId,
+                                    entryOrList,
+                                    topic,
+                                    false,
+                                    true);
+                            }
+                            catch (ClusterTopologyCheckedException ex) {
+                                if (log.isDebugEnabled())
+                                    log.debug("Failed to send event notification to node, node left cluster " +
+                                        "[node=" + nodeId + ", err=" + ex + ']');
+                            }
+                            catch (IgniteCheckedException ex) {
+                                U.error(ctx.log(CU.CONTINUOUS_QRY_LOG_CATEGORY),
+                                    "Failed to send event notification to node: " + nodeId, ex);
+                            }
+                        }
+                    });
+                }
+
+                return skipCtx;
+            }
+
             @Override public void onPartitionEvicted(int part) {
                 entryBufs.remove(part);
             }
@@ -1011,7 +1075,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                         t.get1());
 
                     for (AffinityTopologyVersion topVer : t.get2()) {
-                        for (ClusterNode node : ctx.discovery().cacheAffinityNodes(cctx.name(), topVer)) {
+                        for (ClusterNode node : ctx.discovery().cacheGroupAffinityNodes(cctx.groupId(), topVer)) {
                             if (!node.isLocal()) {
                                 try {
                                     cctx.io().send(node, msg, GridIoPolicy.SYSTEM_POOL);

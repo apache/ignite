@@ -195,7 +195,7 @@ public class VisorBasicConfiguration extends VisorDataTransferObject {
         addrRslvr = compactClass(c.getAddressResolver());
         cacheSanityCheckEnabled = c.isCacheSanityCheckEnabled();
         clsLdr = compactClass(c.getClassLoader());
-        consistentId = String.valueOf(c.getConsistentId());
+        consistentId = c.getConsistentId() != null ? String.valueOf(c.getConsistentId()) : null;
         failureDetectionTimeout = c.getFailureDetectionTimeout();
         igniteWorkDir = c.getWorkDirectory();
         lateAffAssignment = c.isLateAffinityAssignment();

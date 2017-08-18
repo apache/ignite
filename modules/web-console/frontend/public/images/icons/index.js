@@ -21,3 +21,5 @@ export gear from './gear.svg';
 export clock from './clock.svg';
 export manual from './manual.svg';
 export download from './download.svg';
+export filter from './filter.svg';
+export search from './search.svg';

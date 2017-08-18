@@ -20,6 +20,7 @@ package org.apache.ignite;
 import java.util.Collection;
 import java.util.Map;
 import javax.cache.CacheException;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.stream.StreamReceiver;
@@ -30,6 +31,16 @@ import org.jetbrains.annotations.Nullable;
  * properly buffering updates and properly mapping keys to nodes responsible for the data
  * to make sure that there is the least amount of data movement possible and optimal
  * network and memory utilization.
+ * <p>
+ * Note that data streamer data manipulation methods do not support transactions.
+ * When updating data with {@link #allowOverwrite()} set to {@code false} new entry
+ * is created on primary and backups if it has not existed. If {@link #allowOverwrite()}
+ * is {@code true} then batches are applied with regular {@code cache.put(..)} methods
+ * starting implicit transactions if streamer is targeted to a transactional cache.
+ * <p>
+ * However, explicit transactional updates inside are possible with custom {@link StreamReceiver}.
+ * This way batches can be applied within transaction(s) on target node.
+ * See {@link #receiver(StreamReceiver)} for details.
  * <p>
  * Note that streamer will stream data concurrently by multiple internal threads, so the
  * data may get to remote nodes in different order from which it was added to
@@ -62,7 +73,7 @@ import org.jetbrains.annotations.Nullable;
  *      this setting limits maximum allowed number of parallel buffered stream messages that
  *      are being processed on remote nodes. If this number is exceeded, then
  *      {@link #addData(Object, Object)} method will block to control memory utilization.
- *      Default is defined by {@link #DFLT_MAX_PARALLEL_OPS} value.
+ *      Default is equal to CPU count on remote node multiply by {@link #DFLT_PARALLEL_OPS_MULTIPLIER}.
  *  </li>
  *  <li>
  *      {@link #autoFlushFrequency(long)} - automatic flush frequency in milliseconds. Essentially,
@@ -90,11 +101,23 @@ import org.jetbrains.annotations.Nullable;
  * </ul>
  */
 public interface IgniteDataStreamer<K, V> extends AutoCloseable {
-    /** Default max concurrent put operations count. */
+    /**
+     * Default max concurrent put operations count.
+     * @deprecated Is not used anymore.
+     */
+    @Deprecated
     public static final int DFLT_MAX_PARALLEL_OPS = 16;
 
-    /** Default per node buffer size. */
-    public static final int DFLT_PER_NODE_BUFFER_SIZE = 1024;
+    /**
+     * Default multiplier for data streamer pool size to get concurrent batches count for each remote node.
+     *
+     * @see IgniteConfiguration#getDataStreamerThreadPoolSize()
+     * @see #perNodeParallelOperations()
+     */
+    public static final int DFLT_PARALLEL_OPS_MULTIPLIER = 8;
+
+    /** Default operations batch size to sent to remote node for loading. */
+    public static final int DFLT_PER_NODE_BUFFER_SIZE = 512;
 
     /** Default timeout for streamer's operations. */
     public static final long DFLT_UNLIMIT_TIMEOUT = -1;
@@ -193,9 +216,11 @@ public interface IgniteDataStreamer<K, V> extends AutoCloseable {
      * <p>
      * This method should be called prior to {@link #addData(Object, Object)} call.
      * <p>
-     * If not provided, default value is {@link #DFLT_MAX_PARALLEL_OPS}.
+     * If not provided, default value is calculated as follows
+     * {@link #DFLT_PARALLEL_OPS_MULTIPLIER} * {@code DATA_STREAMER_POOL_SIZE_ON_REMOTE_NODE}.
      *
      * @param parallelOps Maximum number of parallel stream operations for a single node.
+     * @see IgniteConfiguration#getDataStreamerThreadPoolSize()
      */
     public void perNodeParallelOperations(int parallelOps);
 
@@ -440,5 +465,4 @@ public interface IgniteDataStreamer<K, V> extends AutoCloseable {
      */
     @Override public void close() throws CacheException, IgniteInterruptedException,
         IgniteDataStreamerTimeoutException;
-
 }

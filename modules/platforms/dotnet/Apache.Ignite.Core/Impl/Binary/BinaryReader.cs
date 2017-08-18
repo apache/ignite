@@ -20,7 +20,6 @@ namespace Apache.Ignite.Core.Impl.Binary
     using System;
     using System.Collections;
     using System.Collections.Generic;
-    using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
     using Apache.Ignite.Core.Binary;
@@ -401,9 +400,10 @@ namespace Apache.Ignite.Core.Impl.Binary
                     return default(T);
 
                 case BinaryUtils.TypeEnum:
+                    return ReadEnum0<T>(this, _mode == BinaryMode.ForceBinary);
+
                 case BinaryUtils.TypeBinaryEnum:
-                    // Never read enums in binary mode when reading a field (we do not support half-binary objects)
-                    return ReadEnum0<T>(this, false);  
+                    return ReadEnum0<T>(this, _mode != BinaryMode.Deserialize);
 
                 case BinaryUtils.HdrFull:
                     // Unregistered enum written as serializable
@@ -583,6 +583,10 @@ namespace Apache.Ignite.Core.Impl.Binary
                     return true;
 
                 case BinaryUtils.TypeEnum:
+                    res = ReadEnum0<T>(this, _mode == BinaryMode.ForceBinary);
+
+                    return true;
+
                 case BinaryUtils.TypeBinaryEnum:
                     res = ReadEnum0<T>(this, _mode != BinaryMode.Deserialize);
 
@@ -762,7 +766,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             var typeName = ReadString();  // Must read always.
 
-            return knownType ?? Type.GetType(typeName, true);
+            return knownType ?? Marshaller.ResolveType(typeName);
         }
 
         /// <summary>
@@ -778,7 +782,8 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                 if (_frame.Schema == null)
                 {
-                    _frame.Schema = ReadSchema(desc.TypeId);
+                    _frame.Schema = 
+                        BinaryObjectSchemaSerializer.GetFieldIds(_frame.Hdr, Marshaller.Ignite, Stream, _frame.Pos);
 
                     desc.Schema.Add(_frame.Hdr.SchemaId, _frame.Schema);
                 }
@@ -789,49 +794,6 @@ namespace Apache.Ignite.Core.Impl.Binary
             }
         }
 
-        /// <summary>
-        /// Reads the schema.
-        /// </summary>
-        private int[] ReadSchema(int typeId)
-        {
-            if (_frame.Hdr.IsCompactFooter)
-            {
-                // Get schema from Java
-                var ignite = Marshaller.Ignite;
-
-                Debug.Assert(typeId != BinaryUtils.TypeUnregistered);
-
-                var schema = ignite == null
-                    ? null
-                    : ignite.BinaryProcessor.GetSchema(_frame.Hdr.TypeId, _frame.Hdr.SchemaId);
-
-                if (schema == null)
-                    throw new BinaryObjectException("Cannot find schema for object with compact footer [" +
-                        "typeId=" + typeId + ", schemaId=" + _frame.Hdr.SchemaId + ']');
-
-                return schema;
-            }
-
-            var pos = Stream.Position;
-
-            Stream.Seek(_frame.Pos + _frame.Hdr.SchemaOffset, SeekOrigin.Begin);
-
-            var count = _frame.Hdr.SchemaFieldCount;
-
-            var offsetSize = _frame.Hdr.SchemaFieldOffsetSize;
-
-            var res = new int[count];
-
-            for (int i = 0; i < count; i++)
-            {
-                res[i] = Stream.ReadInt();
-                Stream.Seek(offsetSize, SeekOrigin.Current);
-            }
-
-            Stream.Seek(pos, SeekOrigin.Begin);
-
-            return res;
-        }
         /// <summary>
         /// Reads the handle object.
         /// </summary>
@@ -937,7 +899,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                 int pos;
 
-                if (!_frame.SchemaMap.TryGetValue(fieldId, out pos))
+                if (_frame.SchemaMap == null || !_frame.SchemaMap.TryGetValue(fieldId, out pos))
                     return false;
 
                 Stream.Seek(pos + _frame.Pos, SeekOrigin.Begin);

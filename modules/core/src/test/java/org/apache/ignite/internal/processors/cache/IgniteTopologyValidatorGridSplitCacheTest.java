@@ -202,6 +202,8 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends GridCommonAbstrac
 
     /**
      * Resolves split by client node join.
+     *
+     * @throws Exception If failed.
      */
     private void resolveSplit() throws Exception {
         startGrid(RESOLVER_GRID_IDX);
@@ -305,6 +307,7 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends GridCommonAbstrac
             return true;
         }
 
+        /** {@inheritDoc} */
         @Override public void start() throws IgniteException {
             if (ignite.cluster().localNode().isClient())
                 return;
@@ -327,12 +330,15 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends GridCommonAbstrac
 
         /**
          * @param node Node.
+         * @return {@code True} if this is marker node.
          */
         private boolean isMarkerNode(ClusterNode node) {
             return node.isClient() && node.attribute(ACTIVATOR_NODE_ATTR) != null;
         }
 
-        @Override public void stop() throws IgniteException {
+        /** {@inheritDoc} */
+        @Override public void stop() {
+            // No-op.
         }
     }
 }

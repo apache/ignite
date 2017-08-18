@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.io.Serializable;
+import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -26,7 +27,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 /**
  * Cache information sent in discovery data to joining node.
  */
-class CacheNodeCommonDiscoveryData implements Serializable {
+public class CacheNodeCommonDiscoveryData implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -39,40 +40,72 @@ class CacheNodeCommonDiscoveryData implements Serializable {
     private final Map<String, CacheData> templates;
 
     /** */
+    @GridToStringInclude
+    private final Map<Integer, CacheGroupData> cacheGrps;
+
+    /** */
     private final Map<String, Map<UUID, Boolean>> clientNodesMap;
+
+    /** */
+    private Collection<String> restartingCaches;
 
     /**
      * @param caches Started caches.
      * @param templates Configured templates.
+     * @param cacheGrps Started cache groups.
      * @param clientNodesMap Information about cache client nodes.
      */
-    CacheNodeCommonDiscoveryData(Map<String, CacheData> caches,
+    public CacheNodeCommonDiscoveryData(Map<String, CacheData> caches,
         Map<String, CacheData> templates,
-        Map<String, Map<UUID, Boolean>> clientNodesMap) {
+        Map<Integer, CacheGroupData> cacheGrps,
+        Map<String, Map<UUID, Boolean>> clientNodesMap,
+        Collection<String> restartingCaches
+    ) {
+        assert caches != null;
+        assert templates != null;
+        assert cacheGrps != null;
+        assert clientNodesMap != null;
+
         this.caches = caches;
         this.templates = templates;
+        this.cacheGrps = cacheGrps;
         this.clientNodesMap = clientNodesMap;
+        this.restartingCaches = restartingCaches;
+    }
+
+    /**
+     * @return Started cache groups.
+     */
+    Map<Integer, CacheGroupData> cacheGroups() {
+        return cacheGrps;
     }
 
     /**
      * @return Started caches.
      */
-    Map<String, CacheData> caches() {
+    public Map<String, CacheData> caches() {
         return caches;
     }
 
     /**
      * @return Configured templates.
      */
-    Map<String, CacheData> templates() {
+    public Map<String, CacheData> templates() {
         return templates;
     }
 
     /**
      * @return Information about cache client nodes.
      */
-    Map<String, Map<UUID, Boolean>> clientNodesMap() {
+    public Map<String, Map<UUID, Boolean>> clientNodesMap() {
         return clientNodesMap;
+    }
+
+    /**
+     * @return A collection of restarting cache names.
+     */
+    Collection<String> restartingCaches() {
+        return restartingCaches;
     }
 
     /** {@inheritDoc} */

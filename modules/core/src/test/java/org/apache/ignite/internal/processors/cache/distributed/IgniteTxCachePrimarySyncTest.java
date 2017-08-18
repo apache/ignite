@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 import javax.cache.Cache;
 import javax.cache.configuration.Factory;
 import javax.cache.integration.CacheLoaderException;
@@ -1103,19 +1104,30 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @SuppressWarnings("unchecked")
         @Override public CacheStore<Object, Object> create() {
-            return new CacheStoreAdapter() {
-                @Override public Object load(Object key) throws CacheLoaderException {
-                    return null;
-                }
+            return new TestCacheStore();
+        }
+    }
 
-                @Override public void write(Cache.Entry entry) throws CacheWriterException {
-                    // No-op.
-                }
+    /**
+     *
+     */
+    private static class TestCacheStore extends CacheStoreAdapter<Object, Object> {
+        /** Store map. */
+        private static final Map STORE_MAP = new ConcurrentHashMap();
 
-                @Override public void delete(Object key) throws CacheWriterException {
-                    // No-op.
-                }
-            };
+        /** {@inheritDoc} */
+        @Override public Object load(Object key) throws CacheLoaderException {
+            return STORE_MAP.get(key);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void write(Cache.Entry<?, ?> entry) throws CacheWriterException {
+            STORE_MAP.put(entry.getKey(), entry.getValue());
+        }
+
+        /** {@inheritDoc} */
+        @Override public void delete(Object key) throws CacheWriterException {
+            STORE_MAP.remove(key);
         }
     }
 }

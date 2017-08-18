@@ -23,10 +23,10 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
-import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
-import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIO;
-import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusMetaIO;
-import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
+import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusMetaIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2ExtrasInnerIO;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2ExtrasLeafIO;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
@@ -63,7 +63,7 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
     /**
      * @param name Tree name.
      * @param reuseList Reuse list.
-     * @param cacheId Cache ID.
+     * @param grpId Cache group ID.
      * @param pageMem Page memory.
      * @param wal Write ahead log manager.
      * @param rowStore Row data store.
@@ -74,7 +74,7 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
     protected H2Tree(
         String name,
         ReuseList reuseList,
-        int cacheId,
+        int grpId,
         PageMemory pageMem,
         IgniteWriteAheadLogManager wal,
         AtomicLong globalRmvId,
@@ -85,7 +85,7 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
         List<InlineIndexHelper> inlineIdxs,
         int inlineSize
     ) throws IgniteCheckedException {
-        super(name, cacheId, pageMem, wal, globalRmvId, metaPageId, reuseList);
+        super(name, grpId, pageMem, wal, globalRmvId, metaPageId, reuseList);
 
         if (!initNew) {
             // Page is ready - read inline size from it.

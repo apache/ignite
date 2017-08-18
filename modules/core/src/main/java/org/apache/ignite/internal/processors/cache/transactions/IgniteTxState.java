@@ -59,7 +59,7 @@ public interface IgniteTxState {
     /**
      * @param cctx Awaits for previous async operations on active caches to be completed.
      */
-    public void awaitLastFut(GridCacheSharedContext cctx);
+    public void awaitLastFuture(GridCacheSharedContext cctx);
 
     /**
      * @param cctx Context.
@@ -77,12 +77,6 @@ public interface IgniteTxState {
      * @return Write synchronization mode.
      */
     public CacheWriteSynchronizationMode syncMode(GridCacheSharedContext cctx);
-
-    /**
-     * @param cctx Context.
-     * @return {@code True} is tx has active near cache.
-     */
-    public boolean hasNearCache(GridCacheSharedContext cctx);
 
     /**
      * @param cacheCtx Context.

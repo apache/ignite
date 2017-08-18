@@ -18,10 +18,6 @@
 package org.apache.ignite.internal.processors.platform.dotnet;
 
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.binary.BinaryBasicIdMapper;
-import org.apache.ignite.binary.BinaryBasicNameMapper;
-import org.apache.ignite.binary.BinaryIdMapper;
-import org.apache.ignite.binary.BinaryNameMapper;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -118,7 +114,7 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
      * Sets binary config.
      *
      * @param igniteCfg Ignite config.
-     * @param dotNetCfg Dotnet config.
+     * @param dotNetCfg .NET config.
      */
     private void setBinaryConfiguration(IgniteConfiguration igniteCfg, PlatformDotNetConfigurationEx dotNetCfg) {
         // Check marshaller.
@@ -166,7 +162,7 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
                     writer.writeMap(bean.getProperties());
                 }
 
-                // Write .NET affinity funcs
+                // Write .NET affinity functions
                 List<PlatformDotNetAffinityFunction> affFuncs = affinityFunctions(igniteCfg);
 
                 writer.writeInt(affFuncs.size());

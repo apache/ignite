@@ -160,7 +160,7 @@ public class TestUtils {
                 double eij = exp.getX(i, j);
                 double aij = actual.getX(i, j);
 
-                // TODO: Check precision here.
+                // TODO: IGNITE-5824, Check precision here.
                 Assert.assertEquals(eij, aij, 0.0);
             }
     }

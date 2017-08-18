@@ -21,9 +21,11 @@ import java.util.Iterator;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteQueue;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -177,20 +179,15 @@ public class GridCacheQueueCleanupSelfTest extends IgniteCollectionAbstractTest 
         // Check that items of removed queue are removed, items of new queue not.
         assertTrue(GridTestUtils.waitForCondition(new PAX() {
             @SuppressWarnings("WhileLoopReplaceableByForEach")
-            @Override public boolean applyx() {
+            @Override public boolean applyx() throws IgniteCheckedException {
                 int cnt = 0;
 
                 for (int i = 0; i < gridCount(); i++) {
                     GridCacheAdapter<Object, Object> cache =
-                        ((IgniteKernal)grid(i)).context().cache().internalCache(queueCacheName);
+                        grid(i).context().cache().internalCache(queueCacheName);
 
-                    Iterator<GridCacheMapEntry> entries = cache.map().entries().iterator();
-
-                    while (entries.hasNext()) {
+                    for (Object e : cache.localEntries(new CachePeekMode[]{CachePeekMode.ALL}))
                         cnt++;
-
-                        entries.next();
-                    }
                 }
 
                 if (cnt > 501) { // 500 items + header.

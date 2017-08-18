@@ -26,12 +26,14 @@ import java.sql.SQLFeatureNotSupportedException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.ignite.cache.affinity.AffinityKey;
-import org.apache.ignite.configuration.OdbcConfiguration;
 import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.jdbc.JdbcDriverPropertyInfo;
-import org.apache.ignite.internal.jdbc.thin.JdbcConnection;
+import org.apache.ignite.internal.jdbc.thin.JdbcThinConnection;
+import org.apache.ignite.internal.jdbc.thin.JdbcThinUtils;
+import org.apache.ignite.internal.util.typedef.F;
 
 /**
  * JDBC driver thin implementation for In-Memory Data Grid.
@@ -100,9 +102,6 @@ import org.apache.ignite.internal.jdbc.thin.JdbcConnection;
  * </table>
  * <h1 class="header">Example</h1>
  * <pre name="code" class="java">
- * // Register JDBC driver.
- * Class.forName("org.apache.ignite.IgniteJdbcThinDriver");
- *
  * // Open JDBC connection.
  * Connection conn = DriverManager.getConnection("jdbc:ignite:thin//localhost:10800");
  *
@@ -132,32 +131,17 @@ import org.apache.ignite.internal.jdbc.thin.JdbcConnection;
  */
 @SuppressWarnings("JavadocReference")
 public class IgniteJdbcThinDriver implements Driver {
-    /** Prefix for property names. */
-    private static final String PROP_PREFIX = "ignite.jdbc";
-
-    /** Distributed joins parameter name. */
-    private static final String PARAM_DISTRIBUTED_JOINS = "distributedJoins";
-
-    /** Enforce join order parameter name. */
-    private static final String ENFORCE_JOIN_ORDER = "enforceJoinOrder";
-
-    /** Hostname property name. */
-    public static final String PROP_HOST = PROP_PREFIX + "host";
-
-    /** Port number property name. */
-    public static final String PROP_PORT = PROP_PREFIX + "port";
-
-    /** Distributed joins property name. */
-    public static final String PROP_DISTRIBUTED_JOINS = PROP_PREFIX + PARAM_DISTRIBUTED_JOINS;
-
-    /** Transactions allowed property name. */
-    public static final String PROP_ENFORCE_JOIN_ORDER = PROP_PREFIX + ENFORCE_JOIN_ORDER;
-
-    /** URL prefix. */
-    public static final String URL_PREFIX = "jdbc:ignite:thin://";
-
-    /** Default port. */
-    public static final int DFLT_PORT = OdbcConfiguration.DFLT_TCP_PORT_FROM;
+    /*
+     * Static initializer.
+     */
+    static {
+        try {
+            DriverManager.registerDriver(new IgniteJdbcThinDriver());
+        }
+        catch (SQLException e) {
+            throw new RuntimeException("Failed to register " + IgniteJdbcThinDriver.class.getName(), e);
+        }
+    }
 
     /** Major version. */
     private static final int MAJOR_VER = IgniteVersionUtils.VER.major();
@@ -179,27 +163,30 @@ public class IgniteJdbcThinDriver implements Driver {
 
     /** {@inheritDoc} */
     @Override public Connection connect(String url, Properties props) throws SQLException {
-        if (!parseUrl(url, props))
-            throw new SQLException("URL is invalid: " + url);
+        if (!acceptsURL(url))
+            return null;
 
-        return new JdbcConnection(url, props);
+        parseUrl(url, props);
+
+        return new JdbcThinConnection(url, props);
     }
 
     /** {@inheritDoc} */
     @Override public boolean acceptsURL(String url) throws SQLException {
-        return url.startsWith(URL_PREFIX);
+        return url.startsWith(JdbcThinUtils.URL_PREFIX);
     }
 
     /** {@inheritDoc} */
     @Override public DriverPropertyInfo[] getPropertyInfo(String url, Properties info) throws SQLException {
-        if (!parseUrl(url, info))
-            throw new SQLException("URL is invalid: " + url);
+        parseUrl(url, info);
 
         List<DriverPropertyInfo> props = Arrays.<DriverPropertyInfo>asList(
-            new JdbcDriverPropertyInfo("Hostname", info.getProperty(PROP_HOST), ""),
-            new JdbcDriverPropertyInfo("Port number", info.getProperty(PROP_PORT), ""),
-            new JdbcDriverPropertyInfo("Distributed Joins", info.getProperty(PROP_DISTRIBUTED_JOINS), ""),
-            new JdbcDriverPropertyInfo("Enforce Join Order", info.getProperty(PROP_ENFORCE_JOIN_ORDER), "")
+            new JdbcDriverPropertyInfo("Hostname", info.getProperty(JdbcThinUtils.PROP_HOST), ""),
+            new JdbcDriverPropertyInfo("Port number", info.getProperty(JdbcThinUtils.PROP_PORT), ""),
+            new JdbcDriverPropertyInfo("Distributed Joins", info.getProperty(JdbcThinUtils.PROP_DISTRIBUTED_JOINS), ""),
+            new JdbcDriverPropertyInfo("Enforce Join Order", info.getProperty(JdbcThinUtils.PROP_ENFORCE_JOIN_ORDER), ""),
+            new JdbcDriverPropertyInfo("Collocated", info.getProperty(JdbcThinUtils.PROP_COLLOCATED), ""),
+            new JdbcDriverPropertyInfo("Replicated only", info.getProperty(JdbcThinUtils.PROP_REPLICATED_ONLY), "")
         );
 
         return props.toArray(new DriverPropertyInfo[0]);
@@ -230,83 +217,65 @@ public class IgniteJdbcThinDriver implements Driver {
      *
      * @param props Properties.
      * @param url URL.
-     * @return Whether URL is valid.
      */
-    private boolean parseUrl(String url, Properties props) {
-        if (url == null)
-            return false;
+    private void parseUrl(String url, Properties props) throws SQLException {
+        if (F.isEmpty(url))
+            throw new SQLException("URL cannot be null or empty.");
 
-        if (url.startsWith(URL_PREFIX) && url.length() > URL_PREFIX.length())
-            return parseJdbcUrl(url, props);
+        if (!url.startsWith(JdbcThinUtils.URL_PREFIX))
+            throw new SQLException("URL must start with \"" + JdbcThinUtils.URL_PREFIX + "\"");
 
-        return false;
-    }
+        String nakedUrl = url.substring(JdbcThinUtils.URL_PREFIX.length()).trim();
 
-    /**
-     * @param url Url.
-     * @param props Properties.
-     * @return Whether URL is valid.
-     */
-    private boolean parseJdbcUrl(String url, Properties props) {
-        url = url.substring(URL_PREFIX.length());
+        String[] nakedUrlParts = nakedUrl.split("\\?");
 
-        String[] parts = url.split("\\?");
+        if (nakedUrlParts.length > 2)
+            throw new SQLException("Invalid URL format (only one ? character is allowed): " + url);
 
-        if (parts.length > 2)
-            return false;
+        String endpoint = nakedUrlParts[0];
 
-        if (parts.length == 2)
-            if (!parseParameters(parts[1], "&", props))
-                return false;
+        if (endpoint.endsWith("/"))
+            endpoint = endpoint.substring(0, endpoint.length() - 1);
 
-        parts = parts[0].split("/");
+        String[] endpointParts = endpoint.split(":");
 
-        assert parts.length > 0;
+        if (endpointParts.length > 2)
+            throw new SQLException("Invalid endpoint format (should be \"host[:port]\"): " + endpoint);
 
-        if (parts.length > 1)
-            return false;
+        props.setProperty(JdbcThinUtils.PROP_HOST, endpointParts[0]);
 
-        url = parts[0];
+        if (endpointParts.length == 2)
+            props.setProperty(JdbcThinUtils.PROP_PORT, endpointParts[1]);
 
-        parts = url.split(":");
-
-        assert parts.length > 0;
-
-        if (parts.length > 2)
-            return false;
-
-        props.setProperty(PROP_HOST, parts[0]);
-
-        try {
-            props.setProperty(PROP_PORT, String.valueOf(parts.length == 2 ? Integer.valueOf(parts[1]) : DFLT_PORT));
-        }
-        catch (NumberFormatException ignored) {
-            return false;
-        }
-
-        return true;
+        if (nakedUrlParts.length == 2)
+            parseParameters(nakedUrlParts[1], props);
     }
 
     /**
      * Validates and parses URL parameters.
      *
-     * @param val Parameters string.
+     * @param str Parameters string.
      * @param delim Delimiter.
      * @param props Properties.
-     * @return Whether URL parameters string is valid.
+     * @throws SQLException If failed.
      */
-    private boolean parseParameters(String val, String delim, Properties props) {
-        String[] params = val.split(delim);
+    private void parseParameters(String str, Properties props) throws SQLException {
+        String[] params = str.split("&");
 
         for (String param : params) {
             String[] pair = param.split("=");
 
-            if (pair.length != 2 || pair[0].isEmpty() || pair[1].isEmpty())
-                return false;
+            if (pair.length != 2)
+                throw new SQLException("Invalid parameter format (only one = character is allowed per key/value " +
+                    "pair: " + param);
 
-            props.setProperty(PROP_PREFIX + pair[0], pair[1]);
+            String key = pair[0].trim();
+            String val = pair[1].trim();
+
+            if (key.isEmpty() || val.isEmpty())
+                throw new SQLException("Invalid parameter format (key and value cannot be empty): " + param);
+
+            props.setProperty(JdbcThinUtils.PROP_PREFIX + key, val);
         }
-
-        return true;
     }
 }

@@ -87,10 +87,7 @@ export default merge(commonCfg, {
             aggregateTimeout: 1000,
             poll: 2000
         },
-        stats: {
-            colors: true,
-            chunks: false
-        },
+        stats: 'errors-only',
         host: devServerHost,
         port: devServerPort
     },

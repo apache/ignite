@@ -103,6 +103,15 @@
         </xs:restriction>
     </xs:simpleType>
 
+    <xs:simpleType name="walMode" final="restriction">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="Defauls" />
+            <xs:enumeration value="LogOnly" />
+            <xs:enumeration value="Background" />
+            <xs:enumeration value="None" />
+        </xs:restriction>
+    </xs:simpleType>
+
     <xs:element name="igniteConfiguration">
         <xs:annotation>
             <xs:documentation>Ignite configuration root.</xs:documentation>
@@ -743,6 +752,11 @@
                                             <xs:documentation>Partition loss policy defines how Ignite will react to a situation when all nodes for some partition leave the cluster.</xs:documentation>
                                         </xs:annotation>
                                     </xs:attribute>
+                                    <xs:attribute name="groupName" type="xs:string">
+                                        <xs:annotation>
+                                            <xs:documentation>Cache group name. Caches with the same group name share single underlying 'physical' cache (partition set), but are logically isolated.</xs:documentation>
+                                        </xs:annotation>
+                                    </xs:attribute>
                                 </xs:complexType>
                             </xs:element>
                         </xs:sequence>
@@ -1247,6 +1261,155 @@
                             </xs:annotation>
                         </xs:attribute>
                     </xs:complexType>
+                </xs:element>                
+                <xs:element name="sqlConnectorConfiguration" minOccurs="0">
+                    <xs:annotation>
+                        <xs:documentation>SQL connector configuration (JDBC and ODBC).</xs:documentation>
+                    </xs:annotation>
+                    <xs:complexType>
+                        <xs:attribute name="port" type="xs:int">
+                            <xs:annotation>
+                                <xs:documentation>Connector port.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="host" type="xs:string">
+                            <xs:annotation>
+                                <xs:documentation>Connector host.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="portRange" type="xs:int">
+                            <xs:annotation>
+                                <xs:documentation>Connector port range.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="socketSendBufferSize" type="xs:int">
+                            <xs:annotation>
+                                <xs:documentation>Size of the socket send buffer.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="socketReceiveBufferSize" type="xs:int">
+                            <xs:annotation>
+                                <xs:documentation>Size of the socket receive buffer.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="tcpNoDelay" type="xs:boolean">
+                            <xs:annotation>
+                                <xs:documentation>TCP_NODELAY socket option.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="maxOpenCursorsPerConnection" type="xs:int">
+                            <xs:annotation>
+                                <xs:documentation>Maximum open cursors per connection.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="threadPoolSize" type="xs:int">
+                            <xs:annotation>
+                                <xs:documentation>SQL connector thread pool size.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="persistentStoreConfiguration" minOccurs="0">
+                    <xs:annotation>
+                        <xs:documentation>Persistent store configuration.</xs:documentation>
+                    </xs:annotation>
+                    <xs:complexType>
+                        <xs:attribute name="persistentStorePath" type="xs:string">
+                            <xs:annotation>
+                                <xs:documentation>Path where data and indexes will be persisted.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="checkpointingFrequency" type="xs:string">
+                            <xs:annotation>
+                                <xs:documentation>Checkpointing frequency which is a minimal interval when the dirty pages will be written to the Persistent Store.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="checkpointingPageBufferSize" type="xs:long">
+                            <xs:annotation>
+                                <xs:documentation>Size of the checkpointing page buffer.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="checkpointingThreads" type="xs:int">
+                            <xs:annotation>
+                                <xs:documentation>Number of threads for checkpointing.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="lockWaitTime" type="xs:string">
+                            <xs:annotation>
+                                <xs:documentation>Persistent manager file lock wait time.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="walHistorySize" type="xs:int">
+                            <xs:annotation>
+                                <xs:documentation>Number of checkpoints to store in WAL (Write Ahead Log) history.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="walSegments" type="xs:int">
+                            <xs:annotation>
+                                <xs:documentation>Number of WAL (Write Ahead Log) segments to work with.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="walSegmentSize" type="xs:int">
+                            <xs:annotation>
+                                <xs:documentation>Size of the WAL (Write Ahead Log) segment.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="walStorePath" type="xs:string">
+                            <xs:annotation>
+                                <xs:documentation>Path to the directory where WAL (Write Ahead Log) is stored.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="walArchivePath" type="xs:string">
+                            <xs:annotation>
+                                <xs:documentation>Path to the directory where WAL (Write Ahead Log) archive is stored.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="walMode" type="walMode">
+                            <xs:annotation>
+                                <xs:documentation>WAL (Write Ahead Log) mode.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="tlbSize" type="xs:int">
+                            <xs:annotation>
+                                <xs:documentation>Size of the TLB (Thread-Local Buffer), in bytes.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="walFlushFrequency" type="xs:string">
+                            <xs:annotation>
+                                <xs:documentation>WAL (Write Ahead Log) flush frequency.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="walFsyncDelayNanos" type="xs:int">
+                            <xs:annotation>
+                                <xs:documentation>WAL (Write Ahead Log) fsync (disk sync) delay, in nanoseconds.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="walRecordIteratorBufferSize" type="xs:int">
+                            <xs:annotation>
+                                <xs:documentation>Size of the WAL (Write Ahead Log) record iterator buffer, in bytes.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="alwaysWriteFullPages" type="xs:boolean">
+                            <xs:annotation>
+                                <xs:documentation>Whether full pages should always be written.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="metricsEnabled" type="xs:boolean">
+                            <xs:annotation>
+                                <xs:documentation>Enable persistent store metrics.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="subIntervals" type="xs:int">
+                            <xs:annotation>
+                                <xs:documentation>Number of sub intervals to split RateTimeInterval into.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="rateTimeInterval" type="xs:string">
+                            <xs:annotation>
+                                <xs:documentation>Rate time interval.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                    </xs:complexType>
                 </xs:element>
                 <xs:element name="pluginConfigurations" minOccurs="0">
                     <xs:annotation>
@@ -1428,9 +1591,66 @@
                     </xs:documentation>
                 </xs:annotation>
             </xs:attribute>
+            <xs:attribute name="longQueryWarningTimeout" type="xs:string">
+                <xs:annotation>
+                    <xs:documentation>
+                        Timeout after which long query warning will be printed.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
             <xs:attribute name="peerAssemblyLoadingMode" type="peerAssemblyLoadingMode">
                 <xs:annotation>
                     <xs:documentation>Indicates whether user assemblies should be loaded on remote nodes automatically.</xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="publicThreadPoolSize" type="xs:string">
+                <xs:annotation>
+                    <xs:documentation>Size of the public thread pool, which processes compute jobs and user messages.</xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="stripedThreadPoolSize" type="xs:string">
+                <xs:annotation>
+                    <xs:documentation>Size of the striped thread pool.</xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="serviceThreadPoolSize" type="xs:string">
+                <xs:annotation>
+                    <xs:documentation>Size of the service thread pool.</xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="systemThreadPoolSize" type="xs:string">
+                <xs:annotation>
+                    <xs:documentation>Size of the system thread pool.</xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="asyncCallbackThreadPoolSize" type="xs:string">
+                <xs:annotation>
+                    <xs:documentation>Size of the async callback thread pool.</xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="managementThreadPoolSize" type="xs:string">
+                <xs:annotation>
+                    <xs:documentation>Size of the management thread pool.</xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="dataStreamerThreadPoolSize" type="xs:string">
+                <xs:annotation>
+                    <xs:documentation>Size of the data streamer thread pool.</xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="utilityCacheThreadPoolSize" type="xs:string">
+                <xs:annotation>
+                    <xs:documentation>Size of the utility cache thread pool.</xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="queryThreadPoolSize" type="xs:string">
+                <xs:annotation>
+                    <xs:documentation>Size of the query thread pool.</xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="isActiveOnStart" type="xs:boolean">
+                <xs:annotation>
+                    <xs:documentation>Whether grid should be active on start.</xs:documentation>
                 </xs:annotation>
             </xs:attribute>
         </xs:complexType>

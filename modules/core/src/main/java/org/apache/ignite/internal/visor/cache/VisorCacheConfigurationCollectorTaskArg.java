@@ -24,7 +24,6 @@ import java.util.Collection;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
-import org.apache.ignite.lang.IgniteUuid;
 
 /**
  * Argument for {@link VisorCacheConfigurationCollectorTask}.
@@ -34,7 +33,7 @@ public class VisorCacheConfigurationCollectorTaskArg extends VisorDataTransferOb
     private static final long serialVersionUID = 0L;
 
     /** Collection of cache deployment IDs. */
-    private Collection<IgniteUuid> deploymentIds;
+    private Collection<String> cacheNames;
 
     /**
      * Default constructor.
@@ -44,27 +43,27 @@ public class VisorCacheConfigurationCollectorTaskArg extends VisorDataTransferOb
     }
 
     /**
-     * @param deploymentIds Collection of cache deployment IDs.
+     * @param cacheNames Collection of cache names.
      */
-    public VisorCacheConfigurationCollectorTaskArg(Collection<IgniteUuid> deploymentIds) {
-        this.deploymentIds = deploymentIds;
+    public VisorCacheConfigurationCollectorTaskArg(Collection<String> cacheNames) {
+        this.cacheNames = cacheNames;
     }
 
     /**
      * @return Collection of cache deployment IDs.
      */
-    public Collection<IgniteUuid> getDeploymentIds() {
-        return deploymentIds;
+    public Collection<String> getCacheNames() {
+        return cacheNames;
     }
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeCollection(out, deploymentIds);
+        U.writeCollection(out, cacheNames);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
-        deploymentIds = U.readCollection(in);
+        cacheNames = U.readCollection(in);
     }
 
     /** {@inheritDoc} */

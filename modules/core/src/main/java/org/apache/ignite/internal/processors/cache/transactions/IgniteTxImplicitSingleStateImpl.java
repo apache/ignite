@@ -26,7 +26,7 @@ import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheStoppedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
@@ -91,7 +91,7 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void awaitLastFut(GridCacheSharedContext ctx) {
+    @Override public void awaitLastFuture(GridCacheSharedContext ctx) {
         if (cacheCtx == null)
             return;
 
@@ -115,8 +115,9 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
         Throwable err = topFut.validateCache(cacheCtx, recovery, read, null, entry);
 
         if (err != null) {
-            return new IgniteCheckedException("Failed to perform cache operation (cache topology is not valid): " +
-                U.maskName(cacheCtx.name()));
+            return new IgniteCheckedException(
+                "Failed to perform cache operation (cache topology is not valid): "
+                    + U.maskName(cacheCtx.name()), err);
         }
 
         if (CU.affinityNodes(cacheCtx, topFut.topologyVersion()).isEmpty()) {
@@ -133,11 +134,6 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean hasNearCache(GridCacheSharedContext cctx) {
-        return cacheCtx != null && cacheCtx.isNear();
-    }
-
-    /** {@inheritDoc} */
     @Override public GridDhtTopologyFuture topologyReadLock(GridCacheSharedContext cctx, GridFutureAdapter<?> fut) {
         if (cacheCtx == null || cacheCtx.isLocal())
             return cctx.exchange().lastTopologyFuture();
@@ -145,8 +141,7 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
         cacheCtx.topology().readLock();
 
         if (cacheCtx.topology().stopping()) {
-            fut.onDone(new IgniteCheckedException("Failed to perform cache operation (cache is stopped): " +
-                cacheCtx.name()));
+            fut.onDone(new CacheStoppedException(cacheCtx.name()));
 
             return null;
         }
@@ -291,11 +286,6 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
     /** {@inheritDoc} */
     @Override public IgniteTxEntry singleWrite() {
         return entry != null ? entry.get(0) : null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean hasNearCacheConfigured(GridCacheSharedContext ctx, AffinityTopologyVersion topVer) {
-        return cacheCtx != null ? ctx.discovery().hasNearCache(cacheCtx.cacheId(), topVer) : false;
     }
 
     /** {@inheritDoc} */

@@ -27,14 +27,12 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.client.GridClientCacheMode;
-import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.port.GridPortRecord;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
 import org.apache.ignite.internal.processors.rest.GridRestProtocol;
@@ -213,18 +211,17 @@ public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
         nodeBean.setNodeId(node.id());
         nodeBean.setConsistentId(node.consistentId());
         nodeBean.setTcpPort(attribute(node, ATTR_REST_TCP_PORT, 0));
+        nodeBean.setOrder(node.order());
 
         nodeBean.setTcpAddresses(nonEmptyList(node.<Collection<String>>attribute(ATTR_REST_TCP_ADDRS)));
         nodeBean.setTcpHostNames(nonEmptyList(node.<Collection<String>>attribute(ATTR_REST_TCP_HOST_NAMES)));
 
-        GridCacheProcessor cacheProc = ctx.cache();
-
-        Map<String, CacheMode> nodeCaches = ctx.discovery().nodeCaches(node);
+        Map<String, CacheConfiguration> nodeCaches = ctx.discovery().nodePublicCaches(node);
 
         Collection<GridClientCacheBean> caches = new ArrayList<>(nodeCaches.size());
 
-        for (String cacheName : nodeCaches.keySet())
-            caches.add(createCacheBean(cacheProc.cacheConfiguration(cacheName)));
+        for (CacheConfiguration ccfg : nodeCaches.values())
+            caches.add(createCacheBean(ccfg));
 
         nodeBean.setCaches(caches);
 

@@ -30,6 +30,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Resource;
     using NUnit.Framework;
 
     /// <summary>
@@ -378,12 +379,13 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var exp = PopulateCache(cache, loc, cnt, x => x < 50);
 
             // 2. Validate results.
-            var qry = new SqlFieldsQuery("SELECT name, age FROM QueryPerson WHERE age < 50", loc)
+            var qry = new SqlFieldsQuery("SELECT name, age FROM QueryPerson WHERE age < 50")
             {
                 EnableDistributedJoins = distrJoin,
                 EnforceJoinOrder = enforceJoinOrder,
                 Colocated = !distrJoin,
                 ReplicatedOnly = false,
+                Local = loc,
                 Timeout = TimeSpan.FromSeconds(2)
             };
 
@@ -478,19 +480,16 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         {
             var cache = GetIgnite().GetOrCreateCache<int, QueryPerson>("nonindexed_cache");
 
-            var queries = new QueryBase[]
-            {
-                new TextQuery(typeof (QueryPerson), "1*"),
-                new SqlQuery(typeof (QueryPerson), "age < 50")
-            };
+            // Text query.
+            var err = Assert.Throws<IgniteException>(() => cache.Query(new TextQuery(typeof(QueryPerson), "1*")));
 
-            foreach (var qry in queries)
-            {
-                var err = Assert.Throws<IgniteException>(() => cache.Query(qry));
+            Assert.AreEqual("Indexing is disabled for cache: nonindexed_cache. " +
+                "Use setIndexedTypes or setTypeMetadata methods on CacheConfiguration to enable.", err.Message);
 
-                Assert.AreEqual("Indexing is disabled for cache: nonindexed_cache. " +
-                    "Use setIndexedTypes or setTypeMetadata methods on CacheConfiguration to enable.", err.Message);
-            }
+            // SQL query.
+            err = Assert.Throws<IgniteException>(() => cache.Query(new SqlQuery(typeof(QueryPerson), "age < 50")));
+
+            Assert.AreEqual("Failed to find SQL table for type: QueryPerson", err.Message);
         }
 
         /// <summary>
@@ -576,6 +575,38 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 ValidateQueryResults(cache, qry, exp0, keepBinary);
             }
             
+        }
+
+        /// <summary>
+        /// Tests custom schema name.
+        /// </summary>
+        [Test]
+        public void TestCustomSchema()
+        {
+            var doubles = GetIgnite().GetOrCreateCache<int, double>(new CacheConfiguration("doubles", typeof(double)));
+            var strings = GetIgnite().GetOrCreateCache<int, string>(new CacheConfiguration("strings", typeof(string)));
+
+            doubles[1] = 36.6;
+            strings[1] = "foo";
+
+            // Default schema.
+            var res = doubles.QueryFields(new SqlFieldsQuery(
+                    "select S._val from double as D join \"strings\".string as S on S._key = D._key"))
+                .Select(x => (string) x[0])
+                .Single();
+
+            Assert.AreEqual("foo", res);
+
+            // Custom schema.
+            res = doubles.QueryFields(new SqlFieldsQuery(
+                    "select S._val from \"doubles\".double as D join string as S on S._key = D._key")
+                {
+                    Schema = strings.Name
+                })
+                .Select(x => (string)x[0])
+                .Single();
+
+            Assert.AreEqual("foo", res);
         }
 
         /// <summary>
@@ -858,23 +889,18 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         {
             var rand = new Random();
 
-            var exp = new HashSet<int>();
-
-            var aff = cache.Ignite.GetAffinity(cache.Name);
-
-            var localNode = cache.Ignite.GetCluster().GetLocalNode();
-
             for (var i = 0; i < cnt; i++)
             {
                 var val = rand.Next(cnt);
 
                 cache.Put(val, new QueryPerson(val.ToString(), val));
-
-                if (expectedEntryFilter(val) && (!loc || aff.IsPrimary(localNode, val)))
-                    exp.Add(val);
             }
 
-            return exp;
+            var entries = loc
+                ? cache.GetLocalEntries(CachePeekMode.Primary)
+                : cache;
+
+            return new HashSet<int>(entries.Select(x => x.Key).Where(expectedEntryFilter));
         }
     }
 
@@ -924,9 +950,15 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         // Error flag
         public bool ThrowErr { get; set; }
 
+        // Injection test
+        [InstanceResource]
+        public IIgnite Ignite { get; set; }
+
         /** <inheritdoc /> */
         public bool Invoke(ICacheEntry<int, TV> entry)
         {
+            Assert.IsNotNull(Ignite);
+
             if (ThrowErr)
                 throw new Exception(ErrMessage);
 

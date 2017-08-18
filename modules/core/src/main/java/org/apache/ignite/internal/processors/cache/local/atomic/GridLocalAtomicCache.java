@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -55,7 +54,7 @@ import org.apache.ignite.internal.processors.cache.GridCachePreloaderAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.local.GridLocalCache;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -104,7 +103,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
     public GridLocalAtomicCache(GridCacheContext<K, V> ctx) {
         super(ctx);
 
-        preldr = new GridCachePreloaderAdapter(ctx);
+        preldr = new GridCachePreloaderAdapter(ctx.group());
     }
 
     /** {@inheritDoc} */
@@ -301,8 +300,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
         final K key,
         String taskName,
         boolean deserializeBinary,
-        boolean needVer) throws IgniteCheckedException
-    {
+        boolean needVer) throws IgniteCheckedException {
         Map<K, V> m = getAllInternal(Collections.singleton(key),
             ctx.readThrough(),
             taskName,
@@ -405,7 +403,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
             boolean skipEntry = readNoEntry;
 
             if (readNoEntry) {
-                CacheDataRow row = ctx.offheap().read(cacheKey);
+                CacheDataRow row = ctx.offheap().read(ctx, cacheKey);
 
                 if (row != null) {
                     long expireTime = row.expireTime();
@@ -509,12 +507,6 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
                                     success = false;
                             }
                         }
-                        else {
-                            if (!storeEnabled && configuration().isStatisticsEnabled() && !skipVals)
-                                metrics0().onRead(false);
-
-                            success = false;
-                        }
 
                         break; // While.
                     }
@@ -529,6 +521,10 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
                     if (!success && storeEnabled)
                         break;
                 }
+            }
+            if (!success) {
+                if (!storeEnabled && configuration().isStatisticsEnabled() && !skipVals)
+                    metrics0().onRead(false);
             }
         }
 

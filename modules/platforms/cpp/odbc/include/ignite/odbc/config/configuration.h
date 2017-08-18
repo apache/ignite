@@ -50,8 +50,8 @@ namespace ignite
                     /** Connection attribute keyword for Driver attribute. */
                     static const std::string driver;
 
-                    /** Connection attribute keyword for cache attribute. */
-                    static const std::string cache;
+                    /** Connection attribute keyword for schema attribute. */
+                    static const std::string schema;
 
                     /** Connection attribute keyword for address attribute. */
                     static const std::string address;
@@ -73,6 +73,12 @@ namespace ignite
 
                     /** Connection attribute keyword for fetch results page size attribute. */
                     static const std::string pageSize;
+
+                    /** Connection attribute keyword for replicated only attribute. */
+                    static const std::string replicatedOnly;
+
+                    /** Connection attribute keyword for collocated attribute. */
+                    static const std::string collocated;
                 };
 
                 /** Default values for configuration. */
@@ -84,8 +90,8 @@ namespace ignite
                     /** Default value for Driver attribute. */
                     static const std::string driver;
 
-                    /** Default value for cache attribute. */
-                    static const std::string cache;
+                    /** Default value for schema attribute. */
+                    static const std::string schema;
 
                     /** Default value for address attribute. */
                     static const std::string address;
@@ -107,6 +113,12 @@ namespace ignite
 
                     /** Default value for enforce join order attribute. */
                     static const bool enforceJoinOrder;
+
+                    /** Default value for replicated only attribute. */
+                    static const bool replicatedOnly;
+
+                    /** Default value for collocated attribute. */
+                    static const bool collocated;
                 };
 
                 /**
@@ -229,23 +241,23 @@ namespace ignite
                 void SetHost(const std::string& server);
 
                 /**
-                 * Get cache.
+                 * Get schema.
                  *
-                 * @return Cache name.
+                 * @return Schema.
                  */
-                const std::string& GetCache() const
+                const std::string& GetSchema() const
                 {
-                    return GetStringValue(Key::cache, DefaultValue::cache);
+                    return GetStringValue(Key::schema, DefaultValue::schema);
                 }
 
                 /**
-                 * Set cache.
+                 * Set schema.
                  *
-                 * @param cache Cache name.
+                 * @param schema Schema name.
                  */
-                void SetCache(const std::string& cache)
+                void SetSchema(const std::string& schema)
                 {
-                    arguments[Key::cache] = cache;
+                    arguments[Key::schema] = schema;
                 }
 
                 /**
@@ -303,6 +315,46 @@ namespace ignite
                 void SetEnforceJoinOrder(bool val)
                 {
                     SetBoolValue(Key::enforceJoinOrder, val);
+                }
+
+                /**
+                 * Check replicated only flag.
+                 *
+                 * @return True if replicated only is enabled.
+                 */
+                bool IsReplicatedOnly() const
+                {
+                    return GetBoolValue(Key::replicatedOnly, DefaultValue::replicatedOnly);
+                }
+
+                /**
+                 * Set replicated only flag.
+                 *
+                 * @param val Value to set.
+                 */
+                void SetReplicatedOnly(bool val)
+                {
+                    SetBoolValue(Key::replicatedOnly, val);
+                }
+
+                /**
+                 * Check collocated flag.
+                 *
+                 * @return True if collocated is enabled.
+                 */
+                bool IsCollocated() const
+                {
+                    return GetBoolValue(Key::collocated, DefaultValue::collocated);
+                }
+
+                /**
+                 * Set collocated.
+                 *
+                 * @param val Value to set.
+                 */
+                void SetCollocated(bool val)
+                {
+                    SetBoolValue(Key::collocated, val);
                 }
 
                 /**

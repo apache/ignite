@@ -88,8 +88,6 @@ public class JdbcNoDefaultCacheTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         startGridsMultiThreaded(GRID_CNT);
 
-        Class.forName("org.apache.ignite.IgniteJdbcDriver");
-
         Ignite ignite = ignite(0);
 
         IgniteCache<Integer, Integer> cache1 = ignite.cache(CACHE1_NAME);
