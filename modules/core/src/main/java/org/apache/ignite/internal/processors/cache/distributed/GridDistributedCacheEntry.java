@@ -32,6 +32,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheMvcc;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
+import org.apache.ignite.internal.processors.cache.transactions.TxThreadId;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -81,7 +82,7 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
      * @throws GridCacheEntryRemovedException If entry has been removed.
      */
     @Nullable public GridCacheMvccCandidate addLocal(
-        long threadId,
+        TxThreadId threadId,
         GridCacheVersion ver,
         AffinityTopologyVersion topVer,
         long timeout,
@@ -180,7 +181,7 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
     public void addRemote(
         UUID nodeId,
         @Nullable UUID otherNodeId,
-        long threadId,
+        TxThreadId threadId,
         GridCacheVersion ver,
         boolean tx,
         boolean implicitSingle,

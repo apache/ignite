@@ -189,7 +189,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
         super(tx.xidVersion(), 0, addDepInfo);
 
         writeVer = tx.writeVersion();
-        threadId = tx.threadId();
+        threadId = tx.threadId().value();
         concurrency = tx.concurrency();
         isolation = tx.isolation();
         txSize = tx.size();

@@ -28,6 +28,7 @@ import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.transactions.TxThreadId;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -61,7 +62,7 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
     private GridCacheVersion nearXidVer;
 
     /** Thread ID. */
-    private long threadId;
+    private TxThreadId threadId = new TxThreadId();
 
     /** Future ID. */
     private IgniteUuid futId;
@@ -127,7 +128,7 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
         int cacheId,
         UUID nodeId,
         @Nullable GridCacheVersion nearXidVer,
-        long threadId,
+        TxThreadId threadId,
         IgniteUuid futId,
         GridCacheVersion lockVer,
         boolean isInTx,
@@ -184,7 +185,7 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
      *
      * @return Owner node thread ID.
      */
-    public long threadId() {
+    public TxThreadId threadId() {
         return threadId;
     }
 
@@ -427,7 +428,7 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
                 writer.incrementState();
 
             case 17:
-                if (!writer.writeLong("threadId", threadId))
+                if (!writer.writeLong("threadId", threadId.valueSafely()))
                     return false;
 
                 writer.incrementState();
@@ -444,6 +445,12 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
 
                 writer.incrementState();
 
+            case 20:
+                if (!writer.writeBoolean("threadIdUndefined", threadId.undefined()))
+                    return false;
+
+                writer.incrementState();
+
         }
 
         return true;
@@ -452,6 +459,9 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
     /** {@inheritDoc} */
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
+
+        if(threadId == null)
+            threadId = new TxThreadId();
 
         if (!reader.beforeMessageRead())
             return false;
@@ -545,7 +555,7 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
                 reader.incrementState();
 
             case 17:
-                threadId = reader.readLong("threadId");
+                threadId.value(reader.readLong("threadId"));
 
                 if (!reader.isLastRead())
                     return false;
@@ -568,6 +578,14 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
 
                 reader.incrementState();
 
+            case 20:
+
+                threadId.undefined(reader.readBoolean("threadIdUndefined"));
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
         }
 
         return reader.afterMessageRead(GridDistributedLockRequest.class);

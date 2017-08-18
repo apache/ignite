@@ -26,6 +26,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheMvcc;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
+import org.apache.ignite.internal.processors.cache.transactions.TxThreadId;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
@@ -67,7 +68,7 @@ public class GridLocalCacheEntry extends GridCacheMapEntry {
      * @throws GridCacheEntryRemovedException If entry has been removed.
      */
     @Nullable GridCacheMvccCandidate addLocal(
-        long threadId,
+        TxThreadId threadId,
         GridCacheVersion ver,
         @Nullable GridCacheVersion serOrder,
         @Nullable GridCacheVersion serReadVer,

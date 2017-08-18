@@ -62,6 +62,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLo
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearUnlockRequest;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
+import org.apache.ignite.internal.processors.cache.transactions.TxThreadId;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.future.GridEmbeddedFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -893,7 +894,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
     IgniteInternalFuture<Exception> lockAllAsync(
         final GridCacheContext<?, ?> cacheCtx,
         @Nullable final GridNearTxLocal tx,
-        final long threadId,
+        final TxThreadId threadId,
         final GridCacheVersion ver,
         final AffinityTopologyVersion topVer,
         final Collection<KeyCacheObject> keys,
@@ -977,7 +978,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
     private IgniteInternalFuture<Exception> lockAllAsync0(
         GridCacheContext<?, ?> cacheCtx,
         @Nullable final GridNearTxLocal tx,
-        long threadId,
+        TxThreadId threadId,
         final GridCacheVersion ver,
         AffinityTopologyVersion topVer,
         final Collection<KeyCacheObject> keys,

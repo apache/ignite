@@ -461,7 +461,7 @@ public class IgniteTxHandler {
                     req.version(),
                     req.futureId(),
                     req.miniId(),
-                    req.threadId(),
+                    new TxThreadId(req.threadId(), false),
                     req.implicitSingle(),
                     req.implicitSingle(),
                     req.system(),

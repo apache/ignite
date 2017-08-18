@@ -154,7 +154,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
 
         this.explicitLock = explicitLock;
 
-        threadId = Thread.currentThread().getId();
+        threadId.value(Thread.currentThread().getId());
     }
 
     /**

@@ -498,9 +498,9 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
                 if (!tx.implicit()) {
                     if (cacheCtx == null || !cacheCtx.systemTx())
-                        threadMap.put(tx.threadId(), tx);
+                        threadMap.put(tx.threadId().value(), tx);
                     else
-                        sysThreadMap.put(new TxThreadKey(tx.threadId(), cacheCtx.cacheId()), tx);
+                        sysThreadMap.put(new TxThreadKey(tx.threadId().value(), cacheCtx.cacheId()), tx);
                 }
             }
 
@@ -1433,7 +1433,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 Integer cacheId = tx.txState().firstCacheId();
 
                 if (cacheId != null)
-                    sysThreadMap.remove(new TxThreadKey(tx.threadId(), cacheId), tx);
+                    sysThreadMap.remove(new TxThreadKey(tx.threadId().value(), cacheId), tx);
                 else {
                     for (Iterator<IgniteInternalTx> it = sysThreadMap.values().iterator(); it.hasNext(); ) {
                         IgniteInternalTx txx = it.next();
@@ -2170,7 +2170,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                         TxLock txLock = new TxLock(
                             tx.nearXidVersion(),
                             tx.nodeId(),
-                            tx.threadId(),
+                            tx.threadId().value(),
                             TxLock.OWNERSHIP_REQUESTED);
 
                         res.addTxLock(txKey, txLock);

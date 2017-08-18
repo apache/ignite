@@ -82,7 +82,7 @@ public interface IgniteInternalTx {
      *
      * @return Thread ID.
      */
-    public long threadId();
+    public TxThreadId threadId();
 
     /**
      * Start time of this transaction.

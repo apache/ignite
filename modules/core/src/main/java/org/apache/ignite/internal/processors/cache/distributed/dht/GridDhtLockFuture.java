@@ -54,6 +54,7 @@ import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLo
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
+import org.apache.ignite.internal.processors.cache.transactions.TxThreadId;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.dr.GridDrType;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
@@ -107,7 +108,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
     private AffinityTopologyVersion topVer;
 
     /** Thread. */
-    private long threadId;
+    private TxThreadId threadId = new TxThreadId();
 
     /** Keys locked so far. */
     @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
@@ -198,7 +199,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
         boolean needReturnVal,
         long timeout,
         GridDhtTxLocalAdapter tx,
-        long threadId,
+        TxThreadId threadId,
         long createTtl,
         long accessTtl,
         CacheEntryPredicate[] filter,
@@ -228,7 +229,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
         if (tx != null)
             tx.topologyVersion(topVer);
 
-        assert tx == null || threadId == tx.threadId();
+        assert tx == null || threadId.valueSafely() == tx.threadId().valueSafely();
 
         this.threadId = threadId;
 
@@ -933,6 +934,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
 
                             add(fut); // Append new future.
 
+                            req.threadId().undefined(true);
                             cctx.io().send(n, req, cctx.ioPolicy());
 
                             if (msgLog.isDebugEnabled()) {
