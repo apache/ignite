@@ -186,7 +186,7 @@ public class IgnitePersistentStoreCacheGroupsTest extends GridCommonAbstractTest
 
         startGrids(3);
 
-        awaitPartitionMapExchange();
+        //awaitPartitionMapExchange();
 
         node = ignite(0);
 

@@ -181,7 +181,7 @@ public interface GridQueryIndexing {
      * @param cacheName Cache name.
      * @throws IgniteCheckedException If failed to drop cache schema.
      */
-    public void unregisterCache(String cacheName) throws IgniteCheckedException;
+    public void unregisterCache(String cacheName, boolean destroy) throws IgniteCheckedException;
 
     /**
      * Registers type if it was not known before or updates it otherwise.
