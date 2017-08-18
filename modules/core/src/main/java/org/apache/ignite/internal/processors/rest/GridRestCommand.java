@@ -114,6 +114,9 @@ public enum GridRestCommand {
     /** Memory metrics. */
     MEMORY_METRICS("memory"),
 
+    /** Persistent store metrics. */
+    PERSISTENCE_METRICS("persistence"),
+
     /** Grid topology. */
     TOPOLOGY("top"),
 

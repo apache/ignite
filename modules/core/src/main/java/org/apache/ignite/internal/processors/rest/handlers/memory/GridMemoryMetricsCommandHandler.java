@@ -17,7 +17,6 @@
 package org.apache.ignite.internal.processors.rest.handlers.memory;
 
 import java.util.Collection;
-import org.apache.ignite.MemoryMetrics;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
@@ -28,15 +27,16 @@ import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.MEMORY_METRICS;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.PERSISTENCE_METRICS;
 
 /**
- * Handler for {@link GridRestCommand#MEMORY_METRICS} command.
+ * Handler for {@link GridRestCommand#MEMORY_METRICS} and {@link GridRestCommand#PERSISTENCE_METRICS} command.
  */
 public class GridMemoryMetricsCommandHandler extends GridRestCommandHandlerAdapter {
     /**
      * Supported commands.
      */
-    private static final Collection<GridRestCommand> SUPPORTED_COMMANDS = U.sealList(MEMORY_METRICS);
+    private static final Collection<GridRestCommand> SUPPORTED_COMMANDS = U.sealList(MEMORY_METRICS, PERSISTENCE_METRICS);
 
     /**
      * @param ctx Context.
@@ -54,16 +54,22 @@ public class GridMemoryMetricsCommandHandler extends GridRestCommandHandlerAdapt
     @Override public IgniteInternalFuture<GridRestResponse> handleAsync(GridRestRequest req) {
         assert req != null;
 
-        if (req.command() != MEMORY_METRICS)
-            return new GridFinishedFuture<>();
+        GridRestCommand command = req.command();
 
-        if (log.isDebugEnabled())
-            log.debug("Handling " + MEMORY_METRICS.key() + " REST request: " + req);
+        if (command == MEMORY_METRICS || command == PERSISTENCE_METRICS) {
+            if (log.isDebugEnabled())
+                log.debug("Handling " + req.command().key() + " REST request: " + req);
 
-        Collection<MemoryMetrics> metrics = ctx.grid().memoryMetrics();
+            if (command == MEMORY_METRICS)
+                return new GridFinishedFuture<>(new GridRestResponse(ctx.grid().memoryMetrics()));
+            else {
+                if (ctx.config().getPersistentStoreConfiguration() != null)
+                    return new GridFinishedFuture<>(new GridRestResponse(ctx.grid().persistentStoreMetrics()));
+                else
+                    return new GridFinishedFuture<>(new GridRestResponse("Persistent store is not configured"));
+            }
+        }
 
-        assert metrics != null;
-
-        return new GridFinishedFuture<>(new GridRestResponse(metrics));
+        return new GridFinishedFuture<>();
     }
 }
