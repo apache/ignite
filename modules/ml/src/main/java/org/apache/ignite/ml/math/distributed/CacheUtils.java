@@ -31,7 +31,6 @@ import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
 import org.apache.ignite.internal.util.typedef.internal.A;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteRunnable;
@@ -42,6 +41,7 @@ import org.apache.ignite.ml.math.functions.IgniteConsumer;
 import org.apache.ignite.ml.math.functions.IgniteDoubleFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.impls.matrix.BlockEntry;
+import org.apache.ignite.ml.math.impls.storage.matrix.RowColMatrixKey;
 
 /**
  * Distribution-related misc. support.
@@ -154,14 +154,7 @@ public class CacheUtils {
                 throw new UnsupportedOperationException();
 
             return acc == null ? sum : acc + sum;
-        }, key -> {
-            if (key instanceof BlockMatrixKey)
-                return ((BlockMatrixKey)key).matrixId().equals(matrixUuid);
-            else if (key instanceof IgniteBiTuple)
-                return ((IgniteBiTuple<Integer, IgniteUuid>)key).get2().equals(matrixUuid);
-            else
-                throw new UnsupportedOperationException();
-        });
+        }, sparseKeyFilter(matrixUuid));
 
         return sum(subSums);
     }
@@ -236,14 +229,7 @@ public class CacheUtils {
             else
                 return Math.min(acc, min);
 
-        }, key -> {
-            if (key instanceof BlockMatrixKey)
-                return ((BlockMatrixKey)key).matrixId().equals(matrixUuid);
-            else if (key instanceof IgniteBiTuple)
-                return ((IgniteBiTuple<Integer, IgniteUuid>)key).get2().equals(matrixUuid);
-            else
-                throw new UnsupportedOperationException();
-        });
+        }, sparseKeyFilter(matrixUuid));
 
         return Collections.min(mins);
     }
@@ -280,14 +266,7 @@ public class CacheUtils {
             else
                 return Math.max(acc, max);
 
-        }, key -> {
-            if (key instanceof BlockMatrixKey)
-                return ((BlockMatrixKey)key).matrixId().equals(matrixUuid);
-            else if (key instanceof IgniteBiTuple)
-                return ((IgniteBiTuple<Integer, IgniteUuid>)key).get2().equals(matrixUuid);
-            else
-                throw new UnsupportedOperationException();
-        });
+        }, sparseKeyFilter(matrixUuid));
 
         return Collections.max(maxes);
     }
@@ -367,14 +346,23 @@ public class CacheUtils {
                 throw new UnsupportedOperationException();
 
             ce.cache().put(k, v);
-        }, key -> {
+        }, sparseKeyFilter(matrixUuid));
+    }
+
+    /**
+     * Filter for distributed matrix keys.
+     *
+     * @param matrixUuid Matrix uuid.
+     */
+    private static <K> IgnitePredicate<K> sparseKeyFilter(IgniteUuid matrixUuid) {
+        return key -> {
             if (key instanceof BlockMatrixKey)
                 return ((BlockMatrixKey)key).matrixId().equals(matrixUuid);
-            else if (key instanceof IgniteBiTuple)
-                return ((IgniteBiTuple<Integer, IgniteUuid>)key).get2().equals(matrixUuid);
+            else if (key instanceof RowColMatrixKey)
+                return ((RowColMatrixKey)key).matrixId().equals(matrixUuid);
             else
                 throw new UnsupportedOperationException();
-        });
+        };
     }
 
     /**

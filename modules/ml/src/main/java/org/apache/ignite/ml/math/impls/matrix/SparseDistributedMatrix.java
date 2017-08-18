@@ -28,11 +28,11 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.StorageConstants;
 import org.apache.ignite.ml.math.Vector;
-import org.apache.ignite.ml.math.distributed.BlockMatrixKey;
 import org.apache.ignite.ml.math.distributed.CacheUtils;
 import org.apache.ignite.ml.math.exceptions.CardinalityException;
 import org.apache.ignite.ml.math.exceptions.UnsupportedOperationException;
 import org.apache.ignite.ml.math.functions.IgniteDoubleFunction;
+import org.apache.ignite.ml.math.impls.storage.matrix.RowColMatrixKey;
 import org.apache.ignite.ml.math.impls.storage.matrix.SparseDistributedMatrixStorage;
 
 /**
@@ -101,9 +101,8 @@ public class SparseDistributedMatrix extends AbstractMatrix implements StorageCo
         return mapOverValues(v -> v * x);
     }
 
-    /**
-     * TODO: IGNITE-5114, tmp naive implementation, WIP.
-     */
+
+    /** {@inheritDoc} */
     @Override public Matrix times(Matrix mtx) {
         if (mtx == null)
             throw new IllegalArgumentException("The matrix should be not null.");
@@ -122,27 +121,40 @@ public class SparseDistributedMatrix extends AbstractMatrix implements StorageCo
             Ignite ignite = Ignition.localIgnite();
             Affinity affinity = ignite.affinity(cacheName);
 
-            IgniteCache<BlockMatrixKey, BlockEntry> cache = ignite.getOrCreateCache(cacheName);
+            IgniteCache<RowColMatrixKey, BlockEntry> cache = ignite.getOrCreateCache(cacheName);
             ClusterNode locNode = ignite.cluster().localNode();
 
             SparseDistributedMatrixStorage storageC = matrixC.storage();
 
-            Map<ClusterNode, Collection<BlockMatrixKey>> keysCToNodes = affinity.mapKeysToNodes(storageC.getAllKeys());
-            Collection<BlockMatrixKey> locKeys = keysCToNodes.get(locNode);
+            Map<ClusterNode, Collection<RowColMatrixKey>> keysCToNodes = affinity.mapKeysToNodes(storageC.getAllKeys());
+            Collection<RowColMatrixKey> locKeys = keysCToNodes.get(locNode);
+
+            boolean isRowMode = storageC.storageMode() == ROW_STORAGE_MODE;
 
             if (locKeys == null)
                 return;
 
             // compute Cij locally on each node
             // TODO: IGNITE:5114, exec in parallel
+
             locKeys.forEach(key -> {
+                int index = key.index();
+                
+                if (isRowMode){
+                    Vector Aik = matrixA.getCol(index);
 
+                    for (int i = 0; i < columnSize(); i++) {
+                        Vector Bkj = matrixB.getRow(i);
+                        matrixC.set(index, i, Aik.times(Bkj).sum());
+                    }
+                } else {
+                    Vector Bkj = matrixB.getRow(index);
 
-                //TODO:WIP
-
-
-
-//                cache.put(storageC.getCacheKey(newBlockId), blockC);
+                    for (int i = 0; i < rowSize(); i++) {
+                        Vector Aik = matrixA.getCol(i);
+                        matrixC.set(index, i, Aik.times(Bkj).sum());
+                    }
+                }
             });
         });
 
@@ -168,7 +180,7 @@ public class SparseDistributedMatrix extends AbstractMatrix implements StorageCo
 //                res.setX(x, y, sum);
 //            }
 //
-//        return res;
+        return matrixC;
     }
 
     /** {@inheritDoc} */

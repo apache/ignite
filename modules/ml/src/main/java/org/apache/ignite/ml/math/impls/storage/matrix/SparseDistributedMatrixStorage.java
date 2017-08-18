@@ -34,18 +34,18 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.ml.math.MatrixStorage;
 import org.apache.ignite.ml.math.StorageConstants;
 import org.apache.ignite.ml.math.distributed.CacheUtils;
 import org.apache.ignite.ml.math.distributed.DistributedStorage;
+import org.apache.ignite.ml.math.distributed.SparseMatrixKey;
 import org.apache.ignite.ml.math.impls.matrix.SparseDistributedMatrix;
 
 /**
  * {@link MatrixStorage} implementation for {@link SparseDistributedMatrix}.
  */
-public class SparseDistributedMatrixStorage extends CacheUtils implements MatrixStorage, StorageConstants, DistributedStorage<IgniteBiTuple<Integer, IgniteUuid>> {
+public class SparseDistributedMatrixStorage extends CacheUtils implements MatrixStorage, StorageConstants, DistributedStorage<RowColMatrixKey> {
     /** Cache name used for all instances of {@link SparseDistributedMatrixStorage}. */
     private static final String CACHE_NAME = "ML_SPARSE_MATRICES_CONTAINER";
     /** Amount of rows in the matrix. */
@@ -62,7 +62,7 @@ public class SparseDistributedMatrixStorage extends CacheUtils implements Matrix
     //TODO, IGNITE-5725, create separate key class.
     /** Actual distributed storage. */
     private IgniteCache<
-        IgniteBiTuple<Integer, IgniteUuid> /* Row or column index with matrix uuid. */,
+        RowColMatrixKey /* Row or column index with matrix uuid. */,
         Map<Integer, Double> /* Map-based row or column. */
         > cache = null;
 
@@ -98,8 +98,8 @@ public class SparseDistributedMatrixStorage extends CacheUtils implements Matrix
     /**
      * Create new ML cache if needed.
      */
-    private IgniteCache<IgniteBiTuple<Integer, IgniteUuid>, Map<Integer, Double>> newCache() {
-        CacheConfiguration<IgniteBiTuple<Integer, IgniteUuid>, Map<Integer, Double>> cfg = new CacheConfiguration<>();
+    private IgniteCache<RowColMatrixKey, Map<Integer, Double>> newCache() {
+        CacheConfiguration<RowColMatrixKey, Map<Integer, Double>> cfg = new CacheConfiguration<>();
 
         // Write to primary.
         cfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.PRIMARY_SYNC);
@@ -126,7 +126,7 @@ public class SparseDistributedMatrixStorage extends CacheUtils implements Matrix
      *
      *
      */
-    public IgniteCache<IgniteBiTuple<Integer, IgniteUuid>, Map<Integer, Double>> cache() {
+    public IgniteCache<RowColMatrixKey, Map<Integer, Double>> cache() {
         return cache;
     }
 
@@ -164,7 +164,7 @@ public class SparseDistributedMatrixStorage extends CacheUtils implements Matrix
     private double matrixGet(int a, int b) {
         // Remote get from the primary node (where given row or column is stored locally).
         return ignite().compute(groupForKey(CACHE_NAME, a)).call(() -> {
-            IgniteCache<IgniteBiTuple<Integer, IgniteUuid>, Map<Integer, Double>> cache = Ignition.localIgnite().getOrCreateCache(CACHE_NAME);
+            IgniteCache<RowColMatrixKey, Map<Integer, Double>> cache = Ignition.localIgnite().getOrCreateCache(CACHE_NAME);
 
             // Local get.
             Map<Integer, Double> map = cache.localPeek(getCacheKey(a), CachePeekMode.PRIMARY);
@@ -186,7 +186,7 @@ public class SparseDistributedMatrixStorage extends CacheUtils implements Matrix
     private void matrixSet(int a, int b, double v) {
         // Remote set on the primary node (where given row or column is stored locally).
         ignite().compute(groupForKey(CACHE_NAME, a)).run(() -> {
-            IgniteCache<IgniteBiTuple<Integer, IgniteUuid>, Map<Integer, Double>> cache = Ignition.localIgnite().getOrCreateCache(CACHE_NAME);
+            IgniteCache<RowColMatrixKey, Map<Integer, Double>> cache = Ignition.localIgnite().getOrCreateCache(CACHE_NAME);
 
             // Local get.
             Map<Integer, Double> map = cache.localPeek(getCacheKey(a), CachePeekMode.PRIMARY);
@@ -209,8 +209,8 @@ public class SparseDistributedMatrixStorage extends CacheUtils implements Matrix
     }
 
     /** Build cache key for row/column. */
-    private IgniteBiTuple<Integer, IgniteUuid> getCacheKey(int idx) {
-        return new IgniteBiTuple<>(idx, uuid);
+    public RowColMatrixKey getCacheKey(int idx) {
+        return new SparseMatrixKey(idx, uuid, null);
     }
 
     /** {@inheritDoc} */
@@ -275,7 +275,7 @@ public class SparseDistributedMatrixStorage extends CacheUtils implements Matrix
 
     /** Delete all data from cache. */
     @Override public void destroy() {
-        Set<IgniteBiTuple<Integer, IgniteUuid>> keyset = IntStream.range(0, rows).mapToObj(this::getCacheKey).collect(Collectors.toSet());
+        Set<RowColMatrixKey> keyset = IntStream.range(0, rows).mapToObj(this::getCacheKey).collect(Collectors.toSet());
 
         cache.clearAll(keyset);
     }
@@ -314,10 +314,10 @@ public class SparseDistributedMatrixStorage extends CacheUtils implements Matrix
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<IgniteBiTuple<Integer, IgniteUuid>> getAllKeys() {
+    @Override public Collection<RowColMatrixKey> getAllKeys() {
         int range = stoMode == ROW_STORAGE_MODE ? rows : cols;
 
-        return IntStream.range(0, range).mapToObj(i -> new IgniteBiTuple<>(i, getUUID())).collect(Collectors.toList());
+        return IntStream.range(0, range).mapToObj(i -> new SparseMatrixKey(i, getUUID(), null)).collect(Collectors.toList());
     }
 
     /** {@inheritDoc} */
