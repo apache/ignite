@@ -321,9 +321,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     @GridToStringExclude
     private ObjectName stripedExecSvcMBean;
 
-    /** */
-    private boolean rebalanceEnabled = true;
-
     /** Kernal start timestamp. */
     private long startTime = U.currentTimeMillis();
 
@@ -462,22 +459,13 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /** {@inheritDoc} */
     @Override
     public boolean isRebalanceEnabled() {
-        return rebalanceEnabled;
+        return ctx.cache().context().isRebalanceEnabled();
     }
 
     /** {@inheritDoc} */
     @Override
     public void rebalanceEnabled(boolean rebalanceEnabled) {
-        this.rebalanceEnabled = rebalanceEnabled;
-        if (rebalanceEnabled) {
-            Collection<IgniteFuture> futs = new ArrayList<>();
-
-            for (IgniteCacheProxy c : this.caches())
-                futs.add(c.rebalance());
-
-            for (IgniteFuture f : futs)
-                f.get();
-        }
+        ctx.cache().context().rebalanceEnabled(rebalanceEnabled);
     }
 
     /** {@inheritDoc} */
