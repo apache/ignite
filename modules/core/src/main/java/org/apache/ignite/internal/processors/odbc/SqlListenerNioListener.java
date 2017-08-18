@@ -34,7 +34,6 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequestHandler;
 import org.apache.ignite.internal.processors.odbc.odbc.OdbcMessageParser;
 import org.apache.ignite.internal.processors.odbc.odbc.OdbcRequestHandler;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
-import org.apache.ignite.internal.util.nio.GridNioServer;
 import org.apache.ignite.internal.util.nio.GridNioServerListenerAdapter;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.nio.GridNioSessionMetaKey;
@@ -165,7 +164,7 @@ public class SqlListenerNioListener extends GridNioServerListenerAdapter<byte[]>
                     ", req=" + req + ']');
             }
 
-            SqlListenerResponse resp = handler.handle(req);
+            SqlListenerResponse resp = handler.handle(req, new IntermediateResponseSenderImpl(ses, parser));
 
             if (log.isDebugEnabled()) {
                 long dur = (System.nanoTime() - startTime) / 1000;
@@ -288,5 +287,33 @@ public class SqlListenerNioListener extends GridNioServerListenerAdapter<byte[]>
         }
         else
             throw new IgniteException("Unknown client type: " + clientType);
+    }
+
+    /**
+     *
+     */
+    private static class IntermediateResponseSenderImpl implements SqlListenerIntermediateResponseSender {
+        /** Session. */
+        private final GridNioSession ses;
+
+        /** Parser. */
+        private final SqlListenerMessageParser parser;
+
+        /**
+         * @param ses Session.
+         * @param parser Parser
+         */
+        private IntermediateResponseSenderImpl(GridNioSession ses,
+            SqlListenerMessageParser parser) {
+            this.ses = ses;
+            this.parser = parser;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void send(SqlListenerResponse resp) {
+            byte[] outMsg = parser.encode(resp);
+
+            ses.send(outMsg);
+        }
     }
 }

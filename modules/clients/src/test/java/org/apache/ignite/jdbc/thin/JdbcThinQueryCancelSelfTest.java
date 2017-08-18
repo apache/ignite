@@ -19,6 +19,7 @@ package org.apache.ignite.jdbc.thin;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCheckedException;
@@ -112,32 +113,48 @@ public class JdbcThinQueryCancelSelfTest extends JdbcThinAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void testCancelQuery() throws Exception {
-        final StringBuilder sql = new StringBuilder("SELECT * from TEST as t0");
+        Statement stmt2 = conn.createStatement();
 
-        for (int i = 1; i < MAX_CROSS_JOINS; i++)
-            sql.append(", TEST as t" + i);
+        try {
+            stmt2.setFetchSize(1);
 
-        GridTestUtils.runAsync(new Runnable() {
-            @Override public void run() {
-                try {
-                    Thread.sleep(1000);
+            // Open the second cursor
+            ResultSet rs = stmt2.executeQuery("SELECT * from TEST");
 
-                    stmt.cancel();
+            assert rs.next();
+
+            final StringBuilder sql = new StringBuilder("SELECT * from TEST as t0");
+
+            for (int i = 1; i < MAX_CROSS_JOINS; i++)
+                sql.append(", TEST as t" + i);
+
+            GridTestUtils.runAsync(new Runnable() {
+                @Override public void run() {
+                    try {
+                        Thread.sleep(1000);
+
+                        stmt.cancel();
+                    }
+                    catch (Exception e) {
+                        log.error("Unexpected exception.", e);
+
+                        fail("Unexpected exception");
+                    }
                 }
-                catch (Exception e) {
-                    log.error("Unexpected exception.", e);
+            });
 
-                    fail("Unexpected exception");
+            GridTestUtils.assertThrowsAnyCause(log, new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    // Execute long running query
+                    stmt.executeQuery(sql.toString());
+
+                    return null;
                 }
-            }
-        });
+            }, IgniteCheckedException.class, "The query was cancelled while executing");
 
-        GridTestUtils.assertThrowsAnyCause(log, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                stmt.executeQuery(sql.toString());
-
-                return null;
-            }
-        }, IgniteCheckedException.class, "The query was cancelled while executing");
+            assert rs.next() : "The other cursor mustn't be closed";
+        } finally {
+            stmt2.close();
+        }
     }
 }

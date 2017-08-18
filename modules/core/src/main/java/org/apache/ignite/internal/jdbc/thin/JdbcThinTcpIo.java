@@ -53,6 +53,7 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryFetchRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryFetchResult;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryIdResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryMetadataRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryMetadataResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest;
@@ -134,6 +135,9 @@ public class JdbcThinTcpIo implements AutoCloseable {
 
     /** Connection ID. */
     private long connId;
+
+    /** Current query ID. */
+    private long qryId = -1;
 
     /**
      * Constructor.
@@ -264,8 +268,12 @@ public class JdbcThinTcpIo implements AutoCloseable {
     public JdbcQueryExecuteResult queryExecute(String cache, int fetchSize, int maxRows,
         String sql, List<Object> args)
         throws IOException, IgniteCheckedException {
-        return sendRequest(new JdbcQueryExecuteRequest(cache, fetchSize, maxRows, sql,
+        JdbcQueryIdResult resId = sendRequest(new JdbcQueryExecuteRequest(cache, fetchSize, maxRows, sql,
             args == null ? null : args.toArray(new Object[args.size()])), DYNAMIC_SIZE_MSG_CAP);
+
+        qryId = resId.getQueryId();
+
+        return readResponse();
     }
 
     /**
@@ -283,6 +291,16 @@ public class JdbcThinTcpIo implements AutoCloseable {
 
         send(writer.array());
 
+        return (R)readResponse();
+    }
+
+    /**
+     * @param <R> Response type.
+     * @return Response.
+     * @throws IOException On error.
+     * @throws IgniteCheckedException On error.
+     */
+    private <R extends JdbcResult> R readResponse() throws IOException, IgniteCheckedException {
         BinaryReaderExImpl reader = new BinaryReaderExImpl(null, new BinaryHeapInputStream(read()), null, null, false);
 
         JdbcResponse res = new JdbcResponse();
@@ -290,7 +308,7 @@ public class JdbcThinTcpIo implements AutoCloseable {
         res.readBinary(reader);
 
         if (res.status() != SqlListenerResponse.STATUS_SUCCESS)
-            throw new IgniteCheckedException("Error server response: [req=" + req + ", resp=" + res + ']');
+            throw new IgniteCheckedException("Error server response: resp=" + res + ']');
 
         return (R)res.response();
     }
@@ -344,12 +362,13 @@ public class JdbcThinTcpIo implements AutoCloseable {
 
     /**
      * @param connId Connection ID.
+     * @param qryId Query ID.
      * @throws IOException On error.
      * @throws IgniteCheckedException On error.
      */
-    public void cancelQuery(long connId)
+    public void cancelQuery(long connId, long qryId)
         throws IOException, IgniteCheckedException {
-        sendRequest(new JdbcQueryCancelRequest(connId), QUERY_CLOSE_MSG_SIZE);
+        sendRequest(new JdbcQueryCancelRequest(connId, qryId), QUERY_CLOSE_MSG_SIZE);
     }
 
     /**
@@ -557,6 +576,13 @@ public class JdbcThinTcpIo implements AutoCloseable {
      */
     public long connectionId() {
         return connId;
+    }
+
+    /**
+     * @return Current query ID.
+     */
+    public long queryId() {
+        return qryId;
     }
 
     /**

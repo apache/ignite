@@ -207,7 +207,7 @@ public class JdbcThinStatement implements Statement {
         ensureNotClosed();
 
         try(JdbcThinTcpIo cancelIo = JdbcThinTcpIo.newIo(conn.io())) {
-            cancelIo.cancelQuery(conn.io().connectionId());
+            cancelIo.cancelQuery(conn.io().connectionId(), conn.io().queryId());
         }
         catch (IOException e) {
             throw new SQLException("Failed to query Ignite.", e);

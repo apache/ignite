@@ -23,64 +23,53 @@ import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * JDBC query cancel request.
+ * JDBC query ID intermediate result. Used for send query Id on the client before the results to
+ * allow cancel heavy and long running queries.
  */
-public class JdbcQueryCancelRequest extends JdbcRequest {
-    /** Connection ID. */
-    private long connId;
-
+public class JdbcQueryIdResult extends JdbcResult {
     /** Query ID. */
-    private long qryId;
+    private long queryId;
 
     /**
+     * Condtructor.
      */
-    public JdbcQueryCancelRequest() {
-        super(QRY_CANCEL);
+    JdbcQueryIdResult() {
+        super(QRY_ID);
     }
 
     /**
-     * @param connId Connection ID.
-     * @param qryId Query ID.
+     * @param queryId Query ID.
      */
-    public JdbcQueryCancelRequest(long connId, long qryId) {
-        super(QRY_CANCEL);
+    JdbcQueryIdResult(long queryId) {
+        super(QRY_ID);
 
-        this.connId = connId;
-        this.qryId = qryId;
-    }
-
-    /**
-     * @return Query ID.
-     */
-    public long connectionId() {
-        return connId;
+        this.queryId = queryId;
     }
 
     /**
      * @return Query ID.
      */
-    public long queryId() {
-        return qryId;
+    public long getQueryId() {
+        return queryId;
     }
 
     /** {@inheritDoc} */
     @Override public void writeBinary(BinaryWriterExImpl writer) throws BinaryObjectException {
         super.writeBinary(writer);
 
-        writer.writeLong(connId);
-        writer.writeLong(qryId);
+        writer.writeLong(queryId);
     }
+
 
     /** {@inheritDoc} */
     @Override public void readBinary(BinaryReaderExImpl reader) throws BinaryObjectException {
         super.readBinary(reader);
 
-        connId = reader.readLong();
-        qryId = reader.readLong();
+        queryId = reader.readLong();
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(JdbcQueryCancelRequest.class, this);
+        return S.toString(JdbcQueryIdResult.class, this);
     }
 }

@@ -17,33 +17,14 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
-import org.apache.ignite.internal.binary.BinaryWriterExImpl;
-
 /**
- * SQL listener request handler.
+ * SQL listener intermediate response sender.
  */
-public interface SqlListenerRequestHandler {
+public interface SqlListenerIntermediateResponseSender {
     /**
-     * Handle request.
+     * Sent intermediate response.
      *
-     * @param req Request.
-     * @param sender Sender the intermediate responses.
-     * @return Response.
+     * @param resp Intermediate response.
      */
-    public SqlListenerResponse handle(SqlListenerRequest req, SqlListenerIntermediateResponseSender sender);
-
-    /**
-     * Handle exception.
-     *
-     * @param e Exception.
-     * @return Error response.
-     */
-    public SqlListenerResponse handleException(Exception e);
-
-    /**
-     * Write successful handshake response.
-     *
-     * @param writer Binary writer.
-     */
-    public void writeHandshake(BinaryWriterExImpl writer);
+    public void send(SqlListenerResponse resp);
 }

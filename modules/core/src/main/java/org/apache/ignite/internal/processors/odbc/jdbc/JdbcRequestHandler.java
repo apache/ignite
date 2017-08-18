@@ -23,7 +23,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -37,8 +36,8 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
-import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
+import org.apache.ignite.internal.processors.odbc.SqlListenerIntermediateResponseSender;
 import org.apache.ignite.internal.processors.odbc.SqlListenerRequest;
 import org.apache.ignite.internal.processors.odbc.SqlListenerRequestHandler;
 import org.apache.ignite.internal.processors.odbc.SqlListenerResponse;
@@ -139,7 +138,7 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public SqlListenerResponse handle(SqlListenerRequest req0) {
+    @Override public SqlListenerResponse handle(SqlListenerRequest req0, SqlListenerIntermediateResponseSender sender) {
         assert req0 != null;
 
         assert req0 instanceof JdbcRequest;
@@ -153,7 +152,7 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
         try {
             switch (req.type()) {
                 case QRY_EXEC:
-                    return executeQuery((JdbcQueryExecuteRequest)req);
+                    return executeQuery((JdbcQueryExecuteRequest)req, sender);
 
                 case QRY_FETCH:
                     return fetchQuery((JdbcQueryFetchRequest)req);
@@ -226,11 +225,16 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
     }
 
     /**
+     * @param qryId Query ID to cancel.
      */
-    public void cancelCurrentQuery() {
-        assert qryCursors.size() == 1 : "qryCursors.size()=" + qryCursors.size();
+    public void cancelQuery(long qryId) {
+        JdbcQueryCursor cur = qryCursors.get(qryId);
 
-        JdbcQueryCursor cur = qryCursors.elements().nextElement();
+        if (cur == null) {
+            log.warning("Cancel query do nothing. Cannot find query [qryId=" + qryId + ']');
+
+            return;
+        }
 
         ctx.query().cancelQueries(Collections.singleton(cur.queryId()));
     }
@@ -239,10 +243,11 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
      * {@link JdbcQueryExecuteRequest} command handler.
      *
      * @param req Execute query request.
+     * @param sender Intermediate response sender.
      * @return Response.
      */
     @SuppressWarnings("unchecked")
-    private JdbcResponse executeQuery(JdbcQueryExecuteRequest req) {
+    private JdbcResponse executeQuery(JdbcQueryExecuteRequest req, SqlListenerIntermediateResponseSender sender) {
         int cursorCnt = qryCursors.size();
 
         if (maxCursors > 0 && cursorCnt >= maxCursors)
@@ -282,6 +287,8 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
             JdbcQueryCursor cur = new JdbcQueryCursor(qryId, req.pageSize(), req.maxRows(), (QueryCursorImpl)qryCur);
 
             qryCursors.put(qryId, cur);
+
+            sender.send(new JdbcResponse(new JdbcQueryIdResult(qryId)));
 
             cur.open();
 
@@ -686,7 +693,7 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
         try {
             JdbcRequestHandler handler = handlers.get(req.connectionId());
 
-            handler.cancelCurrentQuery();
+            handler.cancelQuery(req.queryId());
 
             return new JdbcResponse(null);
         }
