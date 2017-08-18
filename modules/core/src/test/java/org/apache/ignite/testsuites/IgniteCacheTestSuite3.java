@@ -58,6 +58,7 @@ import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridC
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRebalancingSyncCheckDataTest;
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRebalancingSyncSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRebalancingUnmarshallingFailedSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridLostPartitionRebalanceTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheDaemonNodeReplicatedSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedAtomicGetAndTransformStoreSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedBasicApiTest;
@@ -152,6 +153,7 @@ public class IgniteCacheTestSuite3 extends TestSuite {
         suite.addTestSuite(GridCacheRebalancingUnmarshallingFailedSelfTest.class);
         suite.addTestSuite(GridCacheRebalancingAsyncSelfTest.class);
         suite.addTestSuite(GridCacheRabalancingDelayedPartitionMapExchangeSelfTest.class);
+        suite.addTestSuite(GridLostPartitionRebalanceTest.class);
 
         // Test for byte array value special case.
         suite.addTestSuite(GridCacheLocalByteArrayValuesSelfTest.class);

@@ -33,7 +33,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.IgniteNeedReconnectException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
@@ -45,6 +44,7 @@ import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.IgniteNeedReconnectException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
@@ -1066,6 +1066,11 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 }
             }
 
+            if (discoEvt.type() == EVT_NODE_LEFT ||
+                discoEvt.type() == EVT_NODE_FAILED ||
+                discoEvt.type() == EVT_NODE_JOINED)
+                detectLostPartitions();
+
             Map<Integer, Boolean> m = null;
 
             for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
@@ -1279,6 +1284,21 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     }
 
     /**
+     * Detect lost partitions.
+     */
+    private void detectLostPartitions() {
+        synchronized (cctx.exchange().interruptLock()) {
+            if (Thread.currentThread().isInterrupted())
+                return;
+
+            for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
+                if (!cacheCtx.isLocal())
+                    cacheCtx.topology().detectLostPartitions(discoEvt);
+            }
+        }
+    }
+
+    /**
      */
     private void onAllReceived() {
         try {
@@ -1290,6 +1310,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                         cacheCtx.topology().beforeExchange(GridDhtPartitionsExchangeFuture.this, !centralizedAff);
                 }
             }
+
+            if (discoEvt.type() == EVT_NODE_LEFT || discoEvt.type() == EVT_NODE_FAILED)
+                detectLostPartitions();
 
             for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
                 if (!cacheCtx.isLocal())

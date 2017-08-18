@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId;
@@ -224,6 +225,16 @@ public interface GridDhtPartitionTopology {
         GridDhtPartitionMap2 parts,
         @Nullable Map<Integer, Long> cntrMap,
         boolean checkEvictions);
+
+    /**
+     * Checks if there is at least one owner for each partition in the cache topology.
+     * If not, marks such a partition as LOST.
+     * <p>
+     * This method should be called on topology coordinator after all partition messages are received.
+     *
+     * @param discoEvt Discovery event for which we detect lost partitions.
+     */
+    public void detectLostPartitions(DiscoveryEvent discoEvt);
 
     /**
      *

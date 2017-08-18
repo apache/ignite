@@ -43,7 +43,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.IgniteNeedReconnectException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
@@ -53,6 +52,7 @@ import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.IgniteNeedReconnectException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
@@ -155,6 +155,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
     /** */
     private GridFutureAdapter<?> reconnectExchangeFut;
+
+    /** */
+    private final Object interruptLock = new Object();
 
     /**
      * Partition map futures.
@@ -531,6 +534,13 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         busyLock.writeLock().lock();
 
         exchFuts = null;
+    }
+
+    /**
+     * @return Interrupt lock.
+     */
+    public Object interruptLock() {
+        return interruptLock;
     }
 
     /**
@@ -1627,6 +1637,13 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
             if (log.isDebugEnabled())
                 log.debug("Added exchange future to exchange worker: " + exchFut);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void cancel() {
+            synchronized (interruptLock) {
+                super.cancel();
+            }
         }
 
         /** {@inheritDoc} */

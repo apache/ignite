@@ -30,6 +30,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -751,6 +752,11 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
         finally {
             lock.writeLock().unlock();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void detectLostPartitions(DiscoveryEvent discoEvt) {
+        assert false : "detectLostPartitions should never be called on client topology";
     }
 
     /** {@inheritDoc} */
