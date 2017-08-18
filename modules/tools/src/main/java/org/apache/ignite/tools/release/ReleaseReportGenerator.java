@@ -1,35 +1,51 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.ignite.tools.release;
 
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.FileReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Collection;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.List;
 import java.util.concurrent.Callable;
-import java.util.concurrent.Executors;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.text.SimpleDateFormat;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.http.HttpException;
+import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpRequestBase;
+import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
 import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpPost;
-import org.apache.http.client.methods.HttpDelete;
+import org.apache.http.client.methods.HttpPut;
+import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.HttpException;
-import org.apache.http.HttpResponse;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -38,9 +54,6 @@ import org.json.JSONObject;
  * Create HTML release report based on Jira Issues
  */
 public class ReleaseReportGenerator {
-    /** Jira search DateTime format */
-    private final static SimpleDateFormat jiraSearchDTF = new SimpleDateFormat("yyyy-MM-dd HH:mm");
-
     /** Issue fields list for return from Jira search */
     private final static String[] jiraFields = new String[] {"key", "summary", "description"};
 
@@ -56,25 +69,35 @@ public class ReleaseReportGenerator {
      * @param args Command line arguments, none required.
      * @throws Exception If generating report execution failed.
      */
-    public static void main(String... args) throws Exception {
+    public static void main(String[] args) throws Exception {
         parseArguments(args);
 
-        String sCurrentLine;
-        String templateJsonStr = "";
-        BufferedReader br = new BufferedReader(new FileReader(templatePath));
-        while ((sCurrentLine = br.readLine()) != null)
-            templateJsonStr += sCurrentLine;
+        JSONObject template = new JSONObject(readFile(templatePath));
 
-        JSONObject template = new JSONObject(templateJsonStr);
-
-        String templateCss = "";
-        br = new BufferedReader(new FileReader(cssPath));
-        while ((sCurrentLine = br.readLine()) != null)
-            templateCss += sCurrentLine;
+        String css = readFile(cssPath);
 
         PrintWriter writer = new PrintWriter(template.getString("outfile"), "UTF-8");
-        writer.println(generateHTMLReleaseReport(template, templateCss));
+
+        writer.println(generateHTMLReleaseReport(template, css));
+
         writer.close();
+    }
+
+    /**
+     * @param Path path to file
+     * @return String content.
+     * @throws IOException If failed.
+     */
+    private static String readFile(String Path) throws IOException {
+        StringBuilder sb = new StringBuilder();
+
+        BufferedReader br = new BufferedReader(new FileReader(Path));
+        String line;
+
+        while ((line = br.readLine()) != null)
+            sb.append(line);
+
+        return sb.toString();
     }
 
     /**
@@ -97,21 +120,20 @@ public class ReleaseReportGenerator {
      * @throws HttpException On search failed throws exception
      */
     private static String generateHTMLReleaseReport(JSONObject template, String templateCss) throws HttpException {
-        String htmlReport = "<head>\n<style>" + templateCss + "</style>\n</head>\n";
+        StringBuilder htmlReport = new StringBuilder("<head>\n<style>" + templateCss + "</style>\n</head>\n");
 
-        htmlReport += "<body>\n";
+        htmlReport.append("<body>\n");
 
-        htmlReport += "<h1>" + template.getString("header") + "</h1>\n";
+        htmlReport.append("<h1>").append(template.getString("header")).append("</h1>\n");
 
-        htmlReport += "<div>" + template.getString("description") + "</div>";
+        htmlReport.append("<div>").append(template.getString("description")).append("</div>");
 
-        for (Object item : template.getJSONArray("items")) {
-            htmlReport += buildReportForTemplateItem(template, (JSONObject) item);
-        }
+        for (Object item : template.getJSONArray("items"))
+            htmlReport.append(buildReportForTemplateItem(template, (JSONObject)item));
 
-        htmlReport += "</body>";
+        htmlReport.append("</body>");
 
-        return htmlReport;
+        return htmlReport.toString();
     }
 
     /**
@@ -123,18 +145,21 @@ public class ReleaseReportGenerator {
      * @throws HttpException If Jira search throw exception
      */
     private static String buildReportForTemplateItem(JSONObject template, JSONObject item) throws HttpException{
-        String itemReport = "<h2>" + item.getString("header") + "</h2>\n";
+        StringBuilder itemReport = new StringBuilder("<h2>" + item.getString("header") + "</h2>\n");
 
-        itemReport += "<ul>\n";
+        itemReport.append("<ul>\n");
 
         for (Object search : item.getJSONArray("search")) {
-            JSONObject srv = getJsonObjectFromArrayById(((JSONObject) search).getInt("server"), "id", template.getJSONArray("servers"));
-            if (srv != null)
-                itemReport += buildReportForSearch((JSONObject) search, srv);
-        }
-        itemReport += "</ul>";
+            JSONObject srv = getJsonObjectFromArrayById(((JSONObject)search).getInt("server"),
+                "id", template.getJSONArray("servers"));
 
-        return itemReport.contains("<li>") ? itemReport : "";
+            if (srv != null)
+                itemReport.append(buildReportForSearch((JSONObject)search, srv));
+        }
+
+        itemReport.append("</ul>");
+
+        return itemReport.toString().contains("<li>") ? itemReport.toString() : "";
     }
 
     /**
@@ -147,9 +172,10 @@ public class ReleaseReportGenerator {
      */
     private static JSONObject getJsonObjectFromArrayById(int id, String fieldName, JSONArray arr) {
         for (Object item : arr) {
-            if (((JSONObject) item).getInt(fieldName) == id)
-                return (JSONObject) item;
+            if (((JSONObject)item).getInt(fieldName) == id)
+                return (JSONObject)item;
         }
+
         return null;
     }
 
@@ -160,9 +186,13 @@ public class ReleaseReportGenerator {
      * @return HTML formatted string
      */
     private static String buildReportForSearch(JSONObject search, JSONObject srv) throws HttpException{
-        String searchReport = "";
+        StringBuilder searchReport = new StringBuilder();
 
-        List<JSONObject> issues = searchIssues(srv.getString("apiurl"), srv.getString("username"), srv.getString("password"), search.getString("jql"), jiraFields);
+        List<JSONObject> issues = searchIssues(srv.getString("apiurl"),
+            srv.getString("username"),
+            srv.getString("password"),
+            search.getString("jql"),
+            jiraFields);
 
         for (JSONObject issue : issues) {
             String summary = issue.getJSONObject("fields").getString("summary");
@@ -170,16 +200,16 @@ public class ReleaseReportGenerator {
             if (summary.lastIndexOf(".") == summary.length() - 1)
                 summary = summary.substring(0, summary.length() - 1);
 
-                searchReport += "<li>" + summary;
+                searchReport.append("<li>").append(summary);
 
                 if (search.getBoolean("showlink"))
-                    searchReport += "<a href=\"" + srv.getString("baseUrl") + issue.getString("key") + "\"> [#" + issue.getString("key") + "]</a>\n";
+                    searchReport.append("<a href=\"").append(srv.getString("baseUrl")).append(issue.getString("key")).append("\"> [#").append(issue.getString("key")).append("]</a>\n");
                 else
-                    searchReport +=  " <span>[#" + issue.getString("key") + "]</span>";
+                    searchReport.append(" <span>[#").append(issue.getString("key")).append("]</span>");
 
-            searchReport +=  "</li>\n";
+            searchReport.append("</li>\n");
         }
-        return searchReport;
+        return searchReport.toString();
     }
 
     /**
@@ -195,7 +225,8 @@ public class ReleaseReportGenerator {
         final int startAt = 0;
         final int maxResults = 50;
 
-        JSONObject firstRes = executeSearchRequest(jiraApiUrl, jiraUsername, jiraApiPwd, jql, fields, startAt, maxResults);
+        JSONObject firstRes = executeSearchRequest(jiraApiUrl, jiraUsername, jiraApiPwd, jql, fields,
+            startAt, maxResults);
 
         final int total = firstRes.getInt("total");
 
@@ -263,7 +294,8 @@ public class ReleaseReportGenerator {
         if (!jiraApiUrl.endsWith("/"))
             jiraApiUrl+= "/";
 
-        HttpRequestBase req = buildRequestWithData("POST", jiraApiUrl + "search", jiraUsername, jiraPwd, data.toString(), ContentType.APPLICATION_JSON);
+        HttpRequestBase req = buildRequestWithData("POST", jiraApiUrl + "search", jiraUsername, jiraPwd,
+            data.toString(), ContentType.APPLICATION_JSON);
 
         return new JSONObject(executeRequest(req));
     }
@@ -289,7 +321,9 @@ public class ReleaseReportGenerator {
             if (statusCode != 204) {
                 BufferedReader br = new BufferedReader(
                         new InputStreamReader((httpRes.getEntity().getContent())));
+
                 String line;
+
                 while ((line = br.readLine()) != null)
                     res.append(line);
             }
