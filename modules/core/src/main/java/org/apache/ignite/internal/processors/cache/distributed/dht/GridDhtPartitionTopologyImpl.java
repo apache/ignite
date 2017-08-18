@@ -34,6 +34,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
@@ -1228,6 +1229,56 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 log.debug("Partition map after single update: " + fullMapString());
 
             return changed;
+        }
+        finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void detectLostPartitions(DiscoveryEvent discoEvt) {
+        lock.writeLock().lock();
+
+        try {
+            int parts = cctx.affinity().partitions();
+
+            Collection<Integer> lost = null;
+
+            for (int p = 0; p < parts; p++) {
+                boolean foundOwner = false;
+
+                Set<UUID> nodeIds = part2node.get(p);
+
+                if (nodeIds != null) {
+                    for (UUID nodeId : nodeIds) {
+                        GridDhtPartitionMap2 partMap = node2part.get(nodeId);
+
+                        GridDhtPartitionState state = partMap.get(p);
+
+                        if (state == OWNING) {
+                            foundOwner = true;
+
+                            break;
+                        }
+                    }
+                }
+
+                if (!foundOwner) {
+                    if (lost == null)
+                        lost = new HashSet<>(parts - p, 1.0f);
+
+                    lost.add(p);
+                }
+            }
+
+            if (lost != null) {
+                // Update partition state on all nodes.
+                for (Integer part : lost) {
+                    if (cctx.events().isRecordable(EventType.EVT_CACHE_REBALANCE_PART_DATA_LOST))
+                        cctx.events().addPreloadEvent(part, EVT_CACHE_REBALANCE_PART_DATA_LOST,
+                            discoEvt.eventNode(), discoEvt.type(), discoEvt.timestamp());
+                }
+            }
         }
         finally {
             lock.writeLock().unlock();
