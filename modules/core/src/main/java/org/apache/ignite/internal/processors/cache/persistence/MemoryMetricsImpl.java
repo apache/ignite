@@ -19,9 +19,10 @@ package org.apache.ignite.internal.processors.cache.persistence;
 import org.apache.ignite.MemoryMetrics;
 import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeListImpl;
 import org.apache.ignite.internal.processors.cache.ratemetrics.HitRateMetrics;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteOutClosure;
+import org.jetbrains.annotations.Nullable;
 import org.jsr166.LongAdder8;
 
 /**
@@ -29,7 +30,7 @@ import org.jsr166.LongAdder8;
  */
 public class MemoryMetricsImpl implements MemoryMetrics {
     /** */
-    private FreeListImpl freeList;
+    private final IgniteOutClosure<Float> fillFactorProvider;
 
     /** */
     private final LongAdder8 totalAllocatedPages = new LongAdder8();
@@ -69,8 +70,9 @@ public class MemoryMetricsImpl implements MemoryMetrics {
     /**
      * @param memPlcCfg MemoryPolicyConfiguration.
      */
-    public MemoryMetricsImpl(MemoryPolicyConfiguration memPlcCfg) {
+    public MemoryMetricsImpl(MemoryPolicyConfiguration memPlcCfg, @Nullable IgniteOutClosure<Float> fillFactorProvider) {
         this.memPlcCfg = memPlcCfg;
+        this.fillFactorProvider = fillFactorProvider;
 
         metricsEnabled = memPlcCfg.isMetricsEnabled();
 
@@ -114,10 +116,10 @@ public class MemoryMetricsImpl implements MemoryMetrics {
 
     /** {@inheritDoc} */
     @Override public float getPagesFillFactor() {
-        if (!metricsEnabled || freeList == null)
+        if (!metricsEnabled || fillFactorProvider == null)
             return 0;
 
-        return freeList.fillFactor();
+        return fillFactorProvider.apply();
     }
 
     /** {@inheritDoc} */
@@ -273,12 +275,5 @@ public class MemoryMetricsImpl implements MemoryMetrics {
 
         allocRate = new HitRateMetrics((int) rateTimeInterval, subInts);
         pageReplaceRate = new HitRateMetrics((int) rateTimeInterval, subInts);
-    }
-
-    /**
-     * @param freeList Free list.
-     */
-    void freeList(FreeListImpl freeList) {
-        this.freeList = freeList;
     }
 }

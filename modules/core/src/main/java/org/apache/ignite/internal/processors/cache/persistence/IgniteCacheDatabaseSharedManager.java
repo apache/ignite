@@ -58,6 +58,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.mxbean.MemoryMetricsMXBean;
 import org.jetbrains.annotations.Nullable;
 
@@ -166,7 +167,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
             MemoryMetricsImpl memMetrics = (MemoryMetricsImpl) memMetricsMap.get(memPlcCfg.getName());
 
-            FreeListImpl freeList = new FreeListImpl(0,
+            final FreeListImpl freeList = new FreeListImpl(0,
                     cctx.igniteInstanceName(),
                     memMetrics,
                     memPlc,
@@ -174,8 +175,6 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
                     cctx.wal(),
                     0L,
                     true);
-
-            memMetrics.freeList(freeList);
 
             freeListMap.put(memPlcCfg.getName(), freeList);
         }
@@ -273,7 +272,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         if (dfltMemPlcName == null)
             dfltMemPlcName = DFLT_MEM_PLC_DEFAULT_NAME;
 
-        MemoryMetricsImpl memMetrics = new MemoryMetricsImpl(memPlcCfg);
+        MemoryMetricsImpl memMetrics = new MemoryMetricsImpl(memPlcCfg, fillFactorProvider(memPlcName));
 
         MemoryPolicy memPlc = initMemory(memCfg, memPlcCfg, memMetrics);
 
@@ -286,6 +285,31 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         else if (memPlcName.equals(DFLT_MEM_PLC_DEFAULT_NAME))
             U.warn(log, "Memory Policy with name 'default' isn't used as a default. " +
                     "Please check Memory Policies configuration.");
+    }
+
+    /**
+     * Closure that can be used to compute fill factor for provided memory policy.
+     *
+     * @param memPlcName Memory policy name.
+     * @return Closure.
+     */
+    protected IgniteOutClosure<Float> fillFactorProvider(final String memPlcName) {
+        return new IgniteOutClosure<Float>() {
+            private FreeListImpl freeList;
+
+            @Override public Float apply() {
+                if (freeList == null) {
+                    FreeListImpl freeList0 = freeListMap.get(memPlcName);
+
+                    if (freeList0 == null)
+                        return (float) 0;
+
+                    freeList = freeList0;
+                }
+
+                return (float) freeList.fillFactor().get1() / freeList.fillFactor().get2();
+            }
+        };
     }
 
     /**

@@ -133,6 +133,7 @@ import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.mxbean.PersistenceMetricsMXBean;
 import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
@@ -513,6 +514,30 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         catch (Throwable e) {
             U.error(log, "Failed to unregister " + MBEAN_NAME + " MBean.", e);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteOutClosure<Float> fillFactorProvider(final String memPlcName) {
+        return new IgniteOutClosure<Float>() {
+            @Override public Float apply() {
+                long loadSize = 0L;
+                long totalSize = 0L;
+
+                for (CacheGroupContext grpCtx : cctx.cache().cacheGroups()) {
+                    if (!grpCtx.memoryPolicy().config().getName().equals(memPlcName))
+                        continue;
+
+                    assert grpCtx.offheap() instanceof GridCacheOffheapManager;
+
+                    T2<Long, Long> fillFactor = ((GridCacheOffheapManager)grpCtx.offheap()).fillFactor();
+
+                    loadSize += fillFactor.get1();
+                    totalSize += fillFactor.get2();
+                }
+
+                return (float) loadSize /totalSize;
+            }
+        };
     }
 
     /** {@inheritDoc} */
