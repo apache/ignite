@@ -29,9 +29,10 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseL
 
 /**
  */
-public class FreeListImpl extends AbstractFreeList<CacheDataRow> {
+public class CacheFreeListImpl extends AbstractFreeList<CacheDataRow> {
 
-    public FreeListImpl(int cacheId, String name, MemoryMetricsImpl memMetrics, MemoryPolicy memPlc,
+    /** {@inheritDoc} */
+    public CacheFreeListImpl(int cacheId, String name, MemoryMetricsImpl memMetrics, MemoryPolicy memPlc,
         ReuseList reuseList,
         IgniteWriteAheadLogManager wal, long metaPageId, boolean initNew) throws IgniteCheckedException {
         super(cacheId, name, memMetrics, memPlc, reuseList, wal, metaPageId, initNew);

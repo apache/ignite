@@ -355,7 +355,7 @@ public abstract class AbstractFreeList<T extends Storeable> extends PagesList im
     }
 
     /**
-     * Calculates average fill factor over FreeListImpl instance.
+     * Calculates average fill factor over CacheFreeListImpl instance.
      */
     public float fillFactor() {
         long pageSize = pageSize();

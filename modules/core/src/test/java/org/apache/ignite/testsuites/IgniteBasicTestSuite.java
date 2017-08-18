@@ -20,8 +20,6 @@ package org.apache.ignite.testsuites;
 import java.util.Set;
 import junit.framework.TestSuite;
 import org.apache.ignite.GridSuppressedExceptionSelfTest;
-import org.apache.ignite.internal.processors.database.SwapPathConstructionSelfTest;
-import org.apache.ignite.util.AttributeNodeFilterSelfTest;
 import org.apache.ignite.internal.ClusterGroupHostsSelfTest;
 import org.apache.ignite.internal.ClusterGroupSelfTest;
 import org.apache.ignite.internal.GridFailFastNodeFailureDetectionSelfTest;
@@ -54,9 +52,10 @@ import org.apache.ignite.internal.processors.continuous.GridMessageListenSelfTes
 import org.apache.ignite.internal.processors.database.BPlusTreeFakeReuseSelfTest;
 import org.apache.ignite.internal.processors.database.BPlusTreeReuseSelfTest;
 import org.apache.ignite.internal.processors.database.BPlusTreeSelfTest;
-import org.apache.ignite.internal.processors.database.FreeListImplSelfTest;
+import org.apache.ignite.internal.processors.database.CacheFreeListImplSelfTest;
 import org.apache.ignite.internal.processors.database.MemoryMetricsSelfTest;
 import org.apache.ignite.internal.processors.database.MetadataStorageSelfTest;
+import org.apache.ignite.internal.processors.database.SwapPathConstructionSelfTest;
 import org.apache.ignite.internal.processors.odbc.OdbcConfigurationValidationSelfTest;
 import org.apache.ignite.internal.processors.odbc.OdbcEscapeSequenceSelfTest;
 import org.apache.ignite.internal.processors.service.ClosureServiceClientsNodesTest;
@@ -173,7 +172,7 @@ public class IgniteBasicTestSuite extends TestSuite {
         suite.addTestSuite(BPlusTreeFakeReuseSelfTest.class);
         suite.addTestSuite(BPlusTreeReuseSelfTest.class);
         suite.addTestSuite(MetadataStorageSelfTest.class);
-        suite.addTestSuite(FreeListImplSelfTest.class);
+        suite.addTestSuite(CacheFreeListImplSelfTest.class);
         suite.addTestSuite(MemoryMetricsSelfTest.class);
         suite.addTestSuite(SwapPathConstructionSelfTest.class);
 

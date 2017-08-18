@@ -43,8 +43,8 @@ import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.MemoryMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.MemoryPolicy;
 import org.apache.ignite.internal.processors.cache.persistence.evict.NoOpPageEvictionTracker;
+import org.apache.ignite.internal.processors.cache.persistence.freelist.CacheFreeListImpl;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
-import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeListImpl;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -55,7 +55,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  *
  */
-public class FreeListImplSelfTest extends GridCommonAbstractTest {
+public class CacheFreeListImplSelfTest extends GridCommonAbstractTest {
     /** */
     private static final int CPUS = Runtime.getRuntime().availableProcessors();
 
@@ -347,7 +347,7 @@ public class FreeListImplSelfTest extends GridCommonAbstractTest {
 
         MemoryPolicy memPlc = new MemoryPolicy(pageMem, plcCfg, metrics, new NoOpPageEvictionTracker());
 
-        return new FreeListImpl(1, "freelist", metrics, memPlc, null, null, metaPageId, true);
+        return new CacheFreeListImpl(1, "freelist", metrics, memPlc, null, null, metaPageId, true);
     }
 
     /**

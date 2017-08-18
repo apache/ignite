@@ -59,6 +59,7 @@ import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PageDeltaRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.TrackingPageIO;
 import org.apache.ignite.internal.util.typedef.F;
@@ -866,6 +867,40 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
                 assertEquals(new IndexedObject(i), cache1.get(i));
                 assertEquals(new IndexedObject(i), cache2.get(i));
             }
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
+     * @throws Exception If fail.
+     */
+    public void testMetastorage() throws Exception {
+        try {
+            IgniteEx ignite0 = (IgniteEx)startGrid("node1");
+            IgniteEx ignite1 = (IgniteEx)startGrid("node2");
+
+            ignite1.active(true);
+
+            GridCacheSharedContext<Object, Object> sharedCtx0 = ignite0.context().cache().context();
+            GridCacheSharedContext<Object, Object> sharedCtx1 = ignite1.context().cache().context();
+
+            MetaStorage storage0 = ((GridCacheDatabaseSharedManager)sharedCtx0.database()).metaStorage();
+            MetaStorage storage1 = ((GridCacheDatabaseSharedManager)sharedCtx0.database()).metaStorage();
+
+            assert storage0 != null;
+
+            for (int i = 0; i < 10; i++) {
+                storage0.putData(String.valueOf(i), new byte[] {(byte)i, 2, 3});
+                storage1.putData(String.valueOf(i), new byte[] {(byte)i, 3, 4});
+            }
+
+            for (int i = 0; i < 10; i++) {
+                assertEquals(new byte[] {(byte)i, 2, 3}, storage0.getData(String.valueOf(i)));
+                assertEquals(new byte[] {(byte)i, 3, 4}, storage1.getData(String.valueOf(i)));
+            }
+
         }
         finally {
             stopAllGrids();

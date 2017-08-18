@@ -19,10 +19,11 @@ package org.apache.ignite.internal.processors.cache.persistence.freelist;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.processors.cache.persistence.Storeable;
 
 /**
  */
-public interface FreeList<T> {
+public interface FreeList<T extends Storeable> {
     /**
      * @param row Row.
      * @throws IgniteCheckedException If failed.

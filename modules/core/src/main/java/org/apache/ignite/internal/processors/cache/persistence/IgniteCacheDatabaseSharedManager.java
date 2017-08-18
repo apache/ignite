@@ -50,8 +50,9 @@ import org.apache.ignite.internal.processors.cache.persistence.evict.NoOpPageEvi
 import org.apache.ignite.internal.processors.cache.persistence.evict.PageEvictionTracker;
 import org.apache.ignite.internal.processors.cache.persistence.evict.Random2LruPageEvictionTracker;
 import org.apache.ignite.internal.processors.cache.persistence.evict.RandomLruPageEvictionTracker;
+import org.apache.ignite.internal.processors.cache.persistence.freelist.CacheFreeListImpl;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
-import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeListImpl;
+import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.util.typedef.F;
@@ -72,9 +73,6 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     /** MemoryPolicyConfiguration name reserved for internal caches. */
     static final String SYSTEM_MEMORY_POLICY_NAME = "sysMemPlc";
 
-    /** MemoryPolicyConfiguration name reserved for meta store. */
-    static final String METASTORE_MEMORY_POLICY_NAME = "metastoreMemPlc";
-
     /** Minimum size of memory chunk */
     private static final long MIN_PAGE_MEMORY_SIZE = 10 * 1024 * 1024;
 
@@ -91,10 +89,10 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     protected MemoryPolicy dfltMemPlc;
 
     /** */
-    private Map<String, FreeListImpl> freeListMap;
+    private Map<String, CacheFreeListImpl> freeListMap;
 
     /** */
-    private FreeListImpl dfltFreeList;
+    private CacheFreeListImpl dfltFreeList;
 
     /** Page size from memory configuration, may be set only for fake(standalone) IgniteCacheDataBaseSharedManager */
     private int pageSize;
@@ -169,7 +167,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
             MemoryMetricsImpl memMetrics = (MemoryMetricsImpl) memMetricsMap.get(memPlcCfg.getName());
 
-            FreeListImpl freeList = new FreeListImpl(0,
+            CacheFreeListImpl freeList = new CacheFreeListImpl(0,
                     cctx.igniteInstanceName(),
                     memMetrics,
                     memPlc,
@@ -212,7 +210,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         MemoryPolicyConfiguration[] memPlcsCfgs = memCfg.getMemoryPolicies();
 
         if (memPlcsCfgs == null) {
-            //reserve place for default and system memory policies
+            //reserve place for default, system and store memory policies
             memPlcMap = U.newHashMap(3);
             memMetricsMap = U.newHashMap(3);
 
@@ -241,9 +239,9 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
                 U.warn(log, "No user-defined default MemoryPolicy found; system default of 1GB size will be used.");
             }
             else {
-                //reserve additional space for system memory policy only
-                memPlcMap = U.newHashMap(memPlcsCfgs.length + 1);
-                memMetricsMap = U.newHashMap(memPlcsCfgs.length + 1);
+                //reserve additional space for system and store memory policies
+                memPlcMap = U.newHashMap(memPlcsCfgs.length + 2);
+                memMetricsMap = U.newHashMap(memPlcsCfgs.length + 2);
             }
 
             for (MemoryPolicyConfiguration memPlcCfg : memPlcsCfgs)
@@ -259,11 +257,6 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
             SYSTEM_MEMORY_POLICY_NAME
         );
 
-        addMemoryPolicy(
-            memCfg,
-            createStoreMemoryPolicy(memCfg),
-            METASTORE_MEMORY_POLICY_NAME
-        );
     }
 
     /**
@@ -272,7 +265,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @param memPlcName Memory policy name.
      * @throws IgniteCheckedException If failed to initialize swap path.
      */
-    private void addMemoryPolicy(
+    protected void addMemoryPolicy(
         MemoryConfiguration memCfg,
         MemoryPolicyConfiguration memPlcCfg,
         String memPlcName
@@ -321,19 +314,6 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         res.setName(SYSTEM_MEMORY_POLICY_NAME);
         res.setInitialSize(sysCacheInitSize);
         res.setMaxSize(sysCacheMaxSize);
-
-        return res;
-    }
-
-    /**
-     * @return {@link MemoryPolicyConfiguration configuration} of MemoryPolicy for system cache.
-     */
-    protected MemoryPolicyConfiguration createStoreMemoryPolicy(MemoryConfiguration memCfg) {
-        MemoryPolicyConfiguration res = new MemoryPolicyConfiguration();
-
-        res.setName(METASTORE_MEMORY_POLICY_NAME);
-        res.setInitialSize(memCfg.getSystemCacheInitialSize());
-        res.setMaxSize(memCfg.getSystemCacheMaxSize());
 
         return res;
     }
@@ -563,7 +543,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      */
     public void dumpStatistics(IgniteLogger log) {
         if (freeListMap != null) {
-            for (FreeListImpl freeList : freeListMap.values())
+            for (CacheFreeListImpl freeList : freeListMap.values())
                 freeList.dumpStatistics(log);
         }
     }
@@ -845,7 +825,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
         int sysPageSize = pageMem.systemPageSize();
 
-        FreeListImpl freeListImpl = freeListMap.get(plcCfg.getName());
+        CacheFreeListImpl freeListImpl = freeListMap.get(plcCfg.getName());
 
         for (;;) {
             long allocatedPagesCnt = pageMem.loadedPages();
@@ -1013,5 +993,12 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      */
     protected void setPageSize(int pageSize) {
         this.pageSize = pageSize;
+    }
+
+    /**
+     * @return MetaStorage
+     */
+    public MetaStorage metaStorage() {
+        return null;
     }
 }

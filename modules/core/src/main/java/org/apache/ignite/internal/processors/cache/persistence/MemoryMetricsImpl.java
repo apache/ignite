@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence;
 import org.apache.ignite.MemoryMetrics;
 import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeListImpl;
+import org.apache.ignite.internal.processors.cache.persistence.freelist.CacheFreeListImpl;
 import org.apache.ignite.internal.processors.cache.ratemetrics.HitRateMetrics;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jsr166.LongAdder8;
@@ -29,7 +29,7 @@ import org.jsr166.LongAdder8;
  */
 public class MemoryMetricsImpl implements MemoryMetrics {
     /** */
-    private FreeListImpl freeList;
+    private CacheFreeListImpl freeList;
 
     /** */
     private final LongAdder8 totalAllocatedPages = new LongAdder8();
@@ -278,7 +278,7 @@ public class MemoryMetricsImpl implements MemoryMetrics {
     /**
      * @param freeList Free list.
      */
-    void freeList(FreeListImpl freeList) {
+    void freeList(CacheFreeListImpl freeList) {
         this.freeList = freeList;
     }
 }
