@@ -407,7 +407,7 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
             authenticator: String,
             forceServerMode: Boolean,
             clientReconnectDisabled: Boolean,
-            kind: {type: String, enum: ['Vm', 'Multicast', 'S3', 'Cloud', 'GoogleStorage', 'Jdbc', 'SharedFs', 'ZooKeeper']},
+            kind: {type: String, enum: ['Vm', 'Multicast', 'S3', 'Cloud', 'GoogleStorage', 'Jdbc', 'SharedFs', 'ZooKeeper', 'Kubernetes']},
             Vm: {
                 addresses: [String]
             },
@@ -528,6 +528,12 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
                 basePath: String,
                 serviceName: String,
                 allowDuplicateRegistrations: Boolean
+            },
+            Kubernetes: {
+                serviceName: String,
+                namespace: String,
+                masterUrl: String,
+                accountToken: String
             }
         },
         atomicConfiguration: {
