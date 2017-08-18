@@ -227,17 +227,27 @@ module.exports.factory = function(_, fs, path, JSZip, socketio, settings, mongo,
          * @param {String} cacheName Cache name.
          * @param {String} query Query.
          * @param {Boolean} nonCollocatedJoins Flag whether to execute non collocated joins.
+         * @param {Boolean} enforceJoinOrder Flag whether enforce join order is enabled.
          * @param {Boolean} local Flag whether to execute query locally.
          * @param {int} pageSize Page size.
          * @returns {Promise}
          */
-        fieldsQuery(demo, nid, cacheName, query, nonCollocatedJoins, local, pageSize) {
+        fieldsQuery(demo, nid, cacheName, query, nonCollocatedJoins, enforceJoinOrder, local, pageSize) {
             const cmd = new Command(demo, 'exe')
                 .addParam('name', 'org.apache.ignite.internal.visor.compute.VisorGatewayTask')
                 .addParam('p1', nid)
                 .addParam('p2', 'org.apache.ignite.internal.visor.query.VisorQueryTask');
 
-            if (nonCollocatedJoins) {
+            if (enforceJoinOrder) {
+                cmd.addParam('p3', 'org.apache.ignite.internal.visor.query.VisorQueryArgV3')
+                    .addParam('p4', cacheName)
+                    .addParam('p5', query)
+                    .addParam('p6', nonCollocatedJoins)
+                    .addParam('p7', enforceJoinOrder)
+                    .addParam('p8', local)
+                    .addParam('p9', pageSize);
+            }
+            else if (nonCollocatedJoins) {
                 cmd.addParam('p3', 'org.apache.ignite.internal.visor.query.VisorQueryArgV2')
                     .addParam('p4', cacheName)
                     .addParam('p5', query)
@@ -324,6 +334,42 @@ module.exports.factory = function(_, fs, path, JSZip, socketio, settings, mongo,
                 .addParam('p1', nids)
                 .addParam('p2', 'org.apache.ignite.internal.visor.cache.VisorCacheResetQueryDetailMetricsTask')
                 .addParam('p3', 'java.lang.Void');
+
+            return this.executeRest(cmd);
+        }
+
+        /**
+         * Collect running queries
+         * @param {Boolean} demo Is need run command on demo node.
+         * @param {Number} duration minimum duration time of running queries.
+         * @returns {Promise}
+         */
+        queryCollectRunning(demo, duration) {
+            const cmd = new Command(demo, 'exe')
+                .addParam('name', 'org.apache.ignite.internal.visor.compute.VisorGatewayTask')
+                .addParam('p1', '')
+                .addParam('p2', 'org.apache.ignite.internal.visor.query.VisorCollectRunningQueriesTask')
+                .addParam('p3', 'java.lang.Long')
+                .addParam('p4', duration);
+
+            return this.executeRest(cmd);
+        }
+
+        /**
+         * Cancel running query.
+         * @param {Boolean} demo Is need run command on demo node.
+         * @param {String} nid Node id.
+         * @param {Number} queryId query id to cancel.
+         * @returns {Promise}
+         */
+        queryCancel(demo, nid, queryId) {
+            const cmd = new Command(demo, 'exe')
+                .addParam('name', 'org.apache.ignite.internal.visor.compute.VisorGatewayTask')
+                .addParam('p1', nid)
+                .addParam('p2', 'org.apache.ignite.internal.visor.query.VisorCancelQueriesTask')
+                .addParam('p3', 'java.util.Collection')
+                .addParam('p4', 'java.lang.Long')
+                .addParam('p5', queryId);
 
             return this.executeRest(cmd);
         }

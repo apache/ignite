@@ -25,6 +25,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
@@ -162,6 +163,8 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
         Collection<IgniteBiTuple<byte[], byte[]>> evicts = offheapEvicts.get();
 
         if (evicts != null) {
+            List<GridCacheEntryEx> entries = null;
+
             GridCacheVersion obsoleteVer = cctx.versions().next();
 
             for (IgniteBiTuple<byte[], byte[]> t : evicts) {
@@ -179,6 +182,12 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
                         try {
                             if (entry.onOffheapEvict(vb, evictVer, obsoleteVer))
                                 cctx.cache().removeEntry(entry);
+                            else {
+                                if (entries == null)
+                                    entries = new ArrayList<>();
+
+                                entries.add(entry);
+                            }
 
                             break;
                         }
@@ -196,6 +205,11 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
             }
 
             offheapEvicts.set(null);
+
+            if (entries != null) {
+                for (int i = 0; i < entries.size(); i++)
+                    cctx.evicts().touch(entries.get(i), AffinityTopologyVersion.NONE);
+            }
         }
     }
 
@@ -816,6 +830,28 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
 
         return read(entry.key(), entry.key().valueBytes(cctx.cacheObjectContext()), entry.partition(), locked,
             readOffheap, readSwap, valOnly);
+    }
+
+    /**
+     * @param key Key.
+     * @return Read value.
+     * @throws IgniteCheckedException If failed.
+     */
+    @Nullable public GridCacheSwapEntry readSwapEntry(KeyCacheObject key) throws IgniteCheckedException {
+        assert offheapEnabled || swapEnabled;
+
+        GridCacheSwapEntry entry = read(key,
+            key.valueBytes(cctx.cacheObjectContext()),
+            cctx.affinity().partition(key),
+            false,
+            true,
+            true,
+            false);
+
+        assert entry == null || entry.value() != null : entry;
+        assert entry == null || entry.version() != null : entry;
+
+        return entry;
     }
 
     /**
