@@ -27,8 +27,6 @@ import static org.junit.Assert.assertEquals;
 
 /**
  * Attribute tests for matrices.
- *
- * TODO: WIP
  */
 public class MatrixAttributeTest {
     /** */

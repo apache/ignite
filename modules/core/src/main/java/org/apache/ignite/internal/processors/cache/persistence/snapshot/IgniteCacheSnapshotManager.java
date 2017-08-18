@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.nio.ByteBuffer;
-import java.util.NavigableMap;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.events.DiscoveryEvent;
@@ -29,8 +28,8 @@ import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
+import org.apache.ignite.internal.processors.cache.persistence.partstate.PartitionAllocationMap;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -64,12 +63,13 @@ public class IgniteCacheSnapshotManager<T extends SnapshotOperation> extends Gri
 
     /**
      * @param snapshotOperation current snapshot operation.
+     * @param map  (cacheId, partId) -> (lastAllocatedIndex, count)
      *
      * @return {@code true} if next operation must be snapshot, {@code false} if checkpoint must be executed.
      */
     public boolean onMarkCheckPointBegin(
         T snapshotOperation,
-        NavigableMap<T2<Integer, Integer>, T2<Integer, Integer>> map
+        PartitionAllocationMap map
     ) throws IgniteCheckedException {
         return false;
     }
@@ -107,9 +107,16 @@ public class IgniteCacheSnapshotManager<T extends SnapshotOperation> extends Gri
     }
 
     /**
-     * @param fullId Full id.
+     * @param fullId Full page id.
+     * @param tmpWriteBuf buffer
+     * @param writtenPages Overall pages written, negative value means there is no progress tracked
+     * @param totalPages Overall pages count to be written, should be positive
      */
-    public void onPageWrite(FullPageId fullId, ByteBuffer tmpWriteBuf) {
+    public void onPageWrite(
+        final FullPageId fullId,
+        final ByteBuffer tmpWriteBuf,
+        final int writtenPages,
+        final int totalPages) {
         // No-op.
     }
 

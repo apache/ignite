@@ -180,9 +180,11 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
 
             FileWALPointer ptr;
 
-            try (FileIO fileIO = ioFactory.create(file, "r")) {
-                final DataInput in = new FileInput(fileIO,
-                    new ByteBufferExpander(HEADER_RECORD_SIZE, ByteOrder.nativeOrder()));
+            try (
+                FileIO fileIO = ioFactory.create(file, "r");
+                ByteBufferExpander buf = new ByteBufferExpander(HEADER_RECORD_SIZE, ByteOrder.nativeOrder())
+            ) {
+                final DataInput in = new FileInput(fileIO, buf);
 
                 // Header record must be agnostic to the serializer version.
                 final int type = in.readUnsignedByte();
@@ -234,7 +236,9 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
             return initReadHandle(fd, null);
         }
         catch (FileNotFoundException e) {
-            log.info("Missing WAL segment in the archive: " + e.getMessage());
+            if (log.isInfoEnabled())
+                log.info("Missing WAL segment in the archive: " + e.getMessage());
+
             return null;
         }
     }
@@ -254,6 +258,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
     /** {@inheritDoc} */
     @Override protected void onClose() throws IgniteCheckedException {
         super.onClose();
+
         curRec = null;
 
         closeCurrentWalSegment();

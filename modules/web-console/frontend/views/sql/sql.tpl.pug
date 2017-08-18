@@ -196,7 +196,7 @@ mixin paragraph-scan
 
         .col-sm-12.sql-result(ng-if='paragraph.queryExecuted()' ng-switch='paragraph.resultType()')
             .error(ng-switch-when='error') Error: {{paragraph.error.message}}
-            .empty(ng-switch-when='empty') Result set is empty
+            .empty(ng-switch-when='empty') Result set is empty. Duration: #[b {{paragraph.duration | duration}}]
             .table(ng-switch-when='table')
                 +table-result-heading-scan
                 +table-result-body
@@ -247,7 +247,7 @@ mixin paragraph-query
                 label Error: {{paragraph.error.message}}
                 br
                 a(ng-show='paragraph.resultType() === "error"' ng-click='showStackTrace(paragraph)') Show more
-            .empty(ng-switch-when='empty') Result set is empty
+            .empty(ng-switch-when='empty') Result set is empty. Duration: #[b {{paragraph.duration | duration}}]
             .table(ng-switch-when='table')
                 +table-result-heading-query
                 +table-result-body

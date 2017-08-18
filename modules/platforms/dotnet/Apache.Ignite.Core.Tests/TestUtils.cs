@@ -365,12 +365,11 @@ namespace Apache.Ignite.Core.Tests
             };
 
             var proc = System.Diagnostics.Process.Start(procStart);
-
             Assert.IsNotNull(proc);
 
-            Console.WriteLine(proc.StandardOutput.ReadToEnd());
-            Console.WriteLine(proc.StandardError.ReadToEnd());
-            Assert.IsTrue(proc.WaitForExit(15000));
+            IgniteProcess.AttachProcessConsoleReader(proc);
+
+            Assert.IsTrue(proc.WaitForExit(19000));
             Assert.AreEqual(0, proc.ExitCode);
         }
 

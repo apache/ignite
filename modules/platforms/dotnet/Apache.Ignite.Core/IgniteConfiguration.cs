@@ -970,6 +970,8 @@ namespace Apache.Ignite.Core
         /// <para />
         /// If not provided, default value is <see cref="DefaultIsLateAffinityAssignment"/>.
         /// </summary>
+        [SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
+        [SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "value")]
         [DefaultValue(DefaultIsLateAffinityAssignment)]
         [Obsolete("No longer supported, always true.")]
         public bool IsLateAffinityAssignment

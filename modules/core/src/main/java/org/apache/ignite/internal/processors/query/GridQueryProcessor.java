@@ -504,21 +504,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                 if (cacheDesc != null && F.eq(cacheDesc.deploymentId(), proposeMsg.deploymentId()))
                     cacheDesc.schemaChangeFinish(msg);
-
-                if (ctx.cache().context().pageStore() != null &&
-                    ctx.cache().context().database().persistenceEnabled()) {
-
-                    StoredCacheData cacheData = new StoredCacheData(cacheDesc.cacheConfiguration());
-
-                    cacheData.queryEntities(cacheDesc.schema().entities());
-
-                    try {
-                        ctx.cache().context().pageStore().storeCacheData(cacheData);
-                    }
-                    catch (IgniteCheckedException e) {
-                        throw new IllegalStateException("Failed to persist cache data: " + cacheData.config().getName(), e);
-                    }
-                }
             }
 
             // Propose message will be used from exchange thread to
@@ -703,7 +688,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                 if (!F.isEmpty(qryEntities)) {
                     for (QueryEntity qryEntity : qryEntities) {
-                        QueryTypeCandidate cand = QueryUtils.typeForQueryEntity(cacheName, cctx, qryEntity,
+                        QueryTypeCandidate cand = QueryUtils.typeForQueryEntity(cacheName, schemaName, cctx, qryEntity,
                             mustDeserializeClss, escape);
 
                         cands.add(cand);

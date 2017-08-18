@@ -72,9 +72,6 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
     /** */
     private static IgniteCache<String, Organization> orgCache;
 
-    /** Cache name. */
-    protected static final String CACHE = "cache";
-
     /** */
     private static IgniteCache<AffinityKey<String>, Person> personCache;
 
@@ -83,6 +80,9 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
 
     /** */
     protected static IgniteCache<Integer, Integer> intCache;
+
+    /** */
+    protected static IgniteCache<?, ?> noOpCache;
 
     /** Flag indicating if starting node should have cache. */
     protected boolean hasCache;
@@ -187,6 +187,8 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
 
         for (int i = 0; i < 200; i++)
             intCache.put(i, i);
+
+        noOpCache = grid(0).getOrCreateCache("noop");
     }
 
     /** {@inheritDoc} */
@@ -202,6 +204,7 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
         personCache = null;
         strCache = null;
         intCache = null;
+        noOpCache = null;
     }
 
     /** @return cache mode. */
@@ -345,7 +348,7 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
                     assert String.class.getName().equals(fields.get("_KEY"));
                     assert String.class.getName().equals(fields.get("_VAL"));
                 }
-                else if (DEFAULT_CACHE_NAME.equals(meta.cacheName()))
+                else if (DEFAULT_CACHE_NAME.equals(meta.cacheName()) || noOpCache.getName().equals(meta.cacheName()))
                     assertTrue("Invalid types size", types.isEmpty());
                 else
                     fail("Unknown cache: " + meta.cacheName());
@@ -479,7 +482,22 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
 
     /** @throws Exception If failed. */
     public void testExecute() throws Exception {
-        QueryCursor<List<?>> qry = personCache.query(sqlFieldsQuery("select _KEY, name, age from Person"));
+        doTestExecute(personCache, sqlFieldsQuery("select _KEY, name, age from Person"));
+    }
+
+    /** @throws Exception If failed. */
+    public void testExecuteNoOpCache() throws Exception {
+        doTestExecute(noOpCache, sqlFieldsQuery("select _KEY, name, age from \"AffinityKey-Person\".Person"));
+    }
+
+    /**
+     * Execute given query and check results.
+     * @param cache Cache to run query on.
+     * @param fldsQry Query.
+     * @throws Exception if failed.
+     */
+    private void doTestExecute (IgniteCache<?, ?> cache, SqlFieldsQuery fldsQry) throws Exception {
+        QueryCursor<List<?>> qry = cache.query(fldsQry);
 
         List<List<?>> res = new ArrayList<>(qry.getAll());
 
@@ -528,8 +546,6 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
             .query(sqlFieldsQuery("select _KEY, name, age from Person where age > ?").setArgs(30));
 
         List<List<?>> res = new ArrayList<>(qry.getAll());
-
-        assert res != null;
 
         dedup(res);
 

@@ -887,7 +887,7 @@ export default class IgniteConfigurationGenerator {
             cfg.intProperty('peerClassLoadingMissedResourcesCacheSize')
                 .intProperty('peerClassLoadingThreadPoolSize')
                 .varArgProperty('p2pLocClsPathExcl', 'peerClassLoadingLocalClassPathExclude',
-                   cluster.peerClassLoadingLocalClassPathExclude);
+                    cluster.peerClassLoadingLocalClassPathExclude);
         }
 
         // Since ignite 2.0
@@ -1477,17 +1477,17 @@ export default class IgniteConfigurationGenerator {
             .boolProperty('metricsEnabled')
             .boolProperty('alwaysWriteFullPages')
             .intProperty('checkpointingFrequency')
-            .intProperty('checkpointingPageBufferSize')
+            .longProperty('checkpointingPageBufferSize')
             .intProperty('checkpointingThreads')
             .stringProperty('walStorePath')
             .stringProperty('walArchivePath')
             .intProperty('walSegments')
             .intProperty('walSegmentSize')
             .intProperty('walHistorySize')
-            .intProperty('walFlushFrequency')
-            .intProperty('walFsyncDelay')
+            .longProperty('walFlushFrequency')
+            .longProperty('walFsyncDelayNanos')
             .intProperty('walRecordIteratorBufferSize')
-            .intProperty('lockWaitTime')
+            .longProperty('lockWaitTime')
             .intProperty('rateTimeInterval')
             .intProperty('tlbSize')
             .intProperty('subIntervals');
@@ -1695,7 +1695,8 @@ export default class IgniteConfigurationGenerator {
                     fields.push({name: valFieldName, className: javaTypes.fullClassName(domain.valueType)});
             }
 
-            cfg.mapProperty('fields', fields, 'fields', true)
+            cfg.collectionProperty('keyFields', 'keyFields', domain.queryKeyFields, 'java.lang.String', 'java.util.HashSet')
+                .mapProperty('fields', fields, 'fields', true)
                 .mapProperty('aliases', 'aliases');
 
             const indexes = _.map(domain.indexes, (index) =>

@@ -448,11 +448,6 @@ public final class GridLocalLockFuture<K, V> extends GridCacheFutureAdapter<Bool
     }
 
     /** {@inheritDoc} */
-    @Override public int hashCode() {
-        return futId.hashCode();
-    }
-
-    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridLocalLockFuture.class, this);
     }

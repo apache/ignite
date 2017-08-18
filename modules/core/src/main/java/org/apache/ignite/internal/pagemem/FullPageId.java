@@ -21,7 +21,7 @@ import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
-  * Compound object used to address a page in the global page space.
+ * Compound object used to address a page in the global page space.
  * <h3>Page ID structure</h3>
  * <p>
  * Generally, a full page ID consists of a cache ID and page ID. A page ID consists of
@@ -49,13 +49,13 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  * Effective page ID is page ID with zeroed bits used for page ID rotation.
  */
 public class FullPageId {
-    /** */
+    /** Page ID. */
     private final long pageId;
 
     /** */
     private final long effectivePageId;
 
-    /** */
+    /** Cache group ID. */
     private final int grpId;
 
     /**

@@ -257,11 +257,13 @@ public class GridDhtPartitionDemander {
      * @param forcedRebFut External future for forced rebalance.
      * @return Rebalancing runnable.
      */
-    Runnable addAssignments(final GridDhtPreloaderAssignments assigns,
+    Runnable addAssignments(
+        final GridDhtPreloaderAssignments assigns,
         boolean force,
         int cnt,
         final Runnable next,
-        @Nullable final GridCompoundFuture<Boolean, Boolean> forcedRebFut) {
+        @Nullable final GridCompoundFuture<Boolean, Boolean> forcedRebFut
+    ) {
         if (log.isDebugEnabled())
             log.debug("Adding partition assignments: " + assigns);
 
@@ -289,13 +291,13 @@ public class GridDhtPartitionDemander {
 
             rebalanceFut = fut;
 
-            fut.sendRebalanceStartedEvent();
-
-            for (GridCacheContext cctx : grp.caches()) {
+            for (final GridCacheContext cctx : grp.caches()) {
                 if (cctx.config().isStatisticsEnabled()) {
                     final CacheMetricsImpl metrics = cctx.cache().metrics0();
 
                     metrics.clearRebalanceCounters();
+
+                    metrics.startRebalance(0);
 
                     rebalanceFut.listen(new IgniteInClosure<IgniteInternalFuture<Boolean>>() {
                         @Override public void apply(IgniteInternalFuture<Boolean> fut) {
@@ -304,6 +306,8 @@ public class GridDhtPartitionDemander {
                     });
                 }
             }
+
+            fut.sendRebalanceStartedEvent();
 
             if (assigns.cancelled()) { // Pending exchange.
                 if (log.isDebugEnabled())
@@ -350,6 +354,14 @@ public class GridDhtPartitionDemander {
             };
         }
         else if (delay > 0) {
+            for (GridCacheContext cctx : grp.caches()) {
+                if (cctx.config().isStatisticsEnabled()) {
+                    final CacheMetricsImpl metrics = cctx.cache().metrics0();
+
+                    metrics.startRebalance(delay);
+                }
+            }
+
             GridTimeoutObject obj = lastTimeoutObj.get();
 
             if (obj != null)
