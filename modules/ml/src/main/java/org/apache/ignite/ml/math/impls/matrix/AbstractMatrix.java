@@ -711,7 +711,9 @@ public abstract class AbstractMatrix implements Matrix {
 
     /** {@inheritDoc} */
     @Override public Vector getRow(int row) {
-        Vector res = new DenseLocalOnHeapVector(rowSize());
+        checkRowIndex(row);
+
+        Vector res = new DenseLocalOnHeapVector(columnSize());
 
         for (int i = 0; i < columnSize(); i++)
             res.setX(i, getX(row,i));
@@ -736,7 +738,9 @@ public abstract class AbstractMatrix implements Matrix {
 
     /** {@inheritDoc} */
     @Override public Vector getCol(int col) {
-        Vector res = new DenseLocalOnHeapVector(columnSize());
+        checkColumnIndex(col);
+
+        Vector res = new DenseLocalOnHeapVector(rowSize());
 
         for (int i = 0; i < rowSize(); i++)
             res.setX(i, getX(i,col));
