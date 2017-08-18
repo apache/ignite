@@ -1124,34 +1124,37 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                 }
             }
             else {
-                txSync.listen(new CI1<IgniteInternalFuture<?>>() {
-                    @Override public void apply(IgniteInternalFuture<?> t) {
-                        try {
-                            cctx.io().send(node, req, cctx.ioPolicy());
 
-                            if (msgLog.isDebugEnabled()) {
-                                msgLog.debug("Collocated lock fut, sent request [txId=" + lockVer +
-                                    ", inTx=" + inTx() +
-                                    ", node=" + node.id() + ']');
-                            }
-                        }
-                        catch (ClusterTopologyCheckedException ex) {
-                            assert fut != null;
+                throw new RuntimeException("[txSync.listen].GridNearLockFuture= " + this);
 
-                            fut.onResult(ex);
-                        }
-                        catch (IgniteCheckedException e) {
-                            if (msgLog.isDebugEnabled()) {
-                                msgLog.debug("Collocated lock fut, failed to send request [txId=" + lockVer +
-                                    ", inTx=" + inTx() +
-                                    ", node=" + node.id() +
-                                    ", err=" + e + ']');
-                            }
-
-                            onError(e);
-                        }
-                    }
-                });
+//                txSync.listen(new CI1<IgniteInternalFuture<?>>() {
+//                    @Override public void apply(IgniteInternalFuture<?> t) {
+//                        try {
+//                            cctx.io().send(node, req, cctx.ioPolicy());
+//
+//                            if (msgLog.isDebugEnabled()) {
+//                                msgLog.debug("Collocated lock fut, sent request [txId=" + lockVer +
+//                                    ", inTx=" + inTx() +
+//                                    ", node=" + node.id() + ']');
+//                            }
+//                        }
+//                        catch (ClusterTopologyCheckedException ex) {
+//                            assert fut != null;
+//
+//                            fut.onResult(ex);
+//                        }
+//                        catch (IgniteCheckedException e) {
+//                            if (msgLog.isDebugEnabled()) {
+//                                msgLog.debug("Collocated lock fut, failed to send request [txId=" + lockVer +
+//                                    ", inTx=" + inTx() +
+//                                    ", node=" + node.id() +
+//                                    ", err=" + e + ']');
+//                            }
+//
+//                            onError(e);
+//                        }
+//                    }
+//                });
             }
         }
     }
