@@ -322,8 +322,15 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         }
     }
 
-    public void forceCloseCache(final GridDhtPartitionsExchangeFuture fut,
-        boolean crd,
+    /**
+     * Called during exchange rollback in order to stop the given cache(s)
+     * even if it's not fully initialized (e.g. fail on cache init stage).
+     *
+     * @param fut Exchange future.
+     * @param crd Coordinator flag.
+     * @param reqs Cache change requests.
+     */
+    public void forceCloseCache(final GridDhtPartitionsExchangeFuture fut, boolean crd,
         Collection<DynamicCacheChangeRequest> reqs) {
 
         assert !F.isEmpty(reqs) : fut;
