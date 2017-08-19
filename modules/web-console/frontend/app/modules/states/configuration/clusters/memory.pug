@@ -26,7 +26,7 @@ include /app/helpers/jade/mixins
         label Memory configuration
         ignite-form-field-tooltip.tipLabel
             | Page memory is a manageable off-heap based memory architecture that is split into pages of fixed size#[br]
-            | #[a(href="https://apacheignite.readme.io/durable-memory" target="_blank") More info]
+            | #[a(href="https://apacheignite.readme.io/docs/durable-memory" target="_blank") More info]
         ignite-form-revert
     .panel-collapse(role='tabpanel' bs-collapse-target id=`${form}`)
         .panel-body(ng-if=`$ctrl.available("2.0.0") && ui.isPanelLoaded('${form}')`)
