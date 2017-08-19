@@ -316,15 +316,19 @@ public final class GridCacheMvcc {
                         // If reentry, add at the beginning. Note that
                         // no reentry happens for DHT-local candidates.
                         if (!cand.dhtLocal() && first.threadId() == cand.threadId()) {
-                            assert !first.serializable();
 
-                            cand.setOwner();
-                            cand.setReady();
-                            cand.setReentry();
+                            throw new RuntimeException("[GridCacheMvcc.add0()]candidate= " + cand + ".\n GridCacheMvcc= " +
+                            this);
 
-                            locs.addFirst(cand);
-
-                            return true;
+//                            assert !first.serializable();
+//
+//                            cand.setOwner();
+//                            cand.setReady();
+//                            cand.setReentry();
+//
+//                            locs.addFirst(cand);
+//
+//                            return true;
                         }
                     }
 
