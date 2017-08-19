@@ -643,8 +643,9 @@ public final class GridCacheMvcc {
         if (!dhtLoc && !reenter) {
             GridCacheMvccCandidate owner = localOwner();
 
-            if (owner != null && owner.threadId() == threadId)
-                return null;
+            if (owner != null && owner.threadId() == threadId) {
+                throw new RuntimeException("[GridCacheMvcc.addLocal()]Owner= " + owner + "\n.GridCacheMvcc= " + this);
+            }
         }
 
         // If there are pending locks and timeout is negative,
