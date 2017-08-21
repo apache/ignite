@@ -157,6 +157,8 @@ public abstract class GridH2IndexBase extends BaseIndex {
      * Attempts to destroys index and release all the resources.
      * We use this method instead of {@link #close(Session)} because that method
      * is used by H2 internally.
+     *
+     * @param rmv Flag remove.
      */
     public void destroy(boolean rmv) {
         if (msgLsnr != null)

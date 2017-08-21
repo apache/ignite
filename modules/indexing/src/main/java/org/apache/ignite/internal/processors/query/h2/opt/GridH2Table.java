@@ -109,8 +109,8 @@ public class GridH2Table extends TableBase {
     /** Identifier as string. */
     private final String identifierStr;
 
-    /** */
-    public final ThreadLocal<Boolean> rmIndex = new ThreadLocal<>();
+    /** Flag remove index or not when table will be destroyed. */
+    private volatile boolean rmIndex;
 
     /**
      * Creates table.
@@ -322,7 +322,7 @@ public class GridH2Table extends TableBase {
 
                     // We have to call destroy here if we are who has removed this index from the table.
                     if (idx instanceof GridH2IndexBase)
-                        ((GridH2IndexBase)idx).destroy(rmIndex.get());
+                        ((GridH2IndexBase)idx).destroy(rmIndex);
                 }
             }
 
@@ -358,11 +358,20 @@ public class GridH2Table extends TableBase {
 
             for (int i = 1, len = idxs.size(); i < len; i++)
                 if (idxs.get(i) instanceof GridH2IndexBase)
-                    index(i).destroy(rmIndex.get());
+                    index(i).destroy(rmIndex);
         }
         finally {
             unlock(true);
         }
+    }
+
+    /**
+     * If flag {@code True}, index will be destroyed when table {@link #destroy()}.
+     *
+     * @param rmIndex Flag indicate remove index on destroy or not.
+     */
+    public void setRemoveIndexOnDestroy(boolean rmIndex){
+        this.rmIndex = rmIndex;
     }
 
     /** {@inheritDoc} */

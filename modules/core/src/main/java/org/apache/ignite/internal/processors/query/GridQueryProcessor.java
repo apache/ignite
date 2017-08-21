@@ -1416,8 +1416,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 cacheNames.add(CU.mask(cacheName));
             }
             catch (IgniteCheckedException | RuntimeException e) {
-                //todo ???
-                onCacheStop0(cacheName, false);
+                onCacheStop0(cacheName, true);
 
                 throw e;
             }
