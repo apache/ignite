@@ -459,7 +459,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                             if (clientTop != null) {
                                 grp.topology().update(grpHolder.affinity().lastVersion(),
                                     clientTop.partitionMap(true),
-                                    clientTop.updateCounters(false),
+                                    clientTop.fullUpdateCounters(),
                                     Collections.<Integer>emptySet(),
                                     null);
                             }
