@@ -18,11 +18,11 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
 import java.util.Collection;
-import java.util.Map;
-import java.util.HashMap;
+import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.Collections;
-import java.io.Externalizable;
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.GridDirectMap;
@@ -32,7 +32,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartit
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
@@ -62,7 +61,7 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
     /** Partitions update counters. */
     @GridToStringInclude
     @GridDirectTransient
-    private Map<Integer, Map<Integer, T2<Long, Long>>> partCntrs;
+    private Map<Integer, CachePartitionPartialCountersMap> partCntrs;
 
     /** Serialized partitions counters. */
     private byte[] partCntrsBytes;
@@ -190,7 +189,7 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
      * @param grpId Cache group ID.
      * @param cntrMap Partition update counters.
      */
-    public void partitionUpdateCounters(int grpId, Map<Integer, T2<Long, Long>> cntrMap) {
+    public void partitionUpdateCounters(int grpId, CachePartitionPartialCountersMap cntrMap) {
         if (partCntrs == null)
             partCntrs = new HashMap<>();
 
@@ -201,14 +200,10 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
      * @param grpId Cache group ID.
      * @return Partition update counters.
      */
-    @Override public Map<Integer, T2<Long, Long>> partitionUpdateCounters(int grpId) {
-        if (partCntrs != null) {
-            Map<Integer, T2<Long, Long>> res = partCntrs.get(grpId);
+    public CachePartitionPartialCountersMap partitionUpdateCounters(int grpId) {
+        CachePartitionPartialCountersMap res = partCntrs == null ? null : partCntrs.get(grpId);
 
-            return res != null ? res : Collections.<Integer, T2<Long, Long>>emptyMap();
-        }
-
-        return Collections.emptyMap();
+        return res == null ? CachePartitionPartialCountersMap.EMPTY : res;
     }
 
     /**
