@@ -104,6 +104,9 @@ public class JdbcThinTcpIo {
     /** Replicated only flag. */
     private final boolean replicatedOnly;
 
+    /** Lazy execution query flag. */
+    private final boolean lazyExec;
+
     /** Flag to automatically close server cursor. */
     private final boolean autoCloseServerCursor;
 
@@ -141,12 +144,13 @@ public class JdbcThinTcpIo {
      * @param collocated Collocated flag.
      * @param replicatedOnly Replicated only flag.
      * @param autoCloseServerCursor Flag to automatically close server cursors.
+     * @param lazyExec Lazy execution query flag.
      * @param sockSndBuf Socket send buffer.
      * @param sockRcvBuf Socket receive buffer.
      * @param tcpNoDelay TCP no delay flag.
      */
     JdbcThinTcpIo(String host, int port, boolean distributedJoins, boolean enforceJoinOrder, boolean collocated,
-        boolean replicatedOnly, boolean autoCloseServerCursor, int sockSndBuf, int sockRcvBuf, boolean tcpNoDelay) {
+        boolean replicatedOnly, boolean autoCloseServerCursor, boolean lazyExec, int sockSndBuf, int sockRcvBuf, boolean tcpNoDelay) {
         this.host = host;
         this.port = port;
         this.distributedJoins = distributedJoins;
@@ -154,6 +158,7 @@ public class JdbcThinTcpIo {
         this.collocated = collocated;
         this.replicatedOnly = replicatedOnly;
         this.autoCloseServerCursor = autoCloseServerCursor;
+        this.lazyExec = lazyExec;
         this.sockSndBuf = sockSndBuf;
         this.sockRcvBuf = sockRcvBuf;
         this.tcpNoDelay = tcpNoDelay;
@@ -210,6 +215,7 @@ public class JdbcThinTcpIo {
         writer.writeBoolean(collocated);
         writer.writeBoolean(replicatedOnly);
         writer.writeBoolean(autoCloseServerCursor);
+        writer.writeBoolean(lazyExec);
 
         send(writer.array());
 
@@ -536,5 +542,12 @@ public class JdbcThinTcpIo {
      */
     IgniteProductVersion igniteVersion() {
         return igniteVer;
+    }
+
+    /**
+     * @return Lazy query execution flag.
+     */
+    public boolean lazy() {
+        return lazyExec;
     }
 }

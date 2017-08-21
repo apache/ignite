@@ -258,9 +258,10 @@ public class SqlListenerNioListener extends GridNioServerListenerAdapter<byte[]>
             boolean collocated = reader.readBoolean();
             boolean replicatedOnly = reader.readBoolean();
             boolean autoCloseCursors = reader.readBoolean();
+            boolean lazyExec = reader.readBoolean();
 
             SqlListenerRequestHandler handler = new JdbcRequestHandler(ctx, busyLock, maxCursors, distributedJoins,
-                enforceJoinOrder, collocated, replicatedOnly, autoCloseCursors);
+                enforceJoinOrder, collocated, replicatedOnly, autoCloseCursors, lazyExec);
 
             SqlListenerMessageParser parser = new JdbcMessageParser(ctx);
 
