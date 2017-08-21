@@ -721,7 +721,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** {@inheritDoc} */
     @Override public void beforeExchange(GridDhtPartitionsExchangeFuture fut) throws IgniteCheckedException {
-        DiscoveryEvent discoEvt = fut.discoveryEvent();
+        DiscoveryEvent discoEvt = fut.firstEvent();
 
         boolean joinEvt = discoEvt.type() == EventType.EVT_NODE_JOINED;
 
@@ -737,7 +737,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         if (cctx.kernalContext().query().moduleEnabled()) {
             for (GridCacheContext cacheCtx : (Collection<GridCacheContext>)cctx.cacheContexts()) {
-                if (cacheCtx.startTopologyVersion().equals(fut.topologyVersion()) &&
+                if (cacheCtx.startTopologyVersion().equals(fut.initialVersion()) &&
                     !cctx.pageStore().hasIndexStore(cacheCtx.groupId()) && cacheCtx.affinityNode()) {
                     final int cacheId = cacheCtx.cacheId();
 
@@ -1558,6 +1558,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                     long partMetaId = pageMem.partitionMetaPageId(grpId, i);
                     long partMetaPage = pageMem.acquirePage(grpId, partMetaId);
+
                     try {
                         long pageAddr = pageMem.writeLock(grpId, partMetaId, partMetaPage);
 
@@ -1622,6 +1623,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /**
      * @param cacheCtx Cache context to apply an update.
      * @param dataEntry Data entry to apply.
+     * @throws IgniteCheckedException If failed to restore.
      */
     private void applyUpdate(GridCacheContext cacheCtx, DataEntry dataEntry) throws IgniteCheckedException {
         int partId = dataEntry.partitionId();

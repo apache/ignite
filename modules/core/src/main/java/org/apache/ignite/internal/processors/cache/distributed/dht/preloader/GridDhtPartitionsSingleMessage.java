@@ -17,12 +17,14 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
+import java.util.Collection;
 import java.util.Map;
 import java.util.HashMap;
 import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.io.Externalizable;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.GridDirectMap;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -88,6 +90,16 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
     @GridDirectTransient
     private transient boolean compress;
 
+    /** */
+    @GridDirectCollection(Integer.class)
+    private Collection<Integer> grpsAffRequest;
+
+    /**
+     * Exchange finish message, sent to new coordinator when it tries to
+     * restore state after previous coordinator failed during exchange.
+     */
+    private GridDhtPartitionsFullMessage finishMsg;
+
     /**
      * Required by {@link Externalizable}.
      */
@@ -109,6 +121,34 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
 
         this.client = client;
         this.compress = compress;
+    }
+
+    /**
+     * @param finishMsg Exchange finish message (used to restore exchange state on new coordinator).
+     */
+    void finishMessage(GridDhtPartitionsFullMessage finishMsg) {
+        this.finishMsg = finishMsg;
+    }
+
+    /**
+     * @return Exchange finish message (used to restore exchange state on new coordinator).
+     */
+    GridDhtPartitionsFullMessage finishMessage() {
+        return finishMsg;
+    }
+
+    /**
+     * @param grpsAffRequest Cache groups to get affinity for (affinity is requested when node joins cluster).
+     */
+    void cacheGroupsAffinityRequest(Collection<Integer> grpsAffRequest) {
+        this.grpsAffRequest = grpsAffRequest;
+    }
+
+    /**
+     * @return Cache groups to get affinity for (affinity is requested when node joins cluster).
+     */
+    @Nullable public Collection<Integer> cacheGroupsAffinityRequest() {
+        return grpsAffRequest;
     }
 
     /** {@inheritDoc} */
@@ -374,18 +414,30 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
                 writer.incrementState();
 
             case 8:
-                if (!writer.writeByteArray("partCntrsBytes", partCntrsBytes))
+                if (!writer.writeMessage("finishMsg", finishMsg))
                     return false;
 
                 writer.incrementState();
 
             case 9:
-                if (!writer.writeByteArray("partHistCntrsBytes", partHistCntrsBytes))
+                if (!writer.writeCollection("grpsAffRequest", grpsAffRequest, MessageCollectionItemType.INT))
                     return false;
 
                 writer.incrementState();
 
             case 10:
+                if (!writer.writeByteArray("partCntrsBytes", partCntrsBytes))
+                    return false;
+
+                writer.incrementState();
+
+            case 11:
+                if (!writer.writeByteArray("partHistCntrsBytes", partHistCntrsBytes))
+                    return false;
+
+                writer.incrementState();
+
+            case 12:
                 if (!writer.writeByteArray("partsBytes", partsBytes))
                     return false;
 
@@ -432,7 +484,7 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
                 reader.incrementState();
 
             case 8:
-                partCntrsBytes = reader.readByteArray("partCntrsBytes");
+                finishMsg = reader.readMessage("finishMsg");
 
                 if (!reader.isLastRead())
                     return false;
@@ -440,7 +492,7 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
                 reader.incrementState();
 
             case 9:
-                partHistCntrsBytes = reader.readByteArray("partHistCntrsBytes");
+                grpsAffRequest = reader.readCollection("grpsAffRequest", MessageCollectionItemType.INT);
 
                 if (!reader.isLastRead())
                     return false;
@@ -448,6 +500,22 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
                 reader.incrementState();
 
             case 10:
+                partCntrsBytes = reader.readByteArray("partCntrsBytes");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 11:
+                partHistCntrsBytes = reader.readByteArray("partHistCntrsBytes");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 12:
                 partsBytes = reader.readByteArray("partsBytes");
 
                 if (!reader.isLastRead())
@@ -467,7 +535,7 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 11;
+        return 13;
     }
 
     /** {@inheritDoc} */

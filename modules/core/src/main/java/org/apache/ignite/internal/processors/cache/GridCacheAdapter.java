@@ -3328,8 +3328,10 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         try {
             KeyCacheObject cacheKey = ctx.toCacheKeyObject(key);
 
-            GridCacheEntryEx e = entry0(cacheKey, ctx.discovery().topologyVersionEx(),
-                false, false);
+            GridCacheEntryEx e = entry0(cacheKey,
+                ctx.shared().exchange().readyAffinityVersion(),
+                false,
+                false);
 
             if (e == null)
                 return false;
@@ -5078,7 +5080,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 return op(tx, (AffinityTopologyVersion)null);
 
             // Tx needs affinity for entry creation, wait when affinity is ready to avoid blocking inside async operation.
-            final AffinityTopologyVersion topVer = ctx.shared().exchange().topologyVersion();
+            final AffinityTopologyVersion topVer = ctx.shared().exchange().readyAffinityVersion();
 
             IgniteInternalFuture<?> topFut = ctx.shared().exchange().affinityReadyFuture(topVer);
 

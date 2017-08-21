@@ -362,11 +362,11 @@ public abstract class IgniteCachePrimaryNodeFailureRecoveryAbstractTest extends 
 
         Transaction tx = txs.txStart(optimistic ? OPTIMISTIC : PESSIMISTIC, REPEATABLE_READ);
 
-        log.info("Put key1: " + key1);
+        log.info("Put key1 [key1=" + key1 + ", nodes=" + U.nodeIds(aff.mapKeyToPrimaryAndBackups(key1)) + ']');
 
         cache0.put(key1, key1);
 
-        log.info("Put key2: " + key2);
+        log.info("Put key2 [key2=" + key2 + ", nodes=" + U.nodeIds(aff.mapKeyToPrimaryAndBackups(key2)) + ']');
 
         cache0.put(key2, key2);
 

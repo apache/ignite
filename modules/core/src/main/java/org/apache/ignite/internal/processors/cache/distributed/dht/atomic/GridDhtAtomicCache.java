@@ -61,6 +61,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridCacheUpdateAtomicResult;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
@@ -1754,8 +1755,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         GridDhtAtomicAbstractUpdateFuture dhtFut = null;
 
-        boolean remap = false;
-
         IgniteCacheExpiryPolicy expiry = null;
 
         ctx.shared().database().checkpointReadLock();
@@ -1783,21 +1782,27 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         return;
                     }
 
+                    boolean remap = false;
+
                     // Do not check topology version if topology was locked on near node by
                     // external transaction or explicit lock.
-                    if (req.topologyLocked() || !needRemap(req.topologyVersion(), top.topologyVersion())) {
+                    if (!req.topologyLocked()) {
+                        // Can not wait for topology future since it will break
+                        // GridNearAtomicCheckUpdateRequest processing.
+                        remap = !top.topologyVersionFuture().exchangeDone() ||
+                            needRemap(req.topologyVersion(), top.readyTopologyVersion());
+                    }
+
+                    if (!remap) {
                         DhtAtomicUpdateResult updRes = update(node, locked, req, res);
 
                         dhtFut = updRes.dhtFuture();
                         deleted = updRes.deleted();
                         expiry = updRes.expiryPolicy();
                     }
-                    else {
+                    else
                         // Should remap all keys.
-                        remap = true;
-
-                        res.remapTopologyVersion(top.topologyVersion());
-                    }
+                        res.remapTopologyVersion(top.lastTopologyChangeVersion());
                 }
                 finally {
                     top.readUnlock();
@@ -1831,9 +1836,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             if (log.isDebugEnabled())
                 log.debug("Caught invalid partition exception for cache entry (will remap update request): " + req);
 
-            remap = true;
-
-            res.remapTopologyVersion(ctx.topology().topologyVersion());
+            res.remapTopologyVersion(ctx.topology().lastTopologyChangeVersion());
         }
         catch (Throwable e) {
             // At least RuntimeException can be thrown by the code above when GridCacheContext is cleaned and there is
@@ -1853,7 +1856,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             ctx.shared().database().checkpointReadUnlock();
         }
 
-        if (remap) {
+        if (res.remapTopologyVersion() != null) {
             assert dhtFut == null;
 
             completionCb.apply(req, res);
@@ -1891,7 +1894,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         boolean hasNear = req.nearCache();
 
         // Assign next version for update inside entries lock.
-        GridCacheVersion ver = ctx.versions().next(top.topologyVersion());
+        GridCacheVersion ver = ctx.versions().next(top.readyTopologyVersion());
 
         if (hasNear)
             res.nearVersion(ver);
@@ -3246,7 +3249,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     }
                 }
                 catch (NodeStoppingException e){
-                    U.error(log, "Failed to update key on backup (local node is stopping):" + key, e);
+                    U.warn(log, "Failed to update key on backup (local node is stopping): " + key);
 
                     return;
                 }
