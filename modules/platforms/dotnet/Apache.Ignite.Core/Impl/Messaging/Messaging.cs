@@ -29,13 +29,12 @@ namespace Apache.Ignite.Core.Impl.Messaging
     using Apache.Ignite.Core.Impl.Collections;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Resource;
-    using Apache.Ignite.Core.Impl.Unmanaged;
     using Apache.Ignite.Core.Messaging;
 
     /// <summary>
     /// Messaging functionality.
     /// </summary>
-    internal class Messaging : PlatformTarget, IMessaging
+    internal class Messaging : PlatformTargetAdapter, IMessaging
     {
         /// <summary>
         /// Opcodes.
@@ -67,10 +66,9 @@ namespace Apache.Ignite.Core.Impl.Messaging
         /// Initializes a new instance of the <see cref="Messaging" /> class.
         /// </summary>
         /// <param name="target">Target.</param>
-        /// <param name="marsh">Marshaller.</param>
         /// <param name="prj">Cluster group.</param>
-        public Messaging(IUnmanagedTarget target, Marshaller marsh, IClusterGroup prj)
-            : base(target, marsh)
+        public Messaging(IPlatformTargetInternal target, IClusterGroup prj)
+            : base(target)
         {
             Debug.Assert(prj != null);
 
@@ -102,7 +100,7 @@ namespace Apache.Ignite.Core.Impl.Messaging
             {
                 writer.Write(topic);
 
-                WriteEnumerable(writer, messages.OfType<object>());
+                writer.WriteEnumerable(messages.OfType<object>());
             });
         }
 

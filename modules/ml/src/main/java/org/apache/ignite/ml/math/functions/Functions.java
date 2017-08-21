@@ -17,9 +17,8 @@
 
 package org.apache.ignite.ml.math.functions;
 
-import org.apache.ignite.lang.IgniteBiTuple;
-
 import java.util.List;
+import org.apache.ignite.lang.IgniteBiTuple;
 
 /**
  * Compatibility with Apache Mahout.
@@ -87,11 +86,6 @@ public final class Functions {
 
     /** Function that returns {@code a &lt; b ? -1 : a &gt; b ? 1 : 0}. */
     public static final IgniteBiFunction<Double, Double, Double> COMPARE = (a, b) -> a < b ? -1.0 : a > b ? 1.0 : 0.0;
-
-    /** */
-    public  static <A, B, C> IgniteFunction<B, C> curry(IgniteBiFunction<A, B, C> f, A a) {
-        return (IgniteFunction<B, C>)b -> f.apply(a, b);
-    }
 
     /** */
     public static <A, B extends Comparable<B>> IgniteBiTuple<Integer, A> argmin(List<A> args, IgniteFunction<A, B> f) {

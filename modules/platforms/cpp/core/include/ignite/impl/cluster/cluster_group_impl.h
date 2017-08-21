@@ -71,6 +71,21 @@ namespace ignite
                  */
                 SP_ComputeImpl GetCompute();
 
+                /**
+                 * Check if the Ignite grid is active.
+                 *
+                 * @return True if grid is active and false otherwise.
+                 */
+                bool IsActive();
+
+                /**
+                 * Change Ignite grid state to active or inactive.
+                 *
+                 * @param active If true start activation process. If false start
+                 *    deactivation process.
+                 */
+                void SetActive(bool active);
+
             private:
                 IGNITE_NO_COPY_ASSIGNMENT(ClusterGroupImpl);
 

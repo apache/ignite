@@ -25,18 +25,24 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteProductVersion;
 import org.jetbrains.annotations.Nullable;
 
 /**
  *
  */
 public class DiscoCache {
+    /** */
+    private final DiscoveryDataClusterState state;
+
     /** Local node. */
     private final ClusterNode loc;
 
@@ -77,7 +83,15 @@ public class DiscoCache {
     /** Alive nodes. */
     private final Set<UUID> alives = new GridConcurrentHashSet<>();
 
+    /** */
+    private final IgniteProductVersion minNodeVer;
+
+    /** */
+    private final AffinityTopologyVersion topVer;
+
     /**
+     * @param topVer Topology version.
+     * @param state Current cluster state.
      * @param loc Local node.
      * @param rmtNodes Remote nodes.
      * @param allNodes All nodes.
@@ -91,7 +105,10 @@ public class DiscoCache {
      * @param nodeMap Node map.
      * @param alives Alive nodes.
      */
-    DiscoCache(ClusterNode loc,
+    DiscoCache(
+        AffinityTopologyVersion topVer,
+        DiscoveryDataClusterState state,
+        ClusterNode loc,
         List<ClusterNode> rmtNodes,
         List<ClusterNode> allNodes,
         List<ClusterNode> srvNodes,
@@ -103,6 +120,8 @@ public class DiscoCache {
         Map<Integer, List<ClusterNode>> cacheGrpAffNodes,
         Map<UUID, ClusterNode> nodeMap,
         Set<UUID> alives) {
+        this.topVer = topVer;
+        this.state = state;
         this.loc = loc;
         this.rmtNodes = rmtNodes;
         this.allNodes = allNodes;
@@ -115,6 +134,40 @@ public class DiscoCache {
         this.cacheGrpAffNodes = cacheGrpAffNodes;
         this.nodeMap = nodeMap;
         this.alives.addAll(alives);
+
+        IgniteProductVersion minVer = null;
+
+        for (int i = 0; i < allNodes.size(); i++) {
+            ClusterNode node = allNodes.get(i);
+
+            if (minVer == null)
+                minVer = node.version();
+            else if (node.version().compareTo(minVer) < 0)
+                minVer = node.version();
+        }
+
+        minNodeVer = minVer;
+    }
+
+    /**
+     * @return Topology version.
+     */
+    public AffinityTopologyVersion version() {
+        return topVer;
+    }
+
+    /**
+     * @return Minimum node version.
+     */
+    public IgniteProductVersion minimumNodeVersion() {
+        return minNodeVer;
+    }
+
+    /**
+     * @return Current cluster state.
+     */
+    public DiscoveryDataClusterState state() {
+        return state;
     }
 
     /** @return Local node. */
@@ -239,7 +292,7 @@ public class DiscoCache {
      * @param id Node ID.
      * @return Node.
      */
-    public @Nullable ClusterNode node(UUID id) {
+    @Nullable public ClusterNode node(UUID id) {
         return nodeMap.get(id);
     }
 
@@ -262,6 +315,45 @@ public class DiscoCache {
             if (!discovery.alive(alive))
                 alives.remove(alive);
         }
+    }
+
+    /**
+     * @param order Order.
+     * @return Server node instance.
+     */
+    @Nullable public ClusterNode serverNodeByOrder(long order) {
+        int idx = serverNodeBinarySearch(order);
+
+        if (idx >= 0)
+            return srvNodes.get(idx);
+
+        return null;
+    }
+
+    /**
+     * @param order Node order.
+     * @return Node index.
+     */
+    private int serverNodeBinarySearch(long order) {
+        int low = 0;
+        int high = srvNodes.size() - 1;
+
+        while (low <= high) {
+            int mid = (low + high) >>> 1;
+
+            ClusterNode midVal = srvNodes.get(mid);
+
+            int cmp = Long.compare(midVal.order(), order);
+
+            if (cmp < 0)
+                low = mid + 1;
+            else if (cmp > 0)
+                high = mid - 1;
+            else
+                return mid;
+        }
+
+        return -(low + 1);
     }
 
     /**

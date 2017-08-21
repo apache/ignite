@@ -160,6 +160,11 @@ public class PivotedMatrixStorage implements MatrixStorage {
     }
 
     /** {@inheritDoc} */
+    @Override public int storageMode() {
+        return sto.storageMode();
+    }
+
+    /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeObject(sto);
         out.writeObject(rowPivot);

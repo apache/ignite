@@ -27,12 +27,12 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
-import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsAbstractMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -40,8 +40,9 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+
+import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 
 /**
  *
@@ -234,7 +235,7 @@ public class CacheExchangeMessageDuplicatedStateTest extends GridCommonAbstractT
      * @param msg Message.
      */
     private void checkFullMessage(GridDhtPartitionsFullMessage msg) {
-        Map<Integer, Integer> dupPartsData = GridTestUtils.getFieldValue(msg, "dupPartsData");
+        Map<Integer, Integer> dupPartsData = getFieldValue(msg, "dupPartsData");
 
         assertNotNull(dupPartsData);
 
@@ -243,7 +244,8 @@ public class CacheExchangeMessageDuplicatedStateTest extends GridCommonAbstractT
 
         assertFalse(dupPartsData.containsKey(CU.cacheId(AFF3_CACHE1)));
 
-        Map<Integer, Map<Integer, Long>> partCntrs = GridTestUtils.getFieldValue(msg, "partCntrs");
+        Map<Integer, Map<Integer, Long>> partCntrs =
+            getFieldValue(getFieldValue(msg, "partCntrs"), "map");
 
         if (partCntrs != null) {
             for (Map<Integer, Long> cntrs : partCntrs.values())
@@ -255,7 +257,7 @@ public class CacheExchangeMessageDuplicatedStateTest extends GridCommonAbstractT
      * @param msg Message.
      */
     private void checkSingleMessage(GridDhtPartitionsSingleMessage msg) {
-        Map<Integer, Integer> dupPartsData = GridTestUtils.getFieldValue(msg, "dupPartsData");
+        Map<Integer, Integer> dupPartsData = getFieldValue(msg, "dupPartsData");
 
         assertNotNull(dupPartsData);
 
@@ -264,7 +266,7 @@ public class CacheExchangeMessageDuplicatedStateTest extends GridCommonAbstractT
 
         assertFalse(dupPartsData.containsKey(CU.cacheId(AFF3_CACHE1)));
 
-        Map<Integer, Map<Integer, Long>> partCntrs = GridTestUtils.getFieldValue(msg, "partCntrs");
+        Map<Integer, Map<Integer, Long>> partCntrs = getFieldValue(msg, "partCntrs");
 
         if (partCntrs != null) {
             for (Map<Integer, Long> cntrs : partCntrs.values())
@@ -326,6 +328,13 @@ public class CacheExchangeMessageDuplicatedStateTest extends GridCommonAbstractT
         Map<Integer, Integer> dupPartsData,
         GridDhtPartitionsSingleMessage msg)
     {
+        if (!F.isEmpty(msg.cacheGroupsAffinityRequest())) {
+            for (GridDhtPartitionMap map : msg.partitions().values())
+                assertTrue(F.isEmpty(map.map()));
+
+            return;
+        }
+
         int cache1Grp = groupIdForCache(ignite(0), cache1);
         int cache2Grp = groupIdForCache(ignite(0), cache2);
 

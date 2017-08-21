@@ -83,7 +83,7 @@ public class CacheGroupDescriptor {
         this.rcvdFrom = rcvdFrom;
         this.startTopVer = startTopVer;
         this.deploymentId = deploymentId;
-        this.cacheCfg = cacheCfg;
+        this.cacheCfg = new CacheConfiguration<>(cacheCfg);
         this.caches = caches;
     }
 
@@ -194,6 +194,24 @@ public class CacheGroupDescriptor {
      */
     void receivedFromStartVersion(AffinityTopologyVersion rcvdFromVer) {
         this.rcvdFromVer = rcvdFromVer;
+    }
+
+    /**
+     * Method to merge this CacheGroup descriptor with another one.
+     *
+     * @param otherDesc CacheGroup descriptor that must be merged with this one.
+     */
+    void mergeWith(CacheGroupDescriptor otherDesc) {
+        assert otherDesc != null && otherDesc.config() != null: otherDesc;
+
+        CacheConfiguration otherCfg = otherDesc.config();
+
+        cacheCfg.setRebalanceDelay(otherCfg.getRebalanceDelay());
+        cacheCfg.setRebalanceBatchesPrefetchCount(otherCfg.getRebalanceBatchesPrefetchCount());
+        cacheCfg.setRebalanceBatchSize(otherCfg.getRebalanceBatchSize());
+        cacheCfg.setRebalanceOrder(otherCfg.getRebalanceOrder());
+        cacheCfg.setRebalanceThrottle(otherCfg.getRebalanceThrottle());
+        cacheCfg.setRebalanceTimeout(otherCfg.getRebalanceTimeout());
     }
 
     /**

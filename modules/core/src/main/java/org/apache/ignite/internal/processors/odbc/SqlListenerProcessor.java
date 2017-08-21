@@ -67,7 +67,7 @@ public class SqlListenerProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void start(boolean activeOnStart) throws IgniteCheckedException {
+    @Override public void start() throws IgniteCheckedException {
         IgniteConfiguration cfg = ctx.config();
 
         SqlConnectorConfiguration sqlCfg = prepareConfiguration(cfg);
@@ -144,7 +144,8 @@ public class SqlListenerProcessor extends GridProcessorAdapter {
 
                         ctx.ports().registerPort(port, IgnitePortProtocol.TCP, getClass());
 
-                        log.info("SQL connector processor has started on TCP port " + port);
+                        if (log.isInfoEnabled())
+                            log.info("SQL connector processor has started on TCP port " + port);
 
                         lastErr = null;
 

@@ -23,7 +23,8 @@ import org.apache.ignite.ml.Model;
  * Base interface for clusterers.
  */
 public interface Clusterer<P, M extends Model> {
-    /** Cluster given points set into k clusters.
+    /**
+     * Cluster given points set into k clusters.
      *
      * @param points Points set.
      * @param k Clusters count.

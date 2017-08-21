@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.version;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 
 /**
  * Cache version conflict resolver.
@@ -33,6 +34,7 @@ public interface CacheVersionConflictResolver {
      * @throws IgniteCheckedException If failed.
      */
     public <K, V> GridCacheVersionConflictContext<K, V> resolve(
+        CacheObjectValueContext ctx,
         GridCacheVersionedEntryEx<K, V> oldEntry,
         GridCacheVersionedEntryEx<K, V> newEntry,
         boolean atomicVerComparator

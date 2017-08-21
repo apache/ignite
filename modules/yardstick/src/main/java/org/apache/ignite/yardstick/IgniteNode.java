@@ -25,11 +25,13 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSpring;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.eviction.lru.LruEvictionPolicy;
+import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -155,15 +157,23 @@ public class IgniteNode implements BenchmarkServer {
         c.setCommunicationSpi(commSpi);
 
         if (args.getPageSize() != MemoryConfiguration.DFLT_PAGE_SIZE) {
-            MemoryConfiguration dbCfg = c.getMemoryConfiguration();
+            MemoryConfiguration memCfg = c.getMemoryConfiguration();
 
-            if (dbCfg == null) {
-                dbCfg = new MemoryConfiguration();
+            if (memCfg == null) {
+                memCfg = new MemoryConfiguration();
 
-                c.setMemoryConfiguration(dbCfg);
+                c.setMemoryConfiguration(memCfg);
             }
 
-            dbCfg.setPageSize(args.getPageSize());
+            memCfg.setPageSize(args.getPageSize());
+        }
+
+        if (args.persistentStoreEnabled()) {
+            PersistentStoreConfiguration pcCfg = new PersistentStoreConfiguration();
+
+            c.setBinaryConfiguration(new BinaryConfiguration().setCompactFooter(false));
+
+            c.setPersistentStoreConfiguration(pcCfg);
         }
 
         ignite = IgniteSpring.start(c, appCtx);

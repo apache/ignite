@@ -1511,7 +1511,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
 
         assert MAP.equals(binaryObj.type().fieldTypeName("singletonMap"));
 
-        assert OBJ.equals(binaryObj.type().fieldTypeName("asList"));
+        assert COL.equals(binaryObj.type().fieldTypeName("asList"));
         assert OBJ.equals(binaryObj.type().fieldTypeName("asSet"));
         assert OBJ.equals(binaryObj.type().fieldTypeName("asMap"));
         assert OBJ.equals(binaryObj.type().fieldTypeName("asListHint"));

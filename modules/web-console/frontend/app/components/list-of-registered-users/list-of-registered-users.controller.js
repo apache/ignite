@@ -59,7 +59,7 @@ export default class IgniteListOfRegisteredUsersCtrl {
 
             AdminData.becomeUser(user._id)
                 .then(() => User.load())
-                .then(() => $state.go('base.configuration.clusters'))
+                .then(() => $state.go('base.configuration.tabs.advanced.clusters'))
                 .then(() => NotebookData.load());
         };
 
@@ -186,33 +186,35 @@ export default class IgniteListOfRegisteredUsersCtrl {
          */
         const reloadUsers = (params) => {
             AdminData.loadUsers(params)
-                .then((data) => $ctrl.gridOptions.data = data)
                 .then((data) => {
-                    this.gridApi.grid.refresh();
+                    $ctrl.gridOptions.data = data;
 
-                    this.companies = _.values(_.groupBy(data, (b) => b.company.toLowerCase()));
-                    this.countries = _.values(_.groupBy(data, (b) => b.countryCode));
+                    $ctrl.companies = _.values(_.groupBy(data, 'company'));
+                    $ctrl.countries = _.values(_.groupBy(data, 'countryCode'));
 
-                    return data;
+                    $ctrl.adjustHeight(data.length);
                 });
         };
 
-        const filterDates = (sdt, edt) => {
+        const filterDates = _.debounce(() => {
+            const sdt = $ctrl.params.startDate;
+            const edt = $ctrl.params.endDate;
+
             $ctrl.gridOptions.exporterCsvFilename = `web_console_users_${dtFilter(sdt, 'yyyy_MM')}.csv`;
 
             const startDate = Date.UTC(sdt.getFullYear(), sdt.getMonth(), 1);
             const endDate = Date.UTC(edt.getFullYear(), edt.getMonth() + 1, 1);
 
             reloadUsers({ startDate, endDate });
-        };
+        }, 250);
 
-        $scope.$watch(() => $ctrl.params.startDate, (sdt) => filterDates(sdt, $ctrl.params.endDate));
-        $scope.$watch(() => $ctrl.params.endDate, (edt) => filterDates($ctrl.params.startDate, edt));
+        $scope.$watch(() => $ctrl.params.startDate, filterDates);
+        $scope.$watch(() => $ctrl.params.endDate, filterDates);
     }
 
     adjustHeight(rows) {
         // Add header height.
-        const height = Math.min(rows, 20) * 48 + 78;
+        const height = Math.min(rows, 11) * 48 + 78;
 
         this.gridApi.grid.element.css('height', height + 'px');
 
@@ -242,52 +244,6 @@ export default class IgniteListOfRegisteredUsersCtrl {
 
         if (!_.isEqual(ids, this.selected))
             this.selected = ids;
-    }
-
-    _enableColumns(_categories, visible) {
-        _.forEach(_categories, (cat) => {
-            cat.visible = visible;
-
-            _.forEach(this.gridOptions.columnDefs, (col) => {
-                if (col.categoryDisplayName === cat.name)
-                    col.visible = visible;
-            });
-        });
-
-        // Check to all selected columns.
-        this.gridOptions.selectedAll = true;
-        _.forEach(this._selectableColumns(), ({ visible }) => this.gridOptions.selectedAll = visible);
-
-        // Workaround for this.gridApi.grid.refresh() didn't return promise.
-        this.gridApi.grid.processColumnsProcessors(this.gridApi.grid.columns)
-            .then((renderableColumns) => this.gridApi.grid.setVisibleColumns(renderableColumns))
-            .then(() => this.gridApi.grid.redrawInPlace())
-            .then(() => this.gridApi.grid.refreshCanvas(true))
-            .then(() => {
-                if (visible) {
-                    const categoryDisplayName = _.last(_categories).name;
-
-                    const col = _.findLast(this.gridOptions.columnDefs, {categoryDisplayName});
-
-                    this.gridApi.grid.scrollTo(null, col);
-                }
-            });
-    }
-
-    _selectableColumns() {
-        return _.filter(this.gridOptions.categories, (cat) => cat.selectable);
-    }
-
-    toggleColumns(category, visible) {
-        this._enableColumns([category], visible);
-    }
-
-    selectAllColumns() {
-        this._enableColumns(this._selectableColumns(), true);
-    }
-
-    clearAllColumns() {
-        this._enableColumns(this._selectableColumns(), false);
     }
 
     exportCsv() {

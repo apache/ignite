@@ -16,8 +16,8 @@
  */
 
 // Controller for Clusters screen.
-export default ['$rootScope', '$scope', '$http', '$state', '$timeout', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteConfirm', 'IgniteInput', 'IgniteLoading', 'IgniteModelNormalizer', 'IgniteUnsavedChangesGuard', 'IgniteEventGroups', 'DemoInfo', 'IgniteLegacyTable', 'IgniteConfigurationResource', 'IgniteErrorPopover', 'IgniteFormUtils', 'IgniteVersion',
-    function($root, $scope, $http, $state, $timeout, LegacyUtils, Messages, Confirm, Input, Loading, ModelNormalizer, UnsavedChangesGuard, igniteEventGroups, DemoInfo, LegacyTable, Resource, ErrorPopover, FormUtils, Version) {
+export default ['$rootScope', '$scope', '$http', '$state', '$timeout', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteConfirm', 'IgniteInput', 'IgniteLoading', 'IgniteModelNormalizer', 'IgniteUnsavedChangesGuard', 'IgniteEventGroups', 'DemoInfo', 'IgniteLegacyTable', 'IgniteConfigurationResource', 'IgniteErrorPopover', 'IgniteFormUtils', 'IgniteVersion', 'Clusters',
+    function($root, $scope, $http, $state, $timeout, LegacyUtils, Messages, Confirm, Input, Loading, ModelNormalizer, UnsavedChangesGuard, igniteEventGroups, DemoInfo, LegacyTable, Resource, ErrorPopover, FormUtils, Version, Clusters) {
         let __original_value;
 
         this.available = Version.available.bind(Version);
@@ -75,46 +75,7 @@ export default ['$rootScope', '$scope', '$http', '$state', '$timeout', 'IgniteLe
 
         const emptyCluster = {empty: true};
 
-        const blank = {
-            activeOnStart: true,
-            cacheSanityCheckEnabled: true,
-            atomicConfiguration: {},
-            binaryConfiguration: {},
-            cacheKeyConfiguration: [],
-            communication: {},
-            connector: {},
-            deploymentSpi: {
-                URI: {
-                    uriList: [],
-                    scanners: []
-                }
-            },
-            discovery: {
-                Cloud: {
-                    regions: [],
-                    zones: []
-                }
-            },
-            marshaller: {},
-            peerClassLoadingLocalClassPathExclude: [],
-            sslContextFactory: {
-                trustManagers: []
-            },
-            swapSpaceSpi: {},
-            transactionConfiguration: {},
-            collision: {},
-            memoryConfiguration: {
-                memoryPolicies: []
-            },
-            hadoopConfiguration: {
-                nativeLibraryNames: []
-            },
-            serviceConfigurations: [],
-            executorConfiguration: [],
-            sqlConnectorConfiguration: {
-                tcpNoDelay: true
-            }
-        };
+        const blank = Clusters.getBlankCluster();
 
         const pairFields = {
             attributes: {id: 'Attribute', idPrefix: 'Key', searchCol: 'name', valueCol: 'key', dupObjName: 'name', group: 'attributes'},
@@ -306,6 +267,12 @@ export default ['$rootScope', '$scope', '$http', '$state', '$timeout', 'IgniteLe
             {value: null, label: 'Not set'}
         ];
 
+        $scope.affinityFunction = [
+            {value: 'Rendezvous', label: 'Rendezvous'},
+            {value: 'Custom', label: 'Custom'},
+            {value: null, label: 'Default'}
+        ];
+
         $scope.clusters = [];
 
         function _clusterLbl(cluster) {
@@ -472,7 +439,7 @@ export default ['$rootScope', '$scope', '$http', '$state', '$timeout', 'IgniteLe
                 filterModel();
 
                 if (LegacyUtils.getQueryVariable('new'))
-                    $state.go('base.configuration.clusters');
+                    $state.go('base.configuration.tabs.advanced.clusters');
             }
 
             FormUtils.confirmUnsavedChanges($scope.backupItem && $scope.ui.inputForm && $scope.ui.inputForm.$dirty, selectItem);
@@ -713,10 +680,32 @@ export default ['$rootScope', '$scope', '$http', '$state', '$timeout', 'IgniteLe
                 return ErrorPopover.show('defaultMemoryPolicyName', 'Memory policy with that name should be configured', $scope.ui, 'memoryConfiguration');
 
             return _.isNil(_.find(memory.memoryPolicies, (curPlc, curIx) => {
+                if (curPlc.name === 'sysMemPlc') {
+                    ErrorPopover.show('MemoryPolicyName' + curIx, '"sysMemPlc" policy name is reserved for internal use', $scope.ui, 'memoryConfiguration');
+
+                    return true;
+                }
+
                 if (_.find(memory.memoryPolicies, (plc, ix) => curIx > ix && (curPlc.name || 'default') === (plc.name || 'default'))) {
                     ErrorPopover.show('MemoryPolicyName' + curIx, 'Memory policy with that name is already configured', $scope.ui, 'memoryConfiguration');
 
                     return true;
+                }
+
+                if (curPlc.maxSize && curPlc.maxSize < (curPlc.initialSize || 268435456)) {
+                    ErrorPopover.show('MemoryPolicyMaxSize' + curIx, 'Maximum size should be greater than initial size', $scope.ui, 'memoryConfiguration');
+
+                    return true;
+                }
+
+                if (curPlc.maxSize) {
+                    const maxPoolSize = Math.floor(curPlc.maxSize / (memory.pageSize || 2048) / 10);
+
+                    if (maxPoolSize < (curPlc.emptyPagesPoolSize || 100)) {
+                        ErrorPopover.show('MemoryPolicyEmptyPagesPoolSize' + curIx, 'Evicted pages pool size should be lesser than ' + maxPoolSize, $scope.ui, 'memoryConfiguration');
+
+                        return true;
+                    }
                 }
 
                 return false;

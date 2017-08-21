@@ -113,7 +113,6 @@ public class IgniteCacheStartStopLoadTest extends GridCommonAbstractTest {
 
                 cache.put(1, obj);
 
-                weakMap.put(((IgniteCacheProxy)cache).delegate(), Boolean.TRUE);
                 weakMap.put(obj, Boolean.TRUE);
             }
 

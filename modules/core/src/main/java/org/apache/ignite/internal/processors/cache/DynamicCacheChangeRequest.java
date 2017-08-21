@@ -22,7 +22,6 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.QuerySchema;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
@@ -47,6 +46,7 @@ public class DynamicCacheChangeRequest implements Serializable {
     private String cacheName;
 
     /** Cache start configuration. */
+    @GridToStringExclude
     private CacheConfiguration startCfg;
 
     /** Cache type. */
@@ -56,6 +56,7 @@ public class DynamicCacheChangeRequest implements Serializable {
     private UUID initiatingNodeId;
 
     /** Near cache configuration. */
+    @GridToStringExclude
     private NearCacheConfiguration nearCacheCfg;
 
     /** Start only client cache, do not start data nodes. */
@@ -63,6 +64,9 @@ public class DynamicCacheChangeRequest implements Serializable {
 
     /** Stop flag. */
     private boolean stop;
+
+    /** Restart flag. */
+    private boolean restart;
 
     /** Destroy. */
     private boolean destroy;
@@ -79,14 +83,14 @@ public class DynamicCacheChangeRequest implements Serializable {
     /** */
     private UUID rcvdFrom;
 
-    /** Cache state. Set to non-null when global state is changed. */
-    private ClusterState state;
-
     /** Reset lost partitions flag. */
     private boolean resetLostPartitions;
 
     /** Dynamic schema. */
     private QuerySchema schema;
+
+    /** */
+    private transient boolean locallyConfigured;
 
     /**
      * @param reqId Unique request ID.
@@ -96,25 +100,9 @@ public class DynamicCacheChangeRequest implements Serializable {
     public DynamicCacheChangeRequest(UUID reqId, String cacheName, UUID initiatingNodeId) {
         assert reqId != null;
         assert cacheName != null;
-        assert initiatingNodeId != null;
 
         this.reqId = reqId;
         this.cacheName = cacheName;
-        this.initiatingNodeId = initiatingNodeId;
-    }
-
-    /**
-     * @param reqId Unique request ID.
-     * @param state New cluster state.
-     * @param initiatingNodeId Initiating node ID.
-     */
-    public DynamicCacheChangeRequest(UUID reqId, ClusterState state, UUID initiatingNodeId) {
-        assert reqId != null;
-        assert state != null;
-        assert initiatingNodeId != null;
-
-        this.reqId = reqId;
-        this.state = state;
         this.initiatingNodeId = initiatingNodeId;
     }
 
@@ -156,7 +144,12 @@ public class DynamicCacheChangeRequest implements Serializable {
      * @param destroy Destroy flag.
      * @return Cache stop request.
      */
-    static DynamicCacheChangeRequest stopRequest(GridKernalContext ctx, String cacheName, boolean sql, boolean destroy) {
+    public static DynamicCacheChangeRequest stopRequest(
+        GridKernalContext ctx,
+        String cacheName,
+        boolean sql,
+        boolean destroy
+    ) {
         DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(UUID.randomUUID(), cacheName, ctx.localNodeId());
 
         req.sql(sql);
@@ -171,20 +164,6 @@ public class DynamicCacheChangeRequest implements Serializable {
      */
     public UUID requestId() {
         return reqId;
-    }
-
-    /**
-     * @return State.
-     */
-    public ClusterState state() {
-        return state;
-    }
-
-    /**
-     * @return {@code True} if global caches state is changes.
-     */
-    public boolean globalStateChange() {
-        return state != null;
     }
 
     /**
@@ -244,7 +223,7 @@ public class DynamicCacheChangeRequest implements Serializable {
     }
 
     /**
-     *
+     * @return Destroy flag.
      */
     public boolean destroy(){
         return destroy;
@@ -262,6 +241,20 @@ public class DynamicCacheChangeRequest implements Serializable {
      */
     public void stop(boolean stop) {
         this.stop = stop;
+    }
+
+    /**
+     * @return {@code True} if this is a restart request.
+     */
+    public boolean restart() {
+        return restart;
+    }
+
+    /**
+     * @param restart New restart flag.
+     */
+    public void restart(boolean restart) {
+        this.restart = restart;
     }
 
     /**
@@ -397,8 +390,28 @@ public class DynamicCacheChangeRequest implements Serializable {
         this.schema = schema != null ? schema.copy() : null;
     }
 
+    /**
+     * @return Locally configured flag.
+     */
+    public boolean locallyConfigured() {
+        return locallyConfigured;
+    }
+
+    /**
+     * @param locallyConfigured Locally configured flag.
+     */
+    public void locallyConfigured(boolean locallyConfigured) {
+        this.locallyConfigured = locallyConfigured;
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(DynamicCacheChangeRequest.class, this, "cacheName", cacheName());
+        return "DynamicCacheChangeRequest [cacheName=" + cacheName() +
+            ", hasCfg=" + (startCfg != null) +
+            ", nodeId=" + initiatingNodeId +
+            ", clientStartOnly=" + clientStartOnly +
+            ", stop=" + stop +
+            ", destroy=" + destroy +
+            ']';
     }
 }

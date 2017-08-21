@@ -155,7 +155,6 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
             final Ignite node1 = ignite(1);
 
             UUID id0 = node0.cluster().localNode().id();
-            UUID id1 = node1.cluster().localNode().id();
 
             TestRecordingCommunicationSpi.spi(node0).blockMessages(GridNearSingleGetResponse.class, node1.name());
 
@@ -233,9 +232,9 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
 
             IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {
                 @Override public Void call() throws Exception {
-                    try (Transaction tx = node1.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                        IgniteCache<Object, Object> cache = node1.cache(DEFAULT_CACHE_NAME);
+                    IgniteCache<Object, Object> cache = node1.cache(DEFAULT_CACHE_NAME);
 
+                    try (Transaction tx = node1.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                         Integer key = keys.get(idx.getAndIncrement() % keys.size());
 
                         cache.putIfAbsent(key, String.valueOf(key));
@@ -332,9 +331,9 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
 
             fut.add(GridTestUtils.runAsync(new Callable<Void>() {
                 @Override public Void call() throws Exception {
-                    try (Transaction tx = node0.transactions().txStart()) {
-                        IgniteCache<Object, Object> cache = node0.cache(DEFAULT_CACHE_NAME);
+                    IgniteCache<Object, Object> cache = node0.cache(DEFAULT_CACHE_NAME);
 
+                    try (Transaction tx = node0.transactions().txStart()) {
                         key.set(primaryKey(cache));
 
                         cache.putIfAbsent(key.get(), "dummy val");
@@ -351,10 +350,10 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
 
             fut.add(GridTestUtils.runAsync(new Callable<Void>() {
                 @Override public Void call() throws Exception {
+                    IgniteCache<Object, Object> cache = node1.cache(DEFAULT_CACHE_NAME);
+
                     try (Transaction tx = node1.transactions().txStart()) {
                         l1.await();
-
-                        IgniteCache<Object, Object> cache = node1.cache(DEFAULT_CACHE_NAME);
 
                         cache.replace(key.get(), "dummy val2");
 
@@ -431,9 +430,9 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
 
             IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {
                 @Override public Void call() throws Exception {
-                    try (Transaction tx = node1.transactions().txStart()) {
-                        IgniteCache<Object, Object> cache = node1.cache(DEFAULT_CACHE_NAME);
+                    IgniteCache<Object, Object> cache = node1.cache(DEFAULT_CACHE_NAME);
 
+                    try (Transaction tx = node1.transactions().txStart()) {
                         Integer key = keys.get(idx.getAndIncrement());
 
                         cache.getAndPut(key, "new-" + key);

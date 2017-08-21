@@ -17,6 +17,8 @@
 
 // ReSharper disable MemberCanBePrivate.Global
 // ReSharper disable UnusedParameter.Global
+// ReSharper disable UnusedAutoPropertyAccessor.Local
+// ReSharper disable UnusedAutoPropertyAccessor.Global
 #pragma warning disable 618
 namespace Apache.Ignite.Core.Tests
 {
@@ -33,6 +35,7 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Events;
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Events;
+    using Apache.Ignite.Core.Resource;
     using Apache.Ignite.Core.Tests.Compute;
     using NUnit.Framework;
 
@@ -360,14 +363,14 @@ namespace Apache.Ignite.Core.Tests
                 if (i > 3)
                 {
                     // Filter
-                    waitTask = getWaitTask(new EventFilter<IEvent>(e => e.Type == EventType.TaskReduced), new int[0]);
+                    waitTask = getWaitTask(new LocalEventFilter<IEvent>(e => e.Type == EventType.TaskReduced), new int[0]);
 
                     Assert.IsTrue(waitTask.Wait(timeout));
                     Assert.IsInstanceOf(typeof(TaskEvent), waitTask.Result);
                     Assert.AreEqual(EventType.TaskReduced, waitTask.Result.Type);
 
                     // Filter & types
-                    waitTask = getWaitTask(new EventFilter<IEvent>(e => e.Type == EventType.TaskReduced),
+                    waitTask = getWaitTask(new LocalEventFilter<IEvent>(e => e.Type == EventType.TaskReduced),
                         new[] {EventType.TaskReduced});
 
                     Assert.IsTrue(waitTask.Wait(timeout));
@@ -868,7 +871,7 @@ namespace Apache.Ignite.Core.Tests
         /// <returns>New instance of event listener.</returns>
         public static IEventListener<IEvent> GetListener()
         {
-            return new EventFilter<IEvent>(Listen);
+            return new LocalEventFilter<IEvent>(Listen);
         }
 
         /// <summary>
@@ -917,7 +920,7 @@ namespace Apache.Ignite.Core.Tests
     /// Test event filter.
     /// </summary>
     [Serializable]
-    public class EventFilter<T> : IEventFilter<T>, IEventListener<T> where T : IEvent
+    public class LocalEventFilter<T> : IEventFilter<T>, IEventListener<T> where T : IEvent
     {
         /** */
         private readonly Func<T, bool> _invoke;
@@ -926,7 +929,7 @@ namespace Apache.Ignite.Core.Tests
         /// Initializes a new instance of the <see cref="RemoteListenEventFilter"/> class.
         /// </summary>
         /// <param name="invoke">The invoke delegate.</param>
-        public EventFilter(Func<T, bool> invoke)
+        public LocalEventFilter(Func<T, bool> invoke)
         {
             _invoke = invoke;
         }
@@ -960,6 +963,10 @@ namespace Apache.Ignite.Core.Tests
         /** */
         private readonly int _type;
 
+        /** */
+        [InstanceResource]
+        public IIgnite Ignite { get; set; }
+
         public RemoteEventFilter(int type)
         {
             _type = type;
@@ -968,6 +975,8 @@ namespace Apache.Ignite.Core.Tests
         /** <inheritdoc /> */
         public bool Invoke(IEvent evt)
         {
+            Assert.IsNotNull(Ignite);
+
             return evt.Type == _type;
         }
     }

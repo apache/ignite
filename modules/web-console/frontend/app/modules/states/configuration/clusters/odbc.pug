@@ -20,7 +20,7 @@ include /app/helpers/jade/mixins
 -var model = 'backupItem.odbc'
 -var enabled = model + '.odbcEnabled'
 
-.panel.panel-default(ng-if='$ctrl.available(["1.0.0", "2.1.0"])' ng-form=form novalidate)
+.panel.panel-default(ng-show='$ctrl.available(["1.0.0", "2.1.0"])' ng-form=form novalidate)
     .panel-heading(bs-collapse-toggle ng-click=`ui.loadPanel('${form}')`)
         ignite-form-panel-chevron
         label ODBC configuration
@@ -29,7 +29,7 @@ include /app/helpers/jade/mixins
             | #[a(href="https://apacheignite.readme.io/docs/odbc-driver" target="_blank") More info]
         ignite-form-revert
     .panel-collapse(role='tabpanel' bs-collapse-target id=`${form}`)
-        .panel-body(ng-if=`ui.isPanelLoaded('${form}')`)
+        .panel-body(ng-if=`$ctrl.available(["1.0.0", "2.1.0"]) && ui.isPanelLoaded('${form}')`)
             .col-sm-6
                 .settings-row
                     +checkbox('Enabled', enabled, '"odbcEnabled"', 'Flag indicating whether to configure ODBC configuration')
@@ -43,6 +43,17 @@ include /app/helpers/jade/mixins
                             <li>hostname:port_from..port_to - will use provided hostname and port range</li>\
                         </ul>')
                 .settings-row
+                    +number('Send buffer size:', `${model}.socketSendBufferSize`, '"ODBCSocketSendBufferSize"', enabled, '0', '0',
+                        'Socket send buffer size.<br/>\
+                        When set to <b>0</b>, operation system default will be used')
+                .settings-row
+                    +number('Socket receive buffer size:', `${model}.socketReceiveBufferSize`, '"ODBCSocketReceiveBufferSize"', enabled, '0', '0',
+                        'Socket receive buffer size.<br/>\
+                        When set to <b>0</b>, operation system default will be used')
+                .settings-row
                     +number('Maximum open cursors', `${model}.maxOpenCursors`, '"maxOpenCursors"', enabled, '128', '1', 'Maximum number of opened cursors per connection')
+                .settings-row
+                    +number('Pool size:', `${model}.threadPoolSize`, '"ODBCThreadPoolSize"', enabled, 'max(8, availableProcessors)', '1',
+                        'Size of thread pool that is in charge of processing ODBC tasks')
             .col-sm-6
                 +preview-xml-java(model, 'clusterODBC')

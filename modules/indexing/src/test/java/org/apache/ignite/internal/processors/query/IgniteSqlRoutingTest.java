@@ -33,19 +33,26 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
+import java.nio.ByteBuffer;
+import java.sql.Timestamp;
+import java.text.DateFormat;
 import java.text.MessageFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
 
+/** Tests for query partitions derivation. */
 public class IgniteSqlRoutingTest extends GridCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -62,10 +69,10 @@ public class IgniteSqlRoutingTest extends GridCommonAbstractTest {
     /** */
     private static int NODE_COUNT = 4;
 
-    /** broadcast query to ensure events came from all nodes */
+    /** Broadcast query to ensure events came from all nodes. */
     private static String FINAL_QRY = "select count(1) from {0} where name=?";
 
-    /** Param to distinguish the final query event */
+    /** Param to distinguish the final query event. */
     private static String FINAL_QRY_PARAM = "Abracadabra";
 
     /** {@inheritDoc} */
@@ -108,15 +115,19 @@ public class IgniteSqlRoutingTest extends GridCommonAbstractTest {
 
         startGrid(NODE_CLIENT);
 
+        awaitPartitionMapExchange();
+
         fillCaches();
     }
 
+    /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         super.afterTestsStopped();
 
         stopAllGrids();
     }
 
+    /** */
     private CacheConfiguration buildCacheConfiguration(String name) {
         if (name.equals(CACHE_PERSON)) {
             CacheConfiguration ccfg = new CacheConfiguration(CACHE_PERSON);
@@ -176,7 +187,7 @@ public class IgniteSqlRoutingTest extends GridCommonAbstractTest {
         IgniteCache<CallKey, Call> cache = grid(NODE_CLIENT).cache(CACHE_CALL);
 
         List<List<?>> result = runQueryEnsureUnicast(cache,
-                new SqlFieldsQuery("select id, name, duration from Call where personId=100 order by id"), 1);
+            new SqlFieldsQuery("select id, name, duration from Call where personId=100 order by id"), 1);
 
         assertEquals(2, result.size());
 
@@ -189,7 +200,8 @@ public class IgniteSqlRoutingTest extends GridCommonAbstractTest {
         IgniteCache<CallKey, Call> cache = grid(NODE_CLIENT).cache(CACHE_CALL);
 
         List<List<?>> result = runQueryEnsureUnicast(cache,
-                new SqlFieldsQuery("select id, name, duration from Call where personId=? order by id").setArgs(100), 1);
+            new SqlFieldsQuery("select id, name, duration from Call where personId=? order by id")
+            .setArgs(100), 1);
 
         assertEquals(2, result.size());
 
@@ -203,7 +215,7 @@ public class IgniteSqlRoutingTest extends GridCommonAbstractTest {
 
         for (int key : new int[] {0, 250, 500, 750, 1000} ) {
             List<List<?>> result = runQueryEnsureUnicast(cache,
-                    new SqlFieldsQuery("select name, age from Person where _key=?").setArgs(key), 1);
+                new SqlFieldsQuery("select name, age from Person where _key=?").setArgs(key), 1);
 
             assertEquals(1, result.size());
 
@@ -220,8 +232,8 @@ public class IgniteSqlRoutingTest extends GridCommonAbstractTest {
         CallKey callKey = new CallKey(5, 1);
 
         List<List<?>> result = runQueryEnsureUnicast(cache,
-                new SqlFieldsQuery("select name, duration from Call where _key=?")
-                .setArgs(callKey), 1);
+            new SqlFieldsQuery("select name, duration from Call where _key=?")
+            .setArgs(callKey), 1);
 
         assertEquals(1, result.size());
 
@@ -230,7 +242,7 @@ public class IgniteSqlRoutingTest extends GridCommonAbstractTest {
         checkResultsRow(result, 0, call.name, call.duration);
     }
 
-    /** Check group, having, ordering allowed to be unicast requests */
+    /** Check group, having, ordering allowed to be unicast requests. */
     public void testUnicastQueryGroups() throws Exception {
         IgniteCache<CallKey, Call> cache = grid(NODE_CLIENT).cache(CACHE_CALL);
 
@@ -258,8 +270,8 @@ public class IgniteSqlRoutingTest extends GridCommonAbstractTest {
         CallKey callKey = new CallKey(5, 1);
 
         List<List<?>> result = runQueryEnsureUnicast(cache,
-                new SqlFieldsQuery("select name, duration from Call where _key=? and duration=?")
-                        .setArgs(callKey, 100), 1);
+            new SqlFieldsQuery("select name, duration from Call where _key=? and duration=?")
+            .setArgs(callKey, 100), 1);
 
         assertEquals(1, result.size());
 
@@ -276,8 +288,8 @@ public class IgniteSqlRoutingTest extends GridCommonAbstractTest {
         CallKey callKey2 = new CallKey(1000, 1);
 
         List<List<?>> result = runQueryEnsureUnicast(cache,
-                new SqlFieldsQuery("select name, duration from Call where (_key=? and duration=?) or (_key=?)")
-                        .setArgs(callKey1, 100, callKey2), 2);
+            new SqlFieldsQuery("select name, duration from Call where (_key=? and duration=?) or (_key=?)")
+            .setArgs(callKey1, 100, callKey2), 2);
 
         assertEquals(2, result.size());
 
@@ -291,16 +303,178 @@ public class IgniteSqlRoutingTest extends GridCommonAbstractTest {
     }
 
     /** */
+    public void testUnicastQueryKeyTypeConversionParameter() throws Exception {
+        IgniteCache<Integer, Person> cache = grid(NODE_CLIENT).cache(CACHE_PERSON);
+
+        // Pass string argument to expression with integer
+        List<List<?>> result = runQueryEnsureUnicast(cache,
+            new SqlFieldsQuery("select name, age from Person where _key = ?")
+            .setArgs("5"), 1);
+
+        Person person = cache.get(5);
+
+        assertEquals(1, result.size());
+
+        assertEquals(person.name, result.get(0).get(0));
+        assertEquals(person.age, result.get(0).get(1));
+    }
+
+    /** */
+    public void testUnicastQueryKeyTypeConversionConstant() throws Exception {
+        IgniteCache<Integer, Person> cache = grid(NODE_CLIENT).cache(CACHE_PERSON);
+
+        // Use string within expression against integer key
+        List<List<?>> result = runQueryEnsureUnicast(cache,
+            new SqlFieldsQuery("select name, age from Person where _key = '5'"), 1);
+
+        Person person = cache.get(5);
+
+        assertEquals(1, result.size());
+
+        assertEquals(person.name, result.get(0).get(0));
+        assertEquals(person.age, result.get(0).get(1));
+    }
+
+    /** */
+    public void testUnicastQueryAffinityKeyTypeConversionParameter() throws Exception {
+        IgniteCache<CallKey, Call> cache = grid(NODE_CLIENT).cache(CACHE_CALL);
+
+        // Pass string argument to expression with integer
+        List<List<?>> result = runQueryEnsureUnicast(cache,
+            new SqlFieldsQuery("select id, name, duration from Call where personId=? order by id")
+                .setArgs("100"), 1);
+
+        assertEquals(2, result.size());
+
+        checkResultsRow(result, 0, 1, "caller1", 100);
+        checkResultsRow(result, 1, 2, "caller2", 200);
+    }
+
+    /** */
+    public void testUnicastQueryAffinityKeyTypeConversionConstant() throws Exception {
+        IgniteCache<CallKey, Call> cache = grid(NODE_CLIENT).cache(CACHE_CALL);
+
+        // Use string within expression against integer key
+        List<List<?>> result = runQueryEnsureUnicast(cache,
+            new SqlFieldsQuery("select id, name, duration from Call where personId='100' order by id"), 1);
+
+        assertEquals(2, result.size());
+
+        checkResultsRow(result, 0, 1, "caller1", 100);
+        checkResultsRow(result, 1, 2, "caller2", 200);
+    }
+
+    /** */
     public void testBroadcastQuerySelectKeyEqualsOrFieldParameter() throws Exception {
         IgniteCache<CallKey, Call> cache = grid(NODE_CLIENT).cache(CACHE_CALL);
 
         CallKey callKey = new CallKey(5, 1);
 
         List<List<?>> result = runQueryEnsureBroadcast(cache,
-                new SqlFieldsQuery("select name, duration from Call where _key=? or duration=?")
-                        .setArgs(callKey, 100));
+            new SqlFieldsQuery("select name, duration from Call where _key=? or duration=?")
+            .setArgs(callKey, 100));
 
         assertEquals(cache.size() / 2, result.size());
+    }
+
+    /** */
+    public void testUuidKeyAsByteArrayParameter() throws Exception {
+        String cacheName = "uuidCache";
+
+        CacheConfiguration<UUID, UUID> ccfg = new CacheConfiguration<>(cacheName);
+
+        ccfg.setCacheMode(CacheMode.PARTITIONED);
+
+        ccfg.setIndexedTypes(UUID.class, UUID.class);
+
+        IgniteCache<UUID, UUID> cache = grid(NODE_CLIENT).createCache(ccfg);
+
+        try {
+            int count = 10;
+
+            UUID values[] = new UUID[count];
+
+            for (int i = 0; i < count; i++) {
+                UUID val = UUID.randomUUID();
+
+                cache.put(val, val);
+
+                values[i] = val;
+            }
+
+            for (UUID val : values) {
+                byte[] arr = convertUuidToByteArray(val);
+
+                List<List<?>> result = cache.query(new SqlFieldsQuery(
+                    "select _val from UUID where _key = ?").setArgs(arr)).getAll();
+
+                assertEquals(1, result.size());
+                assertEquals(val, result.get(0).get(0));
+            }
+        }
+        finally {
+            cache.destroy();
+        }
+    }
+
+    /** */
+    public void testDateKeyAsTimestampParameter() throws Exception {
+        String cacheName = "dateCache";
+
+        CacheConfiguration<Date, Date> ccfg = new CacheConfiguration<>(cacheName);
+
+        ccfg.setCacheMode(CacheMode.PARTITIONED);
+
+        ccfg.setIndexedTypes(Date.class, Date.class);
+
+        IgniteCache<Date, Date> cache = grid(NODE_CLIENT).createCache(ccfg);
+
+        try {
+            int count = 30;
+
+            Date values[] = new Date[count];
+
+            DateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
+
+            for (int i = 0; i < count; i++) {
+                Date val = dateFormat.parse(String.format("%02d/06/2017", i + 1));
+
+                cache.put(val, val);
+
+                values[i] = val;
+            }
+
+            for (Date val : values) {
+                Timestamp ts = new Timestamp(val.getTime());
+
+                List<List<?>> result = cache.query(new SqlFieldsQuery(
+                    "select _val from Date where _key = ?").setArgs(ts)).getAll();
+
+                assertEquals(1, result.size());
+                assertEquals(val, result.get(0).get(0));
+            }
+        }
+        finally {
+            cache.destroy();
+        }
+    }
+
+    /**
+     * Convert UUID to byte[].
+     *
+     * @param val UUID to convert.
+     * @return Result.
+     */
+    private byte[] convertUuidToByteArray(UUID val) {
+        assert val != null;
+
+        ByteBuffer bb = ByteBuffer.wrap(new byte[16]);
+
+        bb.putLong(val.getMostSignificantBits());
+
+        bb.putLong(val.getLeastSignificantBits());
+
+        return bb.array();
     }
 
     /** */
@@ -335,15 +509,15 @@ public class IgniteSqlRoutingTest extends GridCommonAbstractTest {
             assertEquals(expected[col], row.get(col));
     }
 
-    /** Run query and check that only one node did generate 'query executed' event for it */
+    /** Run query and check that only one node did generate 'query executed' event for it. */
     private List<List<?>> runQueryEnsureUnicast(IgniteCache<?,?> cache, SqlFieldsQuery qry, int nodeCnt) throws Exception {
         try (EventCounter evtCounter = new EventCounter(nodeCnt)) {
             List<List<?>> result = cache.query(qry).getAll();
 
             // do broadcast 'marker' query to ensure that we received all events from previous qry
             cache.query(new SqlFieldsQuery(
-                    MessageFormat.format(FINAL_QRY, cache.getName()))
-                    .setArgs(FINAL_QRY_PARAM)).getAll();
+                MessageFormat.format(FINAL_QRY, cache.getName()))
+                .setArgs(FINAL_QRY_PARAM)).getAll();
 
             // wait for all events from 'marker' query
             evtCounter.await();
@@ -353,6 +527,7 @@ public class IgniteSqlRoutingTest extends GridCommonAbstractTest {
         }
     }
 
+    /** */
     private List<List<?>> runQueryEnsureBroadcast(IgniteCache<?, ?> cache, SqlFieldsQuery qry) throws Exception {
         final CountDownLatch execLatch = new CountDownLatch(NODE_COUNT);
 
@@ -492,7 +667,7 @@ public class IgniteSqlRoutingTest extends GridCommonAbstractTest {
         private int id;
 
         /** */
-        public CallKey(int personId, int id) {
+        private CallKey(int personId, int id) {
             this.personId = personId;
             this.id = id;
         }

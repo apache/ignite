@@ -45,7 +45,7 @@ public class SplitForwardPageRecord extends PageDeltaRecord {
     private int cnt;
 
     /**
-     * @param cacheId Cache ID.
+     * @param grpId Cache group ID.
      * @param pageId Real forward page ID.
      * @param fwdId Virtual forward page ID.
      * @param ioType IO Type.
@@ -55,7 +55,7 @@ public class SplitForwardPageRecord extends PageDeltaRecord {
      * @param cnt Initial elements count in the page being split.
      */
     public SplitForwardPageRecord(
-        int cacheId,
+        int grpId,
         long pageId,
         long fwdId,
         int ioType,
@@ -64,7 +64,7 @@ public class SplitForwardPageRecord extends PageDeltaRecord {
         int mid,
         int cnt
     ) {
-        super(cacheId, pageId);
+        super(grpId, pageId);
 
         this.fwdId = fwdId;
 

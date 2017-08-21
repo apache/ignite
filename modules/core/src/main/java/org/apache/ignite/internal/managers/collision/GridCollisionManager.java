@@ -47,7 +47,7 @@ public class GridCollisionManager extends GridManagerAdapter<CollisionSpi> {
     }
 
     /** {@inheritDoc} */
-    @Override public void start(boolean activeOnStart) throws IgniteCheckedException {
+    @Override public void start() throws IgniteCheckedException {
         startSpi();
 
         if (enabled()) {

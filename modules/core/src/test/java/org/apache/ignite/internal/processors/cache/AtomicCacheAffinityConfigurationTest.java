@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteAtomicLong;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -25,6 +26,7 @@ import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -54,9 +56,11 @@ public class AtomicCacheAffinityConfigurationTest extends GridCommonAbstractTest
             for (int i = 0; i < 3; i++) {
                 IgniteEx igniteEx = grid(i);
 
-                CacheConfiguration cConf = igniteEx.context().cache().cache("ignite-atomics-sys-cache").configuration();
+                IgniteAtomicLong atomic = igniteEx.atomicLong("test", 0, true);
 
-                AffinityFunction aff = cConf.getAffinity();
+                GridCacheContext cctx = GridTestUtils.getFieldValue(atomic, "ctx");
+
+                AffinityFunction aff = cctx.config().getAffinity();
 
                 assertNotNull(aff);
 
@@ -84,9 +88,11 @@ public class AtomicCacheAffinityConfigurationTest extends GridCommonAbstractTest
             for (int i = 0; i < 3; i++) {
                 IgniteEx igniteEx = grid(i);
 
-                CacheConfiguration cConf = igniteEx.context().cache().cache("ignite-atomics-sys-cache").configuration();
+                IgniteAtomicLong atomic = igniteEx.atomicLong("test", 0, true);
 
-                TestAffinityFunction aff = (TestAffinityFunction)cConf.getAffinity();
+                GridCacheContext cctx = GridTestUtils.getFieldValue(atomic, "ctx");
+
+                TestAffinityFunction aff = (TestAffinityFunction) cctx.config().getAffinity();
 
                 assertNotNull(aff);
 
@@ -114,9 +120,13 @@ public class AtomicCacheAffinityConfigurationTest extends GridCommonAbstractTest
             for (int i = 0; i < 3; i++) {
                 IgniteEx igniteEx = grid(i);
 
-                CacheConfiguration cConf = igniteEx.context().cache().cache("ignite-atomics-sys-cache").configuration();
+                IgniteAtomicLong atomic = igniteEx.atomicLong("test", 0, true);
 
-                assertNotNull(cConf.getAffinity());
+                GridCacheContext cctx = GridTestUtils.getFieldValue(atomic, "ctx");
+
+                AffinityFunction aff = cctx.config().getAffinity();
+
+                assertNotNull(aff);
             }
 
             checkAtomics();

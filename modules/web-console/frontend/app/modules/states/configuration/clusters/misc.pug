@@ -36,7 +36,7 @@ include /app/helpers/jade/mixins
                         or IGNITE_HOME environment variable or system property.')
 
                 //- Since ignite 2.0
-                div(ng-show='$ctrl.available("2.0.0")')
+                div(ng-if='$ctrl.available("2.0.0")')
                     .settings-row
                         +text('Consistent ID:', model + '.consistentId', '"ConsistentId"', 'false', 'Input consistent ID', 'Consistent globally unique node ID which survives node restarts')
                     .settings-row
@@ -56,5 +56,9 @@ include /app/helpers/jade/mixins
                 .settings-row
                     +checkbox('Late affinity assignment', model + '.lateAffinityAssignment', '"lateAffinityAssignment"',
                         'With late affinity assignment mode if primary node was changed for some partition this nodes becomes primary only when rebalancing for all assigned primary partitions is finished')
+
+                .settings-row(ng-if='$ctrl.available("2.1.0")')
+                    +number('Long query timeout:', `${model}.longQueryWarningTimeout`, '"LongQueryWarningTimeout"', 'true', '3000', '0',
+                    'Timeout in milliseconds after which long query warning will be printed')
             .col-sm-6
                 +preview-xml-java(model, 'clusterMisc', 'caches')

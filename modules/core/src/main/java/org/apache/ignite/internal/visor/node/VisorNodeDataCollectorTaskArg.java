@@ -40,9 +40,6 @@ public class VisorNodeDataCollectorTaskArg extends VisorDataTransferObject {
     /** Visor unique key to get lost events throttle counter from node local storage. */
     private String evtThrottleCntrKey;
 
-    /** Cache sample size. */
-    private int sample;
-
     /** If {@code true} then collect information about system caches. */
     private boolean sysCaches;
 
@@ -59,20 +56,17 @@ public class VisorNodeDataCollectorTaskArg extends VisorDataTransferObject {
      * @param taskMonitoringEnabled If {@code true} then Visor should collect information about tasks.
      * @param evtOrderKey Event order key, unique for Visor instance.
      * @param evtThrottleCntrKey Event throttle counter key, unique for Visor instance.
-     * @param sample How many entries use in sampling.
      * @param sysCaches If {@code true} then collect information about system caches.
      */
     public VisorNodeDataCollectorTaskArg(
         boolean taskMonitoringEnabled,
         String evtOrderKey,
         String evtThrottleCntrKey,
-        int sample,
         boolean sysCaches
     ) {
         this.taskMonitoringEnabled = taskMonitoringEnabled;
         this.evtOrderKey = evtOrderKey;
         this.evtThrottleCntrKey = evtThrottleCntrKey;
-        this.sample = sample;
         this.sysCaches = sysCaches;
     }
 
@@ -119,20 +113,6 @@ public class VisorNodeDataCollectorTaskArg extends VisorDataTransferObject {
     }
 
     /**
-     * @return Number of items to evaluate cache size.
-     */
-    public int getSample() {
-        return sample;
-    }
-
-    /**
-     * @param sample Number of items to evaluate cache size.
-     */
-    public void setSample(int sample) {
-        this.sample = sample;
-    }
-
-    /**
      * @return {@code true} if Visor should collect metrics for system caches.
      */
     public boolean getSystemCaches() {
@@ -151,7 +131,6 @@ public class VisorNodeDataCollectorTaskArg extends VisorDataTransferObject {
         out.writeBoolean(taskMonitoringEnabled);
         U.writeString(out, evtOrderKey);
         U.writeString(out, evtThrottleCntrKey);
-        out.writeInt(sample);
         out.writeBoolean(sysCaches);
     }
 
@@ -160,7 +139,6 @@ public class VisorNodeDataCollectorTaskArg extends VisorDataTransferObject {
         taskMonitoringEnabled = in.readBoolean();
         evtOrderKey = U.readString(in);
         evtThrottleCntrKey = U.readString(in);
-        sample = in.readInt();
         sysCaches = in.readBoolean();
     }
 

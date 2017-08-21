@@ -78,8 +78,8 @@ public class CacheGroupData implements Serializable {
         Map<String, Integer> caches,
         long flags) {
         assert cacheCfg != null;
-        assert grpId != 0;
-        assert deploymentId != null;
+        assert grpId != 0 : cacheCfg.getName();
+        assert deploymentId != null : cacheCfg.getName();
 
         this.cacheCfg = cacheCfg;
         this.grpName = grpName;

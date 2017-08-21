@@ -20,6 +20,9 @@ ignite-list-of-registered-users {
 }
 
 .list-of-registered-users {
+  .ui-grid-settings--heading {
+    display: flex;
+  }
   & > a {
     display: inline-block;
     margin: 10px;

@@ -134,11 +134,6 @@ public class IgniteTxConfigCacheSelfTest extends GridCommonAbstractTest {
 
         checkImplicitTxSuccess(utilCache);
         checkStartTxSuccess(utilCache);
-
-        final IgniteInternalCache<Object, Object> atomicsCache = getSystemCache(ignite, CU.ATOMICS_CACHE_NAME);
-
-        checkImplicitTxSuccess(atomicsCache);
-        checkStartTxSuccess(atomicsCache);
     }
 
     /**

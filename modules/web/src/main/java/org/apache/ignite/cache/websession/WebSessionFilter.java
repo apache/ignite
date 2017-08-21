@@ -740,7 +740,7 @@ public class WebSessionFilter implements Filter {
     private <T> IgniteCache<String, T> cacheWithExpiryPolicy(final int maxInactiveInteval,
         final IgniteCache<String, T> cache) {
         if (maxInactiveInteval > 0) {
-            long ttl = maxInactiveInteval * 1000;
+            long ttl = maxInactiveInteval * 1000L;
 
             ExpiryPolicy plc = new ModifiedExpiryPolicy(new Duration(MILLISECONDS, ttl));
 
