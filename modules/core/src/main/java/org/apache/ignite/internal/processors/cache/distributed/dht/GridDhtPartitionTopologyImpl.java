@@ -43,6 +43,8 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.ExchangeDiscoveryEvents;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionFullCountersMap;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
@@ -53,7 +55,6 @@ import org.apache.ignite.internal.util.GridPartitionStateMap;
 import org.apache.ignite.internal.util.StripedCompositeReadWriteLock;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
@@ -131,7 +132,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     private final StripedCompositeReadWriteLock lock = new StripedCompositeReadWriteLock(16);
 
     /** Partition update counter. */
-    private Map<Integer, T2<Long, Long>> cntrMap = new HashMap<>();
+    private final CachePartitionFullCountersMap cntrMap;
 
     /** */
     private volatile AffinityTopologyVersion rebalancedTopVer = AffinityTopologyVersion.NONE;
@@ -140,8 +141,10 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
      * @param ctx Cache shared context.
      * @param grp Cache group.
      */
-    public GridDhtPartitionTopologyImpl(GridCacheSharedContext ctx,
-        CacheGroupContext grp) {
+    public GridDhtPartitionTopologyImpl(
+        GridCacheSharedContext ctx,
+        CacheGroupContext grp
+    ) {
         assert ctx != null;
         assert grp != null;
 
@@ -153,6 +156,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         timeLog = ctx.logger(GridDhtPartitionsExchangeFuture.EXCHANGE_LOG);
 
         locParts = new AtomicReferenceArray<>(grp.affinityFunction().partitions());
+
+        cntrMap = new CachePartitionFullCountersMap(locParts.length());
     }
 
     /** {@inheritDoc} */
@@ -713,10 +718,10 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
             locParts.set(p, loc = new GridDhtLocalPartition(ctx, grp, p));
 
-            T2<Long, Long> cntr = cntrMap.get(p);
+            long updCntr = cntrMap.updateCounter(p);
 
-            if (cntr != null)
-                loc.updateCounter(cntr.get2());
+            if (updCntr != 0)
+                loc.updateCounter(updCntr);
 
             if (ctx.pageStore() != null) {
                 try {
@@ -1165,9 +1170,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     @Override public boolean update(
         @Nullable AffinityTopologyVersion exchangeVer,
         GridDhtPartitionFullMap partMap,
-        @Nullable Map<Integer, T2<Long, Long>> cntrMap,
-        Set<Integer> partsToReload
-    ) {
+        @Nullable CachePartitionFullCountersMap incomeCntrMap,
+        Set<Integer> partsToReload) {
         if (log.isDebugEnabled())
             log.debug("Updating full partition map [exchVer=" + exchangeVer + ", parts=" + fullMapString() + ']');
 
@@ -1179,15 +1183,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             if (stopping || !lastTopChangeVer.initialized())
                 return false;
 
-            if (cntrMap != null) {
-                // update local map partition counters
-                for (Map.Entry<Integer, T2<Long, Long>> e : cntrMap.entrySet()) {
-                    T2<Long, Long> cntr = this.cntrMap.get(e.getKey());
-
-                    if (cntr == null || cntr.get2() < e.getValue().get2())
-                        this.cntrMap.put(e.getKey(), e.getValue());
-                }
-
+            if (incomeCntrMap != null) {
                 // update local counters in partitions
                 for (int i = 0; i < locParts.length(); i++) {
                     GridDhtLocalPartition part = locParts.get(i);
@@ -1195,10 +1191,12 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                     if (part == null)
                         continue;
 
-                    T2<Long, Long> cntr = cntrMap.get(part.id());
+                    if (part.state() == OWNING || part.state() == MOVING) {
+                        long updCntr = incomeCntrMap.updateCounter(part.id());
 
-                    if (cntr != null)
-                        part.updateCounter(cntr.get2());
+                        if (updCntr != 0 && updCntr > part.updateCounter())
+                            part.updateCounter(updCntr);
+                    }
                 }
             }
 
@@ -1321,13 +1319,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                         assert locPart != null : grp.cacheOrGroupName();
 
-                        if (cntrMap != null) {
-                            T2<Long, Long> cntr = cntrMap.get(p);
-
-                            if (cntr != null && cntr.get2() > locPart.updateCounter())
-                                locPart.updateCounter(cntr.get2());
-                        }
-
                         if (locPart.state() == MOVING) {
                             boolean success = locPart.own();
 
@@ -1346,13 +1337,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                             locPart.moving();
 
                             changed = true;
-                        }
-
-                        if (cntrMap != null) {
-                            T2<Long, Long> cntr = cntrMap.get(p);
-
-                            if (cntr != null && cntr.get2() > locPart.updateCounter())
-                                locPart.updateCounter(cntr.get2());
                         }
                     }
                     else if (state == RENTING && partsToReload.contains(p)) {
@@ -1403,7 +1387,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
-    @Override public void applyUpdateCounters(Map<Integer, T2<Long, Long>> cntrMap) {
+    @Override public void collectUpdateCounters(CachePartitionPartialCountersMap cntrMap) {
         assert cntrMap != null;
 
         long now = U.currentTimeMillis();
@@ -1422,12 +1406,40 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             if (stopping)
                 return;
 
-            for (Map.Entry<Integer, T2<Long, Long>> e : cntrMap.entrySet()) {
-                T2<Long, Long> cntr = this.cntrMap.get(e.getKey());
+            for (int i = 0; i < cntrMap.size(); i++) {
+                int pId = cntrMap.partitionAt(i);
 
-                if (cntr == null || cntr.get2() < e.getValue().get2())
-                    this.cntrMap.put(e.getKey(), e.getValue());
+                long initialUpdateCntr = cntrMap.initialUpdateCounterAt(i);
+                long updateCntr = cntrMap.updateCounterAt(i);
+
+                if (this.cntrMap.updateCounter(pId) < updateCntr) {
+                    this.cntrMap.initialUpdateCounter(pId, initialUpdateCntr);
+                    this.cntrMap.updateCounter(pId, updateCntr);
+                }
             }
+        }
+        finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void applyUpdateCounters() {
+        long now = U.currentTimeMillis();
+
+        lock.writeLock().lock();
+
+        try {
+            long acquired = U.currentTimeMillis();
+
+            if (acquired - now >= 100) {
+                if (timeLog.isInfoEnabled())
+                    timeLog.info("Waited too long to acquire topology write lock " +
+                        "[cache=" + grp.groupId() + ", waitTime=" + (acquired - now) + ']');
+            }
+
+            if (stopping)
+                return;
 
             for (int i = 0; i < locParts.length(); i++) {
                 GridDhtLocalPartition part = locParts.get(i);
@@ -1435,12 +1447,14 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 if (part == null)
                     continue;
 
-                T2<Long, Long> cntr = cntrMap.get(part.id());
+                long updCntr = cntrMap.updateCounter(part.id());
 
-                if (cntr != null && cntr.get2() > part.updateCounter())
-                    part.updateCounter(cntr.get2());
-                else if (part.updateCounter() > 0)
-                    this.cntrMap.put(part.id(), new T2<>(part.initialUpdateCounter(), part.updateCounter()));
+                if (updCntr > part.updateCounter())
+                    part.updateCounter(updCntr);
+                else if (part.updateCounter() > 0) {
+                    cntrMap.initialUpdateCounter(part.id(), part.initialUpdateCounter());
+                    cntrMap.updateCounter(part.id(), part.updateCounter());
+                }
             }
         }
         finally {
@@ -2169,26 +2183,32 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
-    @Override public Map<Integer, T2<Long, Long>> updateCounters(boolean skipZeros) {
+    @Override public CachePartitionFullCountersMap fullUpdateCounters() {
         lock.readLock().lock();
 
         try {
-            Map<Integer, T2<Long, Long>> res;
+            return new CachePartitionFullCountersMap(cntrMap);
+        }
+        finally {
+            lock.readLock().unlock();
+        }
+    }
 
-            if (skipZeros) {
-                res = U.newHashMap(cntrMap.size());
+    /** {@inheritDoc} */
+    @Override public CachePartitionPartialCountersMap localUpdateCounters(boolean skipZeros) {
+        lock.readLock().lock();
 
-                for (Map.Entry<Integer, T2<Long, Long>> e : cntrMap.entrySet()) {
-                    Long cntr = e.getValue().get2();
+        try {
+            int locPartCnt = 0;
 
-                    if (ZERO.equals(cntr))
-                        continue;
+            for (int i = 0; i < locParts.length(); i++) {
+                GridDhtLocalPartition part = locParts.get(i);
 
-                    res.put(e.getKey(), e.getValue());
-                }
+                if (part != null)
+                    locPartCnt++;
             }
-            else
-                res = new HashMap<>(cntrMap);
+
+            CachePartitionPartialCountersMap res = new CachePartitionPartialCountersMap(locPartCnt);
 
             for (int i = 0; i < locParts.length(); i++) {
                 GridDhtLocalPartition part = locParts.get(i);
@@ -2196,16 +2216,16 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 if (part == null)
                     continue;
 
-                T2<Long, Long> cntr0 = res.get(part.id());
-                Long initCntr = part.initialUpdateCounter();
+                long updCntr = part.updateCounter();
+                long initCntr = part.initialUpdateCounter();
 
-                if (cntr0 == null || initCntr >= cntr0.get1()) {
-                    if (skipZeros && initCntr == 0L && part.updateCounter() == 0L)
-                        continue;
+                if (skipZeros && initCntr == 0L && updCntr == 0L)
+                    continue;
 
-                    res.put(part.id(), new T2<>(initCntr, part.updateCounter()));
-                }
+                res.add(part.id(), initCntr, updCntr);
             }
+
+            res.trim();
 
             return res;
         }
