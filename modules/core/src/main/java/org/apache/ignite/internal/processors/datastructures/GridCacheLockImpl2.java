@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.datastructures;
 
+import java.util.ArrayDeque;
 import java.util.LinkedList;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -41,7 +42,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteInClosure;
 
-import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
+import static org.apache.ignite.internal.managers.communication.GridIoPolicy.P2P_POOL;
 
 /**
  * Cache reentrant lock implementation based on AbstractQueuedSynchronizer.
@@ -65,6 +66,9 @@ public final class GridCacheLockImpl2 implements GridCacheLockEx2 {
     /** Internal synchronization object. */
     private final LocalSync sync;
 
+    /** */
+    private final boolean fair;
+
     /**
      * Constructor.
      *
@@ -75,7 +79,7 @@ public final class GridCacheLockImpl2 implements GridCacheLockEx2 {
     @SuppressWarnings("unchecked")
     public GridCacheLockImpl2(String name,
         GridCacheInternalKey key,
-        IgniteInternalCache<GridCacheInternalKey, GridCacheLockState2> lockView) {
+        IgniteInternalCache<GridCacheInternalKey, GridCacheLockState2> lockView, boolean fair) {
 
         assert name != null;
         assert key != null;
@@ -85,12 +89,13 @@ public final class GridCacheLockImpl2 implements GridCacheLockEx2 {
         this.key = key;
         this.lockView = lockView;
         this.ctx = lockView.context();
+        this.fair = fair;
 
         log = ctx.logger(getClass());
 
         final UpdateListener lsnr = new UpdateListener();
 
-        sync = new LocalSync(new GlobalSync(ctx.localNodeId(), key, lockView, lsnr, ctx));
+        sync = new LocalSync(new GlobalSync(ctx.localNodeId(), key, lockView, lsnr, ctx), fair);
 
         ctx.io().addCacheHandler(ctx.cacheId(), ReleasedMessage.class,
             new IgniteBiInClosure<UUID, ReleasedMessage>() {
@@ -274,11 +279,11 @@ public final class GridCacheLockImpl2 implements GridCacheLockEx2 {
     }
 
     @Override public boolean isFailoverSafe() {
-        return true;
+        return false;
     }
 
     @Override public boolean isFair() {
-        return true;
+        return false;
     }
 
     /** {@inheritDoc} */
@@ -517,12 +522,11 @@ public final class GridCacheLockImpl2 implements GridCacheLockEx2 {
                                 final UUID nextNode = future.result().get();
 
                                 if (nextNode != null && !nodeId.equals(nextNode))
-                                    ctx.io().send(nextNode, new ReleasedMessage(ctx.cacheId()), SYSTEM_POOL);
+                                    ctx.io().send(nextNode, new ReleasedMessage(ctx.cacheId()), P2P_POOL);
                             }
                         }
-                        catch (IgniteCheckedException ignored) {
-                            ignored.printStackTrace();
-                            // No-op.
+                        catch (IgniteCheckedException e) {
+                            e.printStackTrace();
                         }
                     }
                 });
@@ -550,10 +554,14 @@ public final class GridCacheLockImpl2 implements GridCacheLockEx2 {
         volatile long nextFinish;
 
         /** */
-        public LocalSync(GlobalSync globalSync) {
+        final boolean fair;
+
+        /** */
+        public LocalSync(GlobalSync globalSync, boolean fair) {
             assert globalSync != null;
 
             this.globalSync = globalSync;
+            this.fair = fair;
         }
 
         /** */
@@ -561,7 +569,7 @@ public final class GridCacheLockImpl2 implements GridCacheLockEx2 {
             if (onGlobalLock)
                 return true;
 
-            LinkedList<UUID> nodes = globalSync.forceGet().nodes;
+            ArrayDeque<UUID> nodes = globalSync.forceGet().nodes;
 
             return !(nodes == null || nodes.isEmpty());
         }

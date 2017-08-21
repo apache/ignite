@@ -1224,7 +1224,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         }, name, grpName, SEMAPHORE, null);
     }
 
-    public IgniteLock reentrantLock(final String name, final boolean create) throws IgniteCheckedException {
+    public IgniteLock reentrantLock(final String name, final boolean fair, final boolean create) throws IgniteCheckedException {
         return getAtomic(new AtomicAccessor<GridCacheLockEx2>() {
             @Override public T2<GridCacheLockEx2, AtomicDataStructureValue> get(GridCacheInternalKey key,
                 AtomicDataStructureValue val, IgniteInternalCache cache) throws IgniteCheckedException {
@@ -1242,7 +1242,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
                 AtomicDataStructureValue retVal = (val == null ? new GridCacheLockState2(ctx.discovery().gridStartTime()) : null);
 
-                GridCacheLockEx2 reentrantLock0 = new GridCacheLockImpl2(name, key, cache);
+                GridCacheLockEx2 reentrantLock0 = new GridCacheLockImpl2(name, key, cache, fair);
 
                 return new T2<>(reentrantLock0, retVal);
             }

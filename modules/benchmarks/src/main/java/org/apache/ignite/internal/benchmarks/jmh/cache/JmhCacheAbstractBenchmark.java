@@ -65,7 +65,7 @@ public class JmhCacheAbstractBenchmark extends JmhAbstractBenchmark {
     private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** Default cache name. */
-    private static final String DEFAULT_CACHE_NAME = "default";
+    protected static final String DEFAULT_CACHE_NAME = "default";
 
     /** Target node. */
     protected Ignite node;

@@ -515,7 +515,7 @@ public class IgfsIgniteMock implements IgniteEx {
         return null;
     }
 
-    @Override public IgniteLock reentrantLock(String name, boolean create) throws IgniteException {
+    @Override public IgniteLock reentrantLock(String name, boolean fair, boolean create) throws IgniteException {
         throwUnsupported();
 
         return null;

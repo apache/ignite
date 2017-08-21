@@ -659,7 +659,7 @@ public class IgniteProcessProxy implements IgniteEx {
         throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
-    @Override public IgniteLock reentrantLock(String name, boolean create) throws IgniteException {
+    @Override public IgniteLock reentrantLock(String name, boolean fair, boolean create) throws IgniteException {
         throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 

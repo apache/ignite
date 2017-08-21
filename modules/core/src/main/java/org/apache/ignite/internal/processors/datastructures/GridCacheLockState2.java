@@ -21,6 +21,8 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.util.ArrayDeque;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.UUID;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -39,7 +41,10 @@ public final class GridCacheLockState2 extends VolatileAtomicDataStructureValue 
 
     /** Queue containing nodes that are waiting to acquire this lock, used to ensure fairness. */
     @GridToStringInclude
-    public LinkedList<UUID> nodes;
+    public ArrayDeque<UUID> nodes;
+
+    /** For fast contains. */
+    public HashSet<UUID> nodesSet;
 
     @Override public boolean equals(Object o) {
         if (this == o)
@@ -61,14 +66,16 @@ public final class GridCacheLockState2 extends VolatileAtomicDataStructureValue 
      * @param gridStartTime Cluster start time.
      */
     public GridCacheLockState2(long gridStartTime) {
-        nodes = new LinkedList<>();
+        nodes = new ArrayDeque<>();
+        nodesSet = new HashSet<>();
 
         this.gridStartTime = gridStartTime;
     }
 
     /** Clone constructor. */
     private GridCacheLockState2(GridCacheLockState2 state) {
-        nodes = new LinkedList<>(state.nodes);
+        nodes = new ArrayDeque<>(state.nodes);
+        nodesSet = new HashSet<>(state.nodesSet);
     }
 
     /**
@@ -92,11 +99,16 @@ public final class GridCacheLockState2 extends VolatileAtomicDataStructureValue 
     public LockedModified lockIfFree(UUID nodeId) {
         LockedModified result = new LockedModified(true, false);
 
-        if (nodes == null)
-            nodes = new LinkedList<>();
+        if (nodes == null) {
+            nodes = new ArrayDeque<>();
+        }
+
+        if (nodesSet == null)
+            nodesSet = new HashSet<>();
 
         if (nodes.isEmpty()) {
             nodes.add(nodeId);
+            nodesSet.add(nodeId);
 
             result.modified = true;
 
@@ -115,11 +127,16 @@ public final class GridCacheLockState2 extends VolatileAtomicDataStructureValue 
     public LockedModified lockOrRemove(UUID nodeId) {
         LockedModified result = new LockedModified(true, false);
 
-        if (nodes == null)
-            nodes = new LinkedList<>();
+        if (nodes == null) {
+            nodes = new ArrayDeque<>();
+        }
+
+        if (nodesSet == null)
+            nodesSet = new HashSet<>();
 
         if (nodes.isEmpty()) {
             nodes.add(nodeId);
+            nodesSet.add(nodeId);
 
             result.modified = true;
 
@@ -131,8 +148,10 @@ public final class GridCacheLockState2 extends VolatileAtomicDataStructureValue 
 
         result.locked = false;
 
-        if (nodes.remove(nodeId))
+        if (nodesSet.remove(nodeId)) {
+            nodes.remove(nodeId);
             result.modified = true;
+        }
 
         return result;
     }
@@ -141,11 +160,16 @@ public final class GridCacheLockState2 extends VolatileAtomicDataStructureValue 
     public LockedModified lockOrAdd(UUID nodeId) {
         LockedModified result = new LockedModified(true, false);
 
-        if (nodes == null)
-            nodes = new LinkedList<>();
+        if (nodes == null) {
+            nodes = new ArrayDeque<>();
+        }
+
+        if (nodesSet == null)
+            nodesSet = new HashSet<>();
 
         if (nodes.isEmpty()) {
             nodes.add(nodeId);
+            nodesSet.add(nodeId);
 
             result.modified = true;
 
@@ -155,8 +179,9 @@ public final class GridCacheLockState2 extends VolatileAtomicDataStructureValue 
         if (nodes.getFirst().equals(nodeId))
             return result;
 
-        if (!nodes.contains(nodeId)) {
+        if (!nodesSet.contains(nodeId)) {
             nodes.add(nodeId);
+            nodesSet.add(nodeId);
 
             result.modified = true;
         }
@@ -171,7 +196,7 @@ public final class GridCacheLockState2 extends VolatileAtomicDataStructureValue 
         if (nodes == null || nodes.isEmpty() || !nodes.getFirst().equals(nodeId))
             return null;
 
-        nodes.removeFirst();
+        nodesSet.remove(nodes.removeFirst());
 
         if (nodes.isEmpty())
             return null;
@@ -205,13 +230,16 @@ public final class GridCacheLockState2 extends VolatileAtomicDataStructureValue 
         if (in.readBoolean()) {
             int size = in.readInt();
 
-            nodes = new LinkedList();
+            nodes = new ArrayDeque<>();
 
             for (int i = 0; i < size; i++)
                 nodes.add(U.readUuid(in));
+            nodesSet = new HashSet<>(nodes);
         }
-        else
+        else {
             nodes = null;
+            nodesSet = null;
+        }
     }
 
     /** {@inheritDoc} */
