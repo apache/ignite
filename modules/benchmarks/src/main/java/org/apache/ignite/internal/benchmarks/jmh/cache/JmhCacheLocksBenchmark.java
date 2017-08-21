@@ -61,6 +61,7 @@ import org.openjdk.jmh.annotations.Mode;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
+import org.openjdk.jmh.annotations.TearDown;
 import org.openjdk.jmh.annotations.Warmup;
 import org.openjdk.jmh.infra.Blackhole;
 import org.openjdk.jmh.runner.Runner;
@@ -149,8 +150,14 @@ public class JmhCacheLocksBenchmark extends JmhCacheAbstractBenchmark {
         /** */
         public IgniteLockState2() {
             final int k = countForThread.getAndIncrement() % MAX_NODES;
+
             igniteLock = nodes[k]
-                .reentrantLock(lockKey+"2", true);
+                .reentrantLock(lockKey+"2", fair, true);
+        }
+
+        @TearDown(Level.Trial)
+        public void down() {
+            igniteLock.close();
         }
     }
 
@@ -172,6 +179,41 @@ public class JmhCacheLocksBenchmark extends JmhCacheAbstractBenchmark {
 
         for (int i = 1; i < MAX_NODES; i++)
             nodes[i] = Ignition.start(configuration("node"+(i+147)));
+
+        cache.putIfAbsent(lockKey, "foo");
+    }
+
+
+    @State(Scope.Thread)
+    public static class State3 {
+        /** */
+        public final IgniteCache cache;
+        public final EP ep = new EP();
+
+        /** */
+        public State3() {
+             this.cache = nodes[countForThread.getAndIncrement() % MAX_NODES]
+                .cache(DEFAULT_CACHE_NAME);
+
+             this.cache.putIfAbsent(lockKey, "foo");
+        }
+    }
+
+    public static class EP implements EntryProcessor, Binarylizable {
+        @Override public Object process(MutableEntry entry, Object... objects) throws EntryProcessorException {
+            return new Object();
+        }
+
+        @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
+        }
+
+        @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
+        }
+    }
+
+    @Benchmark
+    public Object invoke(State3 state) {
+        return state.cache.invoke(lockKey, state.ep);
     }
 
     /**
