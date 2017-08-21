@@ -24,7 +24,7 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
+import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -54,12 +54,18 @@ public abstract class IgniteDbAbstractTest extends GridCommonAbstractTest {
      */
     protected abstract boolean indexingEnabled();
 
+    /** */
+    protected boolean client;
+
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         MemoryConfiguration dbCfg = new MemoryConfiguration();
+
+        if (client)
+            cfg.setClientMode(true);
 
         dbCfg.setConcurrencyLevel(Runtime.getRuntime().availableProcessors() * 4);
 
@@ -119,7 +125,8 @@ public abstract class IgniteDbAbstractTest extends GridCommonAbstractTest {
         ccfg5.setRebalanceMode(SYNC);
         ccfg5.setAffinity(new RendezvousAffinityFunction(false, 32));
 
-        cfg.setCacheConfiguration(ccfg, ccfg2, ccfg3, ccfg4, ccfg5);
+        if (!client)
+            cfg.setCacheConfiguration(ccfg, ccfg2, ccfg3, ccfg4, ccfg5);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
@@ -147,6 +154,13 @@ public abstract class IgniteDbAbstractTest extends GridCommonAbstractTest {
         // No-op.
     }
 
+    /**
+     * @return {@code True} if cache operations should be called from client node with near cache.
+     */
+    protected boolean withClientNearCache() {
+        return false;
+    }
+
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
@@ -158,6 +172,18 @@ public abstract class IgniteDbAbstractTest extends GridCommonAbstractTest {
 //        BPlusTree.rnd = new Random(seed);
 
         startGrids(gridCount());
+
+        if (withClientNearCache()) {
+            client = true;
+
+            startGrid(gridCount());
+
+            client = false;
+        }
+
+        assert gridCount() > 0;
+
+        grid(0).active(true);
 
         awaitPartitionMapExchange();
     }

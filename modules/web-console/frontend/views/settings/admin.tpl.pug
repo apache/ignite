@@ -14,11 +14,15 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-.admin-page.row
+.admin-page
     .docs-content
-        header
+        .docs-header
             h1 Admin panel
+
+            button.btn-ignite.btn-ignite--link-dashed-secondary(ng-click='ctrl.changeUserNotifications()')
+                svg.icon-left(ignite-icon='gear')
+                | Set user notifications
         .docs-body
             .row
                 .col-xs-12
-                    ignite-list-of-registered-users(data-options='ctrl.data')
+                    ignite-list-of-registered-users

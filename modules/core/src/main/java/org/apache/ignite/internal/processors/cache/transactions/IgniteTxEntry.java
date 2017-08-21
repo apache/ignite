@@ -327,6 +327,13 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     }
 
     /**
+     * @param ctx Cache context for this tx entry.
+     */
+    public void context(GridCacheContext<?, ?> ctx) {
+        this.ctx = ctx;
+    }
+
+    /**
      * @return Flag indicating if this entry is affinity mapped to the same node.
      */
     public boolean locallyMapped() {

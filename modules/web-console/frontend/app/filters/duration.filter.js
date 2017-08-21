@@ -34,7 +34,7 @@ export default [() => {
         const h = Math.floor((t - d * cd) / ch);
         const m = Math.floor((t - d * cd - h * ch) / cm);
         const s = Math.floor((t - d * cd - h * ch - m * cm) / cs);
-        const ms = t % 1000;
+        const ms = Math.round(t % 1000);
 
         return a(d, 'd') + a(h, 'h') + a(m, 'm') + a(s, 's') + (t < cm ? ms + 'ms' : '');
     };

@@ -1261,7 +1261,6 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     public <T> IgniteFuture<Map<K, EntryProcessorResult<T>>> invokeAllAsync(Set<? extends K> keys,
         EntryProcessor<K, V, T> entryProcessor, Object... args) throws TransactionException;
 
-
     /**
      * Invokes an {@link CacheEntryProcessor} against the set of {@link javax.cache.Cache.Entry}s
      * specified by the set of keys.
@@ -1381,7 +1380,8 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * See {@link CacheConfiguration#getRebalanceDelay()} for more information on how to configure
      * rebalance re-partition delay.
      * <p>
-     * @return Future that will be completed when rebalancing is finished.
+     * @return Future that will be completed when rebalancing is finished. Future.get() returns true
+     *      when rebalance was successfully finished.
      */
     public IgniteFuture<?> rebalance();
 

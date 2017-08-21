@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.util.Collections;
 import java.util.Set;
-import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -28,10 +27,12 @@ import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 
@@ -163,13 +164,13 @@ public class GridCacheClearSelfTest extends GridCommonAbstractTest {
      * @param cacheMode Cache mode.
      * @param near Near cache flag.
      * @param keys Keys to clear.
+     * @throws Exception If failed.
      */
-    private void testClear(CacheMode cacheMode, boolean near, @Nullable Set<Integer> keys) {
+    private void testClear(CacheMode cacheMode, boolean near, @Nullable Set<Integer> keys) throws Exception {
         Ignite client1 = client1();
         Ignite client2 = client2();
 
-        // TODO GG-11220 (use the same name when fixed).
-        String cacheName = "cache-" + UUID.randomUUID();
+        final String cacheName = DEFAULT_CACHE_NAME;
 
         try {
             CacheConfiguration<Integer, Integer> cfg = new CacheConfiguration<>(cacheName);
@@ -183,6 +184,12 @@ public class GridCacheClearSelfTest extends GridCommonAbstractTest {
             IgniteCache<Integer, Integer> cache2 = near ?
                 client2.createNearCache(cacheName, new NearCacheConfiguration<Integer, Integer>()) :
                 client2.<Integer, Integer>cache(cacheName);
+
+            GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                @Override public boolean apply() {
+                    return ignite(0).cluster().forCacheNodes(cacheName).nodes().size() == 5;
+                }
+            }, 5000);
 
             for (int i = 0; i < 10; i++)
                 cache1.put(i, i);

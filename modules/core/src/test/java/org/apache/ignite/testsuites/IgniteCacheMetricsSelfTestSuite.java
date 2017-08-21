@@ -18,6 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
+import org.apache.ignite.internal.processors.cache.CacheGroupsMetricsRebalanceTest;
 import org.apache.ignite.internal.processors.cache.CacheMetricsForClusterGroupSelfTest;
 import org.apache.ignite.internal.processors.cache.OffheapCacheMetricsForClusterGroupSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheAtomicPartitionedMetricsSelfTest;
@@ -30,6 +31,7 @@ import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCa
 import org.apache.ignite.internal.processors.cache.local.GridCacheAtomicLocalMetricsNoStoreSelfTest;
 import org.apache.ignite.internal.processors.cache.local.GridCacheAtomicLocalMetricsSelfTest;
 import org.apache.ignite.internal.processors.cache.local.GridCacheAtomicLocalTckMetricsSelfTestImpl;
+import org.apache.ignite.internal.processors.cache.local.GridCacheLocalAtomicMetricsNoReadThroughSelfTest;
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalMetricsSelfTest;
 
 /**
@@ -44,6 +46,7 @@ public class IgniteCacheMetricsSelfTestSuite extends TestSuite {
         TestSuite suite = new TestSuite("Cache Metrics Test Suite");
 
         suite.addTestSuite(GridCacheLocalMetricsSelfTest.class);
+        suite.addTestSuite(GridCacheLocalAtomicMetricsNoReadThroughSelfTest.class);
         suite.addTestSuite(GridCacheNearMetricsSelfTest.class);
         suite.addTestSuite(GridCacheReplicatedMetricsSelfTest.class);
         suite.addTestSuite(GridCachePartitionedMetricsSelfTest.class);
@@ -56,6 +59,8 @@ public class IgniteCacheMetricsSelfTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheAtomicPartitionedMetricsSelfTest.class);
         suite.addTestSuite(GridCacheAtomicPartitionedTckMetricsSelfTestImpl.class);
         suite.addTestSuite(GridCacheAtomicLocalTckMetricsSelfTestImpl.class);
+
+        suite.addTestSuite(CacheGroupsMetricsRebalanceTest.class);
 
         // Cluster wide metrics.
         suite.addTestSuite(CacheMetricsForClusterGroupSelfTest.class);

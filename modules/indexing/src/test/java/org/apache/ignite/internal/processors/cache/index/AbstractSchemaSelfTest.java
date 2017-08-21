@@ -526,10 +526,9 @@ public class AbstractSchemaSelfTest extends GridCommonAbstractTest {
     /**
      * Destroy SQL cache on given node.
      * @param node Node to create cache on.
-     * @return Created cache.
      */
     protected void destroySqlCache(Ignite node) throws IgniteCheckedException {
-        ((IgniteEx)node).context().cache().dynamicDestroyCache(CACHE_NAME, true, true).get();
+        ((IgniteEx)node).context().cache().dynamicDestroyCache(CACHE_NAME, true, true, false).get();
     }
 
     /**

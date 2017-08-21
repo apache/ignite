@@ -118,7 +118,7 @@ public class GridDhtAtomicUpdateResponse extends GridCacheIdMessage implements G
     /**
      * @param nearEvicted Evicted near cache keys.
      */
-    void nearEvicted(List<KeyCacheObject> nearEvicted) {
+    public void nearEvicted(List<KeyCacheObject> nearEvicted) {
         this.nearEvicted = nearEvicted;
     }
 
@@ -133,10 +133,13 @@ public class GridDhtAtomicUpdateResponse extends GridCacheIdMessage implements G
 
         GridCacheContext cctx = ctx.cacheContext(cacheId);
 
-        prepareMarshalCacheObjects(nearEvicted, cctx);
+        // Can be null if client near cache was removed, in this case assume do not need prepareMarshal.
+        if (cctx != null) {
+            prepareMarshalCacheObjects(nearEvicted, cctx);
 
-        if (errs != null)
-            errs.prepareMarshal(this, cctx);
+            if (errs != null)
+                errs.prepareMarshal(this, cctx);
+        }
     }
 
     /** {@inheritDoc} */

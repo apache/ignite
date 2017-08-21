@@ -18,16 +18,13 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteDiagnosticAware;
-import org.apache.ignite.internal.IgniteDiagnosticMessage;
 import org.apache.ignite.internal.IgniteDiagnosticPrepareContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
@@ -44,7 +41,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheFutureAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.distributed.near.CacheVersionedValue;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetRequest;
@@ -211,7 +208,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
      * @param topVer Topology version.
      */
     @SuppressWarnings("unchecked")
-    private void map(AffinityTopologyVersion topVer) {
+    private void map(final AffinityTopologyVersion topVer) {
         ClusterNode node = mapKeyToNode(topVer);
 
         if (node == null) {
@@ -239,7 +236,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
             final Collection<Integer> invalidParts = fut.invalidPartitions();
 
             if (!F.isEmpty(invalidParts)) {
-                AffinityTopologyVersion updTopVer = cctx.discovery().topologyVersionEx();
+                AffinityTopologyVersion updTopVer = cctx.shared().exchange().readyAffinityVersion();
 
                 assert updTopVer.compareTo(topVer) > 0 : "Got invalid partitions for local node but topology " +
                     "version did not change [topVer=" + topVer + ", updTopVer=" + updTopVer +
@@ -445,7 +442,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                     return true;
                 }
 
-                boolean topStable = cctx.isReplicated() || topVer.equals(cctx.topology().topologyVersion());
+                boolean topStable = cctx.isReplicated() || topVer.equals(cctx.topology().lastTopologyChangeVersion());
 
                 // Entry not found, complete future with null result if topology did not change and there is no store.
                 if (!cctx.readThroughConfigured() && (topStable || partitionOwned(part))) {

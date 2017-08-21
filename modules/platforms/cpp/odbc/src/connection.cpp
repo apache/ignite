@@ -323,13 +323,17 @@ namespace ignite
         {
             bool distributedJoins = false;
             bool enforceJoinOrder = false;
+            bool replicatedOnly = false;
+            bool collocated = false;
             ProtocolVersion protocolVersion;
 
             try
             {
+                protocolVersion = config.GetProtocolVersion();
                 distributedJoins = config.IsDistributedJoins();
                 enforceJoinOrder = config.IsEnforceJoinOrder();
-                protocolVersion = config.GetProtocolVersion();
+                replicatedOnly = config.IsReplicatedOnly();
+                collocated = config.IsCollocated();
             }
             catch (const IgniteError& err)
             {
@@ -340,12 +344,13 @@ namespace ignite
 
             if (!protocolVersion.IsSupported())
             {
-                AddStatusRecord(SqlState::S01S00_INVALID_CONNECTION_STRING_ATTRIBUTE, "Protocol version is not supported: " + protocolVersion.ToString());
+                AddStatusRecord(SqlState::S01S00_INVALID_CONNECTION_STRING_ATTRIBUTE,
+                    "Protocol version is not supported: " + protocolVersion.ToString());
 
                 return SqlResult::AI_ERROR;
             }
 
-            HandshakeRequest req(protocolVersion, distributedJoins, enforceJoinOrder);
+            HandshakeRequest req(protocolVersion, distributedJoins, enforceJoinOrder, replicatedOnly, collocated);
             HandshakeResponse rsp;
 
             try
@@ -371,7 +376,8 @@ namespace ignite
                     constructor << "Additional info: " << rsp.GetError();
 
                 constructor << "Current node Apache Ignite version: " << rsp.GetCurrentVer().ToString() << ", "
-                            << "driver protocol version introduced in version: " << config.GetProtocolVersion().ToString() << ".";
+                            << "driver protocol version introduced in version: "
+                            << config.GetProtocolVersion().ToString() << ".";
 
                 AddStatusRecord(SqlState::S08001_CANNOT_CONNECT, constructor.str());
 

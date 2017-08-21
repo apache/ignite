@@ -146,7 +146,7 @@ public class ClusterProcessor extends GridProcessorAdapter {
             EVT_NODE_FAILED, EVT_NODE_LEFT);
 
         ctx.io().addMessageListener(TOPIC_INTERNAL_DIAGNOSTIC, new GridMessageListener() {
-            @Override public void onMessage(UUID nodeId, Object msg) {
+            @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
                 if (msg instanceof IgniteDiagnosticMessage) {
                     IgniteDiagnosticMessage msg0 = (IgniteDiagnosticMessage)msg;
 
@@ -270,7 +270,6 @@ public class ClusterProcessor extends GridProcessorAdapter {
         dataBag.addNodeSpecificData(CLUSTER_PROC.ordinal(), getDiscoveryData());
     }
 
-
     /**
      * @return Discovery data.
      */
@@ -314,7 +313,7 @@ public class ClusterProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void onKernalStart(boolean activeOnStart) throws IgniteCheckedException {
+    @Override public void onKernalStart(boolean active) throws IgniteCheckedException {
         if (notifyEnabled.get()) {
             try {
                 verChecker = new GridUpdateNotifier(ctx.igniteInstanceName(),
@@ -346,7 +345,10 @@ public class ClusterProcessor extends GridProcessorAdapter {
         if (verChecker != null)
             verChecker.stop();
 
-        ctx.io().removeMessageListener(TOPIC_INTERNAL_DIAGNOSTIC);
+        // Io manager can be null, if invoke stop before create io manager, for example
+        // exception on start.
+        if (ctx.io() != null)
+            ctx.io().removeMessageListener(TOPIC_INTERNAL_DIAGNOSTIC);
     }
 
     /**

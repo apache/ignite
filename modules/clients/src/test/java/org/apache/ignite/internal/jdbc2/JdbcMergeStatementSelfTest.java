@@ -21,6 +21,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Arrays;
 import org.apache.ignite.cache.CachePeekMode;
 
 /**
@@ -142,5 +143,45 @@ public class JdbcMergeStatementSelfTest extends JdbcAbstractDmlStatementSelfTest
         boolean res = stmt.execute(SQL);
 
         assertEquals(false, res);
+    }
+
+    /**
+     * @throws SQLException if failed.
+     */
+    public void testBatch() throws SQLException {
+        prepStmt.setString(1, "p1");
+        prepStmt.setInt(2, 1);
+        prepStmt.setString(3, "John");
+        prepStmt.setString(4, "White");
+        prepStmt.setInt(5, 25);
+        prepStmt.setBytes(6, getBytes("White"));
+
+        prepStmt.setString(7, "p2");
+        prepStmt.setInt(8, 2);
+        prepStmt.setString(9, "Joe");
+        prepStmt.setString(10, "Black");
+        prepStmt.setInt(11, 35);
+        prepStmt.setBytes(12, getBytes("Black"));
+        prepStmt.addBatch();
+
+        prepStmt.setString(1, "p3");
+        prepStmt.setInt(2, 3);
+        prepStmt.setString(3, "Mike");
+        prepStmt.setString(4, "Green");
+        prepStmt.setInt(5, 40);
+        prepStmt.setBytes(6, getBytes("Green"));
+
+        prepStmt.setString(7, "p4");
+        prepStmt.setInt(8, 4);
+        prepStmt.setString(9, "Leah");
+        prepStmt.setString(10, "Grey");
+        prepStmt.setInt(11, 22);
+        prepStmt.setBytes(12, getBytes("Grey"));
+
+        prepStmt.addBatch();
+
+        int[] res = prepStmt.executeBatch();
+
+        assertTrue(Arrays.equals(new int[] {2, 2}, res));
     }
 }

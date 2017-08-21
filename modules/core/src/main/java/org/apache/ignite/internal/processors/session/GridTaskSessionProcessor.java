@@ -49,7 +49,7 @@ public class GridTaskSessionProcessor extends GridProcessorAdapter {
     /**
      * Starts session processor.
      */
-    @Override public void start(boolean activeOnStart) throws IgniteCheckedException {
+    @Override public void start() throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("Session processor started.");
     }

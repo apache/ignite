@@ -320,7 +320,7 @@ export default class IgniteSpringTransformer extends AbstractTransformer {
         const cfg = this.generator.igniteConfiguration(cluster, targetVer, client);
 
         const clientNearCaches = client ? _.filter(cluster.caches, (cache) =>
-            cache.mode === 'PARTITIONED' && _.get(cache, 'clientNearConfiguration.enabled')) : [];
+            cache.cacheMode === 'PARTITIONED' && _.get(cache, 'clientNearConfiguration.enabled')) : [];
 
         return this.igniteConfiguration(cfg, clientNearCaches);
     }

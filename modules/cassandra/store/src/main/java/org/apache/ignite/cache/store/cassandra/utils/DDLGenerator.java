@@ -35,9 +35,12 @@ public class DDLGenerator {
         if (args == null || args.length == 0)
             return;
 
+        boolean success = true;
+
         for (String arg : args) {
             File file = new File(arg);
             if (!file.isFile()) {
+                success = false;
                 System.out.println("-------------------------------------------------------------");
                 System.out.println("Incorrect file specified: " + arg);
                 System.out.println("-------------------------------------------------------------");
@@ -66,11 +69,15 @@ public class DDLGenerator {
                 }
             }
             catch (Throwable e) {
+                success = false;
                 System.out.println("-------------------------------------------------------------");
-                System.out.println("Incorrect file specified: " + arg);
+                System.out.println("Invalid file specified: " + arg);
                 System.out.println("-------------------------------------------------------------");
                 e.printStackTrace();
             }
         }
+
+        if (!success)
+            throw new RuntimeException("Failed to process some of the specified files");
     }
 }

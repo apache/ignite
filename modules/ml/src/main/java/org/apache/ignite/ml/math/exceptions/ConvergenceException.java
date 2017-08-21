@@ -38,11 +38,10 @@ public class ConvergenceException extends MathIllegalStateException {
     /**
      * Construct the exception with a specific context and arguments.
      *
-     * @param msg Message pattern providing the specific context of
-     * the error.
+     * @param msg Message pattern providing the specific context of the error.
      * @param args Arguments.
      */
-    public ConvergenceException(String msg, Object ... args) {
+    public ConvergenceException(String msg, Object... args) {
         super(msg, args);
     }
 }

@@ -52,6 +52,9 @@ public class CollectionConfiguration implements Serializable {
     /** Collocated flag. */
     private boolean collocated;
 
+    /** Group name. */
+    private String grpName;
+
     /**
      * @return {@code True} if all items within the same collection will be collocated on the same node.
      */
@@ -153,6 +156,23 @@ public class CollectionConfiguration implements Serializable {
      */
     public CollectionConfiguration setOffHeapMaxMemory(long offHeapMaxMemory) {
         this.offHeapMaxMem = offHeapMaxMemory;
+
+        return this;
+    }
+
+    /**
+     * @return Group name.
+     */
+    public String getGroupName() {
+        return grpName;
+    }
+
+    /**
+     * @param grpName Group name.
+     * @return {@code this} for chaining.
+     */
+    public CollectionConfiguration setGroupName(String grpName) {
+        this.grpName = grpName;
 
         return this;
     }

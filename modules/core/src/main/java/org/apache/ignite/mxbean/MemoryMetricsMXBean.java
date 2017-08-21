@@ -73,6 +73,18 @@ public interface MemoryMetricsMXBean extends MemoryMetrics {
     @MXBeanDescription("Percentage of space that is still free and can be filled in.")
     @Override public float getPagesFillFactor();
 
+    /** {@inheritDoc} */
+    @MXBeanDescription("Number of pages in memory not yet synchronized with persistent storage.")
+    @Override public long getDirtyPages();
+
+    /** {@inheritDoc} */
+    @MXBeanDescription("Rate at which pages in memory are replaced with pages from persistent storage (pages per second).")
+    @Override public float getPagesReplaceRate();
+
+    /** {@inheritDoc} */
+    @MXBeanDescription("Number of pages residing in physical RAM.")
+    @Override public long getPhysicalMemoryPages();
+
     /**
      * Enables memory metrics collection on an Apache Ignite node.
      */

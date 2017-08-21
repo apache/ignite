@@ -52,6 +52,8 @@ namespace ignite
                             PAGE_SIZE_LABEL,
                             DISTRIBUTED_JOINS_CHECK_BOX,
                             ENFORCE_JOIN_ORDER_CHECK_BOX,
+                            REPLICATED_ONLY_CHECK_BOX,
+                            COLLOCATED_CHECK_BOX,
                             PROTOCOL_VERSION_LABEL,
                             PROTOCOL_VERSION_COMBO_BOX,
                             OK_BUTTON,
@@ -136,6 +138,12 @@ namespace ignite
 
                     /** Enforce join order CheckBox. */
                     std::auto_ptr<Window> enforceJoinOrderCheckBox;
+
+                    /** Replicated only CheckBox. */
+                    std::auto_ptr<Window> replicatedOnlyCheckBox;
+
+                    /** Collocated CheckBox. */
+                    std::auto_ptr<Window> collocatedCheckBox;
 
                     /** Protocol version edit field. */
                     std::auto_ptr<Window> protocolVersionLabel;

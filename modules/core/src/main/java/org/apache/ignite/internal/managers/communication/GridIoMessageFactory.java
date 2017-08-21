@@ -34,8 +34,6 @@ import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoBean;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentRequest;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentResponse;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageMessage;
-import org.apache.ignite.internal.pagemem.snapshot.SnapshotFinishedMessage;
-import org.apache.ignite.internal.pagemem.snapshot.SnapshotProgressMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryInfoCollection;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicateContainsValue;
@@ -83,6 +81,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNe
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicUpdateResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.NearCacheUpdates;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.UpdateErrors;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CacheGroupAffinityMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtForceKeysRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtForceKeysResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
@@ -179,12 +178,12 @@ public class GridIoMessageFactory implements MessageFactory {
         Message msg = null;
 
         switch (type) {
-            case -55:
+            // -54 is reserved for SQL.
+            // -46 ... -51 - snapshot messages.
+            case -61:
                 msg = new IgniteDiagnosticMessage();
 
                 break;
-
-            // -54 is reserved for SQL.
 
             case -53:
                 msg = new SchemaOperationStatusMessage();
@@ -216,18 +215,8 @@ public class GridIoMessageFactory implements MessageFactory {
 
                 break;
 
-            case -47:
-                msg = new SnapshotProgressMessage();
-
-                break;
-
-            case -46:
-                msg = new GridChangeGlobalStateMessageResponse();
-
-                break;
-
             case -45:
-                msg = new SnapshotFinishedMessage();
+                msg = new GridChangeGlobalStateMessageResponse();
 
                 break;
 
@@ -881,9 +870,16 @@ public class GridIoMessageFactory implements MessageFactory {
 
                 break;
 
-            // [-3..119] [124..127] [-23..-27] [-36..-55]- this
+            case 128:
+                msg = new CacheGroupAffinityMessage();
+
+                break;
+
+
+            // [-3..119] [124..128] [-23..-27] [-36..-55]- this
             // [120..123] - DR
             // [-4..-22, -30..-35] - SQL
+            // [2048..2053] - Snapshots
             default:
                 if (ext != null) {
                     for (MessageFactory factory : ext) {

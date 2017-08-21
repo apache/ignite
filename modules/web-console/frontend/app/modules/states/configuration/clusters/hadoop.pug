@@ -40,7 +40,7 @@ include /app/helpers/jade/mixins
                     +dropdown('Map reduce planner:', plannerModel + '.kind', '"MapReducePlanner"', 'true', 'Default', '[\
                         {value: "Weighted", label: "Weighted"},\
                         {value: "Custom", label: "Custom"},\
-                        {value: undefined, label: "Default"}\
+                        {value: null, label: "Default"}\
                     ]', 'Implementation of map reduce planner\
                     <ul>\
                         <li>Weighted - Planner which assigns mappers and reducers based on their "weights"</li>\
@@ -78,7 +78,7 @@ include /app/helpers/jade/mixins
                 .settings-row
                     +number('Max task queue size:', model + '.maxTaskQueueSize', '"maxTaskQueueSize"', 'true', '8192', '1', 'Max task queue size')
                 .settings-row
-                    +ignite-form-group(ng-form=form ng-model=`${addresses}`)
+                    +ignite-form-group(ng-form=form ng-model=`${libs}`)
                         ignite-form-field-label
                             | Native libraries
                         ignite-form-group-tooltip

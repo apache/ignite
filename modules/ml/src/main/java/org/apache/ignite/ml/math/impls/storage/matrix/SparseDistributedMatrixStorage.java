@@ -44,7 +44,7 @@ import org.apache.ignite.ml.math.impls.matrix.SparseDistributedMatrix;
  * {@link MatrixStorage} implementation for {@link SparseDistributedMatrix}.
  */
 public class SparseDistributedMatrixStorage extends CacheUtils implements MatrixStorage, StorageConstants {
-    /** Cache name used for all instances of {@link SparseDistributedMatrixStorage}.*/
+    /** Cache name used for all instances of {@link SparseDistributedMatrixStorage}. */
     public static final String ML_CACHE_NAME = "ML_SPARSE_MATRICES_CONTAINER";
     /** Amount of rows in the matrix. */
     private int rows;
@@ -93,7 +93,7 @@ public class SparseDistributedMatrixStorage extends CacheUtils implements Matrix
     }
 
     /**
-     *  Create new ML cache if needed.
+     * Create new ML cache if needed.
      */
     private IgniteCache<IgniteBiTuple<Integer, IgniteUuid>, Map<Integer, Double>> newCache() {
         CacheConfiguration<IgniteBiTuple<Integer, IgniteUuid>, Map<Integer, Double>> cfg = new CacheConfiguration<>();
@@ -116,9 +116,7 @@ public class SparseDistributedMatrixStorage extends CacheUtils implements Matrix
         // Random cache name.
         cfg.setName(ML_CACHE_NAME);
 
-        IgniteCache<IgniteBiTuple<Integer, IgniteUuid>, Map<Integer, Double>> cache = Ignition.localIgnite().getOrCreateCache(cfg);
-
-        return cache;
+        return Ignition.localIgnite().getOrCreateCache(cfg);
     }
 
     /**
@@ -135,14 +133,6 @@ public class SparseDistributedMatrixStorage extends CacheUtils implements Matrix
      */
     public int accessMode() {
         return acsMode;
-    }
-
-    /**
-     *
-     *
-     */
-    public int storageMode() {
-        return stoMode;
     }
 
     /** {@inheritDoc} */
@@ -198,7 +188,6 @@ public class SparseDistributedMatrixStorage extends CacheUtils implements Matrix
             // Local get.
             Map<Integer, Double> map = cache.localPeek(getCacheKey(a), CachePeekMode.PRIMARY);
 
-
             if (map == null) {
                 map = cache.get(getCacheKey(a)); //Remote entry get.
 
@@ -217,7 +206,7 @@ public class SparseDistributedMatrixStorage extends CacheUtils implements Matrix
     }
 
     /** Build cache key for row/column. */
-    private IgniteBiTuple<Integer, IgniteUuid> getCacheKey(int idx){
+    private IgniteBiTuple<Integer, IgniteUuid> getCacheKey(int idx) {
         return new IgniteBiTuple<>(idx, uuid);
     }
 
@@ -229,6 +218,11 @@ public class SparseDistributedMatrixStorage extends CacheUtils implements Matrix
     /** {@inheritDoc} */
     @Override public int rowSize() {
         return rows;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int storageMode() {
+        return stoMode;
     }
 
     /** {@inheritDoc} */

@@ -58,6 +58,8 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
+import static org.apache.ignite.internal.processors.cache.ExchangeContext.IGNITE_EXCHANGE_COMPATIBILITY_VER_1;
+
 /**
  *
  */
@@ -197,31 +199,42 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
      * @throws Exception If failed.
      */
     public void testPartitionsExchange() throws Exception {
-        partitionsExchange();
+        partitionsExchange(false);
     }
 
     /**
      * @throws Exception If failed.
      */
-    private void partitionsExchange() throws Exception {
+    public void testPartitionsExchangeCompatibilityMode() throws Exception {
+        System.setProperty(IGNITE_EXCHANGE_COMPATIBILITY_VER_1, "true");
+
+        try {
+            partitionsExchange(true);
+        }
+        finally {
+            System.clearProperty(IGNITE_EXCHANGE_COMPATIBILITY_VER_1);
+        }
+    }
+
+    /**
+     * @param compatibilityMode {@code True} to test old exchange protocol.
+     * @throws Exception If failed.
+     */
+    private void partitionsExchange(boolean compatibilityMode) throws Exception {
         Ignite ignite0 = startGrid(0);
 
         TestCommunicationSpi spi0 = (TestCommunicationSpi)ignite0.configuration().getCommunicationSpi();
 
         Ignite ignite1 = startGrid(1);
 
-        boolean lateAff = ignite1.configuration().isLateAffinityAssignment();
-
-        int minorVer = lateAff ? 1 : 0;
-
-        waitForTopologyUpdate(2, new AffinityTopologyVersion(2, minorVer));
+        waitForTopologyUpdate(2, new AffinityTopologyVersion(2, 1));
 
         TestCommunicationSpi spi1 = (TestCommunicationSpi)ignite1.configuration().getCommunicationSpi();
 
         assertEquals(0, spi0.partitionsSingleMessages());
-        assertEquals(lateAff ? 2 : 1, spi0.partitionsFullMessages());
+        assertEquals(2, spi0.partitionsFullMessages());
 
-        assertEquals(lateAff ? 2 : 1, spi1.partitionsSingleMessages());
+        assertEquals(2, spi1.partitionsSingleMessages());
         assertEquals(0, spi1.partitionsFullMessages());
 
         spi0.reset();
@@ -281,23 +294,23 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
 
         Ignite ignite4 = startGrid(4);
 
-        waitForTopologyUpdate(5, new AffinityTopologyVersion(5, lateAff ? 1 : 0));
+        waitForTopologyUpdate(5, new AffinityTopologyVersion(5, 1));
 
         TestCommunicationSpi spi4 = (TestCommunicationSpi)ignite4.configuration().getCommunicationSpi();
 
         assertEquals(0, spi0.partitionsSingleMessages());
-        assertEquals(lateAff ? 8 : 4, spi0.partitionsFullMessages());
+        assertEquals(8, spi0.partitionsFullMessages());
 
-        assertEquals(lateAff ? 2 : 1, spi1.partitionsSingleMessages());
+        assertEquals(2, spi1.partitionsSingleMessages());
         assertEquals(0, spi1.partitionsFullMessages());
 
-        assertEquals(lateAff ? 2 : 1, spi2.partitionsSingleMessages());
+        assertEquals(2, spi2.partitionsSingleMessages());
         assertEquals(0, spi2.partitionsFullMessages());
 
-        assertEquals(lateAff ? 2 : 1, spi3.partitionsSingleMessages());
+        assertEquals(2, spi3.partitionsSingleMessages());
         assertEquals(0, spi3.partitionsFullMessages());
 
-        assertEquals(lateAff ? 2 : 1, spi4.partitionsSingleMessages());
+        assertEquals(2, spi4.partitionsSingleMessages());
         assertEquals(0, spi4.partitionsFullMessages());
 
         spi0.reset();
@@ -307,9 +320,10 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
 
         log.info("Stop server node.");
 
-        ignite4.close(); // With late affinity exchange on server leave is completed by discovery message.
+        ignite4.close();
 
-        if (lateAff) {
+        if (compatibilityMode) {
+            // With late affinity old protocol exchange on server leave is completed by discovery message.
             // With FairAffinityFunction affinity calculation is different, this causes one more topology change.
             boolean exchangeAfterRebalance = false;
 
@@ -446,9 +460,11 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
             for (IgniteInternalCache cache : kernal.context().cache().caches()) {
                 GridDhtPartitionTopology top = cache.context().topology();
 
+                waitForReadyTopology(top, topVer);
+
                 assertEquals("Unexpected topology version [node=" + ignite.name() + ", cache=" + cache.name() + ']',
                     topVer,
-                    top.topologyVersion());
+                    top.readyTopologyVersion());
             }
         }
 
@@ -530,26 +546,31 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
         else
             ignite2.cache(CACHE_NAME1);
 
-        waitForTopologyUpdate(3, new AffinityTopologyVersion(3, ++minorVer));
-
         GridCacheAdapter cache = ((IgniteKernal)ignite2).context().cache().context().cache().internalCache(CACHE_NAME1);
 
         assertNotNull(cache);
         assertEquals(nearCache, cache.context().isNear());
 
         assertEquals(0, spi0.partitionsSingleMessages());
-        assertEquals(1, spi0.partitionsFullMessages());
+        assertEquals(0, spi0.partitionsFullMessages());
         assertEquals(0, spi1.partitionsSingleMessages());
         assertEquals(0, spi1.partitionsFullMessages());
-        assertEquals(1, spi2.partitionsSingleMessages());
+        assertEquals(0, spi2.partitionsSingleMessages());
         assertEquals(0, spi2.partitionsFullMessages());
 
-        ClusterNode clientNode = ((IgniteKernal)ignite2).localNode();
+        final ClusterNode clientNode = ((IgniteKernal)ignite2).localNode();
 
         for (Ignite ignite : Ignition.allGrids()) {
-            GridDiscoveryManager disco = ((IgniteKernal)ignite).context().discovery();
+            final GridDiscoveryManager disco = ((IgniteKernal)ignite).context().discovery();
+
+            GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                @Override public boolean apply() {
+                    return disco.cacheNode(clientNode, CACHE_NAME1);
+                }
+            }, 5000);
 
             assertTrue(disco.cacheNode(clientNode, CACHE_NAME1));
+
             assertFalse(disco.cacheAffinityNode(clientNode, CACHE_NAME1));
             assertEquals(nearCache, disco.cacheNearNode(clientNode, CACHE_NAME1));
         }
@@ -565,8 +586,6 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
 
             assertNull(((IgniteKernal)ignite2).context().cache().context().cache().internalCache(CACHE_NAME1));
 
-            waitForTopologyUpdate(3, new AffinityTopologyVersion(3, ++minorVer));
-
             assertEquals(0, spi0.partitionsSingleMessages());
             assertEquals(0, spi0.partitionsFullMessages());
             assertEquals(0, spi1.partitionsSingleMessages());
@@ -577,9 +596,7 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
 
         final String CACHE_NAME2 = "cache2";
 
-        ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
-
-        ccfg.setName(CACHE_NAME2);
+        ccfg = new CacheConfiguration(CACHE_NAME2);
 
         log.info("Create new cache: " + CACHE_NAME2);
 

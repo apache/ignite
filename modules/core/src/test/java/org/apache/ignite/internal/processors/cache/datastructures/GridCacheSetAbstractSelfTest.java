@@ -51,6 +51,7 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 
+import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -859,6 +860,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
 
         colCfg.setCollocated(false);
         colCfg.setCacheMode(CacheMode.PARTITIONED);
+        colCfg.setGroupName("testGroup");
 
         try (final IgniteSet<Integer> set1 = grid(0).set("Set1", colCfg)) {
             GridTestUtils.assertThrows(
@@ -884,12 +886,14 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
         try (final IgniteSet<Integer> set2 = grid(0).set("Set2", colCfg)) {
             set2.add(100);
 
+            final String cacheName = cctx(set2).name();
+
             set2.affinityRun(new IgniteRunnable() {
                 @IgniteInstanceResource
                 private IgniteEx ignite;
 
                 @Override public void run() {
-                    assertTrue(ignite.cachex("datastructures_0").affinity().isPrimaryOrBackup(
+                    assertTrue(ignite.cachex(cacheName).affinity().isPrimaryOrBackup(
                         ignite.cluster().localNode(), "Set2"));
 
                     assertEquals(100, set2.iterator().next().intValue());
@@ -906,6 +910,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
 
         colCfg.setCollocated(false);
         colCfg.setCacheMode(CacheMode.PARTITIONED);
+        colCfg.setGroupName("testGroup");
 
         try (final IgniteSet<Integer> set1 = grid(0).set("Set1", colCfg)) {
             GridTestUtils.assertThrows(
@@ -931,12 +936,14 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
         try (final IgniteSet<Integer> set2 = grid(0).set("Set2", colCfg)) {
             set2.add(100);
 
+            final String cacheName = cctx(set2).name();
+
             Integer res = set2.affinityCall(new IgniteCallable<Integer>() {
                 @IgniteInstanceResource
                 private IgniteEx ignite;
 
                 @Override public Integer call() {
-                    assertTrue(ignite.cachex("datastructures_0").affinity().isPrimaryOrBackup(
+                    assertTrue(ignite.cachex(cacheName).affinity().isPrimaryOrBackup(
                         ignite.cluster().localNode(), "Set2"));
 
                     return set2.iterator().next();
@@ -993,6 +1000,109 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
         finally {
             ignite.destroyCache(cfg.getName());
         }
+    }
+
+    /**
+     * Test that sets within the same group and compatible configurations are stored in the same cache.
+     *
+     * @throws Exception If failed.
+     */
+    public void testCacheReuse() throws Exception {
+        Ignite ignite = grid(0);
+
+        CollectionConfiguration colCfg = collectionConfiguration();
+
+        colCfg.setAtomicityMode(ATOMIC);
+        colCfg.setGroupName("grp1");
+
+        IgniteSet set1 = ignite.set("set1", colCfg);
+        IgniteSet set2 = ignite.set("set2", colCfg);
+
+        assert cctx(set1).cacheId() == cctx(set2).cacheId();
+
+        colCfg.setAtomicityMode(TRANSACTIONAL);
+
+        IgniteSet set3 = ignite.set("set3", colCfg);
+        IgniteSet set4 = ignite.set("set4", colCfg);
+
+        assert cctx(set3).cacheId() == cctx(set4).cacheId();
+        assert cctx(set1).cacheId() != cctx(set3).cacheId();
+        assert cctx(set1).groupId() == cctx(set3).groupId();
+
+        colCfg.setGroupName("gtp2");
+
+        IgniteSet set5 = ignite.set("set5", colCfg);
+        IgniteSet set6 = ignite.set("set6", colCfg);
+
+        assert cctx(set5).cacheId() == cctx(set6).cacheId();
+        assert cctx(set1).groupId() != cctx(set5).groupId();
+    }
+
+    /**
+     * Tests that basic API works correctly when there are multiple structures in multiple groups.
+     *
+     * @throws Exception If failed.
+     */
+    public void _testMultipleStructuresInDifferentGroups() throws Exception {
+        Ignite ignite = grid(0);
+
+        CollectionConfiguration cfg1 = collectionConfiguration();
+        CollectionConfiguration cfg2 = collectionConfiguration().setGroupName("grp2");
+
+        IgniteSet<String> set1 = ignite.set("set1", cfg1);
+        IgniteSet<String> set2 = ignite.set("set2", cfg1);
+        IgniteSet<String> set3 = ignite.set("set3", cfg2);
+        IgniteSet<String> set4 = ignite.set("set4", cfg2);
+
+        assertTrue(set1.add("a"));
+        assertTrue(set2.add("b"));
+        assertTrue(set3.add("c"));
+        assertTrue(set4.add("d"));
+
+        assertFalse(set1.add("a"));
+        assertFalse(set2.add("b"));
+        assertFalse(set3.add("c"));
+        assertFalse(set4.add("d"));
+
+        assertTrue(set1.contains("a"));
+        assertTrue(set2.contains("b"));
+        assertTrue(set3.contains("c"));
+        assertTrue(set4.contains("d"));
+
+        assertEquals(1, set1.size());
+        assertEquals(1, set2.size());
+        assertEquals(1, set3.size());
+        assertEquals(1, set4.size());
+
+        assertFalse(set1.remove("z"));
+        assertFalse(set2.remove("z"));
+        assertFalse(set3.remove("z"));
+        assertFalse(set4.remove("z"));
+
+        assertTrue(set1.remove("a"));
+        assertTrue(set2.remove("b"));
+        assertTrue(set3.remove("c"));
+        assertTrue(set4.remove("d"));
+
+        assertTrue(set1.isEmpty());
+        assertTrue(set2.isEmpty());
+        assertTrue(set3.isEmpty());
+        assertTrue(set4.isEmpty());
+
+        set2.close();
+        set4.close();
+
+        assertTrue(set2.removed());
+        assertTrue(set4.removed());
+
+        assertFalse(set1.removed());
+        assertFalse(set3.removed());
+
+        assertNotNull(ignite.set("set1", null));
+        assertNull(ignite.set("set2", null));
+
+        set1.close();
+        set3.close();
     }
 
     /**

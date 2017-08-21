@@ -41,7 +41,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedExceptio
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetResponse;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -311,7 +311,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                             remapKeys.add(key);
                     }
 
-                    AffinityTopologyVersion updTopVer = cctx.discovery().topologyVersionEx();
+                    AffinityTopologyVersion updTopVer = cctx.shared().exchange().readyAffinityVersion();
 
                     assert updTopVer.compareTo(topVer) > 0 : "Got invalid partitions for local node but topology version did " +
                         "not change [topVer=" + topVer + ", updTopVer=" + updTopVer +
@@ -551,7 +551,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                     return true;
                 }
 
-                boolean topStable = cctx.isReplicated() || topVer.equals(cctx.topology().topologyVersion());
+                boolean topStable = cctx.isReplicated() || topVer.equals(cctx.topology().lastTopologyChangeVersion());
 
                 // Entry not found, do not continue search if topology did not change and there is no store.
                 if (!cctx.readThroughConfigured() && (topStable || partitionOwned(part))) {
@@ -792,7 +792,8 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
 
                 topFut.listen(new CIX1<IgniteInternalFuture<AffinityTopologyVersion>>() {
                     @SuppressWarnings("unchecked")
-                    @Override public void applyx(IgniteInternalFuture<AffinityTopologyVersion> fut) throws IgniteCheckedException {
+                    @Override public void applyx(
+                        IgniteInternalFuture<AffinityTopologyVersion> fut) throws IgniteCheckedException {
                         AffinityTopologyVersion topVer = fut.get();
 
                         // This will append new futures to compound list.

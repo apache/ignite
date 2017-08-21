@@ -78,7 +78,7 @@ public class EigenDecompositionTest {
             {0.0d, 1.0d, 0.0d},
             {0.0d, 0.0d, 2.0d},
             {1.0d, 1.0d, 0.0d}}));
-        // todo find out why decomposition of 3X4 matrix throws row index exception
+        // TODO: IGNITE-5828, find out why decomposition of 3X4 matrix throws row index exception
 
         Matrix d = decomposition.getD();
         Matrix v = decomposition.getV();

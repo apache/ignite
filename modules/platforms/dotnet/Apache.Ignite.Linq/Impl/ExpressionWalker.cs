@@ -18,6 +18,8 @@
 namespace Apache.Ignite.Linq.Impl
 {
     using System;
+    using System.Collections;
+    using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
     using System.Linq.Expressions;
@@ -38,17 +40,17 @@ namespace Apache.Ignite.Linq.Impl
         /// <summary>
         /// Gets the cache queryable.
         /// </summary>
-        public static ICacheQueryableInternal GetCacheQueryable(IFromClause fromClause)
+        public static ICacheQueryableInternal GetCacheQueryable(IFromClause fromClause, bool throwWhenNotFound = true)
         {
-            return GetCacheQueryable(fromClause.FromExpression);
+            return GetCacheQueryable(fromClause.FromExpression, throwWhenNotFound);
         }
 
         /// <summary>
         /// Gets the cache queryable.
         /// </summary>
-        public static ICacheQueryableInternal GetCacheQueryable(JoinClause joinClause)
+        public static ICacheQueryableInternal GetCacheQueryable(JoinClause joinClause, bool throwWhenNotFound = true)
         {
-            return GetCacheQueryable(joinClause.InnerSequence);
+            return GetCacheQueryable(joinClause.InnerSequence, throwWhenNotFound);
         }
 
         /// <summary>
@@ -59,7 +61,7 @@ namespace Apache.Ignite.Linq.Impl
             var subQueryExp = expression as SubQueryExpression;
 
             if (subQueryExp != null)
-                return GetCacheQueryable(subQueryExp.QueryModel.MainFromClause);
+                return GetCacheQueryable(subQueryExp.QueryModel.MainFromClause, throwWhenNotFound);
 
             var srcRefExp = expression as QuerySourceReferenceExpression;
 
@@ -68,12 +70,12 @@ namespace Apache.Ignite.Linq.Impl
                 var fromSource = srcRefExp.ReferencedQuerySource as IFromClause;
 
                 if (fromSource != null)
-                    return GetCacheQueryable(fromSource);
+                    return GetCacheQueryable(fromSource, throwWhenNotFound);
 
                 var joinSource = srcRefExp.ReferencedQuerySource as JoinClause;
 
                 if (joinSource != null)
-                    return GetCacheQueryable(joinSource);
+                    return GetCacheQueryable(joinSource, throwWhenNotFound);
 
                 throw new NotSupportedException("Unexpected query source: " + srcRefExp.ReferencedQuerySource);
             }
@@ -114,6 +116,38 @@ namespace Apache.Ignite.Linq.Impl
         }
 
         /// <summary>
+        /// Tries to find QuerySourceReferenceExpression
+        /// </summary>
+        public static QuerySourceReferenceExpression GetQuerySourceReference(Expression expression,
+            bool throwWhenNotFound = true)
+        {
+            var reference = expression as QuerySourceReferenceExpression;
+            if (reference != null)
+            {
+                return reference;
+            }
+
+            var unary = expression as UnaryExpression;
+            if (unary != null)
+            {
+                return GetQuerySourceReference(unary.Operand, false);
+            }
+
+            var binary = expression as BinaryExpression;
+            if (binary != null)
+            {
+                return GetQuerySourceReference(binary.Left, false) ?? GetQuerySourceReference(binary.Right, false);
+            }
+
+            if (throwWhenNotFound)
+            {
+                throw new NotSupportedException("Unexpected query source: " + expression);
+            }
+
+            return null;
+        }
+
+        /// <summary>
         /// Evaluates the expression.
         /// </summary>
         public static T EvaluateExpression<T>(Expression expr)
@@ -148,6 +182,44 @@ namespace Apache.Ignite.Linq.Impl
                 return (T) (object) expr;
 
             throw new NotSupportedException("Expression not supported: " + expr);
+        }
+
+        /// <summary>
+        /// Gets the values from IEnumerable expression
+        /// </summary>
+        public static IEnumerable<object> EvaluateEnumerableValues(Expression fromExpression)
+        {
+            IEnumerable result;
+            switch (fromExpression.NodeType)
+            {
+                case ExpressionType.MemberAccess:
+                    var memberExpression = (MemberExpression)fromExpression;
+                    result = EvaluateExpression<IEnumerable>(memberExpression);
+                    break;
+                case ExpressionType.ListInit:
+                    var listInitExpression = (ListInitExpression)fromExpression;
+                    result = listInitExpression.Initializers
+                        .SelectMany(init => init.Arguments)
+                        .Select(EvaluateExpression<object>);
+                    break;
+                case ExpressionType.NewArrayInit:
+                    var newArrayExpression = (NewArrayExpression)fromExpression;
+                    result = newArrayExpression.Expressions
+                        .Select(EvaluateExpression<object>);
+                    break;
+                case ExpressionType.Parameter:
+                    // This should happen only when 'IEnumerable.Contains' is called on parameter of compiled query
+                    throw new NotSupportedException("'Contains' clause on compiled query parameter is not supported.");
+                default:
+                    result = Expression.Lambda(fromExpression).Compile().DynamicInvoke() as IEnumerable;
+                    break;
+            }
+
+            result = result ?? Enumerable.Empty<object>();
+
+            return result
+                .Cast<object>()
+                .ToArray();
         }
 
         /// <summary>

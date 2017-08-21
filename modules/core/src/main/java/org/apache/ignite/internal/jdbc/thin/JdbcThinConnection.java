@@ -64,6 +64,9 @@ public class JdbcThinConnection implements Connection {
     /** Logger. */
     private static final Logger LOG = Logger.getLogger(JdbcThinConnection.class.getName());
 
+    /** Connection URL. */
+    private String url;
+
     /** Schema name. */
     private String schemaName;
 
@@ -76,6 +79,9 @@ public class JdbcThinConnection implements Connection {
     /** Auto commit flag. */
     private boolean autoCommit;
 
+    /** Read-only flag. */
+    private boolean readOnly;
+
     /** Current transaction holdability. */
     private int holdability;
 
@@ -84,6 +90,9 @@ public class JdbcThinConnection implements Connection {
 
     /** Ignite endpoint. */
     private JdbcThinTcpIo cliIo;
+
+    /** Jdbc metadata. Cache the JDBC object on the first access */
+    private JdbcThinDatabaseMetadata metadata;
 
     /**
      * Creates new connection.
@@ -95,6 +104,8 @@ public class JdbcThinConnection implements Connection {
     public JdbcThinConnection(String url, Properties props) throws SQLException {
         assert url != null;
         assert props != null;
+
+        this.url = url;
 
         holdability = HOLD_CURSORS_OVER_COMMIT;
         autoCommit = true;
@@ -271,19 +282,24 @@ public class JdbcThinConnection implements Connection {
     @Override public DatabaseMetaData getMetaData() throws SQLException {
         ensureNotClosed();
 
-        return null;
+        if (metadata == null)
+            metadata = new JdbcThinDatabaseMetadata(this);
+
+        return metadata;
     }
 
     /** {@inheritDoc} */
     @Override public void setReadOnly(boolean readOnly) throws SQLException {
         ensureNotClosed();
+
+        this.readOnly = readOnly;
     }
 
     /** {@inheritDoc} */
     @Override public boolean isReadOnly() throws SQLException {
         ensureNotClosed();
 
-        return true;
+        return readOnly;
     }
 
     /** {@inheritDoc} */
@@ -659,5 +675,12 @@ public class JdbcThinConnection implements Connection {
             throw new SQLException("Failed to parse int property [name=" + JdbcThinUtils.trimPrefix(propName) +
                 ", value=" + strVal + ']');
         }
+    }
+
+    /**
+     * @return Connection URL.
+     */
+    public String url() {
+        return url;
     }
 }

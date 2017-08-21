@@ -24,7 +24,7 @@
  */
 module.exports = {
     implements: 'agent-socket',
-    inject: ['require(lodash)']
+    inject: ['require(lodash)', 'require(zlib)']
 };
 
 /**
@@ -79,9 +79,10 @@ class Command {
 
 /**
  * @param _
+ * @param zlib
  * @returns {AgentSocket}
  */
-module.exports.factory = function(_) {
+module.exports.factory = function(_, zlib) {
     /**
      * Connected agent descriptor.
      */
@@ -126,16 +127,30 @@ module.exports.factory = function(_) {
          * Send event to agent.
          *
          * @param {String} event - Event name.
-         * @param {Array.<Object>?} args - Transmitted arguments.
+         * @param {Object?} args - Transmitted arguments.
          * @returns {Promise}
          */
         emitEvent(event, ...args) {
             return new Promise((resolve, reject) =>
-                this._emit(event, args, (error, res) => {
-                    if (error)
-                        return reject(error);
+                this._emit(event, args, (resErr, res) => {
+                    if (resErr)
+                        return reject(resErr);
 
-                    resolve(res);
+                    if (res.zipped) {
+                        // TODO IGNITE-6127 Temporary solution until GZip support for socket.io-client-java.
+                        // See: https://github.com/socketio/socket.io-client-java/issues/312
+                        // We can GZip manually for now.
+                        zlib.gunzip(new Buffer(res.data, 'base64'), (unzipErr, unzipped) => {
+                            if (unzipErr)
+                                return reject(unzipErr);
+
+                            res.data = unzipped.toString();
+
+                            resolve(res);
+                        });
+                    }
+                    else
+                        resolve(res);
                 })
             );
         }
@@ -202,7 +217,7 @@ module.exports.factory = function(_) {
                 params[`p${idx + 1}`] = args[idx];
             });
 
-            return this.emitEvent('node:rest', {uri: 'ignite', demo, params, method: 'GET'})
+            return this.emitEvent('node:rest', {uri: 'ignite', demo, params})
                 .then(this.restResultParse);
         }
 

@@ -20,12 +20,12 @@ export default ['IgniteVersion', 'SpringTransformer', function(Version, spring) 
 
     delete ctrl.data;
 
-    const targetSince = Version.available.bind(Version);
+    const available = Version.available.bind(Version);
 
     // Setup generator.
     switch (ctrl.generator) {
         case 'igniteConfiguration':
-            ctrl.generate = (cluster) => spring.cluster(cluster, Version.current, ctrl.client === 'true');
+            ctrl.generate = (cluster) => spring.cluster(cluster, Version.currentSbj.getValue(), ctrl.client === 'true');
 
             break;
         case 'clusterCaches':
@@ -37,9 +37,9 @@ export default ['IgniteVersion', 'SpringTransformer', function(Version, spring) 
                     return acc;
                 }, []);
 
-                const cfg = spring.generator.clusterGeneral(cluster, targetSince);
+                const cfg = spring.generator.clusterGeneral(cluster, available);
 
-                spring.generator.clusterCaches(cluster, clusterCaches, null, targetSince, false, cfg);
+                spring.generator.clusterCaches(cluster, clusterCaches, null, available, false, cfg);
 
                 return spring.toSection(cfg);
             };
@@ -55,7 +55,7 @@ export default ['IgniteVersion', 'SpringTransformer', function(Version, spring) 
                     return acc;
                 }, []);
 
-                return spring[ctrl.generator](cache, cacheDomains, targetSince);
+                return spring[ctrl.generator](cache, cacheDomains, available);
             };
 
             break;
@@ -84,6 +84,19 @@ export default ['IgniteVersion', 'SpringTransformer', function(Version, spring) 
             };
 
             break;
+        case 'clusterCheckpoint':
+            ctrl.generate = (cluster, caches) => {
+                const clusterCaches = _.reduce(caches, (acc, cache) => {
+                    if (_.includes(cluster.caches, cache.value))
+                        acc.push(cache.cache);
+
+                    return acc;
+                }, []);
+
+                return spring.clusterCheckpoint(cluster, clusterCaches);
+            };
+
+            break;
         case 'igfss':
             ctrl.generate = (cluster, igfss) => {
                 const clusterIgfss = _.reduce(igfss, (acc, igfs) => {
@@ -93,11 +106,11 @@ export default ['IgniteVersion', 'SpringTransformer', function(Version, spring) 
                     return acc;
                 }, []);
 
-                return spring.clusterIgfss(clusterIgfss, targetSince);
+                return spring.clusterIgfss(clusterIgfss, available);
             };
 
             break;
         default:
-            ctrl.generate = (master) => spring[ctrl.generator](master, targetSince);
+            ctrl.generate = (master) => spring[ctrl.generator](master, available);
     }
 }];
