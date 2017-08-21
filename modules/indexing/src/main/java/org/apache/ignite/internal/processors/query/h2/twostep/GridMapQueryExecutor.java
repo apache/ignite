@@ -56,6 +56,7 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshalla
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.processors.query.h2.UpdateResult;
 import org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RetryException;
@@ -758,11 +759,9 @@ public class GridMapQueryExecutor {
         if (!reservePartitions(cacheIds, topVer, parts, reserved)) {
             log.error("Failed to reserve partitions for DML request");
 
-            GridH2DmlResponse rsp = new GridH2DmlResponse(req.requestId(), GridH2DmlResponse.STATUS_ERROR, -1, null,
-                "Failed to reserve partitions for DML request");
+            sendUpdateResponse(node, req.requestId(), null, "Failed to reserve partitions for DML request");
 
-            // Send response
-            ctx.io().sendToGridTopic(node, GridTopic.TOPIC_QUERY, rsp, QUERY_POOL);
+            return;
         }
 
         try {
@@ -770,23 +769,16 @@ public class GridMapQueryExecutor {
 
             IndexingQueryFilter filter = h2.backupFilter(req.topologyVersion(), req.queryPartitions());
 
-            long updCntr = h2.mapDistributedUpdate(req.mode(), req.schemaName(), req.targetTable(),
+            UpdateResult updRes = h2.mapDistributedUpdate(req.mode(), req.schemaName(), req.targetTable(),
                 req.columnNames(), query, req.parameters(), req.pageSize(), req.timeout(), filter);
 
-            GridH2DmlResponse rsp = new GridH2DmlResponse(req.requestId(), GridH2DmlResponse.STATUS_OK, updCntr, null,
-                null);
+            sendUpdateResponse(node, req.requestId(), updRes, null);
 
-            // Send response
-            ctx.io().sendToGridTopic(node, GridTopic.TOPIC_QUERY, rsp, QUERY_POOL);
         }
         catch (Exception e) {
             log.error("Error processing dml request " + e.toString());
 
-            GridH2DmlResponse rsp = new GridH2DmlResponse(req.requestId(), GridH2DmlResponse.STATUS_ERROR, -1, null,
-                e.getMessage());
-
-            // Send response
-            ctx.io().sendToGridTopic(node, GridTopic.TOPIC_QUERY, rsp, QUERY_POOL);
+            sendUpdateResponse(node, req.requestId(), null, e.getMessage());
         }
         finally {
             if (!F.isEmpty(reserved)) {
@@ -818,6 +810,31 @@ public class GridMapQueryExecutor {
             e.addSuppressed(err);
 
             U.error(log, "Failed to send error message.", e);
+        }
+    }
+
+    /**
+     *
+     * @param node
+     * @param reqId
+     * @param updResult
+     * @param error
+     */
+    private void sendUpdateResponse(ClusterNode node, long reqId, UpdateResult updResult, String error) {
+        try {
+            byte status = (error != null) ? GridH2DmlResponse.STATUS_ERROR :
+                F.isEmpty(updResult.errorKeys()) ? GridH2DmlResponse.STATUS_OK : GridH2DmlResponse.STATUS_ERR_KEYS;
+
+            GridH2DmlResponse rsp = new GridH2DmlResponse(reqId, status, updResult.counter(), updResult.errorKeys(),
+                error);
+
+            if (node.isLocal())
+                h2.reduceQueryExecutor().onMessage(ctx.localNodeId(), rsp);
+            else
+                ctx.io().sendToGridTopic(node, GridTopic.TOPIC_QUERY, rsp, QUERY_POOL);
+        }
+        catch (Exception e) {
+            U.error(log, "Failed to send message.", e);
         }
     }
 

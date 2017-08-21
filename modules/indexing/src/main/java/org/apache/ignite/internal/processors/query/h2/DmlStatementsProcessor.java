@@ -215,6 +215,7 @@ public class DmlStatementsProcessor {
         return new UpdateResult(items, errKeys);
     }
 
+    /** */
     private boolean checkDistributed(String schemaName, UpdatePlan p, SqlFieldsQuery fieldsQry) {
         Connection c = idx.connectionForSchema(schemaName);
 
@@ -571,10 +572,8 @@ public class DmlStatementsProcessor {
         if (cancel == null)
             cancel = new GridQueryCancel();
 
-        long cnt = idx.runDistributedUpdate(schemaName, fieldsQry, plan.cacheIds, (byte)plan.mode.ordinal(),
+        return idx.runDistributedUpdate(schemaName, fieldsQry, plan.cacheIds, (byte)plan.mode.ordinal(),
             plan.tbl.getName(), plan.colNames, plan.selectQry, cancel);
-
-        return new UpdateResult(cnt, null);
     }
 
     /**
@@ -1048,7 +1047,7 @@ public class DmlStatementsProcessor {
     }
 
     /** */
-    long mapDistributedUpdate(byte mode, String schemaName, String targetTable,
+    UpdateResult mapDistributedUpdate(byte mode, String schemaName, String targetTable,
         String[] colNames, String qry, Object[] params, int pageSize, int timeoutMillis,
         IndexingQueryFilter filter) throws IgniteCheckedException {
         GridH2Table tgtTbl = idx.dataTable(schemaName, targetTable); //TODO: use QueryTable instead
@@ -1093,7 +1092,7 @@ public class DmlStatementsProcessor {
             cctx.operationContextPerCall(opCtx);
         }
 
-        return res.cnt;
+        return res;
     }
 
     /** */
@@ -1190,29 +1189,6 @@ public class DmlStatementsProcessor {
      */
     static boolean isDmlStatement(Prepared stmt) {
         return stmt instanceof Merge || stmt instanceof Insert || stmt instanceof Update || stmt instanceof Delete;
-    }
-
-    /** Update result - modifications count and keys to re-run query with, if needed. */
-    private final static class UpdateResult {
-        /** Result to return for operations that affected 1 item - mostly to be used for fast updates and deletes. */
-        final static UpdateResult ONE = new UpdateResult(1, X.EMPTY_OBJECT_ARRAY);
-
-        /** Result to return for operations that affected 0 items - mostly to be used for fast updates and deletes. */
-        final static UpdateResult ZERO = new UpdateResult(0, X.EMPTY_OBJECT_ARRAY);
-
-        /** Number of processed items. */
-        final long cnt;
-
-        /** Keys that failed to be updated or deleted due to concurrent modification of values. */
-        @NotNull
-        final Object[] errKeys;
-
-        /** */
-        @SuppressWarnings("ConstantConditions")
-        private UpdateResult(long cnt, Object[] errKeys) {
-            this.cnt = cnt;
-            this.errKeys = U.firstNotNull(errKeys, X.EMPTY_OBJECT_ARRAY);
-        }
     }
 
     /** Result of processing an individual page with {@link IgniteCache#invokeAll} including error details, if any. */
