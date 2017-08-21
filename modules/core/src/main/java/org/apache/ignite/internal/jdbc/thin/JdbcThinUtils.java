@@ -63,11 +63,11 @@ public class JdbcThinUtils {
     /** Parameter: collocated flag (SQL hint). */
     public static final String PARAM_COLLOCATED = "collocated";
 
-    /** Parameter: replicated only flag (SQL hint). */
-    public static final String PARAM_LAZY = "lazy";
-
     /** Parameter: lazy query execution flag (SQL hint). */
     public static final String PARAM_REPLICATED_ONLY = "replicatedOnly";
+
+    /** Parameter: replicated only flag (SQL hint). */
+    public static final String PARAM_LAZY = "lazy";
 
     /** Parameter: socket send buffer. */
     public static final String PARAM_SOCK_SND_BUF = "socketSendBuffer";
