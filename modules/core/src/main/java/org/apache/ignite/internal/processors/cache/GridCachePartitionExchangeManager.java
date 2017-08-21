@@ -65,6 +65,8 @@ import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCach
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridClientPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionFullCountersMap;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.ForceRebalanceExchangeTask;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId;
@@ -973,7 +975,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      */
     private void sendAllPartitions(Collection<ClusterNode> nodes,
         AffinityTopologyVersion msgTopVer) {
-        GridDhtPartitionsFullMessage m = createPartitionsFullMessage(true, null, null, null, null);
+        GridDhtPartitionsFullMessage m = createPartitionsFullMessage(true, false, null, null, null, null);
 
         m.topologyVersion(msgTopVer);
 
@@ -1000,6 +1002,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     /**
      * @param compress {@code True} if possible to compress message (properly work only if prepareMarshall/
      *     finishUnmarshall methods are called).
+     * @param newCntrMap {@code True} if possible to use {@link CachePartitionFullCountersMap}.
      * @param exchId Non-null exchange ID if message is created for exchange.
      * @param lastVer Last version.
      * @param partHistSuppliers Partition history suppliers map.
@@ -1008,6 +1011,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      */
     public GridDhtPartitionsFullMessage createPartitionsFullMessage(
         boolean compress,
+        boolean newCntrMap,
         @Nullable final GridDhtPartitionExchangeId exchId,
         @Nullable GridCacheVersion lastVer,
         @Nullable IgniteDhtPartitionHistorySuppliersMap partHistSuppliers,
@@ -1046,8 +1050,16 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         affCache.similarAffinityKey());
                 }
 
-                if (exchId != null)
-                    m.addPartitionUpdateCounters(grp.groupId(), grp.topology().fullUpdateCounters());
+                if (exchId != null) {
+                    CachePartitionFullCountersMap cntrsMap = grp.topology().fullUpdateCounters();
+
+                    if (newCntrMap)
+                        m.addPartitionUpdateCounters(grp.groupId(), cntrsMap);
+                    else {
+                        m.addPartitionUpdateCounters(grp.groupId(),
+                            CachePartitionFullCountersMap.toCountersMap(cntrsMap));
+                    }
+                }
             }
         }
 
@@ -1064,8 +1076,14 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     top.similarAffinityKey());
             }
 
-            if (exchId != null)
-                m.addPartitionUpdateCounters(top.groupId(), top.fullUpdateCounters());
+            if (exchId != null) {
+                CachePartitionFullCountersMap cntrsMap = top.fullUpdateCounters();
+
+                if (newCntrMap)
+                    m.addPartitionUpdateCounters(top.groupId(), cntrsMap);
+                else
+                    m.addPartitionUpdateCounters(top.groupId(), CachePartitionFullCountersMap.toCountersMap(cntrsMap));
+            }
         }
 
         return m;
@@ -1119,6 +1137,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         GridDhtPartitionsSingleMessage m = createPartitionsSingleMessage(id,
             cctx.kernalContext().clientNode(),
             false,
+            false,
             null);
 
         if (log.isDebugEnabled())
@@ -1141,12 +1160,14 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * @param exchangeId Exchange ID.
      * @param clientOnlyExchange Client exchange flag.
      * @param sndCounters {@code True} if need send partition update counters.
+     * @param newCntrMap {@code True} if possible to use {@link CachePartitionPartialCountersMap}.
      * @return Message.
      */
     public GridDhtPartitionsSingleMessage createPartitionsSingleMessage(
         @Nullable GridDhtPartitionExchangeId exchangeId,
         boolean clientOnlyExchange,
         boolean sndCounters,
+        boolean newCntrMap,
         ExchangeActions exchActions
     ) {
         GridDhtPartitionsSingleMessage m = new GridDhtPartitionsSingleMessage(exchangeId,
@@ -1167,8 +1188,12 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     locMap,
                     grp.affinity().similarAffinityKey());
 
-                if (sndCounters)
-                    m.partitionUpdateCounters(grp.groupId(), grp.topology().localUpdateCounters(true));
+                if (sndCounters) {
+                    CachePartitionPartialCountersMap cntrsMap = grp.topology().localUpdateCounters(true);
+
+                    m.addPartitionUpdateCounters(grp.groupId(),
+                        newCntrMap ? cntrsMap : CachePartitionPartialCountersMap.toCountersMap(cntrsMap));
+                }
             }
         }
 
@@ -1185,8 +1210,12 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 locMap,
                 top.similarAffinityKey());
 
-            if (sndCounters)
-                m.partitionUpdateCounters(top.groupId(), top.localUpdateCounters(true));
+            if (sndCounters) {
+                CachePartitionPartialCountersMap cntrsMap = top.localUpdateCounters(true);
+
+                m.addPartitionUpdateCounters(top.groupId(),
+                    newCntrMap ? cntrsMap : CachePartitionPartialCountersMap.toCountersMap(cntrsMap));
+            }
         }
 
         return m;
