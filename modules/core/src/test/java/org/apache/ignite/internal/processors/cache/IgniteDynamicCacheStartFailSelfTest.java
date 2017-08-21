@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import javax.cache.CacheException;
 import javax.cache.configuration.Factory;
-import junit.framework.Assert;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.affinity.AffinityFunctionContext;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -35,8 +34,6 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.EventType;
-import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -196,7 +193,7 @@ public class IgniteDynamicCacheStartFailSelfTest extends GridCommonAbstractTest 
         return cfgs;
     }
 
-    private void testDynamicCacheStart(final Collection<CacheConfiguration> cfgs, int initiatorId) {
+    private void testDynamicCacheStart(final Collection<CacheConfiguration> cfgs, final int initiatorId) {
         assert initiatorId < nodeCount();
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
