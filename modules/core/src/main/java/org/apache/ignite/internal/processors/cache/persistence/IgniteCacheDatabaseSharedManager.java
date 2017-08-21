@@ -55,6 +55,7 @@ import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -307,7 +308,12 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
                     freeList = freeList0;
                 }
 
-                return (float) freeList.fillFactor().get1() / freeList.fillFactor().get2();
+                T2<Long, Long> fillFactor = freeList.fillFactor();
+
+                if (fillFactor.get2() == 0)
+                    return (float) 0;
+
+                return (float) fillFactor.get1() / fillFactor.get2();
             }
         };
     }

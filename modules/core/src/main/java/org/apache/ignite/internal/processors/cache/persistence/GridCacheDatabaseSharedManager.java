@@ -535,7 +535,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     totalSize += fillFactor.get2();
                 }
 
-                return (float) loadSize /totalSize;
+                if (totalSize == 0)
+                    return (float) 0;
+
+                return (float) loadSize / totalSize;
             }
         };
     }
