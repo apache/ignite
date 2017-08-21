@@ -37,6 +37,7 @@ import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.CacheStoppedException;
 import org.apache.ignite.internal.processors.cache.GridCacheCompoundIdentityFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
@@ -826,8 +827,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
 
         try {
             if (cctx.topology().stopping()) {
-                onDone(new IgniteCheckedException("Failed to perform cache operation (cache is stopped): " +
-                    cctx.name()));
+                onDone(new CacheStoppedException(cctx.name()));
 
                 return;
             }
@@ -1466,7 +1466,9 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
                             TxDeadlock deadlock = fut.get();
 
                             if (deadlock != null)
-                                err = new TransactionDeadlockException(deadlock.toString(cctx.shared()));
+                                err = new IgniteTxTimeoutCheckedException("Failed to acquire lock within provided timeout for " +
+                                        "transaction [timeout=" + tx.timeout() + ", tx=" + tx + ']',
+                                        new TransactionDeadlockException(deadlock.toString(cctx.shared())));
                         }
                         catch (IgniteCheckedException e) {
                             err = e;

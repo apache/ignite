@@ -92,8 +92,6 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
 
         cfg.setConnectorConfiguration(null);
 
-        cfg.setLateAffinityAssignment(false);
-
         return cfg;
     }
 
@@ -510,7 +508,10 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
      * @return Key with described properties.
      * @throws IllegalStateException if such a key could not be found after 10000 iterations.
      */
-    private int getNextKey(int start, Ignite g, ClusterNode primary, ClusterNode backup, ClusterNode near) {
+    private int getNextKey(int start, Ignite g, ClusterNode primary, ClusterNode backup, ClusterNode near)
+        throws Exception {
+        awaitPartitionMapExchange();
+
         info("Primary: " + primary);
         info("Backup: " + backup);
         info("Near: " + near);

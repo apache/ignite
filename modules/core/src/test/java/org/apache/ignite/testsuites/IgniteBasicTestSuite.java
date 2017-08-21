@@ -20,6 +20,8 @@ package org.apache.ignite.testsuites;
 import java.util.Set;
 import junit.framework.TestSuite;
 import org.apache.ignite.GridSuppressedExceptionSelfTest;
+import org.apache.ignite.internal.processors.database.SwapPathConstructionSelfTest;
+import org.apache.ignite.util.AttributeNodeFilterSelfTest;
 import org.apache.ignite.internal.ClusterGroupHostsSelfTest;
 import org.apache.ignite.internal.ClusterGroupSelfTest;
 import org.apache.ignite.internal.GridFailFastNodeFailureDetectionSelfTest;
@@ -43,6 +45,8 @@ import org.apache.ignite.internal.processors.cache.IgniteDaemonNodeMarshallerCac
 import org.apache.ignite.internal.processors.cache.IgniteMarshallerCacheClassNameConflictTest;
 import org.apache.ignite.internal.processors.cache.IgniteMarshallerCacheClientRequestsMappingOnMissTest;
 import org.apache.ignite.internal.processors.cache.IgniteMarshallerCacheConcurrentReadWriteTest;
+import org.apache.ignite.internal.processors.cache.IgniteMarshallerCacheFSRestoreTest;
+import org.apache.ignite.internal.processors.cache.distributed.IgniteRejectConnectOnNodeStopTest;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessorSelfTest;
 import org.apache.ignite.internal.processors.closure.GridClosureSerializationTest;
 import org.apache.ignite.internal.processors.continuous.GridEventConsumeSelfTest;
@@ -171,11 +175,15 @@ public class IgniteBasicTestSuite extends TestSuite {
         suite.addTestSuite(MetadataStorageSelfTest.class);
         suite.addTestSuite(FreeListImplSelfTest.class);
         suite.addTestSuite(MemoryMetricsSelfTest.class);
+        suite.addTestSuite(SwapPathConstructionSelfTest.class);
 
+        suite.addTestSuite(IgniteMarshallerCacheFSRestoreTest.class);
         suite.addTestSuite(IgniteMarshallerCacheClassNameConflictTest.class);
         suite.addTestSuite(IgniteMarshallerCacheClientRequestsMappingOnMissTest.class);
 
         suite.addTestSuite(IgniteDiagnosticMessagesTest.class);
+
+        suite.addTestSuite(IgniteRejectConnectOnNodeStopTest.class);
 
         return suite;
     }

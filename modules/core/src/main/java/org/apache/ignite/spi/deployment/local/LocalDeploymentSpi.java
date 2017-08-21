@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.compute.ComputeTaskName;
 import org.apache.ignite.internal.util.GridAnnotationsCache;
@@ -67,6 +68,13 @@ import org.jsr166.ConcurrentLinkedHashMap;
 @IgniteSpiConsistencyChecked(optional = false)
 @IgnoreIfPeerClassLoadingDisabled
 public class LocalDeploymentSpi extends IgniteSpiAdapter implements DeploymentSpi {
+    /** Enables additional check for resource name on resources removal. */
+    public static final String IGNITE_DEPLOYMENT_ADDITIONAL_CHECK = "IGNITE.DEPLOYMENT.ADDITIONAL.CHECK";
+
+    /** Value for additional check on resources removal. */
+    private static final boolean ENABLE_IGNITE_DEPLOYMENT_ADDITIONAL_CHECK =
+        IgniteSystemProperties.getBoolean(IGNITE_DEPLOYMENT_ADDITIONAL_CHECK);
+
     /** */
     @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
     @LoggerResource
@@ -333,7 +341,9 @@ public class LocalDeploymentSpi extends IgniteSpiAdapter implements DeploymentSp
                     // Check classes with class loader only when classes points to classes to avoid redundant check.
                     // Resources map contains two entries for class with task name(alias).
                     if (entry.getKey().equals(entry.getValue()) && isResourceExist(ldr, entry.getKey()) &&
-                        !U.hasParent(clsLdrToIgnore, ldr) && ldrRsrcs.remove(ldr, clsLdrRsrcs)) {
+                        !U.hasParent(clsLdrToIgnore, ldr) &&
+                        (!ENABLE_IGNITE_DEPLOYMENT_ADDITIONAL_CHECK || clsLdrRsrcs.containsKey(entry.getKey())) &&
+                        ldrRsrcs.remove(ldr, clsLdrRsrcs)) {
                         // Add class loaders in collection to notify listener outside synchronization block.
                         rmvClsLdrs.add(ldr);
 

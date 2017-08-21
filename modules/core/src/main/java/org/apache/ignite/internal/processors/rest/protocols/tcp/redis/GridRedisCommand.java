@@ -31,6 +31,8 @@ public enum GridRedisCommand {
     QUIT("QUIT"),
     /** Echo. */
     ECHO("ECHO"),
+    /** Select **/
+    SELECT("SELECT"),
 
     // String commands.
     /** GET. */
@@ -65,10 +67,18 @@ public enum GridRedisCommand {
     DEL("DEL"),
     /** EXISTS. */
     EXISTS("EXISTS"),
+    /** EXPIRE. */
+    EXPIRE("EXPIRE"),
+    /** PEXPIRE. */
+    PEXPIRE("PEXPIRE"),
 
     // Server commands.
     /** DBSIZE. */
-    DBSIZE("DBSIZE");
+    DBSIZE("DBSIZE"),
+    /** FLUSHDB. */
+    FLUSHDB("FLUSHDB"),
+    /** FLUSHALL. */
+    FLUSHALL("FLUSHALL");
 
     /** String for command. */
     private final String cmd;

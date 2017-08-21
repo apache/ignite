@@ -19,9 +19,8 @@ package org.apache.ignite.internal.pagemem.wal.record.delta;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
-import org.apache.ignite.internal.processors.cache.database.tree.io.PageMetaIO;
-import org.apache.ignite.internal.processors.cache.database.tree.io.PagePartitionMetaIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageMetaIO;
 
 /**
  *
@@ -37,14 +36,14 @@ public class MetaPageInitRecord extends InitNewPageRecord {
     private int ioType;
 
     /**
-     * @param cacheId Cache ID.
+     * @param grpId Cache group ID.
      * @param pageId Page ID.
      * @param ioType IO type.
      * @param treeRoot Tree root.
      * @param reuseListRoot Reuse list root.
      */
-    public MetaPageInitRecord(int cacheId, long pageId, int ioType, int ioVer, long treeRoot, long reuseListRoot) {
-        super(cacheId, pageId, ioType, ioVer, pageId);
+    public MetaPageInitRecord(int grpId, long pageId, int ioType, int ioVer, long treeRoot, long reuseListRoot) {
+        super(grpId, pageId, ioType, ioVer, pageId);
 
         assert ioType == PageIO.T_META || ioType == PageIO.T_PART_META;
 
@@ -67,18 +66,14 @@ public class MetaPageInitRecord extends InitNewPageRecord {
         return reuseListRoot;
     }
 
-    /**
-     * @return IO type.
-     */
-    public int ioType() {
+    /** {@inheritDoc} */
+    @Override public int ioType() {
         return ioType;
     }
 
     /** {@inheritDoc} */
     @Override public void applyDelta(PageMemory pageMem, long pageAddr) throws IgniteCheckedException {
-        PageMetaIO io = ioType == PageIO.T_META ?
-            PageMetaIO.VERSIONS.forPage(pageAddr) :
-            PagePartitionMetaIO.VERSIONS.forPage(pageAddr);
+        PageMetaIO io = PageMetaIO.getPageIO(ioType, ioVer);
 
         io.initNewPage(pageAddr, newPageId, pageMem.pageSize());
 

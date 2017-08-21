@@ -1258,7 +1258,6 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
             }
 
             assertNaturalIdCache(sesFactory2, nameToId, "name-2");
-            assertNaturalIdCache(sesFactory1, nameToId, "name-2");
         }
         finally {
             cleanup();

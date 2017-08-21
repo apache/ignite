@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.Collection;
+import java.util.Set;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -41,6 +42,12 @@ public class DynamicCacheChangeBatch implements DiscoveryCustomMessage {
 
     /** Cache updates to be executed on exchange. */
     private transient ExchangeActions exchangeActions;
+
+    /** */
+    private boolean startCaches;
+
+    /** Restarting caches. */
+    private Set<String> restartingCaches;
 
     /**
      * @param reqs Requests.
@@ -94,6 +101,36 @@ public class DynamicCacheChangeBatch implements DiscoveryCustomMessage {
         assert exchangeActions != null && !exchangeActions.empty() : exchangeActions;
 
         this.exchangeActions = exchangeActions;
+    }
+
+    /**
+     * @return {@code True} if required to start all caches on client node.
+     */
+    public boolean startCaches() {
+        return startCaches;
+    }
+
+    /**
+     * @param restartingCaches Restarting caches.
+     */
+    public DynamicCacheChangeBatch restartingCaches(Set<String> restartingCaches) {
+        this.restartingCaches = restartingCaches;
+
+        return this;
+    }
+
+    /**
+     * @return Set of restarting caches.
+     */
+    public Set<String> restartingCaches() {
+        return restartingCaches;
+    }
+
+    /**
+     * @param startCaches {@code True} if required to start all caches on client node.
+     */
+    public void startCaches(boolean startCaches) {
+        this.startCaches = startCaches;
     }
 
     /** {@inheritDoc} */

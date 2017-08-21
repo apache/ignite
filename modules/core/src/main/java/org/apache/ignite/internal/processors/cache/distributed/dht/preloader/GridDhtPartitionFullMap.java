@@ -31,8 +31,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 /**
  * Full partition map.
  */
-public class GridDhtPartitionFullMap extends HashMap<UUID, GridDhtPartitionMap>
-    implements Comparable<GridDhtPartitionFullMap>, Externalizable {
+public class GridDhtPartitionFullMap extends HashMap<UUID, GridDhtPartitionMap> implements Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -175,27 +174,6 @@ public class GridDhtPartitionFullMap extends HashMap<UUID, GridDhtPartitionMap>
         this.updateSeq = updateSeq;
 
         return old;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int compareTo(GridDhtPartitionFullMap o) {
-        assert nodeId == null || (nodeOrder != o.nodeOrder && !nodeId.equals(o.nodeId)) ||
-            (nodeOrder == o.nodeOrder && nodeId.equals(o.nodeId)): "Inconsistent node order and ID [id1=" + nodeId +
-                ", order1=" + nodeOrder + ", id2=" + o.nodeId + ", order2=" + o.nodeOrder + ']';
-
-        if (nodeId == null && o.nodeId != null)
-            return -1;
-        else if (nodeId != null && o.nodeId == null)
-            return 1;
-        else if (nodeId == null && o.nodeId == null)
-            return 0;
-
-        int res = Long.compare(nodeOrder, o.nodeOrder);
-
-        if (res == 0)
-            res = Long.compare(updateSeq, o.updateSeq);
-
-        return res;
     }
 
     /** {@inheritDoc} */

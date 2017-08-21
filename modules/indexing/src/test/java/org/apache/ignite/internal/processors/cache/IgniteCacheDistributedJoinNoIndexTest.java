@@ -179,11 +179,11 @@ public class IgniteCacheDistributedJoinNoIndexTest extends GridCommonAbstractTes
             "where p.orgName = o.name");
 
         checkNoIndexError(personCache, "select o.name, p._key, p.orgName " +
-            "from \"org\".Organization o, (select * from \"person\".Person) p " +
+            "from \"org\".Organization o, (select *, _key from \"person\".Person) p " +
             "where p.orgName = o.name");
 
         checkNoIndexError(personCache, "select o.name, p._key, p.orgName " +
-            "from (select * from \"org\".Organization) o, (select * from \"person\".Person) p " +
+            "from (select * from \"org\".Organization) o, (select *, _key from \"person\".Person) p " +
             "where p.orgName = o.name");
 
         checkNoIndexError(personCache, "select o.name, p._key, p.orgName " +

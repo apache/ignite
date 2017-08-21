@@ -18,6 +18,8 @@
 package org.apache.ignite.ml.math.impls.matrix;
 
 import org.apache.ignite.ml.math.Matrix;
+import org.apache.ignite.ml.math.OrderedMatrix;
+import org.apache.ignite.ml.math.StorageConstants;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.impls.storage.matrix.ArrayMatrixStorage;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
@@ -30,7 +32,7 @@ import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
  * local, non-distributed execution is satisfactory and on-heap JVM storage is enough
  * to keep the entire data set.
  */
-public class DenseLocalOnHeapMatrix extends AbstractMatrix {
+public class DenseLocalOnHeapMatrix extends AbstractMatrix implements OrderedMatrix {
     /**
      *
      */
@@ -43,44 +45,89 @@ public class DenseLocalOnHeapMatrix extends AbstractMatrix {
      * @param cols Amount of columns in matrix.
      */
     public DenseLocalOnHeapMatrix(int rows, int cols) {
+        this(rows, cols, StorageConstants.ROW_STORAGE_MODE);
+    }
+
+    /**
+     * @param rows Amount of rows in matrix.
+     * @param cols Amount of columns in matrix.
+     * @param acsMode Storage order (row or column-based).
+     */
+    public DenseLocalOnHeapMatrix(int rows, int cols, int acsMode) {
         assert rows > 0;
         assert cols > 0;
 
-        setStorage(new ArrayMatrixStorage(rows, cols));
+        setStorage(new ArrayMatrixStorage(rows, cols, acsMode));
+    }
+
+    /**
+     * @param mtx Backing data array.
+     * @param acsMode Access mode.
+     */
+    public DenseLocalOnHeapMatrix(double[][] mtx, int acsMode) {
+        assert mtx != null;
+
+        setStorage(new ArrayMatrixStorage(mtx, acsMode));
     }
 
     /**
      * @param mtx Backing data array.
      */
     public DenseLocalOnHeapMatrix(double[][] mtx) {
+        this(mtx, StorageConstants.ROW_STORAGE_MODE);
+    }
+
+    /**
+     * @param mtx Backing data array.
+     * @param acsMode Access mode.
+     */
+    public DenseLocalOnHeapMatrix(double[] mtx, int rows, int acsMode) {
         assert mtx != null;
 
-        setStorage(new ArrayMatrixStorage(mtx));
+        setStorage(new ArrayMatrixStorage(mtx, rows, acsMode));
+    }
+
+    /**
+     * Build new matrix from flat raw array.
+     */
+    public DenseLocalOnHeapMatrix(double[] mtx, int rows) {
+        this(mtx, StorageConstants.ROW_STORAGE_MODE, rows);
+    }
+
+    /** */
+    private DenseLocalOnHeapMatrix(DenseLocalOnHeapMatrix orig) {
+        this(orig, orig.accessMode());
     }
 
     /**
      * @param orig Original matrix.
+     * @param acsMode Access mode.
      */
-    private DenseLocalOnHeapMatrix(DenseLocalOnHeapMatrix orig) {
+    private DenseLocalOnHeapMatrix(DenseLocalOnHeapMatrix orig, int acsMode) {
         assert orig != null;
 
-        setStorage(new ArrayMatrixStorage(orig.rowSize(), orig.columnSize()));
+        setStorage(new ArrayMatrixStorage(orig.rowSize(), orig.columnSize(), acsMode));
 
         assign(orig);
     }
 
     /** {@inheritDoc} */
     @Override public Matrix copy() {
-        return new DenseLocalOnHeapMatrix(this);
+        return new DenseLocalOnHeapMatrix(this, accessMode());
     }
 
     /** {@inheritDoc} */
     @Override public Matrix like(int rows, int cols) {
-        return new DenseLocalOnHeapMatrix(rows, cols);
+        return new DenseLocalOnHeapMatrix(rows, cols, getStorage() != null ? accessMode() : StorageConstants.ROW_STORAGE_MODE);
     }
 
     /** {@inheritDoc} */
     @Override public Vector likeVector(int crd) {
         return new DenseLocalOnHeapVector(crd);
+    }
+
+    /** */
+    @Override public int accessMode() {
+        return ((ArrayMatrixStorage)getStorage()).accessMode();
     }
 }

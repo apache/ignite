@@ -207,7 +207,7 @@ namespace ignite
              * Create statement associated with the connection.
              * Internal call.
              *
-             * @param Pointer to valid instance on success and NULL on failure.
+             * @param statement Pointer to valid instance on success and NULL on failure.
              * @return Operation result.
              */
             SqlResult::Type InternalCreateStatement(Statement*& statement);

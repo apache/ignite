@@ -83,4 +83,17 @@ BOOST_AUTO_TEST_CASE(IgniteImplForServers)
     BOOST_REQUIRE(clusterGroup.Get()->ForServers().IsValid());
 }
 
+BOOST_AUTO_TEST_CASE(IgniteSetActive)
+{
+    BOOST_REQUIRE(node.IsActive());
+
+    node.SetActive(false);
+
+    BOOST_REQUIRE(!node.IsActive());
+
+    node.SetActive(true);
+
+    BOOST_REQUIRE(node.IsActive());
+}
+
 BOOST_AUTO_TEST_SUITE_END()

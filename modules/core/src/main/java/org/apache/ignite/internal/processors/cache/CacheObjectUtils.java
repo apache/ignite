@@ -18,7 +18,9 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.internal.binary.BinaryUtils;
+import org.apache.ignite.internal.util.MutableSingletonList;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -66,7 +68,7 @@ public class CacheObjectUtils {
         for (Object obj : col)
             col0.add(unwrapBinary(ctx, obj, keepBinary, cpy));
 
-        return col0;
+        return (col0 instanceof MutableSingletonList) ? U.convertToSingletonList(col0) : col0;
     }
 
     /**

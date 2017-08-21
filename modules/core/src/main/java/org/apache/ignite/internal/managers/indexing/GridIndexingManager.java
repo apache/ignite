@@ -48,7 +48,7 @@ public class GridIndexingManager extends GridManagerAdapter<IndexingSpi> {
     /**
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
-    @Override public void start(boolean activeOnStart) throws IgniteCheckedException {
+    @Override public void start() throws IgniteCheckedException {
         startSpi();
 
         if (log.isDebugEnabled())

@@ -41,6 +41,7 @@ import org.apache.ignite.internal.processors.cache.extras.GridCacheObsoleteEntry
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.CI1;
@@ -70,6 +71,7 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
     private volatile ReaderId[] rdrs = ReaderId.EMPTY_ARRAY;
 
     /** Local partition. */
+    @GridToStringExclude
     private final GridDhtLocalPartition locPart;
 
     /**
@@ -87,7 +89,7 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
         // Record this entry with partition.
         int p = cctx.affinity().partition(key);
 
-        locPart = ctx.topology().localPartition(p, topVer, true);
+        locPart = ctx.topology().localPartition(p, topVer, true, true);
 
         assert locPart != null : p;
     }
@@ -118,12 +120,6 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
     /** {@inheritDoc} */
     @Override protected GridDhtLocalPartition localPartition() {
         return locPart;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void onUpdateFinished(long cntr) {
-        if (cctx.shared().database().persistenceEnabled())
-            locPart.onUpdateReceived(cntr);
     }
 
     /** {@inheritDoc} */
@@ -407,14 +403,6 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
             return null;
         }
 
-        // If remote node has no near cache, don't add it.
-        if (!cctx.discovery().cacheNearNode(node, cacheName())) {
-            if (log.isDebugEnabled())
-                log.debug("Ignoring near reader because near cache is disabled: " + nodeId);
-
-            return null;
-        }
-
         // If remote node is (primary?) or back up, don't add it as a reader.
         if (cctx.affinity().partitionBelongs(node, partition(), topVer)) {
             if (log.isDebugEnabled())
@@ -653,7 +641,7 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
         for (int i = 0; i < rdrs.length; i++) {
             ClusterNode node = cctx.discovery().getAlive(rdrs[i].nodeId());
 
-            if (node == null || !cctx.discovery().cacheNode(node, cacheName())) {
+            if (node == null) {
                 // Node has left and if new list has already been created, just skip.
                 // Otherwise, create new list and add alive nodes.
                 if (newRdrs == null) {
@@ -732,7 +720,9 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
 
     /** {@inheritDoc} */
     @Override public synchronized String toString() {
-        return S.toString(GridDhtCacheEntry.class, this, "super", super.toString());
+        return S.toString(GridDhtCacheEntry.class, this,
+            "part", locPart.id(),
+            "super", super.toString());
     }
 
     /** {@inheritDoc} */

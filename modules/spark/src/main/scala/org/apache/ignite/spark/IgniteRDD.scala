@@ -60,11 +60,11 @@ class IgniteRDD[K, V] (
 
         val qry: ScanQuery[K, V] = new ScanQuery[K, V](part.index)
 
-        val partNodes = ic.ignite().affinity(cache.getName).mapPartitionToPrimaryAndBackups(part.index)
+        val cur = cache.query(qry)
 
-        val it: java.util.Iterator[Cache.Entry[K, V]] = cache.query(qry).iterator()
+        TaskContext.get().addTaskCompletionListener((_) ⇒ cur.close())
 
-        new IgniteQueryIterator[Cache.Entry[K, V], (K, V)](it, entry ⇒ {
+        new IgniteQueryIterator[Cache.Entry[K, V], (K, V)](cur.iterator(), entry ⇒ {
             (entry.getKey, entry.getValue)
         })
     }

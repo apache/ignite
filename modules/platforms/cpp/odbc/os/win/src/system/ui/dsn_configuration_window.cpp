@@ -32,7 +32,7 @@ namespace ignite
                 DsnConfigurationWindow::DsnConfigurationWindow(Window* parent, config::Configuration& config):
                     CustomWindow(parent, "IgniteConfigureDsn", "Configure Apache Ignite DSN"),
                     width(360),
-                    height(270),
+                    height(280),
                     connectionSettingsGroupBox(),
                     nameLabel(),
                     nameEdit(),
@@ -44,6 +44,8 @@ namespace ignite
                     pageSizeEdit(),
                     distributedJoinsCheckBox(),
                     enforceJoinOrderCheckBox(),
+                    replicatedOnlyCheckBox(),
+                    collocatedCheckBox(),
                     protocolVersionLabel(),
                     protocolVersionComboBox(),
                     okButton(),
@@ -159,6 +161,14 @@ namespace ignite
                     enforceJoinOrderCheckBox = CreateCheckBox(editPosX + checkBoxSize + interval, rowPos, checkBoxSize,
                         rowSize, "Enforce Join Order", ChildId::ENFORCE_JOIN_ORDER_CHECK_BOX, config.IsEnforceJoinOrder());
 
+                    rowPos += rowSize;
+
+                    replicatedOnlyCheckBox = CreateCheckBox(editPosX, rowPos, checkBoxSize, rowSize,
+                        "Replicated Only", ChildId::REPLICATED_ONLY_CHECK_BOX, config.IsReplicatedOnly());
+
+                    collocatedCheckBox = CreateCheckBox(editPosX + checkBoxSize + interval, rowPos, checkBoxSize,
+                        rowSize, "Collocated", ChildId::COLLOCATED_CHECK_BOX, config.IsCollocated());
+
                     rowPos += interval * 2 + rowSize;
 
                     connectionSettingsGroupBox = CreateGroupBox(margin, sectionBegin, width - 2 * margin,
@@ -222,6 +232,20 @@ namespace ignite
                                     break;
                                 }
 
+                                case ChildId::REPLICATED_ONLY_CHECK_BOX:
+                                {
+                                    replicatedOnlyCheckBox->SetChecked(!replicatedOnlyCheckBox->IsChecked());
+
+                                    break;
+                                }
+
+                                case ChildId::COLLOCATED_CHECK_BOX:
+                                {
+                                    collocatedCheckBox->SetChecked(!collocatedCheckBox->IsChecked());
+
+                                    break;
+                                }
+
                                 case ChildId::PROTOCOL_VERSION_COMBO_BOX:
                                 default:
                                     return false;
@@ -254,6 +278,8 @@ namespace ignite
 
                     bool distributedJoins;
                     bool enforceJoinOrder;
+                    bool replicatedOnly;
+                    bool collocated;
 
                     nameEdit->GetText(dsn);
                     addressEdit->GetText(address);
@@ -271,6 +297,8 @@ namespace ignite
 
                     distributedJoins = distributedJoinsCheckBox->IsEnabled() && distributedJoinsCheckBox->IsChecked();
                     enforceJoinOrder = enforceJoinOrderCheckBox->IsEnabled() && enforceJoinOrderCheckBox->IsChecked();
+                    replicatedOnly = replicatedOnlyCheckBox->IsEnabled() && replicatedOnlyCheckBox->IsChecked();
+                    collocated = collocatedCheckBox->IsEnabled() && collocatedCheckBox->IsChecked();
 
                     LOG_MSG("Retriving arguments:");
                     LOG_MSG("DSN:                " << dsn);
@@ -280,6 +308,8 @@ namespace ignite
                     LOG_MSG("Protocol version:   " << version);
                     LOG_MSG("Distributed Joins:  " << (distributedJoins ? "true" : "false"));
                     LOG_MSG("Enforce Join Order: " << (enforceJoinOrder ? "true" : "false"));
+                    LOG_MSG("Replicated only:    " << (replicatedOnly ? "true" : "false"));
+                    LOG_MSG("Collocated:         " << (collocated ? "true" : "false"));
 
                     if (dsn.empty())
                         throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, "DSN name can not be empty.");
@@ -291,6 +321,8 @@ namespace ignite
                     cfg.SetProtocolVersion(version);
                     cfg.SetDistributedJoins(distributedJoins);
                     cfg.SetEnforceJoinOrder(enforceJoinOrder);
+                    cfg.SetReplicatedOnly(replicatedOnly);
+                    cfg.SetCollocated(collocated);
                 }
             }
         }

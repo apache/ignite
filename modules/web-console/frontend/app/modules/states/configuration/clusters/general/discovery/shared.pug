@@ -16,8 +16,9 @@
 
 include /app/helpers/jade/mixins
 
--var model = 'backupItem.discovery.SharedFs'
+mixin discovery-shared(modelAt = 'backupItem')
+    -const model = `${modelAt}.discovery.SharedFs`
 
-div
     .details-row
         +text('File path:', `${model}.path`, '"path"', 'false', 'disco/tcp', 'Shared path')
+    .pcb-flex-grid-break

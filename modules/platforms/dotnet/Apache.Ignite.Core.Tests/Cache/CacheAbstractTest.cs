@@ -2091,26 +2091,22 @@ namespace Apache.Ignite.Core.Tests.Cache
                 () => cache.Invoke(key, new T { ThrowErrNonSerializable = true }, arg), "ExpectedException");
         }
 
+        /// <summary>
+        /// Asserts that specified action throws a CacheEntryProcessorException.
+        /// </summary>
         private static void AssertThrowsCacheEntryProcessorException(Action action, string containsText = null)
         {
-            try
-            {
-                action();
+            var ex = Assert.Throws<CacheEntryProcessorException>(() => action());
 
-                Assert.Fail();
+            Assert.IsInstanceOf<JavaException>(ex.InnerException);
+
+            if (string.IsNullOrEmpty(containsText))
+            {
+                Assert.AreEqual(AddArgCacheEntryProcessor.ExceptionText, ex.GetBaseException().Message);
             }
-            catch (Exception ex)
+            else
             {
-                Assert.IsInstanceOf<CacheEntryProcessorException>(ex);
-
-                if (string.IsNullOrEmpty(containsText))
-                {
-                    Assert.IsNotNull(ex.InnerException);
-                    Assert.AreEqual(AddArgCacheEntryProcessor.ExceptionText, ex.InnerException.Message);
-                }
-                else
-                    Assert.IsTrue(ex.ToString().Contains(containsText), 
-                        "Expected: " + containsText + ", actual: " + ex);
+                Assert.IsTrue(ex.ToString().Contains(containsText), "Expected: " + containsText + ", actual: " + ex);
             }
         }
 

@@ -47,6 +47,9 @@ public class GridCachePartitionedUnloadEventsSelfTest extends GridCommonAbstract
     /** */
     private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
+    /** */
+    private static final int EVENTS_COUNT = 40;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -78,11 +81,11 @@ public class GridCachePartitionedUnloadEventsSelfTest extends GridCommonAbstract
     public void testUnloadEvents() throws Exception {
         final Ignite g1 = startGrid("g1");
 
-        Collection<Integer> allKeys = new ArrayList<>(100);
+        Collection<Integer> allKeys = new ArrayList<>(EVENTS_COUNT);
 
         IgniteCache<Integer, String> cache = g1.cache(DEFAULT_CACHE_NAME);
 
-        for (int i = 0; i < 100; i++) {
+        for (int i = 0; i < EVENTS_COUNT; i++) {
             cache.put(i, "val");
             allKeys.add(i);
         }
@@ -96,8 +99,6 @@ public class GridCachePartitionedUnloadEventsSelfTest extends GridCommonAbstract
 
         assertNotNull(g2Keys);
         assertFalse("There are no keys assigned to g2", g2Keys.isEmpty());
-
-        Thread.sleep(5000);
 
         Collection<Event> objEvts =
             g1.events().localQuery(F.<Event>alwaysTrue(), EVT_CACHE_REBALANCE_OBJECT_UNLOADED);

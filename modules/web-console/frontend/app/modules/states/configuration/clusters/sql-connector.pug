@@ -21,21 +21,19 @@ include /app/helpers/jade/mixins
 -var connectionModel = model + '.sqlConnectorConfiguration'
 -var connectionEnabled = connectionModel + '.enabled'
 
-.panel.panel-default(ng-if='$ctrl.available("2.1.0")' ng-form=form novalidate)
+.panel.panel-default(ng-show='$ctrl.available("2.1.0")' ng-form=form novalidate)
     .panel-heading(bs-collapse-toggle ng-click=`ui.loadPanel('${form}')`)
         ignite-form-panel-chevron
         label Query configuration
         ignite-form-field-tooltip.tipLabel
             | Query configuration
+        //- TODO IGNITE-5415 Add link to documentation.
         ignite-form-revert
     .panel-collapse(role='tabpanel' bs-collapse-target id=`${form}`)
-        .panel-body(ng-if=`ui.isPanelLoaded('${form}')`)
+        .panel-body(ng-if=`$ctrl.available("2.1.0") && ui.isPanelLoaded('${form}')`)
             .col-sm-6
                 .settings-row
-                    +number('Long query timeout:', `${model}.longQueryWarningTimeout`, '"LongQueryWarningTimeout"', 'true', '3000', '0',
-                        'Timeout in milliseconds after which long query warning will be printed')
-                .settings-row
-                    +checkbox('Enable SQL connection configuration', connectionEnabled, '"SqlConnectorEnabled"', 'Enable SQL connector configuration')
+                    +checkbox('Enabled', connectionEnabled, '"SqlConnectorEnabled"', 'Flag indicating whether to configure SQL connector configuration')
                 .settings-row
                     +text-enabled('Host:', `${connectionModel}.host`, '"SqlConnectorHost"', connectionEnabled, 'false', 'localhost', 'Host')
                 .settings-row
@@ -43,13 +41,13 @@ include /app/helpers/jade/mixins
                 .settings-row
                     +number('Port range:', `${connectionModel}.portRange`, '"SqlConnectorPortRange"', connectionEnabled, '100', '0', 'Port range')
                 .settings-row
-                    +number('Socket send buffer:', `${connectionModel}.socketSendBufferSize`, '"SqlConnectorSocketSendBufferSize"', connectionEnabled, '0', '0',
-                        'Socket send buffer size.<br/>\ ' +
-                        'When set to <b>0</b>, operation system default will be used')
+                    +number('Socket send buffer size:', `${connectionModel}.socketSendBufferSize`, '"SqlConnectorSocketSendBufferSize"', connectionEnabled, '0', '0',
+                        'Socket send buffer size.<br/>\
+                        When set to <b>0</b>, operation system default will be used')
                 .settings-row
-                    +number('Socket receive buffer:', `${connectionModel}.socketReceiveBufferSize`, '"SqlConnectorSocketReceiveBufferSize"', connectionEnabled, '0', '0',
-                        'Socket receive buffer size.<br/>\ ' +
-                        'When set to <b>0</b>, operation system default will be used')
+                    +number('Socket receive buffer size:', `${connectionModel}.socketReceiveBufferSize`, '"SqlConnectorSocketReceiveBufferSize"', connectionEnabled, '0', '0',
+                        'Socket receive buffer size.<br/>\
+                        When set to <b>0</b>, operation system default will be used')
                 .settings-row
                     +number('Max connection cursors:', `${connectionModel}.maxOpenCursorsPerConnection`, '"SqlConnectorMaxOpenCursorsPerConnection"', connectionEnabled, '128', '0',
                         'Max number of opened cursors per connection')

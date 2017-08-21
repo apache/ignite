@@ -132,6 +132,79 @@ namespace ignite
                 /** Job. */
                 JobType job;
             };
+
+            /**
+             * Compute job holder. Internal class.
+             * Specialisation for void return type
+             *
+             * @tparam F Actual job type.
+             */
+            template<typename F>
+            class ComputeJobHolderImpl<F, void> : public ComputeJobHolder
+            {
+            public:
+                typedef F JobType;
+
+                /**
+                 * Constructor.
+                 *
+                 * @param job Job.
+                 */
+                ComputeJobHolderImpl(JobType job) :
+                    job(job)
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Destructor.
+                 */
+                virtual ~ComputeJobHolderImpl()
+                {
+                    // No-op.
+                }
+
+                const ComputeJobResult<void>& GetResult()
+                {
+                    return res;
+                }
+
+                virtual void ExecuteLocal()
+                {
+                    try
+                    {
+                        job.Call();
+                        res.SetResult();
+                    }
+                    catch (const IgniteError& err)
+                    {
+                        res.SetError(err);
+                    }
+                    catch (const std::exception& err)
+                    {
+                        res.SetError(IgniteError(IgniteError::IGNITE_ERR_STD, err.what()));
+                    }
+                    catch (...)
+                    {
+                        res.SetError(IgniteError(IgniteError::IGNITE_ERR_UNKNOWN,
+                            "Unknown error occurred during call."));
+                    }
+                }
+
+                virtual void ExecuteRemote(binary::BinaryWriterImpl& writer)
+                {
+                    ExecuteLocal();
+
+                    res.Write(writer);
+                }
+
+            private:
+                /** Result. */
+                ComputeJobResult<void> res;
+
+                /** Job. */
+                JobType job;
+            };
         }
     }
 }

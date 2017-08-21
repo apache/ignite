@@ -30,9 +30,8 @@ public class EuclideanDistance implements DistanceMeasure {
     private static final long serialVersionUID = 1717556319784040040L;
 
     /** {@inheritDoc} */
-    @Override
-    public double compute(Vector a, Vector b)
-    throws CardinalityException {
+    @Override public double compute(Vector a, Vector b)
+        throws CardinalityException {
         return MatrixUtil.localCopyOf(a).minus(b).kNorm(2.0);
     }
 

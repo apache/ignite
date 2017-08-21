@@ -32,6 +32,7 @@ namespace Apache.Ignite.Core
     using Apache.Ignite.Core.Log;
     using Apache.Ignite.Core.Lifecycle;
     using Apache.Ignite.Core.Messaging;
+    using Apache.Ignite.Core.PersistentStore;
     using Apache.Ignite.Core.Plugin;
     using Apache.Ignite.Core.Services;
     using Apache.Ignite.Core.Transactions;
@@ -346,5 +347,26 @@ namespace Apache.Ignite.Core
         /// </summary>
         /// <param name="memoryPolicyName">Name of the memory policy.</param>
         IMemoryMetrics GetMemoryMetrics(string memoryPolicyName);
+
+        /// <summary>
+        /// Changes Ignite grid state to active or inactive.
+        /// </summary>
+        void SetActive(bool isActive);
+
+        /// <summary>
+        /// Determines whether this grid is in active state.
+        /// </summary>
+        /// <returns>
+        ///   <c>true</c> if the grid is active; otherwise, <c>false</c>.
+        /// </returns>
+        bool IsActive();
+
+        /// <summary>
+        /// Gets the persistent store metrics.
+        /// <para />
+        /// To enable metrics set <see cref="PersistentStoreConfiguration.MetricsEnabled"/> property
+        /// in <see cref="IgniteConfiguration.PersistentStoreConfiguration"/>.
+        /// </summary>
+        IPersistentStoreMetrics GetPersistentStoreMetrics();
     }
 }

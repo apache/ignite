@@ -63,6 +63,7 @@ namespace ignite
                 table(table),
                 tableType(tableType),
                 executed(false),
+                fetched(false),
                 meta(),
                 columnsMeta()
             {
@@ -98,6 +99,7 @@ namespace ignite
                 if (result == SqlResult::AI_SUCCESS)
                 {
                     executed = true;
+                    fetched = false;
 
                     cursor = meta.begin();
                 }
@@ -119,6 +121,11 @@ namespace ignite
                     return SqlResult::AI_ERROR;
                 }
 
+                if (!fetched)
+                    fetched = true;
+                else
+                    ++cursor;
+
                 if (cursor == meta.end())
                     return SqlResult::AI_NO_DATA;
 
@@ -126,8 +133,6 @@ namespace ignite
 
                 for (it = columnBindings.begin(); it != columnBindings.end(); ++it)
                     GetColumn(it->first, it->second);
-
-                ++cursor;
 
                 return SqlResult::AI_SUCCESS;
             }
@@ -142,7 +147,12 @@ namespace ignite
                 }
 
                 if (cursor == meta.end())
-                    return SqlResult::AI_NO_DATA;
+                {
+                    diag.AddStatusRecord(SqlState::S24000_INVALID_CURSOR_STATE,
+                        "Cursor has reached end of the result set.");
+
+                    return SqlResult::AI_ERROR;
+                }
 
                 const meta::TableMeta& currentColumn = *cursor;
 

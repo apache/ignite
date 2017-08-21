@@ -992,7 +992,8 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                 IgniteInternalFuture<AffinityTopologyVersion> topFut = cctx.affinity().affinityReadyFuture(rmtTopVer);
 
                 topFut.listen(new CIX1<IgniteInternalFuture<AffinityTopologyVersion>>() {
-                    @Override public void applyx(IgniteInternalFuture<AffinityTopologyVersion> fut) throws IgniteCheckedException {
+                    @Override public void applyx(
+                        IgniteInternalFuture<AffinityTopologyVersion> fut) throws IgniteCheckedException {
                         AffinityTopologyVersion readyTopVer = fut.get();
 
                         // This will append new futures to compound list.

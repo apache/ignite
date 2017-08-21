@@ -17,12 +17,14 @@
 
 package org.apache.ignite.internal.processors.datastructures;
 
+import org.apache.ignite.internal.processors.cache.GridCacheInternal;
+
 import java.io.Serializable;
 
 /**
  * Internal key for data structures processor.
  */
-public class DataStructuresCacheKey implements Serializable {
+public class DataStructuresCacheKey implements GridCacheInternal, Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 

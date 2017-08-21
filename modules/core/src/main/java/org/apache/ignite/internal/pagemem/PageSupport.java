@@ -28,87 +28,87 @@ public interface PageSupport {
      * released by calling {@link #releasePage(int, long, long)}. This method will allocate page with given ID if it doesn't
      * exist.
      *
-     * @param cacheId Cache ID.
+     * @param grpId Cache group ID.
      * @param pageId Page ID.
      * @return Page pointer.
      * @throws IgniteCheckedException If failed.
      */
-    public long acquirePage(int cacheId, long pageId) throws IgniteCheckedException;
+    public long acquirePage(int grpId, long pageId) throws IgniteCheckedException;
 
     /**
      *
-     * @param cacheId Cache ID.
+     * @param grpId Cache group ID.
      * @param pageId Page ID to release.
      * @param page Page pointer.
      */
-    public void releasePage(int cacheId, long pageId, long page);
+    public void releasePage(int grpId, long pageId, long page);
 
     /**
      *
-     * @param cacheId Cache ID.
+     * @param grpId Cache group ID.
      * @param pageId Page ID.
      * @param page Page pointer.
      * @return Pointer for reading the page.
      */
-    public long readLock(int cacheId, long pageId, long page);
+    public long readLock(int grpId, long pageId, long page);
 
     /**
      * Obtains read lock without checking page tag.
      *
-     * @param cacheId Cache ID.
+     * @param grpId Cache group ID.
      * @param pageId Page ID.
      * @param page Page pointer.
      * @return Pointer for reading the page.
      */
-    public long readLockForce(int cacheId, long pageId, long page);
+    public long readLockForce(int grpId, long pageId, long page);
 
     /**
      * Releases locked page.
      *
-     * @param cacheId Cache ID.
+     * @param grpId Cache group ID.
      * @param pageId Page ID.
      * @param page Page pointer.
      */
-    public void readUnlock(int cacheId, long pageId, long page);
+    public void readUnlock(int grpId, long pageId, long page);
 
     /**
      *
-     * @param cacheId Cache ID.
+     * @param grpId Cache group ID.
      * @param pageId Page ID.
      * @param page Page pointer.
      * @return Address of a buffer with contents of the given page or
      *            {@code 0L} if attempt to take the write lock failed.
      */
-    public long writeLock(int cacheId, long pageId, long page);
+    public long writeLock(int grpId, long pageId, long page);
 
     /**
      *
-     * @param cacheId Cache ID.
+     * @param grpId Cache group ID.
      * @param pageId Page ID.
      * @param page Page pointer.
      * @return Address of a buffer with contents of the given page or
      *            {@code 0L} if attempt to take the write lock failed.
      */
-    public long tryWriteLock(int cacheId, long pageId, long page);
+    public long tryWriteLock(int grpId, long pageId, long page);
 
     /**
      * Releases locked page.
      *
-     * @param cacheId Cache ID.
+     * @param grpId Cache group ID.
      * @param pageId Page ID.
      * @param page Page pointer.
      * @param walPlc {@code True} if page should be recorded to WAL, {@code false} if the page must not
      *      be recorded and {@code null} for the default behavior.
      * @param dirtyFlag Determines whether the page was modified since the last checkpoint.
      */
-    public void writeUnlock(int cacheId, long pageId, long page, Boolean walPlc,
+    public void writeUnlock(int grpId, long pageId, long page, Boolean walPlc,
         boolean dirtyFlag);
 
     /**
-     * @param cacheId Cache ID.
+     * @param grpId Cache group ID.
      * @param pageId Page ID.
      * @param page Page pointer.
      * @return {@code True} if the page is dirty.
      */
-    public boolean isDirty(int cacheId, long pageId, long page);
+    public boolean isDirty(int grpId, long pageId, long page);
 }

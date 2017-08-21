@@ -617,7 +617,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                     {
                         // New object, write in full form.
                         var inSchema = BinaryObjectSchemaSerializer.ReadSchema(inStream, inStartPos, inHeader, 
-                            _desc.Schema, _binary.Marshaller);
+                            _desc.Schema, _binary.Marshaller.Ignite);
 
                         var outSchema = BinaryObjectSchemaHolder.Current;
                         var schemaIdx = outSchema.PushSchema();

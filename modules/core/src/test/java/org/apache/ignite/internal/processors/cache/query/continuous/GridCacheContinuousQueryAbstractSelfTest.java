@@ -957,7 +957,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         });
 
         try (QueryCursor<Cache.Entry<Object, Object>> ignored = cache.query(qry)) {
-            cache.put(new GridCacheInternalKeyImpl("test"), 1);
+            cache.put(new GridCacheInternalKeyImpl("test", "test"), 1);
 
             cache.put(1, 1);
             cache.put(2, 2);

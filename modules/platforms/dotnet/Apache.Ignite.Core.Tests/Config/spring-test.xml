@@ -56,5 +56,9 @@
                 </property>
             </bean>
         </property>
+
+        <property name="persistentStoreConfiguration">
+            <bean class="org.apache.ignite.configuration.PersistentStoreConfiguration"/>
+        </property>
     </bean>
 </beans>

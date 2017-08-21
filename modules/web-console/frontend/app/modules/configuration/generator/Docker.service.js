@@ -19,6 +19,8 @@
  * Docker file generation entry point.
  */
 export default class IgniteDockerGenerator {
+    escapeFileName = (name) => name.replace(/[\\\/*\"\[\],\.:;|=<>?]/g, '-').replace(/ /g, '_');
+
     /**
      * Generate from section.
      *
@@ -44,7 +46,7 @@ export default class IgniteDockerGenerator {
             this.from(cluster, targetVer),
             '',
             '# Set config uri for node.',
-            `ENV CONFIG_URI config/${cluster.name}-server.xml`,
+            `ENV CONFIG_URI ${this.escapeFileName(cluster.name)}-server.xml`,
             '',
             '# Copy ignite-http-rest from optional.',
             'ENV OPTION_LIBS ignite-rest-http',
@@ -62,8 +64,7 @@ export default class IgniteDockerGenerator {
             '',
             '# Copy project jars to node classpath.',
             `RUN mkdir $IGNITE_HOME/libs/${cluster.name} && \\`,
-            `   find ${cluster.name}/target -name "*.jar" -type f -exec cp {} $IGNITE_HOME/libs/${cluster.name} \\; && \\`,
-            `   cp -r ${cluster.name}/config/* $IGNITE_HOME/config`
+            `   find ${cluster.name}/target -name "*.jar" -type f -exec cp {} $IGNITE_HOME/libs/${cluster.name} \\;`
         ].join('\n');
     }
 

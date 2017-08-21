@@ -102,6 +102,10 @@ namespace ignite
 
             bool enforceJoinOrder = ReadDsnBool(dsn, Configuration::Key::enforceJoinOrder, config.IsEnforceJoinOrder());
 
+            bool replicatedOnly = ReadDsnBool(dsn, Configuration::Key::replicatedOnly, config.IsReplicatedOnly());
+
+            bool collocated = ReadDsnBool(dsn, Configuration::Key::collocated, config.IsCollocated());
+
             std::string version = ReadDsnString(dsn, Configuration::Key::protocolVersion,
                 config.GetProtocolVersion().ToString().c_str());
 
@@ -116,6 +120,8 @@ namespace ignite
             config.SetSchema(schema);
             config.SetDistributedJoins(distributedJoins);
             config.SetEnforceJoinOrder(enforceJoinOrder);
+            config.SetReplicatedOnly(replicatedOnly);
+            config.SetCollocated(collocated);
             config.SetProtocolVersion(version);
             config.SetPageSize(pageSize);
         }

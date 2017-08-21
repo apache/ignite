@@ -17,7 +17,6 @@
 package org.apache.ignite.ml.math;
 
 import java.io.Externalizable;
-
 import org.apache.ignite.ml.math.exceptions.CardinalityException;
 
 /**
@@ -35,5 +34,5 @@ public interface DistanceMeasure extends Externalizable {
      * @return the distance between the two vectors
      * @throws CardinalityException if the array lengths differ.
      */
-    double compute(Vector a, Vector b) throws CardinalityException;
+    public double compute(Vector a, Vector b) throws CardinalityException;
 }

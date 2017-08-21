@@ -103,6 +103,34 @@ public class JdbcThinResultSet implements ResultSet {
     /** Close statement after close result set count. */
     private boolean closeStmt;
 
+    /** Jdbc metadata. Cache the JDBC object on the first access */
+    private JdbcThinResultSetMetadata jdbcMeta;
+
+    /**
+     * Constructs static result set.
+     *
+     * @param fields Fields.
+     * @param meta Columns metadata.
+     */
+    JdbcThinResultSet(List<List<Object>> fields, List<JdbcColumnMeta> meta) {
+        stmt = null;
+        fetchSize = 0;
+        qryId = -1L;
+        finished = true;
+        isQuery = true;
+        updCnt = -1;
+
+        this.rows = fields;
+
+        rowsIter = fields.iterator();
+
+        this.meta = meta;
+
+        metaInit = true;
+
+        initColumnOrder();
+    }
+
     /**
      * Creates new result set.
      *
@@ -512,7 +540,10 @@ public class JdbcThinResultSet implements ResultSet {
     @Override public ResultSetMetaData getMetaData() throws SQLException {
         ensureNotClosed();
 
-        return new JdbcThinResultSetMetadata(meta());
+        if (jdbcMeta == null)
+            jdbcMeta = new JdbcThinResultSetMetadata(meta());
+
+        return jdbcMeta;
     }
 
     /** {@inheritDoc} */
@@ -1243,7 +1274,7 @@ public class JdbcThinResultSet implements ResultSet {
 
     /** {@inheritDoc} */
     @Override public boolean isClosed() throws SQLException {
-        return stmt.isClosed() || closed;
+        return closed || stmt == null || stmt.connection().isClosed();
     }
 
     /** {@inheritDoc} */
@@ -1663,7 +1694,6 @@ public class JdbcThinResultSet implements ResultSet {
     }
 
     /**
-     * Init column order map.
      * @throws SQLException On error.
      * @return Column order map.
      */
@@ -1674,6 +1704,15 @@ public class JdbcThinResultSet implements ResultSet {
         if(!metaInit)
             meta();
 
+        initColumnOrder();
+
+        return colOrder;
+    }
+
+    /**
+     * Init column order map.
+     */
+    private void initColumnOrder() {
         colOrder = new HashMap<>(meta.size());
 
         for (int i = 0; i < meta.size(); ++i) {
@@ -1682,8 +1721,6 @@ public class JdbcThinResultSet implements ResultSet {
             if(!colOrder.containsKey(colName))
                 colOrder.put(colName, i);
         }
-
-        return colOrder;
     }
 
     /**

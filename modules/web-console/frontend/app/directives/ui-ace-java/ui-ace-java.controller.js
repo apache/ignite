@@ -29,7 +29,7 @@ export default ['IgniteVersion', 'JavaTransformer', function(Version, java) {
         case 'igniteConfiguration':
             const clsName = client ? 'ClientConfigurationFactory' : 'ServerConfigurationFactory';
 
-            ctrl.generate = (cluster) => java.cluster(cluster, Version.current, 'config', clsName, client);
+            ctrl.generate = (cluster) => java.cluster(cluster, Version.currentSbj.getValue(), 'config', clsName, client);
 
             break;
         case 'clusterCaches':
@@ -85,6 +85,19 @@ export default ['IgniteVersion', 'JavaTransformer', function(Version, java) {
                 }, []);
 
                 return java.clusterServiceConfiguration(cluster.serviceConfigurations, clusterCaches);
+            };
+
+            break;
+        case 'clusterCheckpoint':
+            ctrl.generate = (cluster, caches) => {
+                const clusterCaches = _.reduce(caches, (acc, cache) => {
+                    if (_.includes(cluster.caches, cache.value))
+                        acc.push(cache.cache);
+
+                    return acc;
+                }, []);
+
+                return java.clusterCheckpoint(cluster, clusterCaches);
             };
 
             break;

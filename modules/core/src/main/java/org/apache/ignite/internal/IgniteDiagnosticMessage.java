@@ -17,9 +17,11 @@
 
 package org.apache.ignite.internal;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;
@@ -222,7 +224,7 @@ public class IgniteDiagnosticMessage implements Message {
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return -55;
+        return -61;
     }
 
     /** {@inheritDoc} */
@@ -265,7 +267,7 @@ public class IgniteDiagnosticMessage implements Message {
         private final int cacheId;
 
         /** */
-        private final Set<KeyCacheObject> keys;
+        private Collection<KeyCacheObject> keys;
 
         /**
          * @param cacheId Cache ID.
@@ -320,6 +322,21 @@ public class IgniteDiagnosticMessage implements Message {
             assert other0 != null && cacheId == other0.cacheId : other;
 
             this.keys.addAll(other0.keys);
+        }
+
+        /**
+         * @param out Output stream.
+         * @throws IOException If failed.
+         */
+        private void writeObject(java.io.ObjectOutputStream out)
+            throws IOException {
+            /*
+            Transform to List, otherwise Set unmarshalling fails since need
+            call KeyCacheObject.finishUnmarshal before adding in Set.
+             */
+            this.keys = new ArrayList<>(keys);
+
+            out.defaultWriteObject();
         }
     }
 
@@ -396,7 +413,9 @@ public class IgniteDiagnosticMessage implements Message {
             for (IgniteInternalTx tx : ctx.cache().context().tm().activeTransactions()) {
                 if (dhtVer.equals(tx.xidVersion()) || nearVer.equals(tx.nearXidVersion())) {
                     sb.append(U.nl())
-                        .append("    [ver=").append(tx.xidVersion())
+                        .append("    ")
+                        .append(tx.getClass().getSimpleName())
+                        .append(" [ver=").append(tx.xidVersion())
                         .append(", nearVer=").append(tx.nearXidVersion())
                         .append(", topVer=").append(tx.topologyVersion())
                         .append(", state=").append(tx.state())
@@ -438,6 +457,14 @@ public class IgniteDiagnosticMessage implements Message {
 
         sb.append("Partitions exchange info [readyVer=").append(exchMgr.readyAffinityVersion()).append(']').append(U.nl())
             .append("Last initialized exchange future: ").append(fut);
+    }
+
+    /**
+     * @param sb String builder.
+     * @param ctx Context.
+     */
+    static void dumpPendingCacheMessages(StringBuilder sb, GridKernalContext ctx) {
+        ctx.cache().context().io().dumpPendingMessages(sb);
     }
 
     /**
