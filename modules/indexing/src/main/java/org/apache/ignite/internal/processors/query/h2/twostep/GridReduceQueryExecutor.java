@@ -87,10 +87,8 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.h2.command.ddl.CreateTableData;
 import org.h2.engine.Session;
-import org.h2.index.Cursor;
 import org.h2.index.Index;
 import org.h2.jdbc.JdbcConnection;
-import org.h2.result.Row;
 import org.h2.table.Column;
 import org.h2.util.IntArray;
 import org.h2.value.Value;
@@ -169,6 +167,7 @@ public class GridReduceQueryExecutor {
         log = ctx.log(GridReduceQueryExecutor.class);
 
         ctx.io().addMessageListener(GridTopic.TOPIC_QUERY, new GridMessageListener() {
+            @SuppressWarnings("deprecation")
             @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
                 if (!busyLock.enterBusy())
                     return;
@@ -507,17 +506,19 @@ public class GridReduceQueryExecutor {
      * @param cancel Query cancel.
      * @param params Query parameters.
      * @param parts Partitions.
+     * @param lazy Lazy execution flag.
      * @return Rows iterator.
      */
     public Iterator<List<?>> query(
         String schemaName,
-        GridCacheTwoStepQuery qry,
+        final GridCacheTwoStepQuery qry,
         boolean keepBinary,
         boolean enforceJoinOrder,
         int timeoutMillis,
         GridQueryCancel cancel,
         Object[] params,
-        final int[] parts
+        final int[] parts,
+        boolean lazy
     ) {
         if (F.isEmpty(params))
             params = EMPTY_PARAMS;
@@ -622,6 +623,8 @@ public class GridReduceQueryExecutor {
 
             int replicatedQrysCnt = 0;
 
+            final Collection<ClusterNode> finalNodes = nodes;
+
             for (GridCacheSqlQuery mapQry : qry.mapQueries()) {
                 GridMergeIndex idx;
 
@@ -665,6 +668,8 @@ public class GridReduceQueryExecutor {
 
             runs.put(qryReqId, r);
 
+            boolean release = true;
+
             try {
                 cancel.checkCancelled();
 
@@ -685,8 +690,6 @@ public class GridReduceQueryExecutor {
                 }
 
                 final boolean distributedJoins = qry.distributedJoins();
-
-                final Collection<ClusterNode> finalNodes = nodes;
 
                 cancel.set(new Runnable() {
                     @Override public void run() {
@@ -710,6 +713,9 @@ public class GridReduceQueryExecutor {
 
                 if (isReplicatedOnly)
                     flags |= GridH2QueryRequest.FLAG_REPLICATED;
+
+                if (lazy && mapQrys.size() == 1)
+                    flags |= GridH2QueryRequest.FLAG_LAZY;
 
                 GridH2QueryRequest req = new GridH2QueryRequest()
                     .requestId(qryReqId)
@@ -757,27 +763,9 @@ public class GridReduceQueryExecutor {
 
                 if (!retry) {
                     if (skipMergeTbl) {
-                        List<List<?>> res = new ArrayList<>();
+                        resIter = new GridMergeIndexIterator(this, finalNodes, r, qryReqId, qry.distributedJoins());
 
-                        // Simple UNION ALL can have multiple indexes.
-                        for (GridMergeIndex idx : r.indexes()) {
-                            Cursor cur = idx.findInStream(null, null);
-
-                            while (cur.next()) {
-                                Row row = cur.get();
-
-                                int cols = row.getColumnCount();
-
-                                List<Object> resRow = new ArrayList<>(cols);
-
-                                for (int c = 0; c < cols; c++)
-                                    resRow.add(row.getValue(c).getObject());
-
-                                res.add(resRow);
-                            }
-                        }
-
-                        resIter = res.iterator();
+                        release = false;
                     }
                     else {
                         cancel.checkCancelled();
@@ -820,6 +808,8 @@ public class GridReduceQueryExecutor {
                 return new GridQueryCacheObjectsIterator(resIter, h2.objectContext(), keepBinary);
             }
             catch (IgniteCheckedException | RuntimeException e) {
+                release = true;
+
                 U.closeQuiet(r.connection());
 
                 if (e instanceof CacheException) {
@@ -842,15 +832,13 @@ public class GridReduceQueryExecutor {
                 throw new CacheException("Failed to run reduce query locally.", cause);
             }
             finally {
-                // Make sure any activity related to current attempt is cancelled.
-                cancelRemoteQueriesIfNeeded(nodes, r, qryReqId, qry.distributedJoins());
+                if (release) {
+                    releaseRemoteResources(finalNodes, r, qryReqId, qry.distributedJoins());
 
-                if (!runs.remove(qryReqId, r))
-                    U.warn(log, "Query run was already removed: " + qryReqId);
-
-                if (!skipMergeTbl) {
-                    for (int i = 0, mapQrys = qry.mapQueries().size(); i < mapQrys; i++)
-                        fakeTable(null, i).innerTable(null); // Drop all merge tables.
+                    if (!skipMergeTbl) {
+                        for (int i = 0, mapQrys = qry.mapQueries().size(); i < mapQrys; i++)
+                            fakeTable(null, i).innerTable(null); // Drop all merge tables.
+                    }
                 }
             }
         }
@@ -885,16 +873,15 @@ public class GridReduceQueryExecutor {
     }
 
     /**
+     * Release remote resources if needed.
+     *
      * @param nodes Query nodes.
      * @param r Query run.
      * @param qryReqId Query id.
      * @param distributedJoins Distributed join flag.
      */
-    private void cancelRemoteQueriesIfNeeded(Collection<ClusterNode> nodes,
-        ReduceQueryRun r,
-        long qryReqId,
-        boolean distributedJoins)
-    {
+    public void releaseRemoteResources(Collection<ClusterNode> nodes, ReduceQueryRun r, long qryReqId,
+        boolean distributedJoins) {
         // For distributedJoins need always send cancel request to cleanup resources.
         if (distributedJoins)
             send(nodes, new GridQueryCancelRequest(qryReqId), null, false);
@@ -907,6 +894,9 @@ public class GridReduceQueryExecutor {
                 }
             }
         }
+
+        if (!runs.remove(qryReqId, r))
+            U.warn(log, "Query run was already removed: " + qryReqId);
     }
 
     /**

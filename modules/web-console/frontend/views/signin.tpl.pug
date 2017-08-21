@@ -106,6 +106,7 @@ web-console-header
                             li(data-target='#carousel', data-slide-to='4')
                             li(data-target='#carousel', data-slide-to='5')
                             li(data-target='#carousel', data-slide-to='6')
+                            li(data-target='#carousel', data-slide-to='7')
                         //- Wrapper for slides
                         .carousel-inner(role='listbox')
                             .item.active
@@ -143,6 +144,11 @@ web-console-header
                                 .carousel-caption
                                     h3 Query chart
                                     p View data in tabular form and as charts
+                            .item
+                                img(src='/images/multicluster.png', alt='Multicluster support')
+                                .carousel-caption
+                                    h3 Multicluster support
+                                    p Execute queries on different clusters
                         //- Controls
                         a.left.carousel-control(href='#carousel', ng-click='$event.preventDefault()', role='button', data-slide='prev')
                             span.fa.fa-chevron-left(aria-hidden='true')

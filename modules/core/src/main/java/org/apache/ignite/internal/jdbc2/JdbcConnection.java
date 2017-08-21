@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.jdbc2;
 
+import java.net.URL;
 import java.sql.Array;
 import java.sql.Blob;
 import java.sql.CallableStatement;
@@ -50,7 +51,6 @@ import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteJdbcDriver;
-import org.apache.ignite.Ignition;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.compute.ComputeTaskTimeoutException;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -64,6 +64,7 @@ import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.resources.IgniteInstanceResource;
@@ -241,21 +242,30 @@ public class JdbcConnection implements Connection {
                     fut = old;
                 else {
                     try {
-                        Ignite ignite;
+                        final IgniteBiTuple<IgniteConfiguration, ? extends GridSpringResourceContext> cfgAndCtx;
+
+                        String jdbcName = "ignite-jdbc-driver-" + UUID.randomUUID().toString();
 
                         if (NULL.equals(cfg)) {
-                            Ignition.setClientMode(true);
+                            URL url = U.resolveIgniteUrl(IgnitionEx.DFLT_CFG);
 
-                            ignite = Ignition.start();
+                            if (url != null)
+                                cfgAndCtx = loadConfiguration(IgnitionEx.DFLT_CFG, jdbcName);
+                            else {
+                                U.warn(null, "Default Spring XML file not found (is IGNITE_HOME set?): "
+                                    + IgnitionEx.DFLT_CFG);
+
+                                IgniteConfiguration cfg = new IgniteConfiguration()
+                                    .setIgniteInstanceName(jdbcName)
+                                    .setClientMode(true);
+
+                                cfgAndCtx = new IgniteBiTuple<>(cfg, null);
+                            }
                         }
-                        else {
-                            IgniteBiTuple<IgniteConfiguration, ? extends GridSpringResourceContext> cfgAndCtx =
-                                loadConfiguration(cfgUrl);
+                        else
+                            cfgAndCtx = loadConfiguration(cfgUrl, jdbcName);
 
-                            ignite = IgnitionEx.start(cfgAndCtx.get1(), cfgAndCtx.get2());
-                        }
-
-                        fut.onDone(ignite);
+                        fut.onDone(IgnitionEx.start(cfgAndCtx.get1(), cfgAndCtx.get2()));
                     }
                     catch (IgniteException e) {
                         fut.onDone(e);
@@ -274,9 +284,11 @@ public class JdbcConnection implements Connection {
 
     /**
      * @param cfgUrl Config URL.
+     * @param jdbcName Appended to instance name or used as default.
      * @return Ignite config and Spring context.
      */
-    private IgniteBiTuple<IgniteConfiguration, ? extends GridSpringResourceContext> loadConfiguration(String cfgUrl) {
+    private IgniteBiTuple<IgniteConfiguration, ? extends GridSpringResourceContext> loadConfiguration(String cfgUrl,
+        String jdbcName) {
         try {
             IgniteBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext> cfgMap =
                 IgnitionEx.loadConfigurations(cfgUrl);
@@ -284,7 +296,9 @@ public class JdbcConnection implements Connection {
             IgniteConfiguration cfg = F.first(cfgMap.get1());
 
             if (cfg.getIgniteInstanceName() == null)
-                cfg.setIgniteInstanceName("ignite-jdbc-driver-" + UUID.randomUUID().toString());
+                cfg.setIgniteInstanceName(jdbcName);
+            else
+                cfg.setIgniteInstanceName(cfg.getIgniteInstanceName() + "-" + jdbcName);
 
             cfg.setClientMode(true); // Force client mode.
 

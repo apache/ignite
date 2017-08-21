@@ -228,6 +228,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_COMPACT_FOOTER;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_BINARY_STRING_SER_VER_2;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_DFLT_SUID;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MEMORY_CONFIG;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_NODE_CONSISTENT_ID;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PEER_CLASSLOADING;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PHY_RAM;
@@ -235,6 +236,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PREFIX;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_RESTART_ENABLED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_REST_PORT_RANGE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SPI_CLASS;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_TX_CONFIG;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_USER_NAME;
 import static org.apache.ignite.internal.IgniteVersionUtils.ACK_VER_STR;
 import static org.apache.ignite.internal.IgniteVersionUtils.BUILD_TSTAMP_STR;
@@ -1571,6 +1573,12 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         if (cfg.getConnectorConfiguration() != null)
             add(ATTR_REST_PORT_RANGE, cfg.getConnectorConfiguration().getPortRange());
 
+        // Save database configuration.
+        add(ATTR_MEMORY_CONFIG, cfg.getMemoryConfiguration());
+
+        // Save transactions configuration.
+        add(ATTR_TX_CONFIG, cfg.getTransactionConfiguration());
+
         // Stick in SPI versions and classes attributes.
         addSpiAttributes(cfg.getCollisionSpi());
         addSpiAttributes(cfg.getDiscoverySpi());
@@ -2353,7 +2361,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     private void ackSystemProperties() {
         assert log != null;
 
-        if (log.isDebugEnabled())
+        if (log.isDebugEnabled() && S.INCLUDE_SENSITIVE)
             for (Map.Entry<Object, Object> entry : snapshot().entrySet())
                 log.debug("System property [" + entry.getKey() + '=' + entry.getValue() + ']');
     }
@@ -2558,7 +2566,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         assert log != null;
 
         // Ack IGNITE_HOME and VM arguments.
-        if (log.isInfoEnabled()) {
+        if (log.isInfoEnabled() && S.INCLUDE_SENSITIVE) {
             log.info("IGNITE_HOME=" + cfg.getIgniteHome());
             log.info("VM arguments: " + rtBean.getInputArguments());
         }
