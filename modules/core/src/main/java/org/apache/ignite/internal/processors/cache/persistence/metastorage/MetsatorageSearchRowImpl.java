@@ -15,43 +15,41 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.persistence;
-
-import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+package org.apache.ignite.internal.processors.cache.persistence.metastorage;
 
 /**
- * Cache data row.
+ *
  */
-public interface CacheDataRow extends CacheSearchRow, Storeable {
-    /**
-     * @return Cache value.
-     */
-    public CacheObject value();
-
-    /**
-     * @return Cache entry version.
-     */
-    public GridCacheVersion version();
-
-    /**
-     * @return Expire time.
-     */
-    public long expireTime();
-
-    /**
-     * @return Partition for this key.
-     */
-    public int partition();
-
-    /**
-     * @param link Link for this row.
-     */
-    public void link(long link);
+public class MetsatorageSearchRowImpl implements MetastorageSearchRow {
+    /** */
+    private final String key;
+    /** */
+    private final long link;
 
     /**
      * @param key Key.
+     * @param link Link.
      */
-    public void key(KeyCacheObject key);
+    public MetsatorageSearchRowImpl(String key, long link) {
+        this.key = key;
+        this.link = link;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public String key() {
+        return key;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public long link() {
+        return link;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public int hash() {
+        return key.hashCode();
+    }
 }

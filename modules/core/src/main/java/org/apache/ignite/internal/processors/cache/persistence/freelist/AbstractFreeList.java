@@ -28,15 +28,13 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageInsertFragmen
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageInsertRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageRemoveRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageUpdateRecord;
-import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.MemoryMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.MemoryPolicy;
+import org.apache.ignite.internal.processors.cache.persistence.Storeable;
 import org.apache.ignite.internal.processors.cache.persistence.evict.PageEvictionTracker;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.CacheVersionIO;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.AbstractDataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPagePayload;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseBag;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
@@ -45,7 +43,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  */
-public class FreeListImpl extends PagesList implements FreeList, ReuseList {
+public abstract class AbstractFreeList<T extends Storeable> extends PagesList implements FreeList<T>, ReuseList {
     /** */
     private static final int BUCKETS = 256; // Must be power of 2.
 
@@ -77,7 +75,7 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
     private final int emptyDataPagesBucket;
 
     /** */
-    private final PageHandler<CacheDataRow, Boolean> updateRow = new UpdateRowHandler();
+    private final PageHandler<T, Boolean> updateRow = new UpdateRowHandler();
 
     /** */
     private final MemoryMetricsImpl memMetrics;
@@ -88,7 +86,7 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
     /**
      *
      */
-    private final class UpdateRowHandler extends PageHandler<CacheDataRow, Boolean> {
+    private final class UpdateRowHandler extends PageHandler<T, Boolean> {
         @Override public Boolean run(
             int cacheId,
             long pageId,
@@ -96,12 +94,12 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
             long pageAddr,
             PageIO iox,
             Boolean walPlc,
-            CacheDataRow row,
+            T row,
             int itemId)
             throws IgniteCheckedException {
-            DataPageIO io = (DataPageIO)iox;
+            AbstractDataPageIO<T> io = (AbstractDataPageIO<T>)iox;
 
-            int rowSize = getRowSize(row, row.cacheId() != 0);
+            int rowSize = io.getRowSize(row);
 
             boolean updated = io.updateRow(pageAddr, itemId, pageSize(), null, row, rowSize);
 
@@ -129,12 +127,12 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
     }
 
     /** */
-    private final PageHandler<CacheDataRow, Integer> writeRow = new WriteRowHandler();
+    private final PageHandler<T, Integer> writeRow = new WriteRowHandler();
 
     /**
      *
      */
-    private final class WriteRowHandler extends PageHandler<CacheDataRow, Integer> {
+    private final class WriteRowHandler extends PageHandler<T, Integer> {
         @Override public Integer run(
             int cacheId,
             long pageId,
@@ -142,18 +140,18 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
             long pageAddr,
             PageIO iox,
             Boolean walPlc,
-            CacheDataRow row,
+            T row,
             int written)
             throws IgniteCheckedException {
-            DataPageIO io = (DataPageIO)iox;
+            AbstractDataPageIO<T> io = (AbstractDataPageIO<T>)iox;
 
-            int rowSize = getRowSize(row, row.cacheId() != 0);
+            int rowSize = io.getRowSize(row);
             int oldFreeSpace = io.getFreeSpace(pageAddr);
 
             assert oldFreeSpace > 0 : oldFreeSpace;
 
             // If the full row does not fit into this page write only a fragment.
-            written = (written == 0 && oldFreeSpace >= rowSize) ? addRow(pageId, page, pageAddr, io, row, rowSize):
+            written = (written == 0 && oldFreeSpace >= rowSize) ? addRow(pageId, page, pageAddr, io, row, rowSize) :
                 addRowFragment(pageId, page, pageAddr, io, row, written, rowSize);
 
             // Reread free space after update.
@@ -186,8 +184,8 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
             long pageId,
             long page,
             long pageAddr,
-            DataPageIO io,
-            CacheDataRow row,
+            AbstractDataPageIO<T> io,
+            T row,
             int rowSize
         ) throws IgniteCheckedException {
             io.addRow(pageAddr, row, rowSize, pageSize());
@@ -226,8 +224,8 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
             long pageId,
             long page,
             long pageAddr,
-            DataPageIO io,
-            CacheDataRow row,
+            AbstractDataPageIO<T> io,
+            T row,
             int written,
             int rowSize
         ) throws IgniteCheckedException {
@@ -253,7 +251,6 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
         }
     }
 
-
     /** */
     private final PageHandler<Void, Long> rmvRow = new RemoveRowHandler();
 
@@ -271,11 +268,11 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
             Void ignored,
             int itemId)
             throws IgniteCheckedException {
-            DataPageIO io = (DataPageIO)iox;
+            AbstractDataPageIO<T> io = (AbstractDataPageIO<T>)iox;
 
             int oldFreeSpace = io.getFreeSpace(pageAddr);
 
-            assert oldFreeSpace >= 0: oldFreeSpace;
+            assert oldFreeSpace >= 0 : oldFreeSpace;
 
             long nextLink = io.removeRow(pageAddr, itemId, pageSize());
 
@@ -319,7 +316,7 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
      * @param initNew {@code True} if new metadata should be initialized.
      * @throws IgniteCheckedException If failed.
      */
-    public FreeListImpl(
+    public AbstractFreeList(
         int cacheId,
         String name,
         MemoryMetricsImpl memMetrics,
@@ -339,7 +336,7 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
 
         // TODO this constant is used because currently we cannot reuse data pages as index pages
         // TODO and vice-versa. It should be removed when data storage format is finalized.
-        MIN_SIZE_FOR_DATA_PAGE = pageSize - DataPageIO.MIN_DATA_PAGE_OVERHEAD;
+        MIN_SIZE_FOR_DATA_PAGE = pageSize - AbstractDataPageIO.MIN_DATA_PAGE_OVERHEAD;
 
         int shift = 0;
 
@@ -358,7 +355,7 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
     }
 
     /**
-     * Calculates average fill factor over FreeListImpl instance.
+     * Calculates average fill factor over CacheFreeListImpl instance.
      */
     public float fillFactor() {
         long pageSize = pageSize();
@@ -376,7 +373,7 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
             totalSize += pages * pageSize;
         }
 
-        return totalSize == 0 ? -1L : ((float) loadSize / totalSize);
+        return totalSize == 0 ? -1L : ((float)loadSize / totalSize);
     }
 
     /** {@inheritDoc} */
@@ -454,8 +451,8 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
     }
 
     /** {@inheritDoc} */
-    @Override public void insertDataRow(CacheDataRow row) throws IgniteCheckedException {
-        int rowSize = getRowSize(row, row.cacheId() != 0);
+    @Override public void insertDataRow(T row) throws IgniteCheckedException {
+        int rowSize = ioVersions().latest().getRowSize(row);
 
         int written = 0;
 
@@ -468,14 +465,14 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
             long pageId = 0L;
 
             if (freeSpace == MIN_SIZE_FOR_DATA_PAGE)
-                pageId = takeEmptyPage(emptyDataPagesBucket, DataPageIO.VERSIONS);
+                pageId = takeEmptyPage(emptyDataPagesBucket, ioVersions());
 
             boolean reuseBucket = false;
 
             // TODO: properly handle reuse bucket.
             if (pageId == 0L) {
                 for (int b = bucket(freeSpace, false) + 1; b < BUCKETS - 1; b++) {
-                    pageId = takeEmptyPage(b, DataPageIO.VERSIONS);
+                    pageId = takeEmptyPage(b, ioVersions());
 
                     if (pageId != 0L) {
                         reuseBucket = isReuseBucket(b);
@@ -490,7 +487,7 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
             if (allocated)
                 pageId = allocateDataPage(row.partition());
 
-            DataPageIO init = reuseBucket || allocated ? DataPageIO.VERSIONS.latest() : null;
+            AbstractDataPageIO<T> init = reuseBucket || allocated ? ioVersions().latest() : null;
 
             written = write(pageId, writeRow, init, row, written, FAIL_I);
 
@@ -500,7 +497,7 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean updateDataRow(long link, CacheDataRow row) throws IgniteCheckedException {
+    @Override public boolean updateDataRow(long link, T row) throws IgniteCheckedException {
         assert link != 0;
 
         long pageId = PageIdUtils.pageId(link);
@@ -560,40 +557,26 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
 
     /** {@inheritDoc} */
     @Override public void addForRecycle(ReuseBag bag) throws IgniteCheckedException {
-        assert reuseList == this: "not allowed to be a reuse list";
+        assert reuseList == this : "not allowed to be a reuse list";
 
         put(bag, 0, 0, 0L, REUSE_BUCKET);
     }
 
     /** {@inheritDoc} */
     @Override public long takeRecycledPage() throws IgniteCheckedException {
-        assert reuseList == this: "not allowed to be a reuse list";
+        assert reuseList == this : "not allowed to be a reuse list";
 
         return takeEmptyPage(REUSE_BUCKET, null);
     }
 
     /** {@inheritDoc} */
     @Override public long recycledPagesCount() throws IgniteCheckedException {
-        assert reuseList == this: "not allowed to be a reuse list";
+        assert reuseList == this : "not allowed to be a reuse list";
 
         return storedPagesCount(REUSE_BUCKET);
     }
 
-    /**
-     * @param row Row.
-     * @param withCacheId If {@code true} adds cache ID size.
-     * @return Entry size on page.
-     * @throws IgniteCheckedException If failed.
-     */
-    public static int getRowSize(CacheDataRow row, boolean withCacheId) throws IgniteCheckedException {
-        KeyCacheObject key = row.key();
-        CacheObject val = row.value();
-
-        int keyLen = key.valueBytesLength(null);
-        int valLen = val.valueBytesLength(null);
-
-        return keyLen + valLen + CacheVersionIO.size(row.version(), false) + 8 + (withCacheId ? 4 : 0);
-    }
+    public abstract IOVersions<? extends AbstractDataPageIO<T>> ioVersions();
 
     /** {@inheritDoc} */
     @Override public String toString() {
