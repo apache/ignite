@@ -214,7 +214,7 @@ public class IgniteSqlMergeQueryInvalidParametersTest extends GridCommonAbstract
      */
     private void assertMaxSizeEquals(int exp) {
         assertEquals(exp,
-            GridTestUtils.getFieldValue(h2Idx, IgniteH2Indexing.class, "sqlMergeTblMaxSize"));
+            (int) GridTestUtils.getFieldValue(h2Idx, IgniteH2Indexing.class, "sqlMergeTblMaxSize"));
     }
 
     /**
@@ -222,7 +222,7 @@ public class IgniteSqlMergeQueryInvalidParametersTest extends GridCommonAbstract
      */
     private void assertPrefetchSizeEquals(int exp) {
         assertEquals(exp,
-            GridTestUtils.getFieldValue(h2Idx, IgniteH2Indexing.class, "sqlMergeTblPrefetchSize"));
+            (int) GridTestUtils.getFieldValue(h2Idx, IgniteH2Indexing.class, "sqlMergeTblPrefetchSize"));
     }
 
     /**
