@@ -68,6 +68,13 @@ public class MemoryMetricsImpl implements MemoryMetrics {
     private volatile long rateTimeInterval;
 
     /**
+         * @param memPlcCfg MemoryPolicyConfiguration.
+         */
+    public MemoryMetricsImpl(MemoryPolicyConfiguration memPlcCfg) {
+        this(memPlcCfg, null);
+    }
+
+    /**
      * @param memPlcCfg MemoryPolicyConfiguration.
      */
     public MemoryMetricsImpl(MemoryPolicyConfiguration memPlcCfg, @Nullable IgniteOutClosure<Float> fillFactorProvider) {
