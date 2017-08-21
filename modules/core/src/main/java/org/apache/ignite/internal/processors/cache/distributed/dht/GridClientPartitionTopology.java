@@ -115,6 +115,9 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     /** */
     private volatile DiscoCache discoCache;
 
+    /** */
+    private final int parts;
+
     /**
      * @param cctx Context.
      * @param grpId Group ID.
@@ -130,6 +133,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
         this.cctx = cctx;
         this.grpId = grpId;
         this.similarAffKey = similarAffKey;
+        this.parts = parts;
 
         topVer = AffinityTopologyVersion.NONE;
 
@@ -140,6 +144,11 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
             updateSeq.get());
 
         cntrMap = new CachePartitionFullCountersMap(parts);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int partitions() {
+        return parts;
     }
 
     /**

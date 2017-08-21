@@ -43,6 +43,11 @@ import org.jetbrains.annotations.Nullable;
 @GridToStringExclude
 public interface GridDhtPartitionTopology {
     /**
+     * @return  Total cache partitions.
+     */
+    public int partitions();
+
+    /**
      * Locks the topology, usually during mapping on locks or transactions.
      */
     public void readLock();

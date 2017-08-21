@@ -19,20 +19,18 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
 import java.io.Serializable;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.ignite.internal.util.typedef.T2;
 
 /**
  * Partition counters map.
  */
-public class IgniteDhtPartitionCountersMap implements Serializable {
+public class IgniteDhtPartitionCountersMap2 implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    private Map<Integer, Map<Integer, T2<Long, Long>>> map;
+    private Map<Integer, CachePartitionFullCountersMap> map;
 
     /**
      * @return {@code True} if map is empty.
@@ -45,7 +43,7 @@ public class IgniteDhtPartitionCountersMap implements Serializable {
      * @param cacheId Cache ID.
      * @param cntrMap Counters map.
      */
-    public synchronized void putIfAbsent(int cacheId, Map<Integer, T2<Long, Long>> cntrMap) {
+    public synchronized void putIfAbsent(int cacheId, CachePartitionFullCountersMap cntrMap) {
         if (map == null)
             map = new HashMap<>();
 
@@ -57,14 +55,14 @@ public class IgniteDhtPartitionCountersMap implements Serializable {
      * @param cacheId Cache ID.
      * @return Counters map.
      */
-    public synchronized Map<Integer, T2<Long, Long>> get(int cacheId) {
+    public synchronized CachePartitionFullCountersMap get(int cacheId) {
         if (map == null)
-            map = new HashMap<>();
+            return null;
 
-        Map<Integer, T2<Long, Long>> cntrMap = map.get(cacheId);
+        CachePartitionFullCountersMap cntrMap = map.get(cacheId);
 
         if (cntrMap == null)
-            return Collections.emptyMap();
+            return null;
 
         return cntrMap;
     }
