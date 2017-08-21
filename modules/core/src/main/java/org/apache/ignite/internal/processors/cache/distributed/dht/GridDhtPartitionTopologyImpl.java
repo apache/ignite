@@ -671,6 +671,15 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         GridDhtLocalPartition loc = locParts.get(p);
 
         if (loc == null || loc.state() == EVICTED) {
+            if (loc != null) {
+                try {
+                    loc.rent(false).get();
+                }
+                catch (IgniteCheckedException e) {
+                    throw new IgniteException(e);
+                }
+            }
+
             locParts.set(p, loc = new GridDhtLocalPartition(ctx, grp, p));
 
             T2<Long, Long> cntr = cntrMap.get(p);
@@ -729,6 +738,13 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             boolean belongs = partitionLocalNode(p, topVer);
 
             if (loc != null && state == EVICTED) {
+                try {
+                    loc.rent(false).get();
+                }
+                catch (IgniteCheckedException ex) {
+                    throw new IgniteException(ex);
+                }
+
                 locParts.set(p, loc = null);
 
                 if (!treatAllPartAsLoc && !belongs)

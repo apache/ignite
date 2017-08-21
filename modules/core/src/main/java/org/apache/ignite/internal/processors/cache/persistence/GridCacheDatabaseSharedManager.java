@@ -1550,6 +1550,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     if (storeMgr.pages(grpId, i) <= 1)
                         continue;
 
+                    GridDhtLocalPartition part = grp.topology()
+                        .localPartition(i, AffinityTopologyVersion.NONE, true);
+
+                    assert part != null;
+
+                    // TODO: https://issues.apache.org/jira/browse/IGNITE-6097
+                    grp.offheap().onPartitionInitialCounterUpdated(i, 0);
+
                     long partMetaId = pageMem.partitionMetaPageId(grpId, i);
                     long partMetaPage = pageMem.acquirePage(grpId, partMetaId);
                     try {
@@ -1561,11 +1569,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             PagePartitionMetaIO io = PagePartitionMetaIO.VERSIONS.forPage(pageAddr);
 
                             T2<Integer, Long> fromWal = partStates.get(new T2<>(grpId, i));
-
-                            GridDhtLocalPartition part = grp.topology()
-                                .localPartition(i, AffinityTopologyVersion.NONE, true);
-
-                            assert part != null;
 
                             if (fromWal != null) {
                                 int stateId = fromWal.get1();
