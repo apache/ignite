@@ -35,4 +35,9 @@ public class IgnitePartitionedCountDownLatchSelfTest extends IgniteCountDownLatc
     @Override public void testLatch() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-1793");
     }
+
+    /** {@inheritDoc} */
+    @Override public void testLatchBroadcast() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-5972");
+    }
 }

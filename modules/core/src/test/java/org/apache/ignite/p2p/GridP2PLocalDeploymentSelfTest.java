@@ -217,6 +217,8 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
      * Tests concurrent deployment using delegating classloader for the task.
      */
     public void testConcurrentDeploymentWithDelegatingClassloader() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-5970");
+
         depMode = DeploymentMode.SHARED;
 
         // Force rmvQueue removal task to run very often.

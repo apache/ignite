@@ -25,4 +25,9 @@ public class GridCachePartitionedNearDisabledOnheapMultiJvmFullApiSelfTest exten
     @Override protected boolean isMultiJvm() {
         return true;
     }
+
+    /** Remove this overridden method when IGNITE-6058 is fixed. */
+    @Override public void testTransformResourceInjection() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-6058");
+    }
 }

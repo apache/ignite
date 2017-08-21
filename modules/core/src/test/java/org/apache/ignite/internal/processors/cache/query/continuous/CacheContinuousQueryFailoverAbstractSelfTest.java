@@ -1552,6 +1552,8 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
      * @throws Exception If failed.
      */
     public void testFailoverStartStopBackup() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-5971");
+
         failoverStartStopFilter(2);
     }
 
@@ -1866,6 +1868,8 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
      * @throws Exception If failed.
      */
     public void testMultiThreadedFailover() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-5971");
+
         this.backups = 2;
 
         final int SRV_NODES = 4;

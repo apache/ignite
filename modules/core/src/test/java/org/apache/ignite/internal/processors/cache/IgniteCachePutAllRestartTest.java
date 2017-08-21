@@ -168,6 +168,8 @@ public class IgniteCachePutAllRestartTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testStopOriginatingNode() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-5990");
+
         startGrids(NODES);
 
         ThreadLocalRandom rnd = ThreadLocalRandom.current();

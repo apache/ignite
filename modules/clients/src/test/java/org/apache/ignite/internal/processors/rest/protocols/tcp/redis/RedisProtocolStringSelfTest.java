@@ -55,6 +55,8 @@ public class RedisProtocolStringSelfTest extends RedisCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testGetSet() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-5967");
+
         try (Jedis jedis = pool.getResource()) {
             jcache().put("getSetKey1", "1");
 

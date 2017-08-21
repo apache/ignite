@@ -151,6 +151,7 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
      * @throws Exception If failed.
      */
     public void testPrimaryFullAsync() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-5979");
         checkRestarts(FULL_ASYNC);
     }
 

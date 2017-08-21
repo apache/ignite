@@ -98,6 +98,8 @@ public class CacheExamplesSelfTest extends GridAbstractExamplesTest {
      * @throws Exception If failed.
      */
     public void testCacheSemaphoreExample() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-6009");
+
         IgniteSemaphoreExample.main(EMPTY_ARGS);
     }
 

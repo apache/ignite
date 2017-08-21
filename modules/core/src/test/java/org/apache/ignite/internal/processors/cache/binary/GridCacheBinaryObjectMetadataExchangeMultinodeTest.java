@@ -142,7 +142,12 @@ public class GridCacheBinaryObjectMetadataExchangeMultinodeTest extends GridComm
     }
 
     /** */
-    private static final CountDownLatch LATCH1 = new CountDownLatch(1);
+    public static volatile CountDownLatch LATCH1;
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        LATCH1 = new CountDownLatch(1);
+    }
 
     /**
      * Verifies that if thread tries to read metadata with ongoing update it gets blocked
@@ -156,7 +161,9 @@ public class GridCacheBinaryObjectMetadataExchangeMultinodeTest extends GridComm
                         : (DiscoveryCustomMessage) IgniteUtils.field(msg, "delegate");
 
                 if (customMsg instanceof MetadataUpdateAcceptedMessage) {
-                    if (((MetadataUpdateAcceptedMessage)customMsg).typeId() == BINARY_TYPE_ID)
+                    MetadataUpdateAcceptedMessage accMsg = (MetadataUpdateAcceptedMessage) customMsg;
+
+                    if (accMsg.typeId() == BINARY_TYPE_ID && accMsg.acceptedVersion() == 2)
                         try {
                             Thread.sleep(300);
                         }
@@ -182,6 +189,13 @@ public class GridCacheBinaryObjectMetadataExchangeMultinodeTest extends GridComm
             @Override public void handleDiscoveryMessage(DiscoverySpiCustomMessage msg) {
                 DiscoveryCustomMessage customMsg = msg == null ? null
                         : (DiscoveryCustomMessage) IgniteUtils.field(msg, "delegate");
+
+                if (customMsg instanceof MetadataUpdateProposedMessage) {
+                    MetadataUpdateProposedMessage propMsg = (MetadataUpdateProposedMessage) customMsg;
+
+                    if (propMsg.typeId() == BINARY_TYPE_ID && propMsg.pendingVersion() == 2)
+                        LATCH1.countDown();
+                }
 
                 if (customMsg instanceof MetadataUpdateAcceptedMessage) {
                     MetadataUpdateAcceptedMessage acceptedMsg = (MetadataUpdateAcceptedMessage)customMsg;
@@ -230,7 +244,6 @@ public class GridCacheBinaryObjectMetadataExchangeMultinodeTest extends GridComm
 
         Future<?> fut = ignite1.executorService().submit(new Runnable() {
             @Override public void run() {
-                LATCH1.countDown();
                 addStringField(ignite1, "f2", "str", 2);
             }
         });
@@ -260,6 +273,8 @@ public class GridCacheBinaryObjectMetadataExchangeMultinodeTest extends GridComm
      * Verifies that all sequential updates that don't introduce any conflicts are accepted and observed by all nodes.
      */
     public void testSequentialUpdatesNoConflicts() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-6007");
+
         IgniteEx ignite0 = startGrid(0);
 
         final IgniteEx ignite1 = startGrid(1);

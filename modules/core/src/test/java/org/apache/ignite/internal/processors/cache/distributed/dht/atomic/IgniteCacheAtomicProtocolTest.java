@@ -762,6 +762,8 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testPutReaderUpdate2() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-5945"); // flaky test with success rate ~80%
+
         readerUpdateDhtFails(true, false, false);
 
         stopAllGrids();

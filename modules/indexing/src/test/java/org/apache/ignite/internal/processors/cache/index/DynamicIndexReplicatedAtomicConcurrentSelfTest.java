@@ -30,4 +30,8 @@ public class DynamicIndexReplicatedAtomicConcurrentSelfTest extends DynamicIndex
     public DynamicIndexReplicatedAtomicConcurrentSelfTest() {
         super(CacheMode.REPLICATED, CacheAtomicityMode.ATOMIC);
     }
+
+    @Override public void testConcurrentOperationsAndCacheStartStopMultithreaded() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-6001");
+    }
 }
