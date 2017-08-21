@@ -1681,6 +1681,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * @param node Joined node.
+     * @return {@code True} if there are new caches received from joined node.
+     */
+    boolean hasCachesReceivedFromJoin(ClusterNode node) {
+        return cachesInfo.hasCachesReceivedFromJoin(node.id());
+    }
+
+    /**
      * Starts statically configured caches received from remote nodes during exchange.
      *
      * @param nodeId Joining node ID.
@@ -2016,17 +2024,17 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /**
      * Callback invoked when first exchange future for dynamic cache is completed.
      *
-     * @param topVer Completed topology version.
+     * @param cacheStartVer Started caches version to create proxy for.
      * @param exchActions Change requests.
      * @param err Error.
      */
     @SuppressWarnings("unchecked")
     public void onExchangeDone(
-        AffinityTopologyVersion topVer,
+        AffinityTopologyVersion cacheStartVer,
         @Nullable ExchangeActions exchActions,
         @Nullable Throwable err
     ) {
-        initCacheProxies(topVer, err);
+        initCacheProxies(cacheStartVer, err);
 
         if (exchActions == null)
             return;

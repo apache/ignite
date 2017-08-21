@@ -15,35 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.internal.processors.cache.distributed;
 
-import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
+import org.apache.ignite.cache.CacheAtomicityMode;
+
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 
 /**
  *
  */
-class ClientCacheUpdateTimeout extends GridTimeoutObjectAdapter implements CachePartitionExchangeWorkerTask {
-    /** */
-    private final GridCacheSharedContext cctx;
-
-    /**
-     * @param cctx Context.
-     * @param timeout Timeout.
-     */
-    ClientCacheUpdateTimeout(GridCacheSharedContext cctx, long timeout) {
-        super(timeout);
-
-        this.cctx = cctx;
-    }
-
+public class CacheTxLoadingConcurrentGridStartSelfTestAllowOverwrite extends
+    CacheLoadingConcurrentGridStartSelfTestAllowOverwrite {
     /** {@inheritDoc} */
-    @Override public boolean skipForExchangeMerge() {
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onTimeout() {
-        if (!cctx.kernalContext().isStopping())
-            cctx.exchange().addCustomTask(this);
+    @Override protected CacheAtomicityMode atomicityMode() {
+        return TRANSACTIONAL;
     }
 }
