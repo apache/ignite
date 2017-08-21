@@ -105,5 +105,18 @@
             " </ul>",
             "</div>"
         ]
+    },
+    {
+        "title": "Multicluster support",
+        "message": [
+            "<div class='col-xs-7'>",
+            " <img src='/images/multicluster.png' width='100%' />",
+            "</div>",
+            "<div class='col-xs-5'>",
+            " <ul>",
+            "  <li>Execute queries on different clusters</li>",
+            " </ul>",
+            "</div>"
+        ]
     }
 ]

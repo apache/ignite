@@ -57,6 +57,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.net.ssl.SSLException;
+import javax.net.ssl.SSLSocket;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -1801,6 +1802,22 @@ class ServerImpl extends TcpDiscoveryImpl {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(ServerImpl.class, this);
+    }
+
+    /**
+     * Trying get node in any state (visible or not)
+     * @param nodeId Node id.
+     */
+    ClusterNode getNode0(UUID nodeId) {
+        assert nodeId != null;
+
+        UUID locNodeId0 = getLocalNodeId();
+
+        if (locNodeId0 != null && locNodeId0.equals(nodeId))
+            // Return local node directly.
+            return locNode;
+
+        return ring.node(nodeId);
     }
 
     /**
@@ -5769,7 +5786,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                             spi.writeToSocket(sock, res, timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
 
-                            sock.shutdownOutput();
+                            if (!(sock instanceof SSLSocket))
+                                sock.shutdownOutput();
 
                             if (log.isInfoEnabled())
                                 log.info("Finished writing ping response " + "[rmtNodeId=" + msg.creatorNodeId() +

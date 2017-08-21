@@ -138,6 +138,8 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
 
         pCfg.setWalRecordIteratorBufferSize(1024 * 1024);
 
+        pCfg.setWalHistorySize(2);
+
         if (logOnly)
             pCfg.setWalMode(WALMode.LOG_ONLY);
 

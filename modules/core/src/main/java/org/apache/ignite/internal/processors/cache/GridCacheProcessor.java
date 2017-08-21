@@ -34,9 +34,6 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
-import javax.cache.configuration.Factory;
-import javax.cache.integration.CacheLoader;
-import javax.cache.integration.CacheWriter;
 import javax.management.MBeanServer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -55,6 +52,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.events.EventType;
@@ -156,12 +154,9 @@ import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
-import static org.apache.ignite.cache.CacheRebalanceMode.ASYNC;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
-import static org.apache.ignite.configuration.CacheConfiguration.DFLT_CACHE_MODE;
 import static org.apache.ignite.configuration.DeploymentMode.CONTINUOUS;
 import static org.apache.ignite.configuration.DeploymentMode.ISOLATED;
 import static org.apache.ignite.configuration.DeploymentMode.PRIVATE;
@@ -244,86 +239,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     private void initialize(CacheConfiguration cfg, CacheObjectContext cacheObjCtx)
         throws IgniteCheckedException {
-        if (cfg.getCacheMode() == null)
-            cfg.setCacheMode(DFLT_CACHE_MODE);
-
-        if (cfg.getNodeFilter() == null)
-            cfg.setNodeFilter(CacheConfiguration.ALL_NODES);
-
-        if (cfg.getAffinity() == null) {
-            if (cfg.getCacheMode() == PARTITIONED) {
-                RendezvousAffinityFunction aff = new RendezvousAffinityFunction();
-
-                cfg.setAffinity(aff);
-            }
-            else if (cfg.getCacheMode() == REPLICATED) {
-                RendezvousAffinityFunction aff = new RendezvousAffinityFunction(false, 512);
-
-                cfg.setAffinity(aff);
-
-                cfg.setBackups(Integer.MAX_VALUE);
-            }
-            else
-                cfg.setAffinity(new LocalAffinityFunction());
-        }
-        else {
-            if (cfg.getCacheMode() == LOCAL && !(cfg.getAffinity() instanceof LocalAffinityFunction)) {
-                cfg.setAffinity(new LocalAffinityFunction());
-
-                U.warn(log, "AffinityFunction configuration parameter will be ignored for local cache" +
-                    " [cacheName=" + U.maskName(cfg.getName()) + ']');
-            }
-        }
-
-        if (cfg.getCacheMode() == REPLICATED)
-            cfg.setBackups(Integer.MAX_VALUE);
-
-        if (cfg.getQueryParallelism() > 1 && cfg.getCacheMode() != PARTITIONED)
-            throw new IgniteCheckedException("Segmented indices are supported for PARTITIONED mode only.");
-
-        if (cfg.getAffinityMapper() == null)
-            cfg.setAffinityMapper(cacheObjCtx.defaultAffMapper());
+        CU.initializeConfigDefaults(log, cfg, cacheObjCtx);
 
         ctx.igfsHelper().preProcessCacheConfiguration(cfg);
-
-        if (cfg.getRebalanceMode() == null)
-            cfg.setRebalanceMode(ASYNC);
-
-        if (cfg.getAtomicityMode() == null)
-            cfg.setAtomicityMode(CacheConfiguration.DFLT_CACHE_ATOMICITY_MODE);
-
-        if (cfg.getWriteSynchronizationMode() == null)
-            cfg.setWriteSynchronizationMode(PRIMARY_SYNC);
-
-        assert cfg.getWriteSynchronizationMode() != null;
-
-        if (cfg.getCacheStoreFactory() == null) {
-            Factory<CacheLoader> ldrFactory = cfg.getCacheLoaderFactory();
-            Factory<CacheWriter> writerFactory = cfg.isWriteThrough() ? cfg.getCacheWriterFactory() : null;
-
-            if (ldrFactory != null || writerFactory != null)
-                cfg.setCacheStoreFactory(new GridCacheLoaderWriterStoreFactory(ldrFactory, writerFactory));
-        }
-        else {
-            if (cfg.getCacheLoaderFactory() != null)
-                throw new IgniteCheckedException("Cannot set both cache loaded factory and cache store factory " +
-                    "for cache: " + U.maskName(cfg.getName()));
-
-            if (cfg.getCacheWriterFactory() != null)
-                throw new IgniteCheckedException("Cannot set both cache writer factory and cache store factory " +
-                    "for cache: " + U.maskName(cfg.getName()));
-        }
-
-        Collection<QueryEntity> entities = cfg.getQueryEntities();
-
-        if (!F.isEmpty(entities)) {
-            Collection<QueryEntity> normalEntities = new ArrayList<>(entities.size());
-
-            for (QueryEntity entity : entities)
-                normalEntities.add(QueryUtils.normalizeQueryEntity(entity, cfg.isSqlEscapeAll()));
-
-            cfg.clearQueryEntities().setQueryEntities(normalEntities);
-        }
     }
 
     /**
@@ -893,6 +811,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 continue;
 
             checkTransactionConfiguration(n);
+
+            checkMemoryConfiguration(n);
 
             DeploymentMode locDepMode = ctx.config().getDeploymentMode();
             DeploymentMode rmtDepMode = n.attribute(IgniteNodeAttributes.ATTR_DEPLOYMENT_MODE);
@@ -3117,6 +3037,29 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * @param rmt Remote node to check.
+     * @throws IgniteCheckedException If check failed.
+     */
+    private void checkMemoryConfiguration(ClusterNode rmt) throws IgniteCheckedException {
+        ClusterNode locNode = ctx.discovery().localNode();
+
+        if (ctx.config().isClientMode() || locNode.isDaemon() || rmt.isClient() || rmt.isDaemon())
+            return;
+
+        MemoryConfiguration memCfg = rmt.attribute(IgniteNodeAttributes.ATTR_MEMORY_CONFIG);
+
+        if (memCfg != null) {
+            MemoryConfiguration locMemCfg = ctx.config().getMemoryConfiguration();
+
+            if (memCfg.getPageSize() != locMemCfg.getPageSize()) {
+                throw new IgniteCheckedException("Memory configuration mismatch (fix configuration or set -D" +
+                    IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK + "=true system property) [rmtNodeId=" + rmt.id() +
+                    ", locPageSize = " + locMemCfg.getPageSize() + ", rmtPageSize = " + memCfg.getPageSize() + "]");
+            }
+        }
+    }
+
+    /**
      * @param cfg Cache configuration.
      * @return Query manager.
      */
@@ -3961,7 +3904,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /**
      *
      */
-    private static class LocalAffinityFunction implements AffinityFunction {
+    static class LocalAffinityFunction implements AffinityFunction {
         /** */
         private static final long serialVersionUID = 0L;
 

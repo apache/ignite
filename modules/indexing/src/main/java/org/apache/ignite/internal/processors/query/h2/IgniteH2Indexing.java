@@ -111,6 +111,7 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuerySplitter;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridMapQueryExecutor;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridReduceQueryExecutor;
+import org.apache.ignite.internal.processors.query.h2.twostep.MapQueryLazyWorker;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
@@ -139,6 +140,7 @@ import org.h2.api.ErrorCode;
 import org.h2.api.JavaObjectSerializer;
 import org.h2.command.Prepared;
 import org.h2.command.dml.Insert;
+import org.h2.engine.Session;
 import org.h2.engine.SysProperties;
 import org.h2.index.Index;
 import org.h2.jdbc.JdbcPreparedStatement;
@@ -905,24 +907,32 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @throws IgniteCheckedException If failed.
      */
     private ResultSet executeSqlQuery(final Connection conn, final PreparedStatement stmt,
-        int timeoutMillis, @Nullable GridQueryCancel cancel)
-        throws IgniteCheckedException {
+        int timeoutMillis, @Nullable GridQueryCancel cancel) throws IgniteCheckedException {
+        final MapQueryLazyWorker lazyWorker = MapQueryLazyWorker.currentWorker();
 
         if (cancel != null) {
             cancel.set(new Runnable() {
                 @Override public void run() {
-                    try {
-                        stmt.cancel();
+                    if (lazyWorker != null) {
+                        lazyWorker.submit(new Runnable() {
+                            @Override public void run() {
+                                cancelStatement(stmt);
+                            }
+                        });
                     }
-                    catch (SQLException ignored) {
-                        // No-op.
-                    }
+                    else
+                        cancelStatement(stmt);
                 }
             });
         }
 
+        Session ses = H2Utils.session(conn);
+
         if (timeoutMillis > 0)
-            H2Utils.session(conn).setQueryTimeout(timeoutMillis);
+            ses.setQueryTimeout(timeoutMillis);
+
+        if (lazyWorker != null)
+            ses.setLazyQueryExecution(true);
 
         try {
             return stmt.executeQuery();
@@ -936,7 +946,24 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
         finally {
             if (timeoutMillis > 0)
-                H2Utils.session(conn).setQueryTimeout(0);
+                ses.setQueryTimeout(0);
+
+            if (lazyWorker != null)
+                ses.setLazyQueryExecution(false);
+        }
+    }
+
+    /**
+     * Cancel prepared statement.
+     *
+     * @param stmt Statement.
+     */
+    private static void cancelStatement(PreparedStatement stmt) {
+        try {
+            stmt.cancel();
+        }
+        catch (SQLException ignored) {
+            // No-op.
         }
     }
 
@@ -1143,6 +1170,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param keepCacheObj Flag to keep cache object.
      * @param enforceJoinOrder Enforce join order of tables.
      * @param parts Partitions.
+     * @param lazy Lazy query execution flag.
      * @return Iterable result.
      */
     private Iterable<List<?>> runQueryTwoStep(
@@ -1153,12 +1181,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         final int timeoutMillis,
         final GridQueryCancel cancel,
         final Object[] params,
-        final int[] parts
+        final int[] parts,
+        final boolean lazy
     ) {
         return new Iterable<List<?>>() {
             @Override public Iterator<List<?>> iterator() {
                 return rdcQryExec.query(schemaName, qry, keepCacheObj, enforceJoinOrder, timeoutMillis, cancel, params,
-                    parts);
+                    parts, lazy);
             }
         };
     }
@@ -1402,7 +1431,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         QueryCursorImpl<List<?>> cursor = new QueryCursorImpl<>(
             runQueryTwoStep(schemaName, twoStepQry, keepBinary, enforceJoinOrder, qry.getTimeout(), cancel,
-                qry.getArgs(), partitions), cancel);
+                qry.getArgs(), partitions, qry.isLazy()), cancel);
 
         cursor.fieldsMeta(meta);
 
@@ -2070,6 +2099,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (log.isDebugEnabled())
             log.debug("Stopping cache query index...");
 
+        mapQryExec.cancelLazyWorkers();
+
 //        unregisterMBean(); TODO https://issues.apache.org/jira/browse/IGNITE-2139
         if (ctx != null && !ctx.cache().context().database().persistenceEnabled()) {
             for (H2Schema schema : schemas.values())
@@ -2355,6 +2386,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** {@inheritDoc} */
     @Override public void cancelAllQueries() {
+        mapQryExec.cancelLazyWorkers();
+
         for (Connection conn : conns)
             U.close(conn, log);
     }

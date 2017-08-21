@@ -433,6 +433,16 @@ public class PlatformCacheWriteMetricsTask extends ComputeTaskAdapter<Long, Obje
         @Override public long getHeapEntriesCount() {
             return 59;
         }
+
+        /** {@inheritDoc} */
+        @Override public long estimateRebalancingFinishTime() {
+            return 60;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long rebalancingStartTime() {
+            return 61;
+        }
     }
 }
 

@@ -1508,7 +1508,7 @@ public class IgnitionEx {
         private ThreadPoolExecutor igfsExecSvc;
 
         /** Data streamer executor service. */
-        private ThreadPoolExecutor dataStreamerExecSvc;
+        private StripedExecutor dataStreamerExecSvc;
 
         /** REST requests executor service. */
         private ThreadPoolExecutor restExecSvc;
@@ -1728,7 +1728,11 @@ public class IgnitionEx {
 
             validateThreadPoolSize(cfg.getStripedPoolSize(), "stripedPool");
 
-            stripedExecSvc = new StripedExecutor(cfg.getStripedPoolSize(), cfg.getIgniteInstanceName(), "sys", log);
+            stripedExecSvc = new StripedExecutor(
+                cfg.getStripedPoolSize(),
+                cfg.getIgniteInstanceName(),
+                "sys",
+                log);
 
             // Note that since we use 'LinkedBlockingQueue', number of
             // maximum threads has no effect.
@@ -1763,17 +1767,12 @@ public class IgnitionEx {
 
             p2pExecSvc.allowCoreThreadTimeOut(true);
 
-            // Note that we do not pre-start threads here as this pool may not be needed.
-            dataStreamerExecSvc = new IgniteThreadPoolExecutor(
-                "data-streamer",
+            dataStreamerExecSvc = new StripedExecutor(
+                cfg.getDataStreamerThreadPoolSize(),
                 cfg.getIgniteInstanceName(),
-                cfg.getDataStreamerThreadPoolSize(),
-                cfg.getDataStreamerThreadPoolSize(),
-                DFLT_THREAD_KEEP_ALIVE_TIME,
-                new LinkedBlockingQueue<Runnable>(),
-                GridIoPolicy.DATA_STREAMER_POOL);
-
-            dataStreamerExecSvc.allowCoreThreadTimeOut(true);
+                "data-streamer",
+                log,
+                true);
 
             // Note that we do not pre-start threads here as igfs pool may not be needed.
             validateThreadPoolSize(cfg.getIgfsThreadPoolSize(), "IGFS");
