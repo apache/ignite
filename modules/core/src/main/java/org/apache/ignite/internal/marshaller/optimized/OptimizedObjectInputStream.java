@@ -212,7 +212,7 @@ class OptimizedObjectInputStream extends ObjectInputStream {
 
             case JDK:
                 try {
-                    return JDK_MARSH.unmarshal(this, clsLdr, useCache);
+                    return JDK_MARSH.unmarshal(this, clsLdr);
                 }
                 catch (IgniteCheckedException e) {
                     IOException ioEx = e.getCause(IOException.class);

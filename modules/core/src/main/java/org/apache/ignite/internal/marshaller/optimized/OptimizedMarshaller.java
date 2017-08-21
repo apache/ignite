@@ -26,6 +26,7 @@ import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.AbstractNodeNameAwareMarshaller;
 import org.jetbrains.annotations.Nullable;
@@ -98,6 +99,9 @@ public class OptimizedMarshaller extends AbstractNodeNameAwareMarshaller {
 
     /** Class descriptors by class. */
     private final ConcurrentMap<Class, OptimizedClassDescriptor> clsMap = new ConcurrentHashMap8<>();
+
+    /** Node name. */
+    private volatile String nodeName = U.LOC_IGNITE_NAME_EMPTY;
 
     /**
      * Creates new marshaller will all defaults.
@@ -212,7 +216,23 @@ public class OptimizedMarshaller extends AbstractNodeNameAwareMarshaller {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override protected <T> T unmarshal0(InputStream in, @Nullable ClassLoader clsLdr, boolean useCache) throws IgniteCheckedException {
+    @Override protected <T> T unmarshal0(InputStream in, @Nullable ClassLoader clsLdr) throws IgniteCheckedException {
+        return unmarshal0(in, clsLdr, true);
+    }
+
+    /**
+     * Unmarshals object from the input stream using given class loader.
+     * This method should not close given input stream.
+     *
+     * @param <T> Type of unmarshalled object.
+     * @param in Input stream.
+     * @param clsLdr Class loader to use.
+     * @param useCache True if class loader cache will be used, false otherwise.
+     * @return Unmarshalled object.
+     * @throws IgniteCheckedException If unmarshalling failed.
+     */
+    @SuppressWarnings("unchecked")
+    protected <T> T unmarshal0(InputStream in, @Nullable ClassLoader clsLdr, boolean useCache) throws IgniteCheckedException {
         assert in != null;
 
         OptimizedObjectInputStream objIn = null;
@@ -310,5 +330,27 @@ public class OptimizedMarshaller extends AbstractNodeNameAwareMarshaller {
         }
 
         U.clearClassCache(ldr);
+    }
+
+    /**
+     * Unmarshals object from the input stream using given class loader.
+     * This method should not close given input stream.
+     *
+     * @param <T> Type of unmarshalled object.
+     * @param in Input stream.
+     * @param clsLdr Class loader to use.
+     * @param useCache True if class loader cache will be used, false otherwise.
+     * @return Unmarshalled object.
+     * @throws IgniteCheckedException If unmarshalling failed.
+     */
+    public <T> T unmarshal(InputStream in, @Nullable ClassLoader clsLdr, boolean useCache) throws IgniteCheckedException {
+        String oldNodeName = IgniteUtils.setCurrentIgniteName(nodeName);
+
+        try {
+            return unmarshal0(in, clsLdr, useCache);
+        }
+        finally {
+            IgniteUtils.restoreOldIgniteName(oldNodeName, nodeName);
+        }
     }
 }
