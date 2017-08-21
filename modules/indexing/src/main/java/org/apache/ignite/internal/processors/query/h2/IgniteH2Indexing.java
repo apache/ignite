@@ -2176,7 +2176,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             for (H2TableDescriptor tbl : schema.tables()) {
                 if (F.eq(tbl.cache().name(), cacheName)) {
                     try {
-                        tbl.table().rmIndex.set(destroy);
+                        boolean removeIdx = !ctx.cache().context().database().persistenceEnabled() || destroy;
+
+                        tbl.table().setRemoveIndexOnDestroy(removeIdx);
 
                         dropTable(tbl);
                     }
