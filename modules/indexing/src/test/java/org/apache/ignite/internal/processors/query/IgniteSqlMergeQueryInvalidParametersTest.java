@@ -17,12 +17,13 @@
 
 package org.apache.ignite.internal.processors.query;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.util.Collections;
 import java.util.Hashtable;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.cache.query.QueryTable;
@@ -227,7 +228,7 @@ public class IgniteSqlMergeQueryInvalidParametersTest extends GridCommonAbstract
     /**
      * @return Log4j {@link Hashtable}.
      */
-    private Hashtable getLog4jHashable() {
+    private Hashtable<Object, Object> getLog4jHashable() {
         GridTestLog4jLogger log = (GridTestLog4jLogger)log();
 
         Object impl = GridTestUtils.getFieldValue(log, GridTestLog4jLogger.class, "impl");
@@ -241,15 +242,21 @@ public class IgniteSqlMergeQueryInvalidParametersTest extends GridCommonAbstract
      *
      */
     private Object getLoggerKey() throws Exception {
-        if (logKey != null)
-            return logKey;
+        if (logKey == null) {
+            IgniteLogger log = log().getLogger(IgniteH2Indexing.class);
 
-        Class<?> keyCls = ClassLoader.getSystemClassLoader().loadClass("org.apache.log4j.CategoryKey");
+            Object impl = GridTestUtils.getFieldValue(log, GridTestLog4jLogger.class, "impl");
 
-        Constructor<?> keyConstructor = keyCls.getDeclaredConstructor(String.class);
-        keyConstructor.setAccessible(true);
+            for (Map.Entry<Object, Object> entry : getLog4jHashable().entrySet()) {
+                if (entry.getValue().equals(impl)) {
+                    logKey = entry.getKey();
 
-        return logKey = keyConstructor.newInstance(IgniteH2Indexing.class.getName());
+                    break;
+                }
+            }
+        }
+
+        return logKey;
     }
 
     /**
