@@ -47,11 +47,12 @@ public class IgniteSemaphoreExample {
      */
     public static void main(String[] args) {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
-            // Number of producers; should be equal to number of consumers.
-            // This value should not exceed overall number of compute threads in a cluster,
-            // otherwise blocking consumer jobs can occupy all the threads leading to deadlock.
-            int producerConsumerCount =
-                ignite.configuration().getPublicThreadPoolSize() * ignite.cluster().forServers().nodes().size() / 2;
+            int nodeCount = ignite.cluster().forServers().nodes().size();
+
+            // Number of producers should be equal to number of consumers.
+            // This value should not exceed overall number of public thread pools in a cluster,
+            // otherwise blocking consumer jobs can occupy all the threads leading to starvation.
+            int jobCount = ignite.configuration().getPublicThreadPoolSize() * nodeCount / 2;
 
             System.out.println();
             System.out.println(">>> Cache atomic semaphore example started.");
@@ -66,17 +67,17 @@ public class IgniteSemaphoreExample {
             IgniteSemaphore semaphore = ignite.semaphore(semaphoreName, 0, false, true);
 
             // Start consumers on all cluster nodes.
-            for (int i = 0; i < producerConsumerCount; i++)
+            for (int i = 0; i < jobCount; i++)
                 ignite.compute().runAsync(new Consumer(semaphoreName));
 
             // Start producers on all cluster nodes.
-            for (int i = 0; i < producerConsumerCount; i++)
+            for (int i = 0; i < jobCount; i++)
                 ignite.compute().runAsync(new Producer(semaphoreName));
 
             System.out.println("Master node is waiting for all other nodes to finish...");
 
             // Wait for everyone to finish.
-            syncSemaphore.acquire(2 * producerConsumerCount);
+            syncSemaphore.acquire(2 * jobCount);
         }
 
         System.out.flush();
