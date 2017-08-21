@@ -93,7 +93,7 @@ public class GridQueryNextPageResponse implements MessageEx {
      * @param last Last page flag.
      */
     public GridQueryNextPageResponse(GridKernalContext ctx, long qryReqId, int segmentId, int qry, int page,
-        int allRows, int cols, Collection<?> vals, , boolean last) {
+        int allRows, int cols, Collection<?> vals, boolean last) {
         assert vals != null;
         assert cols > 0 : cols;
 
