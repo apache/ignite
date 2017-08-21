@@ -316,7 +316,7 @@ public final class GridCacheMvcc {
                     if (first.owner()) {
                         // If reentry, add at the beginning. Note that
                         // no reentry happens for DHT-local candidates.
-                        if (!cand.dhtLocal() && first.threadId() == cand.threadId()) {
+                        if (!cand.dhtLocal() && first.threadIdSafely() == cand.threadIdSafely()) {
                             assert !first.serializable();
 
                             cand.setOwner();
@@ -644,7 +644,7 @@ public final class GridCacheMvcc {
         if (!dhtLoc && !reenter) {
             GridCacheMvccCandidate owner = localOwner();
 
-            if (owner != null && owner.threadId() == threadId.value())
+            if (owner != null && owner.threadIdSafely() == threadId.valueSafely())
                 return null;
         }
 
@@ -655,7 +655,7 @@ public final class GridCacheMvcc {
                 GridCacheMvccCandidate owner = localOwner();
 
                 // Only proceed if this is a re-entry.
-                if (owner == null || owner.threadId() != threadId.value())
+                if (owner == null || owner.threadIdSafely() != threadId.valueSafely())
                     return null;
             }
         }

@@ -1149,7 +1149,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
             IgniteInternalFuture<?> txSync = null;
 
             if (inTx())
-                txSync = cctx.tm().awaitFinishAckAsync(node.id(), tx.threadId().value());
+                txSync = cctx.tm().awaitFinishAckAsync(node.id(), tx.threadId().valueSafely());
 
             if (txSync == null || txSync.isDone()) {
                 try {

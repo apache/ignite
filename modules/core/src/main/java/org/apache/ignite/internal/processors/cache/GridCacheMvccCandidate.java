@@ -394,6 +394,10 @@ public class GridCacheMvccCandidate implements Externalizable,
         return threadId.value();
     }
 
+    public long threadIdSafely(){
+        return threadId.valueSafely();
+    }
+
     /**
      * @return Lock version.
      */

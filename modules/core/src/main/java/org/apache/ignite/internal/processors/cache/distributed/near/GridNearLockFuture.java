@@ -1366,7 +1366,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
             IgniteInternalFuture<?> txSync = null;
 
             if (inTx())
-                txSync = cctx.tm().awaitFinishAckAsync(node.id(), tx.threadId().value());
+                txSync = cctx.tm().awaitFinishAckAsync(node.id(), tx.threadId().valueSafely());
 
             if (txSync == null || txSync.isDone()) {
                 try {

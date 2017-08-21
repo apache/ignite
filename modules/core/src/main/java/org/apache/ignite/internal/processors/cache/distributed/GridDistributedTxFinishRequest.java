@@ -160,7 +160,7 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
         this.futId = futId;
         this.topVer = topVer;
         this.commitVer = commitVer;
-        this.threadId = threadId.value();
+        this.threadId = threadId.valueSafely();
         this.commit = commit;
         this.invalidate = invalidate;
         this.sys = sys;

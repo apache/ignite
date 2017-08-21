@@ -2869,7 +2869,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         if (pessimistic())
             throw new UnsupportedOperationException("Suspension is not supported for pessimistic transactions.");
 
-        if (threadId().value() != Thread.currentThread().getId())
+        if (threadId().valueSafely() != Thread.currentThread().getId())
             throw new IgniteCheckedException("Only thread started transaction can suspend it.");
 
         synchronized (this) {
