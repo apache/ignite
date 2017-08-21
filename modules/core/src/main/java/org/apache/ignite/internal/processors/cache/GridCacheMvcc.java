@@ -654,8 +654,12 @@ public final class GridCacheMvcc {
                 GridCacheMvccCandidate owner = localOwner();
 
                 // Only proceed if this is a re-entry.
-                if (owner == null || owner.threadId() != threadId)
+                if (owner == null || owner.threadId() != threadId) {
+                    if(owner != null)
+                        throw new RuntimeException("[GridCacheMvcc.addLocal()]Owner= " + owner + "\n.GridCacheMvcc= " + this);
+
                     return null;
+                }
             }
         }
 
