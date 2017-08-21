@@ -339,10 +339,10 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
     /**
      * Handle drop.
      */
-    void onDrop(boolean rmvIndex) {
+    void onDrop() {
         idx.removeDataTable(tbl);
 
-        tbl.destroy(rmvIndex);
+        tbl.destroy();
 
         U.closeQuiet(luceneIdx);
     }

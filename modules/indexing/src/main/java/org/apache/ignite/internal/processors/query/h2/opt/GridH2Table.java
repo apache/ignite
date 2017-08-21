@@ -346,7 +346,7 @@ public class GridH2Table extends TableBase {
     /**
      * Destroy the table.
      */
-    public void destroy(boolean rmvIndex) {
+    public void destroy() {
         lock(true);
 
         try {
@@ -358,7 +358,7 @@ public class GridH2Table extends TableBase {
 
             for (int i = 1, len = idxs.size(); i < len; i++)
                 if (idxs.get(i) instanceof GridH2IndexBase)
-                    index(i).destroy(rmvIndex);
+                    index(i).destroy(rmIndex.get());
         }
         finally {
             unlock(true);

@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.query.h2.database;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
@@ -66,9 +65,6 @@ public class H2TreeIndex extends GridH2IndexBase {
 
     /** Cache context. */
     private GridCacheContext<?, ?> cctx;
-
-    /** */
-    private final AtomicBoolean destroy = new AtomicBoolean();
 
     /**
      * @param cctx Cache context.
@@ -311,13 +307,9 @@ public class H2TreeIndex extends GridH2IndexBase {
 
     /** {@inheritDoc} */
     @Override public void destroy(boolean rmvIndex) {
-        boolean needEvt = false;
-
         try {
             if (cctx.affinityNode()) {
-                if (!cctx.kernalContext().cache().context().database().persistenceEnabled()
-                    || rmvIndex && (needEvt = destroy.compareAndSet(false, true))) {
-
+                if (!cctx.kernalContext().cache().context().database().persistenceEnabled() || rmvIndex) {
                     for (int i = 0; i < segments.length; i++) {
                         H2Tree tree = segments[i];
 
@@ -332,8 +324,7 @@ public class H2TreeIndex extends GridH2IndexBase {
             throw new IgniteException(e);
         }
         finally {
-            if (needEvt)
-                super.destroy(rmvIndex);
+            super.destroy(rmvIndex);
         }
     }
 

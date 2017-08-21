@@ -110,10 +110,10 @@ public class H2Schema {
      *
      * @param tbl Table to be removed.
      */
-    public void drop(H2TableDescriptor tbl, boolean rmvIndex) {
-        tbl.onDrop(rmvIndex);
+    public void drop(H2TableDescriptor tbl) {
+        tbl.onDrop();
 
-        tbls.remove(tbl.tableName(), rmvIndex);
+        tbls.remove(tbl.tableName());
 
         typeToTbl.remove(tbl.typeName());
     }
@@ -123,9 +123,10 @@ public class H2Schema {
      */
     public void dropAll() {
         for (H2TableDescriptor tbl : tbls.values())
-            tbl.onDrop(false);
+            tbl.onDrop();
 
         tbls.clear();
+
         typeToTbl.clear();
     }
 }
