@@ -374,6 +374,7 @@ public class IgniteConfiguration {
     private boolean cacheSanityCheckEnabled = DFLT_CACHE_SANITY_CHECK_ENABLED;
 
     /** Discovery startup delay. */
+    @Deprecated
     private long discoStartupDelay = DFLT_DISCOVERY_STARTUP_DELAY;
 
     /** Tasks classes sharing mode. */
@@ -1932,7 +1933,9 @@ public class IgniteConfiguration {
      * delay, you should increase this value.
      *
      * @return Time in milliseconds for when nodes can be out-of-sync.
+     * @deprecated Not used any more.
      */
+    @Deprecated
     public long getDiscoveryStartupDelay() {
         return discoStartupDelay;
     }
@@ -1944,7 +1947,9 @@ public class IgniteConfiguration {
      * @param discoStartupDelay Time in milliseconds for when nodes
      *      can be out-of-sync during startup.
      * @return {@code this} for chaining.
+     * @deprecated Not used any more.
      */
+    @Deprecated
     public IgniteConfiguration setDiscoveryStartupDelay(long discoStartupDelay) {
         this.discoStartupDelay = discoStartupDelay;
 
