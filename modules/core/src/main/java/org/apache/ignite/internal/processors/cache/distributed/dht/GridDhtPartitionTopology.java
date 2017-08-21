@@ -69,11 +69,14 @@ public interface GridDhtPartitionTopology {
     ) throws IgniteInterruptedCheckedException;
 
     /**
-     * Topology version.
-     *
-     * @return Topology version.
+     * @return Result topology version of last finished exchange.
      */
-    public AffinityTopologyVersion topologyVersion();
+    public AffinityTopologyVersion readyTopologyVersion();
+
+    /**
+     * @return Start topology version of last exchange.
+     */
+    public AffinityTopologyVersion lastTopologyChangeVersion();
 
     /**
      * Gets a future that will be completed when partition exchange map for this
@@ -98,16 +101,21 @@ public interface GridDhtPartitionTopology {
      *
      * @param exchFut Exchange future.
      * @param affReady Affinity ready flag.
+     * @param updateMoving
      * @throws IgniteCheckedException If failed.
      */
-    public void beforeExchange(GridDhtPartitionsExchangeFuture exchFut, boolean affReady)
+    public void beforeExchange(GridDhtPartitionsExchangeFuture exchFut,
+        boolean affReady,
+        boolean updateMoving)
         throws IgniteCheckedException;
 
     /**
+     * @param affVer Affinity version.
      * @param exchFut Exchange future.
      * @throws IgniteInterruptedCheckedException If interrupted.
      */
-    public void initPartitions(GridDhtPartitionsExchangeFuture exchFut) throws IgniteInterruptedCheckedException;
+    public void initPartitionsWhenAffinityReady(AffinityTopologyVersion affVer, GridDhtPartitionsExchangeFuture exchFut)
+        throws IgniteInterruptedCheckedException;
 
     /**
      * Post-initializes this topology.
@@ -245,13 +253,14 @@ public interface GridDhtPartitionTopology {
     public void onRemoved(GridDhtCacheEntry e);
 
     /**
-     * @param exchangeVer Exchange version.
+     * @param exchangeResVer Result topology version for exchange. Value should be greater than previously passed. Null value
+     *      means full map received is not related to exchange
      * @param partMap Update partition map.
      * @param cntrMap Partition update counters.
      * @return {@code True} if local state was changed.
      */
     public boolean update(
-        @Nullable AffinityTopologyVersion exchangeVer,
+        @Nullable AffinityTopologyVersion exchangeResVer,
         GridDhtPartitionFullMap partMap,
         @Nullable Map<Integer, T2<Long, Long>> cntrMap,
         Set<Integer> partsToReload);
@@ -259,10 +268,12 @@ public interface GridDhtPartitionTopology {
     /**
      * @param exchId Exchange ID.
      * @param parts Partitions.
+     * @param force {@code True} to skip stale update check.
      * @return {@code True} if local state was changed.
      */
     public boolean update(@Nullable GridDhtPartitionExchangeId exchId,
-        GridDhtPartitionMap parts);
+        GridDhtPartitionMap parts,
+        boolean force);
 
     /**
      * @param cntrMap Counters map.
@@ -275,15 +286,18 @@ public interface GridDhtPartitionTopology {
      * <p>
      * This method should be called on topology coordinator after all partition messages are received.
      *
+     * @param resTopVer Exchange result version.
      * @param discoEvt Discovery event for which we detect lost partitions.
      * @return {@code True} if partitions state got updated.
      */
-    public boolean detectLostPartitions(DiscoveryEvent discoEvt);
+    public boolean detectLostPartitions(AffinityTopologyVersion resTopVer, DiscoveryEvent discoEvt);
 
     /**
      * Resets the state of all LOST partitions to OWNING.
+     *
+     * @param resTopVer Exchange result version.
      */
-    public void resetLostPartitions();
+    public void resetLostPartitions(AffinityTopologyVersion resTopVer);
 
     /**
      * @return Collection of lost partitions, if any.
@@ -344,5 +358,5 @@ public interface GridDhtPartitionTopology {
      * @param assignment New affinity assignment.
      * @param updateRebalanceVer {@code True} if need check rebalance state.
      */
-    public void onExchangeDone(AffinityAssignment assignment, boolean updateRebalanceVer);
+    public void onExchangeDone(GridDhtPartitionsExchangeFuture fut, AffinityAssignment assignment, boolean updateRebalanceVer);
 }

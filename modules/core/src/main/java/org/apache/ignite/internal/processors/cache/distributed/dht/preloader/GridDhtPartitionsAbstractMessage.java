@@ -34,7 +34,10 @@ import org.jetbrains.annotations.Nullable;
  */
 public abstract class GridDhtPartitionsAbstractMessage extends GridCacheMessage {
     /** */
-    protected static final byte COMPRESSED_FLAG_MASK = 1;
+    private static final byte COMPRESSED_FLAG_MASK = 0x01;
+
+    /** */
+    private static final byte RESTORE_STATE_FLAG_MASK = 0x02;
 
     /** */
     private static final long serialVersionUID = 0L;
@@ -46,7 +49,7 @@ public abstract class GridDhtPartitionsAbstractMessage extends GridCacheMessage 
     private GridCacheVersion lastVer;
 
     /** */
-    private byte flags;
+    protected byte flags;
 
     /**
      * Required by {@link Externalizable}.
@@ -62,6 +65,15 @@ public abstract class GridDhtPartitionsAbstractMessage extends GridCacheMessage 
     GridDhtPartitionsAbstractMessage(GridDhtPartitionExchangeId exchId, @Nullable GridCacheVersion lastVer) {
         this.exchId = exchId;
         this.lastVer = lastVer;
+    }
+
+    /**
+     * @param msg Message.
+     */
+    void copyStateTo(GridDhtPartitionsAbstractMessage msg) {
+        msg.exchId = exchId;
+        msg.lastVer = lastVer;
+        msg.flags = flags;
     }
 
     /** {@inheritDoc} */
@@ -92,6 +104,13 @@ public abstract class GridDhtPartitionsAbstractMessage extends GridCacheMessage 
     }
 
     /**
+     * @param exchId Exchange ID.
+     */
+    public void exchangeId(GridDhtPartitionExchangeId exchId) {
+        this.exchId = exchId;
+    }
+
+    /**
      * @param grpId Cache group ID.
      * @return Parition update counters.
      */
@@ -116,6 +135,20 @@ public abstract class GridDhtPartitionsAbstractMessage extends GridCacheMessage 
      */
     protected final void compressed(boolean compressed) {
         flags = compressed ? (byte)(flags | COMPRESSED_FLAG_MASK) : (byte)(flags & ~COMPRESSED_FLAG_MASK);
+    }
+
+    /**
+     * @param restoreState Restore exchange state flag.
+     */
+    void restoreState(boolean restoreState) {
+        flags = restoreState ? (byte)(flags | RESTORE_STATE_FLAG_MASK) : (byte)(flags & ~RESTORE_STATE_FLAG_MASK);
+    }
+
+    /**
+     * @return Restore exchange state flag.
+     */
+    public boolean restoreState() {
+        return (flags & RESTORE_STATE_FLAG_MASK) != 0;
     }
 
     /** {@inheritDoc} */

@@ -364,7 +364,7 @@ public class IgniteDiagnosticMessage implements Message {
             List<GridDhtPartitionsExchangeFuture> futs = ctx.cache().context().exchange().exchangeFutures();
 
             for (GridDhtPartitionsExchangeFuture fut : futs) {
-                if (topVer.equals(fut.topologyVersion())) {
+                if (topVer.equals(fut.initialVersion())) {
                     sb.append("Exchange future: ").append(fut);
 
                     return;
