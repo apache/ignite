@@ -437,6 +437,16 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
         return impl.getNode(nodeId);
     }
 
+    /**
+     * @param id Id.
+     */
+    public ClusterNode getNode0(UUID id) {
+        if (impl instanceof ServerImpl)
+            return ((ServerImpl)impl).getNode0(id);
+
+        return getNode(id);
+    }
+
     /** {@inheritDoc} */
     @Override public boolean pingNode(UUID nodeId) {
         return impl.pingNode(nodeId);

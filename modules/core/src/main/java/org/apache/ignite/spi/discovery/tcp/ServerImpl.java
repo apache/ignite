@@ -1803,9 +1803,27 @@ class ServerImpl extends TcpDiscoveryImpl {
     }
 
     /**
-     * Thread that cleans IP finder and keeps it in the correct state, unregistering addresses of the nodes that has
-     * left the topology. <p> This thread should run only on coordinator node and will clean IP finder if and only if
-     * {@link org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder#isShared()} is {@code true}.
+     * Trying get node in any state (visible or not)
+     * @param nodeId Node id.
+     */
+    ClusterNode getNode0(UUID nodeId) {
+        assert nodeId != null;
+
+        UUID locNodeId0 = getLocalNodeId();
+
+        if (locNodeId0 != null && locNodeId0.equals(nodeId))
+            // Return local node directly.
+            return locNode;
+
+        return ring.node(nodeId);
+    }
+
+    /**
+     * Thread that cleans IP finder and keeps it in the correct state, unregistering
+     * addresses of the nodes that has left the topology.
+     * <p>
+     * This thread should run only on coordinator node and will clean IP finder
+     * if and only if {@link org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder#isShared()} is {@code true}.
      */
     private class IpFinderCleaner extends IgniteSpiThread {
         /**
