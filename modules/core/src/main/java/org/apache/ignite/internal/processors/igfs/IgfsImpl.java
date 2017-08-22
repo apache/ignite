@@ -247,7 +247,7 @@ public final class IgfsImpl implements IgfsEx {
         }
 
         dualPool = secondaryFs != null ? new IgniteThreadPoolExecutor(4, Integer.MAX_VALUE, 5000L,
-            new SynchronousQueue<Runnable>(), new IgfsThreadFactory(cfg.getName()), null) : null;
+            new SynchronousQueue<Runnable>(), new IgfsThreadFactory(cfg.getName())) : null;
     }
 
     /** {@inheritDoc} */

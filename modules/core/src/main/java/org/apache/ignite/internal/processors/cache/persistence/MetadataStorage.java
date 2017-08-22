@@ -41,6 +41,9 @@ public class MetadataStorage implements MetaStore {
     /** Max index name length (bytes num) */
     public static final int MAX_IDX_NAME_LEN = 255;
 
+    /** Reserved size for index name. Needed for backward compatibility. */
+    public static final int RESERVED_IDX_NAME_LEN = 768;
+
     /** Bytes in byte. */
     private static final int BYTE_LEN = 1;
 
@@ -288,7 +291,7 @@ public class MetadataStorage implements MetaStore {
         PageUtils.putUnsignedByte(dstPageAddr, dstOff, len);
         dstOff++;
 
-        PageHandler.copyMemory(srcPageAddr, dstPageAddr, srcOff, dstOff, len);
+        PageHandler.copyMemory(srcPageAddr, srcOff, dstPageAddr, dstOff, len);
         srcOff += len;
         dstOff += len;
 
@@ -344,7 +347,7 @@ public class MetadataStorage implements MetaStore {
          */
         private MetaStoreInnerIO(final int ver) {
             // name bytes and 1 byte for length, 8 bytes pageId
-            super(T_METASTORE_INNER, ver, false, MAX_IDX_NAME_LEN + 1 + 8);
+            super(T_METASTORE_INNER, ver, false, RESERVED_IDX_NAME_LEN + 1 + 8);
         }
 
         /** {@inheritDoc} */
@@ -385,7 +388,7 @@ public class MetadataStorage implements MetaStore {
          */
         private MetaStoreLeafIO(final int ver) {
             // 4 byte cache ID, UTF-16 symbols and 1 byte for length, 8 bytes pageId
-            super(T_METASTORE_LEAF, ver, MAX_IDX_NAME_LEN + 1 + 8);
+            super(T_METASTORE_LEAF, ver, RESERVED_IDX_NAME_LEN + 1 + 8);
         }
 
         /** {@inheritDoc} */

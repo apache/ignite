@@ -122,7 +122,7 @@ public class IgniteDataIntegrityTests extends TestCase {
      *
      */
     public void testExpandBuffer() {
-        ByteBufferExpander expBuf = new ByteBufferExpander(16, ByteOrder.nativeOrder());
+        ByteBufferExpander expBuf = new ByteBufferExpander(24, ByteOrder.nativeOrder());
 
         ByteBuffer b1 = expBuf.buffer();
 
@@ -131,21 +131,32 @@ public class IgniteDataIntegrityTests extends TestCase {
         b1.putLong(3L);
 
         assertEquals(13, b1.position());
-        assertEquals(16, b1.limit());
+        assertEquals(24, b1.limit());
 
         ByteBuffer b2 = expBuf.expand(32);
+
+        assertEquals(13, b2.position());
+        assertEquals(24, b2.limit());
+
+        b2.rewind();
 
         assertEquals(0, b2.position());
         assertEquals((byte)1, b2.get());
         assertEquals(2, b2.getInt());
         assertEquals(3L, b2.getLong());
         assertEquals(13, b2.position());
-        assertEquals(32, b2.limit());
+        assertEquals(24, b2.limit());
+        assertEquals(32, b2.capacity());
+
+        b2.limit(b2.capacity());
 
         b2.putInt(4);
+        b2.putInt(5);
+        b2.putInt(6);
 
-        assertEquals(17, b2.position());
+        assertEquals(25, b2.position());
         assertEquals(32, b2.limit());
+        assertEquals(32, b2.capacity());
 
         b2.flip();
 
@@ -154,7 +165,10 @@ public class IgniteDataIntegrityTests extends TestCase {
         assertEquals(2, b2.getInt());
         assertEquals(3L, b2.getLong());
         assertEquals(4, b2.getInt());
-        assertEquals(17, b2.limit());
+        assertEquals(5, b2.getInt());
+        assertEquals(6, b2.getInt());
+        assertEquals(25, b2.limit());
+        assertEquals(32, b2.capacity());
     }
 
     /**

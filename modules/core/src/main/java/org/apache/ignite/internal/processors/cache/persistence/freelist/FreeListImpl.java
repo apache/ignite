@@ -41,6 +41,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseBag;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -359,8 +360,10 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
 
     /**
      * Calculates average fill factor over FreeListImpl instance.
+     *
+     * @return Tuple (numenator, denominator).
      */
-    public float fillFactor() {
+    public T2<Long, Long> fillFactor() {
         long pageSize = pageSize();
 
         long totalSize = 0;
@@ -376,7 +379,7 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
             totalSize += pages * pageSize;
         }
 
-        return totalSize == 0 ? -1L : ((float) loadSize / totalSize);
+        return totalSize == 0 ? new T2<>(0L, 0L) : new T2<>(loadSize, totalSize);
     }
 
     /** {@inheritDoc} */
