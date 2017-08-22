@@ -2094,6 +2094,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             tracker.onLockWaitStart();
 
+            boolean hasPages;
+
             checkpointLock.writeLock().lock();
 
             try {
@@ -2158,7 +2160,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 cpPagesTuple = beginAllCheckpoints();
 
-                if (!F.isEmpty(cpPagesTuple.get1())) {
+                hasPages = hasPageForWrite(cpPagesTuple.get1());
+
+                if (hasPages) {
                     // No page updates for this checkpoint are allowed from now on.
                     cpPtr = cctx.wal().log(cpRec);
 
@@ -2174,7 +2178,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             curr.cpBeginFut.onDone();
 
-            if (hasPageForWrite(cpPagesTuple.get1())) {
+            if (hasPages) {
                 assert cpPtr != null;
 
                 // Sync log outside the checkpoint write lock.
