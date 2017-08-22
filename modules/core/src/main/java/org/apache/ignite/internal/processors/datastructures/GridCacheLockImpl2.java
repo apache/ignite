@@ -302,11 +302,7 @@ public final class GridCacheLockImpl2 implements GridCacheLockEx2 {
 
     /** {@inheritDoc} */
     @Override public void close() {
-        /*System.out.println("!!!~ " +
-            "\nwait:\t"+ (sync.globalSync.countWait.get()/sync.globalSync.nnnWait.get())+
-        "\nrelease:\t"+ (sync.globalSync.countRel.get()/sync.globalSync.nnnRel.get())+
-        "\nacq:\t" + (sync.globalSync.countAcq.get()/sync.globalSync.nnnAcq.get()));
-        */
+        // No-op.
     }
 
     /** {@inheritDoc} */
@@ -436,23 +432,18 @@ public final class GridCacheLockImpl2 implements GridCacheLockEx2 {
             return lockView.get(key);
         }
 
-        //final AtomicLong countAcq = new AtomicLong(0L);
-        //final AtomicLong nnnAcq = new AtomicLong(0L);
 
         /** */
         private final boolean tryAcquireOrAdd() {
-            //final long start = System.nanoTime();
             try {
                 return lockView.invoke(key, acquireProcessor).get();
             }
             catch (IgniteCheckedException e) {
                 if (log.isDebugEnabled())
                     log.debug("Invoke has failed: "+e);
+
                 return false;
-            }/* finally {
-                countAcq.addAndGet(System.nanoTime()-start);
-                nnnAcq.incrementAndGet();
-            }*/
+            }
         }
 
         /** */
@@ -499,20 +490,12 @@ public final class GridCacheLockImpl2 implements GridCacheLockEx2 {
             }
         }
 
-        //final AtomicLong countWait = new AtomicLong(0L);
-        //final AtomicLong nnnWait = new AtomicLong(0L);
-
         /** */
         private final void acquire() {
-            if (!tryAcquireOrAdd())
-                waitForUpdate();
-
-            /*while (!tryAcquireOrAdd()) {
-                //final long start = System.nanoTime();
-
-                //countWait.addAndGet(System.nanoTime()-start);
-                //nnnWait.incrementAndGet();
-            }*/
+            while (!tryAcquireOrAdd()) {
+                if (waitForUpdate())
+                    break;
+            }
         }
 
         /** */
@@ -537,13 +520,8 @@ public final class GridCacheLockImpl2 implements GridCacheLockEx2 {
             return true;
         }
 
-        //final AtomicLong countRel = new AtomicLong(0L);
-        //final AtomicLong nnnRel = new AtomicLong(0L);
-
         /** {@inheritDoc} */
         private final void release() {
-            //final long start = System.nanoTime();
-
             lockView.invokeAsync(key, releaseProcessor).listen(
                 new IgniteInClosure<IgniteInternalFuture<EntryProcessorResult<UUID>>>() {
                     @Override public void apply(IgniteInternalFuture<EntryProcessorResult<UUID>> future) {
@@ -558,8 +536,6 @@ public final class GridCacheLockImpl2 implements GridCacheLockEx2 {
 
                                     ctx.io().send(nextNode, new ReleasedMessage(ctx.cacheId()), P2P_POOL);
                             }
-                            //countRel.addAndGet(System.nanoTime()-start);
-                            //nnnRel.incrementAndGet();
                         }
                         catch (IgniteCheckedException e) {
                             if (log.isDebugEnabled())
