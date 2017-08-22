@@ -306,6 +306,48 @@ namespace ignite
 #ifdef SQL_CORRELATION_NAME
                     DBG_STR_CASE(SQL_CORRELATION_NAME);
 #endif // SQL_CORRELATION_NAME
+#ifdef SQL_CREATE_ASSERTION
+                    DBG_STR_CASE(SQL_CREATE_ASSERTION);
+#endif // SQL_CREATE_ASSERTION
+#ifdef SQL_CREATE_CHARACTER_SET
+                    DBG_STR_CASE(SQL_CREATE_CHARACTER_SET);
+#endif // SQL_CREATE_CHARACTER_SET
+#ifdef SQL_CREATE_COLLATION
+                    DBG_STR_CASE(SQL_CREATE_COLLATION);
+#endif // SQL_CREATE_COLLATION
+#ifdef SQL_CREATE_DOMAIN
+                    DBG_STR_CASE(SQL_CREATE_DOMAIN);
+#endif // SQL_CREATE_DOMAIN
+#ifdef SQL_CREATE_TABLE
+                    DBG_STR_CASE(SQL_CREATE_TABLE);
+#endif // SQL_CREATE_TABLE
+#ifdef SQL_CREATE_TRANSLATION
+                    DBG_STR_CASE(SQL_CREATE_TRANSLATION);
+#endif // SQL_CREATE_TRANSLATION
+#ifdef SQL_CREATE_VIEW
+                    DBG_STR_CASE(SQL_CREATE_VIEW);
+#endif // SQL_CREATE_VIEW
+#ifdef SQL_CURSOR_SENSITIVITY
+                    DBG_STR_CASE(SQL_CURSOR_SENSITIVITY);
+#endif // SQL_CURSOR_SENSITIVITY
+#ifdef SQL_DATA_SOURCE_NAME
+                    DBG_STR_CASE(SQL_DATA_SOURCE_NAME);
+#endif // SQL_DATA_SOURCE_NAME
+#ifdef SQL_DATA_SOURCE_READ_ONLY
+                    DBG_STR_CASE(SQL_DATA_SOURCE_READ_ONLY);
+#endif // SQL_DATA_SOURCE_READ_ONLY
+#ifdef SQL_DATABASE_NAME
+                    DBG_STR_CASE(SQL_DATABASE_NAME);
+#endif // SQL_DATABASE_NAME
+#ifdef SQL_DDL_INDEX
+                    DBG_STR_CASE(SQL_DDL_INDEX);
+#endif // SQL_DDL_INDEX
+#ifdef SQL_DEFAULT_TXN_ISOLATION
+                    DBG_STR_CASE(SQL_DEFAULT_TXN_ISOLATION);
+#endif // SQL_DEFAULT_TXN_ISOLATION
+#ifdef SQL_DESCRIBE_PARAMETER
+                    DBG_STR_CASE(SQL_DESCRIBE_PARAMETER);
+#endif // SQL_DESCRIBE_PARAMETER
                     default:
                         break;
                 }
@@ -314,8 +356,11 @@ namespace ignite
 
 #undef DBG_STR_CASE
 
-            ConnectionInfo::ConnectionInfo() : strParams(), intParams(),
-                shortParams()
+            ConnectionInfo::ConnectionInfo(const Configuration& config) :
+                strParams(),
+                intParams(),
+                shortParams(),
+                config(config)
             {
                 //
                 //======================= String Params =======================
@@ -422,6 +467,40 @@ namespace ignite
                 // return a non-empty string.
                 strParams[SQL_COLLATION_SEQ] = "UTF-8";
 #endif // SQL_COLLATION_SEQ
+
+#ifdef SQL_DATA_SOURCE_NAME
+                // A character string with the data source name that was used during connection.
+                //
+                // If the application called SQLConnect, this is the value of the szDSN argument. If the application
+                // called SQLDriverConnect or SQLBrowseConnect, this is the value of the DSN keyword in the connection
+                // string passed to the driver. If the connection string did not contain the DSN keyword (such as when
+                // it contains the DRIVER keyword), this is an empty string.
+                strParams[SQL_DATA_SOURCE_NAME] = config.GetDsn();
+#endif // SQL_DATA_SOURCE_NAME
+
+#ifdef SQL_DATA_SOURCE_READ_ONLY
+                // A character string. "Y" if the data source is set to READ ONLY mode, "N" if it is otherwise.
+                //
+                // This characteristic pertains only to the data source itself; it is not a characteristic of the driver
+                // that enables access to the data source. A driver that is read/write can be used with a data source
+                // that is read-only. If a driver is read-only, all of its data sources must be read-only and must
+                // return SQL_DATA_SOURCE_READ_ONLY.
+                strParams[SQL_DATA_SOURCE_READ_ONLY] = "N";
+#endif // SQL_DATA_SOURCE_READ_ONLY
+
+#ifdef SQL_DATABASE_NAME
+                // A character string with the name of the current database in use, if the data source defines a named
+                // object called "database".
+                strParams[SQL_DATABASE_NAME] = "";
+#endif // SQL_DATABASE_NAME
+
+#ifdef SQL_DESCRIBE_PARAMETER
+                // A character string: "Y" if parameters can be described; "N", if not.
+                // An SQL-92 Full level-conformant driver will usually return "Y" because it will support the DESCRIBE
+                // INPUT statement. Because this does not directly specify the underlying SQL support, however,
+                // describing parameters might not be supported, even in a SQL-92 Full level-conformant driver.
+                strParams[SQL_DESCRIBE_PARAMETER] = "N";
+#endif // SQL_DESCRIBE_PARAMETER
 
                 //
                 //====================== Integer Params =======================
@@ -993,6 +1072,193 @@ namespace ignite
                 intParams[SQL_ALTER_TABLE] = 0;
 #endif // SQL_ALTER_TABLE
 
+#ifdef SQL_CREATE_ASSERTION
+                // Bitmask enumerating the clauses in the CREATE ASSERTION statement, as defined in SQL-92, supported by
+                // the data source.
+                //
+                // The following bitmasks are used to determine which clauses are supported :
+                // SQL_CA_CREATE_ASSERTION
+                //
+                // The following bits specify the supported constraint attribute if the ability to specify constraint
+                // attributes explicitly is supported(see the SQL_ALTER_TABLE and SQL_CREATE_TABLE information types) :
+                // SQL_CA_CONSTRAINT_INITIALLY_DEFERRED
+                // SQL_CA_CONSTRAINT_INITIALLY_IMMEDIATE
+                // SQL_CA_CONSTRAINT_DEFERRABLE
+                // SQL_CA_CONSTRAINT_NON_DEFERRABLE
+                //
+                // An SQL - 92 Full level-conformant driver will always return all of these options as supported.
+                // A return value of "0" means that the CREATE ASSERTION statement is not supported.
+                intParams[SQL_CREATE_ASSERTION] = 0;
+#endif // SQL_CREATE_ASSERTION
+
+#ifdef SQL_CREATE_CHARACTER_SET
+                // Bitmask enumerating the clauses in the CREATE CHARACTER SET statement, as defined in SQL-92,
+                // supported by the data source.
+                // The following bitmasks are used to determine which clauses are supported :
+                // SQL_CCS_CREATE_CHARACTER_SET
+                // SQL_CCS_COLLATE_CLAUSE
+                // SQL_CCS_LIMITED_COLLATION
+                //
+                // An SQL - 92 Full level-conformant driver will always return all of these options as supported.
+                // A return value of "0" means that the CREATE CHARACTER SET statement is not supported.
+                intParams[SQL_CREATE_CHARACTER_SET] = 0;
+#endif // SQL_CREATE_CHARACTER_SET
+
+#ifdef SQL_CREATE_COLLATION
+                // Bitmask enumerating the clauses in the CREATE COLLATION statement, as defined in SQL-92, supported by
+                // the data source.
+                // The following bitmask is used to determine which clauses are supported :
+                // SQL_CCOL_CREATE_COLLATION
+                // An SQL - 92 Full level-conformant driver will always return this option as supported.A return value
+                // of "0" means that the CREATE COLLATION statement is not supported.
+                intParams[SQL_CREATE_COLLATION] = 0;
+#endif // SQL_CREATE_COLLATION
+
+#ifdef SQL_CREATE_DOMAIN
+                // Bitmask enumerating the clauses in the CREATE DOMAIN statement, as defined in SQL-92, supported by
+                // the data source.
+                // The following bitmasks are used to determine which clauses are supported :
+                // SQL_CDO_CREATE_DOMAIN = The CREATE DOMAIN statement is supported(Intermediate level).
+                // SQL_CDO_CONSTRAINT_NAME_DEFINITION = <constraint name definition> is supported for naming domain
+                //     constraints(Intermediate level).
+                //
+                // The following bits specify the ability to create column constraints :
+                // SQL_CDO_DEFAULT = Specifying domain constraints is supported (Intermediate level)
+                // SQL_CDO_CONSTRAINT = Specifying domain defaults is supported (Intermediate level)
+                // SQL_CDO_COLLATION = Specifying domain collation is supported (Full level)
+                //
+                // The following bits specify the supported constraint attributes if specifying domain constraints is
+                // supported (SQL_CDO_DEFAULT is set) :
+                // SQL_CDO_CONSTRAINT_INITIALLY_DEFERRED (Full level)
+                // SQL_CDO_CONSTRAINT_INITIALLY_IMMEDIATE (Full level)
+                // SQL_CDO_CONSTRAINT_DEFERRABLE (Full level)
+                // SQL_CDO_CONSTRAINT_NON_DEFERRABLE (Full level)
+                //
+                // A return value of "0" means that the CREATE DOMAIN statement is not supported.
+                intParams[SQL_CREATE_DOMAIN] = 0;
+#endif // SQL_CREATE_DOMAIN
+
+#ifdef SQL_CREATE_SCHEMA
+                // Bitmask enumerating the clauses in the CREATE SCHEMA statement, as defined in SQL-92, supported by
+                // the data source.
+                // The following bitmasks are used to determine which clauses are supported :
+                // SQL_CS_CREATE_SCHEMA
+                // SQL_CS_AUTHORIZATION
+                // SQL_CS_DEFAULT_CHARACTER_SET
+                //
+                // An SQL - 92 Intermediate level-conformant driver will always return the SQL_CS_CREATE_SCHEMA and
+                // SQL_CS_AUTHORIZATION options as supported. These must also be supported at the SQL-92 Entry level,
+                // but not necessarily as SQL statements. An SQL-92 Full level-conformant driver will always return all
+                // of these options as supported.
+                intParams[SQL_CREATE_SCHEMA] = 0;
+#endif // SQL_CREATE_SCHEMA
+
+#ifdef SQL_CREATE_TABLE
+                // Bitmask enumerating the clauses in the CREATE TABLE statement, as defined in SQL-92, supported by
+                // the data source.
+                // The SQL - 92 or FIPS conformance level at which this feature must be supported is shown in
+                // parentheses next to each bitmask.
+                //
+                // The following bitmasks are used to determine which clauses are supported :
+                // SQL_CT_CREATE_TABLE = The CREATE TABLE statement is supported. (Entry level)
+                // SQL_CT_TABLE_CONSTRAINT = Specifying table constraints is supported (FIPS Transitional level)
+                // SQL_CT_CONSTRAINT_NAME_DEFINITION = The <constraint name definition> clause is supported for naming
+                //     column and table constraints (Intermediate level)
+                //
+                // The following bits specify the ability to create temporary tables :
+                // SQL_CT_COMMIT_PRESERVE = Deleted rows are preserved on commit. (Full level)
+                // SQL_CT_COMMIT_DELETE = Deleted rows are deleted on commit. (Full level)
+                // SQL_CT_GLOBAL_TEMPORARY = Global temporary tables can be created. (Full level)
+                // SQL_CT_LOCAL_TEMPORARY = Local temporary tables can be created. (Full level)
+                //
+                // The following bits specify the ability to create column constraints :
+                // SQL_CT_COLUMN_CONSTRAINT = Specifying column constraints is supported (FIPS Transitional level)
+                // SQL_CT_COLUMN_DEFAULT = Specifying column defaults is supported (FIPS Transitional level)
+                // SQL_CT_COLUMN_COLLATION = Specifying column collation is supported (Full level)
+                //
+                // The following bits specify the supported constraint attributes if specifying column or table
+                // constraints is supported :
+                // SQL_CT_CONSTRAINT_INITIALLY_DEFERRED (Full level)
+                // SQL_CT_CONSTRAINT_INITIALLY_IMMEDIATE (Full level)
+                // SQL_CT_CONSTRAINT_DEFERRABLE (Full level)
+                // SQL_CT_CONSTRAINT_NON_DEFERRABLE (Full level)
+                intParams[SQL_CREATE_TABLE] = SQL_CT_CREATE_TABLE;
+#endif // SQL_CREATE_TABLE
+
+#ifdef SQL_CREATE_TRANSLATION
+                // Bitmask enumerating the clauses in the CREATE TRANSLATION statement, as defined in SQL-92, supported
+                // by the data source.
+                //
+                // The following bitmask is used to determine which clauses are supported :
+                // SQL_CTR_CREATE_TRANSLATION
+                //
+                // An SQL - 92 Full level-conformant driver will always return these options as supported. A return
+                // value of "0" means that the CREATE TRANSLATION statement is not supported.
+                intParams[SQL_CREATE_TRANSLATION] = 0;
+#endif // SQL_CREATE_TRANSLATION
+
+#ifdef SQL_CREATE_VIEW
+                // Bitmask enumerating the clauses in the CREATE VIEW statement, as defined in SQL-92, supported by the
+                // data source.
+                //
+                // The following bitmasks are used to determine which clauses are supported :
+                // SQL_CV_CREATE_VIEW
+                // SQL_CV_CHECK_OPTION
+                // SQL_CV_CASCADEDSQL_CV_LOCAL
+                //
+                // A return value of "0" means that the CREATE VIEW statement is not supported.
+                // An SQL - 92 Entry level-conformant driver will always return the SQL_CV_CREATE_VIEW and
+                // SQL_CV_CHECK_OPTION options as supported.
+                // An SQL - 92 Full level-conformant driver will always return all of these options as supported.
+                intParams[SQL_CREATE_VIEW] = 0;
+#endif // SQL_CREATE_VIEW
+
+#ifdef SQL_CURSOR_SENSITIVITY
+                // Value that indicates the support for cursor sensitivity:
+                // SQL_INSENSITIVE = All cursors on the statement handle show the result set without reflecting any
+                //     changes that were made to it by any other cursor within the same transaction.
+                // SQL_UNSPECIFIED = It is unspecified whether cursors on the statement handle make visible the changes
+                //     that were made to a result set by another cursor within the same transaction. Cursors on the
+                //     statement handle may make visible none, some, or all such changes.
+                // SQL_SENSITIVE = Cursors are sensitive to changes that were made by other cursors within the same
+                //     transaction.
+                //
+                // An SQL - 92 Entry level-conformant driver will always return the SQL_UNSPECIFIED option as supported.
+                // An SQL - 92 Full level-conformant driver will always return the SQL_INSENSITIVE option as supported.
+                intParams[SQL_CURSOR_SENSITIVITY] = SQL_INSENSITIVE;
+#endif // SQL_CURSOR_SENSITIVITY
+
+#ifdef SQL_DDL_INDEX
+                // Value that indicates support for creation and dropping of indexes:
+                // SQL_DI_CREATE_INDEX
+                // SQL_DI_DROP_INDEX
+                intParams[SQL_DDL_INDEX] = SQL_DI_CREATE_INDEX | SQL_DI_DROP_INDEX;
+#endif // SQL_DDL_INDEX
+
+#ifdef SQL_DEFAULT_TXN_ISOLATION
+                // Value that indicates the default transaction isolation level supported by the driver or data source,
+                // or zero if the data source does not support transactions. The following terms are used to define
+                // transaction isolation levels:
+                //
+                // Dirty Read Transaction 1 changes a row. Transaction 2 reads the changed row before transaction 1
+                // commits the change. If transaction 1 rolls back the change, transaction 2 will have read a row that
+                // is considered to have never existed.
+                // Nonrepeatable Read Transaction 1 reads a row.Transaction 2 updates or deletes that row and commits
+                // this change. If transaction 1 tries to reread the row, it will receive different row values or
+                // discover that the row has been deleted.
+                // Phantom Transaction 1 reads a set of rows that satisfy some search criteria. Transaction 2 generates
+                // one or more rows (through either inserts or updates) that match the search criteria. If transaction 1
+                // reexecutes the statement that reads the rows, it receives a different set of rows.
+                //
+                // If the data source supports transactions, the driver returns one of the following bitmasks :
+                // SQL_TXN_READ_UNCOMMITTED = Dirty reads, nonrepeatable reads, and phantoms are possible.
+                // SQL_TXN_READ_COMMITTED = Dirty reads are not possible. Nonrepeatable reads and phantoms are possible
+                // SQL_TXN_REPEATABLE_READ = Dirty reads and nonrepeatable reads are not possible. Phantoms are possible
+                // SQL_TXN_SERIALIZABLE = Transactions are serializable. Serializable transactions do not allow dirty
+                //     reads, nonrepeatable reads, or phantoms.
+                intParams[SQL_DEFAULT_TXN_ISOLATION] = 0;
+#endif // SQL_DEFAULT_TXN_ISOLATION
+
                 //
                 //======================= Short Params ========================
                 //
@@ -1004,12 +1270,32 @@ namespace ignite
 #endif // SQL_MAX_CONCURRENT_ACTIVITIES
 
 #ifdef SQL_CURSOR_COMMIT_BEHAVIOR
-                // Indicates how a COMMIT operation affects cursors and prepared statements in the data source.
+                // Value that indicates how a COMMIT operation affects cursors and prepared statements in the data
+                // source (the behavior of the data source when you commit a transaction).
+                //
+                // The value of this attribute will reflect the current state of the next setting :
+                // SQL_COPT_SS_PRESERVE_CURSORS.
+                // SQL_CB_DELETE = Close cursors and delete prepared statements.To use the cursor again, the application
+                //     must reprepare and reexecute the statement.
+                // SQL_CB_CLOSE = Close cursors. For prepared statements, the application can call SQLExecute on the
+                //     statement without calling SQLPrepare again. The default for the SQL ODBC driver is SQL_CB_CLOSE.
+                //     This means that the SQL ODBC driver will close your cursor(s) when you commit a transaction.
+                // SQL_CB_PRESERVE = Preserve cursors in the same position as before the COMMIT operation. The
+                //     application can continue to fetch data, or it can close the cursor and re-execute the statement
+                //     without re-preparing it.
+                // SQL_CURSOR_ROLLBACK_BEHAVIOR (ODBC 1.0)
                 shortParams[SQL_CURSOR_COMMIT_BEHAVIOR] = SQL_CB_PRESERVE;
 #endif // SQL_CURSOR_COMMIT_BEHAVIOR
 
 #ifdef SQL_CURSOR_ROLLBACK_BEHAVIOR
-                // Indicates how a ROLLBACK  operation affects cursors and prepared statements in the data source.
+                // Indicates how a ROLLBACK  operation affects cursors and prepared statements in the data source:
+                // SQL_CB_DELETE = Close cursors and delete prepared statements. To use the cursor again, the
+                //     application must reprepare and reexecute the statement.
+                // SQL_CB_CLOSE = Close cursors. For prepared statements, the application can call SQLExecute on the
+                //     statement without calling SQLPrepare again.
+                // SQL_CB_PRESERVE = Preserve cursors in the same position as before the ROLLBACK operation. The
+                //     application can continue to fetch data, or it can close the cursor and re-execute the statement
+                //     without repreparing it.
                 shortParams[SQL_CURSOR_ROLLBACK_BEHAVIOR] = SQL_CB_PRESERVE;
 #endif // SQL_CURSOR_ROLLBACK_BEHAVIOR
 
