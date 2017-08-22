@@ -47,6 +47,7 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlTable;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlUnion;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlUpdate;
+import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2DmlRequest;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -300,7 +301,18 @@ public final class UpdatePlanBuilder {
         }
     }
 
-    /** */
+    /**
+     * Recover update plan from parameters received in {@link GridH2DmlRequest message}
+     *
+     * @param cctx Cache context.
+     * @param updateMode Update mode.
+     * @param tgtTbl Target table.
+     * @param desc Target table descriptor.
+     * @param colNames Updated column names.
+     * @param qry SQL select for update.
+     * @return Update plan.
+     * @throws IgniteCheckedException If failed.
+     */
     public static UpdatePlan planFromMessage(GridCacheContext cctx, UpdateMode updateMode, GridH2Table tgtTbl,
         GridH2RowDescriptor desc, String[] colNames, String qry) throws IgniteCheckedException {
         boolean hasKeyProps = false;

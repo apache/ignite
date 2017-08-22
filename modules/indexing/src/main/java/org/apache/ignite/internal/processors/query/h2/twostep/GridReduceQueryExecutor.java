@@ -134,7 +134,7 @@ public class GridReduceQueryExecutor {
     /** */
     private final ConcurrentMap<Long, ReduceQueryRun> runs = new ConcurrentHashMap8<>();
 
-    /** */
+    /** Contexts of running DML requests. */
     private final ConcurrentMap<Long, DistributedUpdateRun> updRuns = new ConcurrentHashMap8<>();
 
     /** */
@@ -843,7 +843,22 @@ public class GridReduceQueryExecutor {
         }
     }
 
-    /** */
+    /**
+     *
+     * @param schemaName Schema name.
+     * @param cacheIds Cache ids.
+     * @param updateMode Update mode.
+     * @param tgtTable Target table.
+     * @param colNames Column names.
+     * @param selectQry Select query.
+     * @param enforceJoinOrder Enforce join order of tables.
+     * @param pageSize Page size.
+     * @param timeoutMillis Timeout.
+     * @param params SQL parameters.
+     * @param parts Partitions.
+     * @param cancel Cancel state.
+     * @return Update result.
+     */
     public UpdateResult update(
         String schemaName,
         List<Integer> cacheIds,
@@ -922,7 +937,12 @@ public class GridReduceQueryExecutor {
         }
     }
 
-    /** */
+    /**
+     * Process response for DML request.
+     *
+     * @param node Node.
+     * @param msg Message.
+     */
     private void onDmlResponse(final ClusterNode node, GridH2DmlResponse msg) {
         try {
             long reqId = msg.requestId();

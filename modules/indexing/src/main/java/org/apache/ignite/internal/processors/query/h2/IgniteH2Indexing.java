@@ -1192,7 +1192,19 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         };
     }
 
-    /** */
+    /**
+     * Run DML on remote nodes.
+     *
+     * @param schemaName Schema name.
+     * @param fieldsQry Initial update query.
+     * @param cacheIds Cache identifiers.
+     * @param updateMode Update mode.
+     * @param tgtTable Target table.
+     * @param colNames Column names.
+     * @param selectQry Select query derived from initial update query.
+     * @param cancel Cancel state.
+     * @return Update result.
+     */
     UpdateResult runDistributedUpdate(
         String schemaName,
         SqlFieldsQuery fieldsQry,
@@ -1440,7 +1452,22 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         return cursor;
     }
 
-    /** */
+    /**
+     * Run DML request from other node.
+     *
+     * @param mode Update mode.
+     * @param schemaName Schema name.
+     * @param targetTable Target table.
+     * @param colNames Column names.
+     * @param qry Query.
+     * @param params SQL parameters.
+     * @param pageSize Page size.
+     * @param timeoutMillis Timeout.
+     * @param filter Filter.
+     * @param cancel Cancel state.
+     * @return Update result.
+     * @throws IgniteCheckedException if failed.
+     */
     public UpdateResult mapDistributedUpdate(byte mode, String schemaName, String targetTable, String[] colNames,
         String qry, Object[] params, int pageSize, int timeoutMillis, IndexingQueryFilter filter,
         GridQueryCancel cancel) throws IgniteCheckedException {
@@ -2400,7 +2427,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             U.close(conn, log);
     }
 
-    /** */
+    /**
+     * Collect cache identifiers from two-step query.
+     *
+     * @param mainCacheId Id of main cache.
+     * @param twoStepQry Two-step query.
+     * @return Result.
+     */
     public List<Integer> collectCacheIds(@Nullable Integer mainCacheId, GridCacheTwoStepQuery twoStepQry) {
         LinkedHashSet<Integer> caches0 = new LinkedHashSet<>();
 

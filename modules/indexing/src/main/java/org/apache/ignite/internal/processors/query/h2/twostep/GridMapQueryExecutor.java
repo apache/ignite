@@ -822,19 +822,20 @@ public class GridMapQueryExecutor {
     }
 
     /**
+     * Sends update response for DML request.
      *
-     * @param node
-     * @param reqId
-     * @param updResult
-     * @param error
+     * @param node Node.
+     * @param reqId Request id.
+     * @param updResult Update result.
+     * @param error Error message.
      */
     private void sendUpdateResponse(ClusterNode node, long reqId, UpdateResult updResult, String error) {
         try {
-            byte status = (error != null) ? GridH2DmlResponse.STATUS_ERROR :
+            byte status = (error != null || updResult == null) ? GridH2DmlResponse.STATUS_ERROR :
                 F.isEmpty(updResult.errorKeys()) ? GridH2DmlResponse.STATUS_OK : GridH2DmlResponse.STATUS_ERR_KEYS;
 
-            GridH2DmlResponse rsp = new GridH2DmlResponse(reqId, status, updResult.counter(), updResult.errorKeys(),
-                error);
+            GridH2DmlResponse rsp = new GridH2DmlResponse(reqId, status, updResult == null ? 0: updResult.counter(),
+                updResult == null ? null: updResult.errorKeys(), error);
 
             if (node.isLocal())
                 h2.reduceQueryExecutor().onMessage(ctx.localNodeId(), rsp);

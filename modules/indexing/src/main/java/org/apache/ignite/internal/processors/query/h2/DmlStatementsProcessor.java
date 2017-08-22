@@ -215,12 +215,18 @@ public class DmlStatementsProcessor {
         return new UpdateResult(items, errKeys);
     }
 
-    /** */
-    private boolean checkDistributed(String schemaName, UpdatePlan p, SqlFieldsQuery fieldsQry) {
+    /**
+     *
+     * @param schemaName Schema name.
+     * @param plan Update plan.
+     * @param fieldsQry Initial update query.
+     * @return {@code true} if query can be optimized with distributed DML.
+     */
+    private boolean checkDistributed(String schemaName, UpdatePlan plan, SqlFieldsQuery fieldsQry) {
         Connection c = idx.connectionForSchema(schemaName);
 
         try {
-            PreparedStatement stmt = c.prepareStatement(p.selectQry);
+            PreparedStatement stmt = c.prepareStatement(plan.selectQry);
 
             idx.bindParameters(stmt, F.asList(fieldsQry.getArgs()));
 
@@ -231,16 +237,16 @@ public class DmlStatementsProcessor {
                 fieldsQry.isEnforceJoinOrder(), idx);
 
             // TODO: find a way to set aside sub-queries
-            p.distributed = !qry.isReplicatedOnly() && qry.mapQueries().size() == 1 && qry.skipMergeTable();
+            plan.distributed = !qry.isReplicatedOnly() && qry.mapQueries().size() == 1 && qry.skipMergeTable();
 
-            if (p.distributed)
-                p.cacheIds = idx.collectCacheIds(CU.cacheId(p.tbl.cacheName()), qry);
+            if (plan.distributed)
+                plan.cacheIds = idx.collectCacheIds(CU.cacheId(plan.tbl.cacheName()), qry);
         }
         catch (SQLException | IgniteCheckedException e) {
             throw new IgniteException(e);
         }
 
-        return p.distributed;
+        return plan.distributed;
     }
 
     /**
@@ -1018,7 +1024,21 @@ public class DmlStatementsProcessor {
         return new IgniteBiTuple<>(key, val);
     }
 
-    /** */
+    /**
+     *
+     * @param mode Update mode.
+     * @param schemaName Schema name.
+     * @param targetTable Target table.
+     * @param colNames Column names.
+     * @param qry Query.
+     * @param params Query parameters.
+     * @param pageSize Page size.
+     * @param timeoutMillis Timeout.
+     * @param filter Filter.
+     * @param cancel Cancel state.
+     * @return Update result.
+     * @throws IgniteCheckedException if failed.
+     */
     UpdateResult mapDistributedUpdate(byte mode, String schemaName, String targetTable,
         String[] colNames, String qry, Object[] params, int pageSize, int timeoutMillis,
         IndexingQueryFilter filter, GridQueryCancel cancel) throws IgniteCheckedException {

@@ -44,15 +44,15 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 import static org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery.EMPTY_PARAMS;
 
-/** */
-public class GridH2DmlRequest  implements Message, GridCacheQueryMarshallable {
+/** Request for DML operation on remote node. */
+public class GridH2DmlRequest implements Message, GridCacheQueryMarshallable {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** */
+    /** Request id. */
     private long reqId;
 
-    /** */
+    /** Cache identifiers. */
     @GridToStringInclude
     @GridDirectCollection(Integer.class)
     private List<Integer> caches;
@@ -69,10 +69,10 @@ public class GridH2DmlRequest  implements Message, GridCacheQueryMarshallable {
     @GridToStringInclude
     private int[] qryParts;
 
-    /** */
+    /** Page size. */
     private int pageSize;
 
-    /** */
+    /** Query. */
     @GridToStringInclude
     @GridDirectCollection(Message.class)
     private List<GridCacheSqlQuery> qrys;

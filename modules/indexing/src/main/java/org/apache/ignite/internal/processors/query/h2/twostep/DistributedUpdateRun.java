@@ -29,7 +29,7 @@ import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 
-/** */
+/** Context for DML operation on reducer node. */
 class DistributedUpdateRun {
     /** Response counter. */
     private AtomicLong rspCntr;
@@ -46,7 +46,12 @@ class DistributedUpdateRun {
     /** Result future. */
     private GridFutureAdapter<UpdateResult> fut = new GridFutureAdapter<>();
 
-    /** */
+    /**
+     * Constructor.
+     *
+     * @param nodeCount Number of nodes to await results from.
+     * @param qry Query info.
+     */
     DistributedUpdateRun(int nodeCount, GridRunningQueryInfo qry) {
         rspCntr = new AtomicLong(nodeCount);
 
@@ -67,17 +72,30 @@ class DistributedUpdateRun {
         return fut;
     }
 
-    /** */
+    /**
+     * Handle disconnection.
+     * @param e Pre-formatted error.
+     */
     void handleDisconnect(CacheException e) {
         fut.onDone(new IgniteCheckedException("Update failed.", e));
     }
 
-    /** */
+    /**
+     * Handle leave of a node.
+     *
+     * @param nodeId Node id.
+     */
     void handleNodeLeft(UUID nodeId) {
         fut.onDone(new IgniteCheckedException("Update failed: node " + nodeId + " has left"));
     }
 
-    /** */
+    /**
+     * Handle response from remote node.
+     *
+     * @param id Node id.
+     * @param msg Response message.
+     * @return {@code true} if no more responses are expected.
+     */
     boolean handleResponse(UUID id, GridH2DmlResponse msg) {
         boolean done = rspCntr.decrementAndGet() == 0;
 
@@ -100,12 +118,14 @@ class DistributedUpdateRun {
             case GridH2DmlResponse.STATUS_ERROR:
                 String err = msg.error();
 
-                fut.onDone(new IgniteCheckedException("Update failed. " + (F.isEmpty(err)? "" : err)));
+                fut.onDone(new IgniteCheckedException("Update failed. " + (F.isEmpty(err)? "" : err) + "[reqId=" +
+                    msg.requestId() + ", node=" + id + "]."));
 
                 return false;
 
             default:
-                fut.onDone(new IgniteCheckedException("Update failed. Invalid status in response message."));
+                fut.onDone(new IgniteCheckedException("Update failed. Invalid status in response message [reqId=" +
+                    msg.requestId() + ", node=" + id + "]."));
 
                 return false;
         }

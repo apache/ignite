@@ -24,33 +24,33 @@ import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemTy
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
-/** */
+/** Response to remote DML request. */
 public class GridH2DmlResponse implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** */
+    /** Successful execution. */
     public static final byte STATUS_OK = 0;
 
-    /** */
+    /** Error occurred. */
     public static final byte STATUS_ERROR = 1;
 
-    /** */
+    /** Partial success. Erroneous keys identified. */
     public static final byte STATUS_ERR_KEYS = 2;
 
-    /** */
+    /** Request id. */
     private long reqId;
 
-    /** */
+    /** Status. */
     private byte status;
 
-    /** */
+    /** Updated rows counter. */
     private long updCnt;
 
-    /** */
+    /** Error message. */
     private String err;
 
-    /** */
+    /** Keys that failed. */
     private Object[] errKeys;
 
     /**
@@ -60,7 +60,15 @@ public class GridH2DmlResponse implements Message {
         // No-op.
     }
 
-    /** */
+    /**
+     * Constructor.
+     *
+     * @param reqId Request id.
+     * @param status Status.
+     * @param updCnt Updated row number.
+     * @param errKeys Erroneous keys.
+     * @param error Error message.
+     */
     public GridH2DmlResponse(long reqId, byte status, long updCnt, Object[] errKeys, String error) {
         this.reqId = reqId;
         this.status = status;

@@ -68,7 +68,7 @@ public final class UpdatePlan {
     /** Distributed update flag. */
     public boolean distributed = false;
 
-    /** */
+    /** Integer cache identifiers. */
     public List<Integer> cacheIds;
 
     /** */
