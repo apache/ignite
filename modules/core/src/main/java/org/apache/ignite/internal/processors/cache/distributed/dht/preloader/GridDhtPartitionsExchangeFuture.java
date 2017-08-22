@@ -365,7 +365,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
          */
         assert exchangeDone() : "Should not be called before exchange is finished";
 
-        return exchCtx.events().topologyVersion();
+        return isDone() ? result() : exchCtx.events().topologyVersion();
     }
 
     /**
