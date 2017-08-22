@@ -207,7 +207,7 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
         Object res = partCntrs == null ? null : partCntrs.get(grpId);
 
         if (res == null)
-            return null;
+            return CachePartitionPartialCountersMap.EMPTY;
 
         if (res instanceof CachePartitionPartialCountersMap)
             return (CachePartitionPartialCountersMap)res;
