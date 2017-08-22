@@ -289,11 +289,6 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
             assertEquals("Invalid schema", DEFAULT_CACHE_NAME, conn.getSchema());
         }
 
-        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?schema="
-            + DEFAULT_CACHE_NAME)) {
-            assertEquals("Invalid schema", DEFAULT_CACHE_NAME, conn.getSchema());
-        }
-
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1/_not_exist_schema_")) {
             assertEquals("Invalid schema", "_not_exist_schema_", conn.getSchema());
         }
