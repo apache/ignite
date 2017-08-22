@@ -161,6 +161,9 @@ public class IgniteJdbcThinDriver implements Driver {
         }
     }
 
+    /** Schema name. */
+    private String schema;
+
     /** {@inheritDoc} */
     @Override public Connection connect(String url, Properties props) throws SQLException {
         if (!acceptsURL(url))
@@ -168,7 +171,7 @@ public class IgniteJdbcThinDriver implements Driver {
 
         parseUrl(url, props);
 
-        return new JdbcThinConnection(url, props);
+        return new JdbcThinConnection(url, props, schema);
     }
 
     /** {@inheritDoc} */
@@ -183,7 +186,6 @@ public class IgniteJdbcThinDriver implements Driver {
         List<DriverPropertyInfo> props = Arrays.<DriverPropertyInfo>asList(
             new JdbcDriverPropertyInfo("Hostname", info.getProperty(JdbcThinUtils.PROP_HOST), ""),
             new JdbcDriverPropertyInfo("Port number", info.getProperty(JdbcThinUtils.PROP_PORT), ""),
-            new JdbcDriverPropertyInfo("Schema", info.getProperty(JdbcThinUtils.PROP_SCHEMA), ""),
             new JdbcDriverPropertyInfo("Distributed Joins", info.getProperty(JdbcThinUtils.PROP_DISTRIBUTED_JOINS), ""),
             new JdbcDriverPropertyInfo("Enforce Join Order", info.getProperty(JdbcThinUtils.PROP_ENFORCE_JOIN_ORDER), ""),
             new JdbcDriverPropertyInfo("Collocated", info.getProperty(JdbcThinUtils.PROP_COLLOCATED), ""),
@@ -256,8 +258,9 @@ public class IgniteJdbcThinDriver implements Driver {
                 "'host:port[/schemaName]'): " + url);
         }
 
+        // Set up initial schema from URL string.
         if (pathParts.length == 2)
-            props.setProperty(JdbcThinUtils.PROP_SCHEMA, pathParts[1]);
+            schema = pathParts[1];
     }
 
     /**

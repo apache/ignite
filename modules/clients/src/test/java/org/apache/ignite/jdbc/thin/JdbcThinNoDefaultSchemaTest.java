@@ -206,22 +206,6 @@ public class JdbcThinNoDefaultSchemaTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void testSchemaInProperty() throws Exception {
-        try(Connection conn = DriverManager.getConnection(URL + "?schema=cache1")) {
-            Statement stmt = conn.createStatement();
-
-            stmt.execute("select t._key, t._val from Integer t");
-
-            ResultSet rs = stmt.getResultSet();
-
-            while (rs.next())
-                assertEquals(rs.getInt(2), rs.getInt(1) * 2);
-        }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testSetSchema() throws Exception {
         try(Connection conn = DriverManager.getConnection(URL)) {
             // Try to execute query without set schema

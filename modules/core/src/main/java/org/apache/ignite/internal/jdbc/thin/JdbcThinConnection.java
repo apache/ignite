@@ -51,7 +51,6 @@ import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_DISTRIBUTE
 import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_ENFORCE_JOIN_ORDER;
 import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_COLLOCATED;
 import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_REPLICATED_ONLY;
-import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_SCHEMA;
 import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_SOCK_SND_BUF;
 import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_SOCK_RCV_BUF;
 import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_TCP_NO_DELAY;
@@ -100,9 +99,10 @@ public class JdbcThinConnection implements Connection {
      *
      * @param url Connection URL.
      * @param props Additional properties.
+     * @param schema Schema name.
      * @throws SQLException In case Ignite client failed to start.
      */
-    public JdbcThinConnection(String url, Properties props) throws SQLException {
+    public JdbcThinConnection(String url, Properties props, String schema) throws SQLException {
         assert url != null;
         assert props != null;
 
@@ -112,7 +112,7 @@ public class JdbcThinConnection implements Connection {
         autoCommit = true;
         txIsolation = Connection.TRANSACTION_NONE;
 
-        schema = extractSchema(props);
+        this.schema = schema;
         String host = extractHost(props);
         int port = extractPort(props);
 
@@ -582,19 +582,6 @@ public class JdbcThinConnection implements Connection {
             throw new SQLException("Host name is empty.");
 
         return host;
-    }
-
-    /**
-     * Extract schema.
-     *
-     * @param props Properties.
-     * @return Host.
-     * @throws SQLException If failed.
-     */
-    private static String extractSchema(Properties props) throws SQLException {
-        String schema = props.getProperty(PROP_SCHEMA);
-
-        return F.isEmpty(schema) ? null : schema.trim();
     }
 
     /**
