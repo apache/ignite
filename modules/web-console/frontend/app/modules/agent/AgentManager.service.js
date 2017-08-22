@@ -488,17 +488,21 @@ export default class IgniteAgentManager {
      * @param {Boolean} replicatedOnly Flag whether query contains only replicated tables.
      * @param {Boolean} local Flag whether to execute query locally.
      * @param {int} pageSz
+     * @param {Boolean} lazy query flag.
      * @returns {Promise}
      */
-    querySql(nid, cacheName, query, nonCollocatedJoins, enforceJoinOrder, replicatedOnly, local, pageSz) {
-        if (this.ignite2x) {
-            return this.visorTask('querySqlX2', nid, cacheName, query, nonCollocatedJoins, enforceJoinOrder, replicatedOnly, local, pageSz)
-                .then(({error, result}) => {
-                    if (_.isEmpty(error))
-                        return result;
+    querySql(nid, cacheName, query, nonCollocatedJoins, enforceJoinOrder, replicatedOnly, local, pageSz, lazy) {
+        if (this.available('2.0.0')) {
+            const task = this.available('2.1.4') ?
+                this.visorTask('querySqlX2', nid, cacheName, query, nonCollocatedJoins, enforceJoinOrder, replicatedOnly, local, pageSz, lazy) :
+                this.visorTask('querySqlX2', nid, cacheName, query, nonCollocatedJoins, enforceJoinOrder, replicatedOnly, local, pageSz);
+            
+            return task.then(({error, result}) => {
+                if (_.isEmpty(error))
+                    return result;
 
-                    return Promise.reject(error);
-                });
+                return Promise.reject(error);
+            });
         }
 
         cacheName = _.isEmpty(cacheName) ? null : cacheName;
