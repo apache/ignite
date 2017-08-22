@@ -170,6 +170,66 @@ public class JmhCacheLocksBenchmark extends JmhCacheAbstractBenchmark {
         lockState.igniteLock.unlock();
     }
 
+    /*@State(Scope.Benchmark)
+    public static class SecondUnlock {
+
+        Thread waitingForLock;
+
+        IgniteLock igniteLock;
+
+        IgniteLock igniteLock2;
+
+        public SecondUnlock() {}
+
+        @Setup(Level.Invocation)
+        public void start() {
+            igniteLock = nodes[0].reentrantLock(lockKey+"2", fair, true);
+
+            igniteLock.lock();
+            igniteLock2 = nodes[1].reentrantLock(lockKey+"2", fair, true);
+            final IgniteLock pam = igniteLock2;
+            waitingForLock = new Thread(new Runnable() {
+                @Override public void run() {
+                    pam.lock();
+                    pam.unlock();
+                }
+            });
+            waitingForLock.start();
+            try {
+                Thread.sleep(1);
+            }
+            catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+
+        @TearDown(Level.Invocation)
+        public void end() {
+            try {
+                waitingForLock.join();
+            }
+            catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    @Benchmark
+    public void zzz(SecondUnlock unlock) {
+        unlock.igniteLock.unlock();
+        try {
+            unlock.waitingForLock.join();
+        }
+        catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Benchmark
+    public void zzz2(SecondUnlock unlock) {
+        unlock.igniteLock.unlock();
+    }*/
+
     /**
      * Create locks and put values in the cache.
      */
@@ -184,24 +244,29 @@ public class JmhCacheLocksBenchmark extends JmhCacheAbstractBenchmark {
     }
 
 
-    @State(Scope.Thread)
+    /*@State(Scope.Thread)
     public static class State3 {
-        /** */
         public final IgniteCache cache;
-        public final EP ep = new EP();
+        public final EntryProcessor<Object, Object, Boolean> ep = new EP();
 
-        /** */
         public State3() {
              this.cache = nodes[countForThread.getAndIncrement() % MAX_NODES]
                 .cache(DEFAULT_CACHE_NAME);
 
-             this.cache.putIfAbsent(lockKey, "foo");
+             this.cache.put(lockKey, "foo");
         }
     }
 
-    public static class EP implements EntryProcessor, Binarylizable {
-        @Override public Object process(MutableEntry entry, Object... objects) throws EntryProcessorException {
-            return new Object();
+    public static class EP implements EntryProcessor<Object, Object, Boolean>, Binarylizable {
+        @Override public Boolean process(MutableEntry entry, Object... objects) throws EntryProcessorException {
+            //Make it operation like update
+            if (entry.exists())
+                if (entry.getValue() != null) {
+                    entry.setValue(entry.getValue());
+                    return true;
+                }
+
+            return false;
         }
 
         @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
@@ -214,7 +279,7 @@ public class JmhCacheLocksBenchmark extends JmhCacheAbstractBenchmark {
     @Benchmark
     public Object invoke(State3 state) {
         return state.cache.invoke(lockKey, state.ep);
-    }
+    }*/
 
     /**
      * Run benchmarks.
@@ -237,8 +302,8 @@ public class JmhCacheLocksBenchmark extends JmhCacheAbstractBenchmark {
 
         final Options opt = new OptionsBuilder()
             .threads(threads)
-            .include(simpleClsName)
-            .output(output + ".jmh.log")
+            .include(simpleClsName+".igniteLock2")
+            //.output(output + ".jmh.log")
             .timeUnit(TimeUnit.MICROSECONDS)
             .mode(Mode.AverageTime)
             .jvmArgs(

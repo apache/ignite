@@ -547,6 +547,16 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
     }
 
     /** {@inheritDoc} */
+    @Nullable @Override public IgniteLock reentrantLock(String name,
+        boolean fair,
+        boolean create)
+    {
+        checkIgnite();
+
+        return g.reentrantLock(name, fair, create);
+    }
+
+    /** {@inheritDoc} */
     @Nullable @Override public <T> IgniteQueue<T> queue(String name,
         int cap,
         CollectionConfiguration cfg)

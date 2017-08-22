@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.datastructures;
 
 import java.util.ArrayDeque;
-import java.util.LinkedList;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -45,7 +44,7 @@ import org.apache.ignite.lang.IgniteInClosure;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.P2P_POOL;
 
 /**
- * Cache reentrant lock implementation based on AbstractQueuedSynchronizer.
+ * Cache reentrant lock implementation based on IgniteCache.invoke.
  */
 public final class GridCacheLockImpl2 implements GridCacheLockEx2 {
     /** Logger. */
@@ -95,7 +94,7 @@ public final class GridCacheLockImpl2 implements GridCacheLockEx2 {
 
         final UpdateListener lsnr = new UpdateListener();
 
-        sync = new LocalSync(new GlobalSync(ctx.localNodeId(), key, lockView, lsnr, ctx), fair);
+        sync = new LocalSync(new GlobalSync(ctx.localNodeId(), key, lockView, lsnr, ctx, log), fair);
 
         ctx.io().addCacheHandler(ctx.cacheId(), ReleasedMessage.class,
             new IgniteBiInClosure<UUID, ReleasedMessage>() {
@@ -303,6 +302,11 @@ public final class GridCacheLockImpl2 implements GridCacheLockEx2 {
 
     /** {@inheritDoc} */
     @Override public void close() {
+        /*System.out.println("!!!~ " +
+            "\nwait:\t"+ (sync.globalSync.countWait.get()/sync.globalSync.nnnWait.get())+
+        "\nrelease:\t"+ (sync.globalSync.countRel.get()/sync.globalSync.nnnRel.get())+
+        "\nacq:\t" + (sync.globalSync.countAcq.get()/sync.globalSync.nnnAcq.get()));
+        */
     }
 
     /** {@inheritDoc} */
@@ -399,16 +403,20 @@ public final class GridCacheLockImpl2 implements GridCacheLockEx2 {
         /** */
         private final UUID nodeId;
 
+        /** Logger. */
+        private final IgniteLogger log;
+
         /** */
         private GlobalSync(UUID nodeId, GridCacheInternalKey key,
             IgniteInternalCache<GridCacheInternalKey, GridCacheLockState2> lockView, UpdateListener listener,
-            GridCacheContext<GridCacheInternalKey, GridCacheLockState2> ctx) {
+            GridCacheContext<GridCacheInternalKey, GridCacheLockState2> ctx, IgniteLogger log) {
 
             assert nodeId != null;
             assert key != null;
             assert lockView != null;
             assert listener != null;
             assert ctx != null;
+            assert log != null;
 
             acquireProcessor = new AcquireProcessor(nodeId);
             releaseProcessor = new ReleaseProcessor(nodeId);
@@ -420,6 +428,7 @@ public final class GridCacheLockImpl2 implements GridCacheLockEx2 {
             this.listener = listener;
             this.ctx = ctx;
             this.nodeId = nodeId;
+            this.log = log;
         }
 
         /** */
@@ -427,15 +436,23 @@ public final class GridCacheLockImpl2 implements GridCacheLockEx2 {
             return lockView.get(key);
         }
 
+        //final AtomicLong countAcq = new AtomicLong(0L);
+        //final AtomicLong nnnAcq = new AtomicLong(0L);
+
         /** */
         private final boolean tryAcquireOrAdd() {
+            //final long start = System.nanoTime();
             try {
                 return lockView.invoke(key, acquireProcessor).get();
             }
-            catch (IgniteCheckedException ignored) {
-                ignored.printStackTrace();
+            catch (IgniteCheckedException e) {
+                if (log.isDebugEnabled())
+                    log.debug("Invoke has failed: "+e);
                 return false;
-            }
+            }/* finally {
+                countAcq.addAndGet(System.nanoTime()-start);
+                nnnAcq.incrementAndGet();
+            }*/
         }
 
         /** */
@@ -443,8 +460,9 @@ public final class GridCacheLockImpl2 implements GridCacheLockEx2 {
             try {
                 return lockView.invoke(key, lockIfFreeProcessor).get();
             }
-            catch (IgniteCheckedException ignored) {
-                ignored.printStackTrace();
+            catch (IgniteCheckedException e) {
+                if (log.isDebugEnabled())
+                    log.debug("Invoke has failed: "+e);
                 return false;
             }
         }
@@ -454,8 +472,9 @@ public final class GridCacheLockImpl2 implements GridCacheLockEx2 {
             try {
                 return lockView.invoke(key, lockOrRemoveProcessor).get();
             }
-            catch (IgniteCheckedException ignored) {
-                ignored.printStackTrace();
+            catch (IgniteCheckedException e) {
+                if (log.isDebugEnabled())
+                    log.debug("Invoke has failed: "+e);
                 return false;
             }
         }
@@ -480,11 +499,20 @@ public final class GridCacheLockImpl2 implements GridCacheLockEx2 {
             }
         }
 
+        //final AtomicLong countWait = new AtomicLong(0L);
+        //final AtomicLong nnnWait = new AtomicLong(0L);
+
         /** */
         private final void acquire() {
-            while (!tryAcquireOrAdd()) {
+            if (!tryAcquireOrAdd())
                 waitForUpdate();
-            }
+
+            /*while (!tryAcquireOrAdd()) {
+                //final long start = System.nanoTime();
+
+                //countWait.addAndGet(System.nanoTime()-start);
+                //nnnWait.incrementAndGet();
+            }*/
         }
 
         /** */
@@ -509,8 +537,13 @@ public final class GridCacheLockImpl2 implements GridCacheLockEx2 {
             return true;
         }
 
+        //final AtomicLong countRel = new AtomicLong(0L);
+        //final AtomicLong nnnRel = new AtomicLong(0L);
+
         /** {@inheritDoc} */
         private final void release() {
+            //final long start = System.nanoTime();
+
             lockView.invokeAsync(key, releaseProcessor).listen(
                 new IgniteInClosure<IgniteInternalFuture<EntryProcessorResult<UUID>>>() {
                     @Override public void apply(IgniteInternalFuture<EntryProcessorResult<UUID>> future) {
@@ -522,11 +555,15 @@ public final class GridCacheLockImpl2 implements GridCacheLockEx2 {
                                 final UUID nextNode = future.result().get();
 
                                 if (nextNode != null && !nodeId.equals(nextNode))
+
                                     ctx.io().send(nextNode, new ReleasedMessage(ctx.cacheId()), P2P_POOL);
                             }
+                            //countRel.addAndGet(System.nanoTime()-start);
+                            //nnnRel.incrementAndGet();
                         }
                         catch (IgniteCheckedException e) {
-                            e.printStackTrace();
+                            if (log.isDebugEnabled())
+                                log.debug("Send has failed: "+e);
                         }
                     }
                 });
