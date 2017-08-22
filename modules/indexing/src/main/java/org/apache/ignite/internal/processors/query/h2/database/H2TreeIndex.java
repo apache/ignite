@@ -306,17 +306,15 @@ public class H2TreeIndex extends GridH2IndexBase {
     }
 
     /** {@inheritDoc} */
-    @Override public void destroy() {
+    @Override public void destroy(boolean rmvIndex) {
         try {
-            if (cctx.affinityNode()) {
-                if (!cctx.kernalContext().cache().context().database().persistenceEnabled()) {
-                    for (int i = 0; i < segments.length; i++) {
-                        H2Tree tree = segments[i];
+            if (cctx.affinityNode() && rmvIndex) {
+                for (int i = 0; i < segments.length; i++) {
+                    H2Tree tree = segments[i];
 
-                        tree.destroy();
+                    tree.destroy();
 
-                        dropMetaPage(tree.getName(), i);
-                    }
+                    dropMetaPage(tree.getName(), i);
                 }
             }
         }
@@ -324,7 +322,7 @@ public class H2TreeIndex extends GridH2IndexBase {
             throw new IgniteException(e);
         }
         finally {
-            super.destroy();
+            super.destroy(rmvIndex);
         }
     }
 

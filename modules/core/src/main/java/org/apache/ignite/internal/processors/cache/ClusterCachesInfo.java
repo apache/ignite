@@ -811,9 +811,26 @@ class ClusterCachesInfo {
 
     /**
      * @param joinedNodeId Joined node ID.
+     * @return {@code True} if there are new caches received from joined node.
+     */
+    boolean hasCachesReceivedFromJoin(UUID joinedNodeId) {
+        for (DynamicCacheDescriptor desc : registeredCaches.values()) {
+            if (desc.staticallyConfigured()) {
+                assert desc.receivedFrom() != null : desc;
+
+                if (joinedNodeId.equals(desc.receivedFrom()))
+                    return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @param joinedNodeId Joined node ID.
      * @return New caches received from joined node.
      */
-    @NotNull public List<DynamicCacheDescriptor> cachesReceivedFromJoin(UUID joinedNodeId) {
+    List<DynamicCacheDescriptor> cachesReceivedFromJoin(UUID joinedNodeId) {
         assert joinedNodeId != null;
 
         List<DynamicCacheDescriptor> started = null;
@@ -1732,8 +1749,7 @@ class ClusterCachesInfo {
          * DIRECT comparator for cache descriptors (first system caches).
          */
         static Comparator<DynamicCacheDescriptor> DIRECT = new Comparator<DynamicCacheDescriptor>() {
-            @Override
-            public int compare(DynamicCacheDescriptor o1, DynamicCacheDescriptor o2) {
+            @Override public int compare(DynamicCacheDescriptor o1, DynamicCacheDescriptor o2) {
                 if (!o1.cacheType().userCache())
                     return -1;
                 if (!o2.cacheType().userCache())

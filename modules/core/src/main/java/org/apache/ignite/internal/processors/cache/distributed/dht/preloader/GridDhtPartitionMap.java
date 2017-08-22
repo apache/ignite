@@ -254,7 +254,7 @@ public class GridDhtPartitionMap implements Comparable<GridDhtPartitionMap>, Ext
             i++;
         }
 
-        assert i == size;
+        assert i == size : "Invalid size [size1=" + size + ", size2=" + i + ']';
 
         if (top != null) {
             out.writeLong(topologyVersion().topologyVersion());
