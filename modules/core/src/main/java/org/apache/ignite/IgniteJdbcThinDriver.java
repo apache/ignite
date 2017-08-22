@@ -161,15 +161,12 @@ public class IgniteJdbcThinDriver implements Driver {
         }
     }
 
-    /** Schema name. */
-    private String schema;
-
     /** {@inheritDoc} */
     @Override public Connection connect(String url, Properties props) throws SQLException {
         if (!acceptsURL(url))
             return null;
 
-        parseUrl(url, props);
+        String schema = parseUrl(url, props);
 
         return new JdbcThinConnection(url, props, schema);
     }
@@ -220,9 +217,10 @@ public class IgniteJdbcThinDriver implements Driver {
      *
      * @param props Properties.
      * @param url URL.
+     * @return Scheme name. {@code null} in case the schema isn't specified in the url.
      * @throws SQLException On error.
      */
-    private void parseUrl(String url, Properties props) throws SQLException {
+    private String parseUrl(String url, Properties props) throws SQLException {
         if (F.isEmpty(url))
             throw new SQLException("URL cannot be null or empty.");
 
@@ -258,9 +256,8 @@ public class IgniteJdbcThinDriver implements Driver {
                 "'host:port[/schemaName]'): " + url);
         }
 
-        // Set up initial schema from URL string.
-        if (pathParts.length == 2)
-            schema = pathParts[1];
+        // Gets schema from URL string & returns.
+        return pathParts.length == 2 ? pathParts[1] : null;
     }
 
     /**
