@@ -30,6 +30,8 @@ const NON_COLLOCATED_JOINS_SINCE = '1.7.0';
 
 const ENFORCE_JOIN_VERS = [['1.7.9', '1.8.0'], ['1.8.4', '1.9.0'], ['1.9.1']];
 
+const LAZY_QUERY_VERS = ['2.1.4'];
+
 const _fullColName = (col) => {
     const res = [];
 
@@ -1328,7 +1330,7 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
                 .then(() => _closeOldQuery(paragraph))
                 .then(() => args.localNid || _chooseNode(args.cacheName, false))
                 .then((nid) => agentMgr.querySql(nid, args.cacheName, args.query, args.nonCollocatedJoins,
-                    args.enforceJoinOrder, false, !!args.localNid, args.pageSize))
+                    args.enforceJoinOrder, false, !!args.localNid, args.pageSize, args.lazy))
                 .then((res) => _processQueryResult(paragraph, false, res))
                 .catch((err) => paragraph.setError(err));
         };
@@ -1370,9 +1372,19 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
             return false;
         };
 
+        $scope.lazyQueryAvailable = (paragraph) => {
+            const cache = _.find($scope.caches, {name: paragraph.cacheName});
+
+            if (cache)
+                return !!_.find(cache.nodes, (node) => Version.since(node.version, ...LAZY_QUERY_VERS));
+
+            return false;
+        };
+
         $scope.execute = (paragraph, local = false) => {
             const nonCollocatedJoins = !!paragraph.nonCollocatedJoins;
             const enforceJoinOrder = !!paragraph.enforceJoinOrder;
+            const lazy = !!paragraph.lazy;
 
             $scope.actionAvailable(paragraph, true) && _chooseNode(paragraph.cacheName, local)
                 .then((nid) => {
@@ -1393,14 +1405,15 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
                                 maxPages: paragraph.maxPages,
                                 nonCollocatedJoins,
                                 enforceJoinOrder,
-                                localNid: local ? nid : null
+                                localNid: local ? nid : null,
+                                lazy
                             };
 
                             const qry = args.maxPages ? addLimit(args.query, args.pageSize * args.maxPages) : paragraph.query;
 
                             ActivitiesData.post({ action: '/queries/execute' });
 
-                            return agentMgr.querySql(nid, args.cacheName, qry, nonCollocatedJoins, enforceJoinOrder, false, local, args.pageSize);
+                            return agentMgr.querySql(nid, args.cacheName, qry, nonCollocatedJoins, enforceJoinOrder, false, local, args.pageSize, lazy);
                         })
                         .then((res) => {
                             _processQueryResult(paragraph, true, res);
@@ -1453,7 +1466,7 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
 
                     ActivitiesData.post({ action: '/queries/explain' });
 
-                    return agentMgr.querySql(nid, args.cacheName, args.query, false, !!paragraph.enforceJoinOrder, false, false, args.pageSize);
+                    return agentMgr.querySql(nid, args.cacheName, args.query, false, !!paragraph.enforceJoinOrder, false, false, args.pageSize, false);
                 })
                 .then((res) => _processQueryResult(paragraph, true, res))
                 .catch((err) => {
