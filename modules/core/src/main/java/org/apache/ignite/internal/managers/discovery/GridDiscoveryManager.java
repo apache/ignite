@@ -74,7 +74,6 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheAffinitySharedManager;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
-import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.jobmetrics.GridJobMetrics;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.processors.service.GridServiceProcessor;
@@ -255,8 +254,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         new ConcurrentHashMap8<>();
 
     /** Map of dynamic cache filters. */
-    private Map<String, CachePredicate> registeredCaches = new ConcurrentHashMap8<>();
-    //private Map<String, CachePredicate> registeredCaches = new HashMap<>();
+    private Map<String, CachePredicate> registeredCaches = new HashMap<>();
 
     /** */
     private final GridSpinBusyLock busyLock = new GridSpinBusyLock();
@@ -314,8 +312,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         boolean nearEnabled,
         CacheMode cacheMode
     ) {
-        String name = GridCacheUtils.mask(cacheName);
-        registeredCaches.putIfAbsent(name, new CachePredicate(filter, nearEnabled, cacheMode));
+        if (!registeredCaches.containsKey(cacheName))
+            registeredCaches.put(cacheName, new CachePredicate(filter, nearEnabled, cacheMode));
     }
 
     /**
@@ -324,9 +322,18 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * @param cacheName Cache name.
      */
     public void removeCacheFilter(String cacheName) {
-        CachePredicate p = registeredCaches.remove(GridCacheUtils.mask(cacheName));
+        CachePredicate p = registeredCaches.remove(cacheName);
 
         assert p != null : cacheName;
+    }
+
+    /**
+     * Removes dynamic cache filter.
+     *
+     * @param cacheName Cache name.
+     */
+    public void forceRemoveCacheFilter(String cacheName) {
+        registeredCaches.remove(cacheName);
     }
 
     /**
@@ -338,7 +345,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * @return {@code True} if new node ID was added.
      */
     public boolean addClientNode(String cacheName, UUID clientNodeId, boolean nearEnabled) {
-        CachePredicate p = registeredCaches.get(GridCacheUtils.mask(cacheName));
+        CachePredicate p = registeredCaches.get(cacheName);
 
         assert p != null : cacheName;
 
@@ -353,7 +360,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * @return {@code True} if existing node ID was removed.
      */
     public boolean onClientCacheClose(String cacheName, UUID clientNodeId) {
-        CachePredicate p = registeredCaches.get(GridCacheUtils.mask(cacheName));
+        CachePredicate p = registeredCaches.get(cacheName);
 
         assert p != null : cacheName;
 
@@ -1720,7 +1727,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * @return {@code True} if node is a cache data node.
      */
     public boolean cacheAffinityNode(ClusterNode node, String cacheName) {
-        CachePredicate pred = registeredCaches.get(GridCacheUtils.mask(cacheName));
+        CachePredicate pred = registeredCaches.get(cacheName);
 
         return pred != null && pred.dataNode(node);
     }
@@ -1731,7 +1738,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * @return {@code True} if node has near cache enabled.
      */
     public boolean cacheNearNode(ClusterNode node, String cacheName) {
-        CachePredicate pred = registeredCaches.get(GridCacheUtils.mask(cacheName));
+        CachePredicate pred = registeredCaches.get(cacheName);
 
         return pred != null && pred.nearNode(node);
     }
@@ -1742,7 +1749,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * @return {@code True} if node has client cache (without near cache).
      */
     public boolean cacheClientNode(ClusterNode node, String cacheName) {
-        CachePredicate pred = registeredCaches.get(GridCacheUtils.mask(cacheName));
+        CachePredicate pred = registeredCaches.get(cacheName);
 
         return pred != null && pred.clientNode(node);
     }
@@ -1753,7 +1760,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * @return If cache with the given name is accessible on the given node.
      */
     public boolean cacheNode(ClusterNode node, String cacheName) {
-        CachePredicate pred = registeredCaches.get(GridCacheUtils.mask(cacheName));
+        CachePredicate pred = registeredCaches.get(cacheName);
 
         return pred != null && pred.cacheNode(node);
     }
@@ -1766,7 +1773,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         Map<String, CacheMode> caches = U.newHashMap(registeredCaches.size());
 
         for (Map.Entry<String, CachePredicate> entry : registeredCaches.entrySet()) {
-            String cacheName = GridCacheUtils.unmask(entry.getKey());
+            String cacheName = entry.getKey();
 
             CachePredicate pred = entry.getValue();
 
@@ -2015,7 +2022,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             assert !node.isDaemon();
 
             for (Map.Entry<String, CachePredicate> entry : registeredCaches.entrySet()) {
-                String cacheName = GridCacheUtils.unmask(entry.getKey());
+                String cacheName = entry.getKey();
                 CachePredicate filter = entry.getValue();
 
                 if (filter.cacheNode(node)) {

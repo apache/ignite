@@ -1747,10 +1747,20 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
     }
 
+    public void forceCloseCache(DynamicCacheChangeRequest req) {
+        assert req.stop() : req;
+
+        registeredCaches.remove(maskNull(req.cacheName()));
+
+        stopGateway(req);
+
+        prepareCacheStop(req, true);
+    }
+
     /**
      * @param req Request.
      */
-    public void stopGateway(DynamicCacheChangeRequest req) {
+    private void stopGateway(DynamicCacheChangeRequest req) {
         assert req.stop() : req;
 
         // Break the proxy before exchange future is done.
@@ -1763,7 +1773,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /**
      * @param req Stop request.
      */
-    public void prepareCacheStop(DynamicCacheChangeRequest req, boolean forceClose) {
+    private void prepareCacheStop(DynamicCacheChangeRequest req, boolean forceClose) {
         assert req.stop() || req.close() || forceClose : req;
 
         GridCacheAdapter<?, ?> cache = caches.remove(maskNull(req.cacheName()));
@@ -2607,8 +2617,24 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         AffinityTopologyVersion topVer) {
         if (msg instanceof CacheAffinityChangeMessage)
             return sharedCtx.affinity().onCustomEvent(((CacheAffinityChangeMessage)msg));
+        else if (msg instanceof DynamicCacheChangeFailureMessage)
+            return onCacheChangeRequested((DynamicCacheChangeFailureMessage)msg);
 
         return msg instanceof DynamicCacheChangeBatch && onCacheChangeRequested((DynamicCacheChangeBatch)msg, topVer);
+    }
+
+    /**
+     * @param failMsg Dynamic change change request fail message.
+     * @return {@code True} if minor topology version should be increased.
+     */
+    private boolean onCacheChangeRequested(DynamicCacheChangeFailureMessage failMsg) {
+        for (DynamicCacheChangeRequest req : failMsg.requests()) {
+            registeredCaches.remove(maskNull(req.cacheName()));
+
+            ctx.discovery().forceRemoveCacheFilter(req.cacheName());
+        }
+
+        return false;
     }
 
     /**

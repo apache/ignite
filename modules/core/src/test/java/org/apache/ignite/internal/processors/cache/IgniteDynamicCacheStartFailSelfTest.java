@@ -27,6 +27,7 @@ import java.util.concurrent.Callable;
 import javax.cache.CacheException;
 import javax.cache.configuration.Factory;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.AffinityFunctionContext;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.store.CacheStore;
@@ -155,7 +156,32 @@ public class IgniteDynamicCacheStartFailSelfTest extends GridCommonAbstractTest 
             initiator);
     }
 
-    private Collection<CacheConfiguration> createCacheConfigsWithBrokenAffinityFunction(boolean failOnAllNodes, int unluckyNode, int unluckyCfg, int cacheNum) {
+    public void testCreateCacheMultipleTimes() {
+        final boolean failOnAllNodes = false;
+        final int unluckyNode = 1;
+        final int unluckyCfg = 0;
+        final int numOfAttempts = 100;
+
+        CacheConfiguration cfg = createCacheConfigsWithBrokenAffinityFunction(failOnAllNodes,
+            unluckyNode, unluckyCfg, 1).get(0);
+
+        for (int i = 0; i < numOfAttempts; ++i) {
+            try {
+                IgniteCache cache = ignite(0).getOrCreateCache(cfg);
+
+                fail("Expected exception was not thrown");
+            }
+            catch (CacheException e) {
+                // No-op.
+            }
+        }
+    }
+
+    private List<CacheConfiguration> createCacheConfigsWithBrokenAffinityFunction(
+        boolean failOnAllNodes,
+        int unluckyNode,
+        int unluckyCfg,
+        int cacheNum) {
         assert unluckyCfg >= 0 && unluckyCfg < cacheNum;
 
         List<CacheConfiguration> cfgs = new ArrayList<>();

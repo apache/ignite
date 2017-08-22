@@ -51,7 +51,7 @@ import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
 import org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessage;
-import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
+import org.apache.ignite.internal.processors.cache.DynamicCacheChangeFailureMessage;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -1041,15 +1041,10 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     private GridDhtPartitionsFullMessage createPartitionsMessage(Collection<ClusterNode> nodes, boolean compress) {
         GridCacheVersion last = lastVer.get();
 
-        GridDhtPartitionsFullMessage m = cctx.exchange().createPartitionsFullMessage(nodes,
+        return cctx.exchange().createPartitionsFullMessage(nodes,
             exchangeId(),
             last != null ? last : cctx.versions().last(),
             compress);
-
-        if (!F.isEmpty(exchangeGlobalExceptions))
-            m.setErrorsMap(exchangeGlobalExceptions);
-
-        return m;
     }
 
     /**
@@ -1394,12 +1389,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                     stopReq.stop(true);
                     stopReq.deploymentId(req.deploymentId());
 
-                    Collection<DynamicCacheChangeRequest> requests = Collections.singletonList(stopReq);
-
-                    // cleanup GridCacheProcessor and DiscoveryManager
-                    cctx.cache().onCustomEvent(new DynamicCacheChangeBatch(requests), topologyVersion());
-                    cctx.cache().stopGateway(stopReq);
-                    cctx.cache().prepareCacheStop(stopReq, true);
+                    // cleanup GridCacheProcessor
+                    cctx.cache().forceCloseCache(stopReq);
 
                     // cleanup CacheAffinitySharedManager
                     cctx.affinity().forceCloseCache(this, crd.isLocal(), Collections.singletonList(stopReq));
@@ -1415,8 +1406,23 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         try {
             assert crd.isLocal();
 
-            if (!F.isEmpty(exchangeGlobalExceptions) && isRollbackSupported())
-                rollbackExchange();
+            if (!F.isEmpty(exchangeGlobalExceptions) && isRollbackSupported()) {
+
+                updateLastVersion(cctx.versions().last());
+
+                cctx.versions().onExchange(lastVer.get().order());
+
+                IgniteCheckedException err = createExchangeException(exchangeGlobalExceptions);
+
+                DynamicCacheChangeFailureMessage msg = new DynamicCacheChangeFailureMessage(exchId, lastVer.get(), err, reqs);
+
+                if (log.isDebugEnabled())
+                    log.debug("Dynamic cache change failed. Send message to all participating nodes: " + msg);
+
+                cctx.discovery().sendCustomEvent(msg);
+
+                return;
+            }
 
             if (!crd.equals(discoCache.serverNodes().get(0))) {
                 for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
@@ -1459,12 +1465,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 if (!nodes.isEmpty())
                     sendAllPartitions(nodes);
 
-                IgniteCheckedException err = null;
-
-                if (!F.isEmpty(exchangeGlobalExceptions))
-                    err = createExchangeException(exchangeGlobalExceptions);
-
-                onDone(exchangeId().topologyVersion(), err);
+                onDone(exchangeId().topologyVersion());
             }
         }
         catch (IgniteCheckedException e) {
@@ -1580,16 +1581,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
         updatePartitionFullMap(msg);
 
-        IgniteCheckedException err = null;
-
-        if (exchangeLocalException != null || !F.isEmpty(msg.getErrorsMap())) {
-            err = createExchangeException(msg.getErrorsMap());
-
-            if (isRollbackSupported())
-                rollbackExchange();
-        }
-
-        onDone(exchId.topologyVersion(), err);
+        onDone(exchId.topologyVersion());
     }
 
     /**
@@ -1633,6 +1625,37 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
             top.update(exchId, entry.getValue(), msg.partitionUpdateCounters(cacheId), false);
         }
+    }
+
+    /**
+     * Cache change failure message callback, processed from the discovery thread.
+     *
+     * @param node Message sender node.
+     * @param msg Message.
+     */
+    public void onDynamicCacheChangeFail(final ClusterNode node, final DynamicCacheChangeFailureMessage msg) {
+        assert exchId.equals(msg.exchangeId()) : msg;
+        assert msg.lastVersion() != null : msg;
+
+        onDiscoveryEvent(new IgniteRunnable() {
+            @Override public void run() {
+                if (isDone() || !enterBusy())
+                    return;
+
+                try {
+                    if (isRollbackSupported())
+                        rollbackExchange();
+
+                    if (!crd.isLocal())
+                        cctx.versions().onExchange(msg.lastVersion().order());
+
+                    onDone(exchId.topologyVersion(), msg.getError());
+                }
+                finally {
+                    leaveBusy();
+                }
+            }
+        });
     }
 
     /**
