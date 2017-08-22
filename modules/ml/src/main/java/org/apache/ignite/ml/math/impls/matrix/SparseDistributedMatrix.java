@@ -136,7 +136,6 @@ public class SparseDistributedMatrix extends AbstractMatrix implements StorageCo
 
             // compute Cij locally on each node
             // TODO: IGNITE:5114, exec in parallel
-
             locKeys.forEach(key -> {
                 int index = key.index();
                 
@@ -158,28 +157,6 @@ public class SparseDistributedMatrix extends AbstractMatrix implements StorageCo
             });
         });
 
-
-//        int cols = columnSize();
-//
-//        if (cols != mtx.rowSize())
-//            throw new CardinalityException(cols, mtx.rowSize());
-//
-//        int rows = rowSize();
-//
-//        int mtxCols = mtx.columnSize();
-//
-//        Matrix res = like(rows, mtxCols);
-//
-//        for (int x = 0; x < rows; x++)
-//            for (int y = 0; y < mtxCols; y++) {
-//                double sum = 0.0;
-//
-//                for (int k = 0; k < cols; k++)
-//                    sum += getX(x, k) * mtx.getX(k, y);
-//
-//                res.setX(x, y, sum);
-//            }
-//
         return matrixC;
     }
 

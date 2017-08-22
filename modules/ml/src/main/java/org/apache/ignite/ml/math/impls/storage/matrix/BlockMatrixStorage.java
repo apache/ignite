@@ -20,7 +20,7 @@ package org.apache.ignite.ml.math.impls.storage.matrix;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.util.Collection;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
@@ -128,6 +128,11 @@ public class BlockMatrixStorage extends CacheUtils implements MatrixStorage, Sto
     /** {@inheritDoc} */
     @Override public int storageMode() {
         return UNKNOWN_STORAGE_MODE;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int accessMode() {
+        return RANDOM_ACCESS_MODE;
     }
 
     /** {@inheritDoc} */
@@ -259,9 +264,9 @@ public class BlockMatrixStorage extends CacheUtils implements MatrixStorage, Sto
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<BlockMatrixKey> getAllKeys() {
+    @Override public Set<BlockMatrixKey> getAllKeys() {
         long maxBlockId = numberOfBlocks();
-        Collection<BlockMatrixKey> keys = new LinkedList<>();
+        Set<BlockMatrixKey> keys = new HashSet<>();
 
         for (long id = 0; id < maxBlockId; id++)
             keys.add(getCacheKey(id));

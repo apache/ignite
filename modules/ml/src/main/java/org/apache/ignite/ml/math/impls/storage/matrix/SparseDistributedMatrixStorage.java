@@ -22,7 +22,6 @@ import it.unimi.dsi.fastutil.ints.Int2DoubleRBTreeMap;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -124,17 +123,13 @@ public class SparseDistributedMatrixStorage extends CacheUtils implements Matrix
 
     /**
      *
-     *
      */
     public IgniteCache<RowColMatrixKey, Map<Integer, Double>> cache() {
         return cache;
     }
 
-    /**
-     *
-     *
-     */
-    public int accessMode() {
+    /** {@inheritDoc} */
+    @Override public int accessMode() {
         return acsMode;
     }
 
@@ -314,10 +309,10 @@ public class SparseDistributedMatrixStorage extends CacheUtils implements Matrix
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<RowColMatrixKey> getAllKeys() {
+    @Override public Set<RowColMatrixKey> getAllKeys() {
         int range = stoMode == ROW_STORAGE_MODE ? rows : cols;
 
-        return IntStream.range(0, range).mapToObj(i -> new SparseMatrixKey(i, getUUID(), null)).collect(Collectors.toList());
+        return IntStream.range(0, range).mapToObj(i -> new SparseMatrixKey(i, getUUID(), null)).collect(Collectors.toSet());
     }
 
     /** {@inheritDoc} */

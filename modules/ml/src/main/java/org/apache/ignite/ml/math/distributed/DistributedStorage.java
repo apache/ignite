@@ -17,7 +17,7 @@
 
 package org.apache.ignite.ml.math.distributed;
 
-import java.util.Collection;
+import java.util.Set;
 
 /**
  * Extension for any distributed storage.
@@ -26,7 +26,7 @@ public interface DistributedStorage<K> {
     /**
      * Build a keyset for this storage.
      */
-    public Collection<K> getAllKeys();
+    public Set<K> getAllKeys();
 
     /**
      * @return The name of cache used in this storage.
