@@ -434,59 +434,31 @@ public class DmlStatementsProcessor {
 
         int pageSize = loc ? 0 : fieldsQry.getPageSize();
 
-        switch (plan.mode) {
-            case MERGE:
-                return new UpdateResult(doMerge(plan, cur, pageSize), X.EMPTY_OBJECT_ARRAY);
-
-            case INSERT:
-                return new UpdateResult(doInsert(plan, cur, pageSize), X.EMPTY_OBJECT_ARRAY);
-
-            case UPDATE:
-                return doUpdate(plan, cur, pageSize);
-
-            case DELETE:
-                return doDelete(cctx, cur, pageSize);
-
-            default:
-                throw new IgniteSQLException("Unexpected DML operation [mode=" + plan.mode + ']',
-                    IgniteQueryErrorCode.UNEXPECTED_OPERATION);
-        }
+        return processDmlSelectResult(cctx, plan, cur, pageSize);
     }
 
-    /** */
-    private UpdateResult executeLocalDmlSelect(GridCacheContext cctx, String schemaName, UpdatePlan plan,
-        int pageSize, boolean isEnforceJoinOrder, int timeoutMillis, IndexingQueryFilter filters,
-        GridQueryCancel cancel, Object[] args) throws IgniteCheckedException {
-
-        // TODO: similar code in executeUpdateStatement(), need to refactor
-
-        final GridQueryFieldsResult res = idx.queryLocalSqlFields(schemaName, plan.selectQry,
-            F.asList(args), filters, isEnforceJoinOrder, timeoutMillis, cancel);
-
-        QueryCursorImpl<List<?>> cur = new QueryCursorImpl<>(new Iterable<List<?>>() {
-            @Override public Iterator<List<?>> iterator() {
-                try {
-                    return new GridQueryCacheObjectsIterator(res.iterator(), idx.objectContext(), true);
-                }
-                catch (IgniteCheckedException e) {
-                    throw new IgniteException(e);
-                }
-            }
-        }, cancel);
-
-
+    /**
+     * @param cctx Cache context.
+     * @param plan Update plan.
+     * @param cursor Cursor over select results.
+     * @param pageSize Page size.
+     * @return Pair [number of successfully processed items; keys that have failed to be processed]
+     * @throws IgniteCheckedException if failed.
+     */
+    private UpdateResult processDmlSelectResult(GridCacheContext cctx, UpdatePlan plan, Iterable<List<?>> cursor,
+        int pageSize) throws IgniteCheckedException {
         switch (plan.mode) {
             case MERGE:
-                return new UpdateResult(doMerge(plan, cur, pageSize), X.EMPTY_OBJECT_ARRAY);
+                return new UpdateResult(doMerge(plan, cursor, pageSize), X.EMPTY_OBJECT_ARRAY);
 
             case INSERT:
-                return new UpdateResult(doInsert(plan, cur, pageSize), X.EMPTY_OBJECT_ARRAY);
+                return new UpdateResult(doInsert(plan, cursor, pageSize), X.EMPTY_OBJECT_ARRAY);
 
             case UPDATE:
-                return doUpdate(plan, cur, pageSize);
+                return doUpdate(plan, cursor, pageSize);
 
             case DELETE:
-                return doDelete(cctx, cur, pageSize);
+                return doDelete(cctx, cursor, pageSize);
 
             default:
                 throw new IgniteSQLException("Unexpected DML operation [mode=" + plan.mode + ']',
@@ -1049,7 +1021,7 @@ public class DmlStatementsProcessor {
     /** */
     UpdateResult mapDistributedUpdate(byte mode, String schemaName, String targetTable,
         String[] colNames, String qry, Object[] params, int pageSize, int timeoutMillis,
-        IndexingQueryFilter filter) throws IgniteCheckedException {
+        IndexingQueryFilter filter, GridQueryCancel cancel) throws IgniteCheckedException {
         GridH2Table tgtTbl = idx.dataTable(schemaName, targetTable); //TODO: use QueryTable instead
 
         UpdateMode[] modes = UpdateMode.values();
@@ -1064,7 +1036,6 @@ public class DmlStatementsProcessor {
             colNames, qry);
 
         boolean isEnforceJoinOrder = false; // TODO fix this.
-        GridQueryCancel cancel = new GridQueryCancel();
 
         CacheOperationContext opCtx = cctx.operationContextPerCall();
 
@@ -1082,17 +1053,26 @@ public class DmlStatementsProcessor {
                 cctx.operationContextPerCall(newOpCtx);
         }
 
-        UpdateResult res;
-
         try {
-            res = executeLocalDmlSelect(cctx, schemaName, plan, pageSize, isEnforceJoinOrder,
-                timeoutMillis, filter, cancel, params);
+            final GridQueryFieldsResult res = idx.queryLocalSqlFields(schemaName, plan.selectQry,
+                F.asList(params), filter, isEnforceJoinOrder, timeoutMillis, cancel);
+
+            QueryCursorImpl<List<?>> cur = new QueryCursorImpl<>(new Iterable<List<?>>() {
+                @Override public Iterator<List<?>> iterator() {
+                    try {
+                        return new GridQueryCacheObjectsIterator(res.iterator(), idx.objectContext(), true);
+                    }
+                    catch (IgniteCheckedException e) {
+                        throw new IgniteException(e);
+                    }
+                }
+            }, cancel);
+
+            return processDmlSelectResult(cctx, plan, cur, pageSize);
         }
         finally {
             cctx.operationContextPerCall(opCtx);
         }
-
-        return res;
     }
 
     /** */

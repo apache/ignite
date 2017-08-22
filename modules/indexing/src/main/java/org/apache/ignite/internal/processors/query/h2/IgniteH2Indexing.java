@@ -1442,10 +1442,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** */
     public UpdateResult mapDistributedUpdate(byte mode, String schemaName, String targetTable, String[] colNames,
-        String qry, Object[] params, int pageSize, int timeoutMillis, IndexingQueryFilter filter)
-        throws IgniteCheckedException {
+        String qry, Object[] params, int pageSize, int timeoutMillis, IndexingQueryFilter filter,
+        GridQueryCancel cancel) throws IgniteCheckedException {
         return dmlProc.mapDistributedUpdate(mode, schemaName, targetTable, colNames, qry, params, pageSize,
-            timeoutMillis, filter);
+            timeoutMillis, filter, cancel);
     }
 
     /**

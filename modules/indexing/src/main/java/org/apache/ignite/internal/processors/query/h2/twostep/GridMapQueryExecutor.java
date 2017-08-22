@@ -54,6 +54,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservabl
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
+import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.UpdateResult;
@@ -752,6 +753,8 @@ public class GridMapQueryExecutor {
 
         final List<Integer> cacheIds = req.caches();
 
+        long reqId = req.requestId();
+
         AffinityTopologyVersion topVer = req.topologyVersion();
 
         List<GridReservable> reserved = new ArrayList<>();
@@ -759,26 +762,31 @@ public class GridMapQueryExecutor {
         if (!reservePartitions(cacheIds, topVer, parts, reserved)) {
             log.error("Failed to reserve partitions for DML request");
 
-            sendUpdateResponse(node, req.requestId(), null, "Failed to reserve partitions for DML request");
+            sendUpdateResponse(node, reqId, null, "Failed to reserve partitions for DML request");
 
             return;
         }
+
+        MapNodeResults nodeResults = resultsForNode(node.id());
 
         try {
             String query = req.queries().get(0).query();
 
             IndexingQueryFilter filter = h2.backupFilter(req.topologyVersion(), req.queryPartitions());
 
+            GridQueryCancel cancel = nodeResults.putUpdate(reqId);
+
             UpdateResult updRes = h2.mapDistributedUpdate(req.mode(), req.schemaName(), req.targetTable(),
-                req.columnNames(), query, req.parameters(), req.pageSize(), req.timeout(), filter);
+                req.columnNames(), query, req.parameters(), req.pageSize(), req.timeout(), filter, cancel);
 
-            sendUpdateResponse(node, req.requestId(), updRes, null);
-
+            sendUpdateResponse(node, reqId, updRes, null);
         }
         catch (Exception e) {
             log.error("Error processing dml request " + e.toString());
 
-            sendUpdateResponse(node, req.requestId(), null, e.getMessage());
+            nodeResults.removeUpdate(reqId);
+
+            sendUpdateResponse(node, reqId, null, e.getMessage());
         }
         finally {
             if (!F.isEmpty(reserved)) {
