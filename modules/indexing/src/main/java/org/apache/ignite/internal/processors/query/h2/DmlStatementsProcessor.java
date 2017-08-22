@@ -40,6 +40,7 @@ import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.EntryProcessorResult;
 import javax.cache.processor.MutableEntry;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
@@ -216,37 +217,38 @@ public class DmlStatementsProcessor {
     }
 
     /**
+     * Checks whether the given update plan can be distributed and updates it accordingly.
      *
-     * @param schemaName Schema name.
-     * @param plan Update plan.
      * @param fieldsQry Initial update query.
-     * @return {@code true} if query can be optimized with distributed DML.
+     * @param prepStmt Prepared statement for initial update query.
+     * @param plan Update plan.
+     * @throws IgniteCheckedException if failed.
      */
-    private boolean checkDistributed(String schemaName, UpdatePlan plan, SqlFieldsQuery fieldsQry) {
-        Connection c = idx.connectionForSchema(schemaName);
-
+    private void checkPlanCanBeDistributed(SqlFieldsQuery fieldsQry, PreparedStatement prepStmt, UpdatePlan plan)
+        throws IgniteCheckedException {
         try {
-            PreparedStatement stmt = c.prepareStatement(plan.selectQry);
+            Connection conn = prepStmt.getConnection();
 
-            idx.bindParameters(stmt, F.asList(fieldsQry.getArgs()));
+            // Get a new prepared statement for derived select query.
+            try (PreparedStatement stmt = conn.prepareStatement(plan.selectQry)) {
+                idx.bindParameters(stmt, F.asList(fieldsQry.getArgs()));
 
-            GridCacheTwoStepQuery qry = GridSqlQuerySplitter.split((JdbcPreparedStatement)stmt,
-                fieldsQry.getArgs(),
-                fieldsQry.isCollocated(),
-                fieldsQry.isDistributedJoins(),
-                fieldsQry.isEnforceJoinOrder(), idx);
+                GridCacheTwoStepQuery qry = GridSqlQuerySplitter.split((JdbcPreparedStatement)stmt,
+                    fieldsQry.getArgs(),
+                    fieldsQry.isCollocated(),
+                    fieldsQry.isDistributedJoins(),
+                    fieldsQry.isEnforceJoinOrder(), idx);
 
-            // TODO: find a way to set aside sub-queries
-            plan.distributed = !qry.isReplicatedOnly() && qry.mapQueries().size() == 1 && qry.skipMergeTable();
+                // TODO: find a way to set aside sub-queries
+                plan.distributed = !qry.isReplicatedOnly() && qry.mapQueries().size() == 1 && qry.skipMergeTable();
 
-            if (plan.distributed)
-                plan.cacheIds = idx.collectCacheIds(CU.cacheId(plan.tbl.cacheName()), qry);
+                if (plan.distributed)
+                    plan.cacheIds = idx.collectCacheIds(CU.cacheId(plan.tbl.cacheName()), qry);
+            }
         }
-        catch (SQLException | IgniteCheckedException e) {
-            throw new IgniteException(e);
+        catch (SQLException e) {
+            throw new IgniteCheckedException(e);
         }
-
-        return plan.distributed;
     }
 
     /**
@@ -495,7 +497,7 @@ public class DmlStatementsProcessor {
         res = UpdatePlanBuilder.planForStatement(p, errKeysPos);
 
         if (!loc && !F.isEmpty(res.selectQry))
-            checkDistributed(schema, res, fieldsQry);
+            checkPlanCanBeDistributed(fieldsQry, prepStmt, res);
 
         // Don't cache re-runs
         if (errKeysPos == null)

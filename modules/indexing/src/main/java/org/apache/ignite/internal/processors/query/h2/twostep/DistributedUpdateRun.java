@@ -101,8 +101,6 @@ class DistributedUpdateRun {
 
         switch (msg.status()) {
             case GridH2DmlResponse.STATUS_ERR_KEYS:
-                updCntr.addAndGet(msg.updateCounter());
-
                 if (!F.isEmpty(msg.errorKeys()))
                     errorKeys.addAll(Arrays.asList(msg.errorKeys()));
 
