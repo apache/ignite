@@ -46,9 +46,44 @@ public class SimpleDataPageIO extends AbstractDataPageIO<MetastorageDataRow> {
         final int rowOff,
         final int payloadSize
     ) throws IgniteCheckedException {
-        final int len = Math.min(row.value().length - rowOff, payloadSize);
+        int written = writeSizeFragment(row, buf, rowOff, payloadSize);
 
-        buf.put(row.value(), rowOff, len);
+        if (payloadSize == written)
+            return;
+
+        int start = rowOff > 2 ? rowOff - 2 : 0;
+
+        final int len = Math.min(row.value().length - start, payloadSize - written);
+
+        if (len > 0) {
+            buf.put(row.value(), start, len);
+            written += len;
+        }
+
+        assert written == payloadSize;
+    }
+
+    /** */
+    private int writeSizeFragment(final MetastorageDataRow row, final ByteBuffer buf, final int rowOff,
+        final int payloadSize) {
+        final int size = 2;
+
+        if (rowOff >= size)
+            return 0;
+
+        if (rowOff == 0 && payloadSize >= size) {
+            buf.putShort((short)row.value().length);
+            return size;
+        }
+
+        ByteBuffer buf2 = ByteBuffer.allocate(size);
+        buf2.order(buf.order());
+
+        buf2.putShort((short)row.value().length);
+        int len = Math.min(size - rowOff, payloadSize);
+        buf.put(buf2.array(), rowOff, len);
+
+        return len;
     }
 
     /** {@inheritDoc} */
@@ -62,14 +97,17 @@ public class SimpleDataPageIO extends AbstractDataPageIO<MetastorageDataRow> {
     ) throws IgniteCheckedException {
         long addr = pageAddr + dataOff;
 
-        if (newRow) {
+        if (newRow)
             PageUtils.putShort(addr, 0, (short)payloadSize);
-            addr += 2;
-        }
-        else
-            addr += 2;
 
-        PageUtils.putBytes(addr, 0, row.value());
+        PageUtils.putShort(addr, 2, (short)row.value().length);
+        PageUtils.putBytes(addr, 4, row.value());
+    }
+
+    public static byte[] readPayload(long link) {
+        int size = PageUtils.getShort(link, 0);
+
+        return PageUtils.getBytes(link, 2, size);
     }
 
     @Override public int getRowSize(MetastorageDataRow row) throws IgniteCheckedException {

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.metastorage;
 
+import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.FullPageId;
@@ -24,6 +25,7 @@ import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageInitRecord;
+import org.apache.ignite.internal.processors.cache.IncompleteObject;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.MemoryMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.MemoryPolicy;
@@ -31,6 +33,7 @@ import org.apache.ignite.internal.processors.cache.persistence.RootPage;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.AbstractFreeList;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.AbstractDataPageIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPagePayload;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
@@ -39,6 +42,9 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseL
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+
+import static org.apache.ignite.internal.pagemem.PageIdUtils.itemId;
+import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
 
 /**
  *
@@ -59,9 +65,9 @@ public class MetaStorage {
     private MemoryMetricsImpl memMetrics;
     /** */
     private boolean readOnly;
-
+    /** */
     private RootPage treeRoot;
-
+    /** */
     private RootPage reuseListRoot;
 
     /** */
@@ -80,8 +86,7 @@ public class MetaStorage {
 
     /** */
     public void start(IgniteCacheDatabaseSharedManager db) throws IgniteCheckedException {
-        memPlc.pageMemory().start();
-//        memPlc.evictionTracker().start();
+//        memPlc.pageMemory().start();
 
         getOrAllocateMetas();
 
@@ -99,17 +104,16 @@ public class MetaStorage {
     public void putData(String key, byte[] data) throws IgniteCheckedException {
         if (!readOnly) {
             synchronized (this) {
-                MetastorageDataRow row = new MetastorageDataRow(key, data);
-                MetastorageDataRow oldRow = tree.findOne(row);
+                MetastorageDataRow oldRow = tree.findOne(new MetastorageDataRow(key, null));
 
                 if (oldRow != null) {
+                    tree.removex(oldRow);
                     tree.rowStore().removeRow(oldRow.link());
-                    tree.remove(oldRow);
                 }
-                else {
-                    tree.rowStore().addRow(row);
-                    tree.put(row);
-                }
+
+                MetastorageDataRow row = new MetastorageDataRow(key, data);
+                tree.rowStore().addRow(row);
+                tree.put(row);
             }
         }
     }
@@ -123,7 +127,15 @@ public class MetaStorage {
     /** */
     public void removeData(String key) throws IgniteCheckedException {
         if (!readOnly)
-            tree.remove(new MetastorageDataRow(key, null));
+            synchronized (this) {
+                MetastorageDataRow row = new MetastorageDataRow(key, null);
+                MetastorageDataRow oldRow = tree.findOne(row);
+
+                if (oldRow != null) {
+                    tree.removex(oldRow);
+                    tree.rowStore().removeRow(oldRow.link());
+                }
+            }
     }
 
     /**
@@ -143,7 +155,7 @@ public class MetaStorage {
                 long treeRoot, reuseListRoot;
 
                 // Initialize new page.
-                if (PageIO.getType(pageAddr) != PageIO.T_PART_META) {
+                if (PageIO.getType(pageAddr) != PageIO.T_DATA_METASTORAGE) {
                     if (readOnly)
                         throw new IgniteCheckedException("metastorage is not initialized");
 
@@ -197,7 +209,7 @@ public class MetaStorage {
     }
 
     /** */
-    private static class FreeListImpl extends AbstractFreeList<MetastorageDataRow> {
+    public static class FreeListImpl extends AbstractFreeList<MetastorageDataRow> {
         /** {@inheritDoc} */
         public FreeListImpl(int cacheId, String name, MemoryMetricsImpl memMetrics, MemoryPolicy memPlc,
             ReuseList reuseList,
@@ -209,6 +221,90 @@ public class MetaStorage {
         @Override
         public IOVersions<? extends AbstractDataPageIO<MetastorageDataRow>> ioVersions() {
             return SimpleDataPageIO.VERSIONS;
+        }
+
+        /**
+         * Read row from data pages.
+         */
+        public final MetastorageDataRow readRow(String key, long link)
+            throws IgniteCheckedException {
+            assert link != 0 : "link";
+
+            long nextLink = link;
+            IncompleteObject incomplete = null;
+            int size = 0;
+            int stage = 0;
+
+            boolean first = true;
+
+            do {
+                final long pageId = pageId(nextLink);
+
+                final long page = pageMem.acquirePage(grpId, pageId);
+
+                try {
+                    long pageAddr = pageMem.readLock(grpId, pageId, page); // Non-empty data page must not be recycled.
+
+                    assert pageAddr != 0L : nextLink;
+
+                    try {
+                        SimpleDataPageIO io = null;
+
+                        io = (SimpleDataPageIO)ioVersions().forPage(pageAddr);
+
+                        DataPagePayload data = io.readPayload(pageAddr, itemId(nextLink), pageMem.pageSize());
+
+                        nextLink = data.nextLink();
+
+                        if (first) {
+                            if (nextLink == 0) {
+                                // Fast path for a single page row.
+                                return new MetastorageDataRow(link, key, SimpleDataPageIO.readPayload(pageAddr + data.offset()));
+                            }
+
+                            first = false;
+                        }
+
+                        ByteBuffer buf = pageMem.pageBuffer(pageAddr);
+
+                        buf.position(data.offset());
+                        buf.limit(data.offset() + data.payloadSize());
+
+                        if (size == 0) {
+                            if (buf.remaining() >= 2 && incomplete == null) {
+                                // Just read size.
+                                size = buf.getShort();
+                                incomplete = new IncompleteObject(new byte[size]);
+                            }
+                            else {
+                                if (incomplete == null)
+                                    incomplete = new IncompleteObject(new byte[2]);
+
+                                incomplete.readData(buf);
+
+                                if (incomplete.isReady()) {
+                                    size = ByteBuffer.wrap(incomplete.data()).order(buf.order()).getShort();
+                                    incomplete = new IncompleteObject(new byte[size]);
+                                }
+                            }
+                        }
+
+                        if (size != 0 && buf.remaining() > 0)
+                            incomplete.readData(buf);
+                    }
+                    finally {
+                        pageMem.readUnlock(grpId, pageId, page);
+                    }
+                }
+                finally {
+                    pageMem.releasePage(grpId, pageId, page);
+                }
+            }
+            while (nextLink != 0);
+
+            assert incomplete.isReady();
+
+            return new MetastorageDataRow(link, key, incomplete.data());
         }
     }
 }

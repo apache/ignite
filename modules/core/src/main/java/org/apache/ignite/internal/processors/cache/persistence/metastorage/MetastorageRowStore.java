@@ -42,8 +42,8 @@ public class MetastorageRowStore {
      * @param link Row link.
      * @return Data row.
      */
-    public MetastorageDataRow dataRow(long link) {
-        return null;
+    public MetastorageDataRow dataRow(String key, long link) throws IgniteCheckedException {
+        return ((MetaStorage.FreeListImpl)freeList).readRow(key, link);
     }
 
     /**

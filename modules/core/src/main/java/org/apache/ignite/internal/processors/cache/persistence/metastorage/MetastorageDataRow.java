@@ -34,6 +34,13 @@ public class MetastorageDataRow implements MetastorageSearchRow, Storeable {
     private byte[] value;
 
     /* **/
+    public MetastorageDataRow(long link, String key, byte[] value) {
+        this.link = link;
+        this.key = key;
+        this.value = value;
+    }
+
+    /* **/
     public MetastorageDataRow(String key, byte[] value) {
         this.key = key;
         this.value = value;
@@ -75,5 +82,11 @@ public class MetastorageDataRow implements MetastorageSearchRow, Storeable {
      */
     public byte[] value() {
         return value;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public String toString() {
+        return "key=" + key;
     }
 }

@@ -60,6 +60,7 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.PageDeltaRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
+import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.TrackingPageIO;
 import org.apache.ignite.internal.util.typedef.F;
@@ -878,6 +879,8 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
      */
     public void testMetastorage() throws Exception {
         try {
+            int cnt = 5000;
+
             IgniteEx ignite0 = (IgniteEx)startGrid("node1");
             IgniteEx ignite1 = (IgniteEx)startGrid("node2");
 
@@ -887,20 +890,149 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
             GridCacheSharedContext<Object, Object> sharedCtx1 = ignite1.context().cache().context();
 
             MetaStorage storage0 = ((GridCacheDatabaseSharedManager)sharedCtx0.database()).metaStorage();
-            MetaStorage storage1 = ((GridCacheDatabaseSharedManager)sharedCtx0.database()).metaStorage();
+            MetaStorage storage1 = ((GridCacheDatabaseSharedManager)sharedCtx1.database()).metaStorage();
 
             assert storage0 != null;
 
-            for (int i = 0; i < 10; i++) {
-                storage0.putData(String.valueOf(i), new byte[] {(byte)i, 2, 3});
-                storage1.putData(String.valueOf(i), new byte[] {(byte)i, 3, 4});
+            for (int i = 0; i < cnt; i++) {
+                storage0.putData(String.valueOf(i), new byte[] {(byte)(i % 256), 2, 3});
+
+                byte[] b1 = new byte[i + 3];
+                b1[0] = 1;
+                b1[1] = 2;
+                b1[2] = 3;
+                storage1.putData(String.valueOf(i), b1);
             }
 
-            for (int i = 0; i < 10; i++) {
-                assertEquals(new byte[] {(byte)i, 2, 3}, storage0.getData(String.valueOf(i)));
-                assertEquals(new byte[] {(byte)i, 3, 4}, storage1.getData(String.valueOf(i)));
+            for (int i = 0; i < cnt; i++) {
+                byte[] d1 = storage0.getData(String.valueOf(i)).value();
+                assertEquals(3, d1.length);
+                assertEquals((byte)(i % 256), d1[0]);
+                assertEquals(2, d1[1]);
+                assertEquals(3, d1[2]);
+
+                byte[] d2 = storage1.getData(String.valueOf(i)).value();
+                assertEquals(i + 3, d2.length);
+                assertEquals(1, d2[0]);
+                assertEquals(2, d2[1]);
+                assertEquals(3, d2[2]);
             }
 
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
+     * @throws Exception If fail.
+     */
+    public void testMetastorageRemove() throws Exception {
+        try {
+            int cnt = 400;
+
+            IgniteEx ignite0 = (IgniteEx)startGrid("node1");
+
+            ignite0.active(true);
+
+            GridCacheSharedContext<Object, Object> sharedCtx0 = ignite0.context().cache().context();
+
+            MetaStorage storage = ((GridCacheDatabaseSharedManager)sharedCtx0.database()).metaStorage();
+
+            assert storage != null;
+
+            for (int i = 0; i < cnt; i++)
+                storage.putData(String.valueOf(i), new byte[] {1, 2, 3});
+
+            for (int i = 0; i < 10; i++)
+                storage.removeData(String.valueOf(i));
+
+            for (int i = 10; i < cnt; i++) {
+                byte[] d1 = storage.getData(String.valueOf(i)).value();
+                assertEquals(3, d1.length);
+                assertEquals(1, d1[0]);
+                assertEquals(2, d1[1]);
+                assertEquals(3, d1[2]);
+            }
+
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
+     * @throws Exception If fail.
+     */
+    public void testMetastorageUpdate() throws Exception {
+        try {
+            int cnt = 2000;
+
+            IgniteEx ignite0 = (IgniteEx)startGrid("node1");
+
+            ignite0.active(true);
+
+            GridCacheSharedContext<Object, Object> sharedCtx0 = ignite0.context().cache().context();
+
+            MetaStorage storage = ((GridCacheDatabaseSharedManager)sharedCtx0.database()).metaStorage();
+
+            assert storage != null;
+
+            for (int i = 0; i < cnt; i++)
+                storage.putData(String.valueOf(i), new byte[] {1, 2, 3});
+
+            for (int i = 0; i < cnt; i++)
+                storage.putData(String.valueOf(i), new byte[] {2, 2, 3, 4});
+
+            for (int i = 0; i < cnt; i++) {
+                byte[] d1 = storage.getData(String.valueOf(i)).value();
+                assertEquals(4, d1.length);
+                assertEquals(2, d1[0]);
+                assertEquals(2, d1[1]);
+                assertEquals(3, d1[2]);
+            }
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
+     * @throws Exception If fail.
+     */
+    public void testMetastorageWalRestore() throws Exception {
+        try {
+            int cnt = 2000;
+
+            IgniteEx ignite0 = (IgniteEx)startGrid(1);
+
+            ignite0.active(true);
+
+            GridCacheSharedContext<Object, Object> sharedCtx0 = ignite0.context().cache().context();
+
+            MetaStorage storage = ((GridCacheDatabaseSharedManager)sharedCtx0.database()).metaStorage();
+
+            assert storage != null;
+
+            for (int i = 0; i < cnt; i++)
+                storage.putData(String.valueOf(i), new byte[] {1, 2, 3});
+
+            stopGrid(1);
+
+            ignite0 = (IgniteEx)startGrid(1);
+
+            ignite0.active(true);
+
+            sharedCtx0 = ignite0.context().cache().context();
+
+            storage = ((GridCacheDatabaseSharedManager)sharedCtx0.database()).metaStorage();
+
+            assert storage != null;
+
+            for (int i = 0; i < cnt; i++) {
+                MetastorageDataRow row = storage.getData(String.valueOf(i));
+                assert row != null;
+            }
         }
         finally {
             stopAllGrids();
