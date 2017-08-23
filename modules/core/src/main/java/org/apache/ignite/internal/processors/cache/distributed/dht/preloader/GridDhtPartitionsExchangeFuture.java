@@ -3204,13 +3204,16 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         }
                     }
 
+                    Map<UUID, GridDhtPartitionsSingleMessage> mergedJoins = newCrdFut.mergedJoinExchangeMessages();
+
                     if (log.isInfoEnabled()) {
                         log.info("New coordinator sends full message [ver=" + initialVersion() +
                             ", resVer=" + fullMsg.resultTopologyVersion() +
-                            ", nodes=" + F.nodeIds(msgs.keySet()) + ']');
+                            ", nodes=" + F.nodeIds(msgs.keySet()) +
+                            ", mergedJoins=" + (mergedJoins != null ? mergedJoins.keySet() : null) + ']');
                     }
 
-                    sendAllPartitions(fullMsg, msgs.keySet(), null, joinedNodeAff);
+                    sendAllPartitions(fullMsg, msgs.keySet(), mergedJoins, joinedNodeAff);
                 }
 
                 return;
