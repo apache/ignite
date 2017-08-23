@@ -770,12 +770,7 @@ public class BinaryContext {
 
         final int typeId = mapper.typeId(clsName);
 
-        try {
-            registered = marshCtx.registerClassName(JAVA_ID, typeId, cls.getName());
-        }
-        catch (IgniteCheckedException e) {
-            throw new BinaryObjectException("Failed to register class.", e);
-        }
+        registered = registerUserClassName(typeId, cls.getName());
 
         BinarySerializer serializer = serializerForClass(cls);
 
@@ -813,12 +808,7 @@ public class BinaryContext {
     private BinaryClassDescriptor registerUserClassDescriptor(BinaryClassDescriptor desc) {
         boolean registered;
 
-        try {
-            registered = marshCtx.registerClassName(JAVA_ID, desc.typeId(), desc.describedClass().getName());
-        }
-        catch (IgniteCheckedException e) {
-            throw new BinaryObjectException("Failed to register class.", e);
-        }
+        registered = registerUserClassName(desc.typeId(), desc.describedClass().getName());
 
         if (registered) {
             BinarySerializer serializer = desc.initialSerializer();
@@ -1202,7 +1192,7 @@ public class BinaryContext {
         }
 
         if (e != null)
-            throw new BinaryObjectException("Failed to register user type name.", e);
+            throw new BinaryObjectException("Failed to register class.", e);
 
         return res;
     }
