@@ -18,14 +18,23 @@
 package org.apache.ignite.internal.processors.query.h2.twostep.msg;
 
 import java.nio.ByteBuffer;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /** Response to remote DML request. */
-public class GridH2DmlResponse implements Message {
+public class GridH2DmlResponse implements Message, GridCacheQueryMarshallable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -51,7 +60,12 @@ public class GridH2DmlResponse implements Message {
     private String err;
 
     /** Keys that failed. */
+    @GridToStringInclude
+    @GridDirectTransient
     private Object[] errKeys;
+
+    /** */
+    private byte[] errKeysBytes;
 
     /**
      * Default constructor.
@@ -113,6 +127,39 @@ public class GridH2DmlResponse implements Message {
     }
 
     /** {@inheritDoc} */
+    @Override public void marshall(Marshaller m) {
+        if (errKeysBytes != null || errKeys == null)
+            return;
+
+        try {
+            errKeysBytes = U.marshal(m, errKeys);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("IfMayBeConditional")
+    @Override public void unmarshall(Marshaller m, GridKernalContext ctx) {
+        if (errKeys != null || errKeysBytes == null)
+            return;
+
+        try {
+            final ClassLoader ldr = U.resolveClassLoader(ctx.config());
+
+            if (m instanceof BinaryMarshaller)
+                // To avoid deserializing of enum types.
+                errKeys = ((BinaryMarshaller)m).binaryMarshaller().unmarshal(errKeysBytes, ldr);
+            else
+                errKeys = U.unmarshal(m, errKeysBytes, ldr);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridH2DmlResponse.class, this);
     }
@@ -136,7 +183,7 @@ public class GridH2DmlResponse implements Message {
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeObjectArray("errKeys", errKeys, MessageCollectionItemType.MSG))
+                if (!writer.writeByteArray("errKeysBytes", errKeysBytes))
                     return false;
 
                 writer.incrementState();
@@ -181,7 +228,7 @@ public class GridH2DmlResponse implements Message {
                 reader.incrementState();
 
             case 1:
-                errKeys = reader.readObjectArray("errKeys", MessageCollectionItemType.MSG, Object.class);
+                errKeysBytes = reader.readByteArray("errKeysBytes");
 
                 if (!reader.isLastRead())
                     return false;

@@ -18,7 +18,6 @@ package org.apache.ignite.internal.processors.query.h2.twostep.msg;
 
 import java.io.Externalizable;
 import java.nio.ByteBuffer;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -31,8 +30,6 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
-import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
-import org.apache.ignite.internal.processors.cache.query.QueryTable;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -74,16 +71,10 @@ public class GridH2DmlRequest implements Message, GridCacheQueryMarshallable {
 
     /** Query. */
     @GridToStringInclude
-    @GridDirectCollection(Message.class)
-    private List<GridCacheSqlQuery> qrys;
+    private String qry;
 
     /** */
     private byte flags;
-
-    /** */
-    @GridToStringInclude
-    @GridDirectCollection(Message.class)
-    private Collection<QueryTable> tbls;
 
     /** */
     private int timeout;
@@ -98,15 +89,6 @@ public class GridH2DmlRequest implements Message, GridCacheQueryMarshallable {
 
     /** Schema name. */
     private String schemaName;
-
-    /** Update mode. */
-    private byte mode;
-
-    /** Target table. */
-    private String tgtTbl; //TODO: go for QueryTable instead?
-
-    /** Target table column names. */
-    private String[] colNames;
 
     /**
      * Required by {@link Externalizable}
@@ -125,16 +107,12 @@ public class GridH2DmlRequest implements Message, GridCacheQueryMarshallable {
         parts = req.parts;
         qryParts = req.qryParts;
         pageSize = req.pageSize;
-        qrys = req.qrys;
+        qry = req.qry;
         flags = req.flags;
-        tbls = req.tbls;
         timeout = req.timeout;
         params = req.params;
         paramsBytes = req.paramsBytes;
         schemaName = req.schemaName;
-        mode = req.mode;
-        tgtTbl = req.tgtTbl;
-        colNames = req.colNames;
     }
 
     /**
@@ -155,23 +133,6 @@ public class GridH2DmlRequest implements Message, GridCacheQueryMarshallable {
         this.params = params;
 
         return this;
-    }
-
-    /**
-     * @param tbls Tables.
-     * @return {@code this}.
-     */
-    public GridH2DmlRequest tables(Collection<QueryTable> tbls) {
-        this.tbls = tbls;
-
-        return this;
-    }
-
-    /**
-     * @return Tables.
-     */
-    public Collection<QueryTable> tables() {
-        return tbls;
     }
 
     /**
@@ -277,20 +238,20 @@ public class GridH2DmlRequest implements Message, GridCacheQueryMarshallable {
     }
 
     /**
-     * @param qrys SQL Queries.
+     * @param qry SQL Query.
      * @return {@code this}.
      */
-    public GridH2DmlRequest queries(List<GridCacheSqlQuery> qrys) {
-        this.qrys = qrys;
+    public GridH2DmlRequest query(String qry) {
+        this.qry = qry;
 
         return this;
     }
 
     /**
-     * @return SQL Queries.
+     * @return SQL Query.
      */
-    public List<GridCacheSqlQuery> queries() {
-        return qrys;
+    public String query() {
+        return qry;
     }
 
     /**
@@ -343,57 +304,6 @@ public class GridH2DmlRequest implements Message, GridCacheQueryMarshallable {
      */
     public GridH2DmlRequest schemaName(String schemaName) {
         this.schemaName = schemaName;
-
-        return this;
-    }
-
-    /**
-     * @return Update mode.
-     */
-    public byte mode() {
-        return mode;
-    }
-
-    /**
-     * @param mode Update mode.
-     * @return {@code this}
-     */
-    public GridH2DmlRequest mode(byte mode) {
-        this.mode = mode;
-
-        return this;
-    }
-
-    /**
-     * @return Target table.
-     */
-    public String targetTable() {
-        return tgtTbl;
-    }
-
-    /**
-     * @param targetTable Target table.
-     * @return {@code this}
-     */
-    public GridH2DmlRequest targetTable(String targetTable) {
-        tgtTbl = targetTable;
-
-        return this;
-    }
-
-    /**
-     * @return Target table column names.
-     */
-    public String[] columnNames() {
-        return colNames;
-    }
-
-    /**
-     * @param columnNames Target table column names.
-     * @return {@code this}
-     */
-    public GridH2DmlRequest columnNames(String[] columnNames) {
-        this.colNames = columnNames;
 
         return this;
     }
@@ -454,84 +364,60 @@ public class GridH2DmlRequest implements Message, GridCacheQueryMarshallable {
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeObjectArray("colNames", colNames, MessageCollectionItemType.STRING))
-                    return false;
-
-                writer.incrementState();
-
-            case 2:
                 if (!writer.writeByte("flags", flags))
                     return false;
 
                 writer.incrementState();
 
-            case 3:
-                if (!writer.writeByte("mode", mode))
-                    return false;
-
-                writer.incrementState();
-
-            case 4:
+            case 2:
                 if (!writer.writeInt("pageSize", pageSize))
                     return false;
 
                 writer.incrementState();
 
-            case 5:
+            case 3:
                 if (!writer.writeByteArray("paramsBytes", paramsBytes))
                     return false;
 
                 writer.incrementState();
 
-            case 6:
+            case 4:
                 if (!writer.writeMap("parts", parts, MessageCollectionItemType.UUID, MessageCollectionItemType.INT_ARR))
                     return false;
 
                 writer.incrementState();
 
-            case 7:
+            case 5:
+                if (!writer.writeString("qry", qry))
+                    return false;
+
+                writer.incrementState();
+
+            case 6:
                 if (!writer.writeIntArray("qryParts", qryParts))
                     return false;
 
                 writer.incrementState();
 
-            case 8:
-                if (!writer.writeCollection("qrys", qrys, MessageCollectionItemType.MSG))
-                    return false;
-
-                writer.incrementState();
-
-            case 9:
+            case 7:
                 if (!writer.writeLong("reqId", reqId))
                     return false;
 
                 writer.incrementState();
 
-            case 10:
+            case 8:
                 if (!writer.writeString("schemaName", schemaName))
                     return false;
 
                 writer.incrementState();
 
-            case 11:
-                if (!writer.writeCollection("tbls", tbls, MessageCollectionItemType.MSG))
-                    return false;
-
-                writer.incrementState();
-
-            case 12:
-                if (!writer.writeString("tgtTbl", tgtTbl))
-                    return false;
-
-                writer.incrementState();
-
-            case 13:
+            case 9:
                 if (!writer.writeInt("timeout", timeout))
                     return false;
 
                 writer.incrementState();
 
-            case 14:
+            case 10:
                 if (!writer.writeMessage("topVer", topVer))
                     return false;
 
@@ -559,14 +445,6 @@ public class GridH2DmlRequest implements Message, GridCacheQueryMarshallable {
                 reader.incrementState();
 
             case 1:
-                colNames = reader.readObjectArray("colNames", MessageCollectionItemType.STRING, String.class);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 2:
                 flags = reader.readByte("flags");
 
                 if (!reader.isLastRead())
@@ -574,15 +452,7 @@ public class GridH2DmlRequest implements Message, GridCacheQueryMarshallable {
 
                 reader.incrementState();
 
-            case 3:
-                mode = reader.readByte("mode");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 4:
+            case 2:
                 pageSize = reader.readInt("pageSize");
 
                 if (!reader.isLastRead())
@@ -590,7 +460,7 @@ public class GridH2DmlRequest implements Message, GridCacheQueryMarshallable {
 
                 reader.incrementState();
 
-            case 5:
+            case 3:
                 paramsBytes = reader.readByteArray("paramsBytes");
 
                 if (!reader.isLastRead())
@@ -598,7 +468,7 @@ public class GridH2DmlRequest implements Message, GridCacheQueryMarshallable {
 
                 reader.incrementState();
 
-            case 6:
+            case 4:
                 parts = reader.readMap("parts", MessageCollectionItemType.UUID, MessageCollectionItemType.INT_ARR, false);
 
                 if (!reader.isLastRead())
@@ -606,7 +476,15 @@ public class GridH2DmlRequest implements Message, GridCacheQueryMarshallable {
 
                 reader.incrementState();
 
-            case 7:
+            case 5:
+                qry = reader.readString("qry");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 6:
                 qryParts = reader.readIntArray("qryParts");
 
                 if (!reader.isLastRead())
@@ -614,15 +492,7 @@ public class GridH2DmlRequest implements Message, GridCacheQueryMarshallable {
 
                 reader.incrementState();
 
-            case 8:
-                qrys = reader.readCollection("qrys", MessageCollectionItemType.MSG);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 9:
+            case 7:
                 reqId = reader.readLong("reqId");
 
                 if (!reader.isLastRead())
@@ -630,7 +500,7 @@ public class GridH2DmlRequest implements Message, GridCacheQueryMarshallable {
 
                 reader.incrementState();
 
-            case 10:
+            case 8:
                 schemaName = reader.readString("schemaName");
 
                 if (!reader.isLastRead())
@@ -638,23 +508,7 @@ public class GridH2DmlRequest implements Message, GridCacheQueryMarshallable {
 
                 reader.incrementState();
 
-            case 11:
-                tbls = reader.readCollection("tbls", MessageCollectionItemType.MSG);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 12:
-                tgtTbl = reader.readString("tgtTbl");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 13:
+            case 9:
                 timeout = reader.readInt("timeout");
 
                 if (!reader.isLastRead())
@@ -662,7 +516,7 @@ public class GridH2DmlRequest implements Message, GridCacheQueryMarshallable {
 
                 reader.incrementState();
 
-            case 14:
+            case 10:
                 topVer = reader.readMessage("topVer");
 
                 if (!reader.isLastRead())
@@ -682,7 +536,7 @@ public class GridH2DmlRequest implements Message, GridCacheQueryMarshallable {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 15;
+        return 11;
     }
 
     /** {@inheritDoc} */

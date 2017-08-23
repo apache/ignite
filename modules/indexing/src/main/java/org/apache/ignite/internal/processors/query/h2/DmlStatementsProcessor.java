@@ -40,7 +40,6 @@ import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.EntryProcessorResult;
 import javax.cache.processor.MutableEntry;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
@@ -71,7 +70,6 @@ import org.apache.ignite.internal.processors.query.h2.dml.UpdateMode;
 import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlan;
 import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlanBuilder;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuerySplitter;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
@@ -405,7 +403,7 @@ public class DmlStatementsProcessor {
             return doFastUpdate(plan, fieldsQry.getArgs());
         }
 
-        if (plan.distributed)
+        if (plan.distributed && !loc)
             return doDistributedUpdate(schemaName, fieldsQry, plan, cancel);
 
         assert !F.isEmpty(plan.selectQry);
@@ -554,8 +552,7 @@ public class DmlStatementsProcessor {
         if (cancel == null)
             cancel = new GridQueryCancel();
 
-        return idx.runDistributedUpdate(schemaName, fieldsQry, plan.cacheIds, (byte)plan.mode.ordinal(),
-            plan.tbl.getName(), plan.colNames, plan.selectQry, cancel);
+        return idx.runDistributedUpdate(schemaName, fieldsQry, plan.cacheIds, cancel);
     }
 
     /**
@@ -1030,73 +1027,17 @@ public class DmlStatementsProcessor {
 
     /**
      *
-     * @param mode Update mode.
      * @param schemaName Schema name.
-     * @param targetTable Target table.
-     * @param colNames Column names.
-     * @param qry Query.
-     * @param params Query parameters.
-     * @param pageSize Page size.
-     * @param timeoutMillis Timeout.
+     * @param stmt Prepared statement.
+     * @param fldsQry Query.
      * @param filter Filter.
      * @param cancel Cancel state.
      * @return Update result.
      * @throws IgniteCheckedException if failed.
      */
-    UpdateResult mapDistributedUpdate(byte mode, String schemaName, String targetTable,
-        String[] colNames, String qry, Object[] params, int pageSize, int timeoutMillis,
+    UpdateResult mapDistributedUpdate(String schemaName, PreparedStatement stmt, SqlFieldsQuery fldsQry,
         IndexingQueryFilter filter, GridQueryCancel cancel) throws IgniteCheckedException {
-        GridH2Table tgtTbl = idx.dataTable(schemaName, targetTable); //TODO: use QueryTable instead
-
-        UpdateMode[] modes = UpdateMode.values();
-
-        assert mode >= 0 && mode < modes.length;
-
-        UpdateMode updateMode = modes[mode];
-
-        GridCacheContext cctx = tgtTbl.rowDescriptor().context();
-
-        UpdatePlan plan = UpdatePlanBuilder.planFromMessage(cctx, updateMode, tgtTbl, tgtTbl.rowDescriptor(),
-            colNames, qry);
-
-        boolean isEnforceJoinOrder = false; // TODO fix this.
-
-        CacheOperationContext opCtx = cctx.operationContextPerCall();
-
-        // Force keepBinary for operation context to avoid binary deserialization inside entry processor
-        if (cctx.binaryMarshaller()) {
-            CacheOperationContext newOpCtx = null;
-
-            if (opCtx == null)
-                // Mimics behavior of GridCacheAdapter#keepBinary and GridCacheProxyImpl#keepBinary
-                newOpCtx = new CacheOperationContext(false, null, true, null, false, null, false);
-            else if (!opCtx.isKeepBinary())
-                newOpCtx = opCtx.keepBinary();
-
-            if (newOpCtx != null)
-                cctx.operationContextPerCall(newOpCtx);
-        }
-
-        try {
-            final GridQueryFieldsResult res = idx.queryLocalSqlFields(schemaName, plan.selectQry,
-                F.asList(params), filter, isEnforceJoinOrder, timeoutMillis, cancel);
-
-            QueryCursorImpl<List<?>> cur = new QueryCursorImpl<>(new Iterable<List<?>>() {
-                @Override public Iterator<List<?>> iterator() {
-                    try {
-                        return new GridQueryCacheObjectsIterator(res.iterator(), idx.objectContext(), true);
-                    }
-                    catch (IgniteCheckedException e) {
-                        throw new IgniteException(e);
-                    }
-                }
-            }, cancel);
-
-            return processDmlSelectResult(cctx, plan, cur, pageSize);
-        }
-        finally {
-            cctx.operationContextPerCall(opCtx);
-        }
+        return updateSqlFields(schemaName, stmt, fldsQry, true, filter, cancel);
     }
 
     /** */
