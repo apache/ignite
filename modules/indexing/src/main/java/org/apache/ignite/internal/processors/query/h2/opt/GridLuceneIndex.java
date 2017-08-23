@@ -262,18 +262,14 @@ public class GridLuceneIndex implements AutoCloseable {
             throw new IgniteCheckedException(e);
         }
 
-        IndexSearcher searcher;
+        IndexSearcher searcher = new IndexSearcher(reader);
+
+        MultiFieldQueryParser parser = new MultiFieldQueryParser(idxdFields,
+            writer.getAnalyzer());
 
         TopDocs docs;
 
         try {
-            searcher = new IndexSearcher(reader);
-
-            MultiFieldQueryParser parser = new MultiFieldQueryParser(idxdFields,
-                writer.getAnalyzer());
-
-            parser.setAllowLeadingWildcard(true);
-
             // Filter expired items.
             Query filter = NumericRangeQuery.newLongRange(EXPIRATION_TIME_FIELD_NAME, U.currentTimeMillis(),
                 null, false, false);
@@ -286,8 +282,6 @@ public class GridLuceneIndex implements AutoCloseable {
             docs = searcher.search(query, Integer.MAX_VALUE);
         }
         catch (Exception e) {
-            U.closeQuiet(reader);
-
             throw new IgniteCheckedException(e);
         }
 
@@ -302,7 +296,8 @@ public class GridLuceneIndex implements AutoCloseable {
     /** {@inheritDoc} */
     @Override public void close() {
         U.closeQuiet(writer);
-        U.close(dir, ctx.log(GridLuceneIndex.class));
+
+        dir.close();
     }
 
     /**
