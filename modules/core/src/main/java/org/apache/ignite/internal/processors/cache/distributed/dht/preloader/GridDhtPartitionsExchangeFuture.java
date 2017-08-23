@@ -75,6 +75,7 @@ import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
@@ -94,6 +95,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     /** */
     public static final int DUMP_PENDING_OBJECTS_THRESHOLD =
         IgniteSystemProperties.getInteger(IgniteSystemProperties.IGNITE_DUMP_PENDING_OBJECTS_THRESHOLD, 10);
+
+    public static final IgniteProductVersion ROLLBACK_SINCE = IgniteProductVersion.fromString("1.8.10");
 
     /** */
     private static final long serialVersionUID = 0L;
@@ -1360,6 +1363,11 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      */
     private boolean isRollbackSupported() {
         boolean rollbackSupported = false;
+
+        for (ClusterNode node : discoCache.allNodes()) {
+            if (node.version().compareToIgnoreTimestamp(ROLLBACK_SINCE) < 0)
+                return false;
+        }
 
         // Currently the rollback process is supported for dynamically started caches.
         if (discoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT && !F.isEmpty(reqs)) {
