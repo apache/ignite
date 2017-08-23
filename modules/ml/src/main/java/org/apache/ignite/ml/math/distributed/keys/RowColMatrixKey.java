@@ -15,15 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.math;
+package org.apache.ignite.ml.math.distributed.keys;
+
+import org.apache.ignite.ml.math.impls.matrix.SparseDistributedMatrix;
 
 /**
- * Maps {@link Vector} element index to cache key.
+ * Cache key for {@link SparseDistributedMatrix}.
  */
-public interface VectorKeyMapper<K> extends KeyMapper<K> {
+public interface RowColMatrixKey extends MatrixCacheKey {
     /**
-     * @param i Vector element index.
-     * @return Cache key for given element index.
+     *  Return index value(blockId, Row/Col index, etc.)
      */
-    public K apply(int i);
+    public int index();
 }
