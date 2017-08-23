@@ -17,17 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.atomic.AtomicReference;
-import javax.cache.Cache;
-import javax.cache.expiry.ExpiryPolicy;
-import javax.cache.processor.EntryProcessor;
-import javax.cache.processor.EntryProcessorResult;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -75,6 +64,18 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
+
+import javax.cache.Cache;
+import javax.cache.expiry.ExpiryPolicy;
+import javax.cache.processor.EntryProcessor;
+import javax.cache.processor.EntryProcessorResult;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_EXPIRED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_LOCKED;
@@ -342,9 +343,16 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     /** {@inheritDoc} */
+    @Override public final CacheObject unswap(CacheDataRow row) throws IgniteCheckedException, GridCacheEntryRemovedException {
+        row = unswap(row, true);
+
+        return row != null ? row.value() : null;
+    }
+
+    /** {@inheritDoc} */
     @Nullable @Override public final CacheObject unswap(boolean needVal)
         throws IgniteCheckedException, GridCacheEntryRemovedException {
-        CacheDataRow row = unswap(needVal, true);
+        CacheDataRow row = unswap(null, true);
 
         return row != null ? row.value() : null;
     }
@@ -352,13 +360,13 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     /**
      * Unswaps an entry.
      *
-     * @param needVal If {@code false} then do not to deserialize value during unswap.
+     * @param row Already extracted cache data.
      * @param checkExpire If {@code true} checks for expiration, as result entry can be obsoleted or marked deleted.
      * @return Value.
      * @throws IgniteCheckedException If failed.
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
-    @Nullable protected CacheDataRow unswap(boolean needVal, boolean checkExpire)
+    @Nullable protected CacheDataRow unswap(@Nullable CacheDataRow row, boolean checkExpire)
         throws IgniteCheckedException, GridCacheEntryRemovedException {
         boolean obsolete = false;
         boolean deferred = false;
@@ -368,7 +376,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             checkObsolete();
 
             if (isStartVersion() && ((flags & IS_UNSWAPPED_MASK) == 0)) {
-                CacheDataRow read = cctx.offheap().read(this);
+                assert row == null || row.key() == key: "Unexpected row key";
+
+                CacheDataRow read = row == null ? cctx.offheap().read(this) : row;
 
                 flags |= IS_UNSWAPPED_MASK;
 
@@ -572,7 +582,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 if (val == null) {
                     if (isStartVersion()) {
-                        unswap(true, false);
+                        unswap(null, false);
 
                         val = this.val;
                     }
@@ -1322,7 +1332,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             // Load and remove from swap if it is new.
             if (isNew())
-                oldRow = unswap(retval, false);
+                oldRow = unswap(null, false);
 
             old = val;
 
@@ -2408,7 +2418,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     return null;
 
                 if (val == null && offheap)
-                    unswap(true, false);
+                    unswap(null, false);
 
                 if (checkExpired()) {
                     if (cctx.deferredDelete()) {
@@ -2645,7 +2655,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         boolean isNew = isStartVersion();
 
         if (isNew)
-            unswap(true, false);
+            unswap(null, false);
 
         CacheObject val = this.val;
 
@@ -2949,7 +2959,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 checkObsolete();
 
                 if (isStartVersion())
-                    unswap(true, false);
+                    unswap(null, false);
 
                 long expireTime = expireTimeExtras();
 

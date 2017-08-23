@@ -17,16 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.query;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Deque;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.Queue;
-import java.util.Set;
-import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheMode;
@@ -60,6 +50,19 @@ import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.jetbrains.annotations.Nullable;
+
+import javax.cache.Cache;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Deque;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.Queue;
+import java.util.Set;
+import java.util.UUID;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SCAN;
@@ -517,7 +520,8 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     @Override public GridCloseableIterator executeScanQuery() throws IgniteCheckedException {
         assert type == SCAN : "Wrong processing of qyery: " + type;
 
-        Collection<ClusterNode> nodes = nodes();
+        // Affinity nodes snapshot
+        Collection<ClusterNode> nodes = new ArrayList<>(nodes());
 
         cctx.checkSecurity(SecurityPermission.CACHE_READ);
 
@@ -537,13 +541,15 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
 
         final GridCacheQueryManager qryMgr = cctx.queries();
 
-        if (part != null && !cctx.isLocal())
-            return new ScanQueryFallbackClosableIterator(part, this, qryMgr, cctx);
-        else {
-            boolean loc = nodes.size() == 1 && F.first(nodes).id().equals(cctx.localNodeId());
+        boolean loc = nodes.size() == 1 && F.first(nodes).id().equals(cctx.localNodeId());
 
-            return loc ? qryMgr.scanQueryLocal(this, true) : qryMgr.scanQueryDistributed(this, nodes);
-        }
+        if (loc)
+            return qryMgr.scanQueryLocal(this, true);
+
+        if (part != null)
+            return new ScanQueryFallbackClosableIterator(part, this, qryMgr, cctx);
+        else
+            return qryMgr.scanQueryDistributed(this, nodes);
     }
 
     /**
@@ -621,12 +627,12 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     /**
      * Wrapper for queries with fallback.
      */
-    private static class ScanQueryFallbackClosableIterator extends GridCloseableIteratorAdapter<Map.Entry> {
+    private static class ScanQueryFallbackClosableIterator extends GridCloseableIteratorAdapter {
         /** */
         private static final long serialVersionUID = 0L;
 
         /** Query future. */
-        private volatile T2<GridCloseableIterator<Map.Entry>, GridCacheQueryFutureAdapter> tuple;
+        private volatile T2<GridCloseableIterator<Cache.Entry>, GridCacheQueryFutureAdapter> tuple;
 
         /** Backups. */
         private volatile Queue<ClusterNode> nodes;
@@ -653,7 +659,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         private boolean firstItemReturned;
 
         /** */
-        private Map.Entry cur;
+        private Object cur;
 
         /**
          * @param part Partition.
@@ -726,7 +732,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
                 }
             }
             else {
-                final GridCacheQueryBean bean = new GridCacheQueryBean(qry, null, null, null);
+                final GridCacheQueryBean bean = new GridCacheQueryBean(qry, null, qry.transform, null);
 
                 GridCacheQueryFutureAdapter fut =
                     (GridCacheQueryFutureAdapter)qryMgr.queryDistributed(bean, Collections.singleton(node));
@@ -736,13 +742,13 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         }
 
         /** {@inheritDoc} */
-        @Override protected Map.Entry onNext() throws IgniteCheckedException {
+        @Override protected Object onNext() throws IgniteCheckedException {
             if (!onHasNext())
                 throw new NoSuchElementException();
 
             assert cur != null;
 
-            Map.Entry e = cur;
+            Object e = cur;
 
             cur = null;
 
@@ -755,9 +761,9 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
                 if (cur != null)
                     return true;
 
-                T2<GridCloseableIterator<Map.Entry>, GridCacheQueryFutureAdapter> t = tuple;
+                T2<GridCloseableIterator<Cache.Entry>, GridCacheQueryFutureAdapter> t = tuple;
 
-                GridCloseableIterator<Map.Entry> iter = t.get1();
+                GridCloseableIterator<Cache.Entry> iter = t.get1();
 
                 if (iter != null) {
                     boolean hasNext = iter.hasNext();
@@ -773,14 +779,14 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
                     assert fut != null;
 
                     if (firstItemReturned)
-                        return (cur = (Map.Entry)fut.next()) != null;
+                        return (cur = convert(fut.next())) != null;
 
                     try {
                         fut.awaitFirstPage();
 
                         firstItemReturned = true;
 
-                        return (cur = (Map.Entry)fut.next()) != null;
+                        return (cur = convert(fut.next())) != null;
                     }
                     catch (IgniteClientDisconnectedCheckedException e) {
                         throw CU.convertToCacheException(e);
@@ -790,6 +796,19 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
                     }
                 }
             }
+        }
+
+        /**
+         * @param obj Entry to convert.
+         * @return Cache entry
+         */
+        private Object convert(Object obj) {
+            if(qry.transform() != null)
+                return obj;
+
+            Map.Entry e = (Map.Entry)obj;
+
+            return e == null ? null : new CacheQueryEntry(e.getKey(), e.getValue());
         }
 
         /**
@@ -847,7 +866,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         @Override protected void onClose() throws IgniteCheckedException {
             super.onClose();
 
-            T2<GridCloseableIterator<Map.Entry>, GridCacheQueryFutureAdapter> t = tuple;
+            T2<GridCloseableIterator<Cache.Entry>, GridCacheQueryFutureAdapter> t = tuple;
 
             if (t != null && t.get1() != null)
                 t.get1().close();

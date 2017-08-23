@@ -17,14 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.query;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.UUID;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
@@ -42,7 +34,6 @@ import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -52,6 +43,15 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteReducer;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.UUID;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentMap;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
@@ -632,7 +632,20 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 if (locIter != null && locIter.hasNextX())
                     cur = locIter.nextX();
 
-                return cur != null || (cur = fut.next()) != null;
+                return cur != null || (cur = convert(fut.next())) != null;
+            }
+
+            /**
+             * @param obj Entry to convert.
+             * @return Cache entry
+             */
+            private Object convert(Object obj) {
+                if(qry.transform() != null)
+                    return obj;
+
+                Map.Entry e = (Map.Entry)obj;
+
+                return e == null ? null : new CacheQueryEntry(e.getKey(), e.getValue());
             }
 
             @Override protected void onClose() throws IgniteCheckedException {

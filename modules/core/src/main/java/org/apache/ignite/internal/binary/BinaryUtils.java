@@ -17,6 +17,33 @@
 
 package org.apache.ignite.internal.binary;
 
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.binary.BinaryCollectionFactory;
+import org.apache.ignite.binary.BinaryInvalidTypeException;
+import org.apache.ignite.binary.BinaryMapFactory;
+import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryRawReader;
+import org.apache.ignite.binary.BinaryRawWriter;
+import org.apache.ignite.binary.BinaryType;
+import org.apache.ignite.binary.Binarylizable;
+import org.apache.ignite.internal.binary.builder.BinaryLazyValue;
+import org.apache.ignite.internal.binary.streams.BinaryInputStream;
+import org.apache.ignite.internal.processors.cache.CacheObjectByteArrayImpl;
+import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
+import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
+import org.apache.ignite.internal.processors.cacheobject.UserCacheObjectByteArrayImpl;
+import org.apache.ignite.internal.processors.cacheobject.UserCacheObjectImpl;
+import org.apache.ignite.internal.processors.cacheobject.UserKeyCacheObjectImpl;
+import org.apache.ignite.internal.util.MutableSingletonList;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgniteUuid;
+import org.jetbrains.annotations.Nullable;
+import org.jsr166.ConcurrentHashMap8;
+
 import java.io.ByteArrayInputStream;
 import java.io.Externalizable;
 import java.io.ObjectInputStream;
@@ -47,26 +74,6 @@ import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.binary.BinaryCollectionFactory;
-import org.apache.ignite.binary.BinaryInvalidTypeException;
-import org.apache.ignite.binary.BinaryMapFactory;
-import org.apache.ignite.binary.BinaryObject;
-import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryRawReader;
-import org.apache.ignite.binary.BinaryRawWriter;
-import org.apache.ignite.binary.BinaryType;
-import org.apache.ignite.binary.Binarylizable;
-import org.apache.ignite.internal.binary.builder.BinaryLazyValue;
-import org.apache.ignite.internal.binary.streams.BinaryInputStream;
-import org.apache.ignite.internal.util.MutableSingletonList;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.lang.IgniteUuid;
-import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
@@ -704,6 +711,26 @@ public class BinaryUtils {
             cls == ArrayList.class ||
             cls == LinkedList.class ||
             cls == SINGLETON_LIST_CLS;
+    }
+
+    /**
+     * @param obj Object to check.
+     * @return True if this is an object of a known type.
+     */
+    public static boolean knownCacheObject(Object obj) {
+        if (obj == null)
+            return false;
+
+        Class<?> cls= obj.getClass();
+
+        return cls == KeyCacheObjectImpl.class ||
+            cls == BinaryObjectImpl.class ||
+            cls == CacheObjectImpl.class ||
+            cls == CacheObjectByteArrayImpl.class ||
+            cls == BinaryEnumObjectImpl.class ||
+            cls == UserKeyCacheObjectImpl.class ||
+            cls == UserCacheObjectImpl.class ||
+            cls == UserCacheObjectByteArrayImpl.class;
     }
 
     /**
