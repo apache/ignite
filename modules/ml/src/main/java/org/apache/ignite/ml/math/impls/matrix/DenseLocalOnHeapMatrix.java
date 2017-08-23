@@ -126,7 +126,7 @@ public class DenseLocalOnHeapMatrix extends AbstractMatrix implements OrderedMat
         return new DenseLocalOnHeapVector(crd);
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override public int accessMode() {
         return getStorage().accessMode();
     }
