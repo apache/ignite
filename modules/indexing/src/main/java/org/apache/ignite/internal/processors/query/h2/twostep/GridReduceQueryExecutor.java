@@ -847,14 +847,11 @@ public class GridReduceQueryExecutor {
      *
      * @param schemaName Schema name.
      * @param cacheIds Cache ids.
-     * @param updateMode Update mode.
-     * @param tgtTable Target table.
-     * @param colNames Column names.
      * @param selectQry Select query.
+     * @param params SQL parameters.
      * @param enforceJoinOrder Enforce join order of tables.
      * @param pageSize Page size.
      * @param timeoutMillis Timeout.
-     * @param params SQL parameters.
      * @param parts Partitions.
      * @param cancel Cancel state.
      * @return Update result.
@@ -862,14 +859,11 @@ public class GridReduceQueryExecutor {
     public UpdateResult update(
         String schemaName,
         List<Integer> cacheIds,
-        byte updateMode,
-        String tgtTable,
-        String[] colNames,
         String selectQry,
+        Object[] params,
         boolean enforceJoinOrder,
         int pageSize,
         int timeoutMillis,
-        Object[] params,
         final int[] parts,
         GridQueryCancel cancel
     ) {
@@ -889,11 +883,8 @@ public class GridReduceQueryExecutor {
         GridH2DmlRequest req = new GridH2DmlRequest()
             .requestId(reqId)
             .topologyVersion(h2.readyTopologyVersion())
-            .mode(updateMode)
             .schemaName(schemaName)
-            .targetTable(tgtTable)
-            .columnNames(colNames)
-            .queries(Collections.singletonList(new GridCacheSqlQuery(selectQry)))
+            .query(selectQry)
             .pageSize(pageSize)
             .parameters(params)
             .timeout(timeoutMillis)

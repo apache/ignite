@@ -1198,10 +1198,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param schemaName Schema name.
      * @param fieldsQry Initial update query.
      * @param cacheIds Cache identifiers.
-     * @param updateMode Update mode.
-     * @param tgtTable Target table.
-     * @param colNames Column names.
-     * @param selectQry Select query derived from initial update query.
      * @param cancel Cancel state.
      * @return Update result.
      */
@@ -1209,15 +1205,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         String schemaName,
         SqlFieldsQuery fieldsQry,
         List<Integer> cacheIds,
-        byte updateMode,
-        String tgtTable,
-        String[] colNames,
-        String selectQry,
         GridQueryCancel cancel) {
-
-        return rdcQryExec.update(schemaName, cacheIds, updateMode, tgtTable, colNames, selectQry,
+        return rdcQryExec.update(schemaName, cacheIds, fieldsQry.getSql(), fieldsQry.getArgs(),
             fieldsQry.isEnforceJoinOrder(), fieldsQry.getPageSize(), fieldsQry.getTimeout(),
-            fieldsQry.getArgs(), fieldsQry.getPartitions(), cancel);
+            fieldsQry.getPartitions(), cancel);
     }
 
     /** {@inheritDoc} */
@@ -1455,24 +1446,23 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /**
      * Run DML request from other node.
      *
-     * @param mode Update mode.
      * @param schemaName Schema name.
-     * @param targetTable Target table.
-     * @param colNames Column names.
-     * @param qry Query.
-     * @param params SQL parameters.
-     * @param pageSize Page size.
-     * @param timeoutMillis Timeout.
+     * @param fldsQry Query.
      * @param filter Filter.
      * @param cancel Cancel state.
      * @return Update result.
      * @throws IgniteCheckedException if failed.
      */
-    public UpdateResult mapDistributedUpdate(byte mode, String schemaName, String targetTable, String[] colNames,
-        String qry, Object[] params, int pageSize, int timeoutMillis, IndexingQueryFilter filter,
+    public UpdateResult mapDistributedUpdate(String schemaName, SqlFieldsQuery fldsQry, IndexingQueryFilter filter,
         GridQueryCancel cancel) throws IgniteCheckedException {
-        return dmlProc.mapDistributedUpdate(mode, schemaName, targetTable, colNames, qry, params, pageSize,
-            timeoutMillis, filter, cancel);
+        Connection conn = connectionForSchema(schemaName);
+
+        H2Utils.setupConnection(conn, false, fldsQry.isEnforceJoinOrder());
+
+        PreparedStatement stmt = preparedStatementWithParams(conn, fldsQry.getSql(),
+            Arrays.asList(fldsQry.getArgs()), true);
+
+        return dmlProc.mapDistributedUpdate(schemaName, stmt, fldsQry, filter, cancel);
     }
 
     /**

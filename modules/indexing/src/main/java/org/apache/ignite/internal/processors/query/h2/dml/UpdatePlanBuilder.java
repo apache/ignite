@@ -47,7 +47,6 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlTable;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlUnion;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlUpdate;
-import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2DmlRequest;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -299,76 +298,6 @@ public final class UpdatePlanBuilder {
                 return UpdatePlan.forDelete(gridTbl, sel.getSQL());
             }
         }
-    }
-
-    /**
-     * Recover update plan from parameters received in {@link GridH2DmlRequest message}
-     *
-     * @param cctx Cache context.
-     * @param updateMode Update mode.
-     * @param tgtTbl Target table.
-     * @param desc Target table descriptor.
-     * @param colNames Updated column names.
-     * @param qry SQL select for update.
-     * @return Update plan.
-     * @throws IgniteCheckedException If failed.
-     */
-    public static UpdatePlan planFromMessage(GridCacheContext cctx, UpdateMode updateMode, GridH2Table tgtTbl,
-        GridH2RowDescriptor desc, String[] colNames, String qry) throws IgniteCheckedException {
-        boolean hasKeyProps = false;
-        boolean hasValProps = false;
-        int keyColIdx = -1;
-        int valColIdx = -1;
-        int[] colTypes = null;
-
-        if (updateMode != UpdateMode.DELETE) {
-            colTypes = new int[colNames.length];
-
-            for (int i = 0; i < colTypes.length; ++i) {
-                String colName = colNames[i];
-
-                Column col = tgtTbl.getColumn(colName);
-
-                colTypes[i] = col.getType();
-
-                int colId = col.getColumnId();
-
-                if (desc.isKeyColumn(colId)) {
-                    keyColIdx = i;
-
-                    continue;
-                }
-
-                if (desc.isValueColumn(colId)) {
-                    valColIdx = i;
-
-                    continue;
-                }
-
-                GridQueryProperty prop = desc.type().property(colName);
-
-                assert prop != null : "Property '" + colName + "' not found.";
-
-                if (prop.key())
-                    hasKeyProps = true;
-                else
-                    hasValProps = true;
-            }
-
-            if (updateMode == UpdateMode.UPDATE)
-                valColIdx = (valColIdx != -1) ? valColIdx + 2 : -1;
-        }
-
-        KeyValueSupplier keySupplier = (updateMode == UpdateMode.INSERT || updateMode == UpdateMode.MERGE) ?
-            createSupplier(cctx, desc.type(), keyColIdx, hasKeyProps, true, false) : null;
-
-        int valSupColIdx = (updateMode == UpdateMode.UPDATE)? ((valColIdx != -1) ? valColIdx : 1) : valColIdx;
-
-        KeyValueSupplier valSupplier = (updateMode == UpdateMode.DELETE) ? null :
-            createSupplier(cctx, desc.type(), valSupColIdx, hasValProps, false, updateMode == UpdateMode.UPDATE);
-
-        return UpdatePlan.fromMessage(updateMode, tgtTbl, colNames, colTypes, qry, keySupplier, valSupplier,
-            keyColIdx, valColIdx);
     }
 
     /**

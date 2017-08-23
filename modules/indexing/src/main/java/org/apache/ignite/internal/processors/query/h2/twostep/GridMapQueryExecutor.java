@@ -30,12 +30,14 @@ import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.query.QueryCancelledException;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.CacheQueryExecutedEvent;
 import org.apache.ignite.events.DiscoveryEvent;
@@ -89,6 +91,7 @@ import static org.apache.ignite.internal.processors.query.h2.opt.DistributedJoin
 import static org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode.distributedJoinMode;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.MAP;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.REPLICATED;
+import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest.FLAG_ENFORCE_JOIN_ORDER;
 import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory.toMessages;
 
 /**
@@ -446,7 +449,7 @@ public class GridMapQueryExecutor {
             req.isFlagSet(GridH2QueryRequest.FLAG_IS_LOCAL),
             req.isFlagSet(GridH2QueryRequest.FLAG_DISTRIBUTED_JOINS));
 
-        final boolean enforceJoinOrder = req.isFlagSet(GridH2QueryRequest.FLAG_ENFORCE_JOIN_ORDER);
+        final boolean enforceJoinOrder = req.isFlagSet(FLAG_ENFORCE_JOIN_ORDER);
         final boolean explain = req.isFlagSet(GridH2QueryRequest.FLAG_EXPLAIN);
         final boolean replicated = req.isFlagSet(GridH2QueryRequest.FLAG_REPLICATED);
         final boolean lazy = req.isFlagSet(GridH2QueryRequest.FLAG_LAZY);
@@ -770,14 +773,20 @@ public class GridMapQueryExecutor {
         MapNodeResults nodeResults = resultsForNode(node.id());
 
         try {
-            String query = req.queries().get(0).query();
-
             IndexingQueryFilter filter = h2.backupFilter(req.topologyVersion(), req.queryPartitions());
 
             GridQueryCancel cancel = nodeResults.putUpdate(reqId);
 
-            UpdateResult updRes = h2.mapDistributedUpdate(req.mode(), req.schemaName(), req.targetTable(),
-                req.columnNames(), query, req.parameters(), req.pageSize(), req.timeout(), filter, cancel);
+            SqlFieldsQuery fldsQry = new SqlFieldsQuery(req.query());
+
+            if (req.parameters() != null)
+                fldsQry.setArgs(req.parameters());
+
+            fldsQry.setEnforceJoinOrder(req.isFlagSet(FLAG_ENFORCE_JOIN_ORDER));
+            fldsQry.setTimeout(req.timeout(), TimeUnit.MILLISECONDS);
+            fldsQry.setPageSize(req.pageSize());
+
+            UpdateResult updRes = h2.mapDistributedUpdate(req.schemaName(), fldsQry, filter, cancel);
 
             sendUpdateResponse(node, reqId, updRes, null);
         }
@@ -834,8 +843,8 @@ public class GridMapQueryExecutor {
             byte status = (error != null || updResult == null) ? GridH2DmlResponse.STATUS_ERROR :
                 F.isEmpty(updResult.errorKeys()) ? GridH2DmlResponse.STATUS_OK : GridH2DmlResponse.STATUS_ERR_KEYS;
 
-            GridH2DmlResponse rsp = new GridH2DmlResponse(reqId, status, updResult == null ? 0: updResult.counter(),
-                updResult == null ? null: updResult.errorKeys(), error);
+            GridH2DmlResponse rsp = new GridH2DmlResponse(reqId, status, updResult == null ? 0 : updResult.counter(),
+                updResult == null ? null : updResult.errorKeys(), error);
 
             if (node.isLocal())
                 h2.reduceQueryExecutor().onMessage(ctx.localNodeId(), rsp);
