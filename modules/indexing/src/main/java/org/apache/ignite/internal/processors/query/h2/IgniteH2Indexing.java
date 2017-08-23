@@ -1198,6 +1198,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param schemaName Schema name.
      * @param fieldsQry Initial update query.
      * @param cacheIds Cache identifiers.
+     * @param isReplicatedOnly Whether query uses only replicated caches.
      * @param cancel Cancel state.
      * @return Update result.
      */
@@ -1205,10 +1206,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         String schemaName,
         SqlFieldsQuery fieldsQry,
         List<Integer> cacheIds,
+        boolean isReplicatedOnly,
         GridQueryCancel cancel) {
         return rdcQryExec.update(schemaName, cacheIds, fieldsQry.getSql(), fieldsQry.getArgs(),
             fieldsQry.isEnforceJoinOrder(), fieldsQry.getPageSize(), fieldsQry.getTimeout(),
-            fieldsQry.getPartitions(), cancel);
+            fieldsQry.getPartitions(), isReplicatedOnly, cancel);
     }
 
     /** {@inheritDoc} */

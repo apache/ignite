@@ -71,6 +71,9 @@ public final class UpdatePlan {
     /** Integer cache identifiers. */
     public List<Integer> cacheIds;
 
+    /** Flag that query contains only replicated tables. */
+    public boolean isReplicatedOnly;
+
     /** */
     private UpdatePlan(UpdateMode mode, GridH2Table tbl, String[] colNames, int[] colTypes, KeyValueSupplier keySupplier,
         KeyValueSupplier valSupplier, int keyColIdx, int valColIdx, String selectQry, boolean isLocSubqry,

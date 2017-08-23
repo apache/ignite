@@ -81,8 +81,7 @@ class DistributedUpdateRun {
      * @param e Pre-formatted error.
      */
     void handleDisconnect(CacheException e) {
-        // TODO: Snesible error message.
-        fut.onDone(new IgniteCheckedException("Update failed.", e));
+        fut.onDone(new IgniteCheckedException("Update failed because client node have disconnected.", e));
     }
 
     /**
@@ -99,11 +98,10 @@ class DistributedUpdateRun {
      *
      * @param id Node id.
      * @param msg Response message.
-     * @return {@code true} if no more responses are expected.
      */
-    boolean handleResponse(UUID id, GridH2DmlResponse msg) {
+    void handleResponse(UUID id, GridH2DmlResponse msg) {
         if (!rspNodes.add(id))
-            return false; // ignore duplicated messages
+            return; // ignore duplicated messages
 
         String err = msg.error();
 
@@ -111,7 +109,7 @@ class DistributedUpdateRun {
             fut.onDone(new IgniteCheckedException("Update failed. " + (F.isEmpty(err)? "" : err) + "[reqId=" +
                 msg.requestId() + ", node=" + id + "]."));
 
-            return true;
+            return;
         }
 
         if (!F.isEmpty(msg.errorKeys()))
@@ -119,12 +117,7 @@ class DistributedUpdateRun {
 
         long cntr = updCntr.addAndGet(msg.updateCounter());
 
-        if (rspNodes.size() == nodeCount) {
+        if (rspNodes.size() == nodeCount)
             fut.onDone(new UpdateResult(cntr, errorKeys.toArray()));
-
-            return true;
-        }
-
-        return false;
     }
 }

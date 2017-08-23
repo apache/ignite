@@ -44,6 +44,7 @@ public class GridH2DmlRequest implements Message, GridCacheQueryMarshallable {
     private static final long serialVersionUID = 0L;
 
     /** Request id. */
+    @GridToStringInclude
     private long reqId;
 
     /** Cache identifiers. */
@@ -52,6 +53,7 @@ public class GridH2DmlRequest implements Message, GridCacheQueryMarshallable {
     private List<Integer> caches;
 
     /** Topology version. */
+    @GridToStringInclude
     private AffinityTopologyVersion topVer;
 
     /** Query partitions. */
@@ -80,6 +82,7 @@ public class GridH2DmlRequest implements Message, GridCacheQueryMarshallable {
     private byte[] paramsBytes;
 
     /** Schema name. */
+    @GridToStringInclude
     private String schemaName;
 
     /**

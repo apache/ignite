@@ -21,6 +21,7 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.util.AbstractCollection;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
@@ -91,7 +92,6 @@ import static org.apache.ignite.internal.processors.query.h2.opt.DistributedJoin
 import static org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode.distributedJoinMode;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.MAP;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.REPLICATED;
-import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest.FLAG_ENFORCE_JOIN_ORDER;
 import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory.toMessages;
 
 /**
@@ -449,7 +449,7 @@ public class GridMapQueryExecutor {
             req.isFlagSet(GridH2QueryRequest.FLAG_IS_LOCAL),
             req.isFlagSet(GridH2QueryRequest.FLAG_DISTRIBUTED_JOINS));
 
-        final boolean enforceJoinOrder = req.isFlagSet(FLAG_ENFORCE_JOIN_ORDER);
+        final boolean enforceJoinOrder = req.isFlagSet(GridH2QueryRequest.FLAG_ENFORCE_JOIN_ORDER);
         final boolean explain = req.isFlagSet(GridH2QueryRequest.FLAG_EXPLAIN);
         final boolean replicated = req.isFlagSet(GridH2QueryRequest.FLAG_REPLICATED);
         final boolean lazy = req.isFlagSet(GridH2QueryRequest.FLAG_LAZY);
@@ -759,11 +759,12 @@ public class GridMapQueryExecutor {
         List<GridReservable> reserved = new ArrayList<>();
 
         if (!reservePartitions(cacheIds, topVer, parts, reserved)) {
-            log.error("Failed to reserve partitions for DML request");
+            U.error(log, "Failed to reserve partitions for DML request. [localNodeId=" + ctx.localNodeId() +
+                ", nodeId=" + node.id() + ", reqId=" + req.requestId() + ", cacheIds=" + cacheIds +
+                ", topVer=" + topVer + ", parts=" + Arrays.toString(parts) + ']');
 
-            // TODO: Explanation (Suggestion),
-            // Explanation (Retry your request when re-balancing is over)
-            sendUpdateResponse(node, reqId, null, "Failed to reserve partitions for DML request");
+            sendUpdateResponse(node, reqId, null, "Failed to reserve partitions for DML request. " +
+                "Explanation (Retry your request when re-balancing is over).");
 
             return;
         }
@@ -780,7 +781,7 @@ public class GridMapQueryExecutor {
             if (req.parameters() != null)
                 fldsQry.setArgs(req.parameters());
 
-            fldsQry.setEnforceJoinOrder(req.isFlagSet(FLAG_ENFORCE_JOIN_ORDER));
+            fldsQry.setEnforceJoinOrder(req.isFlagSet(GridH2QueryRequest.FLAG_ENFORCE_JOIN_ORDER));
             fldsQry.setTimeout(req.timeout(), TimeUnit.MILLISECONDS);
             fldsQry.setPageSize(req.pageSize());
 
@@ -789,9 +790,8 @@ public class GridMapQueryExecutor {
             sendUpdateResponse(node, reqId, updRes, null);
         }
         catch (Exception e) {
-            log.error("Error processing dml request " + e.toString());
-
-            nodeResults.removeUpdate(reqId);
+            U.error(log, "Error processing dml request. [localNodeId=" + ctx.localNodeId() +
+                ", nodeId=" + node.id() + ", req=" + req + ']', e);
 
             sendUpdateResponse(node, reqId, null, e.getMessage());
         }
@@ -801,6 +801,8 @@ public class GridMapQueryExecutor {
                 for (int i = 0; i < reserved.size(); i++)
                     reserved.get(i).release();
             }
+
+            nodeResults.removeUpdate(reqId);
         }
     }
 
@@ -840,6 +842,9 @@ public class GridMapQueryExecutor {
         try {
             GridH2DmlResponse rsp = new GridH2DmlResponse(reqId, updResult == null ? 0 : updResult.counter(),
                 updResult == null ? null : updResult.errorKeys(), error);
+
+            if (log.isDebugEnabled())
+                log.debug("Sending: [localNodeId=" + ctx.localNodeId() + ", node=" + node.id() + ", msg=" + rsp + "]");
 
             if (node.isLocal())
                 h2.reduceQueryExecutor().onMessage(ctx.localNodeId(), rsp);

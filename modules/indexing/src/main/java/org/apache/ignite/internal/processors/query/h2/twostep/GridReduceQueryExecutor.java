@@ -107,8 +107,6 @@ import static org.apache.ignite.internal.processors.query.h2.opt.DistributedJoin
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.REDUCE;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuerySplitter.mergeTableIdentifier;
 
-// TODO: Logging
-
 /**
  * Reduce query executor.
  */
@@ -856,6 +854,7 @@ public class GridReduceQueryExecutor {
      * @param pageSize Page size.
      * @param timeoutMillis Timeout.
      * @param parts Partitions.
+     * @param isReplicatedOnly Whether query uses only replicated caches.
      * @param cancel Cancel state.
      * @return Update result.
      */
@@ -868,24 +867,39 @@ public class GridReduceQueryExecutor {
         int pageSize,
         int timeoutMillis,
         final int[] parts,
+        boolean isReplicatedOnly,
         GridQueryCancel cancel
     ) {
         AffinityTopologyVersion topVer = h2.readyTopologyVersion();
 
-        NodesForPartitionsResult nodesParts = nodesForPartitions(cacheIds, topVer, parts, false);
+        NodesForPartitionsResult nodesParts = nodesForPartitions(cacheIds, topVer, parts, isReplicatedOnly);
 
         final long reqId = qryIdGen.incrementAndGet();
 
         final GridRunningQueryInfo qryInfo = new GridRunningQueryInfo(reqId, selectQry, GridCacheQueryType.SQL_FIELDS,
             schemaName, U.currentTimeMillis(), cancel, false);
 
-        final Collection<ClusterNode> nodes = nodesParts.nodes();
+        Collection<ClusterNode> nodes = nodesParts.nodes();
+
+        if (nodes == null)
+            throw new CacheException("Failed to determine nodes participating in the update. " +
+                "Explanation (Retry update once topology recovers).");
+
+        if (isReplicatedOnly) {
+            ClusterNode locNode = ctx.discovery().localNode();
+
+            if (nodes.contains(locNode))
+                nodes = singletonList(locNode);
+            else
+                nodes = singletonList(F.rand(nodes));
+        }
 
         final DistributedUpdateRun r = new DistributedUpdateRun(nodes.size(), qryInfo);
 
         GridH2DmlRequest req = new GridH2DmlRequest()
             .requestId(reqId)
             .topologyVersion(h2.readyTopologyVersion())
+            .caches(cacheIds)
             .schemaName(schemaName)
             .query(selectQry)
             .pageSize(pageSize)
@@ -898,28 +912,34 @@ public class GridReduceQueryExecutor {
         boolean release = false;
 
         try {
+            Map<ClusterNode, IntArray> partsMap = (nodesParts.queryPartitionsMap() != null) ?
+                nodesParts.queryPartitionsMap() : nodesParts.partitionsMap();
+
             ExplicitPartitionsSpecializer partsSpec = (parts == null) ? null :
-                new ExplicitPartitionsSpecializer(nodesParts.queryPartitionsMap());
+                new ExplicitPartitionsSpecializer(partsMap);
+
+            final Collection<ClusterNode> finalNodes = nodes;
 
             cancel.set(new Runnable() {
                 @Override public void run() {
                     r.future().onCancelled();
 
-                    send(nodes, new GridQueryCancelRequest(reqId), null, false);
+                    send(finalNodes, new GridQueryCancelRequest(reqId), null, false);
                 }
             });
 
+            // send() logs the debug message
             if (send(nodes, req, partsSpec, false))
                 return r.future().get();
 
-            throw new CacheException("Failed to send update request.");
+            throw new CacheException("Failed to send update request to participating nodes.");
         }
         catch (IgniteCheckedException | RuntimeException e) {
             release = true;
 
-            log.error("Error in update: " + e.toString());
+            U.error(log, "Error during update [localNodeId=" + ctx.localNodeId() + "]", e);
 
-            throw new CacheException("Failed to run update: ", e);
+            throw new CacheException("Failed to run update. " + e.getMessage(), e);
         }
         finally {
             if (release)
@@ -942,15 +962,18 @@ public class GridReduceQueryExecutor {
 
             DistributedUpdateRun r = updRuns.get(reqId);
 
-            if (r == null)
-                // TODO: Print warning
-                return;
+            if (r == null) {
+                U.warn(log, "Unexpected dml response (will ignore). [localNodeId=" + ctx.localNodeId() + ", nodeId=" +
+                    node.id() + ", msg=" + msg.toString() + ']');
 
-            if (r.handleResponse(node.id(), msg))
-                updRuns.remove(reqId);
+                return;
+            }
+
+            r.handleResponse(node.id(), msg);
         }
         catch (Exception e) {
-            log.error("Error in dml response processing: " + e.toString());
+            U.error(log, "Error in dml response processing. [localNodeId=" + ctx.localNodeId() + ", nodeId=" +
+                node.id() + ", msg=" + msg.toString() + ']', e);
         }
     }
 
@@ -1423,7 +1446,7 @@ public class GridReduceQueryExecutor {
      *
      * @param cacheIds Cache ids.
      * @param topVer Topology version.
-     * @param parts Paritions array.
+     * @param parts Partitions array.
      * @param isReplicatedOnly Allow only replicated caches.
      * @return Result.
      */

@@ -237,15 +237,14 @@ public class DmlStatementsProcessor {
                     fieldsQry.isDistributedJoins(),
                     fieldsQry.isEnforceJoinOrder(), idx);
 
-                // TODO: replicatedOnly -> route ro single server
-
-                plan.distributed = !qry.isReplicatedOnly() &&
-                    qry.skipMergeTable() &&
+                plan.distributed = qry.skipMergeTable() &&
                     qry.mapQueries().size() == 1 &&
                     !qry.mapQueries().get(0).hasSubQueries();
 
-                if (plan.distributed)
+                if (plan.distributed) {
                     plan.cacheIds = idx.collectCacheIds(CU.cacheId(plan.tbl.cacheName()), qry);
+                    plan.isReplicatedOnly = qry.isReplicatedOnly();
+                }
             }
         }
         catch (SQLException e) {
@@ -554,7 +553,7 @@ public class DmlStatementsProcessor {
         if (cancel == null)
             cancel = new GridQueryCancel();
 
-        return idx.runDistributedUpdate(schemaName, fieldsQry, plan.cacheIds, cancel);
+        return idx.runDistributedUpdate(schemaName, fieldsQry, plan.cacheIds, plan.isReplicatedOnly, cancel);
     }
 
     /**

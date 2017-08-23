@@ -38,12 +38,15 @@ public class GridH2DmlResponse implements Message, GridCacheQueryMarshallable {
     private static final long serialVersionUID = 0L;
 
     /** Request id. */
+    @GridToStringInclude
     private long reqId;
 
     /** Number of updated rows. */
+    @GridToStringInclude
     private long updCnt;
 
     /** Error message. */
+    @GridToStringInclude
     private String err;
 
     /** Keys that failed. */
