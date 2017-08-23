@@ -219,16 +219,20 @@ public class JdbcThinTcpIo {
         boolean accepted = reader.readBoolean();
 
         if (accepted) {
-            byte maj = reader.readByte();
-            byte min = reader.readByte();
-            byte maintenance = reader.readByte();
+            if (reader.available() > 3) {
+                byte maj = reader.readByte();
+                byte min = reader.readByte();
+                byte maintenance = reader.readByte();
 
-            String stage = reader.readString();
+                String stage = reader.readString();
 
-            long ts = reader.readLong();
-            byte[] hash = reader.readByteArray();
+                long ts = reader.readLong();
+                byte[] hash = reader.readByteArray();
 
-            igniteVer = new IgniteProductVersion(maj, min, maintenance, stage, ts, hash);
+                igniteVer = new IgniteProductVersion(maj, min, maintenance, stage, ts, hash);
+            }
+            else
+                igniteVer = new IgniteProductVersion((byte)2, (byte)1, (byte)0, "Unknown 2.1 version", 0L, null);
 
             return;
         }
