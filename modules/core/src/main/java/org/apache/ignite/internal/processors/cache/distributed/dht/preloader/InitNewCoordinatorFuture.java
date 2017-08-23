@@ -196,6 +196,13 @@ public class InitNewCoordinatorFuture extends GridCompoundFuture {
     }
 
     /**
+     * @return Messages for merged join exchanges.
+     */
+    Map<UUID, GridDhtPartitionsSingleMessage> mergedJoinExchangeMessages() {
+        return joinExchMsgs;
+    }
+
+    /**
      * @return Full message is some of nodes received it from previous coordinator.
      */
     GridDhtPartitionsFullMessage fullMessage() {
@@ -247,7 +254,8 @@ public class InitNewCoordinatorFuture extends GridCompoundFuture {
         if (fullMsg != null) {
             AffinityTopologyVersion resVer = fullMsg.resultTopologyVersion();
 
-            for (Iterator<Map.Entry<ClusterNode, GridDhtPartitionsSingleMessage>> it = msgs.entrySet().iterator(); it.hasNext();) {
+            for (Iterator<Map.Entry<ClusterNode, GridDhtPartitionsSingleMessage>> it = msgs.entrySet().iterator();
+                 it.hasNext();) {
                 Map.Entry<ClusterNode, GridDhtPartitionsSingleMessage> e = it.next();
 
                 GridDhtPartitionExchangeId msgVer = joinedNodes.get(e.getKey().id());
@@ -263,8 +271,16 @@ public class InitNewCoordinatorFuture extends GridCompoundFuture {
 
                     if (msgVer.topologyVersion().compareTo(resVer) > 0)
                         it.remove();
-                    else
-                        e.getValue().exchangeId(msgVer);
+                    else {
+                        GridDhtPartitionsSingleMessage msg = e.getValue();
+
+                        msg.exchangeId(msgVer);
+
+                        if (joinExchMsgs == null)
+                            joinExchMsgs = new HashMap<>();
+
+                        joinExchMsgs.put(e.getKey().id(), msg);
+                    }
                 }
             }
         }
