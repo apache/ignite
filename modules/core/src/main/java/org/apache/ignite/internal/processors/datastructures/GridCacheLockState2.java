@@ -30,7 +30,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
- *  Grid cache reentrant lock state.
+ * Grid cache reentrant lock state.
  */
 public final class GridCacheLockState2 extends VolatileAtomicDataStructureValue implements Cloneable {
     /** */
@@ -49,6 +49,7 @@ public final class GridCacheLockState2 extends VolatileAtomicDataStructureValue 
     @Override public boolean equals(Object o) {
         if (this == o)
             return true;
+
         if (o == null || getClass() != o.getClass())
             return false;
 
@@ -218,7 +219,7 @@ public final class GridCacheLockState2 extends VolatileAtomicDataStructureValue 
         if (nodes != null) {
             out.writeInt(nodes.size());
 
-            for (UUID uuid: nodes)
+            for (UUID uuid : nodes)
                 U.writeUuid(out, uuid);
         }
     }

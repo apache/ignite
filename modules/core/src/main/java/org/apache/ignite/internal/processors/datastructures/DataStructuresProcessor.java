@@ -518,7 +518,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         IgniteInternalCache<GridCacheInternalKey, AtomicDataStructureValue> cache0 = ctx.cache().cache(cacheName);
 
 
-        boolean flag = true;
+        boolean needQuery = true;
 
         if (cache0 == null) {
             if (!create && ctx.cache().cacheDescriptor(cacheName) == null)
@@ -528,7 +528,8 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
             if (type.equals(REENTRANT_LOCK2)) {
                 tcfg.setAtomicityMode(ATOMIC);
-                flag = false;
+                // New reentrant lock doesn't need any query.
+                needQuery = false;
             }
 
             ctx.cache().dynamicStartCache(tcfg,
@@ -547,7 +548,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
         final IgniteInternalCache<GridCacheInternalKey, AtomicDataStructureValue> cache = cache0;
 
-        if (flag)
+        if (needQuery)
             startQuery(cache.context());
 
         final GridCacheInternalKey key = new GridCacheInternalKeyImpl(name, grpName);

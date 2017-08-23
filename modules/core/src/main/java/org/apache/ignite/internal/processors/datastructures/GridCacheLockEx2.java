@@ -17,17 +17,11 @@
 
 package org.apache.ignite.internal.processors.datastructures;
 
-import java.util.UUID;
 import org.apache.ignite.IgniteLock;
 
 /**
  * Grid cache reentrant lock ({@code 'Ex'} stands for external).
  */
 public interface GridCacheLockEx2 extends IgniteLock, GridCacheRemovable {
-    /**
-     * Get current reentrant lock latch key.
-     *
-     * @return Lock key.
-     */
-    public GridCacheInternalKey key();
+
 }
