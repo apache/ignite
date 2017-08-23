@@ -132,12 +132,4 @@ public final class UpdatePlan {
 
         return new UpdatePlan(mode, tbl, null, null, null, null, -1, -1, null, false, 0, fastUpdateArgs);
     }
-
-    /** */
-    // TODO: Remove
-    public static UpdatePlan fromMessage(UpdateMode mode, GridH2Table tbl, String[] colNames, int[] colTypes,
-        String qry, KeyValueSupplier keySupplier, KeyValueSupplier valSupplier, int keyColIdx, int valColIdx) {
-        return new UpdatePlan(mode, tbl, colNames, colTypes, keySupplier, valSupplier, keyColIdx, valColIdx, qry, false,
-            0, null);
-    }
 }

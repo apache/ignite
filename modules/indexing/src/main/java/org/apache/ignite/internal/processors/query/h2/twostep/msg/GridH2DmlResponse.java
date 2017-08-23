@@ -29,7 +29,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
@@ -38,22 +37,10 @@ public class GridH2DmlResponse implements Message, GridCacheQueryMarshallable {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Successful execution. */
-    public static final byte STATUS_OK = 0;
-
-    /** Error occurred. */
-    public static final byte STATUS_ERROR = 1;
-
-    /** Partial success. Erroneous keys identified. */
-    public static final byte STATUS_ERR_KEYS = 2;
-
     /** Request id. */
     private long reqId;
 
-    /** Status. */
-    private byte status;
-
-    /** Updated rows counter. */
+    /** Number of updated rows. */
     private long updCnt;
 
     /** Error message. */
@@ -64,7 +51,7 @@ public class GridH2DmlResponse implements Message, GridCacheQueryMarshallable {
     @GridDirectTransient
     private Object[] errKeys;
 
-    /** */
+    /** Keys that failed (after marshalling). */
     private byte[] errKeysBytes;
 
     /**
@@ -78,14 +65,12 @@ public class GridH2DmlResponse implements Message, GridCacheQueryMarshallable {
      * Constructor.
      *
      * @param reqId Request id.
-     * @param status Status.
      * @param updCnt Updated row number.
      * @param errKeys Erroneous keys.
      * @param error Error message.
      */
-    public GridH2DmlResponse(long reqId, byte status, long updCnt, Object[] errKeys, String error) {
+    public GridH2DmlResponse(long reqId, long updCnt, Object[] errKeys, String error) {
         this.reqId = reqId;
-        this.status = status;
         this.updCnt = updCnt;
         this.errKeys = errKeys;
         this.err = error;
@@ -96,13 +81,6 @@ public class GridH2DmlResponse implements Message, GridCacheQueryMarshallable {
      */
     public long requestId() {
         return reqId;
-    }
-
-    /**
-     * @return Status.
-     */
-    public byte status() {
-        return status;
     }
 
     /**
@@ -195,12 +173,6 @@ public class GridH2DmlResponse implements Message, GridCacheQueryMarshallable {
                 writer.incrementState();
 
             case 3:
-                if (!writer.writeByte("status", status))
-                    return false;
-
-                writer.incrementState();
-
-            case 4:
                 if (!writer.writeLong("updCnt", updCnt))
                     return false;
 
@@ -244,14 +216,6 @@ public class GridH2DmlResponse implements Message, GridCacheQueryMarshallable {
                 reader.incrementState();
 
             case 3:
-                status = reader.readByte("status");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 4:
                 updCnt = reader.readLong("updCnt");
 
                 if (!reader.isLastRead())
@@ -271,7 +235,7 @@ public class GridH2DmlResponse implements Message, GridCacheQueryMarshallable {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 5;
+        return 4;
     }
 
     @Override public void onAckReceived() {

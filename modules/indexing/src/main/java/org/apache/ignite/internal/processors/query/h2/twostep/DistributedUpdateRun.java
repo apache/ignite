@@ -31,21 +31,23 @@ import org.apache.ignite.internal.util.typedef.F;
 
 /** Context for DML operation on reducer node. */
 class DistributedUpdateRun {
-    /** Response counter. */
-    private AtomicLong rspCntr;
+    /** Expected number of responses. */
+    private final int nodeCount;
 
-    /** Update counter. */
-    // TODO: Track concrete nodes instead of plain counter.
-    private AtomicLong updCntr = new AtomicLong();
+    /** Registers nodes that have responded. */
+    private final GridConcurrentHashSet<UUID> rspNodes;
 
-    /** Error keys. */
-    private GridConcurrentHashSet<Object> errorKeys = new GridConcurrentHashSet<>();
+    /** Accumulates total number of updated rows. */
+    private final AtomicLong updCntr = new AtomicLong();
+
+    /** Accumulates error keys. */
+    private final GridConcurrentHashSet<Object> errorKeys = new GridConcurrentHashSet<>();
 
     /** Query info. */
     private final GridRunningQueryInfo qry;
 
     /** Result future. */
-    private GridFutureAdapter<UpdateResult> fut = new GridFutureAdapter<>();
+    private final GridFutureAdapter<UpdateResult> fut = new GridFutureAdapter<>();
 
     /**
      * Constructor.
@@ -54,9 +56,10 @@ class DistributedUpdateRun {
      * @param qry Query info.
      */
     DistributedUpdateRun(int nodeCount, GridRunningQueryInfo qry) {
-        rspCntr = new AtomicLong(nodeCount);
-
+        this.nodeCount = nodeCount;
         this.qry = qry;
+
+        rspNodes = new GridConcurrentHashSet<>(nodeCount);
     }
 
     /**
@@ -99,35 +102,29 @@ class DistributedUpdateRun {
      * @return {@code true} if no more responses are expected.
      */
     boolean handleResponse(UUID id, GridH2DmlResponse msg) {
-        boolean done = rspCntr.decrementAndGet() == 0;
+        if (!rspNodes.add(id))
+            return false; // ignore duplicated messages
 
-        switch (msg.status()) {
-            case GridH2DmlResponse.STATUS_ERR_KEYS:
-                if (!F.isEmpty(msg.errorKeys()))
-                    errorKeys.addAll(Arrays.asList(msg.errorKeys()));
+        String err = msg.error();
 
-            // Intentional fall-through.
-            case GridH2DmlResponse.STATUS_OK:
-                updCntr.addAndGet(msg.updateCounter());
+        if (err != null) {
+            fut.onDone(new IgniteCheckedException("Update failed. " + (F.isEmpty(err)? "" : err) + "[reqId=" +
+                msg.requestId() + ", node=" + id + "]."));
 
-                if (done)
-                    fut.onDone(new UpdateResult(updCntr.get(), errorKeys.toArray()));
-
-                return done;
-
-            case GridH2DmlResponse.STATUS_ERROR:
-                String err = msg.error();
-
-                fut.onDone(new IgniteCheckedException("Update failed. " + (F.isEmpty(err)? "" : err) + "[reqId=" +
-                    msg.requestId() + ", node=" + id + "]."));
-
-                return false;
-
-            default:
-                fut.onDone(new IgniteCheckedException("Update failed. Invalid status in response message [reqId=" +
-                    msg.requestId() + ", node=" + id + "]."));
-
-                return false;
+            return true;
         }
+
+        if (!F.isEmpty(msg.errorKeys()))
+            errorKeys.addAll(Arrays.asList(msg.errorKeys()));
+
+        long cntr = updCntr.addAndGet(msg.updateCounter());
+
+        if (rspNodes.size() == nodeCount) {
+            fut.onDone(new UpdateResult(cntr, errorKeys.toArray()));
+
+            return true;
+        }
+
+        return false;
     }
 }

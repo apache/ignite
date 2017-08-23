@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -137,8 +138,7 @@ public class GridReduceQueryExecutor {
     private final ConcurrentMap<Long, ReduceQueryRun> runs = new ConcurrentHashMap8<>();
 
     /** Contexts of running DML requests. */
-    // TODO: Use normal ConcurrentHashMap instead.
-    private final ConcurrentMap<Long, DistributedUpdateRun> updRuns = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<Long, DistributedUpdateRun> updRuns = new ConcurrentHashMap<>();
 
     /** */
     private volatile List<GridThreadLocalTable> fakeTbls = Collections.emptyList();
@@ -891,7 +891,6 @@ public class GridReduceQueryExecutor {
             .pageSize(pageSize)
             .parameters(params)
             .timeout(timeoutMillis)
-            .partitions(convert(nodesParts.partitionsMap()))
             .flags(enforceJoinOrder ? GridH2QueryRequest.FLAG_ENFORCE_JOIN_ORDER : 0);
 
         updRuns.put(reqId, r);

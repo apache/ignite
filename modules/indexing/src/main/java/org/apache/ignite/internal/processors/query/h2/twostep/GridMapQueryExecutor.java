@@ -748,13 +748,9 @@ public class GridMapQueryExecutor {
      * @param req DML request.
      */
     private void onDmlRequest(final ClusterNode node, final GridH2DmlRequest req) throws IgniteCheckedException {
-        int[] qryParts = req.queryPartitions();
+        int[] parts = req.queryPartitions();
 
-        final Map<UUID,int[]> partsMap = req.partitions();
-
-        final int[] parts = qryParts == null ? partsMap == null ? null : partsMap.get(ctx.localNodeId()) : qryParts;
-
-        final List<Integer> cacheIds = req.caches();
+        List<Integer> cacheIds = req.caches();
 
         long reqId = req.requestId();
 
@@ -766,6 +762,7 @@ public class GridMapQueryExecutor {
             log.error("Failed to reserve partitions for DML request");
 
             // TODO: Explanation (Suggestion),
+            // Explanation (Retry your request when re-balancing is over)
             sendUpdateResponse(node, reqId, null, "Failed to reserve partitions for DML request");
 
             return;
@@ -774,7 +771,7 @@ public class GridMapQueryExecutor {
         MapNodeResults nodeResults = resultsForNode(node.id());
 
         try {
-            IndexingQueryFilter filter = h2.backupFilter(req.topologyVersion(), req.queryPartitions());
+            IndexingQueryFilter filter = h2.backupFilter(req.topologyVersion(), parts);
 
             GridQueryCancel cancel = nodeResults.putUpdate(reqId);
 
@@ -841,10 +838,7 @@ public class GridMapQueryExecutor {
      */
     private void sendUpdateResponse(ClusterNode node, long reqId, UpdateResult updResult, String error) {
         try {
-            byte status = (error != null || updResult == null) ? GridH2DmlResponse.STATUS_ERROR :
-                F.isEmpty(updResult.errorKeys()) ? GridH2DmlResponse.STATUS_OK : GridH2DmlResponse.STATUS_ERR_KEYS;
-
-            GridH2DmlResponse rsp = new GridH2DmlResponse(reqId, status, updResult == null ? 0 : updResult.counter(),
+            GridH2DmlResponse rsp = new GridH2DmlResponse(reqId, updResult == null ? 0 : updResult.counter(),
                 updResult == null ? null : updResult.errorKeys(), error);
 
             if (node.isLocal())

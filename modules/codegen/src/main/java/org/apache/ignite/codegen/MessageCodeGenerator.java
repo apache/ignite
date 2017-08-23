@@ -46,8 +46,6 @@ import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.IgniteCodeGeneratingFail;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionEx;
-import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2DmlRequest;
-import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2DmlResponse;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
@@ -163,7 +161,7 @@ public class MessageCodeGenerator {
      * @throws Exception In case of error.
      */
     public static void main(String[] args) throws Exception {
-        String srcDir = INDEXING_SRC_DIR;//DFLT_SRC_DIR;
+        String srcDir = DFLT_SRC_DIR;
 
         if (args != null && args.length > 0)
             srcDir = args[0];
@@ -237,8 +235,8 @@ public class MessageCodeGenerator {
 //        gen.generateAndWrite(GridH2RowMessage.class);
 //        gen.generateAndWrite(GridCacheVersion.class);
 //        gen.generateAndWrite(GridCacheVersionEx.class);
-          gen.generateAndWrite(GridH2DmlRequest.class);
-          gen.generateAndWrite(GridH2DmlResponse.class);
+//        gen.generateAndWrite(GridH2DmlRequest.class);
+//        gen.generateAndWrite(GridH2DmlResponse.class);
     }
 
     /**

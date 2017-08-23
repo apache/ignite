@@ -19,12 +19,9 @@ package org.apache.ignite.internal.processors.query.h2.twostep.msg;
 import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.List;
-import java.util.Map;
-import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridDirectCollection;
-import org.apache.ignite.internal.GridDirectMap;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
@@ -57,11 +54,6 @@ public class GridH2DmlRequest implements Message, GridCacheQueryMarshallable {
     /** Topology version. */
     private AffinityTopologyVersion topVer;
 
-    /** Explicit partitions mappings for nodes. */
-    @GridToStringInclude
-    @GridDirectMap(keyType = UUID.class, valueType = int[].class)
-    private Map<UUID, int[]> parts;
-
     /** Query partitions. */
     @GridToStringInclude
     private int[] qryParts;
@@ -73,18 +65,18 @@ public class GridH2DmlRequest implements Message, GridCacheQueryMarshallable {
     @GridToStringInclude
     private String qry;
 
-    /** */
+    /** Flags. */
     private byte flags;
 
-    /** */
+    /** Timeout. */
     private int timeout;
 
-    /** */
+    /** Query parameters. */
     @GridToStringInclude(sensitive = true)
     @GridDirectTransient
     private Object[] params;
 
-    /** */
+    /** Query parameters as bytes. */
     private byte[] paramsBytes;
 
     /** Schema name. */
@@ -104,7 +96,6 @@ public class GridH2DmlRequest implements Message, GridCacheQueryMarshallable {
         reqId = req.reqId;
         caches = req.caches;
         topVer = req.topVer;
-        parts = req.parts;
         qryParts = req.qryParts;
         pageSize = req.pageSize;
         qry = req.qry;
@@ -184,23 +175,6 @@ public class GridH2DmlRequest implements Message, GridCacheQueryMarshallable {
      */
     public AffinityTopologyVersion topologyVersion() {
         return topVer;
-    }
-
-    /**
-     * @return Explicit partitions mapping.
-     */
-    public Map<UUID, int[]> partitions() {
-        return parts;
-    }
-
-    /**
-     * @param parts Explicit partitions mapping.
-     * @return {@code this}.
-     */
-    public GridH2DmlRequest partitions(Map<UUID, int[]> parts) {
-        this.parts = parts;
-
-        return this;
     }
 
     /**
@@ -382,42 +356,36 @@ public class GridH2DmlRequest implements Message, GridCacheQueryMarshallable {
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeMap("parts", parts, MessageCollectionItemType.UUID, MessageCollectionItemType.INT_ARR))
-                    return false;
-
-                writer.incrementState();
-
-            case 5:
                 if (!writer.writeString("qry", qry))
                     return false;
 
                 writer.incrementState();
 
-            case 6:
+            case 5:
                 if (!writer.writeIntArray("qryParts", qryParts))
                     return false;
 
                 writer.incrementState();
 
-            case 7:
+            case 6:
                 if (!writer.writeLong("reqId", reqId))
                     return false;
 
                 writer.incrementState();
 
-            case 8:
+            case 7:
                 if (!writer.writeString("schemaName", schemaName))
                     return false;
 
                 writer.incrementState();
 
-            case 9:
+            case 8:
                 if (!writer.writeInt("timeout", timeout))
                     return false;
 
                 writer.incrementState();
 
-            case 10:
+            case 9:
                 if (!writer.writeMessage("topVer", topVer))
                     return false;
 
@@ -469,14 +437,6 @@ public class GridH2DmlRequest implements Message, GridCacheQueryMarshallable {
                 reader.incrementState();
 
             case 4:
-                parts = reader.readMap("parts", MessageCollectionItemType.UUID, MessageCollectionItemType.INT_ARR, false);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 5:
                 qry = reader.readString("qry");
 
                 if (!reader.isLastRead())
@@ -484,7 +444,7 @@ public class GridH2DmlRequest implements Message, GridCacheQueryMarshallable {
 
                 reader.incrementState();
 
-            case 6:
+            case 5:
                 qryParts = reader.readIntArray("qryParts");
 
                 if (!reader.isLastRead())
@@ -492,7 +452,7 @@ public class GridH2DmlRequest implements Message, GridCacheQueryMarshallable {
 
                 reader.incrementState();
 
-            case 7:
+            case 6:
                 reqId = reader.readLong("reqId");
 
                 if (!reader.isLastRead())
@@ -500,7 +460,7 @@ public class GridH2DmlRequest implements Message, GridCacheQueryMarshallable {
 
                 reader.incrementState();
 
-            case 8:
+            case 7:
                 schemaName = reader.readString("schemaName");
 
                 if (!reader.isLastRead())
@@ -508,7 +468,7 @@ public class GridH2DmlRequest implements Message, GridCacheQueryMarshallable {
 
                 reader.incrementState();
 
-            case 9:
+            case 8:
                 timeout = reader.readInt("timeout");
 
                 if (!reader.isLastRead())
@@ -516,7 +476,7 @@ public class GridH2DmlRequest implements Message, GridCacheQueryMarshallable {
 
                 reader.incrementState();
 
-            case 10:
+            case 9:
                 topVer = reader.readMessage("topVer");
 
                 if (!reader.isLastRead())
@@ -536,7 +496,7 @@ public class GridH2DmlRequest implements Message, GridCacheQueryMarshallable {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 11;
+        return 10;
     }
 
     /** {@inheritDoc} */
