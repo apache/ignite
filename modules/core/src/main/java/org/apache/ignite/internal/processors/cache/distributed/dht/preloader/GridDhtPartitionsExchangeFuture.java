@@ -84,6 +84,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_THREAD_DUMP_ON_EXC
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_EXCHANGE_ROLLBACK_SUPPORTED;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 
@@ -95,8 +96,6 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     /** */
     public static final int DUMP_PENDING_OBJECTS_THRESHOLD =
         IgniteSystemProperties.getInteger(IgniteSystemProperties.IGNITE_DUMP_PENDING_OBJECTS_THRESHOLD, 10);
-
-    public static final IgniteProductVersion ROLLBACK_SINCE = IgniteProductVersion.fromString("1.8.10");
 
     /** */
     private static final long serialVersionUID = 0L;
@@ -165,10 +164,10 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      * Messages received on non-coordinator are stored in case if this node
      * becomes coordinator.
      */
-    private final Map<ClusterNode, GridDhtPartitionsSingleMessage> singleMsgs = new ConcurrentHashMap8<>();
+    private Map<ClusterNode, GridDhtPartitionsSingleMessage> singleMsgs = new ConcurrentHashMap8<>();
 
     /** Messages received from new coordinator. */
-    private final Map<ClusterNode, GridDhtPartitionsFullMessage> fullMsgs = new ConcurrentHashMap8<>();
+    private Map<ClusterNode, GridDhtPartitionsFullMessage> fullMsgs = new ConcurrentHashMap8<>();
 
     /** */
     @SuppressWarnings({"FieldCanBeLocal", "UnusedDeclaration"})
@@ -206,7 +205,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     private IgniteCheckedException exchangeLocalException;
 
     /** Exchange exceptions from all participating nodes. */
-    private final Map<UUID, Exception> exchangeGlobalExceptions = new ConcurrentHashMap8<>();
+    private Map<UUID, Exception> exchangeGlobalExceptions = new ConcurrentHashMap8<>();
 
     /** Forced Rebalance future. */
     private GridCompoundFuture<Boolean, Boolean> forcedRebFut;
@@ -553,7 +552,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 return;
             }
 
-            U.error(log, "Failed to reinitialize local partitions (preloading will be stopped): " + exchId, e);
+            U.error(log, "Failed to reinitialize local partitions (rebalancing will be stopped): " + exchId, e);
 
             if (cctx.kernalContext().clientNode() || !isRollbackSupported()) {
                 onDone(e);
@@ -562,7 +561,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             }
 
             exchangeLocalException = new IgniteCheckedException(
-                "Failed to initialize exchange. Node Id: " + cctx.localNodeId(), e);
+                "Failed to initialize exchange locally [locNodeId=" + cctx.localNodeId() + "]", e);
 
             exchangeGlobalExceptions.put(cctx.localNodeId(), exchangeLocalException);
 
@@ -585,12 +584,13 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             if (reconnectOnError(e))
                 onDone(new IgniteNeedReconnectException(cctx.localNode(), e));
             else {
-                U.error(log, "Failed to reinitialize local partitions (preloading will be stopped): " + exchId, e);
+                U.error(log, "Failed to reinitialize local partitions (rebalancing will be stopped): " + exchId, e);
 
                 onDone(e);
             }
 
-            throw e;
+            if (e instanceof Error)
+                throw (Error)e;
         }
     }
 
@@ -1179,12 +1179,12 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      * Cleans up resources to avoid excessive memory usage.
      */
     public void cleanUp() {
-        singleMsgs.clear();
-        fullMsgs.clear();
+        singleMsgs = null;
+        fullMsgs = null;
         crd = null;
         partReleaseFut = null;
         exchangeLocalException = null;
-        exchangeGlobalExceptions.clear();
+        exchangeGlobalExceptions = null;
     }
 
     /**
@@ -1345,7 +1345,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         if (exchangeLocalException != null)
             ex = exchangeLocalException;
         else
-            ex = new IgniteCheckedException("Failed to complete exchange process. Will try to rollback.");
+            ex = new IgniteCheckedException("Failed to complete exchange process (will try to rollback).");
 
         for (Map.Entry<UUID, Exception> entry : globalExceptions.entrySet()) {
             // avoid self-suppression
@@ -1365,7 +1365,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         boolean rollbackSupported = false;
 
         for (ClusterNode node : discoCache.allNodes()) {
-            if (node.version().compareToIgnoreTimestamp(ROLLBACK_SINCE) < 0)
+            Boolean exchangeSupported = node.attribute(ATTR_EXCHANGE_ROLLBACK_SUPPORTED);
+            if (exchangeSupported == null || !exchangeSupported)
                 return false;
         }
 
@@ -1415,14 +1416,14 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             assert crd.isLocal();
 
             if (!F.isEmpty(exchangeGlobalExceptions) && isRollbackSupported()) {
-
                 updateLastVersion(cctx.versions().last());
 
                 cctx.versions().onExchange(lastVer.get().order());
 
                 IgniteCheckedException err = createExchangeException(exchangeGlobalExceptions);
 
-                DynamicCacheChangeFailureMessage msg = new DynamicCacheChangeFailureMessage(exchId, lastVer.get(), err, reqs);
+                DynamicCacheChangeFailureMessage msg = new DynamicCacheChangeFailureMessage(
+                    cctx.localNode(), exchId, lastVer.get(), err, reqs);
 
                 if (log.isDebugEnabled())
                     log.debug("Dynamic cache change failed. Send message to all participating nodes: " + msg);

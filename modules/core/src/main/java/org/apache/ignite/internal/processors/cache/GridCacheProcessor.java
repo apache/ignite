@@ -1747,7 +1747,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
     }
 
-    public void forceCloseCache(DynamicCacheChangeRequest req) {
+    /**
+     * Called during exchange rollback in order to stop the given cache
+     * even if it's not fully initialized (e.g. fail on cache init stage).
+     */
+     public void forceCloseCache(DynamicCacheChangeRequest req) {
         assert req.stop() : req;
 
         registeredCaches.remove(maskNull(req.cacheName()));
@@ -2631,7 +2635,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         for (DynamicCacheChangeRequest req : failMsg.requests()) {
             registeredCaches.remove(maskNull(req.cacheName()));
 
-            ctx.discovery().forceRemoveCacheFilter(req.cacheName());
+            ctx.discovery().removeCacheFilter(req.cacheName(), true);
         }
 
         return false;
@@ -2774,7 +2778,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                         assert old != null : "Dynamic cache map was concurrently modified [req=" + req + ']';
 
-                        ctx.discovery().removeCacheFilter(req.cacheName());
+                        ctx.discovery().removeCacheFilter(req.cacheName(), false);
 
                         needExchange = true;
                     }

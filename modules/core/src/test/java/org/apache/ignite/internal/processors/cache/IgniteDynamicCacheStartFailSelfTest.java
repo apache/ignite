@@ -23,6 +23,7 @@ import java.io.ObjectOutput;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.Callable;
 import javax.cache.CacheException;
 import javax.cache.configuration.Factory;
@@ -35,6 +36,8 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.EventType;
+import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -50,6 +53,12 @@ public class IgniteDynamicCacheStartFailSelfTest extends GridCommonAbstractTest 
     /** */
     private static final String DYNAMIC_CACHE_NAME = "TestDynamicCache";
 
+    /** Coordinator node. */
+    private Ignite crd;
+
+    /** Coordinator node index. */
+    private int crdIdx;
+
     /**
      * @return Number of nodes for this test.
      */
@@ -57,29 +66,25 @@ public class IgniteDynamicCacheStartFailSelfTest extends GridCommonAbstractTest 
         return 3;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
-        cfg.setIncludeEventTypes(EventType.EVT_CACHE_STARTED, EventType.EVT_CACHE_STOPPED, EventType.EVT_CACHE_NODES_LEFT);
-
         return cfg;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        startGridsMultiThreaded(nodeCount());
+        crdIdx = 0;
+        crd = startGrid(crdIdx);
+
+        for (int i = 1; i < nodeCount(); ++i)
+            startGrid(i);
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
     }
@@ -92,7 +97,8 @@ public class IgniteDynamicCacheStartFailSelfTest extends GridCommonAbstractTest 
         final int initiator = 0;
 
         testDynamicCacheStart(
-            createCacheConfigsWithBrokenAffinityFunction(failOnAllNodes, unluckyNode, unluckyCfg, numberOfCaches),
+            createCacheConfigsWithBrokenAffinityFunction(
+                failOnAllNodes, unluckyNode, unluckyCfg, numberOfCaches, false),
             initiator);
     }
 
@@ -104,7 +110,8 @@ public class IgniteDynamicCacheStartFailSelfTest extends GridCommonAbstractTest 
         final int initiator = 1;
 
         testDynamicCacheStart(
-            createCacheConfigsWithBrokenAffinityFunction(failOnAllNodes, unluckyNode, unluckyCfg, numberOfCaches),
+            createCacheConfigsWithBrokenAffinityFunction(
+                failOnAllNodes, unluckyNode, unluckyCfg, numberOfCaches, false),
             initiator);
     }
 
@@ -116,7 +123,47 @@ public class IgniteDynamicCacheStartFailSelfTest extends GridCommonAbstractTest 
         final int initiator = 2;
 
         testDynamicCacheStart(
-            createCacheConfigsWithBrokenAffinityFunction(failOnAllNodes, unluckyNode, unluckyCfg, numberOfCaches),
+            createCacheConfigsWithBrokenAffinityFunction(
+                failOnAllNodes, unluckyNode, unluckyCfg, numberOfCaches, false),
+            initiator);
+    }
+
+    public void testBrokenAffinityFunctionOnCoordinatorDiffInitiator() {
+        final boolean failOnAllNodes = false;
+        final int unluckyNode = crdIdx;
+        final int unluckyCfg = 1;
+        final int numberOfCaches = 3;
+        final int initiator = (crdIdx + 1) % nodeCount();
+
+        testDynamicCacheStart(
+            createCacheConfigsWithBrokenAffinityFunction(
+                failOnAllNodes, unluckyNode, unluckyCfg, numberOfCaches, false),
+            initiator);
+    }
+
+    public void testBrokenAffinityFunctionOnCoordinator() {
+        final boolean failOnAllNodes = false;
+        final int unluckyNode = crdIdx;
+        final int unluckyCfg = 1;
+        final int numberOfCaches = 3;
+        final int initiator = crdIdx;
+
+        testDynamicCacheStart(
+            createCacheConfigsWithBrokenAffinityFunction(
+                failOnAllNodes, unluckyNode, unluckyCfg, numberOfCaches, false),
+            initiator);
+    }
+
+    public void testBrokenAffinityFunctionWithNodeFilter() {
+        final boolean failOnAllNodes = false;
+        final int unluckyNode = 0;
+        final int unluckyCfg = 0;
+        final int numberOfCaches = 1;
+        final int initiator = 0;
+
+        testDynamicCacheStart(
+            createCacheConfigsWithBrokenAffinityFunction(
+                failOnAllNodes, unluckyNode, unluckyCfg, numberOfCaches, true),
             initiator);
     }
 
@@ -128,7 +175,8 @@ public class IgniteDynamicCacheStartFailSelfTest extends GridCommonAbstractTest 
         final int initiator = 0;
 
         testDynamicCacheStart(
-            createCacheConfigsWithBrokenCacheStore(failOnAllNodes, unluckyNode, unluckyCfg, numberOfCaches),
+            createCacheConfigsWithBrokenCacheStore(
+                failOnAllNodes, unluckyNode, unluckyCfg, numberOfCaches, false),
             initiator);
     }
 
@@ -140,7 +188,8 @@ public class IgniteDynamicCacheStartFailSelfTest extends GridCommonAbstractTest 
         final int initiator = 1;
 
         testDynamicCacheStart(
-            createCacheConfigsWithBrokenCacheStore(failOnAllNodes, unluckyNode, unluckyCfg, numberOfCaches),
+            createCacheConfigsWithBrokenCacheStore(
+                failOnAllNodes, unluckyNode, unluckyCfg, numberOfCaches, false),
             initiator);
     }
 
@@ -152,7 +201,34 @@ public class IgniteDynamicCacheStartFailSelfTest extends GridCommonAbstractTest 
         final int initiator = 2;
 
         testDynamicCacheStart(
-            createCacheConfigsWithBrokenCacheStore(failOnAllNodes, unluckyNode, unluckyCfg, numberOfCaches),
+            createCacheConfigsWithBrokenCacheStore(
+                failOnAllNodes, unluckyNode, unluckyCfg, numberOfCaches, false),
+            initiator);
+    }
+
+    public void testBrokenCacheStoreOnCoordinatorDiffInitiator() {
+        final boolean failOnAllNodes = false;
+        final int unluckyNode = crdIdx;
+        final int unluckyCfg = 1;
+        final int numberOfCaches = 3;
+        final int initiator = (crdIdx + 1) % nodeCount();
+
+        testDynamicCacheStart(
+            createCacheConfigsWithBrokenCacheStore(
+                failOnAllNodes, unluckyNode, unluckyCfg, numberOfCaches, false),
+            initiator);
+    }
+
+    public void testBrokenCacheStoreFunctionOnCoordinator() {
+        final boolean failOnAllNodes = false;
+        final int unluckyNode = crdIdx;
+        final int unluckyCfg = 1;
+        final int numberOfCaches = 3;
+        final int initiator = crdIdx;
+
+        testDynamicCacheStart(
+            createCacheConfigsWithBrokenCacheStore(
+                failOnAllNodes, unluckyNode, unluckyCfg, numberOfCaches, false),
             initiator);
     }
 
@@ -162,8 +238,8 @@ public class IgniteDynamicCacheStartFailSelfTest extends GridCommonAbstractTest 
         final int unluckyCfg = 0;
         final int numOfAttempts = 100;
 
-        CacheConfiguration cfg = createCacheConfigsWithBrokenAffinityFunction(failOnAllNodes,
-            unluckyNode, unluckyCfg, 1).get(0);
+        CacheConfiguration cfg = createCacheConfigsWithBrokenAffinityFunction(
+            failOnAllNodes, unluckyNode, unluckyCfg, 1, false).get(0);
 
         for (int i = 0; i < numOfAttempts; ++i) {
             try {
@@ -172,7 +248,6 @@ public class IgniteDynamicCacheStartFailSelfTest extends GridCommonAbstractTest 
                 fail("Expected exception was not thrown");
             }
             catch (CacheException e) {
-                // No-op.
             }
         }
     }
@@ -180,9 +255,13 @@ public class IgniteDynamicCacheStartFailSelfTest extends GridCommonAbstractTest 
     private List<CacheConfiguration> createCacheConfigsWithBrokenAffinityFunction(
         boolean failOnAllNodes,
         int unluckyNode,
-        int unluckyCfg,
-        int cacheNum) {
+        final int unluckyCfg,
+        int cacheNum,
+        boolean useFilter
+        ) {
         assert unluckyCfg >= 0 && unluckyCfg < cacheNum;
+
+        final UUID uuid = ignite(unluckyNode).cluster().localNode().id();
 
         List<CacheConfiguration> cfgs = new ArrayList<>();
 
@@ -194,14 +273,25 @@ public class IgniteDynamicCacheStartFailSelfTest extends GridCommonAbstractTest 
             if (i == unluckyCfg)
                 cfg.setAffinity(new BrokenAffinityFunction(failOnAllNodes, getTestGridName(unluckyNode)));
 
+            if (useFilter)
+                cfg.setNodeFilter(new NodeFilter(uuid));
+
             cfgs.add(cfg);
         }
 
         return cfgs;
     }
 
-    private Collection<CacheConfiguration> createCacheConfigsWithBrokenCacheStore(boolean failOnAllNodes, int unluckyNode, int unluckyCfg, int cacheNum) {
+    private Collection<CacheConfiguration> createCacheConfigsWithBrokenCacheStore(
+        boolean failOnAllNodes,
+        int unluckyNode,
+        int unluckyCfg,
+        int cacheNum,
+        boolean useFilter
+    ) {
         assert unluckyCfg >= 0 && unluckyCfg < cacheNum;
+
+        final UUID uuid = ignite(unluckyNode).cluster().localNode().id();
 
         List<CacheConfiguration> cfgs = new ArrayList<>();
 
@@ -212,6 +302,9 @@ public class IgniteDynamicCacheStartFailSelfTest extends GridCommonAbstractTest 
 
             if (i == unluckyCfg)
                 cfg.setCacheStoreFactory(new BrokenStoreFactory(failOnAllNodes, getTestGridName(unluckyNode)));
+
+            if (useFilter)
+                cfg.setNodeFilter(new NodeFilter(uuid));
 
             cfgs.add(cfg);
         }
@@ -230,7 +323,24 @@ public class IgniteDynamicCacheStartFailSelfTest extends GridCommonAbstractTest 
         }, CacheException.class, null);
 
         for (CacheConfiguration cfg : cfgs)
-            assertNull(grid(initiatorId).cache(cfg.getName()));
+            assertNull("initiatorId=" + initiatorId, grid(initiatorId).cache(cfg.getName()));
+    }
+
+    private static class NodeFilter implements IgnitePredicate<ClusterNode> {
+        /** Cache should be created node with certain UUID. */
+        public UUID uuid;
+
+        public NodeFilter() {
+        }
+
+        public NodeFilter(UUID uuid) {
+            this.uuid = uuid;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean apply(ClusterNode clusterNode) {
+            return clusterNode.id().equals(uuid);
+        }
     }
 
     private static class BrokenAffinityFunction extends RendezvousAffinityFunction {
@@ -248,7 +358,6 @@ public class IgniteDynamicCacheStartFailSelfTest extends GridCommonAbstractTest 
         private String gridName;
 
         public BrokenAffinityFunction() {
-            // No-op.
         }
 
         public BrokenAffinityFunction(boolean exceptionOnAllNodes, String gridName) {
@@ -259,7 +368,8 @@ public class IgniteDynamicCacheStartFailSelfTest extends GridCommonAbstractTest 
         /** {@inheritDoc} */
         @Override public List<List<ClusterNode>> assignPartitions(AffinityFunctionContext affCtx) {
             if (exceptionOnAllNodes || ignite.name().equals(gridName))
-                throw new IllegalStateException("Simulated exception. LocalNodeId: " + ignite.cluster().localNode().id());
+                throw new IllegalStateException("Simulated exception [locNodeId="
+                    + ignite.cluster().localNode().id() + "]");
             else
                 return super.assignPartitions(affCtx);
         }
@@ -292,7 +402,6 @@ public class IgniteDynamicCacheStartFailSelfTest extends GridCommonAbstractTest 
         public static String gridName;
 
         public BrokenStoreFactory() {
-            // No-op.
         }
 
         public BrokenStoreFactory(boolean exceptionOnAllNodes, String gridName) {
@@ -303,7 +412,8 @@ public class IgniteDynamicCacheStartFailSelfTest extends GridCommonAbstractTest 
         /** {@inheritDoc} */
         @Override public CacheStore<Integer, String> create() {
             if (exceptionOnAllNodes || ignite.name().equals(gridName))
-                throw new IllegalStateException("Simulated exception. LocalNodeId: " + ignite.cluster().localNode().id());
+                throw new IllegalStateException("Simulated exception [locNodeId="
+                    + ignite.cluster().localNode().id() + "]");
             else
                 return null;
         }

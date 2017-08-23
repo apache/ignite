@@ -336,7 +336,6 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         assert !F.isEmpty(reqs) : fut;
 
         for (DynamicCacheChangeRequest req : reqs) {
-
             assert req.stop() : req;
 
             Integer cacheId = CU.cacheId(req.cacheName());

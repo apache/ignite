@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -41,7 +42,7 @@ public class DynamicCacheChangeFailureMessage implements DiscoveryCustomMessage 
     private Collection<DynamicCacheChangeRequest> reqs;
 
     /** Custom message ID. */
-    private IgniteUuid id = IgniteUuid.randomUuid();
+    private IgniteUuid id;
 
     /** */
     private GridDhtPartitionExchangeId exchId;
@@ -60,10 +61,14 @@ public class DynamicCacheChangeFailureMessage implements DiscoveryCustomMessage 
      * @param cause
      * @param reqs Cache change requests.
      */
-    public DynamicCacheChangeFailureMessage(GridDhtPartitionExchangeId exchId,
+    public DynamicCacheChangeFailureMessage(
+        ClusterNode localNode,
+        GridDhtPartitionExchangeId exchId,
         @Nullable GridCacheVersion lastVer,
         IgniteCheckedException cause,
-        Collection<DynamicCacheChangeRequest> reqs) {
+        Collection<DynamicCacheChangeRequest> reqs)
+    {
+        this.id = IgniteUuid.fromUuid(localNode.id());
         this.exchId = exchId;
         this.lastVer = lastVer;
         this.cause = cause;
