@@ -29,10 +29,10 @@ import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.StorageConstants;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.distributed.CacheUtils;
+import org.apache.ignite.ml.math.distributed.keys.RowColMatrixKey;
 import org.apache.ignite.ml.math.exceptions.CardinalityException;
 import org.apache.ignite.ml.math.exceptions.UnsupportedOperationException;
 import org.apache.ignite.ml.math.functions.IgniteDoubleFunction;
-import org.apache.ignite.ml.math.impls.storage.matrix.RowColMatrixKey;
 import org.apache.ignite.ml.math.impls.storage.matrix.SparseDistributedMatrixStorage;
 
 /**

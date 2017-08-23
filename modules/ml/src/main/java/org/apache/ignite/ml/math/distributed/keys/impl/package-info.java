@@ -15,16 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.math.impls.storage.matrix;
-
-import org.apache.ignite.ml.math.impls.matrix.SparseDistributedMatrix;
-
 /**
- * Cache key for {@link SparseDistributedMatrix}.
+ *  * <!-- Package description. -->
+ * Contains matrix cache key implementations.
  */
-public interface RowColMatrixKey extends MatrixCacheKey {
-    /**
-     *  Return index value(blockId, Row/Col index, etc.)
-     */
-    public int index();
-}
+package org.apache.ignite.ml.math.distributed.keys.impl;

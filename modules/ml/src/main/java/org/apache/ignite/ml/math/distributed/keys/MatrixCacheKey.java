@@ -15,16 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.math.impls.storage.matrix;
+package org.apache.ignite.ml.math.distributed.keys;
 
-import org.apache.ignite.ml.math.impls.matrix.SparseBlockDistributedMatrix;
+import org.apache.ignite.lang.IgniteUuid;
 
 /**
- * Cache key for blocks in {@link SparseBlockDistributedMatrix}.
+ * Base matrix cache key.
  */
-public interface BlockMatrixKey extends MatrixCacheKey {
+public interface MatrixCacheKey {
     /**
-     * @return block id.
+     * @return matrix id.
      */
-    public long blockId();
+    public IgniteUuid matrixId();
+
+    /**
+     * @return affinity key.
+     */
+    public IgniteUuid affinityKey();
 }

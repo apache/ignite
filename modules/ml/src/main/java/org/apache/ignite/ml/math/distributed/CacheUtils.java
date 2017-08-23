@@ -36,13 +36,13 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.ml.math.KeyMapper;
-import org.apache.ignite.ml.math.distributed.impl.BlockMatrixKey;
+import org.apache.ignite.ml.math.distributed.keys.RowColMatrixKey;
+import org.apache.ignite.ml.math.distributed.keys.impl.BlockMatrixKey;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteConsumer;
 import org.apache.ignite.ml.math.functions.IgniteDoubleFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.impls.matrix.BlockEntry;
-import org.apache.ignite.ml.math.impls.storage.matrix.RowColMatrixKey;
 
 /**
  * Distribution-related misc. support.

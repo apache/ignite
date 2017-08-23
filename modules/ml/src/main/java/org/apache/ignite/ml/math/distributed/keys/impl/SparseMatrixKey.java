@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.math.distributed.impl;
+package org.apache.ignite.ml.math.distributed.keys.impl;
 
 import java.io.Externalizable;
 import java.io.IOException;
@@ -32,8 +32,8 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.ml.math.distributed.keys.RowColMatrixKey;
 import org.apache.ignite.ml.math.impls.matrix.SparseDistributedMatrix;
-import org.apache.ignite.ml.math.impls.storage.matrix.RowColMatrixKey;
 
 /**
  * Key implementation for {@link SparseDistributedMatrix}.

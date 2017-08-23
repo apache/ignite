@@ -31,7 +31,7 @@ import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.distributed.DistributedStorage;
-import org.apache.ignite.ml.math.distributed.impl.BlockMatrixKey;
+import org.apache.ignite.ml.math.distributed.keys.impl.BlockMatrixKey;
 import org.apache.ignite.ml.math.exceptions.UnsupportedOperationException;
 import org.apache.ignite.ml.math.impls.MathTestConstants;
 import org.apache.ignite.ml.math.impls.storage.matrix.BlockMatrixStorage;

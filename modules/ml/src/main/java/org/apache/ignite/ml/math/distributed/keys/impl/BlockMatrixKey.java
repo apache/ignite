@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.math.distributed.impl;
+package org.apache.ignite.ml.math.distributed.keys.impl;
 
 import java.io.Externalizable;
 import java.io.IOException;
@@ -39,7 +39,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Key implementation for {@link BlockEntry} using for {@link SparseBlockDistributedMatrix}.
  */
-public class BlockMatrixKey implements org.apache.ignite.ml.math.impls.storage.matrix.BlockMatrixKey, Externalizable, Binarylizable {
+public class BlockMatrixKey implements org.apache.ignite.ml.math.distributed.keys.BlockMatrixKey, Externalizable, Binarylizable {
     /** */
     private static final long serialVersionUID = 0L;
     /** Block ID */

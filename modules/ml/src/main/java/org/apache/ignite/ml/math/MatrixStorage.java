@@ -55,7 +55,7 @@ public interface MatrixStorage extends Externalizable, StorageOpsMetrics, Destro
     public int storageMode();
 
     /**
-     * @return Matrix storage mode.
+     * @return Matrix access mode.
      *
      * @see StorageConstants
      */
