@@ -3917,6 +3917,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         return ctx.itHolder().iterator(iter, new CacheIteratorConverter<Cache.Entry<K, V>, Map.Entry<K, V>>() {
             @Override protected Cache.Entry<K, V> convert(Map.Entry<K, V> e) {
+                // Actually Scan Query returns Iterator<CacheQueryEntry> by default,
+                // CacheQueryEntry implements both Map.Entry and Cache.Entry interfaces.
                 return (Cache.Entry<K, V>) e;
             }
 

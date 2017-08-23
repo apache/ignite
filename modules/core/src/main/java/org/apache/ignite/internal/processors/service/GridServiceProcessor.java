@@ -1308,6 +1308,8 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
             return cache.context().itHolder().iterator(iter,
                 new CacheIteratorConverter<Cache.Entry<Object, Object>, Map.Entry<Object, Object>>() {
                     @Override protected Cache.Entry<Object, Object> convert(Map.Entry<Object, Object> e) {
+                        // Actually Scan Query returns Iterator<CacheQueryEntry> by default,
+                        // CacheQueryEntry implements both Map.Entry and Cache.Entry interfaces.
                         return (Cache.Entry<Object, Object>) e;
                     }
 

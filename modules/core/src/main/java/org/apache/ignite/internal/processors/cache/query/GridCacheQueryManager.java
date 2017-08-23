@@ -824,7 +824,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @throws IgniteCheckedException If failed to get iterator.
      */
     @SuppressWarnings({"unchecked"})
-    private GridCloseableIterator<IgniteBiTuple<K, V>> scanIterator(final GridCacheQueryAdapter<?> qry, boolean locNode)
+    private GridCloseableIterator scanIterator(final GridCacheQueryAdapter<?> qry, boolean locNode)
         throws IgniteCheckedException {
         final IgniteBiPredicate<K, V> keyValFilter = qry.scanFilter();
 
@@ -860,13 +860,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 if (locPart0 == null || locPart0.state() != OWNING || !locPart0.reserve())
                     throw new GridDhtUnreservedPartitionException(part, cctx.affinity().affinityTopologyVersion(),
                         "Partition can not be reserved");
-
-                if (locPart0.state() != OWNING) {
-                    locPart0.release();
-
-                    throw new GridDhtUnreservedPartitionException(part, cctx.affinity().affinityTopologyVersion(),
-                        "Partition can not be reserved");
-                }
 
                 locPart = locPart0;
 

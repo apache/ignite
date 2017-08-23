@@ -51,7 +51,6 @@ import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.jetbrains.annotations.Nullable;
 
-import javax.cache.Cache;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -632,7 +631,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         private static final long serialVersionUID = 0L;
 
         /** Query future. */
-        private volatile T2<GridCloseableIterator<Cache.Entry>, GridCacheQueryFutureAdapter> tuple;
+        private volatile T2<GridCloseableIterator<Object>, GridCacheQueryFutureAdapter> tuple;
 
         /** Backups. */
         private volatile Queue<ClusterNode> nodes;
@@ -761,9 +760,9 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
                 if (cur != null)
                     return true;
 
-                T2<GridCloseableIterator<Cache.Entry>, GridCacheQueryFutureAdapter> t = tuple;
+                T2<GridCloseableIterator<Object>, GridCacheQueryFutureAdapter> t = tuple;
 
-                GridCloseableIterator<Cache.Entry> iter = t.get1();
+                GridCloseableIterator<Object> iter = t.get1();
 
                 if (iter != null) {
                     boolean hasNext = iter.hasNext();
@@ -866,7 +865,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         @Override protected void onClose() throws IgniteCheckedException {
             super.onClose();
 
-            T2<GridCloseableIterator<Cache.Entry>, GridCacheQueryFutureAdapter> t = tuple;
+            T2<GridCloseableIterator<Object>, GridCacheQueryFutureAdapter> t = tuple;
 
             if (t != null && t.get1() != null)
                 t.get1().close();
