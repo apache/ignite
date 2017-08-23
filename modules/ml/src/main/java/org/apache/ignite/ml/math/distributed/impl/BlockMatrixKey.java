@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.math.distributed;
+package org.apache.ignite.ml.math.distributed.impl;
 
 import java.io.Externalizable;
 import java.io.IOException;

@@ -38,7 +38,7 @@ import org.apache.ignite.ml.math.MatrixStorage;
 import org.apache.ignite.ml.math.StorageConstants;
 import org.apache.ignite.ml.math.distributed.CacheUtils;
 import org.apache.ignite.ml.math.distributed.DistributedStorage;
-import org.apache.ignite.ml.math.distributed.SparseMatrixKey;
+import org.apache.ignite.ml.math.distributed.impl.SparseMatrixKey;
 import org.apache.ignite.ml.math.impls.matrix.SparseDistributedMatrix;
 
 /**

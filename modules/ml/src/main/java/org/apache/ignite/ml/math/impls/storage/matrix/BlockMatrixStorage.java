@@ -37,9 +37,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.ml.math.MatrixStorage;
 import org.apache.ignite.ml.math.StorageConstants;
-import org.apache.ignite.ml.math.distributed.BlockMatrixKey;
 import org.apache.ignite.ml.math.distributed.CacheUtils;
 import org.apache.ignite.ml.math.distributed.DistributedStorage;
+import org.apache.ignite.ml.math.distributed.impl.BlockMatrixKey;
 import org.apache.ignite.ml.math.impls.matrix.BlockEntry;
 import org.apache.ignite.ml.math.impls.matrix.SparseBlockDistributedMatrix;
 
