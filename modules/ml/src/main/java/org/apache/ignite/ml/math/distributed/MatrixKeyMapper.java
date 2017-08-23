@@ -15,7 +15,10 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.math;
+package org.apache.ignite.ml.math.distributed;
+
+import org.apache.ignite.ml.math.KeyMapper;
+import org.apache.ignite.ml.math.Matrix;
 
 /**
  * Maps {@link Matrix} row and column index to cache key.
