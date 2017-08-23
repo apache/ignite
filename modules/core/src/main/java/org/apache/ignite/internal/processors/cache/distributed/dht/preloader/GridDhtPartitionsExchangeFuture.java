@@ -677,7 +677,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             if (cctx.localNode().isClient())
                 tryToPerformLocalSnapshotOperation();
 
-            exchLog.info("Finished exchange init [topVer=" + topVer + ", crd=" + crdNode + ']');
+            if (exchLog.isInfoEnabled())
+                exchLog.info("Finished exchange init [topVer=" + topVer + ", crd=" + crdNode + ']');
         }
         catch (IgniteInterruptedCheckedException e) {
             onDone(e);
@@ -1397,9 +1398,11 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         if (isDone() || !done.compareAndSet(false, true))
             return false;
 
-        log.info("Finish exchange future [startVer=" + initialVersion() +
-            ", resVer=" + res +
-            ", err=" + err + ']');
+        if (log.isInfoEnabled()) {
+            log.info("Finish exchange future [startVer=" + initialVersion() +
+                ", resVer=" + res +
+                ", err=" + err + ']');
+        }
 
         assert res != null || err != null;
 
@@ -1588,15 +1591,19 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             if (msg != null) {
                 assert msg.exchangeId().topologyVersion().equals(new AffinityTopologyVersion(node.order()));
 
-                log.info("Merge server join exchange, message received [curFut=" + initialVersion() +
-                    ", node=" + nodeId + ']');
+                if (log.isInfoEnabled()) {
+                    log.info("Merge server join exchange, message received [curFut=" + initialVersion() +
+                        ", node=" + nodeId + ']');
+                }
 
                 mergedJoinExchMsgs.put(nodeId, msg);
             }
             else {
                 if (cctx.discovery().alive(nodeId)) {
-                    log.info("Merge server join exchange, wait for message [curFut=" + initialVersion() +
-                        ", node=" + nodeId + ']');
+                    if (log.isInfoEnabled()) {
+                        log.info("Merge server join exchange, wait for message [curFut=" + initialVersion() +
+                            ", node=" + nodeId + ']');
+                    }
 
                     wait = true;
 
@@ -1605,8 +1612,10 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     awaitMergedMsgs++;
                 }
                 else {
-                    log.info("Merge server join exchange, awaited node left [curFut=" + initialVersion() +
-                        ", node=" + nodeId + ']');
+                    if (log.isInfoEnabled()) {
+                        log.info("Merge server join exchange, awaited node left [curFut=" + initialVersion() +
+                            ", node=" + nodeId + ']');
+                    }
                 }
             }
         }
@@ -1684,11 +1693,13 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     mergedJoinExchMsgs.containsKey(node.id()) &&
                     mergedJoinExchMsgs.get(node.id()) == null;
 
-                log.info("Merge server join exchange, received message [curFut=" + initialVersion() +
-                    ", node=" + node.id() +
-                    ", msgVer=" + msg.exchangeId().topologyVersion() +
-                    ", process=" + process +
-                    ", awaited=" + awaitMergedMsgs + ']');
+                if (log.isInfoEnabled()) {
+                    log.info("Merge server join exchange, received message [curFut=" + initialVersion() +
+                        ", node=" + node.id() +
+                        ", msgVer=" + msg.exchangeId().topologyVersion() +
+                        ", process=" + process +
+                        ", awaited=" + awaitMergedMsgs + ']');
+                }
 
                 if (process) {
                     mergedJoinExchMsgs.put(node.id(), msg);
@@ -1842,8 +1853,10 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             switch (state) {
                 case DONE: {
-                    log.info("Received single message, already done [ver=" + initialVersion() +
-                        ", node=" + nodeId + ']');
+                    if (log.isInfoEnabled()) {
+                        log.info("Received single message, already done [ver=" + initialVersion() +
+                            ", node=" + nodeId + ']');
+                    }
 
                     assert finishState != null;
 
@@ -1865,9 +1878,11 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                         allReceived = remaining.isEmpty();
 
-                        log.info("Coordinator received single message [ver=" + initialVersion() +
-                            ", node=" + nodeId +
-                            ", allReceived=" + allReceived + ']');
+                        if (log.isInfoEnabled()) {
+                            log.info("Coordinator received single message [ver=" + initialVersion() +
+                                ", node=" + nodeId +
+                                ", allReceived=" + allReceived + ']');
+                        }
                     }
 
                     break;
@@ -1875,8 +1890,10 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                 case SRV:
                 case BECOME_CRD: {
-                    log.info("Non-coordinator received single message [ver=" + initialVersion() +
-                        ", node=" + nodeId + ", state=" + state + ']');
+                    if (log.isInfoEnabled()) {
+                        log.info("Non-coordinator received single message [ver=" + initialVersion() +
+                            ", node=" + nodeId + ", state=" + state + ']');
+                    }
 
                     pendingSingleMsgs.put(nodeId, msg);
 
@@ -2170,7 +2187,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             }
 
             if (exchCtx.mergeExchanges()) {
-                log.info("Coordinator received all messages, try merge [ver=" + initialVersion() + ']');
+                if (log.isInfoEnabled())
+                    log.info("Coordinator received all messages, try merge [ver=" + initialVersion() + ']');
 
                 boolean finish = cctx.exchange().mergeExchangesOnCoordinator(this);
 
@@ -2195,8 +2213,10 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         try {
             AffinityTopologyVersion resTopVer = exchCtx.events().topologyVersion();
 
-            log.info("finishExchangeOnCoordinator [topVer=" + initialVersion() +
-                ", resVer=" + resTopVer + ']');
+            if (log.isInfoEnabled()) {
+                log.info("finishExchangeOnCoordinator [topVer=" + initialVersion() +
+                    ", resVer=" + resTopVer + ']');
+            }
 
             Map<Integer, CacheGroupAffinityMessage> idealAffDiff = null;
 
@@ -2394,9 +2414,11 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 onDone(exchCtx.events().topologyVersion(), err);
 
                 for (Map.Entry<UUID, GridDhtPartitionsSingleMessage> e : pendingSingleMsgs.entrySet()) {
-                    log.info("Process pending message on coordinator [node=" + e.getKey() +
-                        ", ver=" + initialVersion() +
-                        ", resVer=" + resTopVer + ']');
+                    if (log.isInfoEnabled()) {
+                        log.info("Process pending message on coordinator [node=" + e.getKey() +
+                            ", ver=" + initialVersion() +
+                            ", resVer=" + resTopVer + ']');
+                    }
 
                     processSingleMessage(e.getKey(), e.getValue());
                 }
@@ -2519,7 +2541,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         synchronized (mux) {
             if (crd == null) {
-                log.info("Ignore partitions request, no coordinator [node=" + node.id() + ']');
+                if (log.isInfoEnabled())
+                    log.info("Ignore partitions request, no coordinator [node=" + node.id() + ']');
 
                 return;
             }
@@ -2529,7 +2552,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     assert finishState != null;
 
                     if (node.id().equals(finishState.crdId)) {
-                        log.info("Ignore partitions request, finished exchange with this coordinator: " + msg);
+                        if (log.isInfoEnabled())
+                            log.info("Ignore partitions request, finished exchange with this coordinator: " + msg);
 
                         return;
                     }
@@ -2541,7 +2565,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                 case CRD:
                 case BECOME_CRD: {
-                    log.info("Ignore partitions request, node is coordinator: " + msg);
+                    if (log.isInfoEnabled())
+                        log.info("Ignore partitions request, node is coordinator: " + msg);
 
                     return;
                 }
@@ -2549,7 +2574,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 case CLIENT:
                 case SRV: {
                     if (!cctx.discovery().alive(node)) {
-                        log.info("Ignore partitions request, node is not alive [node=" + node.id() + ']');
+                        if (log.isInfoEnabled())
+                            log.info("Ignore partitions request, node is not alive [node=" + node.id() + ']');
 
                         return;
                     }
@@ -2557,14 +2583,18 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     if (msg.restoreState()) {
                         if (!node.equals(crd)) {
                             if (node.order() > crd.order()) {
-                                log.info("Received partitions request, change coordinator [oldCrd=" + crd.id() +
-                                    ", newCrd=" + node.id() + ']');
+                                if (log.isInfoEnabled()) {
+                                    log.info("Received partitions request, change coordinator [oldCrd=" + crd.id() +
+                                        ", newCrd=" + node.id() + ']');
+                                }
 
                                 crd = node; // Do not allow to process FullMessage from old coordinator.
                             }
                             else {
-                                log.info("Ignore restore state request, coordinator changed [oldCrd=" + crd.id() +
-                                    ", newCrd=" + node.id() + ']');
+                                if (log.isInfoEnabled()) {
+                                    log.info("Ignore restore state request, coordinator changed [oldCrd=" + crd.id() +
+                                        ", newCrd=" + node.id() + ']');
+                                }
 
                                 return;
                             }
@@ -2595,10 +2625,12 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                 res.restoreState(true);
 
-                log.info("Send restore state response [node=" + node.id() +
-                    ", exchVer=" + msg.restoreExchangeId().topologyVersion() +
-                    ", hasState=" + (finishState0 != null) +
-                    ", affReq=" + !F.isEmpty(res.cacheGroupsAffinityRequest()) + ']');
+                if (log.isInfoEnabled()) {
+                    log.info("Send restore state response [node=" + node.id() +
+                        ", exchVer=" + msg.restoreExchangeId().topologyVersion() +
+                        ", hasState=" + (finishState0 != null) +
+                        ", affReq=" + !F.isEmpty(res.cacheGroupsAffinityRequest()) + ']');
+                }
 
                 res.finishMessage(finishState0 != null ? finishState0.msg : null);
 
@@ -2624,6 +2656,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
+     * @param checkCrd If {@code true} checks that local node is exchange coordinator.
      * @param node Sender node.
      * @param msg Message.
      */
@@ -2637,7 +2670,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                 synchronized (mux) {
                     if (crd == null) {
-                        log.info("Ignore full message, all server nodes left: " + msg);
+                        if (log.isInfoEnabled())
+                            log.info("Ignore full message, all server nodes left: " + msg);
 
                         return;
                     }
@@ -2645,13 +2679,15 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     switch (state) {
                         case CRD:
                         case BECOME_CRD: {
-                            log.info("Ignore full message, node is coordinator: " + msg);
+                            if (log.isInfoEnabled())
+                                log.info("Ignore full message, node is coordinator: " + msg);
 
                             return;
                         }
 
                         case DONE: {
-                            log.info("Ignore full message, future is done: " + msg);
+                            if (log.isInfoEnabled())
+                                log.info("Ignore full message, future is done: " + msg);
 
                             return;
                         }
@@ -2659,10 +2695,12 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         case SRV:
                         case CLIENT: {
                             if (!crd.equals(node)) {
-                                log.info("Received full message from non-coordinator [node=" + node.id() +
-                                    ", nodeOrder=" + node.order() +
-                                    ", crd=" + crd.id() +
-                                    ", crdOrder=" + crd.order() + ']');
+                                if (log.isInfoEnabled()) {
+                                    log.info("Received full message from non-coordinator [node=" + node.id() +
+                                        ", nodeOrder=" + node.order() +
+                                        ", crd=" + crd.id() +
+                                        ", crdOrder=" + crd.order() + ']');
+                                }
 
                                 if (node.order() > crd.order())
                                     fullMsgs.put(node, msg);
@@ -2672,8 +2710,10 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                             else {
                                 AffinityTopologyVersion resVer = msg.resultTopologyVersion() != null ? msg.resultTopologyVersion() : initialVersion();
 
-                                log.info("Received full message, will finish exchange [node=" + node.id() +
-                                    ", resVer=" + resVer + ']');
+                                if (log.isInfoEnabled()) {
+                                    log.info("Received full message, will finish exchange [node=" + node.id() +
+                                        ", resVer=" + resVer + ']');
+                                }
 
                                 finishState = new FinishState(crd.id(), resVer, msg);
 
@@ -2692,8 +2732,10 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             if (exchCtx.mergeExchanges()) {
                 if (msg.resultTopologyVersion() != null && !initialVersion().equals(msg.resultTopologyVersion())) {
-                    log.info("Received full message, need merge [curFut=" + initialVersion() +
-                        ", resVer=" + msg.resultTopologyVersion() + ']');
+                    if (log.isInfoEnabled()) {
+                        log.info("Received full message, need merge [curFut=" + initialVersion() +
+                            ", resVer=" + msg.resultTopologyVersion() + ']');
+                    }
 
                     resTopVer = msg.resultTopologyVersion();
 
@@ -3024,8 +3066,10 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                                 changeGlobalStateExceptions.put(crd0.id(), changeGlobalStateE);
 
                             if (crdChanged) {
-                                log.info("Coordinator failed, node is new coordinator [ver=" + initialVersion() +
-                                    ", prev=" + node.id() + ']');
+                                if (log.isInfoEnabled()) {
+                                    log.info("Coordinator failed, node is new coordinator [ver=" + initialVersion() +
+                                        ", prev=" + node.id() + ']');
+                                }
 
                                 assert newCrdFut != null;
 
@@ -3069,10 +3113,12 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                             if (crdChanged) {
                                 for (Map.Entry<ClusterNode, GridDhtPartitionsFullMessage> m : fullMsgs.entrySet()) {
                                     if (crd0.equals(m.getKey())) {
-                                        log.info("Coordinator changed, process pending full message [" +
-                                            "ver=" + initialVersion() +
-                                            ", crd=" + node.id() +
-                                            ", pendingMsgNode=" + m.getKey() + ']');
+                                        if (log.isInfoEnabled()) {
+                                            log.info("Coordinator changed, process pending full message [" +
+                                                "ver=" + initialVersion() +
+                                                ", crd=" + node.id() +
+                                                ", pendingMsgNode=" + m.getKey() + ']');
+                                        }
 
                                         processFullMessage(true, m.getKey(), m.getValue());
 
@@ -3081,10 +3127,12 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                                     }
                                 }
 
-                                log.info("Coordinator changed, send partitions to new coordinator [" +
-                                    "ver=" + initialVersion() +
-                                    ", crd=" + node.id() +
-                                    ", newCrd=" + crd0.id() + ']');
+                                if (log.isInfoEnabled()) {
+                                    log.info("Coordinator changed, send partitions to new coordinator [" +
+                                        "ver=" + initialVersion() +
+                                        ", crd=" + node.id() +
+                                        ", newCrd=" + crd0.id() + ']');
+                                }
 
                                 sendPartitions(crd0);
                             }
@@ -3121,8 +3169,10 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             assert msgs.isEmpty() : msgs;
 
             if (fullMsg != null) {
-                log.info("New coordinator restored state [ver=" + initialVersion() +
-                    ", resVer=" + fullMsg.resultTopologyVersion() + ']');
+                if (log.isInfoEnabled()) {
+                    log.info("New coordinator restored state [ver=" + initialVersion() +
+                        ", resVer=" + fullMsg.resultTopologyVersion() + ']');
+                }
 
                 synchronized (mux) {
                     state = ExchangeLocalState.DONE;
@@ -3154,13 +3204,20 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         }
                     }
 
+                    if (log.isInfoEnabled()) {
+                        log.info("New coordinator sends full message [ver=" + initialVersion() +
+                            ", resVer=" + fullMsg.resultTopologyVersion() +
+                            ", nodes=" + F.nodeIds(msgs.keySet()) + ']');
+                    }
+
                     sendAllPartitions(fullMsg, msgs.keySet(), null, joinedNodeAff);
                 }
 
                 return;
             }
             else {
-                log.info("New coordinator restore state finished [ver=" + initialVersion() + ']');
+                if (log.isInfoEnabled())
+                    log.info("New coordinator restore state finished [ver=" + initialVersion() + ']');
 
                 for (Map.Entry<ClusterNode, GridDhtPartitionsSingleMessage> e : newCrdFut.messages().entrySet()) {
                     GridDhtPartitionsSingleMessage msg = e.getValue();
@@ -3195,8 +3252,10 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                 assert mergedJoinExchMsgs == null;
 
-                log.info("New coordinator initialization finished [ver=" + initialVersion() +
-                    ", remaining=" + remaining + ']');
+                if (log.isInfoEnabled()) {
+                    log.info("New coordinator initialization finished [ver=" + initialVersion() +
+                        ", remaining=" + remaining + ']');
+                }
 
                 if (!remaining.isEmpty())
                     remaining0 = new HashSet<>(remaining);
@@ -3209,8 +3268,10 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 for (UUID nodeId : remaining0) {
                     try {
                         if (!pendingSingleMsgs.containsKey(nodeId)) {
-                            log.info("New coordinator sends request [ver=" + initialVersion() +
-                                ", node=" + nodeId + ']');
+                            if (log.isInfoEnabled()) {
+                                log.info("New coordinator sends request [ver=" + initialVersion() +
+                                    ", node=" + nodeId + ']');
+                            }
 
                             cctx.io().send(nodeId, req, SYSTEM_POOL);
                         }
@@ -3226,8 +3287,10 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 }
 
                 for (Map.Entry<UUID, GridDhtPartitionsSingleMessage> m : pendingSingleMsgs.entrySet()) {
-                    log.info("New coordinator process pending message [ver=" + initialVersion() +
-                        ", node=" + m.getKey() + ']');
+                    if (log.isInfoEnabled()) {
+                        log.info("New coordinator process pending message [ver=" + initialVersion() +
+                            ", node=" + m.getKey() + ']');
+                    }
 
                     processSingleMessage(m.getKey(), m.getValue());
                 }
