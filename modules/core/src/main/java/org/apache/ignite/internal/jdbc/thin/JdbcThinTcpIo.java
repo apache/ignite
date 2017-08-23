@@ -219,30 +219,33 @@ public class JdbcThinTcpIo {
         boolean accepted = reader.readBoolean();
 
         if (accepted) {
-            byte maj = reader.readByte();
-            byte min = reader.readByte();
-            byte maintenance = reader.readByte();
+            if (reader.available() > 0) {
+                byte maj = reader.readByte();
+                byte min = reader.readByte();
+                byte maintenance = reader.readByte();
 
-            String stage = reader.readString();
+                String stage = reader.readString();
 
-            long ts = reader.readLong();
-            byte[] hash = reader.readByteArray();
+                long ts = reader.readLong();
+                byte[] hash = reader.readByteArray();
 
-            igniteVer = new IgniteProductVersion(maj, min, maintenance, stage, ts, hash);
-
-            return;
+                igniteVer = new IgniteProductVersion(maj, min, maintenance, stage, ts, hash);
+            }
+            else
+                igniteVer = new IgniteProductVersion((byte)2, (byte)0, (byte)0, "Unknown", 0L, null);
         }
+        else {
+            short maj = reader.readShort();
+            short min = reader.readShort();
+            short maintenance = reader.readShort();
 
-        short maj = reader.readShort();
-        short min = reader.readShort();
-        short maintenance = reader.readShort();
+            String err = reader.readString();
 
-        String err = reader.readString();
+            SqlListenerProtocolVersion ver = SqlListenerProtocolVersion.create(maj, min, maintenance);
 
-        SqlListenerProtocolVersion ver = SqlListenerProtocolVersion.create(maj, min, maintenance);
-
-        throw new IgniteCheckedException("Handshake failed [driverProtocolVer=" + CURRENT_VER +
-            ", remoteNodeProtocolVer=" + ver + ", err=" + err + ']');
+            throw new IgniteCheckedException("Handshake failed [driverProtocolVer=" + CURRENT_VER +
+                ", remoteNodeProtocolVer=" + ver + ", err=" + err + ']');
+        }
     }
 
     /**
