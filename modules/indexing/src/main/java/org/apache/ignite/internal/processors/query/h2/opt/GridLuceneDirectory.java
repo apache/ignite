@@ -21,27 +21,22 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.lucene.store.BaseDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.util.Accountable;
-import org.apache.lucene.util.Accountables;
 
 /**
  * A memory-resident {@link Directory} implementation.
  */
-public class GridLuceneDirectory extends BaseDirectory implements Accountable {
+public class GridLuceneDirectory extends BaseDirectory {
     /** */
     protected final Map<String, GridLuceneFile> fileMap = new ConcurrentHashMap<>();
 
@@ -56,7 +51,7 @@ public class GridLuceneDirectory extends BaseDirectory implements Accountable {
      *
      * @param mem Memory.
      */
-    GridLuceneDirectory(GridUnsafeMemory mem) {
+    public GridLuceneDirectory(GridUnsafeMemory mem) {
         super(new GridLuceneLockFactory());
 
         this.mem = mem;
@@ -69,7 +64,10 @@ public class GridLuceneDirectory extends BaseDirectory implements Accountable {
         // and the code below is resilient to map changes during the array population.
         Set<String> fileNames = fileMap.keySet();
 
-        List<String> names = new ArrayList<>(fileNames);
+        List<String> names = new ArrayList<>(fileNames.size());
+
+        for (String name : fileNames)
+            names.add(name);
 
         return names.toArray(new String[names.size()]);
     }
@@ -84,7 +82,6 @@ public class GridLuceneDirectory extends BaseDirectory implements Accountable {
             throw new FileNotFoundException(source);
 
         fileMap.put(dest, file);
-
         fileMap.remove(source);
     }
 
@@ -104,24 +101,20 @@ public class GridLuceneDirectory extends BaseDirectory implements Accountable {
     @Override public void deleteFile(String name) throws IOException {
         ensureOpen();
 
-        doDeleteFile(name, false);
+        doDeleteFile(name);
     }
 
     /**
      * Deletes file.
      *
      * @param name File name.
-     * @param onClose If on close directory;
      * @throws IOException If failed.
      */
-    private void doDeleteFile(String name, boolean onClose) throws IOException {
+    private void doDeleteFile(String name) throws IOException {
         GridLuceneFile file = fileMap.remove(name);
 
         if (file != null) {
             file.delete();
-
-            // All files should be closed when Directory is closing.
-            assert !onClose || !file.hasRefs() : "Possible memory leak, resource is not closed: " + file.toString();
 
             sizeInBytes.addAndGet(-file.getSizeInBytes());
         }
@@ -135,16 +128,15 @@ public class GridLuceneDirectory extends BaseDirectory implements Accountable {
 
         GridLuceneFile file = newRAMFile();
 
-        // Lock for using in stream. Will be unlocked on stream closing.
-        file.lockRef();
-
-        GridLuceneFile existing = fileMap.put(name, file);
+        GridLuceneFile existing = fileMap.remove(name);
 
         if (existing != null) {
             sizeInBytes.addAndGet(-existing.getSizeInBytes());
 
             existing.delete();
         }
+
+        fileMap.put(name, file);
 
         return new GridLuceneOutputStream(file);
     }
@@ -173,16 +165,6 @@ public class GridLuceneDirectory extends BaseDirectory implements Accountable {
         if (file == null)
             throw new FileNotFoundException(name);
 
-        // Lock for using in stream. Will be unlocked on stream closing.
-        file.lockRef();
-
-        if (!fileMap.containsKey(name)) {
-            // Unblock for deferred delete.
-            file.releaseRef();
-
-            throw new FileNotFoundException(name);
-        }
-
         return new GridLuceneInputStream(name, file);
     }
 
@@ -190,36 +172,16 @@ public class GridLuceneDirectory extends BaseDirectory implements Accountable {
     @Override public void close() {
         isOpen = false;
 
-        IgniteException errs = null;
-
         for (String fileName : fileMap.keySet()) {
             try {
-                doDeleteFile(fileName, true);
+                doDeleteFile(fileName);
             }
             catch (IOException e) {
-                if (errs == null)
-                    errs = new IgniteException("Error closing index directory.");
-
-                errs.addSuppressed(e);
+                throw new IllegalStateException(e);
             }
         }
 
         assert fileMap.isEmpty();
-
-        if (errs != null && !F.isEmpty(errs.getSuppressed()))
-            throw errs;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long ramBytesUsed() {
-        ensureOpen();
-
-        return sizeInBytes.get();
-    }
-
-    /** {@inheritDoc} */
-    @Override public synchronized Collection<Accountable> getChildResources() {
-        return Accountables.namedAccountables("file", new HashMap<>(fileMap));
     }
 
     /**

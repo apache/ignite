@@ -296,8 +296,7 @@ public class GridLuceneIndex implements AutoCloseable {
     /** {@inheritDoc} */
     @Override public void close() {
         U.closeQuiet(writer);
-
-        dir.close();
+        U.closeQuiet(dir);
     }
 
     /**

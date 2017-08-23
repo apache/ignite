@@ -17,19 +17,22 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
+import java.io.Serializable;
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
-import org.apache.lucene.util.Accountable;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.apache.ignite.internal.processors.query.h2.opt.GridLuceneOutputStream.BUFFER_SIZE;
 
 /**
  * Lucene file.
  */
-public class GridLuceneFile implements Accountable {
+public class GridLuceneFile implements Serializable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
+    public static final AtomicInteger filesCnt = new AtomicInteger();
+
     /** */
     private LongArray buffers = new LongArray();
 
@@ -42,12 +45,6 @@ public class GridLuceneFile implements Accountable {
     /** */
     private volatile long sizeInBytes;
 
-    /** */
-    private final AtomicLong refCnt = new AtomicLong();
-
-    /** */
-    private final AtomicBoolean deleted = new AtomicBoolean();
-
     /**
      * File used as buffer, in no RAMDirectory
      *
@@ -55,6 +52,8 @@ public class GridLuceneFile implements Accountable {
      */
     GridLuceneFile(GridLuceneDirectory dir) {
         this.dir = dir;
+
+        filesCnt.incrementAndGet();
     }
 
     /**
@@ -94,89 +93,51 @@ public class GridLuceneFile implements Accountable {
     }
 
     /**
-     * Increment ref counter.
-     */
-    void lockRef() {
-        refCnt.incrementAndGet();
-    }
-
-    /**
-     * Decrement ref counter.
-     */
-    void releaseRef() {
-        refCnt.decrementAndGet();
-
-        deferredDelete();
-    }
-
-    /**
-     * Checks if there is file stream opened.
-     *
-     * @return {@code True} if file has external references.
-     */
-    boolean hasRefs() {
-        long refs = refCnt.get();
-
-        assert refs >= 0;
-
-        return refs != 0;
-    }
-
-    /**
      * Gets address of buffer.
      *
      * @param idx Index.
      * @return Pointer.
      */
-    final synchronized long getBuffer(int idx) {
+    protected final synchronized long getBuffer(int idx) {
         return buffers.get(idx);
     }
 
     /**
      * @return Number of buffers.
      */
-    final synchronized int numBuffers() {
+    protected final synchronized int numBuffers() {
         return buffers.size();
     }
 
     /**
-     * Expert: allocate a new buffer. Subclasses can allocate differently.
+     * Expert: allocate a new buffer.
+     * Subclasses can allocate differently.
      *
      * @return allocated buffer.
      */
-    private long newBuffer() {
+    protected long newBuffer() {
         return dir.memory().allocate(BUFFER_SIZE);
     }
 
     /**
      * Deletes file and deallocates memory..
      */
-    public void delete() {
-        if (!deleted.compareAndSet(false, true))
+    public synchronized void delete() {
+        if (buffers == null)
             return;
-
-        deferredDelete();
-    }
-
-    /**
-     * Deferred delete.
-     */
-    synchronized void deferredDelete() {
-        if (!deleted.get() || hasRefs())
-            return;
-
-        assert refCnt.get() == 0;
 
         for (int i = 0; i < buffers.idx; i++)
             dir.memory().release(buffers.arr[i], BUFFER_SIZE);
 
         buffers = null;
+
+        filesCnt.decrementAndGet();
     }
 
     /**
      * @return Size in bytes.
      */
-    long getSizeInBytes() {
+    public long getSizeInBytes() {
         return sizeInBytes;
     }
 
@@ -185,16 +146,6 @@ public class GridLuceneFile implements Accountable {
      */
     public GridLuceneDirectory getDirectory() {
         return dir;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long ramBytesUsed() {
-        return sizeInBytes;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Collection<Accountable> getChildResources() {
-        return Collections.emptyList();
     }
 
     /**
