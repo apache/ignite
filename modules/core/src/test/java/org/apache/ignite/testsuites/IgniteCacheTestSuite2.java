@@ -28,6 +28,7 @@ import org.apache.ignite.internal.processors.cache.CacheDhtLocalPartitionAfterRe
 import org.apache.ignite.internal.processors.cache.CacheEnumOperationsSingleNodeTest;
 import org.apache.ignite.internal.processors.cache.CacheEnumOperationsTest;
 import org.apache.ignite.internal.processors.cache.CacheExchangeMessageDuplicatedStateTest;
+import org.apache.ignite.internal.processors.cache.CacheGroupLocalConfigurationSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheMemoryPolicyConfigurationTest;
 import org.apache.ignite.internal.processors.cache.CacheOptimisticTransactionsWithFilterSingleServerTest;
 import org.apache.ignite.internal.processors.cache.CacheOptimisticTransactionsWithFilterTest;
@@ -262,6 +263,7 @@ public class IgniteCacheTestSuite2 extends TestSuite {
         suite.addTest(new TestSuite(MemoryPolicyConfigValidationTest.class));
         suite.addTest(new TestSuite(MemoryPolicyInitializationTest.class));
         suite.addTest(new TestSuite(CacheMemoryPolicyConfigurationTest.class));
+        suite.addTest(new TestSuite(CacheGroupLocalConfigurationSelfTest.class));
         suite.addTest(new TestSuite(CacheEnumOperationsSingleNodeTest.class));
         suite.addTest(new TestSuite(CacheEnumOperationsTest.class));
         suite.addTest(new TestSuite(IgniteCacheIncrementTxTest.class));
