@@ -765,6 +765,7 @@ public class GridMapQueryExecutor {
         if (!reservePartitions(cacheIds, topVer, parts, reserved)) {
             log.error("Failed to reserve partitions for DML request");
 
+            // TODO: Explanation (Suggestion),
             sendUpdateResponse(node, reqId, null, "Failed to reserve partitions for DML request");
 
             return;

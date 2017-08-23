@@ -106,6 +106,8 @@ import static org.apache.ignite.internal.processors.query.h2.opt.DistributedJoin
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.REDUCE;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuerySplitter.mergeTableIdentifier;
 
+// TODO: Logging
+
 /**
  * Reduce query executor.
  */
@@ -135,6 +137,7 @@ public class GridReduceQueryExecutor {
     private final ConcurrentMap<Long, ReduceQueryRun> runs = new ConcurrentHashMap8<>();
 
     /** Contexts of running DML requests. */
+    // TODO: Use normal ConcurrentHashMap instead.
     private final ConcurrentMap<Long, DistributedUpdateRun> updRuns = new ConcurrentHashMap8<>();
 
     /** */
@@ -941,6 +944,7 @@ public class GridReduceQueryExecutor {
             DistributedUpdateRun r = updRuns.get(reqId);
 
             if (r == null)
+                // TODO: Print warning
                 return;
 
             if (r.handleResponse(node.id(), msg))

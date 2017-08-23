@@ -237,6 +237,8 @@ public class DmlStatementsProcessor {
                     fieldsQry.isDistributedJoins(),
                     fieldsQry.isEnforceJoinOrder(), idx);
 
+                // TODO: replicatedOnly -> route ro single server
+
                 plan.distributed = !qry.isReplicatedOnly() &&
                     qry.skipMergeTable() &&
                     qry.mapQueries().size() == 1 &&

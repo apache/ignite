@@ -35,6 +35,7 @@ class DistributedUpdateRun {
     private AtomicLong rspCntr;
 
     /** Update counter. */
+    // TODO: Track concrete nodes instead of plain counter.
     private AtomicLong updCntr = new AtomicLong();
 
     /** Error keys. */
@@ -77,6 +78,7 @@ class DistributedUpdateRun {
      * @param e Pre-formatted error.
      */
     void handleDisconnect(CacheException e) {
+        // TODO: Snesible error message.
         fut.onDone(new IgniteCheckedException("Update failed.", e));
     }
 
@@ -86,7 +88,7 @@ class DistributedUpdateRun {
      * @param nodeId Node id.
      */
     void handleNodeLeft(UUID nodeId) {
-        fut.onDone(new IgniteCheckedException("Update failed: node " + nodeId + " has left"));
+        fut.onDone(new IgniteCheckedException("Update failed because map node left topology [nodeId=" + nodeId + "]"));
     }
 
     /**

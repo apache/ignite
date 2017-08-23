@@ -134,6 +134,7 @@ public final class UpdatePlan {
     }
 
     /** */
+    // TODO: Remove
     public static UpdatePlan fromMessage(UpdateMode mode, GridH2Table tbl, String[] colNames, int[] colTypes,
         String qry, KeyValueSupplier keySupplier, KeyValueSupplier valSupplier, int keyColIdx, int valColIdx) {
         return new UpdatePlan(mode, tbl, colNames, colTypes, keySupplier, valSupplier, keyColIdx, valColIdx, qry, false,
