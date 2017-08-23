@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.datastructures;
 
 import java.util.ArrayDeque;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -34,9 +35,11 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
+import org.apache.ignite.internal.processors.cache.CacheInvokeResult;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
+import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -434,16 +437,8 @@ public final class GridCacheLockImpl2 implements GridCacheLockEx2 {
 
 
         /** */
-        private final boolean tryAcquireOrAdd() {
-            try {
-                return lockView.invoke(key, acquireProcessor).get();
-            }
-            catch (IgniteCheckedException e) {
-                if (log.isDebugEnabled())
-                    log.debug("Invoke has failed: "+e);
-
-                return false;
-            }
+        private IgniteInternalFuture<EntryProcessorResult<Boolean>>  tryAcquireOrAdd() {
+            return lockView.invokeAsync(key, acquireProcessor);
         }
 
         /** */
@@ -454,6 +449,7 @@ public final class GridCacheLockImpl2 implements GridCacheLockEx2 {
             catch (IgniteCheckedException e) {
                 if (log.isDebugEnabled())
                     log.debug("Invoke has failed: "+e);
+
                 return false;
             }
         }
@@ -466,6 +462,7 @@ public final class GridCacheLockImpl2 implements GridCacheLockEx2 {
             catch (IgniteCheckedException e) {
                 if (log.isDebugEnabled())
                     log.debug("Invoke has failed: "+e);
+
                 return false;
             }
         }
@@ -492,7 +489,22 @@ public final class GridCacheLockImpl2 implements GridCacheLockEx2 {
 
         /** */
         private final void acquire() {
-            while (!tryAcquireOrAdd()) {
+            while (true) {
+                tryAcquireOrAdd().listen(new IgniteInClosure<IgniteInternalFuture<EntryProcessorResult<Boolean>>>() {
+                    @Override public void apply(IgniteInternalFuture<EntryProcessorResult<Boolean>> future) {
+                        try {
+                            EntryProcessorResult<Boolean> result = future.get();
+
+                            if (result !=null && result.get())
+                                listener.release();
+                        }
+                        catch (IgniteCheckedException e) {
+                            if (log.isDebugEnabled())
+                                log.debug("Invoke has failed: "+e);
+                        }
+                    }
+                });
+
                 if (waitForUpdate())
                     break;
             }
@@ -500,10 +512,26 @@ public final class GridCacheLockImpl2 implements GridCacheLockEx2 {
 
         /** */
         private final boolean acquire(long timeout, TimeUnit unit) {
-            while (!tryAcquireOrAdd()) {
-                if (!waitForUpdate(timeout, unit)) {
-                    return acquireOrRemove();
-                }
+            while (true) {
+                tryAcquireOrAdd().listen(new IgniteInClosure<IgniteInternalFuture<EntryProcessorResult<Boolean>>>() {
+                    @Override public void apply(IgniteInternalFuture<EntryProcessorResult<Boolean>> future) {
+                        try {
+                            EntryProcessorResult<Boolean> result = future.get();
+
+                            if (result !=null && result.get())
+                                listener.release();
+                        }
+                        catch (IgniteCheckedException e) {
+                            if (log.isDebugEnabled())
+                                log.debug("Invoke has failed: "+e);
+                        }
+                    }
+                });
+
+                if (waitForUpdate(timeout, unit))
+                    break;
+
+                return acquireOrRemove();
             }
 
             return true;
@@ -511,10 +539,25 @@ public final class GridCacheLockImpl2 implements GridCacheLockEx2 {
 
         /** */
         private final boolean acquireInterruptibly() {
-            while (!tryAcquire()) {
-                if (!waitForUpdate()) {
-                    return acquireOrRemove();
-                }
+            while (true) {
+                tryAcquireOrAdd().listen(new IgniteInClosure<IgniteInternalFuture<EntryProcessorResult<Boolean>>>() {
+                    @Override public void apply(IgniteInternalFuture<EntryProcessorResult<Boolean>> future) {
+                        try {
+                            EntryProcessorResult<Boolean> result = future.get();
+
+                            if (result !=null && result.get())
+                                listener.release();
+                        }
+                        catch (IgniteCheckedException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                });
+
+                if (waitForUpdate())
+                    break;
+
+                return acquireOrRemove();
             }
 
             return true;
@@ -674,6 +717,7 @@ public final class GridCacheLockImpl2 implements GridCacheLockEx2 {
                     }
                 }
             }
+
             return false;
         }
 
