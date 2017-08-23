@@ -30,6 +30,7 @@ import org.apache.ignite.ml.math.DistanceMeasure;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.VectorUtils;
 import org.apache.ignite.ml.math.distributed.CacheUtils;
+import org.apache.ignite.ml.math.distributed.keys.impl.SparseMatrixKey;
 import org.apache.ignite.ml.math.exceptions.ConvergenceException;
 import org.apache.ignite.ml.math.exceptions.MathIllegalArgumentException;
 import org.apache.ignite.ml.math.functions.Functions;
@@ -182,10 +183,10 @@ public class KMeansDistributedClusterer extends BaseKMeansClusterer<SparseDistri
     private List<Vector> getNewCenters(int k, ConcurrentHashMap<Integer, Double> costs, IgniteUuid uid,
         double sumCosts, String cacheName) {
         return distributedFold(cacheName,
-            (IgniteBiFunction<Cache.Entry<IgniteBiTuple<Integer, IgniteUuid>, Map<Integer, Double>>,
+            (IgniteBiFunction<Cache.Entry<SparseMatrixKey, Map<Integer, Double>>,
                 List<Vector>,
                 List<Vector>>)(vectorWithIndex, list) -> {
-                Integer ind = vectorWithIndex.getKey().get1();
+                Integer ind = vectorWithIndex.getKey().index();
 
                 double prob = costs.get(ind) * 2.0 * k / sumCosts;
 
@@ -194,7 +195,7 @@ public class KMeansDistributedClusterer extends BaseKMeansClusterer<SparseDistri
 
                 return list;
             },
-            key -> key.get2().equals(uid),
+            key -> key.matrixId().equals(uid),
             (list1, list2) -> {
                 list1.addAll(list2);
                 return list1;
@@ -206,15 +207,15 @@ public class KMeansDistributedClusterer extends BaseKMeansClusterer<SparseDistri
     /** */
     private ConcurrentHashMap<Integer, Double> getNewCosts(SparseDistributedMatrix points, List<Vector> newCenters, String cacheName) {
         return distributedFold(cacheName,
-            (IgniteBiFunction<Cache.Entry<IgniteBiTuple<Integer, IgniteUuid>, ConcurrentHashMap<Integer, Double>>,
+            (IgniteBiFunction<Cache.Entry<SparseMatrixKey, ConcurrentHashMap<Integer, Double>>,
                 ConcurrentHashMap<Integer, Double>,
                 ConcurrentHashMap<Integer, Double>>)(vectorWithIndex, map) -> {
                 for (Vector center : newCenters)
-                    map.merge(vectorWithIndex.getKey().get1(), distance(vectorWithIndex.getValue(), center), Functions.MIN);
+                    map.merge(vectorWithIndex.getKey().index(), distance(vectorWithIndex.getValue(), center), Functions.MIN);
 
                 return map;
             },
-            key -> key.get2().equals(points.getUUID()),
+            key -> key.matrixId().equals(points.getUUID()),
             (map1, map2) -> {
                 map1.putAll(map2);
                 return map1;
@@ -224,7 +225,7 @@ public class KMeansDistributedClusterer extends BaseKMeansClusterer<SparseDistri
     /** */
     private ConcurrentHashMap<Integer, Integer> weightCenters(IgniteUuid uid, List<Vector> distinctCenters, String cacheName) {
         return distributedFold(cacheName,
-            (IgniteBiFunction<Cache.Entry<IgniteBiTuple<Integer, IgniteUuid>, Map<Integer, Double>>,
+            (IgniteBiFunction<Cache.Entry<SparseMatrixKey, Map<Integer, Double>>,
                 ConcurrentHashMap<Integer, Integer>,
                 ConcurrentHashMap<Integer, Integer>>)(vectorWithIndex, countMap) -> {
                 Integer resInd = -1;
@@ -245,7 +246,7 @@ public class KMeansDistributedClusterer extends BaseKMeansClusterer<SparseDistri
                 countMap.compute(resInd, (ind, v) -> v != null ? v + 1 : 1);
                 return countMap;
             },
-            key -> key.get2().equals(uid),
+            key -> key.matrixId().equals(uid),
             (map1, map2) -> MapUtil.mergeMaps(map1, map2, (integer, integer2) -> integer2 + integer,
                 ConcurrentHashMap::new),
             new ConcurrentHashMap<>());
@@ -259,7 +260,7 @@ public class KMeansDistributedClusterer extends BaseKMeansClusterer<SparseDistri
     /** */
     private SumsAndCounts getSumsAndCounts(Vector[] centers, int dim, IgniteUuid uid, String cacheName) {
         return CacheUtils.distributedFold(cacheName,
-            (IgniteBiFunction<Cache.Entry<IgniteBiTuple<Integer, IgniteUuid>, Map<Integer, Double>>, SumsAndCounts, SumsAndCounts>)(entry, counts) -> {
+            (IgniteBiFunction<Cache.Entry<SparseMatrixKey, Map<Integer, Double>>, SumsAndCounts, SumsAndCounts>)(entry, counts) -> {
                 Map<Integer, Double> vec = entry.getValue();
 
                 IgniteBiTuple<Integer, Double> closest = findClosest(centers, VectorUtils.fromMap(vec, false));
@@ -276,7 +277,7 @@ public class KMeansDistributedClusterer extends BaseKMeansClusterer<SparseDistri
 
                 return counts;
             },
-            key -> key.get2().equals(uid),
+            key -> key.matrixId().equals(uid),
             SumsAndCounts::merge, new SumsAndCounts()
         );
     }
