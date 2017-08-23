@@ -128,6 +128,6 @@ public class DenseLocalOnHeapMatrix extends AbstractMatrix implements OrderedMat
 
     /** */
     @Override public int accessMode() {
-        return ((ArrayMatrixStorage)getStorage()).accessMode();
+        return getStorage().accessMode();
     }
 }

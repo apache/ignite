@@ -16,6 +16,7 @@
  */
 
 /**
- * TODO: add description.
+ * <!-- Package description. -->
+ * Contains classes for distribution support.
  */
 package org.apache.ignite.ml.math.distributed;

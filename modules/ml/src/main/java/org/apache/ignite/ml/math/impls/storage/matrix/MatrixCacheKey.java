@@ -20,7 +20,7 @@ package org.apache.ignite.ml.math.impls.storage.matrix;
 import org.apache.ignite.lang.IgniteUuid;
 
 /**
- * TODO: add description.
+ * Base matrix cache key.
  */
 public interface MatrixCacheKey {
     /**

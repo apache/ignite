@@ -32,14 +32,18 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.ml.math.impls.matrix.SparseDistributedMatrix;
 import org.apache.ignite.ml.math.impls.storage.matrix.RowColMatrixKey;
 
 /**
- * TODO: add description.
+ * Key implementation for {@link SparseDistributedMatrix}.
  */
 public class SparseMatrixKey implements RowColMatrixKey, Externalizable, Binarylizable {
+    /** */
     private int idx;
+    /** */
     private IgniteUuid matrixId;
+    /** */
     private IgniteUuid affinityKey;
 
     /**
@@ -110,7 +114,12 @@ public class SparseMatrixKey implements RowColMatrixKey, Externalizable, Binaryl
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        return matrixId.hashCode() + (idx ^ (idx >>> 32));
+        int res = 1;
+
+        res += res * 37 + matrixId.hashCode();
+        res += res * 37 + idx;
+
+        return res;
     }
 
     /** {@inheritDoc} */

@@ -17,9 +17,14 @@
 
 package org.apache.ignite.ml.math.impls.storage.matrix;
 
+import org.apache.ignite.ml.math.impls.matrix.SparseDistributedMatrix;
+
 /**
- * TODO: add description.
+ * Cache key for {@link SparseDistributedMatrix}.
  */
 public interface RowColMatrixKey extends MatrixCacheKey {
+    /**
+     *  Return index value(blockId, Row/Col index, etc.)
+     */
     public int index();
 }

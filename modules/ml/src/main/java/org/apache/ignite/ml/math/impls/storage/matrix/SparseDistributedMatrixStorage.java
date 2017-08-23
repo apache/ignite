@@ -58,7 +58,6 @@ public class SparseDistributedMatrixStorage extends CacheUtils implements Matrix
     /** Matrix uuid. */
     private IgniteUuid uuid;
 
-    //TODO, IGNITE-5725, create separate key class.
     /** Actual distributed storage. */
     private IgniteCache<
         RowColMatrixKey /* Row or column index with matrix uuid. */,
