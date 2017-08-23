@@ -309,9 +309,11 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     if (!crdInitFut.isDone() && !msg.restoreState()) {
                         GridDhtPartitionExchangeId exchId = msg.exchangeId();
 
-                        log.info("Waiting for coordinator initialization [node=" + node.id() +
-                            ", nodeOrder=" + node.order() +
-                            ", ver=" + (exchId != null ? exchId.topologyVersion() : null) + ']');
+                        if (log.isInfoEnabled()) {
+                            log.info("Waiting for coordinator initialization [node=" + node.id() +
+                                ", nodeOrder=" + node.order() +
+                                ", ver=" + (exchId != null ? exchId.topologyVersion() : null) + ']');
+                        }
 
                         crdInitFut.listen(new CI1<IgniteInternalFuture>() {
                             @Override public void apply(IgniteInternalFuture fut) {
@@ -1810,18 +1812,22 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 GridDhtPartitionsExchangeFuture fut = (GridDhtPartitionsExchangeFuture) task;
 
                 if (fut.initialVersion().compareTo(resVer) > 0) {
-                    log.info("Merge exchange future on finish stop [curFut=" + curFut.initialVersion() +
-                        ", resVer=" + resVer +
-                        ", nextFutVer=" + fut.initialVersion() + ']');
+                    if (log.isInfoEnabled()) {
+                        log.info("Merge exchange future on finish stop [curFut=" + curFut.initialVersion() +
+                            ", resVer=" + resVer +
+                            ", nextFutVer=" + fut.initialVersion() + ']');
+                    }
 
                     break;
                 }
 
-                log.info("Merge exchange future on finish [curFut=" + curFut.initialVersion() +
-                    ", mergedFut=" + fut.initialVersion() +
-                    ", evt=" + IgniteUtils.gridEventName(fut.firstEvent().type()) +
-                    ", evtNode=" + fut.firstEvent().eventNode().id()+
-                    ", evtNodeClient=" + CU.clientNode(fut.firstEvent().eventNode())+ ']');
+                if (log.isInfoEnabled()) {
+                    log.info("Merge exchange future on finish [curFut=" + curFut.initialVersion() +
+                        ", mergedFut=" + fut.initialVersion() +
+                        ", evt=" + IgniteUtils.gridEventName(fut.firstEvent().type()) +
+                        ", evtNode=" + fut.firstEvent().eventNode().id()+
+                        ", evtNodeClient=" + CU.clientNode(fut.firstEvent().eventNode())+ ']');
+                }
 
                 DiscoveryEvent evt = fut.firstEvent();
 
@@ -1832,8 +1838,16 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 if (evt.type() == EVT_NODE_JOINED) {
                     final GridDhtPartitionsSingleMessage pendingMsg = fut.mergeJoinExchangeOnDone(curFut);
 
-                    if (pendingMsg != null)
+                    if (pendingMsg != null) {
+                        if (log.isInfoEnabled()) {
+                            log.info("Merged join exchange future on finish, will reply to node [" +
+                                "curFut=" + curFut.initialVersion() +
+                                ", mergedFut=" + fut.initialVersion() +
+                                ", evtNode=" + evt.eventNode().id() + ']');
+                        }
+
                         curFut.waitAndReplyToNode(evt.eventNode().id(), pendingMsg);
+                    }
                 }
             }
         }
@@ -1865,8 +1879,10 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         AffinityTopologyVersion exchMergeTestWaitVer = this.exchMergeTestWaitVer;
 
         if (exchMergeTestWaitVer != null) {
-            log.info("Exchange merge test, waiting for version [exch=" + curFut.initialVersion() +
-                ", waitVer=" + exchMergeTestWaitVer + ']');
+            if (log.isInfoEnabled()) {
+                log.info("Exchange merge test, waiting for version [exch=" + curFut.initialVersion() +
+                    ", waitVer=" + exchMergeTestWaitVer + ']');
+            }
 
             long end = U.currentTimeMillis() + 10_000;
 
@@ -1878,7 +1894,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         GridDhtPartitionsExchangeFuture fut = (GridDhtPartitionsExchangeFuture)task;
 
                         if (exchMergeTestWaitVer.equals(fut.initialVersion())) {
-                            log.info("Exchange merge test, found awaited version: " + exchMergeTestWaitVer);
+                            if (log.isInfoEnabled())
+                                log.info("Exchange merge test, found awaited version: " + exchMergeTestWaitVer);
 
                             found = true;
 
@@ -1912,7 +1929,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     DiscoveryEvent evt = fut.firstEvent();
 
                     if (evt.type() == EVT_DISCOVERY_CUSTOM_EVT) {
-                        log.info("Stop merge, custom event found: " + evt);
+                        if (log.isInfoEnabled())
+                            log.info("Stop merge, custom event found: " + evt);
 
                         break;
                     }
@@ -1920,21 +1938,25 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     ClusterNode node = evt.eventNode();
 
                     if (!curFut.context().supportsMergeExchanges(node)) {
-                        log.info("Stop merge, node does not support merge: " + node);
+                        if (log.isInfoEnabled())
+                            log.info("Stop merge, node does not support merge: " + node);
 
                         break;
                     }
                     if (evt.type() == EVT_NODE_JOINED && cctx.cache().hasCachesReceivedFromJoin(node)) {
-                        log.info("Stop merge, received caches from node: " + node);
+                        if (log.isInfoEnabled())
+                            log.info("Stop merge, received caches from node: " + node);
 
                         break;
                     }
 
-                    log.info("Merge exchange future [curFut=" + curFut.initialVersion() +
-                        ", mergedFut=" + fut.initialVersion() +
-                        ", evt=" + IgniteUtils.gridEventName(fut.firstEvent().type()) +
-                        ", evtNode=" + fut.firstEvent().eventNode().id() +
-                        ", evtNodeClient=" + CU.clientNode(fut.firstEvent().eventNode())+ ']');
+                    if (log.isInfoEnabled()) {
+                        log.info("Merge exchange future [curFut=" + curFut.initialVersion() +
+                            ", mergedFut=" + fut.initialVersion() +
+                            ", evt=" + IgniteUtils.gridEventName(fut.firstEvent().type()) +
+                            ", evtNode=" + fut.firstEvent().eventNode().id() +
+                            ", evtNodeClient=" + CU.clientNode(fut.firstEvent().eventNode())+ ']');
+                    }
 
                     curFut.context().events().addEvent(fut.initialVersion(),
                         fut.firstEvent(),
@@ -1947,7 +1969,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 }
                 else {
                     if (!task.skipForExchangeMerge()) {
-                        log.info("Stop merge, custom task found: " + task);
+                        if (log.isInfoEnabled())
+                            log.info("Stop merge, custom task found: " + task);
 
                         break;
                     }
