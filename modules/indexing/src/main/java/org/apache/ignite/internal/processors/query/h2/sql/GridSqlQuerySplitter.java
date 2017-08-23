@@ -1511,6 +1511,12 @@ public class GridSqlQuerySplitter {
             rdcQry.distinct(true);
         }
 
+        // -- SUB-QUERIES
+        boolean hasSubQueries = hasSubQueries(mapQry.where());
+
+        for (int i = 0; i < mapQry.columns(false).size(); i++)
+            hasSubQueries |= hasSubQueries(mapQry.column(i));
+
         // Replace the given select with generated reduce query in the parent.
         prnt.child(childIdx, rdcQry);
 
@@ -1521,6 +1527,7 @@ public class GridSqlQuerySplitter {
         map.columns(collectColumns(mapExps));
         map.sortColumns(mapQry.sort());
         map.partitioned(hasPartitionedTables(mapQry));
+        map.hasSubQueries(hasSubQueries);
 
         if (map.isPartitioned())
             map.derivedPartitions(derivePartitionsFromQuery(mapQry, ctx));
@@ -1538,6 +1545,25 @@ public class GridSqlQuerySplitter {
 
         for (int i = 0; i < ast.size(); i++) {
             if (hasPartitionedTables(ast.child(i)))
+                return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * @param ast Map query AST.
+     * @return {@code true} If the given AST has sub-queries.
+     */
+    private boolean hasSubQueries(GridSqlAst ast) {
+        if (ast == null)
+            return false;
+
+        if (ast instanceof GridSqlSubquery)
+            return true;
+
+        for (int childIdx = 0; childIdx < ast.size(); childIdx++) {
+            if (hasSubQueries(ast.child(childIdx)))
                 return true;
         }
 

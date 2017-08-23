@@ -834,8 +834,8 @@ public class GridMapQueryExecutor {
             byte status = (error != null || updResult == null) ? GridH2DmlResponse.STATUS_ERROR :
                 F.isEmpty(updResult.errorKeys()) ? GridH2DmlResponse.STATUS_OK : GridH2DmlResponse.STATUS_ERR_KEYS;
 
-            GridH2DmlResponse rsp = new GridH2DmlResponse(reqId, status, updResult == null ? 0: updResult.counter(),
-                updResult == null ? null: updResult.errorKeys(), error);
+            GridH2DmlResponse rsp = new GridH2DmlResponse(reqId, status, updResult == null ? 0 : updResult.counter(),
+                updResult == null ? null : updResult.errorKeys(), error);
 
             if (node.isLocal())
                 h2.reduceQueryExecutor().onMessage(ctx.localNodeId(), rsp);

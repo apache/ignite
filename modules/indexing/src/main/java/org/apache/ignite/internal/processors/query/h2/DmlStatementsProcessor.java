@@ -239,8 +239,10 @@ public class DmlStatementsProcessor {
                     fieldsQry.isDistributedJoins(),
                     fieldsQry.isEnforceJoinOrder(), idx);
 
-                // TODO: find a way to set aside sub-queries
-                plan.distributed = !qry.isReplicatedOnly() && qry.mapQueries().size() == 1 && qry.skipMergeTable();
+                plan.distributed = !qry.isReplicatedOnly() &&
+                    qry.skipMergeTable() &&
+                    qry.mapQueries().size() == 1 &&
+                    !qry.mapQueries().get(0).hasSubQueries();
 
                 if (plan.distributed)
                     plan.cacheIds = idx.collectCacheIds(CU.cacheId(plan.tbl.cacheName()), qry);
