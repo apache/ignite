@@ -168,9 +168,6 @@ public final class IgniteSystemProperties {
     /** Maximum size for exchange history. Default value is {@code 1000}.*/
     public static final String IGNITE_EXCHANGE_HISTORY_SIZE = "IGNITE_EXCHANGE_HISTORY_SIZE";
 
-    /** */
-    public static final String IGNITE_EXCHANGE_MERGE_DELAY = "IGNITE_EXCHANGE_MERGE_DELAY";
-
     /**
      * Name of the system property defining name of command line program.
      */
@@ -712,6 +709,13 @@ public final class IgniteSystemProperties {
      */
     public static final String IGNITE_DATA_STREAMING_EXECUTOR_SERVICE_TASKS_STEALING_THRESHOLD =
             "IGNITE_DATA_STREAMING_EXECUTOR_SERVICE_TASKS_STEALING_THRESHOLD";
+
+    /**
+     * The distribution will be logged if the actual exceeds the ideal by the specified amount.
+     * <p>
+     * Default is 0.1.
+     */
+    public static final String IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD = "IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD";
 
     /**
      * Enforces singleton.
