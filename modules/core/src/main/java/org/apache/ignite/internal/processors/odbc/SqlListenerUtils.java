@@ -74,9 +74,6 @@ public abstract class SqlListenerUtils {
             case GridBinaryMarshaller.STRING:
                 return BinaryUtils.doReadString(reader.in());
 
-            case GridBinaryMarshaller.ENCODED_STRING:
-                return BinaryUtils.doReadEncodedString(reader.in());
-
             case GridBinaryMarshaller.DECIMAL:
                 return BinaryUtils.doReadDecimal(reader.in());
 
@@ -174,7 +171,7 @@ public abstract class SqlListenerUtils {
         else if (cls == Double.class)
             writer.writeDoubleFieldPrimitive((Double)obj);
         else if (cls == String.class)
-            writer.doWriteEncodedString((String)obj);
+            writer.doWriteString((String)obj);
         else if (cls == BigDecimal.class)
             writer.doWriteDecimal((BigDecimal)obj);
         else if (cls == UUID.class)

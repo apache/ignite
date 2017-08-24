@@ -583,6 +583,14 @@ public class BinaryUtils {
 
     /**
      * @param cls Class.
+     * @return Binary field type.
+     */
+    public static byte typeByClass(Class<?> cls) {
+        return typeByClass(cls, null);
+    }
+
+    /**
+     * @param cls Class.
      * @param ctx Binary context.
      * @return Binary field type.
      */

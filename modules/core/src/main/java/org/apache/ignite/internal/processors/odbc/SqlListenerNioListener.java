@@ -220,7 +220,7 @@ public class SqlListenerNioListener extends GridNioServerListenerAdapter<byte[]>
             writer.writeShort(CURRENT_VER.major());
             writer.writeShort(CURRENT_VER.minor());
             writer.writeShort(CURRENT_VER.maintenance());
-            writer.doWriteEncodedString(errMsg);
+            writer.doWriteString(errMsg);
         }
 
         ses.send(writer.array());

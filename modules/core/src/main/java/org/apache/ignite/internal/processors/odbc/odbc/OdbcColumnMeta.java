@@ -98,14 +98,13 @@ public class OdbcColumnMeta {
      * Write in a binary format.
      *
      * @param writer Binary writer.
-     * @param ctx Binary context.
      */
-    public void write(BinaryRawWriter writer, BinaryContext ctx) {
+    public void write(BinaryRawWriter writer) {
         writer.writeString(schemaName);
         writer.writeString(tableName);
         writer.writeString(columnName);
 
-        byte typeId = BinaryUtils.typeByClass(dataType, ctx);
+        byte typeId = BinaryUtils.typeByClass(dataType);
 
         writer.writeByte(typeId);
     }
