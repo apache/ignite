@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.odbc.odbc;
 
 import org.apache.ignite.binary.BinaryRawWriter;
-import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 
