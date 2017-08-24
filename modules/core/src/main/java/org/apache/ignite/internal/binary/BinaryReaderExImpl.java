@@ -1063,7 +1063,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
             return null;
         else
             throw new BinaryObjectException("Unexpected field type [pos=" + BinaryUtils.positionForHandle(in) +
-                ", expected=" + fieldFlagNames(STRING, ENCODED_STRING) +
+                ", expected=" + fieldFlagName(STRING) + "," + fieldFlagName(ENCODED_STRING) +
                 ", actual=" + fieldFlagName(flag) + ']');
     }
 
@@ -1699,27 +1699,6 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
         String typeName = BinaryUtils.fieldTypeName(flag);
 
         return typeName == null ? String.valueOf(flag) : typeName;
-    }
-
-    /**
-     * Converts flags to comma-separated list of their string equivalents.
-     *
-     * @param flags flag values.
-     * @return comma-separated list of string flag representations.
-     */
-    private String fieldFlagNames(byte ... flags) {
-        StringBuilder sb = new StringBuilder();
-
-        if (flags.length > 0) {
-            sb.append(fieldFlagName(flags[0]));
-
-            for (int i = 1; i < flags.length; i++) {
-                sb.append(",");
-                sb.append(fieldFlagName(flags[i]));
-            }
-        }
-
-        return sb.toString();
     }
 
     /** {@inheritDoc} */
