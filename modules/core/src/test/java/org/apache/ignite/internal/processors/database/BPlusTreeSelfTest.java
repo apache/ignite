@@ -164,7 +164,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
                 try {
                     asyncRunFut.cancel();
-                    asyncRunFut.get(5000);
+                    asyncRunFut.get(60000);
                 }
                 catch (Throwable ex) {
                     //Ignore
@@ -1462,14 +1462,15 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         asyncRunFut.add((IgniteInternalFuture)fut2);
         asyncRunFut.add((IgniteInternalFuture)fut3);
 
+        asyncRunFut.markInitialized();
+
         try {
             fut.get(getTestTimeout(), TimeUnit.MILLISECONDS);
         }
         finally {
             stop.set(true);
 
-            fut2.get();
-            fut3.get();
+            asyncRunFut.get();
         }
 
         GridCursor<Long> cursor = tree.find(null, null);
