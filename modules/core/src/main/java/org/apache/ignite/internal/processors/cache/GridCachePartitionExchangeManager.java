@@ -275,6 +275,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                 .onAffinityChangeMessage(customEvt.eventNode(), msg);
                     }
                     else if (customEvt.customMessage() instanceof DynamicCacheChangeFailureMessage) {
+                        // TODO: check version as above.
                         DynamicCacheChangeFailureMessage msg =
                             (DynamicCacheChangeFailureMessage)customEvt.customMessage();
 

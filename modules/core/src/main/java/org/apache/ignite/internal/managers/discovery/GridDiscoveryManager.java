@@ -325,6 +325,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     public void removeCacheFilter(String cacheName, boolean force) {
         CachePredicate p = registeredCachesPreds.remove(cacheName);
 
+        // TODO: remove force and make sure it does not fail.
         assert force || p != null : cacheName;
     }
 

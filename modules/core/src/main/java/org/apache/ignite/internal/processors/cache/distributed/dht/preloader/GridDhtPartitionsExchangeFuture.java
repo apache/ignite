@@ -75,7 +75,6 @@ import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
-import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
@@ -202,7 +201,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     private boolean centralizedAff;
 
     /** Exception that was thrown during init phase on local node. */
-    private IgniteCheckedException exchangeLocalException;
+    private IgniteCheckedException exchangeLocE;
 
     /** Exchange exceptions from all participating nodes. */
     private Map<UUID, Exception> exchangeGlobalExceptions = new ConcurrentHashMap8<>();
@@ -552,21 +551,24 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 return;
             }
 
+            // TODO: more informative message.
             U.error(log, "Failed to reinitialize local partitions (rebalancing will be stopped): " + exchId, e);
 
+            // TODO: on client node record error and wait for normal exchange completion.
+            // TODO: if failed only on client - warn this in the log.
             if (cctx.kernalContext().clientNode() || !isRollbackSupported()) {
                 onDone(e);
 
                 return;
             }
 
-            exchangeLocalException = new IgniteCheckedException(
+            exchangeLocE = new IgniteCheckedException(
                 "Failed to initialize exchange locally [locNodeId=" + cctx.localNodeId() + "]", e);
 
-            exchangeGlobalExceptions.put(cctx.localNodeId(), exchangeLocalException);
+            exchangeGlobalExceptions.put(cctx.localNodeId(), exchangeLocE);
 
             if (crd.isLocal()) {
-                boolean isRemainingEmpty = false;
+                boolean isRemainingEmpty;
 
                 synchronized (mux) {
                     isRemainingEmpty = remaining.isEmpty();
@@ -1021,8 +1023,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             clientOnlyExchange,
             true);
 
-        if (exchangeLocalException != null)
-            m.setError(exchangeLocalException);
+        if (exchangeLocE != null)
+            m.setError(exchangeLocE);
 
         if (log.isDebugEnabled())
             log.debug("Sending local partitions [nodeId=" + node.id() + ", exchId=" + exchId + ", msg=" + m + ']');
@@ -1183,7 +1185,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         fullMsgs = null;
         crd = null;
         partReleaseFut = null;
-        exchangeLocalException = null;
+        exchangeLocE = null;
         exchangeGlobalExceptions = null;
     }
 
@@ -1222,10 +1224,13 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 log.debug("Received message for finished future (will reply only to sender) [msg=" + msg +
                     ", fut=" + this + ']');
 
+            // TODO: if custom message on cache start error was sent do not need sendAllPartitions.
             if (!centralizedAff)
                 sendAllPartitions(node.id(), cctx.gridConfig().getNetworkSendRetryCount());
         }
         else {
+            assert !msg.client();
+
             initFut.listen(new CI1<IgniteInternalFuture<Boolean>>() {
                 @Override public void apply(IgniteInternalFuture<Boolean> f) {
                     try {
@@ -1342,13 +1347,13 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     private IgniteCheckedException createExchangeException(Map<UUID, Exception> globalExceptions) {
         IgniteCheckedException ex;
 
-        if (exchangeLocalException != null)
-            ex = exchangeLocalException;
+        if (exchangeLocE != null)
+            ex = exchangeLocE;
         else
             ex = new IgniteCheckedException("Failed to complete exchange process (will try to rollback).");
 
         for (Map.Entry<UUID, Exception> entry : globalExceptions.entrySet()) {
-            // avoid self-suppression
+            // Avoid self-suppression.
             if (ex != entry.getValue())
                 ex.addSuppressed(entry.getValue());
         }
@@ -1364,8 +1369,10 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     private boolean isRollbackSupported() {
         boolean rollbackSupported = false;
 
+        // TODO: create method in discoCache.
         for (ClusterNode node : discoCache.allNodes()) {
             Boolean exchangeSupported = node.attribute(ATTR_EXCHANGE_ROLLBACK_SUPPORTED);
+
             if (exchangeSupported == null || !exchangeSupported)
                 return false;
         }
@@ -1398,10 +1405,10 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                     stopReq.stop(true);
                     stopReq.deploymentId(req.deploymentId());
 
-                    // cleanup GridCacheProcessor
+                    // Cleanup GridCacheProcessor.
                     cctx.cache().forceCloseCache(stopReq);
 
-                    // cleanup CacheAffinitySharedManager
+                    // Cleanup CacheAffinitySharedManager.
                     cctx.affinity().forceCloseCache(this, crd.isLocal(), Collections.singletonList(stopReq));
                 }
             }
@@ -1416,14 +1423,10 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             assert crd.isLocal();
 
             if (!F.isEmpty(exchangeGlobalExceptions) && isRollbackSupported()) {
-                updateLastVersion(cctx.versions().last());
-
-                cctx.versions().onExchange(lastVer.get().order());
-
                 IgniteCheckedException err = createExchangeException(exchangeGlobalExceptions);
 
                 DynamicCacheChangeFailureMessage msg = new DynamicCacheChangeFailureMessage(
-                    cctx.localNode(), exchId, lastVer.get(), err, reqs);
+                    cctx.localNode(), exchId, err, reqs);
 
                 if (log.isDebugEnabled())
                     log.debug("Dynamic cache change failed. Send message to all participating nodes: " + msg);
@@ -1644,7 +1647,6 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      */
     public void onDynamicCacheChangeFail(final ClusterNode node, final DynamicCacheChangeFailureMessage msg) {
         assert exchId.equals(msg.exchangeId()) : msg;
-        assert msg.lastVersion() != null : msg;
 
         onDiscoveryEvent(new IgniteRunnable() {
             @Override public void run() {
@@ -1655,10 +1657,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                     if (isRollbackSupported())
                         rollbackExchange();
 
-                    if (!crd.isLocal())
-                        cctx.versions().onExchange(msg.lastVersion().order());
-
-                    onDone(exchId.topologyVersion(), msg.getError());
+                    onDone(exchId.topologyVersion(), msg.error());
                 }
                 finally {
                     leaveBusy();

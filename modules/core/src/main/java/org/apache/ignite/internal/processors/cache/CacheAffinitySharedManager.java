@@ -323,6 +323,16 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     }
 
     /**
+     * @param cacheId Cache ID.
+     * @return {@code True} if cache is in wait list.
+     */
+    private boolean waitCache(int cacheId) {
+        synchronized (mux) {
+            return waitInfo != null && waitInfo.waitCaches.containsKey(cacheId);
+        }
+    }
+
+    /**
      * Called during exchange rollback in order to stop the given cache(s)
      * even if it's not fully initialized (e.g. fail on cache init stage).
      *
@@ -332,7 +342,6 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      */
     public void forceCloseCache(final GridDhtPartitionsExchangeFuture fut, boolean crd,
         Collection<DynamicCacheChangeRequest> reqs) {
-
         assert !F.isEmpty(reqs) : fut;
 
         for (DynamicCacheChangeRequest req : reqs) {
@@ -341,6 +350,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             Integer cacheId = CU.cacheId(req.cacheName());
 
             registeredCaches.remove(cacheId);
+
+            assert !waitCache(cacheId);
         }
 
         Set<Integer> stoppedCaches = null;
@@ -361,34 +372,6 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
                     cctx.io().removeHandler(cacheId, GridDhtAffinityAssignmentResponse.class);
                 }
-            }
-        }
-
-        if (stoppedCaches != null) {
-            boolean notify = false;
-
-            synchronized (mux) {
-                if (waitInfo != null) {
-                    for (Integer cacheId : stoppedCaches) {
-                        boolean rmv =  waitInfo.waitCaches.remove(cacheId) != null;
-
-                        if (rmv) {
-                            notify = true;
-
-                            waitInfo.assignments.remove(cacheId);
-                        }
-                    }
-                }
-            }
-
-            if (notify) {
-                final AffinityTopologyVersion topVer = affCalcVer;
-
-                cctx.kernalContext().closure().runLocalSafe(new Runnable() {
-                    @Override public void run() {
-                        onCacheStopped(topVer);
-                    }
-                });
             }
         }
     }
@@ -484,6 +467,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                     else
                         initStartedCacheOnCoordinator(fut, cacheId);
                 }
+                // TODO: remove catch and forceCloseCache
                 catch (IgniteCheckedException | RuntimeException e) {
                     U.error(log, "Failed to initialize cache. Will try to rollback cache start routine. " +
                         "[cacheName=" + req.cacheName() + ']', e);

@@ -1750,11 +1750,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /**
      * Called during exchange rollback in order to stop the given cache
      * even if it's not fully initialized (e.g. fail on cache init stage).
+     *
+     * @param req Stop request.
      */
      public void forceCloseCache(DynamicCacheChangeRequest req) {
         assert req.stop() : req;
-
-        registeredCaches.remove(maskNull(req.cacheName()));
 
         stopGateway(req);
 
@@ -1798,6 +1798,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /**
      * Closes cache even if it's not fully initialized (e.g. fail on cache init stage).
      *
+     * TODO: remove this method.
+     *
      * @param topVer Completed topology version.
      * @param req Change request.
      * @param err Error.
@@ -1823,7 +1825,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         AffinityTopologyVersion topVer,
         Collection<DynamicCacheChangeRequest> reqs,
         Throwable err,
-        boolean forceClose
+        boolean forceClose // TODO: remove parameter.
     ) {
         for (GridCacheAdapter<?, ?> cache : caches.values()) {
             GridCacheContext<?, ?> cacheCtx = cache.context();
@@ -1874,9 +1876,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     public void completeStartFutures(Collection<DynamicCacheChangeRequest> reqs, @Nullable Throwable err) {
         if (!F.isEmpty(reqs)) {
-            for (DynamicCacheChangeRequest req : reqs) {
+            for (DynamicCacheChangeRequest req : reqs)
                 completeStartFuture(req, err);
-            }
         }
     }
 

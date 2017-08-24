@@ -35,8 +35,6 @@ import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.events.EventType;
-import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -45,6 +43,10 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
+/**
+ * TODO: try start from client and server.
+ * TODO: case when failed on client and did not failed on server and vice versa.
+ */
 @SuppressWarnings("unchecked")
 public class IgniteDynamicCacheStartFailSelfTest extends GridCommonAbstractTest {
     /** */
