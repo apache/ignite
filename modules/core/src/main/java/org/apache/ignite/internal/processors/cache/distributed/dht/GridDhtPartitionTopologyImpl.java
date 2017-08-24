@@ -161,6 +161,11 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
+    @Override public int partitions() {
+        return grp.affinityFunction().partitions();
+    }
+
+    /** {@inheritDoc} */
     @Override public int groupId() {
         return grp.groupId();
     }

@@ -55,6 +55,13 @@ public interface MatrixStorage extends Externalizable, StorageOpsMetrics, Destro
     public int storageMode();
 
     /**
+     * @return Matrix access mode.
+     *
+     * @see StorageConstants
+     */
+    public int accessMode();
+
+    /**
      * Gets underlying data, if {@link StorageOpsMetrics#isArrayBased()} returns {@code false} this method return
      * copy of data. The data must be adapted for {@link Blas}.
      *

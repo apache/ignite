@@ -147,8 +147,10 @@ public class InitNewCoordinatorFuture extends GridCompoundFuture {
                 }
             }
 
-            log.info("Try restore exchange result [allNodes=" + awaited +
-                ", joined=" + joinedNodes.keySet() +  ']');
+            if (log.isInfoEnabled()) {
+                log.info("Try restore exchange result [allNodes=" + awaited +
+                    ", joined=" + joinedNodes.keySet() +  ']');
+            }
 
             if (!nodes.isEmpty()) {
                 GridDhtPartitionsSingleRequest req = GridDhtPartitionsSingleRequest.restoreStateRequest(exchFut.exchangeId(),
@@ -179,6 +181,9 @@ public class InitNewCoordinatorFuture extends GridCompoundFuture {
         markInitialized();
     }
 
+    /**
+     * @return {@code True} if new coordinator tried to restore exchange state.
+     */
     boolean restoreState() {
         return restoreState;
     }
@@ -188,6 +193,13 @@ public class InitNewCoordinatorFuture extends GridCompoundFuture {
      */
     Map<ClusterNode, GridDhtPartitionsSingleMessage> messages() {
         return msgs;
+    }
+
+    /**
+     * @return Messages for merged join exchanges.
+     */
+    Map<UUID, GridDhtPartitionsSingleMessage> mergedJoinExchangeMessages() {
+        return joinExchMsgs;
     }
 
     /**
@@ -202,9 +214,11 @@ public class InitNewCoordinatorFuture extends GridCompoundFuture {
      * @param msg Message.
      */
     public void onMessage(ClusterNode node, GridDhtPartitionsSingleMessage msg) {
-        log.info("Init new coordinator, received response [node=" + node.id() +
-            ", fullMsg=" + (msg.finishMessage() != null) +
-            ", affReq=" + !F.isEmpty(msg.cacheGroupsAffinityRequest()) + ']');
+        if (log.isInfoEnabled()) {
+            log.info("Init new coordinator, received response [node=" + node.id() +
+                ", fullMsg=" + (msg.finishMessage() != null) +
+                ", affReq=" + !F.isEmpty(msg.cacheGroupsAffinityRequest()) + ']');
+        }
 
         assert msg.restoreState() : msg;
 
@@ -240,7 +254,8 @@ public class InitNewCoordinatorFuture extends GridCompoundFuture {
         if (fullMsg != null) {
             AffinityTopologyVersion resVer = fullMsg.resultTopologyVersion();
 
-            for (Iterator<Map.Entry<ClusterNode, GridDhtPartitionsSingleMessage>> it = msgs.entrySet().iterator(); it.hasNext();) {
+            for (Iterator<Map.Entry<ClusterNode, GridDhtPartitionsSingleMessage>> it = msgs.entrySet().iterator();
+                 it.hasNext();) {
                 Map.Entry<ClusterNode, GridDhtPartitionsSingleMessage> e = it.next();
 
                 GridDhtPartitionExchangeId msgVer = joinedNodes.get(e.getKey().id());
@@ -248,14 +263,24 @@ public class InitNewCoordinatorFuture extends GridCompoundFuture {
                 if (msgVer != null) {
                     assert msgVer.topologyVersion().compareTo(initTopVer) > 0 : msgVer;
 
-                    log.info("Process joined node message [resVer=" + resVer +
-                        ", initTopVer=" + initTopVer +
-                        ", msgVer=" + msgVer.topologyVersion() + ']');
+                    if (log.isInfoEnabled()) {
+                        log.info("Process joined node message [resVer=" + resVer +
+                            ", initTopVer=" + initTopVer +
+                            ", msgVer=" + msgVer.topologyVersion() + ']');
+                    }
 
                     if (msgVer.topologyVersion().compareTo(resVer) > 0)
                         it.remove();
-                    else
-                        e.getValue().exchangeId(msgVer);
+                    else {
+                        GridDhtPartitionsSingleMessage msg = e.getValue();
+
+                        msg.exchangeId(msgVer);
+
+                        if (joinExchMsgs == null)
+                            joinExchMsgs = new HashMap<>();
+
+                        joinExchMsgs.put(e.getKey().id(), msg);
+                    }
                 }
             }
         }
@@ -270,8 +295,10 @@ public class InitNewCoordinatorFuture extends GridCompoundFuture {
 
                     assert msgVer.topologyVersion().compareTo(initTopVer) > 0 : msgVer;
 
-                    log.info("Process joined node message [initTopVer=" + initTopVer +
-                        ", msgVer=" + msgVer.topologyVersion() + ']');
+                    if (log.isInfoEnabled()) {
+                        log.info("Process joined node message [initTopVer=" + initTopVer +
+                            ", msgVer=" + msgVer.topologyVersion() + ']');
+                    }
 
                     if (joinExchMsgs == null)
                         joinExchMsgs = new HashMap<>();
@@ -285,6 +312,10 @@ public class InitNewCoordinatorFuture extends GridCompoundFuture {
         }
     }
 
+    /**
+     * @param nodeId Node ID.
+     * @return Single message for node joined after exchange start.
+     */
     @Nullable GridDhtPartitionsSingleMessage joinExchangeMessage(UUID nodeId) {
         return joinExchMsgs != null ? joinExchMsgs.get(nodeId) : null;
     }
@@ -293,7 +324,8 @@ public class InitNewCoordinatorFuture extends GridCompoundFuture {
      * @param nodeId Failed node ID.
      */
     public void onNodeLeft(UUID nodeId) {
-        log.info("Init new coordinator, node left [node=" + nodeId + ']');
+        if (log.isInfoEnabled())
+            log.info("Init new coordinator, node left [node=" + nodeId + ']');
 
         boolean done;
 
