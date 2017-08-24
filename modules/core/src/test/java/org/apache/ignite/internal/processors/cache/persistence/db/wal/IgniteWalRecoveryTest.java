@@ -1017,6 +1017,12 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
             for (int i = 0; i < cnt; i++)
                 storage.putData(String.valueOf(i), new byte[] {1, 2, 3});
 
+            for (int i = 0; i < cnt; i++) {
+                MetastorageDataRow row = storage.getData(String.valueOf(i));
+                assert row != null;
+                assert row.value().length == 3;
+            }
+
             stopGrid(1);
 
             ignite0 = (IgniteEx)startGrid(1);

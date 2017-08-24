@@ -86,8 +86,6 @@ public class MetaStorage {
 
     /** */
     public void start(IgniteCacheDatabaseSharedManager db) throws IgniteCheckedException {
-//        memPlc.pageMemory().start();
-
         getOrAllocateMetas();
 
         FreeListImpl freeList = new FreeListImpl(METASTORAGE_CACHE_ID, "metastorage",
@@ -155,7 +153,8 @@ public class MetaStorage {
                 long treeRoot, reuseListRoot;
 
                 // Initialize new page.
-                if (PageIO.getType(pageAddr) != PageIO.T_DATA_METASTORAGE) {
+                int type = PageIO.getType(pageAddr);
+                if (PageIO.getType(pageAddr) != PageIO.T_PART_META) {
                     if (readOnly)
                         throw new IgniteCheckedException("metastorage is not initialized");
 
@@ -172,7 +171,7 @@ public class MetaStorage {
                     io.setTreeRoot(pageAddr, treeRoot);
                     io.setReuseListRoot(pageAddr, reuseListRoot);
 
-                    if (PageHandler.isWalDeltaRecordNeeded(pageMem, METASTORAGE_CACHE_ID, partMetaId, partMetaPage, wal, null))
+                    if (PageHandler.isWalDeltaRecordNeeded(pageMem, METASTORAGE_CACHE_ID, partMetaId, partMetaPage, wal, Boolean.FALSE))
                         wal.log(new MetaPageInitRecord(
                             METASTORAGE_CACHE_ID,
                             partMetaId,

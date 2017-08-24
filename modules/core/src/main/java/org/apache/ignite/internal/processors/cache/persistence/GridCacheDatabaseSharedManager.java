@@ -376,13 +376,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * @return Memoty polict configuration.
      */
     private MemoryPolicyConfiguration createStoreMemoryPolicy(MemoryConfiguration memCfg) {
-        MemoryPolicyConfiguration memPlcCfg = new MemoryPolicyConfiguration();
+        MemoryPolicyConfiguration cfg = new MemoryPolicyConfiguration();
 
-        memPlcCfg.setName(METASTORE_MEMORY_POLICY_NAME);
-        memPlcCfg.setInitialSize(memCfg.getSystemCacheInitialSize());
-        memPlcCfg.setMaxSize(memCfg.getSystemCacheMaxSize());
+        cfg.setName(METASTORE_MEMORY_POLICY_NAME);
+        cfg.setInitialSize(memCfg.getSystemCacheInitialSize());
+        cfg.setMaxSize(memCfg.getSystemCacheMaxSize());
 
-        return memPlcCfg;
+        return cfg;
     }
 
     /** {@inheritDoc} */
@@ -500,9 +500,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         if (!cctx.localNode().isClient()) {
             cctx.pageStore().initializeForMetastorage();
 
-            metaStorage = new MetaStorage(cctx.wal(), memPlcMap.get(METASTORE_MEMORY_POLICY_NAME), (MemoryMetricsImpl)memMetricsMap.get(METASTORE_MEMORY_POLICY_NAME));
-
-            metaStorage.start(this);
+            metaStorage = new MetaStorage(cctx.wal(), memPlcMap.get(METASTORE_MEMORY_POLICY_NAME),
+                (MemoryMetricsImpl)memMetricsMap.get(METASTORE_MEMORY_POLICY_NAME));
         }
     }
 
@@ -580,6 +579,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             // This method should return a pointer to the last valid record in the WAL.
             WALPointer restore = restoreMemory(status);
 
+            metaStorage.start(this);
+
             cctx.wal().resumeLogging(restore);
 
             cctx.wal().log(new MemoryRecoveryRecord(U.currentTimeMillis()));
@@ -618,9 +619,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             CheckpointStatus status = readCheckpointStatus();
 
-            restoreMemory(status, true, storePageMem);
-
             cctx.pageStore().initializeForMetastorage();
+
+            restoreMemory(status, true, storePageMem);
 
             metaStorage = new MetaStorage(cctx.wal(), storeMemPlc, memMetrics, true);
 
