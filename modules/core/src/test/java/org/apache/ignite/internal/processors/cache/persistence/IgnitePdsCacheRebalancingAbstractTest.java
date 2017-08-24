@@ -558,9 +558,8 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
                         cntrs.put(part.id(), part.updateCounter());
                 }
 
-                for (int k0 = 0; k0 < k; k0++) {
+                for (int k0 = 0; k0 < k; k0++)
                     assertEquals(String.valueOf(k0), k0, ig0.cache(cacheName).get(k0));
-                }
             }
 
             assertEquals(ig.affinity(cacheName).partitions(), cntrs.size());
