@@ -17,6 +17,7 @@
 
 package org.apache.ignite.configuration;
 
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Collection;
 import org.apache.ignite.binary.BinaryIdMapper;
@@ -25,6 +26,9 @@ import org.apache.ignite.binary.BinarySerializer;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.binary.BinaryStringEncoding.ENC_NAME_WINDOWS_1251;
+import static org.apache.ignite.internal.binary.BinaryStringEncoding.ENC_WINDOWS_1251;
 
 /**
  * Configuration object for Ignite Binary Objects.
@@ -196,11 +200,17 @@ public class BinaryConfiguration {
     /**
      * Sets string encoding.
      *
-     * @param code encoding code.
+     * @param encoding canonical encoding name, in terms of {@code java.nio} package.
      * @return {@code this} for chaining.
+     * @throws UnsupportedEncodingException when encoding provided is not supported.
      */
-    public BinaryConfiguration setEncoding(@Nullable Byte code) {
-        this.encoding = code;
+    public BinaryConfiguration setEncoding(@Nullable String encoding) throws UnsupportedEncodingException {
+        if (encoding == null)
+            this.encoding = null;
+        else if (encoding.equals(ENC_NAME_WINDOWS_1251))
+            this.encoding = ENC_WINDOWS_1251;
+        else
+            throw new UnsupportedEncodingException();
 
         return this;
     }

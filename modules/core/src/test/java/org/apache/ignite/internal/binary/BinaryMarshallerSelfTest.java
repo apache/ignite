@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.io.Serializable;
+import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
@@ -99,7 +100,7 @@ import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.apache.ignite.internal.binary.BinaryStringEncoding.ENC_WINDOWS_1251;
+import static org.apache.ignite.internal.binary.BinaryStringEncoding.ENC_NAME_WINDOWS_1251;
 import static org.apache.ignite.internal.binary.streams.BinaryMemoryAllocator.INSTANCE;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertNotEquals;
@@ -280,11 +281,11 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     public void testLossyEncodedString() throws Exception {
         // Ascii check.
         String str = "ascii0123456789";
-        assertEquals(str, marshalUnmarshal(str, ENC_WINDOWS_1251));
+        assertEquals(str, marshalUnmarshal(str, ENC_NAME_WINDOWS_1251));
 
         // Extended symbols set check set.
         str = "abcdкириллица";
-        assertEquals(str, marshalUnmarshal(str, ENC_WINDOWS_1251));
+        assertEquals(str, marshalUnmarshal(str, ENC_NAME_WINDOWS_1251));
     }
 
     /**
@@ -3591,7 +3592,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      * @param obj Original object.
      * @return Result object.
      */
-    private <T> T marshalUnmarshal(T obj, byte stringEncoding) throws IgniteCheckedException {
+    private <T> T marshalUnmarshal(T obj, String stringEncoding) throws IgniteCheckedException {
         return marshalUnmarshal(obj, binaryMarshaller(stringEncoding));
     }
 
@@ -3645,7 +3646,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    protected BinaryMarshaller binaryMarshaller(Byte stringEncoding) throws IgniteCheckedException {
+    protected BinaryMarshaller binaryMarshaller(String stringEncoding) throws IgniteCheckedException {
         return binaryMarshaller(null, null, null, null, null, stringEncoding);
     }
 
@@ -3691,7 +3692,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         BinarySerializer serializer,
         Collection<BinaryTypeConfiguration> cfgs,
         Collection<String> excludedClasses,
-        Byte stringEncoding
+        String stringEncoding
     ) throws IgniteCheckedException {
         IgniteConfiguration iCfg = new IgniteConfiguration();
 
@@ -3702,8 +3703,13 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         bCfg.setSerializer(serializer);
         bCfg.setCompactFooter(compactFooter());
 
-        if (stringEncoding != null)
-            bCfg.setEncoding(stringEncoding);
+        if (stringEncoding != null) {
+            try {
+                bCfg.setEncoding(stringEncoding);
+            } catch (UnsupportedEncodingException e) {
+                throw new IgniteCheckedException(e);
+            }
+        }
 
         bCfg.setTypeConfigurations(cfgs);
 

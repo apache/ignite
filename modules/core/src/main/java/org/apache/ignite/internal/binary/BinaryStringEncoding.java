@@ -25,6 +25,9 @@ import org.jetbrains.annotations.Nullable;
  */
 public class BinaryStringEncoding {
     /** */
+    public static final String ENC_NAME_WINDOWS_1251 = "windows-1251";
+
+    /** */
     public static final byte ENC_WINDOWS_1251 = 1;
 
     /** */

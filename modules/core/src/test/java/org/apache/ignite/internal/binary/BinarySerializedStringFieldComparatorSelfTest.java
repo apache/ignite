@@ -36,7 +36,7 @@ public class BinarySerializedStringFieldComparatorSelfTest extends BinarySeriali
             cfg.setBinaryConfiguration(bCfg);
         }
 
-        bCfg.setEncoding(BinaryStringEncoding.ENC_WINDOWS_1251);
+        bCfg.setEncoding(BinaryStringEncoding.ENC_NAME_WINDOWS_1251);
 
         cfg.setMarshaller(new BinaryMarshaller());
 
