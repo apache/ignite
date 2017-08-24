@@ -182,7 +182,9 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
-        boolean marshal = (parts != null && partsBytes == null) || (partCntrs != null && partCntrsBytes == null);
+        boolean marshal = (parts != null && partsBytes == null) ||
+            (partCntrs != null && partCntrsBytes == null) ||
+            (err != null && errBytes == null);
 
         if (marshal) {
             byte[] partsBytes0 = null;

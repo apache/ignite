@@ -1823,9 +1823,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         if (!F.isEmpty(reqs)) {
             for (DynamicCacheChangeRequest req : reqs) {
-                String masked = maskNull(req.cacheName());
-
                 if (err == null) {
+                    String masked = maskNull(req.cacheName());
+
                     if (req.stop()) {
                         stopGateway(req);
 

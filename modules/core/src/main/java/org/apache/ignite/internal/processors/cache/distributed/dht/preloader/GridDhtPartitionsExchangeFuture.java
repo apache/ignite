@@ -163,10 +163,10 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      * Messages received on non-coordinator are stored in case if this node
      * becomes coordinator.
      */
-    private Map<ClusterNode, GridDhtPartitionsSingleMessage> singleMsgs = new ConcurrentHashMap8<>();
+    private final Map<ClusterNode, GridDhtPartitionsSingleMessage> singleMsgs = new ConcurrentHashMap8<>();
 
     /** Messages received from new coordinator. */
-    private Map<ClusterNode, GridDhtPartitionsFullMessage> fullMsgs = new ConcurrentHashMap8<>();
+    private final Map<ClusterNode, GridDhtPartitionsFullMessage> fullMsgs = new ConcurrentHashMap8<>();
 
     /** */
     @SuppressWarnings({"FieldCanBeLocal", "UnusedDeclaration"})
@@ -204,7 +204,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     private IgniteCheckedException exchangeLocE;
 
     /** Exchange exceptions from all participating nodes. */
-    private Map<UUID, Exception> exchangeGlobalExceptions = new ConcurrentHashMap8<>();
+    private final Map<UUID, Exception> exchangeGlobalExceptions = new ConcurrentHashMap8<>();
 
     /** Forced Rebalance future. */
     private GridCompoundFuture<Boolean, Boolean> forcedRebFut;
@@ -1023,13 +1023,21 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      */
     private void sendLocalPartitions(ClusterNode node)
         throws IgniteCheckedException {
-        GridDhtPartitionsSingleMessage m = cctx.exchange().createPartitionsSingleMessage(node,
-            exchangeId(),
-            clientOnlyExchange,
-            true);
+        GridDhtPartitionsSingleMessage m;
 
-        if (exchangeLocE != null)
+        if (exchangeLocE == null)
+            m = cctx.exchange().createPartitionsSingleMessage(node,
+                exchangeId(),
+                clientOnlyExchange,
+                true);
+        else {
+            m = new GridDhtPartitionsSingleMessage(exchangeId(),
+                clientOnlyExchange,
+                cctx.versions().last(),
+                cctx.exchange().canUsePartitionMapCompression(node));
+
             m.setError(exchangeLocE);
+        }
 
         if (log.isDebugEnabled())
             log.debug("Sending local partitions [nodeId=" + node.id() + ", exchId=" + exchId + ", msg=" + m + ']');
@@ -1184,12 +1192,12 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      * Cleans up resources to avoid excessive memory usage.
      */
     public void cleanUp() {
-        singleMsgs = null;
-        fullMsgs = null;
+        singleMsgs.clear();
+        fullMsgs.clear();
         crd = null;
         partReleaseFut = null;
         exchangeLocE = null;
-        exchangeGlobalExceptions = null;
+        exchangeGlobalExceptions.clear();
     }
 
     /**
@@ -1582,6 +1590,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         assert msg.exchangeId().equals(exchId) : msg;
         assert msg.lastVersion() != null : msg;
 
+        boolean isRollbackNedeed = false;
+
         synchronized (mux) {
             if (crd == null)
                 return;
@@ -1597,11 +1607,16 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 return;
             }
 
-            if (exchangeLocE != null && isRollbackSupported()) {
-                rollbackExchange();
+            if (exchangeLocE != null && isRollbackSupported())
+                isRollbackNedeed = true;
+        }
 
-                onDone(exchId.topologyVersion(), exchangeLocE);
-            }
+        if (isRollbackNedeed) {
+            rollbackExchange();
+
+            onDone(exchId.topologyVersion(), exchangeLocE);
+
+            return;
         }
 
         updatePartitionFullMap(msg);
@@ -1641,6 +1656,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      * @param msg Partitions single message.
      */
     private void updatePartitionSingleMap(GridDhtPartitionsSingleMessage msg) {
+        if (msg.partitions() == null)
+            return;
+
         for (Map.Entry<Integer, GridDhtPartitionMap2> entry : msg.partitions().entrySet()) {
             Integer cacheId = entry.getKey();
             GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
