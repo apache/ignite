@@ -16,11 +16,10 @@
  */
 package org.apache.ignite.configuration;
 
+import java.io.Serializable;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.util.typedef.internal.S;
-
-import java.io.Serializable;
 
 /**
  * Configures Apache Ignite Persistent store.
@@ -45,10 +44,10 @@ public class PersistentStoreConfiguration implements Serializable {
     public static final int DFLT_RATE_TIME_INTERVAL_MILLIS = 60_000;
 
     /** Default number of checkpointing threads. */
-    public static final int DFLT_CHECKPOINTING_THREADS = 1;
+    public static final int DFLT_CHECKPOINTING_THREADS = 4;
 
     /** Default checkpoint write order. */
-    public static final CheckpointWriteOrder DFLT_CHECKPOINT_WRITE_ORDER = CheckpointWriteOrder.RANDOM;
+    public static final CheckpointWriteOrder DFLT_CHECKPOINT_WRITE_ORDER = CheckpointWriteOrder.SEQUENTIAL;
 
     /** Default number of checkpoints to be kept in WAL after checkpoint is finished */
     public static final int DFLT_WAL_HISTORY_SIZE = 20;
