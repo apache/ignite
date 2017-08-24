@@ -362,7 +362,7 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
     @Override public void setNString(int paramIdx, String val) throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("SQL-specific types are not supported.");
+        setString(paramIdx, val);
     }
 
     /** {@inheritDoc} */

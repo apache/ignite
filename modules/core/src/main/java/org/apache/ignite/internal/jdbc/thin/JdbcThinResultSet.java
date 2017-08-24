@@ -1281,16 +1281,12 @@ public class JdbcThinResultSet implements ResultSet {
 
     /** {@inheritDoc} */
     @Override public String getNString(int colIdx) throws SQLException {
-        ensureNotClosed();
-
-        throw new SQLFeatureNotSupportedException("SQL-specific types are not supported.");
+        return getString(colIdx);
     }
 
     /** {@inheritDoc} */
     @Override public String getNString(String colLb) throws SQLException {
-        ensureNotClosed();
-
-        throw new SQLFeatureNotSupportedException("SQL-specific types are not supported.");
+        return getString(colLb);
     }
 
     /** {@inheritDoc} */
