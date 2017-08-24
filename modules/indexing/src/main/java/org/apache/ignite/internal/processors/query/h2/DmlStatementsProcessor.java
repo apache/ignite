@@ -546,7 +546,14 @@ public class DmlStatementsProcessor {
         }
     }
 
-    /** */
+    /**
+     * @param schemaName Schema name.
+     * @param fieldsQry Initial query.
+     * @param plan Update plan.
+     * @param cancel Cancel state.
+     * @return Update result.
+     * @throws IgniteCheckedException if failed.
+     */
     private UpdateResult doDistributedUpdate(String schemaName, SqlFieldsQuery fieldsQry, UpdatePlan plan,
         GridQueryCancel cancel) throws IgniteCheckedException {
 

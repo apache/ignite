@@ -898,7 +898,7 @@ public class GridReduceQueryExecutor {
 
         GridH2DmlRequest req = new GridH2DmlRequest()
             .requestId(reqId)
-            .topologyVersion(h2.readyTopologyVersion())
+            .topologyVersion(topVer)
             .caches(cacheIds)
             .schemaName(schemaName)
             .query(selectQry)

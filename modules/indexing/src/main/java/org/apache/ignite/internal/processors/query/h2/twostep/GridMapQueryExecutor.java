@@ -772,7 +772,7 @@ public class GridMapQueryExecutor {
         MapNodeResults nodeResults = resultsForNode(node.id());
 
         try {
-            IndexingQueryFilter filter = h2.backupFilter(req.topologyVersion(), parts);
+            IndexingQueryFilter filter = h2.backupFilter(topVer, parts);
 
             GridQueryCancel cancel = nodeResults.putUpdate(reqId);
 
