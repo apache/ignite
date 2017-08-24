@@ -15,23 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.math;
+package org.apache.ignite.ml.math.distributed.keys;
 
-import java.io.Serializable;
+import org.apache.ignite.lang.IgniteUuid;
 
 /**
- * Utility mapper that can be used to map arbitrary values types to and from double.
+ * Base matrix cache key.
  */
-public interface ValueMapper<V> extends Serializable {
+public interface MatrixCacheKey {
     /**
-     * @param v Value to map from double.
-     * @return Mapped value.
+     * @return matrix id.
      */
-    public V fromDouble(double v);
+    public IgniteUuid matrixId();
 
     /**
-     * @param v Value to map to double.
-     * @return Mapped value.
+     * @return affinity key.
      */
-    public double toDouble(V v);
+    public IgniteUuid affinityKey();
 }
