@@ -18,14 +18,12 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.Collection;
-import java.util.Map;
-import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
@@ -37,9 +35,9 @@ public class DynamicCacheChangeFailureMessage implements DiscoveryCustomMessage 
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Change requests. */
+    /** Cache names. */
     @GridToStringInclude
-    private Collection<DynamicCacheChangeRequest> reqs;
+    private Collection<String> cacheNames;
 
     /** Custom message ID. */
     private IgniteUuid id;
@@ -48,31 +46,31 @@ public class DynamicCacheChangeFailureMessage implements DiscoveryCustomMessage 
     private GridDhtPartitionExchangeId exchId;
 
     /** */
-    private GridCacheVersion lastVer;
-
     @GridToStringInclude
     private IgniteCheckedException cause;
 
     /**
      * Creates new DynamicCacheChangeFailureMessage instance.
      *
+     * @param locNode Local node.
      * @param exchId Exchange Id.
-     * @param lastVer Last version.
-     * @param cause
-     * @param reqs Cache change requests.
+     * @param cause Cache start error.
+     * @param cacheNames Cache names.
      */
     public DynamicCacheChangeFailureMessage(
-        ClusterNode localNode,
+        ClusterNode locNode,
         GridDhtPartitionExchangeId exchId,
-        @Nullable GridCacheVersion lastVer,
         IgniteCheckedException cause,
-        Collection<DynamicCacheChangeRequest> reqs)
+        Collection<String> cacheNames)
     {
-        this.id = IgniteUuid.fromUuid(localNode.id());
+        assert exchId != null;
+        assert cause != null;
+        assert !F.isEmpty(cacheNames) : cacheNames;
+
+        this.id = IgniteUuid.fromUuid(locNode.id());
         this.exchId = exchId;
-        this.lastVer = lastVer;
         this.cause = cause;
-        this.reqs = reqs;
+        this.cacheNames = cacheNames;
     }
 
     /** {@inheritDoc} */
@@ -81,28 +79,17 @@ public class DynamicCacheChangeFailureMessage implements DiscoveryCustomMessage 
     }
 
     /**
-     * @param id Message ID.
+     * @return Collection of failed caches.
      */
-    public void id(IgniteUuid id) {
-        this.id = id;
+    public Collection<String> cacheNames() {
+        return cacheNames;
     }
 
     /**
-     * @return Collection of change requests.
+     * @return Cache start error.
      */
-    public Collection<DynamicCacheChangeRequest> requests() {
-        return reqs;
-    }
-
-    public IgniteCheckedException getError() {
+    public IgniteCheckedException error() {
         return cause;
-    }
-
-    /**
-     * @return Last used version among all nodes.
-     */
-    @Nullable public GridCacheVersion lastVersion() {
-        return lastVer;
     }
 
     /**

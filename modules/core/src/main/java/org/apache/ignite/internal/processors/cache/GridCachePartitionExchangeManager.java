@@ -278,8 +278,10 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         DynamicCacheChangeFailureMessage msg =
                             (DynamicCacheChangeFailureMessage)customEvt.customMessage();
 
-                        exchangeFuture(msg.exchangeId(), null, null, null, null)
-                            .onDynamicCacheChangeFail(customEvt.eventNode(), msg);
+                        if (msg.exchangeId().topologyVersion().topologyVersion() >=
+                            affinityTopologyVersion(cctx.discovery().localJoinEvent()).topologyVersion())
+                            exchangeFuture(msg.exchangeId(), null, null, null, null)
+                                .onDynamicCacheChangeFail(customEvt.eventNode(), msg);
                     }
                 }
 
@@ -1279,6 +1281,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     log.debug("Received local partition update [nodeId=" + node.id() + ", parts=" +
                         msg + ']');
 
+                if (msg.partitions() == null)
+                    return;
+
                 boolean updated = false;
 
                 for (Map.Entry<Integer, GridDhtPartitionMap2> entry : msg.partitions().entrySet()) {
@@ -1593,7 +1598,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * @return {@code True} if can use compression for partition map messages.
      */
     @SuppressWarnings("SimplifiableIfStatement")
-    private boolean canUsePartitionMapCompression(ClusterNode node) {
+    public boolean canUsePartitionMapCompression(ClusterNode node) {
         IgniteProductVersion ver = node.version();
 
         if (ver.compareToIgnoreTimestamp(GridDhtPartitionsAbstractMessage.PART_MAP_COMPRESS_SINCE) >= 0) {
