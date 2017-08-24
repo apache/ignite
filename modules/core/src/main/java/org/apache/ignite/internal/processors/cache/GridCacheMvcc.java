@@ -1420,7 +1420,7 @@ public final class GridCacheMvcc {
             for (int i = 0; i < owners.size(); i++) {
                 GridCacheMvccCandidate owner = owners.candidate(i);
 
-                if (owner.threadId() == threadId && owner.nodeId().equals(cctx.nodeId()) &&
+                if (owner.threadIdSafely() == threadId && owner.nodeId().equals(cctx.nodeId()) &&
                     (allowDhtLoc || !owner.dhtLocal()) && !U.containsObjectArray(exclude, owner.version()))
                     return true;
             }
