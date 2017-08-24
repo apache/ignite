@@ -24,6 +24,7 @@ import java.io.ObjectOutput;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.Date;
@@ -32,6 +33,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryStringEncoding;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
 import org.apache.ignite.internal.binary.streams.BinaryOffheapInputStream;
@@ -321,6 +323,22 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
                 byte[] data = BinaryPrimitives.readByteArray(ptr, fieldPos + 5, dataLen);
 
                 val = new String(data, UTF_8);
+
+                break;
+            }
+
+            case GridBinaryMarshaller.ENCODED_STRING: {
+                byte encoding = BinaryPrimitives.readByte(ptr, fieldPos + 1);
+
+                Charset charset = BinaryStringEncoding.charsetByCode(encoding);
+
+                if (charset == null)
+                    throw new BinaryObjectException("Unsupported string encoding [code=" + encoding + "]");
+
+                int dataLen = BinaryPrimitives.readInt(ptr, fieldPos + 2);
+                byte[] data = BinaryPrimitives.readByteArray(ptr, fieldPos + 6, dataLen);
+
+                val = new String(data, charset);
 
                 break;
             }
