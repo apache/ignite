@@ -275,12 +275,13 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                 .onAffinityChangeMessage(customEvt.eventNode(), msg);
                     }
                     else if (customEvt.customMessage() instanceof DynamicCacheChangeFailureMessage) {
-                        // TODO: check version as above.
                         DynamicCacheChangeFailureMessage msg =
                             (DynamicCacheChangeFailureMessage)customEvt.customMessage();
 
-                        exchangeFuture(msg.exchangeId(), null, null, null, null)
-                            .onDynamicCacheChangeFail(customEvt.eventNode(), msg);
+                        if (msg.exchangeId().topologyVersion().topologyVersion() >=
+                            affinityTopologyVersion(cctx.discovery().localJoinEvent()).topologyVersion())
+                            exchangeFuture(msg.exchangeId(), null, null, null, null)
+                                .onDynamicCacheChangeFail(customEvt.eventNode(), msg);
                     }
                 }
 

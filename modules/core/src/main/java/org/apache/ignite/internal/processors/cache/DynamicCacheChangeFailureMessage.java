@@ -34,10 +34,9 @@ public class DynamicCacheChangeFailureMessage implements DiscoveryCustomMessage 
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Change requests. */
-    // TODO: only cache names.
+    /** Cache names. */
     @GridToStringInclude
-    private Collection<DynamicCacheChangeRequest> reqs;
+    private Collection<String> cacheNames;
 
     /** Custom message ID. */
     private IgniteUuid id;
@@ -55,13 +54,13 @@ public class DynamicCacheChangeFailureMessage implements DiscoveryCustomMessage 
      * @param locNode Local node.
      * @param exchId Exchange Id.
      * @param cause Cache start error.
-     * @param reqs Cache change requests.
+     * @param cacheNames Cache names.
      */
     public DynamicCacheChangeFailureMessage(
         ClusterNode locNode,
         GridDhtPartitionExchangeId exchId,
         IgniteCheckedException cause,
-        Collection<DynamicCacheChangeRequest> reqs)
+        Collection<String> cacheNames)
     {
         assert exchId != null;
         assert cause != null;
@@ -69,7 +68,7 @@ public class DynamicCacheChangeFailureMessage implements DiscoveryCustomMessage 
         this.id = IgniteUuid.fromUuid(locNode.id());
         this.exchId = exchId;
         this.cause = cause;
-        this.reqs = reqs;
+        this.cacheNames = cacheNames;
     }
 
     /** {@inheritDoc} */
@@ -80,8 +79,8 @@ public class DynamicCacheChangeFailureMessage implements DiscoveryCustomMessage 
     /**
      * @return Collection of change requests.
      */
-    public Collection<DynamicCacheChangeRequest> requests() {
-        return reqs;
+    public Collection<String> requests() {
+        return cacheNames;
     }
 
     /**

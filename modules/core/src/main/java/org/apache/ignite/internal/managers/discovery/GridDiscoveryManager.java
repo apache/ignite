@@ -320,13 +320,11 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * Removes dynamic cache filter.
      *
      * @param cacheName Cache name.
-     * @param force Removes dynamic cache filter without check that it was previously created.
      */
-    public void removeCacheFilter(String cacheName, boolean force) {
+    public void removeCacheFilter(String cacheName) {
         CachePredicate p = registeredCachesPreds.remove(cacheName);
 
-        // TODO: remove force and make sure it does not fail.
-        assert force || p != null : cacheName;
+        assert p != null : cacheName;
     }
 
     /**

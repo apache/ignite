@@ -1796,36 +1796,17 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Closes cache even if it's not fully initialized (e.g. fail on cache init stage).
-     *
-     * TODO: remove this method.
-     *
-     * @param topVer Completed topology version.
-     * @param req Change request.
-     * @param err Error.
-     */
-    void forceCloseCache(
-        AffinityTopologyVersion topVer,
-        DynamicCacheChangeRequest req,
-        Throwable err
-    ) {
-        onExchangeDone(topVer, Collections.singleton(req), err, true);
-    }
-
-    /**
      * Callback invoked when first exchange future for dynamic cache is completed.
      *
      * @param topVer Completed topology version.
      * @param reqs Change requests.
      * @param err Error.
-     * @param forceClose Close cache despite flags in requests.
      */
     @SuppressWarnings("unchecked")
     public void onExchangeDone(
         AffinityTopologyVersion topVer,
         Collection<DynamicCacheChangeRequest> reqs,
-        Throwable err,
-        boolean forceClose // TODO: remove parameter.
+        Throwable err
     ) {
         for (GridCacheAdapter<?, ?> cache : caches.values()) {
             GridCacheContext<?, ?> cacheCtx = cache.context();
@@ -1840,44 +1821,37 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
         }
 
-        if (!F.isEmpty(reqs) && (err == null || forceClose)) {
+        if (!F.isEmpty(reqs)) {
             for (DynamicCacheChangeRequest req : reqs) {
                 String masked = maskNull(req.cacheName());
 
-                if (req.stop()) {
-                    stopGateway(req);
+                if (err == null) {
+                    if (req.stop()) {
+                        stopGateway(req);
 
-                    prepareCacheStop(req, forceClose);
-                }
-                else if (req.close() && req.initiatingNodeId().equals(ctx.localNodeId()) || forceClose) {
-                    IgniteCacheProxy<?, ?> proxy = jCacheProxies.remove(masked);
+                        prepareCacheStop(req, false);
+                    }
+                    else if (req.close() && req.initiatingNodeId().equals(ctx.localNodeId())) {
+                        IgniteCacheProxy<?, ?> proxy = jCacheProxies.remove(masked);
 
-                    if (proxy != null) {
-                        if (proxy.context().affinityNode()) {
-                            GridCacheAdapter<?, ?> cache = caches.get(masked);
+                        if (proxy != null) {
+                            if (proxy.context().affinityNode()) {
+                                GridCacheAdapter<?, ?> cache = caches.get(masked);
 
-                            if (cache != null)
-                                jCacheProxies.put(masked, new IgniteCacheProxy(cache.context(), cache, null, false));
-                        }
-                        else {
-                            proxy.context().gate().onStopped();
+                                if (cache != null)
+                                    jCacheProxies.put(masked, new IgniteCacheProxy(cache.context(), cache, null, false));
+                            }
+                            else {
+                                proxy.context().gate().onStopped();
 
-                            prepareCacheStop(req, forceClose);
+                                prepareCacheStop(req, false);
+                            }
                         }
                     }
                 }
-            }
-        }
-    }
 
-    /**
-     * @param reqs Collection of requests to complete future for.
-     * @param err Error to be passed to futures.
-     */
-    public void completeStartFutures(Collection<DynamicCacheChangeRequest> reqs, @Nullable Throwable err) {
-        if (!F.isEmpty(reqs)) {
-            for (DynamicCacheChangeRequest req : reqs)
                 completeStartFuture(req, err);
+            }
         }
     }
 
@@ -2633,10 +2607,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return {@code True} if minor topology version should be increased.
      */
     private boolean onCacheChangeRequested(DynamicCacheChangeFailureMessage failMsg) {
-        for (DynamicCacheChangeRequest req : failMsg.requests()) {
-            registeredCaches.remove(maskNull(req.cacheName()));
+        for (String cacheName : failMsg.requests()) {
+            registeredCaches.remove(maskNull(cacheName));
 
-            ctx.discovery().removeCacheFilter(req.cacheName(), true);
+            ctx.discovery().removeCacheFilter(cacheName);
         }
 
         return false;
@@ -2779,7 +2753,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                         assert old != null : "Dynamic cache map was concurrently modified [req=" + req + ']';
 
-                        ctx.discovery().removeCacheFilter(req.cacheName(), false);
+                        ctx.discovery().removeCacheFilter(req.cacheName());
 
                         needExchange = true;
                     }
