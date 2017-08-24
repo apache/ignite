@@ -57,9 +57,6 @@ public class IgniteDynamicCacheStartFailSelfTest extends GridCommonAbstractTest 
     /** */
     private static final String CLIENT_GRID_NAME = "client";
 
-    /** Coordinator node. */
-    private Ignite crd;
-
     /** Coordinator node index. */
     private int crdIdx;
 
@@ -82,7 +79,8 @@ public class IgniteDynamicCacheStartFailSelfTest extends GridCommonAbstractTest 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         crdIdx = 0;
-        crd = startGrid(crdIdx);
+
+        startGrid(crdIdx);
 
         for (int i = 1; i < nodeCount(); ++i)
             startGrid(i);
@@ -93,6 +91,9 @@ public class IgniteDynamicCacheStartFailSelfTest extends GridCommonAbstractTest 
         stopAllGrids();
     }
 
+    /**
+     * @throws Exception If failed.
+     */
     public void testBrokenAffinityFunStartOnServerFailedOnClient() throws Exception {
         final String clientName = CLIENT_GRID_NAME + "testBrokenAffinityFunStartOnServerFailedOnClient";
 
@@ -118,6 +119,9 @@ public class IgniteDynamicCacheStartFailSelfTest extends GridCommonAbstractTest 
         stopGrid(clientName);
     }
 
+    /**
+     * @throws Exception If failed.
+     */
     public void testBrokenAffinityFunStartOnServerFailedOnServer() throws Exception {
         final String clientName = CLIENT_GRID_NAME + "testBrokenAffinityFunStartOnServerFailedOnServer";
 
@@ -144,6 +148,9 @@ public class IgniteDynamicCacheStartFailSelfTest extends GridCommonAbstractTest 
         stopGrid(clientName);
     }
 
+    /**
+     * @throws Exception If failed.
+     */
     public void testBrokenAffinityFunStartOnClientFailOnClient() throws Exception {
         final String clientName = CLIENT_GRID_NAME + "testBrokenAffinityFunStartOnClientFailOnClient";
 
@@ -170,6 +177,9 @@ public class IgniteDynamicCacheStartFailSelfTest extends GridCommonAbstractTest 
         stopGrid(clientName);
     }
 
+    /**
+     * @throws Exception If failed.
+     */
     public void testBrokenAffinityFunStartOnClientFailOnServer() throws Exception {
         final String clientName = CLIENT_GRID_NAME + "testBrokenAffinityFunStartOnClientFailOnServer";
 
@@ -196,149 +206,185 @@ public class IgniteDynamicCacheStartFailSelfTest extends GridCommonAbstractTest 
         stopGrid(clientName);
     }
 
+    /**
+     *
+     */
     public void testBrokenAffinityFunOnAllNodes() {
         final boolean failOnAllNodes = true;
         final int unluckyNode = 0;
         final int unluckyCfg = 1;
-        final int numberOfCaches = 3;
+        final int numOfCaches = 3;
         final int initiator = 0;
 
         testDynamicCacheStart(
             createCacheConfigsWithBrokenAffinityFun(
-                failOnAllNodes, unluckyNode, unluckyCfg, numberOfCaches, false),
+                failOnAllNodes, unluckyNode, unluckyCfg, numOfCaches, false),
             initiator);
     }
 
+    /**
+     *
+     */
     public void testBrokenAffinityFunOnInitiator() {
         final boolean failOnAllNodes = false;
         final int unluckyNode = 1;
         final int unluckyCfg = 1;
-        final int numberOfCaches = 3;
+        final int numOfCaches = 3;
         final int initiator = 1;
 
         testDynamicCacheStart(
             createCacheConfigsWithBrokenAffinityFun(
-                failOnAllNodes, unluckyNode, unluckyCfg, numberOfCaches, false),
+                failOnAllNodes, unluckyNode, unluckyCfg, numOfCaches, false),
             initiator);
     }
 
+    /**
+     *
+     */
     public void testBrokenAffinityFunOnNonInitiator() {
         final boolean failOnAllNodes = false;
         final int unluckyNode = 1;
         final int unluckyCfg = 1;
-        final int numberOfCaches = 3;
+        final int numOfCaches = 3;
         final int initiator = 2;
 
         testDynamicCacheStart(
             createCacheConfigsWithBrokenAffinityFun(
-                failOnAllNodes, unluckyNode, unluckyCfg, numberOfCaches, false),
+                failOnAllNodes, unluckyNode, unluckyCfg, numOfCaches, false),
             initiator);
     }
 
+    /**
+     *
+     */
     public void testBrokenAffinityFunOnCoordinatorDiffInitiator() {
         final boolean failOnAllNodes = false;
         final int unluckyNode = crdIdx;
         final int unluckyCfg = 1;
-        final int numberOfCaches = 3;
+        final int numOfCaches = 3;
         final int initiator = (crdIdx + 1) % nodeCount();
 
         testDynamicCacheStart(
             createCacheConfigsWithBrokenAffinityFun(
-                failOnAllNodes, unluckyNode, unluckyCfg, numberOfCaches, false),
+                failOnAllNodes, unluckyNode, unluckyCfg, numOfCaches, false),
             initiator);
     }
 
+    /**
+     *
+     */
     public void testBrokenAffinityFunOnCoordinator() {
         final boolean failOnAllNodes = false;
         final int unluckyNode = crdIdx;
         final int unluckyCfg = 1;
-        final int numberOfCaches = 3;
+        final int numOfCaches = 3;
         final int initiator = crdIdx;
 
         testDynamicCacheStart(
             createCacheConfigsWithBrokenAffinityFun(
-                failOnAllNodes, unluckyNode, unluckyCfg, numberOfCaches, false),
+                failOnAllNodes, unluckyNode, unluckyCfg, numOfCaches, false),
             initiator);
     }
 
+    /**
+     *
+     */
     public void testBrokenAffinityFunWithNodeFilter() {
         final boolean failOnAllNodes = false;
         final int unluckyNode = 0;
         final int unluckyCfg = 0;
-        final int numberOfCaches = 1;
+        final int numOfCaches = 1;
         final int initiator = 0;
 
         testDynamicCacheStart(
             createCacheConfigsWithBrokenAffinityFun(
-                failOnAllNodes, unluckyNode, unluckyCfg, numberOfCaches, true),
+                failOnAllNodes, unluckyNode, unluckyCfg, numOfCaches, true),
             initiator);
     }
 
+    /**
+     *
+     */
     public void testBrokenCacheStoreOnAllNodes() {
         final boolean failOnAllNodes = true;
         final int unluckyNode = 0;
         final int unluckyCfg = 1;
-        final int numberOfCaches = 3;
+        final int numOfCaches = 3;
         final int initiator = 0;
 
         testDynamicCacheStart(
             createCacheConfigsWithBrokenCacheStore(
-                failOnAllNodes, unluckyNode, unluckyCfg, numberOfCaches, false),
+                failOnAllNodes, unluckyNode, unluckyCfg, numOfCaches, false),
             initiator);
     }
 
+    /**
+     *
+     */
     public void testBrokenCacheStoreOnInitiator() {
         final boolean failOnAllNodes = false;
         final int unluckyNode = 1;
         final int unluckyCfg = 1;
-        final int numberOfCaches = 3;
+        final int numOfCaches = 3;
         final int initiator = 1;
 
         testDynamicCacheStart(
             createCacheConfigsWithBrokenCacheStore(
-                failOnAllNodes, unluckyNode, unluckyCfg, numberOfCaches, false),
+                failOnAllNodes, unluckyNode, unluckyCfg, numOfCaches, false),
             initiator);
     }
 
+    /**
+     *
+     */
     public void testBrokenCacheStoreOnNonInitiator() {
         final boolean failOnAllNodes = false;
         final int unluckyNode = 1;
         final int unluckyCfg = 1;
-        final int numberOfCaches = 3;
+        final int numOfCaches = 3;
         final int initiator = 2;
 
         testDynamicCacheStart(
             createCacheConfigsWithBrokenCacheStore(
-                failOnAllNodes, unluckyNode, unluckyCfg, numberOfCaches, false),
+                failOnAllNodes, unluckyNode, unluckyCfg, numOfCaches, false),
             initiator);
     }
 
+    /**
+     *
+     */
     public void testBrokenCacheStoreOnCoordinatorDiffInitiator() {
         final boolean failOnAllNodes = false;
         final int unluckyNode = crdIdx;
         final int unluckyCfg = 1;
-        final int numberOfCaches = 3;
+        final int numOfCaches = 3;
         final int initiator = (crdIdx + 1) % nodeCount();
 
         testDynamicCacheStart(
             createCacheConfigsWithBrokenCacheStore(
-                failOnAllNodes, unluckyNode, unluckyCfg, numberOfCaches, false),
+                failOnAllNodes, unluckyNode, unluckyCfg, numOfCaches, false),
             initiator);
     }
 
+    /**
+     *
+     */
     public void testBrokenCacheStoreFunOnCoordinator() {
         final boolean failOnAllNodes = false;
         final int unluckyNode = crdIdx;
         final int unluckyCfg = 1;
-        final int numberOfCaches = 3;
+        final int numOfCaches = 3;
         final int initiator = crdIdx;
 
         testDynamicCacheStart(
             createCacheConfigsWithBrokenCacheStore(
-                failOnAllNodes, unluckyNode, unluckyCfg, numberOfCaches, false),
+                failOnAllNodes, unluckyNode, unluckyCfg, numOfCaches, false),
             initiator);
     }
 
+    /**
+     *
+     */
     public void testCreateCacheMultipleTimes() {
         final boolean failOnAllNodes = false;
         final int unluckyNode = 1;
@@ -430,12 +476,12 @@ public class IgniteDynamicCacheStartFailSelfTest extends GridCommonAbstractTest 
         }, CacheException.class, null);
     }
 
+    /**
+     *
+     */
     private static class NodeFilter implements IgnitePredicate<ClusterNode> {
         /** Cache should be created node with certain UUID. */
         public UUID uuid;
-
-        public NodeFilter() {
-        }
 
         public NodeFilter(UUID uuid) {
             this.uuid = uuid;
@@ -447,6 +493,9 @@ public class IgniteDynamicCacheStartFailSelfTest extends GridCommonAbstractTest 
         }
     }
 
+    /**
+     *
+     */
     private static class BrokenAffinityFunction extends RendezvousAffinityFunction {
         /** */
         private static final long serialVersionUID = 0L;
@@ -456,22 +505,26 @@ public class IgniteDynamicCacheStartFailSelfTest extends GridCommonAbstractTest 
         private Ignite ignite;
 
         /** Exception should arise on all nodes. */
-        private boolean exceptionOnAllNodes = false;
+        private boolean eOnAllNodes = false;
 
         /** Exception should arise on node with certain name. */
         private String gridName;
 
+        /**
+         *
+         */
         public BrokenAffinityFunction() {
+            // No-op.
         }
 
-        public BrokenAffinityFunction(boolean exceptionOnAllNodes, String gridName) {
-            this.exceptionOnAllNodes = exceptionOnAllNodes;
+        public BrokenAffinityFunction(boolean eOnAllNodes, String gridName) {
+            this.eOnAllNodes = eOnAllNodes;
             this.gridName = gridName;
         }
 
         /** {@inheritDoc} */
         @Override public List<List<ClusterNode>> assignPartitions(AffinityFunctionContext affCtx) {
-            if (exceptionOnAllNodes || ignite.name().equals(gridName))
+            if (eOnAllNodes || ignite.name().equals(gridName))
                 throw new IllegalStateException("Simulated exception [locNodeId="
                     + ignite.cluster().localNode().id() + "]");
             else
@@ -481,7 +534,7 @@ public class IgniteDynamicCacheStartFailSelfTest extends GridCommonAbstractTest 
         /** {@inheritDoc} */
         @Override public void writeExternal(ObjectOutput out) throws IOException {
             super.writeExternal(out);
-            out.writeBoolean(exceptionOnAllNodes);
+            out.writeBoolean(eOnAllNodes);
             out.writeObject(gridName);
         }
 
@@ -489,33 +542,34 @@ public class IgniteDynamicCacheStartFailSelfTest extends GridCommonAbstractTest 
         @SuppressWarnings("unchecked")
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             super.readExternal(in);
-            exceptionOnAllNodes = in.readBoolean();
+            eOnAllNodes = in.readBoolean();
             gridName = (String)in.readObject();
         }
     }
 
+    /**
+     *
+     */
     private static class BrokenStoreFactory implements Factory<CacheStore<Integer, String>> {
         /** */
         @IgniteInstanceResource
         private Ignite ignite;
 
         /** Exception should arise on all nodes. */
-        boolean exceptionOnAllNodes = true;
+        boolean eOnAllNodes = true;
 
         /** Exception should arise on node with certain name. */
         public static String gridName;
 
-        public BrokenStoreFactory() {
-        }
+        public BrokenStoreFactory(boolean eOnAllNodes, String gridName) {
+            this.eOnAllNodes = eOnAllNodes;
 
-        public BrokenStoreFactory(boolean exceptionOnAllNodes, String gridName) {
-            this.exceptionOnAllNodes = exceptionOnAllNodes;
-            this.gridName = gridName;
+            BrokenStoreFactory.gridName = gridName;
         }
 
         /** {@inheritDoc} */
         @Override public CacheStore<Integer, String> create() {
-            if (exceptionOnAllNodes || ignite.name().equals(gridName))
+            if (eOnAllNodes || ignite.name().equals(gridName))
                 throw new IllegalStateException("Simulated exception [locNodeId="
                     + ignite.cluster().localNode().id() + "]");
             else

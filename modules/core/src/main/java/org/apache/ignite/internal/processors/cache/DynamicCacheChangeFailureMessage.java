@@ -23,6 +23,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
@@ -64,6 +65,7 @@ public class DynamicCacheChangeFailureMessage implements DiscoveryCustomMessage 
     {
         assert exchId != null;
         assert cause != null;
+        assert !F.isEmpty(cacheNames) : cacheNames;
 
         this.id = IgniteUuid.fromUuid(locNode.id());
         this.exchId = exchId;
@@ -77,9 +79,9 @@ public class DynamicCacheChangeFailureMessage implements DiscoveryCustomMessage 
     }
 
     /**
-     * @return Collection of change requests.
+     * @return Collection of failed caches.
      */
-    public Collection<String> requests() {
+    public Collection<String> cacheNames() {
         return cacheNames;
     }
 

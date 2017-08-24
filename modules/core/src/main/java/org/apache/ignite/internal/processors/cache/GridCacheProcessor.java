@@ -2607,7 +2607,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return {@code True} if minor topology version should be increased.
      */
     private boolean onCacheChangeRequested(DynamicCacheChangeFailureMessage failMsg) {
-        for (String cacheName : failMsg.requests()) {
+        for (String cacheName : failMsg.cacheNames()) {
             registeredCaches.remove(maskNull(cacheName));
 
             ctx.discovery().removeCacheFilter(cacheName);

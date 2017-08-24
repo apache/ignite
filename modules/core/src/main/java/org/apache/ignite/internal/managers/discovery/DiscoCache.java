@@ -296,16 +296,15 @@ public class DiscoCache {
     }
 
     /**
-     * Returns {@code True} if all the given nodes has the given attribute and its value equals to {@code expVal}.
+     * Returns {@code True} if all nodes has the given attribute and its value equals to {@code expVal}.
      *
      * @param <T> Attribute Type.
      * @param name Attribute name.
      * @param expVal Expected value.
-     * @param nodes List cluster nodes.
      * @return {@code True} if all the given nodes has the given attribute and its value equals to {@code expVal}.
      */
-    public <T> boolean checkAttribute(String name, T expVal, List<ClusterNode> nodes) {
-        for (ClusterNode node : nodes) {
+    public <T> boolean checkAttribute(String name, T expVal) {
+        for (ClusterNode node : allNodes) {
             T attr = node.attribute(name);
 
             if (attr == null || !expVal.equals(attr))

@@ -566,21 +566,24 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
             if (crd != null) {
                 if (crd.isLocal()) {
-                    boolean isRemainingEmpty;
+                    boolean allRcvd;
 
                     synchronized (mux) {
-                        isRemainingEmpty = remaining.isEmpty();
+                        allRcvd = remaining.isEmpty();
                     }
 
-                    if (isRemainingEmpty)
+                    if (allRcvd)
                         onAllReceived(false);
-                } else {
+                }
+                else {
                     clientOnlyExchange = cctx.kernalContext().clientNode();
 
                     if (!centralizedAff)
                         sendPartitions(crd);
                 }
             }
+            else
+                onDone(e);
 
             initDone();
         }
@@ -1373,7 +1376,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     private boolean isRollbackSupported() {
         boolean rollbackSupported = false;
 
-        if (!discoCache.checkAttribute(ATTR_EXCHANGE_ROLLBACK_SUPPORTED, Boolean.TRUE, discoCache.allNodes()))
+        if (!discoCache.checkAttribute(ATTR_EXCHANGE_ROLLBACK_SUPPORTED, Boolean.TRUE))
             return false;
 
         // Currently the rollback process is supported for dynamically started caches.
@@ -1425,6 +1428,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 IgniteCheckedException err = createExchangeException(exchangeGlobalExceptions);
 
                 List<String> cacheNames = new ArrayList<>(reqs.size());
+
                 for (DynamicCacheChangeRequest req : reqs)
                     cacheNames.add(req.cacheName());
 
