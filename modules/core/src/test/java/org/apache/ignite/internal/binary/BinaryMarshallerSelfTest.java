@@ -100,7 +100,7 @@ import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.apache.ignite.internal.binary.BinaryStringEncoding.ENC_NAME_WINDOWS_1251;
+import static org.apache.ignite.binary.BinaryStringEncoding.ENC_NAME_WINDOWS_1251;
 import static org.apache.ignite.internal.binary.streams.BinaryMemoryAllocator.INSTANCE;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertNotEquals;

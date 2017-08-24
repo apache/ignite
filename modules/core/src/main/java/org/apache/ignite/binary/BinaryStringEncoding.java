@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.binary;
+package org.apache.ignite.binary;
 
 import java.nio.charset.Charset;
 import org.jetbrains.annotations.Nullable;

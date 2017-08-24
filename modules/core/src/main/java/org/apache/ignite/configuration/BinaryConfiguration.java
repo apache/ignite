@@ -23,12 +23,13 @@ import java.util.Collection;
 import org.apache.ignite.binary.BinaryIdMapper;
 import org.apache.ignite.binary.BinaryNameMapper;
 import org.apache.ignite.binary.BinarySerializer;
+import org.apache.ignite.binary.BinaryStringEncoding;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.binary.BinaryStringEncoding.ENC_NAME_WINDOWS_1251;
-import static org.apache.ignite.internal.binary.BinaryStringEncoding.ENC_WINDOWS_1251;
+import static org.apache.ignite.binary.BinaryStringEncoding.ENC_NAME_WINDOWS_1251;
+import static org.apache.ignite.binary.BinaryStringEncoding.ENC_WINDOWS_1251;
 
 /**
  * Configuration object for Ignite Binary Objects.
@@ -56,7 +57,7 @@ public class BinaryConfiguration {
     /**
      * Encoding for strings.
      *
-     * @see org.apache.ignite.internal.binary.BinaryStringEncoding
+     * @see BinaryStringEncoding
      */
     private Byte encoding;
 
