@@ -207,7 +207,7 @@ public class IgniteDynamicCacheStartFailSelfTest extends GridCommonAbstractTest 
     }
 
     /**
-     *
+     * Test cache start with broken affinity function that throws an exception on all nodes.
      */
     public void testBrokenAffinityFunOnAllNodes() {
         final boolean failOnAllNodes = true;
@@ -223,7 +223,7 @@ public class IgniteDynamicCacheStartFailSelfTest extends GridCommonAbstractTest 
     }
 
     /**
-     *
+     * Test cache start with broken affinity function that throws an exception on initiator node.
      */
     public void testBrokenAffinityFunOnInitiator() {
         final boolean failOnAllNodes = false;
@@ -239,7 +239,7 @@ public class IgniteDynamicCacheStartFailSelfTest extends GridCommonAbstractTest 
     }
 
     /**
-     *
+     * Test cache start with broken affinity function that throws an exception on non-initiator node.
      */
     public void testBrokenAffinityFunOnNonInitiator() {
         final boolean failOnAllNodes = false;
@@ -255,7 +255,7 @@ public class IgniteDynamicCacheStartFailSelfTest extends GridCommonAbstractTest 
     }
 
     /**
-     *
+     * Test cache start with broken affinity function that throws an exception on coordinator node.
      */
     public void testBrokenAffinityFunOnCoordinatorDiffInitiator() {
         final boolean failOnAllNodes = false;
@@ -271,7 +271,7 @@ public class IgniteDynamicCacheStartFailSelfTest extends GridCommonAbstractTest 
     }
 
     /**
-     *
+     * Test cache start with broken affinity function that throws an exception on initiator node.
      */
     public void testBrokenAffinityFunOnCoordinator() {
         final boolean failOnAllNodes = false;
@@ -287,7 +287,7 @@ public class IgniteDynamicCacheStartFailSelfTest extends GridCommonAbstractTest 
     }
 
     /**
-     *
+     * Tests cache start with node filter and broken affinity function that throws an exception on initiator node.
      */
     public void testBrokenAffinityFunWithNodeFilter() {
         final boolean failOnAllNodes = false;
@@ -303,7 +303,7 @@ public class IgniteDynamicCacheStartFailSelfTest extends GridCommonAbstractTest 
     }
 
     /**
-     *
+     * Tests cache start with broken cache store that throws an exception on all nodes.
      */
     public void testBrokenCacheStoreOnAllNodes() {
         final boolean failOnAllNodes = true;
@@ -319,7 +319,7 @@ public class IgniteDynamicCacheStartFailSelfTest extends GridCommonAbstractTest 
     }
 
     /**
-     *
+     * Tests cache start with broken cache store that throws an exception on initiator node.
      */
     public void testBrokenCacheStoreOnInitiator() {
         final boolean failOnAllNodes = false;
@@ -335,7 +335,7 @@ public class IgniteDynamicCacheStartFailSelfTest extends GridCommonAbstractTest 
     }
 
     /**
-     *
+     * Tests cache start with broken cache store that throws an exception on non-initiator node.
      */
     public void testBrokenCacheStoreOnNonInitiator() {
         final boolean failOnAllNodes = false;
@@ -351,7 +351,7 @@ public class IgniteDynamicCacheStartFailSelfTest extends GridCommonAbstractTest 
     }
 
     /**
-     *
+     *  Tests cache start with broken cache store that throws an exception on initiator node.
      */
     public void testBrokenCacheStoreOnCoordinatorDiffInitiator() {
         final boolean failOnAllNodes = false;
@@ -367,7 +367,7 @@ public class IgniteDynamicCacheStartFailSelfTest extends GridCommonAbstractTest 
     }
 
     /**
-     *
+     *  Tests cache start with broken cache store that throws an exception on coordinator node.
      */
     public void testBrokenCacheStoreFunOnCoordinator() {
         final boolean failOnAllNodes = false;
@@ -383,7 +383,7 @@ public class IgniteDynamicCacheStartFailSelfTest extends GridCommonAbstractTest 
     }
 
     /**
-     *
+     *  Tests multiple creation of cache with broken affinity function.
      */
     public void testCreateCacheMultipleTimes() {
         final boolean failOnAllNodes = false;
@@ -477,12 +477,15 @@ public class IgniteDynamicCacheStartFailSelfTest extends GridCommonAbstractTest 
     }
 
     /**
-     *
+     * Filter specifying on which node the cache should be started.
      */
     private static class NodeFilter implements IgnitePredicate<ClusterNode> {
         /** Cache should be created node with certain UUID. */
         public UUID uuid;
 
+        /**
+         * @param uuid node ID.
+         */
         public NodeFilter(UUID uuid) {
             this.uuid = uuid;
         }
@@ -494,7 +497,7 @@ public class IgniteDynamicCacheStartFailSelfTest extends GridCommonAbstractTest 
     }
 
     /**
-     *
+     * Factory that throws an exception is got created.
      */
     private static class BrokenAffinityFunction extends RendezvousAffinityFunction {
         /** */
@@ -511,12 +514,16 @@ public class IgniteDynamicCacheStartFailSelfTest extends GridCommonAbstractTest 
         private String gridName;
 
         /**
-         *
+         * Default constructor.
          */
         public BrokenAffinityFunction() {
             // No-op.
         }
 
+        /**
+         * @param eOnAllNodes {@code True} if exception should be thrown on all nodes.
+         * @param gridName Exception should arise on node with certain name.
+         */
         public BrokenAffinityFunction(boolean eOnAllNodes, String gridName) {
             this.eOnAllNodes = eOnAllNodes;
             this.gridName = gridName;
@@ -548,7 +555,7 @@ public class IgniteDynamicCacheStartFailSelfTest extends GridCommonAbstractTest 
     }
 
     /**
-     *
+     * Factory that throws an exception is got created.
      */
     private static class BrokenStoreFactory implements Factory<CacheStore<Integer, String>> {
         /** */
@@ -561,6 +568,10 @@ public class IgniteDynamicCacheStartFailSelfTest extends GridCommonAbstractTest 
         /** Exception should arise on node with certain name. */
         public static String gridName;
 
+        /**
+         * @param eOnAllNodes {@code True} if exception should be thrown on all nodes.
+         * @param gridName Exception should arise on node with certain name.
+         */
         public BrokenStoreFactory(boolean eOnAllNodes, String gridName) {
             this.eOnAllNodes = eOnAllNodes;
 
