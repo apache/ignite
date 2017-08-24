@@ -38,6 +38,9 @@ import java.sql.SQLXML;
 import java.sql.Statement;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
+import java.text.ParseException;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -234,54 +237,14 @@ public class JdbcThinResultSet implements ResultSet {
 
     /** {@inheritDoc} */
     @Override public String getString(int colIdx) throws SQLException {
-        ensureNotClosed();
-        ensureHasCurrentRow();
+        Object val = getValue(colIdx);
 
-        try {
-            Object val = curRow.get(colIdx - 1);
-
-            wasNull = val == null;
-
-            if (val == null)
-                return null;
-            else
-                return String.valueOf(val);
-        }
-        catch (IndexOutOfBoundsException e) {
-            throw new SQLException("Invalid column index: " + colIdx, e);
-        }
+        return val == null ? null : String.valueOf(val);
     }
 
     /** {@inheritDoc} */
     @Override public boolean getBoolean(int colIdx) throws SQLException {
-        try {
-            Object val = curRow.get(colIdx - 1);
-
-            wasNull = val == null;
-
-            if (val == null)
-                return false;
-            else if (val.getClass() == Boolean.class)
-                return (Boolean)val;
-            else {
-                if (val.getClass() == Byte.class
-                    || val.getClass() == Short.class
-                    || val.getClass() == Integer.class
-                    || val.getClass() == Long.class)
-                    return castToBoolean((Number)val);
-                else if (val.getClass() == Character.class
-                    || val.getClass() == String.class)
-                    return castToBoolean(val.toString());
-                else
-                    throw new ClassCastException("Cannot cast " + val.getClass().getName() + " to boolean");
-            }
-        }
-        catch (IndexOutOfBoundsException e) {
-            throw new SQLException("Invalid column index: " + colIdx, e);
-        }
-        catch (ClassCastException e) {
-            throw new SQLException("Value is an not instance of " + Boolean.class.getName(), e);
-        }
+        return getTypedValue(colIdx, Boolean.class);
     }
 
     /** {@inheritDoc} */
@@ -338,27 +301,7 @@ public class JdbcThinResultSet implements ResultSet {
 
     /** {@inheritDoc} */
     @Override public Date getDate(int colIdx) throws SQLException {
-        ensureNotClosed();
-        ensureHasCurrentRow();
-
-        try {
-            Object val = curRow.get(colIdx - 1);
-
-            wasNull = val == null;
-
-            if (val == null)
-                return null;
-            else if (val.getClass() == java.util.Date.class)
-                return new java.sql.Date(((java.util.Date)val).getTime());
-            else
-                return (Date)val;
-        }
-        catch (IndexOutOfBoundsException e) {
-            throw new SQLException("Invalid column index: " + colIdx, e);
-        }
-        catch (ClassCastException e) {
-            throw new SQLException("Value is an not instance of Date", e);
-        }
+        return getTypedValue(colIdx, Date.class);
     }
 
     /** {@inheritDoc} */
@@ -533,12 +476,16 @@ public class JdbcThinResultSet implements ResultSet {
 
     /** {@inheritDoc} */
     @Override public Object getObject(int colIdx) throws SQLException {
-        return getTypedValue(colIdx, Object.class);
+        return getValue(colIdx);
     }
 
     /** {@inheritDoc} */
     @Override public Object getObject(String colLb) throws SQLException {
-        return getTypedValue(colLb, Object.class);
+        int colIdx = findColumn(colLb);
+
+        assert colIdx > 0;
+
+        return getValue(colIdx);
     }
 
     /** {@inheritDoc} */
@@ -1599,15 +1546,204 @@ public class JdbcThinResultSet implements ResultSet {
     }
 
     /**
-     * Gets casted field value by index.
+     * Gets converted field value by index.
      *
      * @param colIdx Column index.
-     * @param cls Value class.
-     * @return Casted field value.
+     * @param targetCls Value class.
+     * @return Converted field value.
      * @throws SQLException In case of error.
      */
     @SuppressWarnings("unchecked")
-    private <T> T getTypedValue(int colIdx, Class<T> cls) throws SQLException {
+    private <T> T getTypedValue(int colIdx, Class<T> targetCls) throws SQLException {
+        Object val = getValue(colIdx);
+
+        if (val == null)
+            return null;
+
+        Class<?> cls = val.getClass();
+
+        if (targetCls == cls)
+            return (T)val;
+
+        if (targetCls == Boolean.class) {
+            if (val instanceof Number)
+                return (T)new Boolean(((Number)val).intValue() != 0);
+            if (cls == String.class || cls == Character.class) {
+                try {
+                    return (T)new Boolean(Integer.parseInt(val.toString()) != 0);
+                }
+                catch (NumberFormatException e) {
+                    throw new SQLException("Cannot convert [val=" + val.toString() + "] to boolean");
+                }
+            }
+            else
+                throw new SQLException("Cannot convert " + cls + " to boolean");
+        }
+        else if (targetCls == Byte.class) {
+            if (val instanceof Number)
+                return (T)new Byte(((Number)val).byteValue());
+            else if (cls == Boolean.class)
+                return (T)new Byte((Boolean)val ? (byte)1 : (byte)0);
+            if (cls == String.class || cls == Character.class) {
+                try {
+                    return (T) new Byte(Byte.parseByte(val.toString()));
+                }
+                catch (NumberFormatException e) {
+                    throw new SQLException("Cannot convert [val=" + val.toString() + "] to byte");
+                }
+            }
+            else
+                throw new SQLException("Cannot convert " + cls + " to byte");
+        }
+        else if (targetCls == Short.class) {
+            if (val instanceof Number)
+                return (T)new Short(((Number)val).shortValue());
+            else if (cls == Boolean.class)
+                return (T)new Short((Boolean)val ? (short)1 : (short)0);
+            if (cls == String.class || cls == Character.class) {
+                try {
+                    return (T) new Short(Short.parseShort(val.toString()));
+                }
+                catch (NumberFormatException e) {
+                    throw new SQLException("Cannot convert [val=" + val.toString() + "] to short");
+                }
+            }
+            else
+                throw new SQLException("Cannot convert " + cls + " to short");
+        }
+        else if (targetCls == Integer.class) {
+            if (val instanceof Number)
+                return (T)new Integer(((Number)val).intValue());
+            else if (cls == Boolean.class)
+                return (T)new Integer((Boolean)val ? 1 : 0);
+            if (cls == String.class || cls == Character.class) {
+                try {
+                    return (T) new Integer(Integer.parseInt(val.toString()));
+                }
+                catch (NumberFormatException e) {
+                    throw new SQLException("Cannot convert [val=" + val.toString() + "] to int");
+                }
+            }
+            else
+                throw new SQLException("Cannot convert " + cls + " to int");
+        }
+        else if (targetCls == Long.class) {
+            if (val instanceof Number)
+                return (T)new Long(((Number)val).longValue());
+            else if (cls == Boolean.class)
+                return (T)new Long((Boolean)val ? 1 : 0);
+            if (cls == String.class || cls == Character.class) {
+                try {
+                    return (T) new Long(Long.parseLong(val.toString()));
+                }
+                catch (NumberFormatException e) {
+                    throw new SQLException("Cannot convert [val=" + val.toString() + "] to long");
+                }
+            }
+            else
+                throw new SQLException("Cannot convert " + cls + " to long");
+        }
+        else if (targetCls == Float.class) {
+            if (val instanceof Number)
+                return (T)new Float(((Number)val).floatValue());
+            else if (cls == Boolean.class)
+                return (T)new Float((Boolean)val ? 1 : 0);
+            if (cls == String.class || cls == Character.class) {
+                try {
+                    return (T) new Float(Float.parseFloat(val.toString()));
+                }
+                catch (NumberFormatException e) {
+                    throw new SQLException("Cannot convert [val=" + val.toString() + "] to float");
+                }
+            }
+            else
+                throw new SQLException("Cannot convert " + cls + " to float");
+        }
+        else if (targetCls == Double.class) {
+            if (val instanceof Number)
+                return (T)new Double(((Number)val).doubleValue());
+            else if (cls == Boolean.class)
+                return (T)new Double((Boolean)val ? 1 : 0);
+            if (cls == String.class || cls == Character.class) {
+                try {
+                    return (T) new Double(Double.parseDouble(val.toString()));
+                }
+                catch (NumberFormatException e) {
+                    throw new SQLException("Cannot convert [val=" + val.toString() + "] to double");
+                }
+            }
+            else
+                throw new SQLException("Cannot convert " + cls + " to double");
+        }
+        else if (targetCls == BigDecimal.class) {
+            if (val instanceof Number)
+                return (T)new BigDecimal(((Number)val).doubleValue());
+            else if (cls == Boolean.class)
+                return (T)new BigDecimal((Boolean)val ? 1 : 0);
+            if (cls == String.class || cls == Character.class) {
+                try {
+                    DecimalFormatSymbols symbols = new DecimalFormatSymbols();
+
+                    symbols.setGroupingSeparator(',');
+                    symbols.setDecimalSeparator('.');
+
+                    String pattern = "#,##0.0#";
+
+                    DecimalFormat decimalFormat = new DecimalFormat(pattern, symbols);
+                    decimalFormat.setParseBigDecimal(true);
+
+                    return (T) decimalFormat.parse(val.toString());
+                }
+                catch (ParseException e) {
+                    throw new SQLException("Cannot convert [val=" + val.toString() + "] to BigDecimal");
+                }
+            }
+            else
+                throw new SQLException("Cannot convert " + cls + " to BigDecimal");
+        }
+        else if (targetCls == Date.class) {
+            if (cls == java.util.Date.class)
+                return (T)new Date(((java.util.Date)val).getTime());
+            if (cls == Time.class)
+                return (T)new Date(((Time)val).getTime());
+            else if (cls == Timestamp.class)
+                return (T)new Date(((Timestamp)val).getTime());
+            else
+                throw new SQLException("Cannot convert " + cls + " to date");
+        }
+        else if (targetCls == Time.class) {
+            if (cls == java.util.Date.class)
+                return (T)new Time(((java.util.Date)val).getTime());
+            if (cls == Date.class)
+                return (T)new Time(((Date)val).getTime());
+            else if (cls == Timestamp.class)
+                return (T)new Time(((Timestamp)val).getTime());
+            else
+                throw new SQLException("Cannot convert " + cls + " to time");
+        }
+        else if (targetCls == Timestamp.class) {
+            if (cls == java.util.Date.class)
+                return (T)new Timestamp(((java.util.Date)val).getTime());
+            if (cls == Date.class)
+                return (T)new Timestamp(((Date)val).getTime());
+            else if (cls == Time.class)
+                return (T)new Timestamp(((Time)val).getTime());
+            else
+                throw new SQLException("Cannot convert " + cls + " to timestamp");
+        }
+        else
+            throw new SQLException("Cannot convert " + cls + " to " + targetCls);
+    }
+
+    /**
+     * Gets object field value by index.
+     *
+     * @param colIdx Column index.
+     * @return Object field value.
+     * @throws SQLException In case of error.
+     */
+    @SuppressWarnings("unchecked")
+    private Object getValue(int colIdx) throws SQLException {
         ensureNotClosed();
         ensureHasCurrentRow();
 
@@ -1616,16 +1752,10 @@ public class JdbcThinResultSet implements ResultSet {
 
             wasNull = val == null;
 
-            if (val == null)
-                return null;
-            else
-                return (T)val;
+            return val;
         }
         catch (IndexOutOfBoundsException e) {
             throw new SQLException("Invalid column index: " + colIdx, e);
-        }
-        catch (ClassCastException e) {
-            throw new SQLException("Value is an not instance of " + cls.getName(), e);
         }
     }
 
@@ -1720,32 +1850,5 @@ public class JdbcThinResultSet implements ResultSet {
      */
     long updatedCount() {
         return updCnt;
-    }
-
-    /**
-     * @param val Number value.
-     * @return Boolean value.
-     */
-    private static boolean castToBoolean(Number val) {
-        if (val.intValue() == 1)
-            return true;
-        else if (val.intValue() == 0)
-            return false;
-        else
-            throw new ClassCastException("Cannot cast " + val.getClass().getName()
-                + " [val=" + val +"] to boolean");
-    }
-
-    /**
-     * @param str String value.
-     * @return Boolean value.
-     */
-    private static boolean castToBoolean(String str) {
-        try {
-            return castToBoolean(Integer.parseInt(str));
-        }
-        catch (NumberFormatException e) {
-            throw new ClassCastException("Cannot cast [val=" + str +"] to boolean");
-        }
     }
 }

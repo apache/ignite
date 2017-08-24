@@ -153,7 +153,7 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
         o.floatVal = 1.0f;
         o.doubleVal = 1.0d;
         o.bigVal = new BigDecimal(1);
-        o.strVal = "str";
+        o.strVal = "1.0";
         o.arrVal = new byte[] {1};
         o.dateVal = new Date(1, 1, 1);
         o.timeVal = new Time(1, 1, 1);
@@ -175,13 +175,20 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
             if (cnt == 0) {
                 assert rs.getBoolean("boolVal");
                 assert rs.getBoolean(2);
+                assert rs.getByte(2) == 1;
+                assert rs.getInt(2) == 1;
+                assert rs.getShort(2) == 1;
+                assert rs.getLong(2) == 1;
+                assert rs.getDouble(2) == 1.0;
+                assert rs.getFloat(2) == 1.0f;
+                assert rs.getBigDecimal(2).equals(new BigDecimal(1));
+                assert rs.getString(2).equals("true");
             }
 
             cnt++;
         }
 
         assert cnt == 1;
-
 
         ResultSet rs0 = stmt.executeQuery("select 1");
 
@@ -205,28 +212,6 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
 
         GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
-                ResultSet rs0 = stmt.executeQuery("select 10");
-
-                assert rs0.next();
-                assert rs0.getBoolean(1);
-
-                return null;
-            }
-        }, ClassCastException.class, "Cannot cast java.lang.Integer [val=10] to boolean");
-
-        GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
-            @Override public Void call() throws Exception {
-                ResultSet rs0 = stmt.executeQuery("select '10'");
-
-                assert rs0.next();
-                assert rs0.getBoolean(1);
-
-                return null;
-            }
-        }, ClassCastException.class, "Cannot cast java.lang.Integer [val=10] to boolean");
-
-        GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
-            @Override public Void call() throws Exception {
                 ResultSet rs0 = stmt.executeQuery("select ''");
 
                 assert rs0.next();
@@ -234,7 +219,7 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
 
                 return null;
             }
-        }, ClassCastException.class, "Cannot cast [val=] to boolean");
+        }, SQLException.class, "Cannot convert [val=] to boolean");
 
         GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
@@ -245,7 +230,7 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
 
                 return null;
             }
-        }, ClassCastException.class, "Cannot cast [val=qwe] to boolean");
+        }, SQLException.class, "Cannot convert [val=qwe] to boolean");
     }
 
     /**
@@ -259,7 +244,16 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
         while (rs.next()) {
             if (cnt == 0) {
                 assert rs.getByte("byteVal") == 1;
+
+                assert rs.getBoolean(3);
                 assert rs.getByte(3) == 1;
+                assert rs.getInt(3) == 1;
+                assert rs.getShort(3) == 1;
+                assert rs.getLong(3) == 1;
+                assert rs.getDouble(3) == 1.0;
+                assert rs.getFloat(3) == 1.0f;
+                assert rs.getBigDecimal(3).equals(new BigDecimal(1));
+                assert rs.getString(3).equals("1");
             }
 
             cnt++;
@@ -279,7 +273,16 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
         while (rs.next()) {
             if (cnt == 0) {
                 assert rs.getShort("shortVal") == 1;
+
+                assert rs.getBoolean(4);
+                assert rs.getByte(4) == 1;
                 assert rs.getShort(4) == 1;
+                assert rs.getInt(4) == 1;
+                assert rs.getLong(4) == 1;
+                assert rs.getDouble(4) == 1.0;
+                assert rs.getFloat(4) == 1.0f;
+                assert rs.getBigDecimal(4).equals(new BigDecimal(1));
+                assert rs.getString(4).equals("1");
             }
 
             cnt++;
@@ -299,7 +302,16 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
         while (rs.next()) {
             if (cnt == 0) {
                 assert rs.getInt("intVal") == 1;
+
+                assert rs.getBoolean(5);
+                assert rs.getByte(5) == 1;
+                assert rs.getShort(5) == 1;
                 assert rs.getInt(5) == 1;
+                assert rs.getLong(5) == 1;
+                assert rs.getDouble(5) == 1.0;
+                assert rs.getFloat(5) == 1.0f;
+                assert rs.getBigDecimal(5).equals(new BigDecimal(1));
+                assert rs.getString(5).equals("1");
             }
 
             cnt++;
@@ -319,7 +331,16 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
         while (rs.next()) {
             if (cnt == 0) {
                 assert rs.getLong("longVal") == 1;
+
+                assert rs.getBoolean(6);
+                assert rs.getByte(6) == 1;
+                assert rs.getShort(6) == 1;
+                assert rs.getInt(6) == 1;
                 assert rs.getLong(6) == 1;
+                assert rs.getDouble(6) == 1.0;
+                assert rs.getFloat(6) == 1.0f;
+                assert rs.getBigDecimal(6).equals(new BigDecimal(1));
+                assert rs.getString(6).equals("1");
             }
 
             cnt++;
@@ -339,7 +360,16 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
         while (rs.next()) {
             if (cnt == 0) {
                 assert rs.getFloat("floatVal") == 1.0;
-                assert rs.getFloat(7) == 1.0;
+
+                assert rs.getBoolean(7);
+                assert rs.getByte(7) == 1;
+                assert rs.getShort(7) == 1;
+                assert rs.getInt(7) == 1;
+                assert rs.getLong(7) == 1;
+                assert rs.getDouble(7) == 1.0;
+                assert rs.getFloat(7) == 1.0f;
+                assert rs.getBigDecimal(7).equals(new BigDecimal(1));
+                assert rs.getString(7).equals("1.0");
             }
 
             cnt++;
@@ -359,7 +389,16 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
         while (rs.next()) {
             if (cnt == 0) {
                 assert rs.getDouble("doubleVal") == 1.0;
+
+                assert rs.getBoolean(8);
+                assert rs.getByte(8) == 1;
+                assert rs.getShort(8) == 1;
+                assert rs.getInt(8) == 1;
+                assert rs.getLong(8) == 1;
                 assert rs.getDouble(8) == 1.0;
+                assert rs.getFloat(8) == 1.0f;
+                assert rs.getBigDecimal(8).equals(new BigDecimal(1));
+                assert rs.getString(8).equals("1.0");
             }
 
             cnt++;
@@ -379,7 +418,16 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
         while (rs.next()) {
             if (cnt == 0) {
                 assert rs.getBigDecimal("bigVal").intValue() == 1;
-                assert rs.getBigDecimal(9).intValue() == 1;
+
+                assert rs.getBoolean(9);
+                assert rs.getByte(9) == 1;
+                assert rs.getShort(9) == 1;
+                assert rs.getInt(9) == 1;
+                assert rs.getLong(9) == 1;
+                assert rs.getDouble(9) == 1.0;
+                assert rs.getFloat(9) == 1.0f;
+                assert rs.getBigDecimal(9).equals(new BigDecimal(1));
+                assert rs.getString(9).equals("1.0");
             }
 
             cnt++;
@@ -398,8 +446,17 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
 
         while (rs.next()) {
             if (cnt == 0) {
-                assert "str".equals(rs.getString("strVal"));
-                assert "str".equals(rs.getString(10));
+                assert "1.0".equals(rs.getString("strVal"));
+
+                assert rs.getBoolean(7);
+                assert rs.getByte(7) == 1;
+                assert rs.getShort(7) == 1;
+                assert rs.getInt(7) == 1;
+                assert rs.getLong(7) == 1;
+                assert rs.getDouble(7) == 1.0;
+                assert rs.getFloat(7) == 1.0f;
+                assert rs.getBigDecimal(7).equals(new BigDecimal(1));
+                assert rs.getString(7).equals("1.0");
             }
 
             cnt++;
@@ -440,7 +497,10 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
         while (rs.next()) {
             if (cnt == 0) {
                 assert rs.getDate("dateVal").equals(new Date(1, 1, 1));
+
                 assert rs.getDate(12).equals(new Date(1, 1, 1));
+                assert rs.getTime(12).equals(new Time(new Date(1, 1, 1).getTime()));
+                assert rs.getTimestamp(12).equals(new Timestamp(new Date(1, 1, 1).getTime()));
             }
 
             cnt++;
@@ -461,7 +521,10 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
         while (rs.next()) {
             if (cnt == 0) {
                 assert rs.getTime("timeVal").equals(new Time(1, 1, 1));
+
+                assert rs.getDate(13).equals(new Date(new Time(1, 1, 1).getTime()));
                 assert rs.getTime(13).equals(new Time(1, 1, 1));
+                assert rs.getTimestamp(13).equals(new Timestamp(new Time(1, 1, 1).getTime()));
             }
 
             cnt++;
@@ -481,7 +544,10 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
         while (rs.next()) {
             if (cnt == 0) {
                 assert rs.getTimestamp("tsVal").getTime() == 1;
-                assert rs.getTimestamp(14).getTime() == 1;
+
+                assert rs.getDate(14).equals(new Date(new Timestamp(1).getTime()));
+                assert rs.getTime(14).equals(new Time(new Timestamp(1).getTime()));
+                assert rs.getTimestamp(14).equals(new Timestamp(1));
             }
 
             cnt++;
