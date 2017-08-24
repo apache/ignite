@@ -1331,7 +1331,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
         IgniteInternalFuture<?> fut = multithreadedAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
-                for (int i = 0; i < loops && stop.get(); i++) {
+                for (int i = 0; i < loops && !stop.get(); i++) {
                     final Long x = (long)DataStructure.randomInt(CNT);
                     final int op = DataStructure.randomInt(4);
 
