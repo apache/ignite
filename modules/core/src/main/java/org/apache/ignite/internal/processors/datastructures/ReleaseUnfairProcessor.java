@@ -4,24 +4,18 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.io.Serializable;
 import java.util.UUID;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
-import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryRawReader;
-import org.apache.ignite.binary.BinaryRawWriter;
-import org.apache.ignite.binary.BinaryReader;
-import org.apache.ignite.binary.BinaryWriter;
-import org.apache.ignite.binary.Binarylizable;
+import org.jetbrains.annotations.Nullable;
 
-/** EntryProcessor for lock acquire operation. */
-public class LockIfFreeProcessor implements EntryProcessor<GridCacheInternalKey, GridCacheLockState2, Boolean>,
+/** EntryProcessor for lock release operation. */
+public class ReleaseUnfairProcessor implements EntryProcessor<GridCacheInternalKey, GridCacheLockState2Unfair, UUID>,
     Externalizable {
 
     /** */
-    private static final long serialVersionUID = -5203497119206044926L;
+    private static final long serialVersionUID = 6727594514511280293L;
 
     /** */
     UUID nodeId;
@@ -29,36 +23,35 @@ public class LockIfFreeProcessor implements EntryProcessor<GridCacheInternalKey,
     /**
      * Empty constructor required for {@link Externalizable}.
      */
-    public LockIfFreeProcessor() {
+    public ReleaseUnfairProcessor() {
         // No-op.
     }
 
     /** */
-    public LockIfFreeProcessor(UUID nodeId) {
+    public ReleaseUnfairProcessor(UUID nodeId) {
         assert nodeId != null;
 
         this.nodeId = nodeId;
     }
 
     /** {@inheritDoc} */
-    @Override public Boolean process(MutableEntry<GridCacheInternalKey, GridCacheLockState2> entry,
+    @Nullable @Override public UUID process(MutableEntry<GridCacheInternalKey, GridCacheLockState2Unfair> entry,
         Object... objects) throws EntryProcessorException {
 
         assert entry != null;
 
         if (entry.exists()) {
-            GridCacheLockState2 state = entry.getValue();
+            GridCacheLockState2Unfair state = entry.getValue();
 
-            GridCacheLockState2.LockedModified result = state.lockIfFree(nodeId);
+            UUID nextId = state.unlock(nodeId);
 
-            // Write result if necessary
-            if (result.modified)
-                entry.setValue(state);
+            // Always update value in right using.
+            entry.setValue(state);
 
-            return result.locked;
+            return nextId;
         }
 
-        return false;
+        return null;
     }
 
     /** {@inheritDoc} */

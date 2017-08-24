@@ -1246,7 +1246,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                 if (val == null && !create)
                     return new T2<>(null, null);
 
-                AtomicDataStructureValue retVal = (val == null ? new GridCacheLockState2(ctx.discovery().gridStartTime()) : null);
+                AtomicDataStructureValue retVal = (val == null ? new GridCacheLockState2Unfair(ctx.discovery().gridStartTime()) : null);
 
                 GridCacheLockEx2 reentrantLock0 = new GridCacheLockImpl2(name, key, cache, fair);
 

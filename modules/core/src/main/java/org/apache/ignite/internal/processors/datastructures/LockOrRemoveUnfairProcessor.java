@@ -15,14 +15,13 @@ import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.binary.BinaryReader;
 import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.binary.Binarylizable;
-import org.jetbrains.annotations.Nullable;
 
-/** EntryProcessor for lock release operation. */
-public class ReleaseProcessor implements EntryProcessor<GridCacheInternalKey, GridCacheLockState2, UUID>,
+/** EntryProcessor for release lock by timeout, but acquire it if lock has released. */
+public class LockOrRemoveUnfairProcessor implements EntryProcessor<GridCacheInternalKey, GridCacheLockState2Unfair, Boolean>,
     Externalizable {
 
     /** */
-    private static final long serialVersionUID = 6727594514511280293L;
+    private static final long serialVersionUID = 2968825754944751240L;
 
     /** */
     UUID nodeId;
@@ -30,35 +29,36 @@ public class ReleaseProcessor implements EntryProcessor<GridCacheInternalKey, Gr
     /**
      * Empty constructor required for {@link Externalizable}.
      */
-    public ReleaseProcessor() {
+    public LockOrRemoveUnfairProcessor() {
         // No-op.
     }
 
     /** */
-    public ReleaseProcessor(UUID nodeId) {
+    public LockOrRemoveUnfairProcessor(UUID nodeId) {
         assert nodeId != null;
 
         this.nodeId = nodeId;
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public UUID process(MutableEntry<GridCacheInternalKey, GridCacheLockState2> entry,
+    @Override public Boolean process(MutableEntry<GridCacheInternalKey, GridCacheLockState2Unfair> entry,
         Object... objects) throws EntryProcessorException {
 
         assert entry != null;
 
         if (entry.exists()) {
-            GridCacheLockState2 state = entry.getValue();
+            GridCacheLockState2Unfair state = entry.getValue();
 
-            UUID nextNode = state.unlock(nodeId);
+            LockedModified result = state.lockOrRemove(nodeId);
 
-            // Always update value in right using.
-            entry.setValue(state);
+            // Write result if necessary.
+            if (result.modified)
+                entry.setValue(state);
 
-            return nextNode;
+            return result.locked;
         }
 
-        return null;
+        return false;
     }
 
     /** {@inheritDoc} */

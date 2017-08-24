@@ -4,24 +4,13 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Random;
-import java.util.Set;
-import java.util.TreeSet;
 import java.util.UUID;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
-import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryRawReader;
-import org.apache.ignite.binary.BinaryRawWriter;
-import org.apache.ignite.binary.BinaryReader;
-import org.apache.ignite.binary.BinaryWriter;
-import org.apache.ignite.binary.Binarylizable;
 
 /** EntryProcessor for lock acquire operation. */
-public class AcquireProcessor implements EntryProcessor<GridCacheInternalKey, GridCacheLockState2, Boolean>,
+public class AcquireUnfairProcessor implements EntryProcessor<GridCacheInternalKey, GridCacheLockState2Unfair, Boolean>,
     Externalizable {
 
     /** */
@@ -33,27 +22,27 @@ public class AcquireProcessor implements EntryProcessor<GridCacheInternalKey, Gr
     /**
      * Empty constructor required for {@link Externalizable}.
      */
-    public AcquireProcessor() {
+    public AcquireUnfairProcessor() {
         // No-op.
     }
 
     /** */
-    public AcquireProcessor(UUID nodeId) {
+    public AcquireUnfairProcessor(UUID nodeId) {
         assert nodeId != null;
 
         this.nodeId = nodeId;
     }
 
     /** {@inheritDoc} */
-    @Override public Boolean process(MutableEntry<GridCacheInternalKey, GridCacheLockState2> entry,
+    @Override public Boolean process(MutableEntry<GridCacheInternalKey, GridCacheLockState2Unfair> entry,
         Object... objects) throws EntryProcessorException {
 
         assert entry != null;
 
         if (entry.exists()) {
-            GridCacheLockState2 state = entry.getValue();
+            GridCacheLockState2Unfair state = entry.getValue();
 
-            GridCacheLockState2.LockedModified result = state.lockOrAdd(nodeId);
+            LockedModified result = state.lockOrAdd(nodeId);
 
             // Write result if necessary
             if (result.modified) {

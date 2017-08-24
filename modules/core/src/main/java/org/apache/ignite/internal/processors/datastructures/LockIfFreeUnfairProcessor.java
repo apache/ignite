@@ -16,12 +16,12 @@ import org.apache.ignite.binary.BinaryReader;
 import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.binary.Binarylizable;
 
-/** EntryProcessor for release lock by timeout, but acquire it if lock has released. */
-public class LockOrRemoveProcessor implements EntryProcessor<GridCacheInternalKey, GridCacheLockState2, Boolean>,
+/** EntryProcessor for lock acquire operation. */
+public class LockIfFreeUnfairProcessor implements EntryProcessor<GridCacheInternalKey, GridCacheLockState2Unfair, Boolean>,
     Externalizable {
 
     /** */
-    private static final long serialVersionUID = 2968825754944751240L;
+    private static final long serialVersionUID = -5203497119206044926L;
 
     /** */
     UUID nodeId;
@@ -29,29 +29,29 @@ public class LockOrRemoveProcessor implements EntryProcessor<GridCacheInternalKe
     /**
      * Empty constructor required for {@link Externalizable}.
      */
-    public LockOrRemoveProcessor() {
+    public LockIfFreeUnfairProcessor() {
         // No-op.
     }
 
     /** */
-    public LockOrRemoveProcessor(UUID nodeId) {
+    public LockIfFreeUnfairProcessor(UUID nodeId) {
         assert nodeId != null;
 
         this.nodeId = nodeId;
     }
 
     /** {@inheritDoc} */
-    @Override public Boolean process(MutableEntry<GridCacheInternalKey, GridCacheLockState2> entry,
+    @Override public Boolean process(MutableEntry<GridCacheInternalKey, GridCacheLockState2Unfair> entry,
         Object... objects) throws EntryProcessorException {
 
         assert entry != null;
 
         if (entry.exists()) {
-            GridCacheLockState2 state = entry.getValue();
+            GridCacheLockState2Unfair state = entry.getValue();
 
-            GridCacheLockState2.LockedModified result = state.lockOrRemove(nodeId);
+            LockedModified result = state.lockIfFree(nodeId);
 
-            // Write result if necessary.
+            // Write result if necessary
             if (result.modified)
                 entry.setValue(state);
 
