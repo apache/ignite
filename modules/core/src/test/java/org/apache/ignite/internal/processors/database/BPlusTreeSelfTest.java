@@ -1468,7 +1468,8 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         finally {
             stop.set(true);
 
-            asyncRunFut.get();
+            fut2.get();
+            fut3.get();
         }
 
         GridCursor<Long> cursor = tree.find(null, null);
