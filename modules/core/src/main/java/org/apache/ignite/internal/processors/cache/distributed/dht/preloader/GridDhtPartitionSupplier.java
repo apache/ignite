@@ -134,7 +134,7 @@ class GridDhtPartitionSupplier {
      * @param topVer Topology version.
      */
     @SuppressWarnings("ConstantConditions")
-    public void onTopologyChanged(AffinityTopologyVersion topVer) {
+    void onTopologyChanged(AffinityTopologyVersion topVer) {
         synchronized (scMap) {
             Iterator<T3<UUID, Integer, AffinityTopologyVersion>> it = scMap.keySet().iterator();
 

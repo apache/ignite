@@ -15,15 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.math;
+package org.apache.ignite.internal.util.nio;
 
 /**
- * Maps {@link Vector} element index to cache key.
+ *
  */
-public interface VectorKeyMapper<K> extends KeyMapper<K> {
+interface GridNioKeyAttachment {
     /**
-     * @param i Vector element index.
-     * @return Cache key for given element index.
+     * @return {@code True} if session was created.
      */
-    public K apply(int i);
+    boolean hasSession();
+
+    /**
+     * @return Session if it was created.
+     */
+    GridSelectorNioSessionImpl session();
 }

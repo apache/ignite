@@ -28,7 +28,7 @@ html(ng-app='ignite-console' id='app' ng-strict-di)
 
         meta(name='fragment' content='!')
 
-    body.theme-line.body-overlap
+    body.theme-line.body-overlap(ng-class='{ "demo-mode": IgniteDemoMode }')
 
         .splash.splash-max-foreground(hide-on-state-change)
             .splash-wrapper
@@ -39,8 +39,8 @@ html(ng-app='ignite-console' id='app' ng-strict-di)
 
                 .splash-wellcome Loading...
 
-        .ribbon-wrapper.right(ng-cloak)
-            .ribbon(ng-style='IgniteDemoMode && {"background": "#1b6d88"}')
-                label {{IgniteDemoMode ? "Demo" : "Beta" }}
+        .ribbon-wrapper.right(ng-if='!IgniteDemoMode')
+            .ribbon
+                label Beta
 
         .wrapper(ui-view='')

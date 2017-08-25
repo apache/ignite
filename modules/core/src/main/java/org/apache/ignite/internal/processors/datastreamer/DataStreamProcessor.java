@@ -321,8 +321,10 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
         try {
             GridCacheAdapter cache = ctx.cache().internalCache(req.cacheName());
 
-            if (cache == null)
-                throw new IgniteCheckedException("Cache not created or already destroyed.");
+            if (cache == null) {
+                throw new IgniteCheckedException("Cache not created or already destroyed: " +
+                    req.cacheName());
+            }
 
             GridCacheContext cctx = cache.context();
 
@@ -336,18 +338,33 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
             GridDhtTopologyFuture topWaitFut = null;
 
             try {
-                GridDhtTopologyFuture fut = cctx.topologyVersionFuture();
+                Exception remapErr = null;
 
-                AffinityTopologyVersion topVer = fut.topologyVersion();
+                AffinityTopologyVersion streamerFutTopVer = null;
 
-                if (!allowOverwrite && !topVer.equals(req.topologyVersion())) {
-                    Exception err = new ClusterTopologyCheckedException(
-                        "DataStreamer will retry data transfer at stable topology " +
-                            "[reqTop=" + req.topologyVersion() + ", topVer=" + topVer + ", node=remote]");
+                if (!allowOverwrite) {
+                    GridDhtTopologyFuture topFut = cctx.topologyVersionFuture();
 
-                    sendResponse(nodeId, topic, req.requestId(), err, req.forceLocalDeployment());
+                    AffinityTopologyVersion topVer = topFut.isDone() ? topFut.topologyVersion() :
+                        topFut.initialVersion();
+
+                    if (topVer.compareTo(req.topologyVersion()) > 0) {
+                        remapErr = new ClusterTopologyCheckedException("DataStreamer will retry " +
+                            "data transfer at stable topology [reqTop=" + req.topologyVersion() +
+                            ", topVer=" + topFut.initialVersion() + ", node=remote]");
+                    }
+                    else if (!topFut.isDone())
+                        topWaitFut = topFut;
+                    else
+                        streamerFutTopVer = topFut.topologyVersion();
                 }
-                else if (allowOverwrite || fut.isDone()) {
+
+                if (remapErr != null) {
+                    sendResponse(nodeId, topic, req.requestId(), remapErr, req.forceLocalDeployment());
+
+                    return;
+                }
+                else if (topWaitFut == null) {
                     job = new DataStreamerUpdateJob(ctx,
                         log,
                         req.cacheName(),
@@ -357,10 +374,8 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
                         req.keepBinary(),
                         updater);
 
-                    waitFut = allowOverwrite ? null : cctx.mvcc().addDataStreamerFuture(topVer);
+                    waitFut = allowOverwrite ? null : cctx.mvcc().addDataStreamerFuture(streamerFutTopVer);
                 }
-                else
-                    topWaitFut = fut;
             }
             finally {
                 if (!allowOverwrite)
@@ -378,16 +393,14 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
                 return;
             }
 
-            if (job != null) {
-                try {
-                    job.call();
+            try {
+                job.call();
 
-                    sendResponse(nodeId, topic, req.requestId(), null, req.forceLocalDeployment());
-                }
-                finally {
-                    if (waitFut != null)
-                        waitFut.onDone();
-                }
+                sendResponse(nodeId, topic, req.requestId(), null, req.forceLocalDeployment());
+            }
+            finally {
+                if (waitFut != null)
+                    waitFut.onDone();
             }
         }
         catch (Throwable e) {

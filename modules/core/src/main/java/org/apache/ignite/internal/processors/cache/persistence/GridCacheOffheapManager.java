@@ -66,6 +66,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -594,6 +595,32 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
             return super.rebalanceIterator(part, topVer, partCntrSince);
         }
+    }
+
+    /**
+     * Calculates fill factor of all partition data stores.
+     *
+     * @return Tuple (numenator, denominator).
+     */
+    T2<Long, Long> fillFactor() {
+        long loadSize = 0;
+        long totalSize = 0;
+
+        for (CacheDataStore store : partDataStores.values()) {
+            assert store instanceof GridCacheDataStore;
+
+            FreeListImpl freeList = ((GridCacheDataStore)store).freeList;
+
+            if (freeList == null)
+                continue;
+
+            T2<Long, Long> fillFactor = freeList.fillFactor();
+
+            loadSize += fillFactor.get1();
+            totalSize += fillFactor.get2();
+        }
+
+        return new T2<>(loadSize, totalSize);
     }
 
     /**
@@ -1167,7 +1194,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
 
         /** {@inheritDoc} */
-        @Override public Long initialUpdateCounter() {
+        @Override public long initialUpdateCounter() {
             try {
                 CacheDataStore delegate0 = init0(true);
 
