@@ -1,0 +1,15 @@
+[ ca ]
+default_ca = oneca
+
+[ oneca ]
+certificate = ./oneca.pem
+database = ./oneindex.txt
+private_key = ./oneca.key
+new_certs_dir = ./
+default_md = sha1
+serial = ./oneserial
+default_days = 365
+policy = policy_match
+
+[policy_match]
+commonName = supplied
