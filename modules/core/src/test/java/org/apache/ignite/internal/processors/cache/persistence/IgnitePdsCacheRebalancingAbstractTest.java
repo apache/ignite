@@ -512,6 +512,8 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
         Integer val = 0;
 
         for (int i = 0; i < 5; i++) {
+            info("Iteration: " + i);
+
             Integer key = primaryKey(ignite(3).cache(cacheName));
 
             c.put(key, val);

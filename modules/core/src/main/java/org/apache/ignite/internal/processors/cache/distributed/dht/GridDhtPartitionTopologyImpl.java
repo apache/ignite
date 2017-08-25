@@ -1186,7 +1186,9 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         lock.writeLock().lock();
 
         try {
-            if (stopping || !lastTopChangeVer.initialized())
+            if (stopping || !lastTopChangeVer.initialized() ||
+                // Ignore message not-related to exchange if exchange is in progress.
+                (exchangeVer == null && !lastTopChangeVer.equals(readyTopVer)))
                 return false;
 
             if (incomeCntrMap != null) {
@@ -1909,20 +1911,24 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             }
 
             for (Map.Entry<UUID, GridDhtPartitionMap> e : node2part.entrySet()) {
-                if (!e.getValue().containsKey(p))
+                GridDhtPartitionMap partMap = e.getValue();
+
+                if (!partMap.containsKey(p))
                     continue;
 
-                if (e.getValue().get(p) == OWNING && !owners.contains(e.getKey())) {
+                if (partMap.get(p) == OWNING && !owners.contains(e.getKey())) {
                     if (haveHistory)
-                        e.getValue().put(p, MOVING);
+                        partMap.put(p, MOVING);
                     else {
-                        e.getValue().put(p, RENTING);
+                        partMap.put(p, RENTING);
 
                         result.add(e.getKey());
                     }
 
+                    partMap.updateSequence(partMap.updateSequence() + 1, partMap.topologyVersion());
+
                     U.warn(log, "Partition has been scheduled for rebalancing due to outdated update counter " +
-                        "[nodeId=" + ctx.localNodeId() + ", cacheOrGroupName=" + grp.cacheOrGroupName() +
+                        "[nodeId=" + e.getKey() + ", cacheOrGroupName=" + grp.cacheOrGroupName() +
                         ", partId=" + p + ", haveHistory=" + haveHistory + "]");
                 }
             }
