@@ -20,12 +20,15 @@ package org.apache.ignite.internal.binary;
 import java.math.BigDecimal;
 import java.nio.ByteBuffer;
 import java.util.concurrent.ThreadLocalRandom;
+import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+
+import static org.apache.ignite.binary.BinaryStringEncoding.ENC_NAME_WINDOWS_1251;
 
 /**
  *
@@ -38,16 +41,17 @@ public class BinaryFieldExtractionSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     protected BinaryMarshaller createMarshaller() throws Exception {
-        BinaryContext ctx = new BinaryContext(BinaryCachingMetadataHandler.create(), new IgniteConfiguration(),
-            log());
-
-        BinaryMarshaller marsh = new BinaryMarshaller();
-
         BinaryConfiguration bCfg = new BinaryConfiguration();
+
+        bCfg.setEncoding(ENC_NAME_WINDOWS_1251);
 
         IgniteConfiguration iCfg = new IgniteConfiguration();
 
         iCfg.setBinaryConfiguration(bCfg);
+
+        BinaryContext ctx = new BinaryContext(BinaryCachingMetadataHandler.create(), iCfg, log());
+
+        BinaryMarshaller marsh = new BinaryMarshaller();
 
         marsh.setContext(new MarshallerContextTestImpl(null));
 
@@ -132,6 +136,37 @@ public class BinaryFieldExtractionSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testEncodedStringFieldMarshalling() throws Exception {
+        BinaryMarshaller marsh = createMarshaller();
+
+        String value = "абв";
+
+        StringValue strVal = new StringValue(value);
+
+        BinaryObjectImpl binObj = toBinary(strVal, marsh);
+
+        BinaryType type = binObj.type();
+
+        assertNotNull(type);
+
+        BinaryFieldEx field = (BinaryFieldEx)type.field("strVal");
+
+        ByteBuffer buf = ByteBuffer.allocate(32);
+
+        strVal = new StringValue(value);
+
+        binObj = toBinary(strVal, marsh);
+
+        field.writeField(binObj, buf);
+
+        buf.flip();
+
+        assertEquals(field.value(binObj), field.readField(buf));
+    }
+
+    /**
      * @param obj Object to transform to a binary object.
      * @param marsh Binary marshaller.
      * @return Binary object.
@@ -203,11 +238,26 @@ public class BinaryFieldExtractionSelfTest extends GridCommonAbstractTest {
         private BigDecimal decVal;
 
         /**
-         *
          * @param decVal Value to use
          */
         private DecimalValue(BigDecimal decVal) {
             this.decVal = decVal;
+        }
+    }
+
+    /**
+     *
+     */
+    @SuppressWarnings("UnusedDeclaration")
+    private static class StringValue {
+        /** */
+        private String strVal;
+
+        /**
+         * @param strVal Value to use
+         */
+        private StringValue(String strVal) {
+            this.strVal = strVal;
         }
     }
 }
