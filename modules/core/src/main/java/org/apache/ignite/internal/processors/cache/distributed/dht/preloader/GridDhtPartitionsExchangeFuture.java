@@ -206,6 +206,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     /** Exchange exceptions from all participating nodes. */
     private final Map<UUID, Exception> exchangeGlobalExceptions = new ConcurrentHashMap8<>();
 
+    /** Used to track the fact that {@code DynamicCacheChangeFailureMessage} was sent. */
+    private volatile boolean cacheChangeFailureMsgSent;
+
     /** Forced Rebalance future. */
     private GridCompoundFuture<Boolean, Boolean> forcedRebFut;
 
@@ -1235,9 +1238,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 log.debug("Received message for finished future (will reply only to sender) [msg=" + msg +
                     ", fut=" + this + ']');
 
-            // Custom message (DynamicCacheChangeFailureMessage) was sent.
-            // Do not need sendAllPartitions.
-            if (!exchangeGlobalExceptions.isEmpty())
+            // Custom message (DynamicCacheChangeFailureMessage) was sent. Do not need sendAllPartitions.
+            if (cacheChangeFailureMsgSent)
                 return;
 
             if (!centralizedAff)
@@ -1444,9 +1446,11 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                     cctx.localNode(), exchId, err, cacheNames);
 
                 if (log.isDebugEnabled())
-                    log.debug("Dynamic cache change failed. Send message to all participating nodes: " + msg);
+                    log.debug("Dynamic cache change failed (send message to all participating nodes): " + msg);
 
                 cctx.discovery().sendCustomEvent(msg);
+
+                cacheChangeFailureMsgSent = true;
 
                 return;
             }
