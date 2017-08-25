@@ -298,7 +298,7 @@ public class Blas {
             throw new CardinalityException(a.columnSize(), y.size());
 
         checkMatrixType(a, "gemv");
-        checkVectorType(x,"gemv");
+        checkVectorType(x, "gemv");
         checkVectorType(y, "gemv");
 
         if (alpha == 0.0 && beta == 1.0)
@@ -322,7 +322,7 @@ public class Blas {
     /**
      * M := alpha * M.
      * @param m Matrix M.
-     * @param alpha Aplha.
+     * @param alpha Alpha.
      */
     private static void scal(Matrix m, double alpha) {
         if (alpha != 1.0)

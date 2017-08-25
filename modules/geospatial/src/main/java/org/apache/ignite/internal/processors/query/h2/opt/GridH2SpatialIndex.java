@@ -249,7 +249,7 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
     }
 
     /** {@inheritDoc} */
-    @Override public void destroy() {
+    @Override public void destroy(boolean rmIndex) {
         Lock l = lock.writeLock();
 
         l.lock();
@@ -263,7 +263,7 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
             l.unlock();
         }
 
-        super.destroy();
+        super.destroy(rmIndex);
     }
 
     /** {@inheritDoc} */

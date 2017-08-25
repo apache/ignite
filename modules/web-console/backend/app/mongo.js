@@ -124,6 +124,7 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
             javaFieldName: String,
             javaFieldType: String
         }],
+        queryKeyFields: [String],
         fields: [{name: String, className: String}],
         aliases: [{field: String, alias: String}],
         indexes: [{

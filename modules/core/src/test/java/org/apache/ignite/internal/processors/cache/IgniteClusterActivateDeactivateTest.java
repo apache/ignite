@@ -1087,7 +1087,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
 
         client = false;
 
-        // Start one more nodes while transition is in progress.
+        // Start more nodes while transition is in progress.
         IgniteInternalFuture startFut1 = GridTestUtils.runAsync(new Callable() {
             @Override public Object call() throws Exception {
                 startGrid(8);
@@ -1106,7 +1106,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
         U.sleep(500);
 
         // Stop coordinator.
-        stopGrid(0);
+        stopGrid(getTestIgniteInstanceName(0), true, false);
 
         stopGrid(getTestIgniteInstanceName(1), true, false);
         stopGrid(getTestIgniteInstanceName(4), true, false);
