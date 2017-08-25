@@ -427,7 +427,7 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
                 assert rs.getDouble(9) == 1.0;
                 assert rs.getFloat(9) == 1.0f;
                 assert rs.getBigDecimal(9).equals(new BigDecimal(1));
-                assert rs.getString(9).equals("1.0");
+                assert rs.getString(9).equals("1");
             }
 
             cnt++;
