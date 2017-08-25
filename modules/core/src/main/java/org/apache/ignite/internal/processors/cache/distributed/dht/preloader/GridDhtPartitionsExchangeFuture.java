@@ -1448,9 +1448,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 if (log.isDebugEnabled())
                     log.debug("Dynamic cache change failed (send message to all participating nodes): " + msg);
 
-                cctx.discovery().sendCustomEvent(msg);
-
                 cacheChangeFailureMsgSent = true;
+
+                cctx.discovery().sendCustomEvent(msg);
 
                 return;
             }
@@ -1660,8 +1660,11 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      * @param msg Partitions single message.
      */
     private void updatePartitionSingleMap(GridDhtPartitionsSingleMessage msg) {
-        if (msg.partitions() == null)
+        if (msg.partitions() == null) {
+            assert msg.getError() != null : msg;
+
             return;
+        }
 
         for (Map.Entry<Integer, GridDhtPartitionMap2> entry : msg.partitions().entrySet()) {
             Integer cacheId = entry.getKey();
