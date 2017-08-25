@@ -1661,7 +1661,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      */
     private void updatePartitionSingleMap(GridDhtPartitionsSingleMessage msg) {
         if (msg.partitions() == null) {
-            assert msg.error() != null : msg;
+            assert msg.getError() != null : msg;
 
             return;
         }
