@@ -17,9 +17,7 @@ import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.binary.Binarylizable;
 
 /** EntryProcessor for release lock by timeout, but acquire it if lock has released. */
-public class LockOrRemoveUnfairProcessor implements EntryProcessor<GridCacheInternalKey, GridCacheLockState2Unfair, Boolean>,
-    Externalizable {
-
+public class LockOrRemoveUnfairProcessor extends ReentrantProcessor<UUID> {
     /** */
     private static final long serialVersionUID = 2968825754944751240L;
 
@@ -41,24 +39,8 @@ public class LockOrRemoveUnfairProcessor implements EntryProcessor<GridCacheInte
     }
 
     /** {@inheritDoc} */
-    @Override public Boolean process(MutableEntry<GridCacheInternalKey, GridCacheLockState2Unfair> entry,
-        Object... objects) throws EntryProcessorException {
-
-        assert entry != null;
-
-        if (entry.exists()) {
-            GridCacheLockState2Unfair state = entry.getValue();
-
-            LockedModified result = state.lockOrRemove(nodeId);
-
-            // Write result if necessary.
-            if (result.modified)
-                entry.setValue(state);
-
-            return result.locked;
-        }
-
-        return false;
+    @Override protected LockedModified tryLock(GridCacheLockState2Base<UUID> state) {
+        return state.lockOrRemove(nodeId);
     }
 
     /** {@inheritDoc} */

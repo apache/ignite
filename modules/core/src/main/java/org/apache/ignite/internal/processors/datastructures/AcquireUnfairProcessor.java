@@ -9,10 +9,8 @@ import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
 
-/** EntryProcessor for lock acquire operation. */
-public class AcquireUnfairProcessor implements EntryProcessor<GridCacheInternalKey, GridCacheLockState2Unfair, Boolean>,
-    Externalizable {
-
+/** EntryProcessor for lock acquire operation for unfair mode. */
+public class AcquireUnfairProcessor extends ReentrantProcessor<UUID> {
     /** */
     private static final long serialVersionUID = 8526685073215814916L;
 
@@ -34,25 +32,8 @@ public class AcquireUnfairProcessor implements EntryProcessor<GridCacheInternalK
     }
 
     /** {@inheritDoc} */
-    @Override public Boolean process(MutableEntry<GridCacheInternalKey, GridCacheLockState2Unfair> entry,
-        Object... objects) throws EntryProcessorException {
-
-        assert entry != null;
-
-        if (entry.exists()) {
-            GridCacheLockState2Unfair state = entry.getValue();
-
-            LockedModified result = state.lockOrAdd(nodeId);
-
-            // Write result if necessary
-            if (result.modified) {
-                entry.setValue(state);
-            }
-
-            return result.locked;
-        }
-
-        return false;
+    @Override protected LockedModified tryLock(GridCacheLockState2Base<UUID> state) {
+        return state.lockOrAdd(nodeId);
     }
 
     /** {@inheritDoc} */

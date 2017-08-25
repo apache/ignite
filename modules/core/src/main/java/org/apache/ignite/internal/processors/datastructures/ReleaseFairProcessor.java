@@ -10,45 +10,44 @@ import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
 import org.jetbrains.annotations.Nullable;
 
-/** EntryProcessor for lock release operation. */
-public class ReleaseUnfairProcessor implements EntryProcessor<GridCacheInternalKey, GridCacheLockState2Base<UUID>, UUID>,
+public class ReleaseFairProcessor implements EntryProcessor<GridCacheInternalKey, GridCacheLockState2Base<NodeThread>, NodeThread>,
     Externalizable {
 
     /** */
     private static final long serialVersionUID = 6727594514511280293L;
 
     /** */
-    UUID nodeId;
+    NodeThread owner;
 
     /**
      * Empty constructor required for {@link Externalizable}.
      */
-    public ReleaseUnfairProcessor() {
+    public ReleaseFairProcessor() {
         // No-op.
     }
 
     /** */
-    public ReleaseUnfairProcessor(UUID nodeId) {
-        assert nodeId != null;
+    public ReleaseFairProcessor(NodeThread owner) {
+        assert owner != null;
 
-        this.nodeId = nodeId;
+        this.owner = owner;
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public UUID process(MutableEntry<GridCacheInternalKey, GridCacheLockState2Base<UUID>> entry,
+    @Nullable @Override public NodeThread process(MutableEntry<GridCacheInternalKey, GridCacheLockState2Base<NodeThread>> entry,
         Object... objects) throws EntryProcessorException {
 
         assert entry != null;
 
         if (entry.exists()) {
-            GridCacheLockState2Base<UUID> state = entry.getValue();
+            GridCacheLockState2Base<NodeThread> state = entry.getValue();
 
-            UUID nextId = state.unlock(nodeId);
+            NodeThread nextOwner = state.unlock(owner);
 
             // Always update value in right using.
             entry.setValue(state);
 
-            return nextId;
+            return nextOwner;
         }
 
         return null;
@@ -56,12 +55,15 @@ public class ReleaseUnfairProcessor implements EntryProcessor<GridCacheInternalK
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeLong(nodeId.getMostSignificantBits());
-        out.writeLong(nodeId.getLeastSignificantBits());
+        out.writeLong(owner.nodeId.getMostSignificantBits());
+        out.writeLong(owner.nodeId.getLeastSignificantBits());
+        out.writeLong(owner.threadId);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        nodeId = new UUID(in.readLong(), in.readLong());
+        UUID nodeId = new UUID(in.readLong(), in.readLong());
+        owner = new NodeThread(nodeId, in.readLong());
     }
 }
+

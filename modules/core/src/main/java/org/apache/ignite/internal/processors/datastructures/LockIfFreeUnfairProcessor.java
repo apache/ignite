@@ -17,9 +17,7 @@ import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.binary.Binarylizable;
 
 /** EntryProcessor for lock acquire operation. */
-public class LockIfFreeUnfairProcessor implements EntryProcessor<GridCacheInternalKey, GridCacheLockState2Unfair, Boolean>,
-    Externalizable {
-
+public class LockIfFreeUnfairProcessor extends ReentrantProcessor<UUID> {
     /** */
     private static final long serialVersionUID = -5203497119206044926L;
 
@@ -41,27 +39,6 @@ public class LockIfFreeUnfairProcessor implements EntryProcessor<GridCacheIntern
     }
 
     /** {@inheritDoc} */
-    @Override public Boolean process(MutableEntry<GridCacheInternalKey, GridCacheLockState2Unfair> entry,
-        Object... objects) throws EntryProcessorException {
-
-        assert entry != null;
-
-        if (entry.exists()) {
-            GridCacheLockState2Unfair state = entry.getValue();
-
-            LockedModified result = state.lockIfFree(nodeId);
-
-            // Write result if necessary
-            if (result.modified)
-                entry.setValue(state);
-
-            return result.locked;
-        }
-
-        return false;
-    }
-
-    /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeLong(nodeId.getMostSignificantBits());
         out.writeLong(nodeId.getLeastSignificantBits());
@@ -70,5 +47,9 @@ public class LockIfFreeUnfairProcessor implements EntryProcessor<GridCacheIntern
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         nodeId = new UUID(in.readLong(), in.readLong());
+    }
+
+    @Override protected LockedModified tryLock(GridCacheLockState2Base<UUID> state) {
+        return state.lockIfFree(nodeId);
     }
 }
