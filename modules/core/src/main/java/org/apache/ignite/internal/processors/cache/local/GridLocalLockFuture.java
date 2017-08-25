@@ -261,7 +261,7 @@ public final class GridLocalLockFuture<K, V> extends GridCacheFutureAdapter<Bool
         throws GridCacheEntryRemovedException {
         // Add local lock first, as it may throw GridCacheEntryRemovedException.
         GridCacheMvccCandidate c = entry.addLocal(
-            threadId,
+            threadId.copy(),
             lockVer,
             null,
             null,

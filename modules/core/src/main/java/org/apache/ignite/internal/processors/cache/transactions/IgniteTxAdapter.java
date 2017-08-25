@@ -1783,7 +1783,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         return new TxShadow(
             xidVer.asGridUuid(),
             nodeId,
-            threadId,
+            threadId.copy(),
             startTime,
             isolation,
             concurrency,

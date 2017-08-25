@@ -11,7 +11,7 @@ public class TxThreadId {
 
     public TxThreadId(long id, boolean undefined) {
         this.value = id;
-        this.undefined = undefined;
+        this.undefined(undefined);
     }
 
     public TxThreadId() {
@@ -19,6 +19,9 @@ public class TxThreadId {
 
     public void undefined(boolean undefined) {
         this.undefined = undefined;
+
+        if(undefined)
+            new Exception("Undefined").printStackTrace();
     }
 
     public boolean undefined(){
@@ -42,5 +45,13 @@ public class TxThreadId {
 
     public long valueSafely(){
         return value;
+    }
+
+    public TxThreadId copy(){
+        return new TxThreadId(value, undefined);
+    }
+
+    @Override public boolean equals(Object o) {
+        return ((TxThreadId)o).undefined == undefined && ((TxThreadId)o).value == value;
     }
 }

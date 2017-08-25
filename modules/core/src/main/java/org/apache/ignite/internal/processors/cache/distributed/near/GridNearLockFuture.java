@@ -339,7 +339,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
         // Add local lock first, as it may throw GridCacheEntryRemovedException.
         GridCacheMvccCandidate c = entry.addNearLocal(
             dhtNodeId,
-            threadId,
+            threadId.copy(),
             lockVer,
             topVer,
             timeout,
@@ -1088,7 +1088,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
                                                 cctx.cacheId(),
                                                 topVer,
                                                 cctx.nodeId(),
-                                                threadId,
+                                                threadId.copy(),
                                                 futId,
                                                 lockVer,
                                                 inTx(),
