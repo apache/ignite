@@ -1367,6 +1367,13 @@ public class BinaryContext {
     }
 
     /**
+     * Unregister all descriptors.
+     **/
+    public void unregisterDescriptors(){
+        descByCls.clear();
+    }
+
+    /**
      * Returns instance of {@link OptimizedMarshaller}.
      *
      * @return Optimized marshaller.
