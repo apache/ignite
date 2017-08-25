@@ -30,7 +30,7 @@ public class CollocatedSetItemKey implements SetItemKey {
     private IgniteUuid setId;
 
     /** */
-    @GridToStringInclude
+    @GridToStringInclude(sensitive = true)
     private Object item;
 
     /** */

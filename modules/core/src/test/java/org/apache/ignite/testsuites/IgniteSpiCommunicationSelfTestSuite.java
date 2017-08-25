@@ -25,6 +25,7 @@ import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiMultithrea
 import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiMultithreadedShmemTest;
 import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiRecoveryAckSelfTest;
 import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiRecoveryFailureDetectionSelfTest;
+import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiRecoveryNoPairedConnectionsTest;
 import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiRecoverySelfTest;
 import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiRecoverySslSelfTest;
 import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiShmemSelfTest;
@@ -35,6 +36,8 @@ import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiTcpFailure
 import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiTcpNoDelayOffSelfTest;
 import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiTcpSelfTest;
 import org.apache.ignite.spi.communication.tcp.IgniteTcpCommunicationRecoveryAckClosureSelfTest;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpiDropNodesTest;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpiFaultyClientTest;
 
 /**
  * Test suite for all communication SPIs.
@@ -50,6 +53,7 @@ public class IgniteSpiCommunicationSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridTcpCommunicationSpiRecoveryAckSelfTest.class));
         suite.addTest(new TestSuite(IgniteTcpCommunicationRecoveryAckClosureSelfTest.class));
         suite.addTest(new TestSuite(GridTcpCommunicationSpiRecoverySelfTest.class));
+        suite.addTest(new TestSuite(GridTcpCommunicationSpiRecoveryNoPairedConnectionsTest.class));
         suite.addTest(new TestSuite(GridTcpCommunicationSpiRecoverySslSelfTest.class));
 
         suite.addTest(new TestSuite(GridTcpCommunicationSpiConcurrentConnectSelfTest.class));
@@ -71,6 +75,9 @@ public class IgniteSpiCommunicationSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridTcpCommunicationSpiTcpFailureDetectionSelfTest.class));
 
         suite.addTest(new TestSuite(GridTcpCommunicationSpiConfigSelfTest.class));
+
+        suite.addTest(new TestSuite(TcpCommunicationSpiFaultyClientTest.class));
+        suite.addTest(new TestSuite(TcpCommunicationSpiDropNodesTest.class));
 
         return suite;
     }

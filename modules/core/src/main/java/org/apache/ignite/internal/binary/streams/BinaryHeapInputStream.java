@@ -78,7 +78,7 @@ public final class BinaryHeapInputStream extends BinaryAbstractInputStream {
         if (data.length < len) {
             byte[] data0 = new byte[len];
 
-            GridUnsafe.copyMemory(data, GridUnsafe.BYTE_ARR_OFF, data0, GridUnsafe.BYTE_ARR_OFF, data.length);
+            System.arraycopy(data, 0, data0, 0, data.length);
 
             data = data0;
         }
@@ -105,7 +105,7 @@ public final class BinaryHeapInputStream extends BinaryAbstractInputStream {
     @Override public byte[] arrayCopy() {
         byte[] res = new byte[len];
 
-        GridUnsafe.copyMemory(data, GridUnsafe.BYTE_ARR_OFF, res, GridUnsafe.BYTE_ARR_OFF, res.length);
+        System.arraycopy(data, 0, res, 0, len);
 
         return res;
     }
