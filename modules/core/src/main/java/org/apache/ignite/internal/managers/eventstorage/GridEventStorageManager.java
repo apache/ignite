@@ -534,6 +534,20 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
     }
 
     /**
+     * Checks whether this event type has any listener.
+     *
+     * @param type Event type to check.
+     * @return Whether or not this event type has any listener.
+     */
+    public boolean hasListener(int type) {
+        assert type > 0 : "Invalid event type: " + type;
+
+        Listeners listeners = lsnrs.get(type);
+
+        return (listeners != null) && (!F.isEmpty(listeners.highPriorityLsnrs) || !F.isEmpty(listeners.lsnrs));
+    }
+
+    /**
      * Checks whether all provided events are user-recordable.
      * <p>
      * Note that this method supports only predefined Ignite events.

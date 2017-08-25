@@ -59,6 +59,12 @@ import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.internal.binary.builder.BinaryLazyValue;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
+import org.apache.ignite.internal.processors.cache.CacheObjectByteArrayImpl;
+import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
+import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
+import org.apache.ignite.internal.processors.cacheobject.UserCacheObjectByteArrayImpl;
+import org.apache.ignite.internal.processors.cacheobject.UserCacheObjectImpl;
+import org.apache.ignite.internal.processors.cacheobject.UserKeyCacheObjectImpl;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -698,6 +704,26 @@ public class BinaryUtils {
             cls == ConcurrentSkipListSet.class ||
             cls == ArrayList.class ||
             cls == LinkedList.class;
+    }
+
+    /**
+     * @param obj Object to check.
+     * @return True if this is an object of a known type.
+     */
+    public static boolean knownCacheObject(Object obj) {
+        if (obj == null)
+            return false;
+
+        Class<?> cls= obj.getClass();
+
+        return cls == KeyCacheObjectImpl.class ||
+            cls == BinaryObjectImpl.class ||
+            cls == CacheObjectImpl.class ||
+            cls == CacheObjectByteArrayImpl.class ||
+            cls == BinaryEnumObjectImpl.class ||
+            cls == UserKeyCacheObjectImpl.class ||
+            cls == UserCacheObjectImpl.class ||
+            cls == UserCacheObjectByteArrayImpl.class;
     }
 
     /**
