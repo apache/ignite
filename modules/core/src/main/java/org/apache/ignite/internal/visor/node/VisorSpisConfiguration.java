@@ -22,7 +22,10 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -82,6 +85,18 @@ public class VisorSpisConfiguration extends VisorDataTransferObject {
      * @return Tuple where first component is SPI name and map with properties as second.
      */
     private static VisorSpiDescription collectSpiInfo(IgniteSpi spi) {
+        return collectSpiInfo(spi, Collections.<String>emptySet());
+    }
+
+    /**
+     * Collects SPI information based on GridSpiConfiguration-annotated methods.
+     * Methods with {@code Deprecated} annotation are skipped.
+     *
+     * @param spi SPI to collect information on.
+     * @param includeFormatted Set of fields to try get formatted value.
+     * @return Tuple where first component is SPI name and map with properties as second.
+     */
+    private static VisorSpiDescription collectSpiInfo(IgniteSpi spi, Set<String> includeFormatted) {
         Class<? extends IgniteSpi> spiCls = spi.getClass();
 
         HashMap<String, Object> res = new HashMap<>();
@@ -104,17 +119,25 @@ public class VisorSpisConfiguration extends VisorDataTransferObject {
 
                         for (String getterName : getterNames) {
                             try {
-                                Method getter = spiCls.getDeclaredMethod(getterName);
-
-                                Object getRes = getter.invoke(spi);
-
-                                res.put(propName, compactObject(getRes));
+                                res.put(propName, compactObject(getProperty(spi, getterName)));
 
                                 break;
                             }
                             catch (NoSuchMethodException ignored) {
                                 // No-op.
                             }
+                        }
+
+                        if (includeFormatted.contains(propName)) {
+                            String propFormattedName = propName + "Formatted";
+
+                            if (!res.containsKey(propFormattedName))
+                                try {
+                                    res.put(propFormattedName, getProperty(spi, "get" + mtdName.substring(3) + "Formatted"));
+                                }
+                                catch (NoSuchMethodException e) {
+                                    // No-op.
+                                }
                         }
                     }
                     catch (IllegalAccessException ignored) {
@@ -128,6 +151,22 @@ public class VisorSpisConfiguration extends VisorDataTransferObject {
         }
 
         return new VisorSpiDescription(spi.getName(), res);
+    }
+
+    /**
+     * Get SPI property value by getter with specified name.
+     *
+     * @param spi Object to get property.
+     * @param getterName Name of get method to get
+     *
+     * @return Value of property.
+     */
+    private static Object getProperty(IgniteSpi spi, String getterName) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+        Class<? extends IgniteSpi> spiCls = spi.getClass();
+
+        Method getter = spiCls.getDeclaredMethod(getterName);
+
+        return getter.invoke(spi);
     }
 
     /**
@@ -149,7 +188,7 @@ public class VisorSpisConfiguration extends VisorDataTransferObject {
      * @param c Grid configuration.
      */
     public VisorSpisConfiguration(IgniteConfiguration c) {
-        discoSpi = collectSpiInfo(c.getDiscoverySpi());
+        discoSpi = collectSpiInfo(c.getDiscoverySpi(), new HashSet<>(Collections.singletonList("ipFinder")));
         commSpi = collectSpiInfo(c.getCommunicationSpi());
         evtSpi = collectSpiInfo(c.getEventStorageSpi());
         colSpi = collectSpiInfo(c.getCollisionSpi());

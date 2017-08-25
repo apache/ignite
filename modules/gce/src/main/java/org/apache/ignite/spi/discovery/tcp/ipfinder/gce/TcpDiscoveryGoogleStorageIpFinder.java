@@ -39,6 +39,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -97,9 +98,11 @@ public class TcpDiscoveryGoogleStorageIpFinder extends TcpDiscoveryIpFinderAdapt
     private Storage storage;
 
     /** Init routine guard. */
+    @GridToStringExclude
     private final AtomicBoolean initGuard = new AtomicBoolean();
 
     /** Init routine latch. */
+    @GridToStringExclude
     private final CountDownLatch initLatch = new CountDownLatch(1);
 
     /**
