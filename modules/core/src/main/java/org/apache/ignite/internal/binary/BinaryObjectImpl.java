@@ -594,6 +594,14 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
                 break;
             }
 
+            case GridBinaryMarshaller.ENCODED_STRING: {
+                int dataLen = BinaryPrimitives.readInt(arr, fieldPos + 2);
+
+                totalLen = dataLen + 6;
+
+                break;
+            }
+
             case GridBinaryMarshaller.TIMESTAMP:
                 totalLen = 13;
 
