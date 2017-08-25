@@ -2980,14 +2980,11 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     }
 
     /**
-     * Establish TCP connection to remote node and returns client.
-     *
-     * @param node Remote node.
-     * @param connIdx Connection index.
-     * @return Client.
-     * @throws IgniteCheckedException If failed.
+     * @param node Node.
+     * @return Node addresses.
+     * @throws IgniteCheckedException If node does not have addresses.
      */
-    protected GridCommunicationClient createTcpClient(ClusterNode node, int connIdx) throws IgniteCheckedException {
+    private LinkedHashSet<InetSocketAddress> nodeAddresses(ClusterNode node) throws IgniteCheckedException {
         Collection<String> rmtAddrs0 = node.attribute(createSpiAttributeName(ATTR_ADDRS));
         Collection<String> rmtHostNames0 = node.attribute(createSpiAttributeName(ATTR_HOST_NAMES));
         Integer boundPort = node.attribute(createSpiAttributeName(ATTR_PORT));
@@ -3051,6 +3048,20 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
             if (log.isDebugEnabled())
                 log.debug("Addresses to connect for node [rmtNode=" + node.id() + ", addrs=" + addrs.toString() + ']');
         }
+
+        return addrs;
+    }
+
+    /**
+     * Establish TCP connection to remote node and returns client.
+     *
+     * @param node Remote node.
+     * @param connIdx Connection index.
+     * @return Client.
+     * @throws IgniteCheckedException If failed.
+     */
+    protected GridCommunicationClient createTcpClient(ClusterNode node, int connIdx) throws IgniteCheckedException {
+        LinkedHashSet<InetSocketAddress> addrs = nodeAddresses(node);
 
         boolean conn = false;
         GridCommunicationClient client = null;
@@ -3162,10 +3173,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         if (recoveryDesc != null) {
                             recoveryDesc.onHandshake(rcvCnt);
 
-                            meta.put(-1, recoveryDesc);
+                            meta.put(GridNioServer.RECOVERY_DESC_META_KEY, recoveryDesc);
                         }
 
-                        GridNioSession ses = nioSrvr.createSession(ch, meta).get();
+                        GridNioSession ses = nioSrvr.createSession(ch, meta, false, null).get();
 
                         client = new GridTcpNioCommunicationClient(connIdx, ses, log);
 
