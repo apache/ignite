@@ -498,6 +498,43 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testForceRebalance() throws Exception {
+        final Ignite ig = startGrids(4);
+
+        ig.active(true);
+
+        awaitPartitionMapExchange();
+
+        IgniteCache<Object, Object> c = ig.cache(cacheName);
+
+        Integer val = 0;
+
+        for (int i = 0; i < 5; i++) {
+            Integer key = primaryKey(ignite(3).cache(cacheName));
+
+            c.put(key, val);
+
+            stopGrid(3);
+
+            val++;
+
+            c.put(key, val);
+
+            assertEquals(val, c.get(key));
+
+            startGrid(3);
+
+            awaitPartitionMapExchange();
+
+            Object val0 = ignite(3).cache(cacheName).get(key);
+
+            assertEquals(val, val0);
+        }
+    }
+
+    /**
      * @throws Exception If failed
      */
     public void testPartitionCounterConsistencyOnUnstableTopology() throws Exception {
