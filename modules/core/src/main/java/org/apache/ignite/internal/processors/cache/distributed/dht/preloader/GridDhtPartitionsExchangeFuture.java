@@ -1660,11 +1660,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      * @param msg Partitions single message.
      */
     private void updatePartitionSingleMap(GridDhtPartitionsSingleMessage msg) {
-        if (msg.partitions() == null) {
-            assert msg.getError() != null : msg;
-
+        if (msg.partitions() == null)
             return;
-        }
 
         for (Map.Entry<Integer, GridDhtPartitionMap2> entry : msg.partitions().entrySet()) {
             Integer cacheId = entry.getKey();
