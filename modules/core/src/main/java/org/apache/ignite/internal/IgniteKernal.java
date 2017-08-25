@@ -17,10 +17,12 @@
 
 package org.apache.ignite.internal;
 
+import java.io.BufferedReader;
 import java.io.Externalizable;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.InvalidObjectException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
@@ -40,12 +42,16 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import javax.cache.CacheException;
 import javax.management.JMException;
 import javax.management.ObjectName;
@@ -87,6 +93,7 @@ import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
+import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.binary.BinaryEnumCache;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
@@ -2459,8 +2466,114 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             return;
 
         U.log(log, "System cache's MemoryPolicy size is configured to " +
-            (memCfg.getSystemCacheInitialSize() / (1024 * 1024)) + " MB. " +
+            (memCfg.getSystemCacheInitialSize() >> 20) + " MB. " +
             "Use MemoryConfiguration.systemCacheMemorySize property to change the setting.");
+
+        long available = getPhysicalMemory();
+
+        if(available > 0) {
+            long required = memCfg.getSystemCacheMaxSize();
+
+            MemoryPolicyConfiguration[] memPlcsCfgs = memCfg.getMemoryPolicies();
+
+            if (memPlcsCfgs != null) {
+                String dfltMemPlcName = memCfg.getDefaultMemoryPolicyName();
+
+                boolean customDflt = false;
+
+                for (MemoryPolicyConfiguration plcsCfg : memPlcsCfgs) {
+                    if(Objects.equals(dfltMemPlcName, plcsCfg.getName()))
+                        customDflt = true;
+
+                    required += plcsCfg.getMaxSize();
+                }
+
+                if(!customDflt)
+                    required += memCfg.getDefaultMemoryPolicySize();
+
+            }
+            else
+                required += memCfg.getDefaultMemoryPolicySize();
+
+            long heap = ManagementFactory.getMemoryMXBean().getHeapMemoryUsage().getMax();
+
+            required += heap != -1 ? heap : 0;
+
+            U.log(log, "System requires " +
+                (required >> 20) + "MB of RAM.");
+
+            if(required > available >> 1)
+                U.warn(log, "Total required memory size is larger than 50% of available memory. " +
+                    "Swap partition will be possibly used. Use MemoryPolicyConfiguration.maxSize property to change the setting. " +
+                    "[required=" + (required >> 20) + "MB, available=" + (available >> 20) + "MB]");
+        }
+    }
+
+    /**
+     * @return Total physical memory size in bytes.
+     */
+    private long getPhysicalMemory() {
+        Process proc = null;
+
+        try {
+            if (U.isHotSpot()) {
+                return (long)ManagementFactory.getPlatformMBeanServer().getAttribute(
+                    new ObjectName("java.lang", "type", "OperatingSystem"),
+                    "TotalPhysicalMemorySize");
+            }
+            else if (U.isWindows()) {
+                String s = find(".*Total Physical Memory: +(.*?) MB.*",
+                    proc = Runtime.getRuntime().exec("systeminfo"));
+
+                return s == null ? -1 : Long.parseLong(s) << 20;
+            }
+            else {
+                String s = find(".*MemTotal: +(.*?) kB.*",
+                    proc = Runtime.getRuntime().exec("cat /proc/meminfo | grep MemTotal"));
+
+                return s == null ? -1 : Long.parseLong(s) << 10;
+            }
+        }
+        catch (JMException | IOException e) {
+            if (log.isDebugEnabled())
+                log.debug("Failed to get total physical memory size: " + e);
+        }
+        finally {
+            if (proc != null){
+                try {
+                    if(!proc.waitFor(1000, TimeUnit.MILLISECONDS))
+                        proc.destroy();
+                }
+                catch (InterruptedException ignored){
+                    proc.destroy();
+                }
+            }
+        }
+
+        return -1;
+    }
+
+    /**
+     *
+     * @param proc Process to read output.
+     * @return Found line or null.
+     * @throws IOException If read failed.
+     */
+    private String find(String regexp, Process proc) throws IOException {
+        BufferedReader rdr = new BufferedReader(new InputStreamReader(proc.getInputStream()));
+
+        StringBuilder sb = new StringBuilder();
+        String s;
+
+        while ((s = rdr.readLine()) != null)
+            sb.append(s).append('\n');
+
+        Matcher matcher = Pattern.compile(regexp).matcher(sb);
+
+        if (matcher.find())
+            return matcher.group(1);
+
+        return null;
     }
 
     /**
