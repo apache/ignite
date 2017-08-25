@@ -66,7 +66,7 @@ import org.apache.ignite.lang.IgniteProductVersion;
  */
 public class JdbcThinTcpIo {
     /** Current version. */
-    private static final SqlListenerProtocolVersion CURRENT_VER = SqlListenerProtocolVersion.create(2, 1, 0);
+    private static final SqlListenerProtocolVersion CURRENT_VER = SqlListenerProtocolVersion.create(2, 1, 5);
 
     /** Initial output stream capacity for handshake. */
     private static final int HANDSHAKE_MSG_SIZE = 13;

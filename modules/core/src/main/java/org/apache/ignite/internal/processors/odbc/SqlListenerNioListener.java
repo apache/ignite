@@ -49,8 +49,9 @@ public class SqlListenerNioListener extends GridNioServerListenerAdapter<byte[]>
     public static final byte JDBC_CLIENT = 1;
 
     /** Current version. */
-    private static final SqlListenerProtocolVersion CURRENT_VER = SqlListenerProtocolVersion.create(2, 2, 0);
-    /** Current version. */
+    private static final SqlListenerProtocolVersion CURRENT_VER = SqlListenerProtocolVersion.create(2, 1, 5);
+
+    /** Version 2.1.0. */
     private static final SqlListenerProtocolVersion VER_2_1 = SqlListenerProtocolVersion.create(2, 1, 0);
 
     /** Supported versions. */
