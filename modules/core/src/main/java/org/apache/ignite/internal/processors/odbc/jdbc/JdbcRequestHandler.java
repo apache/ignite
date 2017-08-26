@@ -94,6 +94,9 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
     /** Replicated only flag. */
     private final boolean replicatedOnly;
 
+    /** Lazy query execution flag. */
+    private final boolean lazyExec;
+
     /** Automatic close of cursors. */
     private final boolean autoCloseCursors;
 
@@ -108,10 +111,11 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
      * @param collocated Collocated flag.
      * @param replicatedOnly Replicated only flag.
      * @param autoCloseCursors Flag to automatically close server cursors.
+     * @param lazyExec Lazy query execution flag.
      */
     public JdbcRequestHandler(GridKernalContext ctx, GridSpinBusyLock busyLock, int maxCursors,
         boolean distributedJoins, boolean enforceJoinOrder, boolean collocated, boolean replicatedOnly,
-        boolean autoCloseCursors) {
+        boolean autoCloseCursors, boolean lazyExec) {
         this.ctx = ctx;
         this.busyLock = busyLock;
         this.maxCursors = maxCursors;
@@ -120,6 +124,7 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
         this.collocated = collocated;
         this.replicatedOnly = replicatedOnly;
         this.autoCloseCursors = autoCloseCursors;
+        this.lazyExec= lazyExec;
 
         log = ctx.log(getClass());
     }
@@ -226,6 +231,7 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
             qry.setEnforceJoinOrder(enforceJoinOrder);
             qry.setCollocated(collocated);
             qry.setReplicatedOnly(replicatedOnly);
+            qry.setLazy(lazyExec);
 
             if (req.pageSize() <= 0)
                 return new JdbcResponse(SqlListenerResponse.STATUS_FAILED,
@@ -391,6 +397,7 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
                 qry.setEnforceJoinOrder(enforceJoinOrder);
                 qry.setCollocated(collocated);
                 qry.setReplicatedOnly(replicatedOnly);
+                qry.setLazy(lazyExec);
 
                 qry.setSchema(schemaName);
 
