@@ -33,6 +33,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.UUID;
@@ -55,6 +56,8 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.MemoryConfiguration;
+import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.ClusterMetricsSnapshot;
@@ -128,6 +131,8 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_OPTIMIZED_MARSHALL
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SECURITY_COMPATIBILITY_MODE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SERVICES_COMPATIBILITY_MODE;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
+import static org.apache.ignite.configuration.MemoryConfiguration.DFLT_SYS_CACHE_INIT_SIZE;
+import static org.apache.ignite.configuration.MemoryConfiguration.DFLT_SYS_CACHE_MAX_SIZE;
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_DISCONNECTED;
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_RECONNECTED;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
@@ -136,11 +141,14 @@ import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.events.EventType.EVT_NODE_METRICS_UPDATED;
 import static org.apache.ignite.events.EventType.EVT_NODE_SEGMENTED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DEPLOYMENT_MODE;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_JVM_PID;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_LATE_AFFINITY_ASSIGNMENT;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_BINARY_STRING_SER_VER_2;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_DFLT_SUID;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PEER_CLASSLOADING;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_REQ_HEAP;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_REQ_OFFHEAP;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_COMPATIBILITY_MODE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SERVICES_COMPATIBILITY_MODE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_USER_NAME;
@@ -482,6 +490,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         }
 
         ctx.addNodeAttribute(IgniteNodeAttributes.ATTR_PHY_RAM, totSysMemory);
+        ctx.addNodeAttribute(ATTR_REQ_OFFHEAP, requiredOffheap());
+        ctx.addNodeAttribute(ATTR_REQ_HEAP, mem.getHeapMemoryUsage().getMax());
 
         DiscoverySpi spi = getSpi();
 
@@ -1387,16 +1397,16 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * @param topVer Topology version.
      */
     public void ackTopology(long topVer) {
-        ackTopology(topVer, false);
+        ackTopology(topVer, false, true);
     }
 
     /**
      * Logs grid size for license compliance.
-     *
      * @param topVer Topology version.
      * @param throttle Suppress printing if this topology was already printed.
+     * @param checkMemoryAvailable Check memory available.
      */
-    private void ackTopology(long topVer, boolean throttle) {
+    private void ackTopology(long topVer, boolean throttle, boolean checkMemoryAvailable) {
         assert !isLocDaemon;
 
         DiscoCache discoCache = discoCacheHist.get(new AffinityTopologyVersion(topVer));
@@ -1484,6 +1494,220 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         }
         else if (log.isInfoEnabled())
             log.info(topologySnapshotMessage(topVer, srvNodes.size(), clientNodes.size(), totalCpus, heap));
+
+        if (checkMemoryAvailable)
+            checkMemoryAvailable(topVer);
+    }
+
+    /**
+     * @return Required offheap memory in bytes.
+     */
+    private long requiredOffheap() {
+        MemoryConfiguration memCfg = ctx.config().getMemoryConfiguration();
+
+        long res = memCfg.getSystemCacheMaxSize();
+
+        MemoryPolicyConfiguration[] memPlcsCfgs = memCfg.getMemoryPolicies();
+
+        if (memPlcsCfgs != null) {
+            String dfltMemPlcName = memCfg.getDefaultMemoryPolicyName();
+
+            boolean customDflt = false;
+
+            for (MemoryPolicyConfiguration plcsCfg : memPlcsCfgs) {
+                if(Objects.equals(dfltMemPlcName, plcsCfg.getName()))
+                    customDflt = true;
+
+                res += plcsCfg.getMaxSize();
+            }
+
+            if(!customDflt)
+                res += memCfg.getDefaultMemoryPolicySize();
+        }
+        else
+            res += memCfg.getDefaultMemoryPolicySize();
+
+        return res;
+    }
+
+    /**
+     *
+     */
+    private void checkMemoryAvailable(long topVer) {
+        MemoryConfiguration memCfg = ctx.config().getMemoryConfiguration();
+
+        DiscoCache discoCache = discoCacheHist.get(new AffinityTopologyVersion(topVer));
+
+        ClusterNode loc = discoCache.localNode();
+
+        long available = loc.attribute(IgniteNodeAttributes.ATTR_PHY_RAM);
+
+        if(available > 0) {
+
+            long localRequired = (long)loc.attribute(ATTR_REQ_OFFHEAP) +
+                (long)loc.attribute(ATTR_REQ_HEAP);
+
+            String localMacs = loc.attribute(ATTR_MACS);
+            int localPid = loc.attribute(ATTR_JVM_PID);
+
+            long remoteRequired = 0;
+
+            int nodes = 1;
+
+            Map<Integer, Long> heapSizes = null;
+
+            for (ClusterNode node : discoCache.allNodes()) {
+                if (!node.equals(loc) && localMacs.equals(node.attribute(ATTR_MACS))) {
+                    nodes++;
+
+                    if (heapSizes == null) {
+                        heapSizes = new HashMap<>();
+
+                        heapSizes.put(localPid, loc.attribute(ATTR_REQ_HEAP));
+                    }
+
+                    remoteRequired += (long)node.attribute(ATTR_REQ_OFFHEAP);
+
+                    if (localPid != (int)node.attribute(ATTR_JVM_PID) &&
+                        heapSizes.put(node.attribute(ATTR_JVM_PID), node.attribute(ATTR_REQ_HEAP)) == null)
+                        remoteRequired += (long)node.attribute(ATTR_REQ_HEAP);
+                }
+            }
+
+            // 4GB or 20% of available memory is expected to be used by OS and user applications
+            long safeToUse = available - Math.max(4 << 30, (long)(available * 0.2));
+
+            if ((localRequired + remoteRequired) > safeToUse){
+
+                U.warn(log, "-----------------------------------------------------");
+
+                int jvmCnt = heapSizes == null ? 1 : heapSizes.size();
+
+                long min = (512 /* heap (MB) */ * jvmCnt + (40 /* systemCache (MB) */ + 100 /* offheap (MB) */) * nodes);
+
+                if(safeToUse < min << 20) {
+                    // too few memory, can't suggest anything reasonable
+                    U.warn(log, "Too few of physical memory (performance may drop).");
+                    U.warn(log, "At least " + min + "MB RAM is needed for each node.");
+                    U.warn(log, "-----------------------------------------------------");
+
+                    return;
+                }
+
+                U.warn(log, "Excessive memory usage by Ignite node process (performance may drop) " +
+                    "[requested=" + ((localRequired + remoteRequired) >> 20) + "MB, available=" + (available >> 20) + "MB].");
+
+
+                List<String> current = new ArrayList<>();
+                List<String> suggested = new ArrayList<>();
+
+                long remaning = safeToUse;
+
+                long heapMax = mem.getHeapMemoryUsage().getMax();
+                long heapInit = mem.getHeapMemoryUsage().getInit();
+
+                if (heapMax != -1)
+                    current.add("  Java Heap maxSize=" + (heapMax >> 20) + "MB");
+
+
+                if (heapInit != -1)
+                    current.add("  Java Heap initSize=" + (heapInit >> 20) + "MB");
+
+
+                long heapTotal = heapSizes == null ? heapMax : 0;
+
+                if(heapSizes != null){
+                    for (long heap0 : heapSizes.values())
+                        heapTotal += heap0;
+                }
+
+                if (heapTotal < 0 || heapTotal > safeToUse * 0.3){
+                    long perJvm = Math.max(512 << 20, (long)((safeToUse * 0.3) / jvmCnt));
+                    suggested.add("  Java Heap maxSize=" + (perJvm >> 20) + "MB");
+                    suggested.add("  Java Heap initSize=" + (perJvm >> 20) + "MB");
+
+                    remaning -= perJvm * jvmCnt;
+                }
+                else if (heapTotal > 0)
+                    remaning -= heapTotal;
+
+                boolean sysInitChanged = DFLT_SYS_CACHE_INIT_SIZE != memCfg.getSystemCacheInitialSize();
+                boolean sysMaxChanged = DFLT_SYS_CACHE_MAX_SIZE != memCfg.getSystemCacheMaxSize();
+
+                if (sysInitChanged || sysMaxChanged) {
+                    current.add("  MemoryConfiguration.systemCacheInitialSize=" + (memCfg.getSystemCacheInitialSize() >> 20) + "MB");
+                    current.add("  MemoryConfiguration.systemCacheMaxSize=" + (memCfg.getSystemCacheMaxSize() >> 20) + "MB");
+
+                    suggested.add("  MemoryConfiguration.systemCacheInitialSize=" + (DFLT_SYS_CACHE_INIT_SIZE >> 20) + "MB");
+                    suggested.add("  MemoryConfiguration.systemCacheMaxSize=" + (DFLT_SYS_CACHE_MAX_SIZE >> 20) + "MB");
+
+                }
+
+                remaning -= DFLT_SYS_CACHE_MAX_SIZE * nodes;
+
+                MemoryPolicyConfiguration[] memPlcsCfgs = memCfg.getMemoryPolicies();
+
+                Map<String, Long> sizePerPolicy = U.newHashMap(memPlcsCfgs == null ? 1 : memPlcsCfgs.length + 1);
+
+                String dfltPlcName = memCfg.getDefaultMemoryPolicyName();
+                long dfltPlcSize = memCfg.getDefaultMemoryPolicySize();
+
+                sizePerPolicy.put(
+                    dfltPlcName,
+                    dfltPlcSize);
+
+                if (memPlcsCfgs != null) {
+                    for (MemoryPolicyConfiguration cfg : memPlcsCfgs)
+                        sizePerPolicy.put(cfg.getName(), cfg.getMaxSize());
+                }
+
+                long plcsTotal = 0;
+
+                for (Map.Entry<String, Long> entry : sizePerPolicy.entrySet()) {
+                    if (MemoryConfiguration.DFLT_MEM_PLC_DEFAULT_NAME.equals(dfltPlcName) && Objects.equals(dfltPlcName, entry.getKey()))
+                        current.add("  [MemoryConfiguration.defaultMemoryPolicySize=" + (entry.getValue() >> 20) + "MB]");
+                    else
+                        current.add("  [MemoryPolicyConfiguration.maxSize for " + entry.getKey() + ": " + (entry.getValue() >> 20) + "MB]");
+
+                    plcsTotal += entry.getValue();
+                }
+
+                if (remaning >= (1 * nodes) << 30) {
+
+                    double k = remaning / (double)(plcsTotal * nodes);
+
+                    for (Map.Entry<String, Long> entry : sizePerPolicy.entrySet()) {
+                        if (MemoryConfiguration.DFLT_MEM_PLC_DEFAULT_NAME.equals(dfltPlcName) && Objects.equals(dfltPlcName, entry.getKey()))
+                            suggested.add("  [MemoryConfiguration.defaultMemoryPolicySize=" + ((long)(entry.getValue() * k) >> 20) + "MB]");
+                        else
+                            suggested.add("  [MemoryPolicyConfiguration.maxSize for " + entry.getKey() + ": " + ((long)(entry.getValue() * k) >> 20) + "MB]");
+                    }
+                }
+                else
+                    suggested.add("  MemoryConfiguration.defaultMemoryPolicySize=" + (remaning >> 20) + "MB");
+
+                Collections.sort(current);
+                Collections.sort(suggested);
+
+                U.warn(log, "");
+                U.warn(log, "Please tune the folowing settings as suggested:");
+
+                for (String line : suggested)
+                    U.warn(log, line);
+
+                U.warn(log, "");
+                U.warn(log, "Current settings:");
+
+                for (String line : current)
+                    U.warn(log, line);
+
+                U.warn(log, "");
+
+                U.warn(log, "The overall memory usage by all Ignite nodes on the host: " +   ((localRequired + remoteRequired) >> 20) + "MB");
+
+                U.warn(log, "-----------------------------------------------------");
+            }
+        }
     }
 
     /**
@@ -2530,7 +2754,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                             if (log.isInfoEnabled())
                                 log.info("Added new node to topology: " + node);
 
-                            ackTopology(topVer.topologyVersion(), true);
+                            ackTopology(topVer.topologyVersion(), true, true);
                         }
                         else if (log.isDebugEnabled())
                             log.debug("Added new node to topology: " + node);
@@ -2551,7 +2775,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                             if (log.isInfoEnabled())
                                 log.info("Node left topology: " + node);
 
-                            ackTopology(topVer.topologyVersion(), true);
+                            ackTopology(topVer.topologyVersion(), true, false);
                         }
                         else if (log.isDebugEnabled())
                             log.debug("Node left topology: " + node);
@@ -2573,7 +2797,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                         log.info("Client node reconnected to topology: " + node);
 
                     if (!isLocDaemon)
-                        ackTopology(topVer.topologyVersion(), true);
+                        ackTopology(topVer.topologyVersion(), true, false);
 
                     break;
                 }
@@ -2587,7 +2811,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                         if (!isLocDaemon) {
                             U.warn(log, "Node FAILED: " + node);
 
-                            ackTopology(topVer.topologyVersion(), true);
+                            ackTopology(topVer.topologyVersion(), true, false);
                         }
                         else if (log.isDebugEnabled())
                             log.debug("Node FAILED: " + node);

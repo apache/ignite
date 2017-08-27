@@ -124,6 +124,12 @@ public final class IgniteNodeAttributes {
     public static final String ATTR_PHY_RAM = ATTR_PREFIX + ".phy.ram";
 
     /** Internal attribute name constant. */
+    public static final String ATTR_REQ_OFFHEAP = ATTR_PREFIX + ".req.offheap";
+
+    /** Internal attribute name constant. */
+    public static final String ATTR_REQ_HEAP = ATTR_PREFIX + ".req.heap";
+
+    /** Internal attribute name constant. */
     public static final String ATTR_JVM_PID = ATTR_PREFIX + ".jvm.pid";
 
     /** Internal attribute name constant. */
