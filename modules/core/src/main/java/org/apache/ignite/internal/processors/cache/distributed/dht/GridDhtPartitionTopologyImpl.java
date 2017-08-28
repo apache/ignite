@@ -1910,14 +1910,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 }
             }
 
-            long seqVal = 0;
-
-            if (updateSeq) {
-                seqVal = this.updateSeq.incrementAndGet();
-
-                node2part = new GridDhtPartitionFullMap(node2part, seqVal);
-            }
-
             for (Map.Entry<UUID, GridDhtPartitionMap> e : node2part.entrySet()) {
                 GridDhtPartitionMap partMap = e.getValue();
 
@@ -1933,14 +1925,16 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                         result.add(e.getKey());
                     }
 
-                    if (updateSeq)
-                        partMap.updateSequence(seqVal, partMap.topologyVersion());
+                    partMap.updateSequence(partMap.updateSequence() + 1, partMap.topologyVersion());
 
                     U.warn(log, "Partition has been scheduled for rebalancing due to outdated update counter " +
                         "[nodeId=" + e.getKey() + ", cacheOrGroupName=" + grp.cacheOrGroupName() +
                         ", partId=" + p + ", haveHistory=" + haveHistory + "]");
                 }
             }
+
+            if (updateSeq)
+                node2part = new GridDhtPartitionFullMap(node2part, this.updateSeq.incrementAndGet());
         }
         finally {
             lock.writeLock().unlock();
