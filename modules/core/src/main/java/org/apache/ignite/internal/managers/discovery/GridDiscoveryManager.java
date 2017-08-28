@@ -1591,7 +1591,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 if(safeToUse < min << 20) {
                     // too few memory, can't suggest anything reasonable
                     U.warn(log, sb.append("\nToo few of physical memory (performance may drop).")
-                        .append("\nAt least ").append(min).append("MB RAM is needed for each node.")
+                        .append("\nAt least ").append(min).append("MB RAM is needed.")
                         .append("\n-----------------------------------------------------"));
 
                     return;
