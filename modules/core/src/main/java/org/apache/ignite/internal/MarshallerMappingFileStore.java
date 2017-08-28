@@ -34,6 +34,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.GridStripedLock;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.MarshallerContext;
 
 /**
  * File-based persistence provider for {@link MarshallerContextImpl}.
@@ -52,6 +53,9 @@ final class MarshallerMappingFileStore {
 
     /** */
     private final File workDir;
+
+    /** */
+    private final String FILE_EXTENSION = ".classname";
 
     /**
      * @param log Logger.
@@ -137,11 +141,81 @@ final class MarshallerMappingFileStore {
     }
 
     /**
+     * Restores all mappings available in file system to marshaller context.
+     * This method should be used only on node startup.
+     *
+     * @param marshCtx Marshaller context to register mappings.
+     */
+    void restoreMappings(MarshallerContext marshCtx) throws IgniteCheckedException {
+        for (File file : workDir.listFiles()) {
+            String name = file.getName();
+
+            byte platformId = getPlatformId(name);
+
+            int typeId = getTypeId(name);
+
+            try (FileInputStream in = new FileInputStream(file)) {
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
+                    String className = reader.readLine();
+
+                    marshCtx.registerClassNameLocally(platformId, typeId, className);
+                }
+            }
+            catch (IOException e) {
+                throw new IgniteCheckedException("Reading marshaller mapping from file "
+                    + name
+                    + " failed."
+                    , e);
+            }
+        }
+    }
+
+    /**
+     * @param fileName Name of file with marshaller mapping information.
+     * @throws IgniteCheckedException If file name format is broken.
+     */
+    private byte getPlatformId(String fileName) throws IgniteCheckedException {
+        String lastSymbol = fileName.substring(fileName.length() - 1);
+
+        byte platformId;
+
+        try {
+            platformId = Byte.parseByte(lastSymbol);
+        }
+        catch (NumberFormatException e) {
+            throw new IgniteCheckedException("Reading marshaller mapping from file "
+                + fileName
+                + " failed; last symbol of file name is expected to be numeric.", e);
+        }
+
+        return platformId;
+    }
+
+    /**
+     * @param fileName Name of file with marshaller mapping information.
+     * @throws IgniteCheckedException If file name format is broken.
+     */
+    private int getTypeId(String fileName) throws IgniteCheckedException {
+        int typeId;
+
+        try {
+            typeId = Integer.parseInt(fileName.substring(0, fileName.indexOf(FILE_EXTENSION)));
+        }
+        catch (NumberFormatException e) {
+            throw new IgniteCheckedException("Reading marshaller mapping from file "
+                + fileName
+                + " failed; type ID is expected to be numeric.", e);
+        }
+
+        return typeId;
+    }
+
+    /**
      * @param platformId Platform id.
      * @param typeId Type id.
      */
     private String getFileName(byte platformId, int typeId) {
-        return typeId + ".classname" + platformId;
+        return typeId + FILE_EXTENSION + platformId;
     }
 
     /**

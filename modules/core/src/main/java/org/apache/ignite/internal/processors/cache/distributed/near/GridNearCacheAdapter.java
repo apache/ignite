@@ -323,7 +323,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
      * @return Near entries.
      */
     public Set<Cache.Entry<K, V>> nearEntries() {
-        final AffinityTopologyVersion topVer = ctx.discovery().topologyVersionEx();
+        final AffinityTopologyVersion topVer = ctx.shared().exchange().readyAffinityVersion();
 
         return super.entrySet(new CacheEntryPredicateAdapter() {
             @Override public boolean apply(GridCacheEntryEx entry) {

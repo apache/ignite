@@ -46,7 +46,8 @@ public class MemoryPolicy {
         PageMemory pageMem,
         MemoryPolicyConfiguration cfg,
         MemoryMetricsImpl memMetrics,
-        PageEvictionTracker evictionTracker) {
+        PageEvictionTracker evictionTracker
+    ) {
         this.pageMem = pageMem;
         this.memMetrics = memMetrics;
         this.cfg = cfg;
