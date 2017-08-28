@@ -35,6 +35,7 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
@@ -46,6 +47,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -96,7 +98,19 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
 
         ccfg2.setQueryEntities(Collections.singleton(qryEntity));
 
-        cfg.setCacheConfiguration(ccfg1, ccfg2);
+        // Do not start filtered cache on coordinator.
+        if (gridName.endsWith("0")) {
+            cfg.setCacheConfiguration(ccfg1, ccfg2);
+        }
+        else {
+            CacheConfiguration ccfg3 = cacheConfiguration("filtered");
+            ccfg3.setPartitionLossPolicy(PartitionLossPolicy.READ_ONLY_SAFE);
+            ccfg3.setBackups(1);
+            ccfg3.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+            ccfg3.setNodeFilter(new CoordinatorNodeFilter());
+
+            cfg.setCacheConfiguration(ccfg1, ccfg2, ccfg3);
+        }
 
         MemoryConfiguration memCfg = new MemoryConfiguration();
 
@@ -501,7 +515,23 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
      * @throws Exception If failed.
      */
     public void testForceRebalance() throws Exception {
-        final Ignite ig = startGrids(4);
+        testForceRebalance(cacheName);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testForceRebalanceClientTopology() throws Exception {
+        testForceRebalance("filtered");
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void testForceRebalance(String cacheName) throws Exception {
+        startGrids(4);
+
+        final Ignite ig = grid(1);
 
         ig.active(true);
 
@@ -651,6 +681,16 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
                 "v1=" + v1 +
                 ", v2=" + v2 +
                 '}';
+        }
+    }
+
+    /**
+     *
+     */
+    private static class CoordinatorNodeFilter implements IgnitePredicate<ClusterNode> {
+        /** {@inheritDoc} */
+        @Override public boolean apply(ClusterNode node) {
+            return node.order() > 1;
         }
     }
 }
