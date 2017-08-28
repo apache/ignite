@@ -1595,6 +1595,23 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
     }
 
     /**
+     * @throws Exception If fails
+     */
+    public void testBuilderReusage() throws Exception {
+        BinaryObjectBuilder builder =  newWrapper("SimpleCls");
+
+        builder.setField("str", "abc");
+
+        assertEquals("abc", builder.build().field("str"));
+
+        builder.setField("str", null);
+        assertNull(builder.build().field("str"));
+
+        builder.setField("str", "def");
+        assertEquals("def", builder.build().field("str"));
+    }
+
+    /**
      *
      */
     private static class TestObjectExternalizable implements Externalizable {
