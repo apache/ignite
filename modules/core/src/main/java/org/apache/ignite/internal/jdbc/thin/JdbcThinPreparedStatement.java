@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.jdbc.thin;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
 import java.math.BigDecimal;
@@ -39,7 +40,9 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Calendar;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.odbc.SqlListenerUtils;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaParamsResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQuery;
 
 /**
@@ -51,6 +54,9 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
 
     /** Query arguments. */
     protected ArrayList<Object> args;
+
+    /** Parameters metadata. */
+    private JdbcThinParameterMetadata metaData;
 
     /**
      * Creates new prepared statement.
@@ -322,8 +328,27 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
     /** {@inheritDoc} */
     @Override public ParameterMetaData getParameterMetaData() throws SQLException {
         ensureNotClosed();
+        try {
+            if (conn.isClosed())
+                throw new SQLException("Connection is closed.");
 
-        throw new SQLFeatureNotSupportedException("Meta data for prepared statement is not supported.");
+            if (metaData != null)
+                return metaData;
+
+            JdbcMetaParamsResult res = conn.io().parametersMeta(conn.getSchema(), sql);
+
+            metaData = new JdbcThinParameterMetadata(res.meta());
+
+            return metaData;
+        }
+        catch (IOException e) {
+            conn.close();
+
+            throw new SQLException("Failed to query Ignite.", e);
+        }
+        catch (IgniteCheckedException e) {
+            throw new SQLException("Failed to query Ignite.", e);
+        }
     }
 
     /** {@inheritDoc} */

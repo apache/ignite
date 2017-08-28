@@ -573,22 +573,17 @@ public class IgniteChangeGlobalStateTest extends IgniteChangeGlobalStateAbstract
 
         stopPrimary(0);
 
-        boolean exc = false;
-
         try {
             ig3CB.active(true);
+
+            fail("Activation should fail");
         }
         catch (IgniteException e) {
-            exc = true;
-
-            log.error("stack trace from remote node", e);
+            log.error("Stack trace from remote node", e);
 
             for (Throwable t : e.getSuppressed())
                 assertTrue(t.getMessage().contains("can't get lock during"));
         }
-
-        if (!exc)
-            fail();
 
         assertTrue(!ig1B.active());
         assertTrue(!ig2B.active());

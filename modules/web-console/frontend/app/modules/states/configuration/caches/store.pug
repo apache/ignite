@@ -48,7 +48,7 @@ mixin hibernateField(name, model, items, valid, save, newItem)
         label Store
         ignite-form-field-tooltip.tipLabel
             | Cache store settings#[br]
-            | #[a(href="https://apacheignite.readme.io/docs/persistent-store" target="_blank") More info]
+            | #[a(href="https://apacheignite.readme.io/docs/3rd-party-store" target="_blank") More info]
         ignite-form-revert
     .panel-collapse(role='tabpanel' bs-collapse-target id=`${form}`)
         .panel-body(ng-if=`ui.isPanelLoaded('${form}')`)

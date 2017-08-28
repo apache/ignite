@@ -271,6 +271,35 @@ public class VisorNodeDataCollectorTaskResult extends VisorDataTransferObject {
         return persistenceMetricsEx;
     }
 
+    /**
+     * Add specified results.
+     *
+     * @param res Results to add.
+     */
+    public void add(VisorNodeDataCollectorTaskResult res) {
+        assert res != null;
+
+        active = active || res.isActive();
+        unhandledEx.putAll(res.getUnhandledEx());
+        gridNames.putAll(res.getGridNames());
+        topVersions.putAll(res.getTopologyVersions());
+        taskMonitoringEnabled.putAll(res.isTaskMonitoringEnabled());
+        errCnts.putAll(res.getErrorCounts());
+        evts.addAll(res.getEvents());
+        evtsEx.putAll(res.getEventsEx());
+        memoryMetrics.putAll(res.getMemoryMetrics());
+        memoryMetricsEx.putAll(res.getMemoryMetricsEx());
+        caches.putAll(res.getCaches());
+        cachesEx.putAll(res.getCachesEx());
+        igfss.putAll(res.getIgfss());
+        igfsEndpoints.putAll(res.getIgfsEndpoints());
+        igfssEx.putAll(res.getIgfssEx());
+        readyTopVers.putAll(res.getReadyAffinityVersions());
+        pendingExchanges.putAll(res.getPendingExchanges());
+        persistenceMetrics.putAll(res.getPersistenceMetrics());
+        persistenceMetricsEx.putAll(res.getPersistenceMetricsEx());
+    }
+
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         out.writeBoolean(active);
