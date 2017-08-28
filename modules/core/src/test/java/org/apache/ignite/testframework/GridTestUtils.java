@@ -426,6 +426,32 @@ public final class GridTestUtils {
     }
 
     /**
+     * Checks whether closure throws exception, which is itself of a specified
+     * class, or has a cause of the specified class.
+     *
+     * @param call Closure.
+     * @param p Parameter passed to closure.
+     * @param cls Expected class.
+     * @return Thrown throwable.
+     */
+    public static <P> Throwable assertThrowsWithCause(IgniteInClosure<P> call, P p, Class<? extends Throwable> cls) {
+        assert call != null;
+        assert cls != null;
+
+        try {
+            call.apply(p);
+        }
+        catch (Throwable e) {
+            if (!X.hasCause(e, cls))
+                fail("Exception is neither of a specified class, nor has a cause of the specified class: " + cls, e);
+
+            return e;
+        }
+
+        throw new AssertionError("Exception has not been thrown.");
+    }
+
+    /**
      * Throw assertion error with specified error message and initialized cause.
      *
      * @param msg Error message.
@@ -1884,5 +1910,15 @@ public final class GridTestUtils {
      */
     public static void deleteDbFiles() throws Exception {
         deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
+    }
+
+    /**
+     * Returns a name composed from the base name and a UUID separated by '-'.
+     *
+     * @param baseName Base name
+     * @return Randomized base name.
+     */
+    public static String createRandomizedName(String baseName) {
+        return baseName + '-' + UUID.randomUUID();
     }
 }

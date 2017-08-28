@@ -887,7 +887,7 @@ export default class IgniteConfigurationGenerator {
             cfg.intProperty('peerClassLoadingMissedResourcesCacheSize')
                 .intProperty('peerClassLoadingThreadPoolSize')
                 .varArgProperty('p2pLocClsPathExcl', 'peerClassLoadingLocalClassPathExclude',
-                   cluster.peerClassLoadingLocalClassPathExclude);
+                    cluster.peerClassLoadingLocalClassPathExclude);
         }
 
         // Since ignite 2.0
@@ -1695,7 +1695,8 @@ export default class IgniteConfigurationGenerator {
                     fields.push({name: valFieldName, className: javaTypes.fullClassName(domain.valueType)});
             }
 
-            cfg.mapProperty('fields', fields, 'fields', true)
+            cfg.collectionProperty('keyFields', 'keyFields', domain.queryKeyFields, 'java.lang.String', 'java.util.HashSet')
+                .mapProperty('fields', fields, 'fields', true)
                 .mapProperty('aliases', 'aliases');
 
             const indexes = _.map(domain.indexes, (index) =>

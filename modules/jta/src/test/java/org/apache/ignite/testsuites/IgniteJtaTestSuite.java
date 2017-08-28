@@ -21,13 +21,14 @@ import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.CacheJndiTmFactorySelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheJtaConfigurationValidationSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheJtaFactoryConfigValidationSelfTest;
+import org.apache.ignite.internal.processors.cache.GridJtaLifecycleAwareSelfTest;
+import org.apache.ignite.internal.processors.cache.GridJtaTransactionManagerSelfTest;
 import org.apache.ignite.internal.processors.cache.GridPartitionedCacheJtaFactorySelfTest;
 import org.apache.ignite.internal.processors.cache.GridPartitionedCacheJtaFactoryUseSyncSelfTest;
 import org.apache.ignite.internal.processors.cache.GridPartitionedCacheJtaLookupClassNameSelfTest;
 import org.apache.ignite.internal.processors.cache.GridReplicatedCacheJtaFactorySelfTest;
 import org.apache.ignite.internal.processors.cache.GridReplicatedCacheJtaFactoryUseSyncSelfTest;
 import org.apache.ignite.internal.processors.cache.GridReplicatedCacheJtaLookupClassNameSelfTest;
-import org.apache.ignite.internal.processors.cache.GridJtaLifecycleAwareSelfTest;
 import org.apache.ignite.testframework.IgniteTestSuite;
 
 /**
@@ -53,6 +54,8 @@ public class IgniteJtaTestSuite extends TestSuite {
         suite.addTestSuite(GridJtaLifecycleAwareSelfTest.class);
         suite.addTestSuite(GridCacheJtaConfigurationValidationSelfTest.class);
         suite.addTestSuite(GridCacheJtaFactoryConfigValidationSelfTest.class);
+
+        suite.addTestSuite(GridJtaTransactionManagerSelfTest.class);
 
         // Factory
         suite.addTestSuite(CacheJndiTmFactorySelfTest.class);

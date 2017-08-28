@@ -668,7 +668,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
             this.cctx = cctx;
             this.part = part;
 
-            nodes = fallbacks(cctx.discovery().topologyVersionEx());
+            nodes = fallbacks(cctx.shared().exchange().readyAffinityVersion());
 
             if (F.isEmpty(nodes))
                 throw new ClusterTopologyException("Failed to execute the query " +
@@ -826,7 +826,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
                         if (retryFut != null)
                             retryFut.get();
 
-                        nodes = fallbacks(unreservedTopVer == null ? cctx.discovery().topologyVersionEx() : unreservedTopVer);
+                        nodes = fallbacks(unreservedTopVer == null ? cctx.shared().exchange().readyAffinityVersion() : unreservedTopVer);
 
                         unreservedTopVer = null;
 

@@ -579,6 +579,16 @@ public abstract class GridAbstractCacheStoreSelfTest<T extends CacheStore<Object
         }
 
         /** {@inheritDoc} */
+        @Override public void suspend() {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void resume() {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
         @Override public IgniteFuture<Void> rollbackAsync() throws IgniteException {
             return null;
         }

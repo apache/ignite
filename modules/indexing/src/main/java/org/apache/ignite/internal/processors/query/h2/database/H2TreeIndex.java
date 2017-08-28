@@ -215,25 +215,6 @@ public class H2TreeIndex extends GridH2IndexBase {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean putx(GridH2Row row) {
-        try {
-            InlineIndexHelper.setCurrentInlineIndexes(inlineIdxs);
-
-            int seg = segmentForRow(row);
-
-            H2Tree tree = treeForRead(seg);
-
-            return tree.putx(row);
-        }
-        catch (IgniteCheckedException e) {
-            throw DbException.convert(e);
-        }
-        finally {
-            InlineIndexHelper.clearCurrentInlineIndexes();
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override public GridH2Row remove(SearchRow row) {
         try {
             InlineIndexHelper.setCurrentInlineIndexes(inlineIdxs);
@@ -321,17 +302,15 @@ public class H2TreeIndex extends GridH2IndexBase {
     }
 
     /** {@inheritDoc} */
-    @Override public void destroy() {
+    @Override public void destroy(boolean rmvIndex) {
         try {
-            if (cctx.affinityNode()) {
-                if (!cctx.kernalContext().cache().context().database().persistenceEnabled()) {
-                    for (int i = 0; i < segments.length; i++) {
-                        H2Tree tree = segments[i];
+            if (cctx.affinityNode() && rmvIndex) {
+                for (int i = 0; i < segments.length; i++) {
+                    H2Tree tree = segments[i];
 
-                        tree.destroy();
+                    tree.destroy();
 
-                        dropMetaPage(tree.getName(), i);
-                    }
+                    dropMetaPage(tree.getName(), i);
                 }
             }
         }
@@ -339,15 +318,8 @@ public class H2TreeIndex extends GridH2IndexBase {
             throw new IgniteException(e);
         }
         finally {
-            super.destroy();
+            super.destroy(rmvIndex);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override protected IgniteTree<SearchRow, GridH2Row> doTakeSnapshot() {
-        int seg = threadLocalSegment();
-
-        return treeForRead(seg);
     }
 
     /** {@inheritDoc} */

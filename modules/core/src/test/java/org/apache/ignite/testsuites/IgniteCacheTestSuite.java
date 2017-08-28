@@ -46,6 +46,7 @@ import org.apache.ignite.internal.processors.cache.CacheFutureExceptionSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheNamesSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheNamesWithSpecialCharactersTest;
 import org.apache.ignite.internal.processors.cache.CachePutEventListenerErrorSelfTest;
+import org.apache.ignite.internal.processors.cache.CacheTwoDimensionalArrayTest;
 import org.apache.ignite.internal.processors.cache.CacheTxFastFinishTest;
 import org.apache.ignite.internal.processors.cache.GridCacheAffinityApiSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheAffinityMapperSelfTest;
@@ -77,6 +78,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheStoreValueBytesSelfT
 import org.apache.ignite.internal.processors.cache.GridCacheSwapPreloadSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheTtlManagerSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheTxPartitionedLocalStoreSelfTest;
+import org.apache.ignite.internal.processors.cache.GridMemoryConfigurationConsistencySelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAtomicInvokeTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAtomicLocalInvokeTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAtomicLocalWithStoreInvokeTest;
@@ -223,6 +225,7 @@ public class IgniteCacheTestSuite extends TestSuite {
         // suite.addTestSuite(GridCacheP2PUndeploySelfTest.class);
         suite.addTestSuite(GridCacheConfigurationValidationSelfTest.class);
         suite.addTestSuite(GridCacheConfigurationConsistencySelfTest.class);
+        suite.addTestSuite(GridMemoryConfigurationConsistencySelfTest.class);
         suite.addTestSuite(GridCacheJdbcBlobStoreSelfTest.class);
         suite.addTestSuite(GridCacheJdbcBlobStoreMultithreadedSelfTest.class);
         suite.addTestSuite(JdbcTypesDefaultTransformerTest.class);
@@ -311,6 +314,7 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(IgniteDiagnosticMessagesMultipleConnectionsTest.class);
 
         suite.addTestSuite(IgniteIncompleteCacheObjectSelfTest.class);
+        suite.addTestSuite(CacheTwoDimensionalArrayTest.class);
 
         return suite;
     }

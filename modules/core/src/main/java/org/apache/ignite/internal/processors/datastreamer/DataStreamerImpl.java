@@ -768,9 +768,12 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
             }
 
             try {
-                AffinityTopologyVersion topVer = allowOverwrite() || cctx.isLocal() ?
-                        ctx.cache().context().exchange().readyAffinityVersion() :
-                        cctx.topology().topologyVersion();
+                AffinityTopologyVersion topVer;
+
+                if (!cctx.isLocal())
+                    topVer = ctx.cache().context().exchange().lastTopologyFuture().get();
+                else
+                    topVer = ctx.cache().context().exchange().readyAffinityVersion();
 
                 for (DataStreamerEntry entry : entries) {
                     List<ClusterNode> nodes;
@@ -1524,23 +1527,36 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
             try {
                 GridCacheContext cctx = ctx.cache().internalCache(cacheName).context();
 
-                final boolean allowOverwrite = allowOverwrite();
-                final boolean loc = cctx.isLocal();
+                final boolean lockTop = !cctx.isLocal() && !allowOverwrite();
 
-                if (!loc && !allowOverwrite)
+                GridDhtTopologyFuture topWaitFut = null;
+
+                if (lockTop)
                     cctx.topology().readLock();
 
                 try {
-                    GridDhtTopologyFuture fut = loc ? null : cctx.topologyVersionFuture();
+                    AffinityTopologyVersion streamerFutTopVer = null;
 
-                    AffinityTopologyVersion topVer = loc ? reqTopVer : fut.topologyVersion();
+                    if (lockTop) {
+                        GridDhtTopologyFuture topFut = cctx.topologyVersionFuture();
 
-                    if (!allowOverwrite && !topVer.equals(reqTopVer)) {
-                        curFut.onDone(new IgniteCheckedException(
-                            "DataStreamer will retry data transfer at stable topology. " +
-                                "[reqTop=" + reqTopVer + " ,topVer=" + topVer + ", node=local]"));
+                        AffinityTopologyVersion topVer = topFut.isDone() ? topFut.topologyVersion() :
+                            topFut.initialVersion();
+
+                        if (topVer.compareTo(reqTopVer) > 0) {
+                            curFut.onDone(new IgniteCheckedException("DataStreamer will retry data transfer " +
+                                "at stable topology. reqTop=" + reqTopVer + ", topVer=" + topFut.initialVersion() +
+                                ", node=local]"));
+
+                            return;
+                        }
+                        else if (!topFut.isDone())
+                            topWaitFut = topFut;
+                        else
+                            streamerFutTopVer = topFut.topologyVersion();
                     }
-                    else if (loc || allowOverwrite || fut.isDone()) {
+
+                    if (topWaitFut == null) {
                         IgniteInternalFuture<Object> callFut = ctx.closure().callLocalSafe(
                             new DataStreamerUpdateJob(
                                 ctx,
@@ -1555,9 +1571,8 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
                         locFuts.add(callFut);
 
-                        final GridFutureAdapter waitFut = (loc || allowOverwrite) ?
-                            null :
-                            cctx.mvcc().addDataStreamerFuture(topVer);
+                        final GridFutureAdapter waitFut =
+                            lockTop ? cctx.mvcc().addDataStreamerFuture(streamerFutTopVer) : null;
 
                         callFut.listen(new IgniteInClosure<IgniteInternalFuture<Object>>() {
                             @Override public void apply(IgniteInternalFuture<Object> t) {
@@ -1578,17 +1593,19 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                             }
                         });
                     }
-                    else {
-                        fut.listen(new IgniteInClosure<IgniteInternalFuture<AffinityTopologyVersion>>() {
-                            @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> e) {
-                                localUpdate(entries, reqTopVer, curFut, plc);
-                            }
-                        });
-                    }
                 }
                 finally {
-                    if (!loc && !allowOverwrite)
+                    if (lockTop)
                         cctx.topology().readUnlock();
+                }
+
+                if (topWaitFut != null) {
+                    // Need call 'listen' after topology read lock is released.
+                    topWaitFut.listen(new IgniteInClosure<IgniteInternalFuture<AffinityTopologyVersion>>() {
+                        @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> e) {
+                            localUpdate(entries, reqTopVer, curFut, plc);
+                        }
+                    });
                 }
             }
             catch (Throwable ex) {
