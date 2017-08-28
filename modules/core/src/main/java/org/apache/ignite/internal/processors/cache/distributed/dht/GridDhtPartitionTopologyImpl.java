@@ -521,7 +521,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                             DiscoveryEvent evt = evts0.get(i);
 
                             if (ExchangeDiscoveryEvents.serverLeftEvent(evt))
-                                updateSeq = removeNode(evt.eventNode().id(), updateSeq);
+                                removeNode(evt.eventNode().id());
                         }
                     }
 
@@ -1243,6 +1243,9 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                                 ", curPart=" + mapString(part) +
                                 ", newPart=" + mapString(newPart) + ']');
                         }
+
+                        if (newPart.nodeId().equals(ctx.localNodeId()))
+                            updateSeq.setIfGreater(newPart.updateSequence());
                     }
                     else {
                         // If for some nodes current partition has a newer map,
@@ -1271,6 +1274,12 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                         it.remove();
                     }
                 }
+            }
+            else {
+                GridDhtPartitionMap locNodeMap = partMap.get(ctx.localNodeId());
+
+                if (locNodeMap != null)
+                    updateSeq.setIfGreater(locNodeMap.updateSequence());
             }
 
             if (!fullMapUpdated) {
@@ -1378,8 +1387,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             }
 
             long updateSeq = this.updateSeq.incrementAndGet();
-
-            node2part.newUpdateSequence(updateSeq);
 
             if (readyTopVer.initialized() && readyTopVer.equals(lastTopChangeVer)) {
                 AffinityAssignment  aff = grp.affinity().readyAffinity(readyTopVer);
@@ -1537,11 +1544,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             GridDhtPartitionMap cur = node2part.get(parts.nodeId());
 
             if (force) {
-                if (cur != null && cur.topologyVersion().initialized()) {
+                if (cur != null && cur.topologyVersion().initialized())
                     parts.updateSequence(cur.updateSequence(), cur.topologyVersion());
-
-                    this.updateSeq.setIfGreater(cur.updateSequence());
-                }
             }
             else  if (isStaleUpdate(cur, parts)) {
                 U.warn(log, "Stale update for single partition map update (will ignore) [exchId=" + exchId +
@@ -1551,16 +1555,16 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 return false;
             }
 
+            long updateSeq = this.updateSeq.incrementAndGet();
+
+            node2part.newUpdateSequence(updateSeq);
+
             boolean changed = false;
 
             if (cur == null || !cur.equals(parts))
                 changed = true;
 
             node2part.put(parts.nodeId(), parts);
-
-            this.updateSeq.setIfGreater(parts.updateSequence());
-
-            long updateSeq = this.updateSeq.incrementAndGet();
 
             // During exchange diff is calculated after all messages are received and affinity initialized.
             if (exchId == null && !grp.isReplicated()) {
@@ -1915,14 +1919,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 }
             }
 
-            long seqVal = 0;
-
-            if (updateSeq) {
-                seqVal = this.updateSeq.incrementAndGet();
-
-                node2part = new GridDhtPartitionFullMap(node2part, seqVal);
-            }
-
             for (Map.Entry<UUID, GridDhtPartitionMap> e : node2part.entrySet()) {
                 GridDhtPartitionMap partMap = e.getValue();
 
@@ -1938,14 +1934,19 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                         result.add(e.getKey());
                     }
 
-                    if (updateSeq)
-                        partMap.updateSequence(seqVal, partMap.topologyVersion());
+                    partMap.updateSequence(partMap.updateSequence() + 1, partMap.topologyVersion());
+
+                    if (partMap.nodeId().equals(ctx.localNodeId()))
+                        this.updateSeq.setIfGreater(partMap.updateSequence());
 
                     U.warn(log, "Partition has been scheduled for rebalancing due to outdated update counter " +
                         "[nodeId=" + e.getKey() + ", cacheOrGroupName=" + grp.cacheOrGroupName() +
                         ", partId=" + p + ", haveHistory=" + haveHistory + "]");
                 }
             }
+
+            if (updateSeq)
+                node2part = new GridDhtPartitionFullMap(node2part, this.updateSeq.incrementAndGet());
         }
         finally {
             lock.writeLock().unlock();
@@ -2115,11 +2116,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
     /**
      * @param nodeId Node to remove.
-     * @param updateSeq Update sequence.
-     *
-     * @return Update sequence.
      */
-    private long removeNode(UUID nodeId, long updateSeq) {
+    private void removeNode(UUID nodeId) {
         assert nodeId != null;
         assert lock.isWriteLockedByCurrentThread();
 
@@ -2130,14 +2128,9 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         ClusterNode loc = ctx.localNode();
 
         if (node2part != null) {
-            assert updateSeq >= node2part.updateSequence();
-
-            if (loc.equals(oldest) && !node2part.nodeId().equals(loc.id())) {
-                updateSeq++;
-
-                node2part = new GridDhtPartitionFullMap(loc.id(), loc.order(), updateSeq,
+            if (loc.equals(oldest) && !node2part.nodeId().equals(loc.id()))
+                node2part = new GridDhtPartitionFullMap(loc.id(), loc.order(), updateSeq.get(),
                     node2part, false);
-            }
             else
                 node2part = new GridDhtPartitionFullMap(node2part, node2part.updateSequence());
 
@@ -2156,8 +2149,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
             consistencyCheck();
         }
-
-        return updateSeq;
     }
 
     /** {@inheritDoc} */
