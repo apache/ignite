@@ -18,14 +18,13 @@
 package org.apache.ignite.internal.processors.service;
 
 import java.io.Serializable;
-import java.util.Collections;
-import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.cache.GridCacheInternal;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.services.ServiceTopology;
 import org.apache.ignite.services.ServiceConfiguration;
 
 /**
@@ -46,7 +45,7 @@ public class GridServiceAssignments implements Serializable, GridCacheInternal {
 
     /** Service topology. */
     @GridToStringInclude
-    private GridServiceTopology top;
+    private ServiceTopology top;
 
     /**
      * @param cfg Configuration.
@@ -111,14 +110,14 @@ public class GridServiceAssignments implements Serializable, GridCacheInternal {
     /**
      * @return Service topology.
      */
-    public GridServiceTopology topology() {
+    public ServiceTopology topology() {
         return top;
     }
 
     /**
      * @param top Service topology.
      */
-    public void topology(GridServiceTopology top) {
+    public void topology(ServiceTopology top) {
         this.top = top;
     }
 

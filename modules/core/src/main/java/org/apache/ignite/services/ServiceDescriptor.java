@@ -19,7 +19,6 @@ package org.apache.ignite.services;
 
 import java.io.Serializable;
 import java.util.UUID;
-import org.apache.ignite.internal.processors.service.GridServiceTopology;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -86,5 +85,5 @@ public interface ServiceDescriptor extends Serializable {
      *
      * @return Service deployment topology.
      */
-    public GridServiceTopology topologySnapshot();
+    public ServiceTopology topologySnapshot();
 }

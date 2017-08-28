@@ -33,6 +33,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
+import org.apache.ignite.services.ServiceTopology;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.services.ServiceDescriptor;
@@ -191,7 +192,7 @@ public class ClosureServiceClientsNodesTest extends GridCommonAbstractTest {
 
             assertEquals(1, srvDscs.size());
 
-            GridServiceTopology nodesMap = F.first(srvDscs).topologySnapshot();
+            ServiceTopology nodesMap = F.first(srvDscs).topologySnapshot();
 
             assertEquals(NODES_CNT - 1, nodesMap.nodeCount());
 
@@ -232,7 +233,7 @@ public class ClosureServiceClientsNodesTest extends GridCommonAbstractTest {
 
             assertEquals(1, srvDscs.size());
 
-            GridServiceTopology nodesMap = F.first(srvDscs).topologySnapshot();
+            ServiceTopology nodesMap = F.first(srvDscs).topologySnapshot();
 
             assertEquals(1, nodesMap.nodeCount());
 

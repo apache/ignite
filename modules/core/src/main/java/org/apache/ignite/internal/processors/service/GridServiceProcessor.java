@@ -95,6 +95,7 @@ import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.JobContextResource;
 import org.apache.ignite.resources.LoggerResource;
+import org.apache.ignite.services.ServiceTopology;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceDescriptor;
@@ -719,7 +720,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
      * @return Service topology.
      * @throws IgniteCheckedException On error.
      */
-    public GridServiceTopology serviceTopology(String name, long timeout) throws IgniteCheckedException {
+    public ServiceTopology serviceTopology(String name, long timeout) throws IgniteCheckedException {
         ClusterNode node = cache.affinity().mapKeyToNode(name);
 
         final ServiceTopologyCallable call = new ServiceTopologyCallable(name);
@@ -739,7 +740,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
      * @return Service topology.
      * @throws IgniteCheckedException In case of error.
      */
-    private static GridServiceTopology serviceTopology(IgniteInternalCache<Object, Object> cache, String svcName)
+    private static ServiceTopology serviceTopology(IgniteInternalCache<Object, Object> cache, String svcName)
         throws IgniteCheckedException {
         GridServiceAssignments val = (GridServiceAssignments)cache.get(new GridServiceAssignmentsKey(svcName));
 
@@ -1083,7 +1084,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
     private void redeploy(GridServiceAssignments assigns) {
         String svcName = assigns.name();
 
-        GridServiceTopology top = assigns.topology();
+        ServiceTopology top = assigns.topology();
 
         Integer assignCnt = top == null ? 0 : top.nodeServiceCount(ctx.localNodeId());
 
@@ -1791,7 +1792,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
      * @return true if topologies include same number of nodes and same number of service instances are deployed on
      * each node. Attention: the order of the entries in the topologies shall be the same.
      */
-    private static boolean topologiesEqual(GridServiceTopology a, GridServiceTopology b) {
+    private static boolean topologiesEqual(ServiceTopology a, ServiceTopology b) {
         if (a == null && b == null)
             return true;
 
@@ -1902,7 +1903,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
      */
     @GridInternal
     @SerializableTransient(methodName = "serializableTransient")
-    private static class ServiceTopologyCallable implements IgniteCallable<GridServiceTopology> {
+    private static class ServiceTopologyCallable implements IgniteCallable<ServiceTopology> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -1932,7 +1933,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
         }
 
         /** {@inheritDoc} */
-        @Override public GridServiceTopology call() throws Exception {
+        @Override public ServiceTopology call() throws Exception {
             IgniteInternalCache<Object, Object> cache = ignite.context().cache().utilityCache();
 
             if (cache == null) {

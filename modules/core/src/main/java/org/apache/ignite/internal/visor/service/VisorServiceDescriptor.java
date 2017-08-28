@@ -20,13 +20,12 @@ package org.apache.ignite.internal.visor.service;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.util.Map;
 import java.util.UUID;
-import org.apache.ignite.internal.processors.service.GridServiceTopology;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
 import org.apache.ignite.internal.visor.util.VisorTaskUtils;
+import org.apache.ignite.services.ServiceTopology;
 import org.apache.ignite.services.ServiceDescriptor;
 
 /**
@@ -58,7 +57,7 @@ public class VisorServiceDescriptor extends VisorDataTransferObject {
      * Service deployment topology snapshot.
      * Number of service instances deployed on a node mapped to node ID.
      */
-    private GridServiceTopology topSnapshot;
+    private ServiceTopology topSnapshot;
 
     /**
      * Default constructor.
@@ -134,7 +133,7 @@ public class VisorServiceDescriptor extends VisorDataTransferObject {
     /**
      * @return Service deployment topology snapshot. Number of service instances deployed on a node mapped to node ID.
      */
-    public GridServiceTopology getTopologySnapshot() {
+    public ServiceTopology getTopologySnapshot() {
         return topSnapshot;
     }
 
@@ -157,7 +156,7 @@ public class VisorServiceDescriptor extends VisorDataTransferObject {
         maxPerNodeCnt = in.readInt();
         cacheName = U.readString(in);
         originNodeId = U.readUuid(in);
-        topSnapshot = (GridServiceTopology)in.readObject();
+        topSnapshot = (ServiceTopology)in.readObject();
     }
 
     /** {@inheritDoc} */

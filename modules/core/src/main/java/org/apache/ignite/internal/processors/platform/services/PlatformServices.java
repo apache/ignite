@@ -30,10 +30,10 @@ import org.apache.ignite.internal.processors.platform.dotnet.PlatformDotNetServi
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.processors.platform.utils.PlatformWriterClosure;
 import org.apache.ignite.internal.processors.service.GridServiceProxy;
-import org.apache.ignite.internal.processors.service.GridServiceTopology;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.services.ServiceTopology;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceDescriptor;
@@ -276,7 +276,7 @@ public class PlatformServices extends PlatformAbstractTarget {
                             ? PLATFORM_DOTNET : PLATFORM_JAVA;
                         writer.writeByte(platform);
 
-                        GridServiceTopology top = d.topologySnapshot();
+                        ServiceTopology top = d.topologySnapshot();
 
                         writer.writeInt(top.nodeCount());
 

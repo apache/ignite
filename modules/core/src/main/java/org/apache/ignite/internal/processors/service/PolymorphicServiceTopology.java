@@ -6,12 +6,13 @@ import java.util.UUID;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.services.ServiceTopology;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * Service deployment topology with different number of service instances on different nodes.
  */
-public class PolymorphicServiceTopology implements GridServiceTopology {
+public class PolymorphicServiceTopology implements ServiceTopology {
     /** Serialization version. */
     private static final long serialVersionUID = 0L;
 

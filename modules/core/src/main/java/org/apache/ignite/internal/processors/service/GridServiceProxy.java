@@ -51,6 +51,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.services.ServiceTopology;
 import org.apache.ignite.services.Service;
 import org.jsr166.ThreadLocalRandom8;
 
@@ -271,7 +272,7 @@ public class GridServiceProxy<T> implements Serializable {
         if (hasLocNode && ctx.service().service(name) != null)
             return ctx.discovery().localNode();
 
-        GridServiceTopology snapshot = ctx.service().serviceTopology(name, waitTimeout);
+        ServiceTopology snapshot = ctx.service().serviceTopology(name, waitTimeout);
 
         if (snapshot == null || !snapshot.iterator().hasNext())
             return null;

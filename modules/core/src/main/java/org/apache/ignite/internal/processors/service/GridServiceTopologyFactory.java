@@ -7,17 +7,18 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.services.ServiceTopology;
 
 /**
- * Use this class to create {@link GridServiceTopology} implementations
+ * Use this class to create {@link ServiceTopology} implementations
  */
 public class GridServiceTopologyFactory {
     /**
      * @param node Node in the topology
      * @param cnt Number of service instances deployed on the node
-     * @return a {@link GridServiceTopology} instance of the type most appropriate for the specified parameters.
+     * @return a {@link ServiceTopology} instance of the type most appropriate for the specified parameters.
      */
-    public static GridServiceTopology get(ClusterNode node, int cnt) {
+    public static ServiceTopology get(ClusterNode node, int cnt) {
         A.notNull(node, "node");
 
         return new SingleNodeServiceTopology(node.id(), cnt);
@@ -26,9 +27,9 @@ public class GridServiceTopologyFactory {
     /**
      * @param nodes Nodes in the topology
      * @param cnt Number of service instances deployed on each node
-     * @return a {@link GridServiceTopology} instance of the type most appropriate for the specified parameters.
+     * @return a {@link ServiceTopology} instance of the type most appropriate for the specified parameters.
      */
-    public static GridServiceTopology get(Iterable<ClusterNode> nodes, int cnt) {
+    public static ServiceTopology get(Iterable<ClusterNode> nodes, int cnt) {
         A.notNull(nodes, "nodes");
 
         if (!nodes.iterator().hasNext())
@@ -47,9 +48,9 @@ public class GridServiceTopologyFactory {
     /**
      * @param nodeCntMap Node ID -> number of service instances map. Attention: the method will remove zero assignments
      * from this map!
-     * @return a {@link GridServiceTopology} instance of the type most appropriate for the specified parameters.
+     * @return a {@link ServiceTopology} instance of the type most appropriate for the specified parameters.
      */
-    public static GridServiceTopology get(Map<UUID, Integer> nodeCntMap) {
+    public static ServiceTopology get(Map<UUID, Integer> nodeCntMap) {
         A.notNull(nodeCntMap, "nodeCntMap");
 
         int prevCnt = 0;

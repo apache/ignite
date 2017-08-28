@@ -8,12 +8,13 @@ import java.util.UUID;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.services.ServiceTopology;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * Service deployment topology when same number of services is deployed on each node.
  */
-public class HomomorphicServiceTopology implements GridServiceTopology {
+public class HomomorphicServiceTopology implements ServiceTopology {
     /** Serialization version. */
     private static final long serialVersionUID = 0L;
 
