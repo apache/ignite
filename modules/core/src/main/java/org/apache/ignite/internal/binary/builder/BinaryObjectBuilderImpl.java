@@ -547,15 +547,16 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
 
     /** {@inheritDoc} */
     @Override public BinaryObjectBuilder setField(String name, Object val0) {
-        Object val = val0 == null ? new BinaryValueWithType(BinaryUtils.typeByClass(Object.class), null) : val0;
+        Object val = assignedValues().get(name);
 
-        Object oldVal = assignedValues().put(name, val);
+        if (val instanceof BinaryValueWithType)
+            ((BinaryValueWithType)val).value(val0);
+        else if(val == null)
+            val = val0 == null ? new BinaryValueWithType(BinaryUtils.typeByClass(Object.class), null) : val0;
+        else
+            val = val0 == null ? new BinaryValueWithType(BinaryUtils.typeByClass(val.getClass()), null) : val0;
 
-        if (oldVal instanceof BinaryValueWithType && val0 != null) {
-            ((BinaryValueWithType)oldVal).value(val);
-
-            assignedValues().put(name, oldVal);
-        }
+        assignedValues().put(name, val);
 
         return this;
     }
@@ -579,7 +580,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
     /** {@inheritDoc} */
     @Override public BinaryObjectBuilder setField(String name, @Nullable BinaryObjectBuilder builder) {
         if (builder == null)
-            return setField(name, null, Object.class);
+            return setField(name, (Object)null);
         else
             return setField(name, (Object)builder);
     }
