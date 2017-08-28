@@ -1911,4 +1911,14 @@ public final class GridTestUtils {
     public static void deleteDbFiles() throws Exception {
         deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
     }
+
+    /**
+     * Returns a name composed from the base name and a UUID separated by '-'.
+     *
+     * @param baseName Base name
+     * @return Randomized base name.
+     */
+    public static String createRandomizedName(String baseName) {
+        return baseName + '-' + UUID.randomUUID();
+    }
 }

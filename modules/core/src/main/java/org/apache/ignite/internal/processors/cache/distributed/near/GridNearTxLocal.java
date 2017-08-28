@@ -2087,7 +2087,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
                                     txEntry.keepBinary());
                             }
 
-                            if (val != null) {
+                            if (val != null || txEntry.locked()) {
                                 if (!readCommitted() && !skipVals)
                                     txEntry.readValue(val);
 
