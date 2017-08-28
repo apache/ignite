@@ -299,7 +299,7 @@ public class GridAffinityAssignmentCache {
 
         assert assignment != null;
 
-        if (ctx.cache().cacheConfiguration(cacheOrGrpName).getCacheMode() == PARTITIONED)
+        if (ctx.cache().cacheMode(cacheOrGrpName) == PARTITIONED)
             printDistribution(assignment);
 
         idealAssignment = assignment;
