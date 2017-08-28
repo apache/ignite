@@ -1243,6 +1243,9 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                                 ", curPart=" + mapString(part) +
                                 ", newPart=" + mapString(newPart) + ']');
                         }
+
+                        if (newPart.nodeId().equals(ctx.localNodeId()))
+                            updateSeq.setIfGreater(newPart.updateSequence());
                     }
                     else {
                         // If for some nodes current partition has a newer map,
@@ -1271,6 +1274,12 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                         it.remove();
                     }
                 }
+            }
+            else {
+                GridDhtPartitionMap locNodeMap = partMap.get(ctx.localNodeId());
+
+                if (locNodeMap != null)
+                    updateSeq.setIfGreater(locNodeMap.updateSequence());
             }
 
             if (!fullMapUpdated) {
@@ -1926,6 +1935,9 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                     }
 
                     partMap.updateSequence(partMap.updateSequence() + 1, partMap.topologyVersion());
+
+                    if (partMap.nodeId().equals(ctx.localNodeId()))
+                        this.updateSeq.setIfGreater(partMap.updateSequence());
 
                     U.warn(log, "Partition has been scheduled for rebalancing due to outdated update counter " +
                         "[nodeId=" + e.getKey() + ", cacheOrGroupName=" + grp.cacheOrGroupName() +
