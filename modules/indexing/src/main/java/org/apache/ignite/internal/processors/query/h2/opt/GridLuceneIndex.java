@@ -272,7 +272,7 @@ public class GridLuceneIndex implements AutoCloseable {
             MultiFieldQueryParser parser = new MultiFieldQueryParser(idxdFields,
                 writer.getAnalyzer());
 
-            parser.setAllowLeadingWildcard(true);
+//            parser.setAllowLeadingWildcard(true);
 
             // Filter expired items.
             Query filter = NumericRangeQuery.newLongRange(EXPIRATION_TIME_FIELD_NAME, U.currentTimeMillis(),
