@@ -28,6 +28,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -96,11 +97,13 @@ import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.P1;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -1563,23 +1566,23 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     if (heapSizes == null) {
                         heapSizes = new HashMap<>();
 
-                        heapSizes.put(localPid, loc.attribute(ATTR_REQ_HEAP));
+                        heapSizes.put(localPid, (Long)loc.attribute(ATTR_REQ_HEAP));
                     }
 
                     remoteRequired += (long)node.attribute(ATTR_REQ_OFFHEAP);
 
                     if (localPid != (int)node.attribute(ATTR_JVM_PID) &&
-                        heapSizes.put(node.attribute(ATTR_JVM_PID), node.attribute(ATTR_REQ_HEAP)) == null)
+                        heapSizes.put((Integer)node.attribute(ATTR_JVM_PID), (Long)node.attribute(ATTR_REQ_HEAP)) == null)
                         remoteRequired += (long)node.attribute(ATTR_REQ_HEAP);
                 }
             }
 
             // 4GB or 20% of available memory is expected to be used by OS and user applications
-            long safeToUse = available - Math.max(4 << 30, (long)(available * 0.2));
+            long safeToUse = available - Math.max(4L << 30, (long)(available * 0.2));
 
             if ((localRequired + remoteRequired) > safeToUse){
 
-                U.warn(log, "-----------------------------------------------------");
+                StringBuilder sb = new StringBuilder("\n-----------------------------------------------------");
 
                 int jvmCnt = heapSizes == null ? 1 : heapSizes.size();
 
@@ -1587,31 +1590,31 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                 if(safeToUse < min << 20) {
                     // too few memory, can't suggest anything reasonable
-                    U.warn(log, "Too few of physical memory (performance may drop).");
-                    U.warn(log, "At least " + min + "MB RAM is needed for each node.");
-                    U.warn(log, "-----------------------------------------------------");
+                    U.warn(log, sb.append("\nToo few of physical memory (performance may drop).")
+                        .append("\nAt least ").append(min).append("MB RAM is needed for each node.")
+                        .append("\n-----------------------------------------------------"));
 
                     return;
                 }
 
-                U.warn(log, "Excessive memory usage by Ignite node process (performance may drop) " +
-                    "[requested=" + ((localRequired + remoteRequired) >> 20) + "MB, available=" + (available >> 20) + "MB].");
-
+                sb.append("\nExcessive memory usage by Ignite node process (performance may drop) [requested=")
+                    .append((localRequired + remoteRequired) >> 20)
+                    .append("MB, available=").append(available >> 20).append("MB].");
 
                 List<String> current = new ArrayList<>();
-                List<String> suggested = new ArrayList<>();
 
-                long remaning = safeToUse;
+                current.add("  The overall expected memory usage by all Ignite nodes on the host: " +
+                    ((localRequired + remoteRequired) >> 20) + "MB");
 
                 long heapMax = mem.getHeapMemoryUsage().getMax();
                 long heapInit = mem.getHeapMemoryUsage().getInit();
 
                 if (heapMax != -1)
-                    current.add("  Java Heap maxSize=" + (heapMax >> 20) + "MB");
+                    current.add("  Java Heap  maxSize: " + (heapMax >> 20) + "MB");
 
 
                 if (heapInit != -1)
-                    current.add("  Java Heap initSize=" + (heapInit >> 20) + "MB");
+                    current.add("  Java Heap initSize: " + (heapInit >> 20) + "MB");
 
 
                 long heapTotal = heapSizes == null ? heapMax : 0;
@@ -1621,15 +1624,19 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                         heapTotal += heap0;
                 }
 
+                long remaining = safeToUse;
+
+                List<String> suggested = new ArrayList<>();
+
                 if (heapTotal < 0 || heapTotal > safeToUse * 0.3){
                     long perJvm = Math.max(512 << 20, (long)((safeToUse * 0.3) / jvmCnt));
-                    suggested.add("  Java Heap maxSize=" + (perJvm >> 20) + "MB");
-                    suggested.add("  Java Heap initSize=" + (perJvm >> 20) + "MB");
+                    suggested.add("  Java Heap  maxSize: " + (perJvm >> 20) + "MB");
+                    suggested.add("  Java Heap initSize: " + (perJvm >> 20) + "MB");
 
-                    remaning -= perJvm * jvmCnt;
+                    remaining -= perJvm * jvmCnt;
                 }
                 else if (heapTotal > 0)
-                    remaning -= heapTotal;
+                    remaining -= heapTotal;
 
                 boolean sysInitChanged = DFLT_SYS_CACHE_INIT_SIZE != memCfg.getSystemCacheInitialSize();
                 boolean sysMaxChanged = DFLT_SYS_CACHE_MAX_SIZE != memCfg.getSystemCacheMaxSize();
@@ -1640,72 +1647,92 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                     suggested.add("  MemoryConfiguration.systemCacheInitialSize=" + (DFLT_SYS_CACHE_INIT_SIZE >> 20) + "MB");
                     suggested.add("  MemoryConfiguration.systemCacheMaxSize=" + (DFLT_SYS_CACHE_MAX_SIZE >> 20) + "MB");
-
                 }
 
-                remaning -= DFLT_SYS_CACHE_MAX_SIZE * nodes;
+                remaining -= DFLT_SYS_CACHE_MAX_SIZE * nodes;
 
                 MemoryPolicyConfiguration[] memPlcsCfgs = memCfg.getMemoryPolicies();
-
-                Map<String, Long> sizePerPolicy = U.newHashMap(memPlcsCfgs == null ? 1 : memPlcsCfgs.length + 1);
 
                 String dfltPlcName = memCfg.getDefaultMemoryPolicyName();
                 long dfltPlcSize = memCfg.getDefaultMemoryPolicySize();
 
+                Map<String, IgniteBiTuple<Long, Long>> sizePerPolicy = U.newHashMap(memPlcsCfgs == null ? 1 : memPlcsCfgs.length + 1);
+
                 sizePerPolicy.put(
                     dfltPlcName,
-                    dfltPlcSize);
+                    F.t(dfltPlcSize, dfltPlcSize));
 
                 if (memPlcsCfgs != null) {
                     for (MemoryPolicyConfiguration cfg : memPlcsCfgs)
-                        sizePerPolicy.put(cfg.getName(), cfg.getMaxSize());
+                        sizePerPolicy.put(cfg.getName(), F.t(cfg.getInitialSize(), cfg.getMaxSize()));
                 }
 
                 long plcsTotal = 0;
 
-                for (Map.Entry<String, Long> entry : sizePerPolicy.entrySet()) {
+                for (Map.Entry<String, IgniteBiTuple<Long, Long>> entry : sizePerPolicy.entrySet()) {
                     if (MemoryConfiguration.DFLT_MEM_PLC_DEFAULT_NAME.equals(dfltPlcName) && Objects.equals(dfltPlcName, entry.getKey()))
-                        current.add("  [MemoryConfiguration.defaultMemoryPolicySize=" + (entry.getValue() >> 20) + "MB]");
+                        current.add("  MemoryConfiguration.defaultMemoryPolicySize=" + (entry.getValue().get2() >> 20) + "MB");
                     else
-                        current.add("  [MemoryPolicyConfiguration.maxSize for " + entry.getKey() + ": " + (entry.getValue() >> 20) + "MB]");
+                        current.add(
+                            "  MemoryPolicyConfiguration.initialSize for " + entry.getKey() + ": " + (entry.getValue().get1() >> 20) + "MB\n" +
+                            "  MemoryPolicyConfiguration.maxSize     for " + entry.getKey() + ": " + (entry.getValue().get2() >> 20) + "MB");
 
-                    plcsTotal += entry.getValue();
+                    plcsTotal += entry.getValue().get2();
                 }
 
-                if (remaning >= (1 * nodes) << 30) {
+                long minSize = 100 << 20; // Lower suggested bundle for policy max size is 100mb
 
-                    double k = remaning / (double)(plcsTotal * nodes);
+                if (remaining >= sizePerPolicy.size() * nodes * minSize) {
+                    double k = remaining / (double)(plcsTotal * nodes);
 
-                    for (Map.Entry<String, Long> entry : sizePerPolicy.entrySet()) {
+                    List<Map.Entry<String, IgniteBiTuple<Long, Long>>> entries = new ArrayList<>(sizePerPolicy.entrySet());
+
+                    Collections.sort(entries, new Comparator<Map.Entry<String, IgniteBiTuple<Long, Long>>>() {
+                        @Override public int compare(Map.Entry<String, IgniteBiTuple<Long, Long>> o1,
+                            Map.Entry<String, IgniteBiTuple<Long, Long>> o2) {
+
+                            return Long.compare(o1.getValue().get2(), o2.getValue().get2());
+                        }
+                    });
+
+                    for (Map.Entry<String, IgniteBiTuple<Long, Long>> entry : entries) {
+                        long newSize = (long)(entry.getValue().get2() * k);
+
+                        if(newSize < minSize) {
+                            newSize = minSize;
+
+                            remaining -= minSize;
+                            plcsTotal -= entry.getValue().get2();
+
+                            k = remaining / (double)(plcsTotal * nodes);
+                        }
+
                         if (MemoryConfiguration.DFLT_MEM_PLC_DEFAULT_NAME.equals(dfltPlcName) && Objects.equals(dfltPlcName, entry.getKey()))
-                            suggested.add("  [MemoryConfiguration.defaultMemoryPolicySize=" + ((long)(entry.getValue() * k) >> 20) + "MB]");
-                        else
-                            suggested.add("  [MemoryPolicyConfiguration.maxSize for " + entry.getKey() + ": " + ((long)(entry.getValue() * k) >> 20) + "MB]");
+                            suggested.add("  MemoryConfiguration.defaultMemoryPolicySize=" + (newSize >> 20) + "MB");
+                        else {
+                            suggested.add(
+                                "  MemoryPolicyConfiguration.initialSize for " + entry.getKey() + ": " + (newSize >> 20) + "MB\n" +
+                                "  MemoryPolicyConfiguration.maxSize     for " + entry.getKey() + ": " + (newSize >> 20) + "MB");
+                        }
                     }
                 }
                 else
-                    suggested.add("  MemoryConfiguration.defaultMemoryPolicySize=" + (remaning >> 20) + "MB");
+                    suggested.add("  MemoryConfiguration.defaultMemoryPolicySize=" + (((long)(remaining / nodes)) >> 20) + "MB");
 
                 Collections.sort(current);
                 Collections.sort(suggested);
 
-                U.warn(log, "");
-                U.warn(log, "Please tune the folowing settings as suggested:");
+                sb.append("\n\nPlease tune the folowing settings as suggested:");
 
                 for (String line : suggested)
-                    U.warn(log, line);
+                    sb.append("\n").append(line);
 
-                U.warn(log, "");
-                U.warn(log, "Current settings:");
+                sb.append("\n\nCurrent settings:");
 
                 for (String line : current)
-                    U.warn(log, line);
+                    sb.append("\n").append(line);
 
-                U.warn(log, "");
-
-                U.warn(log, "The overall memory usage by all Ignite nodes on the host: " +   ((localRequired + remoteRequired) >> 20) + "MB");
-
-                U.warn(log, "-----------------------------------------------------");
+                U.warn(log, sb.append("\n-----------------------------------------------------"));
             }
         }
     }
