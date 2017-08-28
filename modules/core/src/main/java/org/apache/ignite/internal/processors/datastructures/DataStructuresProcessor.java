@@ -24,15 +24,10 @@ import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
-import java.util.function.Consumer;
-import javax.cache.Cache;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryListenerException;
 import javax.cache.event.CacheEntryUpdatedListener;
 import javax.cache.event.EventType;
-import javax.cache.processor.EntryProcessor;
-import javax.cache.processor.EntryProcessorException;
-import javax.cache.processor.MutableEntry;
 import org.apache.ignite.IgniteAtomicLong;
 import org.apache.ignite.IgniteAtomicReference;
 import org.apache.ignite.IgniteAtomicSequence;
@@ -91,7 +86,6 @@ import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
-import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.processors.datastructures.DataStructureType.ATOMIC_LONG;
 import static org.apache.ignite.internal.processors.datastructures.DataStructureType.ATOMIC_REF;
 import static org.apache.ignite.internal.processors.datastructures.DataStructureType.ATOMIC_SEQ;
@@ -1246,9 +1240,16 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                 if (val == null && !create)
                     return new T2<>(null, null);
 
-                AtomicDataStructureValue retVal = (val == null ? new GridCacheLockState2Unfair(ctx.discovery().gridStartTime()) : null);
+                AtomicDataStructureValue retVal = (
+                    val == null ?
+                        (fair ?
+                            new GridCacheLockState2Fair(ctx.discovery().gridStartTime()) :
+                            new GridCacheLockState2Unfair(ctx.discovery().gridStartTime())
+                        ):
+                        null);
 
-                GridCacheLockEx2 reentrantLock0 = new GridCacheLockImpl2(name, key, cache, fair);
+                GridCacheLockEx2 reentrantLock0 =
+                    fair ? new GridCacheLockImpl2Fair(name, key, cache): new GridCacheLockImpl2Unfair(name, key, cache);
 
                 return new T2<>(reentrantLock0, retVal);
             }

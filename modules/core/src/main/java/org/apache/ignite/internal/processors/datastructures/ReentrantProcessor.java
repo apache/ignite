@@ -5,7 +5,8 @@ import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
 
-public abstract class ReentrantProcessor<T> implements EntryProcessor<GridCacheInternalKey, GridCacheLockState2Base<T>, Boolean>,
+public abstract class ReentrantProcessor<T>
+    implements EntryProcessor<GridCacheInternalKey, GridCacheLockState2Base<T>, Boolean>,
     Externalizable {
 
     /** {@inheritDoc} */
