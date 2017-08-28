@@ -75,13 +75,7 @@ public final class MarshallerExclusions {
         }
 
         List<Class<?>> excl = new ArrayList<>();
-
-        // Non-Ignite classes.
-        excl.add(MBeanServer.class);
-        excl.add(ExecutorService.class);
-        excl.add(ClassLoader.class);
-        excl.add(Thread.class);
-
+        
         if (springCtxCls != null)
             excl.add(springCtxCls);
 
