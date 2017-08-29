@@ -879,7 +879,7 @@ public class FileSystemConfiguration {
      * <p>
      * IGFS stores information about file system structure (metadata) inside a transactional cache configured through
      * {@link #getMetaCacheName()} property. Metadata updates caused by operations on IGFS usually require several
-     * intearnal keys to be updated. As IGFS metadata cache usually operates in {@link CacheMode#REPLICATED} mode,
+     * internal keys to be updated. As IGFS metadata cache usually operates in {@link CacheMode#REPLICATED} mode,
      * meaning that all nodes have all metadata locally, it makes sense to give a hint to Ignite to co-locate
      * ownership of all metadata keys on a single node. This will decrease amount of network trips required to update
      * metadata and hence could improve performance.

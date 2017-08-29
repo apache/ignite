@@ -31,7 +31,7 @@ class GridCacheQueryInfo {
     private boolean loc;
 
     /** */
-    private IgniteClosure<Object, Object> trans;
+    private IgniteClosure<?, ?> trans;
 
     /** */
     private IgniteReducer<Object, Object> rdc;
@@ -71,7 +71,7 @@ class GridCacheQueryInfo {
      */
     GridCacheQueryInfo(
         boolean loc,
-        IgniteClosure<Object, Object> trans,
+        IgniteClosure<?, ?> trans,
         IgniteReducer<Object, Object> rdc,
         GridCacheQueryAdapter<?> qry,
         GridCacheLocalQueryFuture<?, ?, ?> locFut,
@@ -117,7 +117,7 @@ class GridCacheQueryInfo {
     /**
      * @return Transformer.
      */
-    IgniteClosure<?, Object> transformer() {
+    IgniteClosure<?, ?> transformer() {
         return trans;
     }
 

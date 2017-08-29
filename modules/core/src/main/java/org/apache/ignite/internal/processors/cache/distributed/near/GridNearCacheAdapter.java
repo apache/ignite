@@ -115,6 +115,13 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     public abstract GridDhtCacheAdapter<K, V> dht();
 
     /** {@inheritDoc} */
+    @Override public void forceKeyCheck() {
+        super.forceKeyCheck();
+
+        dht().forceKeyCheck();
+    }
+
+    /** {@inheritDoc} */
     @Override public void onReconnected() {
         map = new GridCacheConcurrentMapImpl(
             ctx,
@@ -301,7 +308,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
 
     /** {@inheritDoc} */
     @Override public int size() {
-        return nearEntries().size() + dht().size();
+        return dht().size();
     }
 
     /** {@inheritDoc} */

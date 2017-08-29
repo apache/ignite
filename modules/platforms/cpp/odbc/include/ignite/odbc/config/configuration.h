@@ -24,6 +24,7 @@
 
 #include <ignite/common/common.h>
 #include <ignite/common/utils.h>
+#include "ignite/odbc/protocol_version.h"
 
 namespace ignite
 {
@@ -60,6 +61,18 @@ namespace ignite
 
                     /** Connection attribute keyword for port attribute. */
                     static const std::string port;
+
+                    /** Connection attribute keyword for distributed joins attribute. */
+                    static const std::string distributedJoins;
+
+                    /** Connection attribute keyword for enforce join order attribute. */
+                    static const std::string enforceJoinOrder;
+
+                    /** Connection attribute keyword for protocol version attribute. */
+                    static const std::string protocolVersion;
+
+                    /** Connection attribute keyword for fetch results page size attribute. */
+                    static const std::string pageSize;
                 };
 
                 /** Default values for configuration. */
@@ -80,11 +93,20 @@ namespace ignite
                     /** Default value for server attribute. */
                     static const std::string server;
 
-                    /** Default value for port attribute. */
-                    static const std::string port;
+                    /** Default value for protocol version. */
+                    static const ProtocolVersion& protocolVersion;
 
-                    /** Default value for port attribute. Uint16 value. */
-                    static const uint16_t uintPort;
+                    /** Default value for port attribute. */
+                    static const uint16_t port;
+
+                    /** Default value for fetch results page size attribute. */
+                    static const int32_t pageSize;
+
+                    /** Default value for distributed joins attribute. */
+                    static const bool distributedJoins;
+
+                    /** Default value for enforce join order attribute. */
+                    static const bool enforceJoinOrder;
                 };
 
                 /**
@@ -122,7 +144,10 @@ namespace ignite
                  *
                  * @param str Connect string.
                  */
-                void FillFromConnectString(const std::string& str);
+                void FillFromConnectString(const std::string& str)
+                {
+                    FillFromConnectString(str.data(), str.size());
+                }
 
                 /**
                  * Convert configure to connect string.
@@ -144,10 +169,17 @@ namespace ignite
                  *
                  * @return Server port.
                  */
-                uint16_t GetPort() const
+                uint16_t GetTcpPort() const
                 {
                     return endPoint.port;
                 }
+
+                /**
+                 * Set server port.
+                 *
+                 * @param port Server port.
+                 */
+                void SetTcpPort(uint16_t port);
 
                 /**
                  * Get DSN.
@@ -157,6 +189,16 @@ namespace ignite
                 const std::string& GetDsn() const
                 {
                     return GetStringValue(Key::dsn, DefaultValue::dsn);
+                }
+
+                /**
+                 * Set DSN.
+                 *
+                 * @param dsn Data Source Name.
+                 */
+                void SetDsn(const std::string& dsn)
+                {
+                    arguments[Key::dsn] = dsn;
                 }
 
                 /**
@@ -180,6 +222,13 @@ namespace ignite
                 }
 
                 /**
+                 * Set server host.
+                 *
+                 * @param server Server host.
+                 */
+                void SetHost(const std::string& server);
+
+                /**
                  * Get cache.
                  *
                  * @return Cache name.
@@ -187,6 +236,16 @@ namespace ignite
                 const std::string& GetCache() const
                 {
                     return GetStringValue(Key::cache, DefaultValue::cache);
+                }
+
+                /**
+                 * Set cache.
+                 *
+                 * @param cache Cache name.
+                 */
+                void SetCache(const std::string& cache)
+                {
+                    arguments[Key::cache] = cache;
                 }
 
                 /**
@@ -200,6 +259,99 @@ namespace ignite
                 }
 
                 /**
+                 * Set address.
+                 *
+                 * @param address Address.
+                 */
+                void SetAddress(const std::string& address);
+
+                /**
+                 * Check distributed joins flag.
+                 *
+                 * @return True if distributed joins are enabled.
+                 */
+                bool IsDistributedJoins() const
+                {
+                    return GetBoolValue(Key::distributedJoins, DefaultValue::distributedJoins);
+                }
+
+                /**
+                 * Set distributed joins.
+                 *
+                 * @param val Value to set.
+                 */
+                void SetDistributedJoins(bool val)
+                {
+                    SetBoolValue(Key::distributedJoins, val);
+                }
+
+                /**
+                 * Check enforce join order flag.
+                 *
+                 * @return True if enforcing of join order is enabled.
+                 */
+                bool IsEnforceJoinOrder() const
+                {
+                    return GetBoolValue(Key::enforceJoinOrder, DefaultValue::enforceJoinOrder);
+                }
+
+                /**
+                 * Set enforce joins.
+                 *
+                 * @param val Value to set.
+                 */
+                void SetEnforceJoinOrder(bool val)
+                {
+                    SetBoolValue(Key::enforceJoinOrder, val);
+                }
+
+                /**
+                 * Get protocol version.
+                 *
+                 * @return Protocol version.
+                 */
+                ProtocolVersion GetProtocolVersion() const;
+
+                /**
+                 * Set protocol version.
+                 *
+                 * @param version Version to set.
+                 */
+                void SetProtocolVersion(const std::string& version)
+                {
+                    arguments[Key::protocolVersion] = version;
+                }
+
+                /**
+                 * Get argument map.
+                 *
+                 * @return Argument map.
+                 */
+                const ArgumentMap& GetMap() const
+                {
+                    return arguments;
+                }
+
+                /**
+                 * Get fetch results page size.
+                 *
+                 * @return Fetch results page size.
+                 */
+                int32_t GetPageSize() const
+                {
+                    return static_cast<int32_t>(GetIntValue(Key::pageSize, DefaultValue::pageSize));
+                }
+                /**
+                 * Set fetch results page size.
+                 *
+                 * @param size Fetch results page size.
+                 */
+                void SetPageSize(int32_t size)
+                {
+                    arguments[Key::pageSize] = common::LexicalCast<std::string>(size);
+                }
+
+                /**
                  * Get string value from the config.
                  *
                  * @param key Configuration key.
@@ -208,6 +360,31 @@ namespace ignite
                  */
                 const std::string& GetStringValue(const std::string& key, const std::string& dflt) const;
 
+                /**
+                 * Get int value from the config.
+                 *
+                 * @param key Configuration key.
+                 * @param dflt Default value to be returned if there is no value stored.
+                 * @return Found or default value.
+                 */
+                int64_t GetIntValue(const std::string& key, int64_t dflt) const;
+
+                /**
+                 * Get bool value from the config.
+                 *
+                 * @param key Configuration key.
+                 * @param dflt Default value to be returned if there is no value stored.
+                 * @return Found or default value.
+                 */
+                bool GetBoolValue(const std::string& key, bool dflt) const;
+
+                /**
+                 * Set bool value to the config.
+                 *
+                 * @param key Configuration key.
+                 * @param val Value to set.
+                 */
+                void SetBoolValue(const std::string& key, bool val);
             private:
                 /**
                  * Parse connect string into key-value storage.

@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.Cache.Store
 {
+    using System;
     using System.Collections;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
@@ -34,6 +35,14 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
 
         /** list of thread ids where Parse has been executed */
         private static readonly ConcurrentDictionary<int, int> ThreadIds = new ConcurrentDictionary<int, int>();
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CacheTestParallelLoadStore"/> class.
+        /// </summary>
+        public CacheTestParallelLoadStore()
+        {
+            MaxDegreeOfParallelism -= 1;
+        }
 
         /// <summary>
         /// Gets the count of unique threads that entered Parse method.

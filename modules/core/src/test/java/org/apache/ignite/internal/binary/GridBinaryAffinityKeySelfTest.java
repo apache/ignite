@@ -178,7 +178,7 @@ public class GridBinaryAffinityKeySelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < 1000; i++) {
             nodeId.set(null);
 
-            grid(0).compute().affinityRun(null, new TestObject(i), new IgniteRunnable() {
+            grid(0).compute().affinityRun((String)null, new TestObject(i), new IgniteRunnable() {
                 @IgniteInstanceResource
                 private Ignite ignite;
 
@@ -189,7 +189,7 @@ public class GridBinaryAffinityKeySelfTest extends GridCommonAbstractTest {
 
             assertEquals(aff.mapKeyToNode(i).id(), nodeId.get());
 
-            grid(0).compute().affinityRun(null, new AffinityKey(0, i), new IgniteRunnable() {
+            grid(0).compute().affinityRun((String)null, new AffinityKey(0, i), new IgniteRunnable() {
                 @IgniteInstanceResource
                 private Ignite ignite;
 
@@ -211,7 +211,7 @@ public class GridBinaryAffinityKeySelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < 1000; i++) {
             nodeId.set(null);
 
-            grid(0).compute().affinityCall(null, new TestObject(i), new IgniteCallable<Object>() {
+            grid(0).compute().affinityCall((String)null, new TestObject(i), new IgniteCallable<Object>() {
                 @IgniteInstanceResource
                 private Ignite ignite;
 

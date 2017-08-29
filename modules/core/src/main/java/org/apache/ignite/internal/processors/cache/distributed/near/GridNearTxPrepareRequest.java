@@ -94,6 +94,7 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
      * @param futId Future ID.
      * @param topVer Topology version.
      * @param tx Transaction.
+     * @param timeout Transaction timeout.
      * @param reads Read entries.
      * @param writes Write entries.
      * @param near {@code True} if mapping is for near caches.
@@ -112,6 +113,7 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
         IgniteUuid futId,
         AffinityTopologyVersion topVer,
         IgniteInternalTx tx,
+        long timeout,
         Collection<IgniteTxEntry> reads,
         Collection<IgniteTxEntry> writes,
         boolean near,
@@ -126,7 +128,7 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
         boolean firstClientReq,
         boolean addDepInfo
     ) {
-        super(tx, reads, writes, txNodes, onePhaseCommit, addDepInfo);
+        super(tx, timeout, reads, writes, txNodes, onePhaseCommit, addDepInfo);
 
         assert futId != null;
         assert !firstClientReq || tx.optimistic() : tx;

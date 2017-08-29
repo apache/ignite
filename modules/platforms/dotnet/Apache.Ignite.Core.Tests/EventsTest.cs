@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+#pragma warning disable 618
 namespace Apache.Ignite.Core.Tests
 {
     using System;
@@ -25,6 +26,7 @@ namespace Apache.Ignite.Core.Tests
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Query;
+    using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Events;
     using Apache.Ignite.Core.Impl;
@@ -141,7 +143,7 @@ namespace Apache.Ignite.Core.Tests
             CheckSend(2);
 
             // Unsubscribe from all events
-            events.StopLocalListen(listener);
+            events.StopLocalListen(listener, Enumerable.Empty<int>());
 
             CheckNoEvent();
 
@@ -299,10 +301,19 @@ namespace Apache.Ignite.Core.Tests
         }
 
         /// <summary>
+        /// Tests the record local.
+        /// </summary>
+        [Test]
+        public void TestRecordLocal()
+        {
+            Assert.Throws<NotImplementedException>(() => _grid1.GetEvents().RecordLocal(new MyEvent()));
+        }
+
+        /// <summary>
         /// Tests the WaitForLocal.
         /// </summary>
         [Test]
-        public void TestWaitForLocal([Values(true, false)] bool async)
+        public void TestWaitForLocal()
         {
             var events = _grid1.GetEvents();
 
@@ -312,50 +323,80 @@ namespace Apache.Ignite.Core.Tests
 
             events.EnableLocal(eventType);
 
-            Func<IEventFilter<IEvent>, int[], Task<IEvent>> getWaitTask;
+            var taskFuncs = GetWaitTasks(events).Select(
+                func => (Func<IEventFilter<IEvent>, int[], Task<IEvent>>) (
+                    (filter, types) =>
+                    {
+                        var task = func(filter, types);
 
-            if (async)
-                getWaitTask = (filter, types) =>
+                        Thread.Sleep(100); // allow task to start and begin waiting for events
+
+                        GenerateTaskEvent();
+
+                        return task;
+                    })).ToArray();
+
+            for (int i = 0; i < taskFuncs.Length; i++)
+            {
+                var getWaitTask = taskFuncs[i];
+
+                // No params
+                var waitTask = getWaitTask(null, new int[0]);
+
+                waitTask.Wait(timeout);
+
+                // Event types
+                waitTask = getWaitTask(null, new[] {EventType.TaskReduced});
+
+                Assert.IsTrue(waitTask.Wait(timeout));
+                Assert.IsInstanceOf(typeof(TaskEvent), waitTask.Result);
+                Assert.AreEqual(EventType.TaskReduced, waitTask.Result.Type);
+
+                if (i > 3)
                 {
-                    var task = events.WaitForLocalAsync(filter, types);
-                    GenerateTaskEvent();
-                    return task;
-                };
-            else
-                getWaitTask = (filter, types) =>
-                {
-                    var task = Task.Factory.StartNew(() => events.WaitForLocal(filter, types));
-                    Thread.Sleep(500); // allow task to start and begin waiting for events
-                    GenerateTaskEvent();
-                    return task;
-                };
+                    // Filter
+                    waitTask = getWaitTask(new EventFilter<IEvent>(e => e.Type == EventType.TaskReduced), new int[0]);
 
-            // No params
-            var waitTask = getWaitTask(null, new int[0]);
+                    Assert.IsTrue(waitTask.Wait(timeout));
+                    Assert.IsInstanceOf(typeof(TaskEvent), waitTask.Result);
+                    Assert.AreEqual(EventType.TaskReduced, waitTask.Result.Type);
 
-            waitTask.Wait(timeout);
+                    // Filter & types
+                    waitTask = getWaitTask(new EventFilter<IEvent>(e => e.Type == EventType.TaskReduced),
+                        new[] {EventType.TaskReduced});
 
-            // Event types
-            waitTask = getWaitTask(null, new[] {EventType.TaskReduced});
+                    Assert.IsTrue(waitTask.Wait(timeout));
+                    Assert.IsInstanceOf(typeof(TaskEvent), waitTask.Result);
+                    Assert.AreEqual(EventType.TaskReduced, waitTask.Result.Type);
+                }
+            }
+        }
 
-            Assert.IsTrue(waitTask.Wait(timeout));
-            Assert.IsInstanceOf(typeof(TaskEvent), waitTask.Result);
-            Assert.AreEqual(EventType.TaskReduced, waitTask.Result.Type);
+        /// <summary>
+        /// Gets the wait tasks for different overloads of WaitForLocal.
+        /// </summary>
+        private static IEnumerable<Func<IEventFilter<IEvent>, int[], Task<IEvent>>> GetWaitTasks(IEvents events)
+        {
+            yield return (filter, types) => Task.Factory.StartNew(() => events.WaitForLocal(types));
+            yield return (filter, types) => Task.Factory.StartNew(() => events.WaitForLocal(types.ToList()));
 
-            // Filter
-            waitTask = getWaitTask(new EventFilter<IEvent>(e => e.Type == EventType.TaskReduced), new int[0]);
+            yield return (filter, types) => events.WaitForLocalAsync(types);
+            yield return (filter, types) => events.WaitForLocalAsync(types.ToList());
 
-            Assert.IsTrue(waitTask.Wait(timeout));
-            Assert.IsInstanceOf(typeof(TaskEvent), waitTask.Result);
-            Assert.AreEqual(EventType.TaskReduced, waitTask.Result.Type);
+            yield return (filter, types) => Task.Factory.StartNew(() => events.WaitForLocal(filter, types));
+            yield return (filter, types) => Task.Factory.StartNew(() => events.WaitForLocal(filter, types.ToList()));
 
-            // Filter & types
-            waitTask = getWaitTask(new EventFilter<IEvent>(e => e.Type == EventType.TaskReduced),
-                new[] {EventType.TaskReduced});
+            yield return (filter, types) => events.WaitForLocalAsync(filter, types);
+            yield return (filter, types) => events.WaitForLocalAsync(filter, types.ToList());
+        }
 
-            Assert.IsTrue(waitTask.Wait(timeout));
-            Assert.IsInstanceOf(typeof(TaskEvent), waitTask.Result);
-            Assert.AreEqual(EventType.TaskReduced, waitTask.Result.Type);
+        /// <summary>
+        /// Tests the wait for local overloads.
+        /// </summary>
+        [Test]
+        public void TestWaitForLocalOverloads()
+        {
+            
         }
 
         /*
@@ -492,6 +533,7 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(expectedGuid, cacheEvent.SubjectId);
                 Assert.AreEqual("cloClsName", cacheEvent.ClosureClassName);
                 Assert.AreEqual("taskName", cacheEvent.TaskName);
+                Assert.IsTrue(cacheEvent.ToShortString().StartsWith("SWAP_SPACE_CLEARED: IsNear="));
 
                 var qryExecEvent = EventReader.Read<CacheQueryExecutedEvent>(reader);
                 CheckEventBase(qryExecEvent);
@@ -501,6 +543,9 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual("clause", qryExecEvent.Clause);
                 Assert.AreEqual(expectedGuid, qryExecEvent.SubjectId);
                 Assert.AreEqual("taskName", qryExecEvent.TaskName);
+                Assert.AreEqual(
+                    "SWAP_SPACE_CLEARED: QueryType=qryType, CacheName=cacheName, ClassName=clsName, Clause=clause, " +
+                    "SubjectId=00000000-0000-0001-0000-000000000002, TaskName=taskName", qryExecEvent.ToShortString());
 
                 var qryReadEvent = EventReader.Read<CacheQueryReadEvent>(reader);
                 CheckEventBase(qryReadEvent);
@@ -514,6 +559,10 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(2, qryReadEvent.Value);
                 Assert.AreEqual(3, qryReadEvent.OldValue);
                 Assert.AreEqual(4, qryReadEvent.Row);
+                Assert.AreEqual(
+                    "SWAP_SPACE_CLEARED: QueryType=qryType, CacheName=cacheName, ClassName=clsName, Clause=clause, " +
+                    "SubjectId=00000000-0000-0001-0000-000000000002, TaskName=taskName, Key=1, Value=2, " +
+                    "OldValue=3, Row=4", qryReadEvent.ToShortString());
 
                 var cacheRebalancingEvent = EventReader.Read<CacheRebalancingEvent>(reader);
                 CheckEventBase(cacheRebalancingEvent);
@@ -522,15 +571,19 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(locNode, cacheRebalancingEvent.DiscoveryNode);
                 Assert.AreEqual(2, cacheRebalancingEvent.DiscoveryEventType);
                 Assert.AreEqual(3, cacheRebalancingEvent.DiscoveryTimestamp);
-                
+                Assert.IsTrue(cacheRebalancingEvent.ToShortString().StartsWith(
+                    "SWAP_SPACE_CLEARED: CacheName=cacheName, Partition=1, DiscoveryNode=GridNode"));
+
                 var checkpointEvent = EventReader.Read<CheckpointEvent>(reader);
                 CheckEventBase(checkpointEvent);
                 Assert.AreEqual("cpKey", checkpointEvent.Key);
-                
+                Assert.AreEqual("SWAP_SPACE_CLEARED: Key=cpKey", checkpointEvent.ToShortString());
+
                 var discoEvent = EventReader.Read<DiscoveryEvent>(reader);
                 CheckEventBase(discoEvent);
                 Assert.AreEqual(grid.TopologyVersion, discoEvent.TopologyVersion);
                 Assert.AreEqual(grid.GetNodes(), discoEvent.TopologyNodes);
+                Assert.IsTrue(discoEvent.ToShortString().StartsWith("SWAP_SPACE_CLEARED: EventNode=GridNode"));
 
                 var jobEvent = EventReader.Read<JobEvent>(reader);
                 CheckEventBase(jobEvent);
@@ -540,10 +593,12 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(locNode, jobEvent.TaskNode);
                 Assert.AreEqual(expectedGridGuid, jobEvent.TaskSessionId);
                 Assert.AreEqual(expectedGuid, jobEvent.TaskSubjectId);
+                Assert.IsTrue(jobEvent.ToShortString().StartsWith("SWAP_SPACE_CLEARED: TaskName=taskName"));
 
                 var spaceEvent = EventReader.Read<SwapSpaceEvent>(reader);
                 CheckEventBase(spaceEvent);
                 Assert.AreEqual("space", spaceEvent.Space);
+                Assert.IsTrue(spaceEvent.ToShortString().StartsWith("SWAP_SPACE_CLEARED: Space=space"));
 
                 var taskEvent = EventReader.Read<TaskEvent>(reader);
                 CheckEventBase(taskEvent);
@@ -552,6 +607,7 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual("taskClsName", taskEvent.TaskClassName);
                 Assert.AreEqual("taskName", taskEvent.TaskName);
                 Assert.AreEqual(expectedGridGuid, taskEvent.TaskSessionId);
+                Assert.IsTrue(taskEvent.ToShortString().StartsWith("SWAP_SPACE_CLEARED: TaskName=taskName"));
             }
         }
 
@@ -570,6 +626,11 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreNotEqual(Guid.Empty, evt.Id.GlobalId);
             Assert.IsTrue(Math.Abs((evt.Timestamp - DateTime.UtcNow).TotalSeconds) < 20, 
                 "Invalid event timestamp: '{0}', current time: '{1}'", evt.Timestamp, DateTime.Now);
+
+            Assert.Greater(evt.LocalOrder, 0);
+
+            Assert.IsTrue(evt.ToString().Contains("[Name=SWAP_SPACE_CLEARED"));
+            Assert.IsTrue(evt.ToShortString().StartsWith("SWAP_SPACE_CLEARED"));
         }
 
         /// <summary>
@@ -855,6 +916,7 @@ namespace Apache.Ignite.Core.Tests
         }
 
         /** <inheritdoc /> */
+        // ReSharper disable once UnusedMember.Global
         public bool Invoke(T evt)
         {
             throw new Exception("Invalid method");
@@ -952,6 +1014,60 @@ namespace Apache.Ignite.Core.Tests
         public override string ToString()
         {
             return EventObjectType.ToString();
+        }
+    }
+
+    /// <summary>
+    /// Custom event.
+    /// </summary>
+    public class MyEvent : IEvent
+    {
+        /** <inheritdoc /> */
+        public IgniteGuid Id
+        {
+            get { throw new NotImplementedException(); }
+        }
+
+        /** <inheritdoc /> */
+        public long LocalOrder
+        {
+            get { throw new NotImplementedException(); }
+        }
+
+        /** <inheritdoc /> */
+        public IClusterNode Node
+        {
+            get { throw new NotImplementedException(); }
+        }
+
+        /** <inheritdoc /> */
+        public string Message
+        {
+            get { throw new NotImplementedException(); }
+        }
+
+        /** <inheritdoc /> */
+        public int Type
+        {
+            get { throw new NotImplementedException(); }
+        }
+
+        /** <inheritdoc /> */
+        public string Name
+        {
+            get { throw new NotImplementedException(); }
+        }
+
+        /** <inheritdoc /> */
+        public DateTime Timestamp
+        {
+            get { throw new NotImplementedException(); }
+        }
+
+        /** <inheritdoc /> */
+        public string ToShortString()
+        {
+            throw new NotImplementedException();
         }
     }
 }
