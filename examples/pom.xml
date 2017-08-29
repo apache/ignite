@@ -234,6 +234,23 @@
         </profile>
 
         <profile>
+            <id>ml</id>
+
+            <properties>
+                <ml.folder>src/main/ml</ml.folder>
+                <java.ver>1.8</java.ver>
+            </properties>
+
+            <dependencies>
+                <dependency>
+                    <groupId>org.apache.ignite</groupId>
+                    <artifactId>ignite-ml</artifactId>
+                    <version>${project.version}</version>
+                </dependency>
+            </dependencies>
+        </profile>
+
+        <profile>
             <id>lgpl</id>
 
             <properties>
