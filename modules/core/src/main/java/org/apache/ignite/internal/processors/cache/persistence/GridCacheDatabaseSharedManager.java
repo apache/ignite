@@ -1333,8 +1333,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         boolean apply = status.needRestoreMemory();
 
         if (apply) {
-            U.quietAndWarn(log, "Ignite node crashed in the middle of checkpoint. Will restore memory state and " +
-                "enforce checkpoint on node start.");
+            U.quietAndWarn(log, "Ignite node stopped in the middle of checkpoint. Will restore memory state and " +
+                "finish checkpoint on node start.");
 
             cctx.pageStore().beginRecover();
         }

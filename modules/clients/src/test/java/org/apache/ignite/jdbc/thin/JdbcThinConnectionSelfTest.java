@@ -158,6 +158,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
             assertFalse(io(conn).enforceJoinOrder());
             assertFalse(io(conn).collocated());
             assertFalse(io(conn).replicatedOnly());
+            assertFalse(io(conn).lazy());
         }
 
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?distributedJoins=true")) {
@@ -165,6 +166,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
             assertFalse(io(conn).enforceJoinOrder());
             assertFalse(io(conn).collocated());
             assertFalse(io(conn).replicatedOnly());
+            assertFalse(io(conn).lazy());
         }
 
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?enforceJoinOrder=true")) {
@@ -172,6 +174,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
             assertTrue(io(conn).enforceJoinOrder());
             assertFalse(io(conn).collocated());
             assertFalse(io(conn).replicatedOnly());
+            assertFalse(io(conn).lazy());
         }
 
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?collocated=true")) {
@@ -179,6 +182,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
             assertFalse(io(conn).enforceJoinOrder());
             assertTrue(io(conn).collocated());
             assertFalse(io(conn).replicatedOnly());
+            assertFalse(io(conn).lazy());
         }
 
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?replicatedOnly=true")) {
@@ -186,14 +190,24 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
             assertFalse(io(conn).enforceJoinOrder());
             assertFalse(io(conn).collocated());
             assertTrue(io(conn).replicatedOnly());
+            assertFalse(io(conn).lazy());
+        }
+
+        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?lazy=true")) {
+            assertFalse(io(conn).distributedJoins());
+            assertFalse(io(conn).enforceJoinOrder());
+            assertFalse(io(conn).collocated());
+            assertFalse(io(conn).replicatedOnly());
+            assertTrue(io(conn).lazy());
         }
 
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?distributedJoins=true&" +
-                "enforceJoinOrder=true&collocated=true&replicatedOnly=true")) {
+            "enforceJoinOrder=true&collocated=true&replicatedOnly=true&lazy=true")) {
             assertTrue(io(conn).distributedJoins());
             assertTrue(io(conn).enforceJoinOrder());
             assertTrue(io(conn).collocated());
             assertTrue(io(conn).replicatedOnly());
+            assertTrue(io(conn).lazy());
         }
     }
 
