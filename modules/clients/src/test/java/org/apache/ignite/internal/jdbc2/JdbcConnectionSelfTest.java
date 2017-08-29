@@ -310,21 +310,31 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
      */
     public void testSqlHints() throws Exception {
         try (final Connection conn = DriverManager.getConnection(CFG_URL_PREFIX + "enforceJoinOrder=true@" + configURL())) {
-            assertEquals(Boolean.TRUE, GridTestUtils.getFieldValue(conn, "enforceJoinOrder"));
-            assertEquals(Boolean.FALSE, GridTestUtils.getFieldValue(conn, "distributedJoins"));
-            assertEquals(Boolean.FALSE, GridTestUtils.getFieldValue(conn, "collocatedQry"));
+            assertTrue(((JdbcConnection)conn).isEnforceJoinOrder());
+            assertFalse(((JdbcConnection)conn).isDistributedJoins());
+            assertFalse(((JdbcConnection)conn).isCollocatedQuery());
+            assertFalse(((JdbcConnection)conn).isLazy());
         }
 
         try (final Connection conn = DriverManager.getConnection(CFG_URL_PREFIX + "distributedJoins=true@" + configURL())) {
-            assertEquals(Boolean.FALSE, GridTestUtils.getFieldValue(conn, "enforceJoinOrder"));
-            assertEquals(Boolean.TRUE, GridTestUtils.getFieldValue(conn, "distributedJoins"));
-            assertEquals(Boolean.FALSE, GridTestUtils.getFieldValue(conn, "collocatedQry"));
+            assertFalse(((JdbcConnection)conn).isEnforceJoinOrder());
+            assertTrue(((JdbcConnection)conn).isDistributedJoins());
+            assertFalse(((JdbcConnection)conn).isCollocatedQuery());
+            assertFalse(((JdbcConnection)conn).isLazy());
         }
 
         try (final Connection conn = DriverManager.getConnection(CFG_URL_PREFIX + "collocated=true@" + configURL())) {
-            assertEquals(Boolean.FALSE, GridTestUtils.getFieldValue(conn, "enforceJoinOrder"));
-            assertEquals(Boolean.FALSE, GridTestUtils.getFieldValue(conn, "distributedJoins"));
-            assertEquals(Boolean.TRUE, GridTestUtils.getFieldValue(conn, "collocatedQry"));
+            assertFalse(((JdbcConnection)conn).isEnforceJoinOrder());
+            assertFalse(((JdbcConnection)conn).isDistributedJoins());
+            assertTrue(((JdbcConnection)conn).isCollocatedQuery());
+            assertFalse(((JdbcConnection)conn).isLazy());
+        }
+
+        try (final Connection conn = DriverManager.getConnection(CFG_URL_PREFIX + "lazy=true@" + configURL())) {
+            assertFalse(((JdbcConnection)conn).isEnforceJoinOrder());
+            assertFalse(((JdbcConnection)conn).isDistributedJoins());
+            assertFalse(((JdbcConnection)conn).isCollocatedQuery());
+            assertTrue(((JdbcConnection)conn).isLazy());
         }
     }
 }

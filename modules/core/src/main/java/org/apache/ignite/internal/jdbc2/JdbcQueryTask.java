@@ -165,6 +165,7 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
             qry.setCollocated(collocatedQry);
             qry.setDistributedJoins(distributedJoins);
             qry.setEnforceJoinOrder(enforceJoinOrder());
+            qry.setLazy(lazy());
             qry.setSchema(schemaName);
 
             QueryCursorImpl<List<?>> qryCursor = (QueryCursorImpl<List<?>>)cache.withKeepBinary().query(qry);
@@ -221,6 +222,13 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
      * @return Enforce join order flag (SQL hit).
      */
     protected boolean enforceJoinOrder() {
+        return false;
+    }
+
+    /**
+     * @return Lazy query execution flag (SQL hit).
+     */
+    protected boolean lazy() {
         return false;
     }
 

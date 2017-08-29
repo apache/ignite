@@ -36,6 +36,9 @@ class JdbcQueryTaskV2 extends JdbcQueryTask {
     /** Enforce join order flag. */
     private final boolean enforceJoinOrder;
 
+    /** Lazy query execution flag. */
+    private final boolean lazy;
+
     /**
      * @param ignite Ignite.
      * @param cacheName Cache name.
@@ -50,20 +53,25 @@ class JdbcQueryTaskV2 extends JdbcQueryTask {
      * @param collocatedQry Collocated query flag.
      * @param distributedJoins Distributed joins flag.
      * @param enforceJoinOrder Enforce joins order falg.
+     * @param lazy Lazy query execution flag.
      */
     public JdbcQueryTaskV2(Ignite ignite, String cacheName, String schemaName, String sql, Boolean isQry, boolean loc,
         Object[] args, int fetchSize, UUID uuid, boolean locQry, boolean collocatedQry, boolean distributedJoins,
-        boolean enforceJoinOrder) {
+        boolean enforceJoinOrder, boolean lazy) {
         super(ignite, cacheName, schemaName, sql, isQry, loc, args, fetchSize, uuid, locQry,
             collocatedQry, distributedJoins);
 
         this.enforceJoinOrder = enforceJoinOrder;
+        this.lazy = lazy;
     }
 
-    /**
-     * @return Enforce join order flag (SQL hit).
-     */
-    protected boolean enforceJoinOrder() {
+    /** {@inheritDoc} */
+    @Override protected boolean enforceJoinOrder() {
         return enforceJoinOrder;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected boolean lazy() {
+        return lazy;
     }
 }

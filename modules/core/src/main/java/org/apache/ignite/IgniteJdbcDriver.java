@@ -115,6 +115,18 @@ import org.apache.ignite.logger.java.JavaLogger;
  *         {@code enforceJoinOrder} - Sets flag to enforce join order of tables in the query. If set to {@code true}
  *          query optimizer will not reorder tables in join. By default is {@code false}.
  *     </li>
+ *     <li>
+ *         {@code lazy} - Sets flag to enable lazy query execution.
+ *         By default Ignite attempts to fetch the whole query result set to memory and send it to the client.
+ *         For small and medium result sets this provides optimal performance and minimize duration of internal
+ *         database locks, thus increasing concurrency.
+ *
+ *         <p> If result set is too big to fit in available memory this could lead to excessive GC pauses and even
+ *         OutOfMemoryError. Use this flag as a hint for Ignite to fetch result set lazily, thus minimizing memory
+ *         consumption at the cost of moderate performance hit.
+ *
+ *         <p> Defaults to {@code false}, meaning that the whole result set is fetched to memory eagerly.
+ *     </li>
  * </ul>
  *
  * <h2 class="header">Configuration of Ignite Java client based connection</h2>
@@ -295,6 +307,9 @@ public class IgniteJdbcDriver implements Driver {
     /** Parameter: enforce join order flag. */
     public static final String PARAM_ENFORCE_JOIN_ORDER = "enforceJoinOrder";
 
+    /** Parameter: lazy query execution flag. */
+    public static final String PARAM_LAZY = "lazy";
+
     /** Distributed joins parameter name. */
     private static final String PARAM_DISTRIBUTED_JOINS = "distributedJoins";
 
@@ -339,6 +354,9 @@ public class IgniteJdbcDriver implements Driver {
 
     /** Enforce join order property name. */
     public static final String PROP_ENFORCE_JOIN_ORDER = PROP_PREFIX + PARAM_ENFORCE_JOIN_ORDER;
+
+    /** Lazy query execution property name. */
+    public static final String PROP_LAZY = PROP_PREFIX + PARAM_LAZY;
 
     /** Transactions allowed property name. */
     public static final String PROP_TX_ALLOWED = PROP_PREFIX + PARAM_TX_ALLOWED;
