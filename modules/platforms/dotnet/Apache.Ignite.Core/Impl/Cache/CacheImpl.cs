@@ -1087,6 +1087,7 @@ namespace Apache.Ignite.Core.Impl.Cache
 
                 writer.WriteBoolean(qry.EnableDistributedJoins);
                 writer.WriteBoolean(qry.EnforceJoinOrder);
+                writer.WriteBoolean(false); // Lazy flag.
                 writer.WriteInt((int) qry.Timeout.TotalMilliseconds);
                 writer.WriteBoolean(qry.ReplicatedOnly);
                 writer.WriteBoolean(qry.Colocated);
