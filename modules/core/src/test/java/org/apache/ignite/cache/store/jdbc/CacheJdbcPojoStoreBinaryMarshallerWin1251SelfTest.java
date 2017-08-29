@@ -19,12 +19,14 @@ package org.apache.ignite.cache.store.jdbc;
 
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.binary.BinaryStringEncoding.ENC_NAME_WINDOWS_1251;
+
 /**
- * Test for {@link CacheJdbcPojoStore} with binary marshaller. Marshaller's string encoding is UTF-8.
+ * Test for {@link CacheJdbcPojoStore} with binary marshaller. Marshaller's string encoding is windows-1251.
  */
-public class CacheJdbcPojoStoreBinaryMarshallerSelfTest extends CacheJdbcPojoStoreBinaryMarshallerAbstractSelfTest {
+public class CacheJdbcPojoStoreBinaryMarshallerWin1251SelfTest extends CacheJdbcPojoStoreBinaryMarshallerAbstractSelfTest {
     /** {@inheritDoc} */
     @Override @Nullable protected String stringEncoding() {
-        return null;
+        return ENC_NAME_WINDOWS_1251;
     }
 }
