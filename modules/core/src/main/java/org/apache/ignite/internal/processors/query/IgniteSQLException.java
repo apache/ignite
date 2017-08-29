@@ -22,22 +22,18 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.CACHE_NOT_FOUND;
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.COLUMN_ALREADY_EXISTS;
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.COLUMN_NOT_FOUND;
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.CONCURRENT_UPDATE;
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.DUPLICATE_KEY;
-import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.ENTRY_PROCESSING;
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.INDEX_ALREADY_EXISTS;
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.INDEX_NOT_FOUND;
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.KEY_UPDATE;
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.NULL_KEY;
-import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.NULL_TABLE_DESCRIPTOR;
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.NULL_VALUE;
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.PARSING;
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.STMT_TYPE_MISMATCH;
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.TABLE_ALREADY_EXISTS;
-import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.TABLE_DROP_FAILED;
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.TABLE_NOT_FOUND;
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.UNEXPECTED_ELEMENT_TYPE;
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.UNEXPECTED_OPERATION;
@@ -128,7 +124,7 @@ public class IgniteSQLException extends IgniteException {
                 return "0A000"; // Generic value for "feature not supported" 0A class.
 
             case CONCURRENT_UPDATE:
-                return "40000"; // Generic value for "tx rollback" 0A class.
+                return "40000"; // Generic value for "tx rollback" 40 class.
 
             case PARSING:
                 return "42000"; // Generic value for "syntax error or access rule violation" 42 class.
@@ -163,19 +159,6 @@ public class IgniteSQLException extends IgniteException {
 
             case KEY_UPDATE:
                 return "42010";
-
-            // Internal errors - custom "XX" class.
-            case ENTRY_PROCESSING:
-                return "XX001";
-
-            case TABLE_DROP_FAILED:
-                return "XX002";
-
-            case NULL_TABLE_DESCRIPTOR:
-                return "XX003";
-
-            case CACHE_NOT_FOUND:
-                return "XX004";
 
             default:
                 return "50000";  // Generic value for custom "50" class.
