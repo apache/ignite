@@ -1,13 +1,11 @@
 package org.apache.ignite.internal;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.Callable;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 
@@ -58,7 +56,7 @@ public class IgniteClientReconnectBinaryContexTest extends IgniteClientReconnect
                 return Collections.singleton((Ignite)startGrid(0));
             }
         });
-        
+
         ignites.iterator().next().createCache(personCache);
 
         client.cache(DEFAULT_CACHE_NAME).put(new TestClass1("2"), new TestClass1("2"));
