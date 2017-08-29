@@ -438,8 +438,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             if (_ignite != null)
             {
-                typeName = typeName ?? _ignite.BinaryProcessor.GetTypeName(typeId)
-                           ?? GetBinaryType(typeId).TypeName;
+                typeName = typeName ?? GetBinaryType(typeId).TypeName;
             }
 
             if (typeName != null)
