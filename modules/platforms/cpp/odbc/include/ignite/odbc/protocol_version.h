@@ -33,6 +33,7 @@ namespace ignite
         public:
             /** Current protocol version. */
             static const ProtocolVersion VERSION_2_1_0;
+            static const ProtocolVersion VERSION_2_3_0;
 
             typedef std::set<ProtocolVersion> VersionSet;
 
