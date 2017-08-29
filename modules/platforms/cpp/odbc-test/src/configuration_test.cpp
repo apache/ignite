@@ -140,9 +140,9 @@ void CheckConnectionConfig(const Configuration& cfg)
                 << "distributed_joins=" << BoolToStr(testDistributedJoins) << ';'
                 << "driver={" << testDriverName << "};"
                 << "enforce_join_order=" << BoolToStr(testEnforceJoinOrder) << ';'
+                << "lazy=" << BoolToStr(testLazy) << ';'
                 << "page_size=" << testPageSize << ';'
                 << "replicated_only=" << BoolToStr(testReplicatedOnly) << ';'
-                << "lazy=" << BoolToStr(testLazy) << ';'
                 << "schema=" << testSchemaName << ';';
 
     const std::string& expectedStr = constructor.str();

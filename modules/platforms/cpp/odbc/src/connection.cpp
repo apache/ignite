@@ -375,7 +375,7 @@ namespace ignite
                 constructor << "Node rejected handshake message. ";
 
                 if (!rsp.GetError().empty())
-                    constructor << "Additional info: " << rsp.GetError();
+                    constructor << "Additional info: " << rsp.GetError() << " ";
 
                 constructor << "Current node Apache Ignite version: " << rsp.GetCurrentVer().ToString() << ", "
                             << "driver protocol version introduced in version: "
