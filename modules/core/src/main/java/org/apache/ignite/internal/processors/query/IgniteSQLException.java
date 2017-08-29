@@ -41,6 +41,7 @@ import static org.apache.ignite.internal.processors.cache.query.IgniteQueryError
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.TABLE_NOT_FOUND;
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.UNEXPECTED_ELEMENT_TYPE;
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.UNEXPECTED_OPERATION;
+import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.UNKNOWN;
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.UNSUPPORTED_OPERATION;
 
 /**
@@ -61,7 +62,7 @@ public class IgniteSQLException extends IgniteException {
 
     /** */
     public IgniteSQLException(String msg) {
-        this(msg, null, 0);
+        this(msg, UNKNOWN, null);
     }
 
     /**
@@ -69,35 +70,27 @@ public class IgniteSQLException extends IgniteException {
      */
     public IgniteSQLException(SQLException cause) {
         super(cause);
-        this.sqlState = null;
-        this.statusCode = 0;
+        this.sqlState = cause.getSQLState();
+        this.statusCode = UNKNOWN;
     }
 
     /** */
     public IgniteSQLException(String msg, @Nullable Throwable cause) {
-        super(msg, cause);
-        this.sqlState = null;
-        this.statusCode = 0;
+        this(msg, UNKNOWN, cause);
     }
 
     /** */
     public IgniteSQLException(String msg, int statusCode, @Nullable Throwable cause) {
         super(msg, cause);
-        this.sqlState = null;
-        this.statusCode = statusCode;
-    }
-
-    /** */
-    public IgniteSQLException(String msg, String sqlState, int statusCode) {
-        super(msg);
-        this.sqlState = sqlState;
+        this.sqlState = (cause instanceof SQLException ? ((SQLException) cause).getSQLState() :
+            codeToSqlState(statusCode));
         this.statusCode = statusCode;
     }
 
     /** */
     public IgniteSQLException(String msg, int statusCode) {
         super(msg);
-        this.sqlState = null;
+        this.sqlState = codeToSqlState(statusCode);
         this.statusCode = statusCode;
     }
 
@@ -116,10 +109,11 @@ public class IgniteSQLException extends IgniteException {
     }
 
     /**
-     *
-     * @param statusCode
-     * @return
+     * Map Ignite specific error code to standard SQL state.
+     * @param statusCode Ignite specific error code.
+     * @return SQL state string.
      * @see <a href="http://en.wikibooks.org/wiki/Structured_Query_Language/SQLSTATE">Wikipedia: SQLSTATE spec.</a>
+     * @see IgniteQueryErrorCode
      */
     private static String codeToSqlState(int statusCode) {
         switch (statusCode) {
@@ -141,20 +135,36 @@ public class IgniteSQLException extends IgniteException {
 
             // 42 - class for "syntax error or access rule violation" + error specific part.
             case TABLE_NOT_FOUND:
-            case INDEX_ALREADY_EXISTS:
-            case STMT_TYPE_MISMATCH:
-            case INDEX_NOT_FOUND:
+                return "42001";
+
             case TABLE_ALREADY_EXISTS:
+                return "42002";
+
+            case INDEX_ALREADY_EXISTS:
+                return "42003";
+
+            case INDEX_NOT_FOUND:
+                return "42004";
+
             case COLUMN_NOT_FOUND:
+                return "42005";
+
             case COLUMN_ALREADY_EXISTS:
-                return "42" + String.valueOf(statusCode).substring(1);
+                return "42006";
+
+            case STMT_TYPE_MISMATCH:
+                return "42007";
 
             case UNEXPECTED_OPERATION:
-            case UNEXPECTED_ELEMENT_TYPE:
-            case KEY_UPDATE:
-                return "421" + String.valueOf(statusCode).substring(2);
+                return "42008";
 
-            // Internal errors - XX class.
+            case UNEXPECTED_ELEMENT_TYPE:
+                return "42009";
+
+            case KEY_UPDATE:
+                return "42010";
+
+            // Internal errors - custom "XX" class.
             case ENTRY_PROCESSING:
                 return "XX001";
 
