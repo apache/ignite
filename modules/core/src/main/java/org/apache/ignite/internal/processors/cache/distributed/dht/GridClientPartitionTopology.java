@@ -616,16 +616,19 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
-    @Override public GridDhtPartitionFullMap partitionMap(boolean onlyActive) {
+    @Nullable @Override public GridDhtPartitionFullMap partitionMap(boolean onlyActive) {
         lock.readLock().lock();
 
         try {
             if (stopping || node2part == null)
                 return null;
 
-            assert node2part.valid() : "Invalid node2part [node2part: " + node2part +
+            assert node2part.valid() || !topVer.initialized() : "Invalid node2part [node2part: " + node2part +
                 ", locNodeId=" + cctx.localNodeId() +
                 ", igniteInstanceName=" + cctx.igniteInstanceName() + ']';
+
+            if (!node2part.valid())
+                return null;
 
             GridDhtPartitionFullMap m = node2part;
 
