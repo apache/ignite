@@ -257,6 +257,13 @@ namespace ignite
                                     break;
                                 }
 
+                                case ChildId::LAZY_CHECK_BOX:
+                                {
+                                    lazyCheckBox->SetChecked(!lazyCheckBox->IsChecked());
+
+                                    break;
+                                }
+
                                 case ChildId::PROTOCOL_VERSION_COMBO_BOX:
                                 {
                                     std::string versionStr;
