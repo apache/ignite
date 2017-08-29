@@ -563,58 +563,6 @@
                                     <skipAssembly>true</skipAssembly>
                                 </configuration>
                             </execution>
-                            <execution>
-                                <id>source-release-assembly-ignite</id>
-                                <phase>initialize</phase>
-                                <goals>
-                                    <goal>single</goal>
-                                </goals>
-                                <configuration>
-                                    <runOnlyAtExecutionRoot>true</runOnlyAtExecutionRoot>
-                                    <descriptors>
-                                        <descriptor>assembly/release-sources.xml</descriptor>
-                                    </descriptors>
-                                    <tarLongFileMode>gnu</tarLongFileMode>
-                                    <finalName>${project.artifactId}-${project.version}-src</finalName>
-                                    <appendAssemblyId>false</appendAssemblyId>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-antrun-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>attach-artifact</id><!-- allows to sign *bin.zip files -->
-                                <phase>initialize</phase>
-                                <goals>
-                                    <goal>run</goal>
-                                </goals>
-                                <configuration>
-                                    <failOnError>false</failOnError>
-                                    <target>
-                                        <attachartifact file="${basedir}/target/bin/${project.artifactId}-fabric-${project.version}-bin.zip" classifier="fabric" type="zip" />
-                                        <attachartifact file="${basedir}/target/bin/${project.artifactId}-hadoop-${project.version}-bin.zip" classifier="hadoop" type="zip" />
-                                    </target>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-gpg-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <goals>
-                                    <goal>sign</goal>
-                                </goals>
-                                <configuration>
-                                    <ascDirectory>${basedir}</ascDirectory>
-                                </configuration>
-                            </execution>
                         </executions>
                     </plugin>
 
@@ -643,6 +591,124 @@
             <build>
                 <plugins>
                     <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <inherited>false</inherited>
+                        <executions>
+                            <execution>
+                                <id>site-generation</id>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                                <phase>validate</phase>
+                                <configuration>
+                                    <failOnError>false</failOnError>
+                                    <target>
+                                        <mkdir dir="${basedir}/target/site" />
+
+                                        <copy file="${basedir}/target/${project.artifactId}-${project.version}-src.zip" tofile="${basedir}/target/site/${project.artifactId}-${project.version}-src.zip" failonerror="false" />
+                                        <copy file="${basedir}/target/${project.artifactId}-${project.version}-src.zip.md5" tofile="${basedir}/target/site/${project.artifactId}-${project.version}-src.zip.md5" failonerror="false" />
+                                        <copy file="${basedir}/target/${project.artifactId}-${project.version}-src.zip.sha512" tofile="${basedir}/target/site/${project.artifactId}-${project.version}-src.zip.sha512" failonerror="false" />
+
+                                        <copy todir="${basedir}/target/site">
+                                            <fileset dir="${basedir}/target/bin">
+                                                <include name="**/*" />
+                                            </fileset>
+                                        </copy>
+                                    </target>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>update-checksum-files</id>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                                <phase>initialize</phase>
+                                <configuration>
+                                    <failOnError>false</failOnError>
+                                    <target>
+                                        <!-- appending filename to md5 and sha512 files. to be improved!! -->
+                                        <!-- update versions task will replace "  " to " ", so additional echo added. -->
+                                        <echo file="${basedir}/target/site/${project.artifactId}-fabric-${project.version}-bin.zip.md5" append="true" message=" " />
+                                        <echo file="${basedir}/target/site/${project.artifactId}-fabric-${project.version}-bin.zip.sha512" append="true" message=" " />
+                                        <echo file="${basedir}/target/site/${project.artifactId}-hadoop-${project.version}-bin.zip.md5" append="true" message=" " />
+                                        <echo file="${basedir}/target/site/${project.artifactId}-hadoop-${project.version}-bin.zip.sha512" append="true" message=" " />
+                                        <echo file="${basedir}/target/site/${project.artifactId}-${project.version}-src.zip.md5" append="true" message=" " />
+                                        <echo file="${basedir}/target/site/${project.artifactId}-${project.version}-src.zip.sha512" append="true" message=" " />
+
+                                        <echo file="${basedir}/target/site/${project.artifactId}-fabric-${project.version}-bin.zip.md5" append="true" message=" ${project.artifactId}-fabric-${project.version}-bin.zip" />
+                                        <echo file="${basedir}/target/site/${project.artifactId}-fabric-${project.version}-bin.zip.sha512" append="true" message=" ${project.artifactId}-fabric-${project.version}-bin.zip" />
+                                        <echo file="${basedir}/target/site/${project.artifactId}-hadoop-${project.version}-bin.zip.md5" append="true" message=" ${project.artifactId}-hadoop-${project.version}-bin.zip" />
+                                        <echo file="${basedir}/target/site/${project.artifactId}-hadoop-${project.version}-bin.zip.sha512" append="true" message=" ${project.artifactId}-hadoop-${project.version}-bin.zip" />
+                                        <echo file="${basedir}/target/site/${project.artifactId}-${project.version}-src.zip.md5" append="true" message=" ${project.artifactId}-${project.version}-src.zip" />
+                                        <echo file="${basedir}/target/site/${project.artifactId}-${project.version}-src.zip.sha512" append="true" message=" ${project.artifactId}-${project.version}-src.zip" />
+                                    </target>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <profile>
+            <id>sources-and-checksum</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-assembly-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <!-- skip default -->
+                                <id>source-release-assembly</id>
+                                <goals>
+                                    <goal>single</goal>
+                                </goals>
+                                <configuration>
+                                    <skipAssembly>true</skipAssembly>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>source-release-assembly-ignite</id>
+                                <phase>validate</phase>
+                                <goals>
+                                    <goal>single</goal>
+                                </goals>
+                                <configuration>
+                                    <runOnlyAtExecutionRoot>true</runOnlyAtExecutionRoot>
+                                    <descriptors>
+                                        <descriptor>assembly/release-sources.xml</descriptor>
+                                    </descriptors>
+                                    <tarLongFileMode>gnu</tarLongFileMode>
+                                    <finalName>${project.artifactId}-${project.version}-src</finalName>
+                                    <appendAssemblyId>false</appendAssemblyId>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>attach-artifact</id><!-- allows to sign *bin.zip files -->
+                                <phase>validate</phase>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                                <configuration>
+                                    <failOnError>false</failOnError>
+                                    <target>
+                                        <attachartifact file="${basedir}/target/bin/${project.artifactId}-fabric-${project.version}-bin.zip" classifier="fabric" type="zip" />
+                                        <attachartifact file="${basedir}/target/bin/${project.artifactId}-hadoop-${project.version}-bin.zip" classifier="hadoop" type="zip" />
+                                    </target>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <plugin>
                         <groupId>net.ju-n.maven.plugins</groupId>
                         <artifactId>checksum-maven-plugin</artifactId>
                         <version>1.2</version>
@@ -667,58 +733,9 @@
                             </fileSets>
                             <algorithms>
                                 <algorithm>MD5</algorithm>
-                                <algorithm>SHA-1</algorithm>
+                                <algorithm>SHA-512</algorithm>
                             </algorithms>
                         </configuration>
-                    </plugin>
-
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-antrun-plugin</artifactId>
-                        <version>1.7</version>
-                        <inherited>false</inherited>
-                        <executions>
-                            <execution>
-                                <id>site-generation</id>
-                                <goals>
-                                    <goal>run</goal>
-                                </goals>
-                                <phase>initialize</phase>
-                                <configuration>
-                                    <failOnError>false</failOnError>
-                                    <target>
-                                        <mkdir dir="${basedir}/target/site" />
-
-                                        <copy file="${basedir}/target/${project.artifactId}-${project.version}-src.zip" tofile="${basedir}/target/site/${project.artifactId}-${project.version}-src.zip" failonerror="false" />
-                                        <copy file="${basedir}/target/${project.artifactId}-${project.version}-src.zip.asc" tofile="${basedir}/target/site/${project.artifactId}-${project.version}-src.zip.asc" failonerror="false" />
-                                        <copy file="${basedir}/target/${project.artifactId}-${project.version}-src.zip.md5" tofile="${basedir}/target/site/${project.artifactId}-${project.version}-src.zip.md5" failonerror="false" />
-                                        <copy file="${basedir}/target/${project.artifactId}-${project.version}-src.zip.sha1" tofile="${basedir}/target/site/${project.artifactId}-${project.version}-src.zip.sha1" failonerror="false" />
-
-                                        <copy todir="${basedir}/target/site">
-                                            <fileset dir="${basedir}/target/bin">
-                                                <include name="**/*" />
-                                            </fileset>
-                                        </copy>
-
-                                        <!-- appending filename to md5 and sha1 files. to be improved!! -->
-                                        <!-- update versions task will replace "  " to " ", so additional echo added. -->
-                                        <echo file="${basedir}/target/site/${project.artifactId}-fabric-${project.version}-bin.zip.md5" append="true" message=" " />
-                                        <echo file="${basedir}/target/site/${project.artifactId}-fabric-${project.version}-bin.zip.sha1" append="true" message=" " />
-                                        <echo file="${basedir}/target/site/${project.artifactId}-hadoop-${project.version}-bin.zip.md5" append="true" message=" " />
-                                        <echo file="${basedir}/target/site/${project.artifactId}-hadoop-${project.version}-bin.zip.sha1" append="true" message=" " />
-                                        <echo file="${basedir}/target/site/${project.artifactId}-${project.version}-src.zip.md5" append="true" message=" " />
-                                        <echo file="${basedir}/target/site/${project.artifactId}-${project.version}-src.zip.sha1" append="true" message=" " />
-
-                                        <echo file="${basedir}/target/site/${project.artifactId}-fabric-${project.version}-bin.zip.md5" append="true" message=" ${project.artifactId}-fabric-${project.version}-bin.zip" />
-                                        <echo file="${basedir}/target/site/${project.artifactId}-fabric-${project.version}-bin.zip.sha1" append="true" message=" ${project.artifactId}-fabric-${project.version}-bin.zip" />
-                                        <echo file="${basedir}/target/site/${project.artifactId}-hadoop-${project.version}-bin.zip.md5" append="true" message=" ${project.artifactId}-hadoop-${project.version}-bin.zip" />
-                                        <echo file="${basedir}/target/site/${project.artifactId}-hadoop-${project.version}-bin.zip.sha1" append="true" message=" ${project.artifactId}-hadoop-${project.version}-bin.zip" />
-                                        <echo file="${basedir}/target/site/${project.artifactId}-${project.version}-src.zip.md5" append="true" message=" ${project.artifactId}-${project.version}-src.zip" />
-                                        <echo file="${basedir}/target/site/${project.artifactId}-${project.version}-src.zip.sha1" append="true" message=" ${project.artifactId}-${project.version}-src.zip" />
-                                    </target>
-                                </configuration>
-                            </execution>
-                        </executions>
                     </plugin>
                 </plugins>
             </build>
