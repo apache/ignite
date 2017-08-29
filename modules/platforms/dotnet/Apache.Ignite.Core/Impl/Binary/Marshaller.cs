@@ -447,8 +447,10 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                 if (binType != BinaryType.Empty)
                 {
-                    return AddUserType(new BinaryTypeConfiguration(typeName) {IsEnum = binType.IsEnum},
-                        new TypeResolver());
+                    return AddUserType(new BinaryTypeConfiguration(binType.TypeName)
+                    {
+                        IsEnum = binType.IsEnum
+                    }, new TypeResolver());
                 }
             }
 
