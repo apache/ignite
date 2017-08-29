@@ -1134,18 +1134,21 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
-    @Override public GridDhtPartitionFullMap partitionMap(boolean onlyActive) {
+    @Nullable @Override public GridDhtPartitionFullMap partitionMap(boolean onlyActive) {
         lock.readLock().lock();
 
         try {
             if (node2part == null || stopping)
                 return null;
 
-            assert node2part.valid() : "Invalid node2part [node2part=" + node2part +
+            assert node2part.valid() || !readyTopVer.initialized() : "Invalid node2part [node2part=" + node2part +
                 ", grp=" + grp.cacheOrGroupName() +
                 ", stopping=" + stopping +
                 ", locNodeId=" + ctx.localNode().id() +
                 ", locName=" + ctx.igniteInstanceName() + ']';
+
+            if (!node2part.valid())
+                return null;
 
             GridDhtPartitionFullMap m = node2part;
 

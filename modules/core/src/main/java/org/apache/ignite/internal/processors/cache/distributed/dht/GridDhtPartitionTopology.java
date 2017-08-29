@@ -245,7 +245,7 @@ public interface GridDhtPartitionTopology {
      * @param onlyActive If {@code true}, then only {@code active} partitions will be returned.
      * @return Node IDs mapped to partitions.
      */
-    public GridDhtPartitionFullMap partitionMap(boolean onlyActive);
+    @Nullable public GridDhtPartitionFullMap partitionMap(boolean onlyActive);
 
     /**
      * @return {@code True} If one of cache nodes has partitions in {@link GridDhtPartitionState#MOVING} state.
