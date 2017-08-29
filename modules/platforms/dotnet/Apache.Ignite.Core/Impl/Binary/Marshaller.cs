@@ -464,24 +464,51 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             var registered = _ignite != null && _ignite.BinaryProcessor.RegisterType(typeId, typeName);
 
-            return AddUserType(typeId, typeName, registered, desc);
+            return AddUserType(type, typeId, typeName, registered, desc);
         }
 
         /// <summary>
         /// Add user type.
         /// </summary>
+        /// <param name="type">The type.</param>
         /// <param name="typeId">The type id.</param>
         /// <param name="typeName">Name of the type.</param>
         /// <param name="registered">Registered flag.</param>
         /// <param name="desc">Existing descriptor.</param>
         /// <returns>Descriptor.</returns>
-        private BinaryFullTypeDescriptor AddUserType(int typeId, string typeName, bool registered,
+        private BinaryFullTypeDescriptor AddUserType(Type type, int typeId, string typeName, bool registered,
             BinaryFullTypeDescriptor desc)
         {
+            Debug.Assert(type != null);
             Debug.Assert(typeName != null);
 
-            // TODO:
-            return AddUserType(new BinaryTypeConfiguration(typeName), new TypeResolver());
+            var ser = GetSerializer(_cfg, null, type, typeId, null, null, _log);
+
+            desc = desc == null
+                ? new BinaryFullTypeDescriptor(type, typeId, typeName, true, _cfg.NameMapper,
+                    _cfg.IdMapper, ser, false, null, BinaryUtils.IsIgniteEnum(type), registered)
+                : new BinaryFullTypeDescriptor(desc, type, ser, registered);
+
+            if (RegistrationDisabled)
+                return desc;
+
+            var typeKey = BinaryUtils.TypeKey(true, typeId);
+
+            var desc0 = _idToDesc.GetOrAdd(typeKey, x => desc);
+            if (desc0.Type != null && desc0.TypeName != typeName)
+            {
+                ThrowConflictingTypeError(type, desc0.Type, typeId);
+            }
+
+            desc0 = _typeNameToDesc.GetOrAdd(typeName, x => desc);
+            if (desc0.Type != null && desc0.TypeName != typeName)
+            {
+                ThrowConflictingTypeError(type, desc0.Type, typeId);
+            }
+
+            _typeToDesc.Set(type, desc);
+
+            return desc;
         }
 
         /// <summary>
