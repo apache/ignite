@@ -309,6 +309,7 @@
                                 <source>${lgpl.folder}</source>
                                 <source>${java8.folder}</source>
                                 <source>${spark.folder}</source>
+                                <source>${ml.folder}</source>
                             </sources>
                         </configuration>
                     </execution>
