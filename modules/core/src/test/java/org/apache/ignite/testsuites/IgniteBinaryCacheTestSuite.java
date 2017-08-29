@@ -21,6 +21,7 @@ import java.util.HashSet;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.GridCacheAffinityRoutingSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryMemorySizeSelfTest;
+import org.apache.ignite.internal.processors.cache.GridCacheMixedBinaryStringEncodingsTest;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccSelfTest;
 import org.apache.ignite.internal.processors.cache.binary.CacheKeepBinaryWithInterceptorTest;
 import org.apache.ignite.internal.processors.cache.expiry.IgniteCacheAtomicLocalExpiryPolicyTest;
@@ -77,6 +78,8 @@ public class IgniteBinaryCacheTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheAffinityRoutingBinarySelfTest.class);
         suite.addTestSuite(GridBinaryCacheEntryMemorySizeSelfTest.class);
         suite.addTestSuite(CacheKeepBinaryWithInterceptorTest.class);
+
+        suite.addTestSuite(GridCacheMixedBinaryStringEncodingsTest.class);
 
         return suite;
     }
