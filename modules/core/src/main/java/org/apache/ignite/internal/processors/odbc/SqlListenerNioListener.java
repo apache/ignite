@@ -32,6 +32,8 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMessageParser;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequestHandler;
 import org.apache.ignite.internal.processors.odbc.odbc.OdbcMessageParser;
 import org.apache.ignite.internal.processors.odbc.odbc.OdbcRequestHandler;
+import org.apache.ignite.internal.processors.platform.client.ClientMessageParser;
+import org.apache.ignite.internal.processors.platform.client.ClientRequestHandler;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.nio.GridNioServerListenerAdapter;
 import org.apache.ignite.internal.util.nio.GridNioSession;
@@ -42,10 +44,10 @@ import org.jetbrains.annotations.Nullable;
  * SQL message listener.
  */
 public class SqlListenerNioListener extends GridNioServerListenerAdapter<byte[]> {
-    /** The value corresponds to ODBC driver of the parser field of the handshake request. */
+    /** ODBC driver handshake code. */
     public static final byte ODBC_CLIENT = 0;
 
-    /** The value corresponds to JDBC driver of the parser field of the handshake request. */
+    /** JDBC driver handshake code. */
     public static final byte JDBC_CLIENT = 1;
 
     /** Version 2.1.0. */
@@ -53,6 +55,9 @@ public class SqlListenerNioListener extends GridNioServerListenerAdapter<byte[]>
 
     /** Version 2.1.5: added "lazy" flag. */
     private static final SqlListenerProtocolVersion VER_2_1_5 = SqlListenerProtocolVersion.create(2, 1, 5);
+
+    /** Thin client handshake code. */
+    public static final byte THIN_CLIENT = 2;
 
     /** Current version. */
     private static final SqlListenerProtocolVersion CURRENT_VER = VER_2_1_5;
@@ -275,6 +280,12 @@ public class SqlListenerNioListener extends GridNioServerListenerAdapter<byte[]>
                 enforceJoinOrder, collocated, replicatedOnly, autoCloseCursors, lazyExec);
 
             SqlListenerMessageParser parser = new JdbcMessageParser(ctx);
+
+            return new SqlListenerConnectionContext(handler, parser);
+        }
+        else if (clientType == THIN_CLIENT) {
+            ClientMessageParser parser = new ClientMessageParser(ctx);
+            ClientRequestHandler handler = new ClientRequestHandler(ctx);
 
             return new SqlListenerConnectionContext(handler, parser);
         }
