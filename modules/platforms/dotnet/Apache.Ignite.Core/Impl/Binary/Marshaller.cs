@@ -436,14 +436,20 @@ namespace Apache.Ignite.Core.Impl.Binary
             typeName = typeName ?? (desc != null ? desc.TypeName : null)
                        ?? (knownType != null ? GetTypeName(knownType) : null);
 
-            if (_ignite != null)
-            {
-                typeName = typeName ?? GetBinaryType(typeId).TypeName;
-            }
-
             if (typeName != null)
             {
                 return AddUserType(new BinaryTypeConfiguration(typeName), new TypeResolver());
+            }
+
+            if (_ignite != null)
+            {
+                var binType = GetBinaryType(typeId);
+
+                if (binType != BinaryType.Empty)
+                {
+                    return AddUserType(new BinaryTypeConfiguration(typeName) {IsEnum = binType.IsEnum},
+                        new TypeResolver());
+                }
             }
 
             return new BinarySurrogateTypeDescriptor(_cfg, typeId, null);
