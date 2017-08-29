@@ -1081,7 +1081,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /** {@inheritDoc} */
     @Override public void clear() throws IgniteCheckedException {
         if (isLocal())
-            clearLocally(true, true, true);
+            clearLocally(true, false, false);
         else
             clear((Set<? extends K>)null);
     }
