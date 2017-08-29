@@ -139,6 +139,20 @@ public abstract class GridUnsafe {
     }
 
     /**
+     *
+     * @param buf Buffer.
+     * @param len New length.
+     * @return Reallocated direct buffer.
+     */
+    public static ByteBuffer reallocateBuffer(ByteBuffer buf, int len) {
+        long ptr = bufferAddress(buf);
+
+        long newPtr = reallocateMemory(ptr, len);
+
+        return wrapPointer(newPtr, len);
+    }
+
+    /**
      * Gets boolean value from object field.
      *
      * @param obj Object.

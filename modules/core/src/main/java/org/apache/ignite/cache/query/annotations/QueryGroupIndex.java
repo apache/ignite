@@ -21,6 +21,8 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.configuration.CacheConfiguration;
 
 /**
  * Describes group index.
@@ -34,6 +36,24 @@ public @interface QueryGroupIndex {
      * @return Name.
      */
     String name();
+
+    /**
+     * Index inline size in bytes. When enabled part of indexed value will be placed directly to index pages,
+     * thus minimizing data page accesses, thus incraesing query performance.
+     * <p>
+     * Allowed values:
+     * <ul>
+     *     <li>{@code -1} (default) - determine inline size automatically (see below)</li>
+     *     <li>{@code 0} - index inline is disabled (not recommended)</li>
+     *     <li>positive value - fixed index inline</li>
+     * </ul>
+     * When set to {@code -1}, Ignite will try to detect inline size automatically. It will be no more than
+     * {@link CacheConfiguration#getSqlIndexMaxInlineSize()}. Index inline will be enabled for all fixed-length types,
+     * but <b>will not be enabled</b> for {@code String}.
+     *
+     * @return Index inline size in bytes.
+     */
+    int inlineSize() default QueryIndex.DFLT_INLINE_SIZE;
 
     /**
      * List of group indexes for type.

@@ -55,6 +55,7 @@ import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.IgniteInstanceResource;
@@ -119,6 +120,9 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
      * @return Cluster state to be used on public API.
      */
     public boolean publicApiActiveState() {
+        if (ctx.isDaemon())
+            return sendComputeCheckGlobalState();
+
         DiscoveryDataClusterState globalState = this.globalState;
 
         assert globalState != null;
@@ -407,7 +411,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
         if (ctx.isDaemon() || ctx.clientNode()) {
             GridFutureAdapter<Void> fut = new GridFutureAdapter<>();
 
-            sendCompute(activate, fut);
+            sendComputeChangeGlobalState(activate, fut);
 
             return fut;
         }
@@ -490,17 +494,17 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
      * @param activate New cluster state.
      * @param resFut State change future.
      */
-    private void sendCompute(boolean activate, final GridFutureAdapter<Void> resFut) {
+    private void sendComputeChangeGlobalState(boolean activate, final GridFutureAdapter<Void> resFut) {
         AffinityTopologyVersion topVer = ctx.discovery().topologyVersionEx();
-
-        IgniteCompute comp = ((ClusterGroupAdapter)ctx.cluster().get().forServers()).compute();
 
         if (log.isInfoEnabled()) {
             log.info("Sending " + prettyStr(activate) + " request from node [id=" + ctx.localNodeId() +
                 ", topVer=" + topVer +
                 ", client=" + ctx.clientNode() +
-                ", daemon" + ctx.isDaemon() + "]");
+                ", daemon=" + ctx.isDaemon() + "]");
         }
+
+        IgniteCompute comp = ((ClusterGroupAdapter)ctx.cluster().get().forServers()).compute();
 
         IgniteFuture<Void> fut = comp.runAsync(new ClientChangeGlobalStateComputeRequest(activate));
 
@@ -514,6 +518,32 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
                 catch (Exception e) {
                     resFut.onDone(e);
                 }
+            }
+        });
+    }
+
+    /**
+     *  Check cluster state.
+     *
+     *  @return Cluster state, {@code True} if cluster active, {@code False} if inactive.
+     */
+    private boolean sendComputeCheckGlobalState() {
+        AffinityTopologyVersion topVer = ctx.discovery().topologyVersionEx();
+
+        if (log.isInfoEnabled()) {
+            log.info("Sending check cluster state request from node [id=" + ctx.localNodeId() +
+                ", topVer=" + topVer +
+                ", client=" + ctx.clientNode() +
+                ", daemon" + ctx.isDaemon() + "]");
+        }
+        IgniteCompute comp = ((ClusterGroupAdapter)ctx.cluster().get().forServers()).compute();
+
+        return comp.call(new IgniteCallable<Boolean>() {
+            @IgniteInstanceResource
+            private Ignite ig;
+
+            @Override public Boolean call() throws Exception {
+                return ig.active();
             }
         });
     }
@@ -863,7 +893,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
 
         /** Ignite. */
         @IgniteInstanceResource
-        private Ignite ignite;
+        private Ignite ig;
 
         /**
          * @param activate New cluster state.
@@ -874,7 +904,23 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
 
         /** {@inheritDoc} */
         @Override public void run() {
-            ignite.active(activate);
+            ig.active(activate);
+        }
+    }
+
+    /**
+     *
+     */
+    private static class CheckGlobalStateComputeRequest implements IgniteCallable<Boolean> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** Ignite. */
+        @IgniteInstanceResource
+        private Ignite ig;
+
+        @Override public Boolean call() throws Exception {
+            return ig.active();
         }
     }
 

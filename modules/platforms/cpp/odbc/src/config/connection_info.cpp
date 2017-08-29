@@ -118,6 +118,7 @@ namespace ignite
                     DBG_STR_CASE(SQL_CONVERT_WLONGVARCHAR);
                     DBG_STR_CASE(SQL_CONVERT_WVARCHAR);
                     DBG_STR_CASE(SQL_CONVERT_GUID);
+                    DBG_STR_CASE(SQL_SCROLL_OPTIONS);
                     DBG_STR_CASE(SQL_PARAM_ARRAY_ROW_COUNTS);
                     DBG_STR_CASE(SQL_PARAM_ARRAY_SELECTS);
                 default:
@@ -628,6 +629,19 @@ namespace ignite
                     SQL_CVT_BINARY | SQL_CVT_VARBINARY | SQL_CVT_LONGVARBINARY | SQL_CVT_GUID;
 #endif //SQL_CONVERT_GUID
 
+#ifdef SQL_SCROLL_OPTIONS
+                // Bitmask enumerating the scroll options supported for scrollable cursors
+                // SQL_SO_FORWARD_ONLY = The cursor only scrolls forward. (ODBC 1.0)
+                // SQL_SO_STATIC = The data in the result set is static. (ODBC 2.0)
+                // SQL_SO_KEYSET_DRIVEN = The driver saves and uses the keys for every row in the result set. (ODBC 1.0)
+                // SQL_SO_DYNAMIC = The driver keeps the keys for every row in the rowset(the keyset size is the same
+                //     as the rowset size). (ODBC 1.0)
+                // SQL_SO_MIXED = The driver keeps the keys for every row in the keyset, and the keyset size is greater
+                //     than the rowset size.The cursor is keyset - driven inside the keyset and dynamic outside the
+                //     keyset. (ODBC 1.0)
+                intParams[SQL_SCROLL_OPTIONS] = SQL_SO_FORWARD_ONLY | SQL_SO_STATIC;
+#endif //SQL_SCROLL_OPTIONS
+
                 //======================= Short Params ========================
 #ifdef SQL_MAX_CONCURRENT_ACTIVITIES
                 // The maximum number of active statements that the driver can
@@ -666,13 +680,16 @@ namespace ignite
             SqlResult::Type ConnectionInfo::GetInfo(InfoType type, void* buf,
                 short buflen, short* reslen) const
             {
-                if (!buf || !buflen)
+                if (!buf)
                     return SqlResult::AI_ERROR;
 
                 StringInfoMap::const_iterator itStr = strParams.find(type);
 
                 if (itStr != strParams.end())
                 {
+                    if (!buflen)
+                        return SqlResult::AI_ERROR;
+
                     unsigned short strlen = static_cast<short>(
                         utility::CopyStringToBuffer(itStr->second,
                             reinterpret_cast<char*>(buf), buflen));

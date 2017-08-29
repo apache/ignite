@@ -54,17 +54,20 @@ public class JdbcThinUtils {
     /** Hostname property name. */
     public static final String PROP_HOST = PROP_PREFIX + "host";
 
-    /** Parameter: distributed joins flag. */
+    /** Parameter: distributed joins flag (SQL hint). */
     public static final String PARAM_DISTRIBUTED_JOINS = "distributedJoins";
 
-    /** Parameter: enforce join order flag. */
+    /** Parameter: enforce join order flag (SQL hint). */
     public static final String PARAM_ENFORCE_JOIN_ORDER = "enforceJoinOrder";
 
-    /** Parameter: collocated flag. */
+    /** Parameter: collocated flag (SQL hint). */
     public static final String PARAM_COLLOCATED = "collocated";
 
-    /** Parameter: replicated only flag. */
+    /** Parameter: lazy query execution flag (SQL hint). */
     public static final String PARAM_REPLICATED_ONLY = "replicatedOnly";
+
+    /** Parameter: replicated only flag (SQL hint). */
+    public static final String PARAM_LAZY = "lazy";
 
     /** Parameter: socket send buffer. */
     public static final String PARAM_SOCK_SND_BUF = "socketSendBuffer";
@@ -86,6 +89,9 @@ public class JdbcThinUtils {
 
     /** Collocated property name. */
     public static final String PROP_COLLOCATED = PROP_PREFIX + PARAM_COLLOCATED;
+
+    /** Lazy property name. */
+    public static final String PROP_LAZY = PROP_PREFIX + PARAM_LAZY;
 
     /** Replicated only property name. */
     public static final String PROP_REPLICATED_ONLY = PROP_PREFIX + PARAM_REPLICATED_ONLY;

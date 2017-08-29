@@ -25,6 +25,7 @@ import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.CacheKeyConfiguration;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
@@ -83,6 +84,8 @@ public class CacheClientBinaryQueryExample {
             employeeCacheCfg.setName(EMPLOYEE_CACHE_NAME);
 
             employeeCacheCfg.setQueryEntities(Arrays.asList(createEmployeeQueryEntity()));
+
+            employeeCacheCfg.setKeyConfiguration(new CacheKeyConfiguration(EmployeeKey.class));
 
             try (IgniteCache<Integer, Organization> orgCache = ignite.getOrCreateCache(orgCacheCfg);
                  IgniteCache<EmployeeKey, Employee> employeeCache = ignite.getOrCreateCache(employeeCacheCfg)
