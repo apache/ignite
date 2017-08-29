@@ -186,7 +186,8 @@ public class IgniteJdbcThinDriver implements Driver {
             new JdbcDriverPropertyInfo("Distributed Joins", info.getProperty(JdbcThinUtils.PROP_DISTRIBUTED_JOINS), ""),
             new JdbcDriverPropertyInfo("Enforce Join Order", info.getProperty(JdbcThinUtils.PROP_ENFORCE_JOIN_ORDER), ""),
             new JdbcDriverPropertyInfo("Collocated", info.getProperty(JdbcThinUtils.PROP_COLLOCATED), ""),
-            new JdbcDriverPropertyInfo("Replicated only", info.getProperty(JdbcThinUtils.PROP_REPLICATED_ONLY), "")
+            new JdbcDriverPropertyInfo("Replicated only", info.getProperty(JdbcThinUtils.PROP_REPLICATED_ONLY), ""),
+            new JdbcDriverPropertyInfo("Lazy query execution flag", info.getProperty(JdbcThinUtils.PROP_LAZY),"")
         );
 
         return props.toArray(new DriverPropertyInfo[0]);
@@ -217,6 +218,7 @@ public class IgniteJdbcThinDriver implements Driver {
      *
      * @param props Properties.
      * @param url URL.
+     * @throws SQLException On error.
      */
     private void parseUrl(String url, Properties props) throws SQLException {
         if (F.isEmpty(url))
