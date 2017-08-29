@@ -433,25 +433,18 @@ namespace Apache.Ignite.Core.Impl.Binary
                 return null;
             }
 
+            var binType = GetBinaryType(typeId);
+
             typeName = typeName ?? (desc != null ? desc.TypeName : null)
-                       ?? (knownType != null ? GetTypeName(knownType) : null);
+                       ?? (knownType != null ? GetTypeName(knownType) : null)
+                       ?? (binType != BinaryType.Empty ? binType.TypeName : null);
 
             if (typeName != null)
             {
-                return AddUserType(new BinaryTypeConfiguration(typeName), new TypeResolver());
-            }
-
-            if (_ignite != null)
-            {
-                var binType = GetBinaryType(typeId);
-
-                if (binType != BinaryType.Empty)
+                return AddUserType(new BinaryTypeConfiguration(typeName)
                 {
-                    return AddUserType(new BinaryTypeConfiguration(binType.TypeName)
-                    {
-                        IsEnum = binType.IsEnum
-                    }, new TypeResolver());
-                }
+                    IsEnum = binType.IsEnum
+                }, new TypeResolver());
             }
 
             return new BinarySurrogateTypeDescriptor(_cfg, typeId, null);
@@ -501,6 +494,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             var typeKey = BinaryUtils.TypeKey(true, typeId);
 
+            // TODO: Deduplicate logic; handle attributes (like affinity field).
             var desc0 = _idToDesc.GetOrAdd(typeKey, x => desc);
             if (desc0.Type != null && desc0.TypeName != typeName)
             {
