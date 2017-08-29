@@ -130,7 +130,7 @@ public class TxTimeoutHandlingTest extends GridCommonAbstractTest {
 
             Thread.sleep(TX_TIMEOUT + 1_000);
 
-            fut2.get(1, TimeUnit.SECONDS);
+            fut2.get();
 
             startGrid(1);
 

@@ -69,6 +69,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearOpti
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.transactions.TxDeadlockDetection.TxDeadlockFuture;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
@@ -459,7 +460,12 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 tx.topologyVersion(topVer);
         }
 
-        return onCreated(sysCacheCtx, tx);
+        tx = onCreated(sysCacheCtx, tx);
+
+        if (tx != null && tx.timeout() > 0)
+            cctx.time().addTimeoutObject(new TxEagerTimeoutObject(tx));
+
+        return tx;
     }
 
     /**
@@ -2395,6 +2401,41 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                     onTimeout0();
                 }
             });
+        }
+    }
+
+    /**
+     * Timeout object for tx timeout handler.
+     */
+    private final class TxEagerTimeoutObject extends GridTimeoutObjectAdapter {
+        /** */
+        private final GridNearTxLocal tx;
+
+        /**
+         * @param tx Tx.
+         */
+        public TxEagerTimeoutObject(final GridNearTxLocal tx) {
+            super(tx.timeout());
+
+            this.tx = tx;
+
+            tx.timeoutHandler(this);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onTimeout() {
+            GridTimeoutObject hnd = tx.timeoutHandler();
+
+            if (hnd == null)
+                return;
+
+            if (!tx.clearTimeoutHandler()) // Transaction is prepared or rolled back concurrently.
+                return;
+
+            log.error("Transaction is timed out and will be rolled back: [tx=" + tx + ']');
+
+            if (tx.setRollbackOnly())
+                tx.rollbackAsync();
         }
     }
 

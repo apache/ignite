@@ -34,6 +34,7 @@ import javax.cache.CacheException;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
@@ -67,6 +68,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionProxy;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyImpl;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
@@ -105,14 +107,12 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRA
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPDATE;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry.SER_READ_EMPTY_ENTRY_VER;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry.SER_READ_NOT_EMPTY_VER;
-import static org.apache.ignite.transactions.TransactionState.ACTIVE;
 import static org.apache.ignite.transactions.TransactionState.COMMITTED;
 import static org.apache.ignite.transactions.TransactionState.COMMITTING;
 import static org.apache.ignite.transactions.TransactionState.PREPARED;
 import static org.apache.ignite.transactions.TransactionState.PREPARING;
 import static org.apache.ignite.transactions.TransactionState.ROLLED_BACK;
 import static org.apache.ignite.transactions.TransactionState.ROLLING_BACK;
-import static org.apache.ignite.transactions.TransactionState.SUSPENDED;
 import static org.apache.ignite.transactions.TransactionState.UNKNOWN;
 
 /**
@@ -174,6 +174,10 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
     /** */
     @GridToStringExclude
     private TransactionProxyImpl proxy;
+
+    /** */
+    @GridToStringExclude
+    private GridTimeoutObject timeoutHandler;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -3148,6 +3152,12 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
             // Prepare was called explicitly.
             return fut;
 
+        // Clears timeout handler before prepare, because prepare phase will clean up everything right up.
+        if (!clearTimeoutHandler()) {
+            // Timeout closure has been invoked, tx will be rolled back.
+            throw new IgniteException("Bad");
+        }
+
         mapExplicitLocks();
 
         fut.prepare();
@@ -3167,6 +3177,15 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
      */
     public final void prepare() throws IgniteCheckedException {
         prepareAsync().get();
+    }
+
+    /**
+     * Clears timeout handler.
+     */
+    public boolean clearTimeoutHandler() {
+        timeoutHandler = null;
+
+        return true;
     }
 
     /**
@@ -3250,6 +3269,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
      * @throws IgniteCheckedException If failed.
      */
     public void rollback() throws IgniteCheckedException {
+        clearTimeoutHandler();
+
         rollbackNearTxLocalAsync().get();
     }
 
@@ -3762,6 +3783,20 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
      */
     public boolean hasRemoteLocks() {
         return hasRemoteLocks;
+    }
+
+    /**
+     * @return Timeout handler.
+     */
+    public GridTimeoutObject timeoutHandler() {
+        return timeoutHandler;
+    }
+
+    /**
+     * @param timeoutHnd New timeout handler.
+     */
+    public void timeoutHandler(GridTimeoutObject timeoutHnd) {
+        timeoutHandler = timeoutHnd;
     }
 
     /**
