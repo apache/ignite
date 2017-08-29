@@ -316,7 +316,7 @@ public class GridAffinityAssignmentCache {
     private void printDistribution(List<List<ClusterNode>> assignment) {
         Float ignitePartDistribution = getFloat(IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD, 0.1f);
 
-        int nodesCnt = assignment.get(0).size();
+        int nodesCnt = 0;
 
         if (nodesCnt != 0) {
             int[] partitionsByLocalNode = new int[nodesCnt];
@@ -326,7 +326,9 @@ public class GridAffinityAssignmentCache {
             int totalBackupCnt = 0;
 
             for (List<ClusterNode> partitionByNodes : assignment) {
-                if (partitionByNodes != null) {
+                if (partitionByNodes != null && partitionByNodes.size() > nodesCnt) {
+                    nodesCnt = partitionByNodes.size();
+
                     for (int i = 0; i < nodesCnt; i++) {
                         if (partitionByNodes.get(i) != null && partitionByNodes.get(i).isLocal())
                             partitionsByLocalNode[i] += 1;
