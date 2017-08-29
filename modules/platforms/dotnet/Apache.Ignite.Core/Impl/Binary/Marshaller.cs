@@ -444,7 +444,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             if (typeName != null)
             {
-                return AddUserType(typeId, typeName, true, desc);
+                return AddUserType(new BinaryTypeConfiguration(typeName), new TypeResolver());
             }
 
             return new BinarySurrogateTypeDescriptor(_cfg, typeId, null);
@@ -481,7 +481,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             Debug.Assert(typeName != null);
 
             // TODO:
-            return AddUserType(null, new TypeResolver());
+            return AddUserType(new BinaryTypeConfiguration(typeName), new TypeResolver());
         }
 
         /// <summary>
