@@ -14,7 +14,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 /**
  *
  */
-public class IgniteClientReconnectBinaryContexTest extends IgniteClientReconnectAbstractTest{
+public class IgniteClientReconnectBinaryContexTest extends IgniteClientReconnectAbstractTest {
     /** {@inheritDoc} */
     @Override protected int serverCount() {
         return 1;
@@ -44,10 +44,9 @@ public class IgniteClientReconnectBinaryContexTest extends IgniteClientReconnect
 
         Ignite srv = grid(0);
 
-        CacheConfiguration<TestClass1, TestClass1> personCache = new CacheConfiguration<TestClass1, TestClass1>();
-        personCache.setName(DEFAULT_CACHE_NAME);
-        personCache.setCacheMode(CacheMode.REPLICATED);
-        personCache.setQueryEntities(new ArrayList<QueryEntity>());
+        CacheConfiguration<TestClass1, TestClass1> personCache = new CacheConfiguration<TestClass1, TestClass1>()
+            .setName(DEFAULT_CACHE_NAME)
+            .setCacheMode(CacheMode.REPLICATED);
 
         srv.createCache(personCache);
 
@@ -59,26 +58,32 @@ public class IgniteClientReconnectBinaryContexTest extends IgniteClientReconnect
                 return Collections.singleton((Ignite)startGrid(0));
             }
         });
+        
         ignites.iterator().next().createCache(personCache);
 
         client.cache(DEFAULT_CACHE_NAME).put(new TestClass1("2"), new TestClass1("2"));
         client.cache(DEFAULT_CACHE_NAME).put(new TestClass1("3"), new TestClass1("3"));
 
         int size = 0;
-        for (Cache.Entry<TestClass1, TestClass1> entry: client.<TestClass1, TestClass1>cache(DEFAULT_CACHE_NAME)){
+
+        for (Cache.Entry<TestClass1, TestClass1> entry : client.<TestClass1, TestClass1>cache(DEFAULT_CACHE_NAME))
             size++;
-        }
+
         assertTrue(size == 2);
     }
 
     /**
      *
      */
-    static class TestClass1{
-        final String field;
+    static class TestClass1 {
+        /** */
+        final String val;
 
-        TestClass1(String field) {
-            this.field = field;
+        /**
+         * @param val Value.
+         */
+        TestClass1(String val) {
+            this.val = val;
         }
     }
 }
