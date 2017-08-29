@@ -291,7 +291,8 @@ angular.module('ignite-console', [
 .run(['$transitions', ($transitions) => {
     $transitions.onSuccess({ }, (trans) => {
         try {
-            const {name, params, unsaved} = trans.$to();
+            const {name, unsaved} = trans.$to();
+            const params = trans.params();
 
             if (unsaved)
                 localStorage.removeItem('lastStateChangeSuccess');

@@ -278,6 +278,23 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testIndexMetadata() throws Exception {
+        try (Connection conn = DriverManager.getConnection(BASE_URL);
+             ResultSet rs = conn.getMetaData().getIndexInfo(null, "pers", "PERSON", false, false)) {
+
+            int cnt = 0;
+
+            while (rs.next()) {
+                cnt++;
+            }
+
+            assertEquals(0, cnt);
+        }
+    }
+
+    /**
      * Person.
      */
     @SuppressWarnings("UnusedDeclaration")

@@ -180,6 +180,9 @@ public final class IgniteNodeAttributes {
     /** */
     public static final String ATTR_DATA_STREAMER_POOL_SIZE = ATTR_PREFIX + ".data.streamer.pool.size";
 
+    /** Memory configuration. */
+    public static final String ATTR_MEMORY_CONFIG = ATTR_PREFIX + ".memory";
+
     /**
      * Enforces singleton.
      */

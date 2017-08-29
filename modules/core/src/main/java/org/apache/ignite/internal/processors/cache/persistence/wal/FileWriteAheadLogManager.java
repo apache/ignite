@@ -2019,6 +2019,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                 flushOrWait(ptr, stop);
 
+                if (stopped())
+                    return;
+
                 if (lastFsyncPos != written) {
                     assert lastFsyncPos < written; // Fsync position must be behind.
 
@@ -2056,51 +2059,58 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
          */
         private boolean close(boolean rollOver) throws IgniteCheckedException, StorageException {
             if (stop.compareAndSet(false, true)) {
-                flushOrWait(null, true);
-
-                assert stopped() : "Segment is not closed after close flush: " + head.get();
+                lock.lock();
 
                 try {
-                    int switchSegmentRecSize = RecordV1Serializer.REC_TYPE_SIZE + RecordV1Serializer.FILE_WAL_POINTER_SIZE;
+                    flushOrWait(null, true);
 
-                    if (rollOver && written < (maxSegmentSize - switchSegmentRecSize)) {
-                        //it is expected there is sufficient space for this record because rollover should run early
-                        final ByteBuffer buf = ByteBuffer.allocate(switchSegmentRecSize);
-                        buf.put((byte)(WALRecord.RecordType.SWITCH_SEGMENT_RECORD.ordinal() + 1));
+                    assert stopped() : "Segment is not closed after close flush: " + head.get();
 
-                        final FileWALPointer pointer = new FileWALPointer(idx, (int)fileIO.position(), -1);
-                        RecordV1Serializer.putPosition(buf, pointer);
+                    try {
+                        int switchSegmentRecSize = RecordV1Serializer.REC_TYPE_SIZE + RecordV1Serializer.FILE_WAL_POINTER_SIZE;
 
-                        buf.rewind();
+                        if (rollOver && written < (maxSegmentSize - switchSegmentRecSize)) {
+                            //it is expected there is sufficient space for this record because rollover should run early
+                            final ByteBuffer buf = ByteBuffer.allocate(switchSegmentRecSize);
+                            buf.put((byte)(WALRecord.RecordType.SWITCH_SEGMENT_RECORD.ordinal() + 1));
 
-                        int rem = buf.remaining();
+                            final FileWALPointer pointer = new FileWALPointer(idx, (int)fileIO.position(), -1);
+                            RecordV1Serializer.putPosition(buf, pointer);
 
-                        while (rem > 0) {
-                            int written0 = fileIO.write(buf, written);
+                            buf.rewind();
 
-                            written += written0;
+                            int rem = buf.remaining();
 
-                            rem -= written0;
+                            while (rem > 0) {
+                                int written0 = fileIO.write(buf, written);
+
+                                written += written0;
+
+                                rem -= written0;
+                            }
                         }
+
+                        // Do the final fsync.
+                        if (mode == WALMode.DEFAULT) {
+                            fileIO.force();
+
+                            lastFsyncPos = written;
+                        }
+
+                        fileIO.close();
+                    }
+                    catch (IOException e) {
+                        throw new IgniteCheckedException(e);
                     }
 
-                    // Do the final fsync.
-                    if (mode == WALMode.DEFAULT) {
-                        fileIO.force();
+                    if (log.isDebugEnabled())
+                        log.debug("Closed WAL write handle [idx=" + idx + "]");
 
-                        lastFsyncPos = written;
-                    }
-
-                    fileIO.close();
+                    return true;
                 }
-                catch (IOException e) {
-                    throw new IgniteCheckedException(e);
+                finally {
+                    lock.unlock();
                 }
-
-                if (log.isDebugEnabled())
-                    log.debug("Closed WAL write handle [idx=" + idx + "]");
-
-                return true;
             }
             else
                 return false;

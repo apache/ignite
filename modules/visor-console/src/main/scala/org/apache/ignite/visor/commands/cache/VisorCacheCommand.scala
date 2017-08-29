@@ -408,8 +408,8 @@ class VisorCacheCommand {
                             formatDouble(nm.getCurrentCpuLoad * 100d) + " %",
                             X.timeSpan2HMSM(nm.getUpTime),
                             (
-                                "Total: " + (cm.getKeySize + cm.getOffHeapEntriesCount()),
-                                "  Heap: " + cm.getKeySize,
+                                "Total: " + (cm.getHeapEntriesCount + cm.getOffHeapEntriesCount()),
+                                "  Heap: " + cm.getHeapEntriesCount,
                                 "  Off-Heap: " + cm.getOffHeapEntriesCount(),
                                 "  Off-Heap Memory: " + formatMemory(cm.getOffHeapAllocatedSize)
                             ),
