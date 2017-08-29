@@ -114,6 +114,7 @@ public class H2Schema {
         tbl.onDrop();
 
         tbls.remove(tbl.tableName());
+
         typeToTbl.remove(tbl.typeName());
     }
 
@@ -125,6 +126,7 @@ public class H2Schema {
             tbl.onDrop();
 
         tbls.clear();
+
         typeToTbl.clear();
     }
 }

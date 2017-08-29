@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.h2.twostep;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.jsr166.ConcurrentHashMap8;
 
+import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 
 import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.PER_SEGMENT_Q;
@@ -34,6 +35,18 @@ class MapNodeResults {
     /** */
     private final GridBoundedConcurrentLinkedHashMap<Long, Boolean> qryHist =
         new GridBoundedConcurrentLinkedHashMap<>(1024, 1024, 0.75f, 64, PER_SEGMENT_Q);
+
+    /** Node ID. */
+    private final UUID nodeId;
+
+    /**
+     * Constructor.
+     *
+     * @param nodeId Node ID.
+     */
+    public MapNodeResults(UUID nodeId) {
+        this.nodeId = nodeId;
+    }
 
     /**
      * @param reqId Query Request ID.
@@ -59,7 +72,7 @@ class MapNodeResults {
      * @return query partial results.
      */
     public MapQueryResults get(long reqId, int segmentId) {
-        return res.get(new MapRequestKey(reqId, segmentId));
+        return res.get(new MapRequestKey(nodeId, reqId, segmentId));
     }
 
     /**
@@ -84,7 +97,7 @@ class MapNodeResults {
      * @return {@code True} if removed.
      */
     public boolean remove(long reqId, int segmentId, MapQueryResults qr) {
-        return res.remove(new MapRequestKey(reqId, segmentId), qr);
+        return res.remove(new MapRequestKey(nodeId, reqId, segmentId), qr);
     }
 
     /**
@@ -94,7 +107,7 @@ class MapNodeResults {
      * @return previous value.
      */
     public MapQueryResults put(long reqId, int segmentId, MapQueryResults qr) {
-        return res.put(new MapRequestKey(reqId, segmentId), qr);
+        return res.put(new MapRequestKey(nodeId, reqId, segmentId), qr);
     }
 
     /**

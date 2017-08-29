@@ -74,7 +74,7 @@ public class JdbcStatement implements Statement {
     /** Current updated items count. */
     long updateCnt = -1;
 
-    /** Batch statements. */
+    /** Batch of statements. */
     private List<String> batch;
 
     /**
@@ -187,7 +187,7 @@ public class JdbcStatement implements Statement {
 
     /**
      * @param rows query result.
-     * @return update counter, if found
+     * @return update counter, if found.
      * @throws SQLException if getting an update counter from result proved to be impossible.
      */
     private static long updateCounterFromQueryResult(List<List<?>> rows) throws SQLException {
@@ -461,7 +461,60 @@ public class JdbcStatement implements Statement {
     @Override public int[] executeBatch() throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Batch statements are not supported yet.");
+        List<String> batch = this.batch;
+
+        this.batch = null;
+
+        return doBatchUpdate(null, batch, null);
+    }
+
+    /**
+     * Runs batch of update commands.
+     *
+     * @param command SQL command.
+     * @param batch Batch of SQL commands.
+     * @param batchArgs Batch of SQL parameters.
+     * @return Number of affected rows.
+     * @throws SQLException If failed.
+     */
+    protected int[] doBatchUpdate(String command, List<String> batch, List<List<Object>> batchArgs)
+        throws SQLException {
+        rs = null;
+
+        updateCnt = -1;
+
+        if ((F.isEmpty(command) || F.isEmpty(batchArgs)) && F.isEmpty(batch))
+            throw new SQLException("Batch is empty.");
+
+        Ignite ignite = conn.ignite();
+
+        UUID nodeId = conn.nodeId();
+
+        boolean loc = nodeId == null;
+
+        if (!conn.isDmlSupported())
+            throw new SQLException("Failed to query Ignite: DML operations are supported in versions 1.8.0 and newer");
+
+        JdbcBatchUpdateTask task = new JdbcBatchUpdateTask(loc ? ignite : null, conn.cacheName(),
+            conn.schemaName(), command, batch, batchArgs, loc, getFetchSize(), conn.isLocalQuery(),
+            conn.isCollocatedQuery(), conn.isDistributedJoins());
+
+        try {
+            int[] res = loc ? task.call() : ignite.compute(ignite.cluster().forNodeId(nodeId)).call(task);
+
+            updateCnt = F.isEmpty(res)? -1 : res[res.length - 1];
+
+            return res;
+        }
+        catch (IgniteSQLException e) {
+            throw e.toJdbcException();
+        }
+        catch (SQLException e) {
+            throw e;
+        }
+        catch (Exception e) {
+            throw new SQLException("Failed to query Ignite.", e);
+        }
     }
 
     /** {@inheritDoc} */

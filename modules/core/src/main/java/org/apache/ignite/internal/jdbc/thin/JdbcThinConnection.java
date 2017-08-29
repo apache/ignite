@@ -46,6 +46,7 @@ import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
 
 import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_AUTO_CLOSE_SERVER_CURSORS;
 import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_HOST;
+import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_LAZY;
 import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_PORT;
 import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_DISTRIBUTED_JOINS;
 import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_ENFORCE_JOIN_ORDER;
@@ -63,6 +64,9 @@ import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_TCP_NO_DEL
 public class JdbcThinConnection implements Connection {
     /** Logger. */
     private static final Logger LOG = Logger.getLogger(JdbcThinConnection.class.getName());
+
+    /** Connection URL. */
+    private String url;
 
     /** Schema name. */
     private String schemaName;
@@ -88,6 +92,9 @@ public class JdbcThinConnection implements Connection {
     /** Ignite endpoint. */
     private JdbcThinTcpIo cliIo;
 
+    /** Jdbc metadata. Cache the JDBC object on the first access */
+    private JdbcThinDatabaseMetadata metadata;
+
     /**
      * Creates new connection.
      *
@@ -98,6 +105,8 @@ public class JdbcThinConnection implements Connection {
     public JdbcThinConnection(String url, Properties props) throws SQLException {
         assert url != null;
         assert props != null;
+
+        this.url = url;
 
         holdability = HOLD_CURSORS_OVER_COMMIT;
         autoCommit = true;
@@ -111,6 +120,7 @@ public class JdbcThinConnection implements Connection {
         boolean collocated = extractBoolean(props, PROP_COLLOCATED, false);
         boolean replicatedOnly = extractBoolean(props, PROP_REPLICATED_ONLY, false);
         boolean autoCloseServerCursor = extractBoolean(props, PROP_AUTO_CLOSE_SERVER_CURSORS, false);
+        boolean lazyExec = extractBoolean(props, PROP_LAZY, false);
 
         int sockSndBuf = extractIntNonNegative(props, PROP_SOCK_SND_BUF, 0);
         int sockRcvBuf = extractIntNonNegative(props, PROP_SOCK_RCV_BUF, 0);
@@ -119,7 +129,7 @@ public class JdbcThinConnection implements Connection {
 
         try {
             cliIo = new JdbcThinTcpIo(host, port, distributedJoins, enforceJoinOrder, collocated, replicatedOnly,
-                autoCloseServerCursor, sockSndBuf, sockRcvBuf, tcpNoDelay);
+                autoCloseServerCursor, lazyExec, sockSndBuf, sockRcvBuf, tcpNoDelay);
 
             cliIo.start();
         }
@@ -274,7 +284,10 @@ public class JdbcThinConnection implements Connection {
     @Override public DatabaseMetaData getMetaData() throws SQLException {
         ensureNotClosed();
 
-        return null;
+        if (metadata == null)
+            metadata = new JdbcThinDatabaseMetadata(this);
+
+        return metadata;
     }
 
     /** {@inheritDoc} */
@@ -664,5 +677,12 @@ public class JdbcThinConnection implements Connection {
             throw new SQLException("Failed to parse int property [name=" + JdbcThinUtils.trimPrefix(propName) +
                 ", value=" + strVal + ']');
         }
+    }
+
+    /**
+     * @return Connection URL.
+     */
+    public String url() {
+        return url;
     }
 }
