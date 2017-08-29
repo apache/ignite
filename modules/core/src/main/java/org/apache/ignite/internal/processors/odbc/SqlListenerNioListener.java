@@ -251,9 +251,13 @@ public class SqlListenerNioListener extends GridNioServerListenerAdapter<byte[]>
             boolean enforceJoinOrder = reader.readBoolean();
             boolean replicatedOnly = reader.readBoolean();
             boolean collocated = reader.readBoolean();
+            boolean lazy = false;
+
+            if (ver.compareTo(SqlListenerProtocolVersion.create(2, 3, 0)) >= 0)
+                lazy = reader.readBoolean();
 
             SqlListenerRequestHandler handler = new OdbcRequestHandler(ctx, busyLock, maxCursors, distributedJoins,
-                enforceJoinOrder, replicatedOnly, collocated);
+                enforceJoinOrder, replicatedOnly, collocated, lazy);
 
             SqlListenerMessageParser parser = new OdbcMessageParser(ctx);
 
