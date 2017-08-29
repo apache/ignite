@@ -74,4 +74,34 @@ class JdbcQueryTaskV2 extends JdbcQueryTask {
     @Override protected boolean lazy() {
         return lazy;
     }
+
+    /**
+     * @param ignite Ignite.
+     * @param cacheName Cache name.
+     * @param schemaName Schema name.
+     * @param sql Sql query.
+     * @param isQry Operation type flag - query or not - to enforce query type check.
+     * @param loc Local execution flag.
+     * @param args Args.
+     * @param fetchSize Fetch size.
+     * @param uuid UUID.
+     * @param locQry Local query flag.
+     * @param collocatedQry Collocated query flag.
+     * @param distributedJoins Distributed joins flag.
+     * @param enforceJoinOrder Enforce joins order falg.
+     * @param lazy Lazy query execution flag.
+     * @return Appropriate task JdbcQueryTask or JdbcQueryTaskV2.
+     */
+    public static JdbcQueryTask createTask(Ignite ignite, String cacheName, String schemaName, String sql,
+        Boolean isQry, boolean loc, Object[] args, int fetchSize, UUID uuid, boolean locQry,
+        boolean collocatedQry, boolean distributedJoins,
+        boolean enforceJoinOrder, boolean lazy) {
+
+        if (enforceJoinOrder || lazy)
+            return new JdbcQueryTaskV2(ignite, cacheName, schemaName, sql, isQry, loc, args, fetchSize,
+                uuid, locQry, collocatedQry, distributedJoins, enforceJoinOrder, lazy);
+        else
+            return new JdbcQueryTask(ignite, cacheName, schemaName, sql, isQry, loc, args, fetchSize,
+                uuid, locQry, collocatedQry, distributedJoins);
+    }
 }
