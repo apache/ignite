@@ -22,6 +22,7 @@ import java.util.concurrent.locks.Lock;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -57,8 +58,14 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
 
         MemoryConfiguration memCfg = new MemoryConfiguration();
 
-        memCfg.setMemoryPolicies(new MemoryPolicyConfiguration().setInitialSize(200 * 1024 * 1024)
-            .setMaxSize(200 * 1024 * 1024).setName("dfltMemPlc"));
+        long memSize = 200L * 1024L * 1024L;
+
+        memCfg.setMemoryPolicies(
+            new MemoryPolicyConfiguration()
+                .setInitialSize(memSize)
+                .setMaxSize(memSize)
+                .setName("dfltMemPlc")
+        );
 
         memCfg.setDefaultMemoryPolicyName("dfltMemPlc");
 
@@ -110,24 +117,59 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
 
         ig0.active(true);
 
-        IgniteCache<Object, Object> cache = ig0.cache("cache1");
+        long start = U.currentTimeMillis();
 
-        for (int k = 0; k < entryCnt; k++)
-            cache.put(k, k);
+        log.warning("Start loading");
+
+        try (IgniteDataStreamer<Object, Object> st = ig0.dataStreamer("cache1")){
+            for (int k = 0; k < entryCnt; k++){
+                st.addData(k, k);
+
+                printProgress(k);
+            }
+        }
+
+        log.warning("Finish loading time:" + (U.currentTimeMillis() - start));
 
         forceCheckpoint();
 
-        for (int k = 0; k < entryCnt; k++)
-            cache.put(k, k * 2);
+        start = U.currentTimeMillis();
+
+        log.warning("Start loading");
+
+        try (IgniteDataStreamer<Object, Object> st = ig0.dataStreamer("cache1")) {
+            st.allowOverwrite(true);
+
+            for (int k = 0; k < entryCnt; k++) {
+                st.addData(k, k * 2);
+
+                printProgress(k);
+            }
+        }
+
+        log.warning("Finish loading time:" + (U.currentTimeMillis() - start));
 
         forceCheckpoint();
 
-        for (int k = 0; k < entryCnt; k++)
-            cache.put(k, k);
+        start = U.currentTimeMillis();
+
+        log.warning("Start loading");
+
+        try (IgniteDataStreamer<Object, Object> st = ig0.dataStreamer("cache1")){
+            st.allowOverwrite(true);
+
+            for (int k = 0; k < entryCnt; k++){
+                st.addData(k, k);
+
+                printProgress(k);
+            }
+        }
+
+        log.warning("Finish loading time:" + (U.currentTimeMillis() - start));
 
         forceCheckpoint();
 
-        Lock lock = cache.lock(0);
+        Lock lock = ig0.cache("cache1").lock(0);
 
         lock.lock();
 
@@ -192,6 +234,14 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
         }, 10_000);
 
         assert released;
+    }
+
+    /**
+     *
+     */
+    private void printProgress(int k){
+        if (k % 1000 == 0)
+            log.warning("Keys -> " + k);
     }
 
     /**

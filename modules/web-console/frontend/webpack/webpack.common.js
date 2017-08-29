@@ -37,7 +37,6 @@ const app = path.resolve('app');
 const IgniteModules = process.env.IGNITE_MODULES ? path.join(process.env.IGNITE_MODULES, 'frontend') : path.resolve('ignite_modules');
 
 export default {
-    cache: true,
     node: {
         fs: 'empty'
     },

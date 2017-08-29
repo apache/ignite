@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.lang.reflect.Array;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.util.typedef.F;
 
@@ -124,30 +123,8 @@ public class CacheObjectUtils {
 
         Object[] res = new Object[arr.length];
 
-        boolean canCastArray = true;
-        Class cls = null;
-
-        for (int i = 0; i < arr.length; i++) {
-            Object obj = unwrapBinary(ctx, arr[i], keepBinary, cpy);
-
-            res[i] = obj;
-
-            if (canCastArray && obj != null) {
-                if (cls == null)
-                    cls = obj.getClass();
-                else if (cls != obj.getClass())
-                    canCastArray = false;
-            }
-        }
-
-        // If array contains all element the same type then will create typed array.
-        if (canCastArray && cls != null) {
-            Object[] res0 = (Object[])Array.newInstance(cls, res.length);
-
-            System.arraycopy(res, 0, res0, 0, res.length);
-
-            res = res0;
-        }
+        for (int i = 0; i < arr.length; i++)
+            res[i] = unwrapBinary(ctx, arr[i], keepBinary, cpy);
 
         return res;
     }

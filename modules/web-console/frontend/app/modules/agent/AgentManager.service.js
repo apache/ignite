@@ -99,7 +99,7 @@ export default class IgniteAgentManager {
 
         this.connectionSbj = new BehaviorSubject(new ConnectionState(cluster));
 
-        this.clusterVersion = '2.0.0';
+        this.clusterVersion = '2.1.0';
 
         if (!$root.IgniteDemoMode) {
             this.connectionSbj.subscribe({
