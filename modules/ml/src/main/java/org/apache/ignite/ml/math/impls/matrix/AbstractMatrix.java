@@ -41,6 +41,7 @@ import org.apache.ignite.ml.math.functions.IgniteDoubleFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.functions.IgniteTriFunction;
 import org.apache.ignite.ml.math.functions.IntIntToDoubleFunction;
+import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.math.impls.vector.MatrixVectorView;
 
 /**
@@ -709,6 +710,18 @@ public abstract class AbstractMatrix implements Matrix {
     }
 
     /** {@inheritDoc} */
+    @Override public Vector getRow(int row) {
+        checkRowIndex(row);
+
+        Vector res = new DenseLocalOnHeapVector(columnSize());
+
+        for (int i = 0; i < columnSize(); i++)
+            res.setX(i, getX(row,i));
+
+        return res;
+    }
+
+    /** {@inheritDoc} */
     @Override public Matrix setColumn(int col, double[] data) {
         checkColumnIndex(col);
 
@@ -721,6 +734,18 @@ public abstract class AbstractMatrix implements Matrix {
             setX(x, col, data[x]);
 
         return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Vector getCol(int col) {
+        checkColumnIndex(col);
+
+        Vector res = new DenseLocalOnHeapVector(rowSize());
+
+        for (int i = 0; i < rowSize(); i++)
+            res.setX(i, getX(i,col));
+
+        return res;
     }
 
     /** {@inheritDoc} */
@@ -770,8 +795,7 @@ public abstract class AbstractMatrix implements Matrix {
 
         Vector res = likeVector(rows);
 
-        for (int x = 0; x < rows; x++)
-            res.setX(x, vec.dot(viewRow(x)));
+        Blas.gemv(1,this,vec,0,res);
 
         return res;
     }

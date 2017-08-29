@@ -965,6 +965,8 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
     /** {@inheritDoc} */
     @Override public ResultSet getIndexInfo(String catalog, String schema, String tbl, boolean unique,
         boolean approximate) throws SQLException {
+        updateMetaData();
+
         Collection<List<?>> rows = new ArrayList<>(indexes.size());
 
         for (List<Object> idx : indexes) {
@@ -1063,7 +1065,7 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
 
     /** {@inheritDoc} */
     @Override public boolean supportsBatchUpdates() throws SQLException {
-        return false;
+        return true;
     }
 
     /** {@inheritDoc} */

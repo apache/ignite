@@ -47,6 +47,7 @@ import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
+import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
@@ -639,13 +640,14 @@ public class PageMemoryImpl implements PageMemoryEx {
 
         GridUnsafe.setMemory(absPtr + PAGE_OVERHEAD, pageSize(), (byte)0);
 
+        PageHeader.dirty(absPtr, false);
+
         long tmpBufPtr = PageHeader.tempBufferPointer(absPtr);
 
         if (tmpBufPtr != INVALID_REL_PTR) {
             GridUnsafe.setMemory(checkpointPool.absolute(tmpBufPtr) + PAGE_OVERHEAD, pageSize(), (byte)0);
 
             PageHeader.tempBufferPointer(absPtr, INVALID_REL_PTR);
-            PageHeader.dirty(absPtr, false);
 
             // We pinned the page when allocated the temp buffer, release it now.
             PageHeader.releasePage(absPtr);
@@ -655,6 +657,12 @@ public class PageMemoryImpl implements PageMemoryEx {
 
         if (rmv)
             seg.loadedPages.remove(cacheId, PageIdUtils.effectivePageId(pageId), tag);
+
+        if (seg.segCheckpointPages != null)
+            seg.segCheckpointPages.remove(new FullPageId(pageId, cacheId));
+
+        if (seg.dirtyPages != null)
+            seg.dirtyPages.remove(new FullPageId(pageId, cacheId));
 
         return relPtr;
     }
@@ -670,55 +678,57 @@ public class PageMemoryImpl implements PageMemoryEx {
             ByteBuffer curPage = null;
             ByteBuffer lastValidPage = null;
 
-            for (IgniteBiTuple<WALPointer, WALRecord> tuple : walMgr.replay(null)) {
-                switch (tuple.getValue().type()) {
-                    case PAGE_RECORD:
-                        PageSnapshot snapshot = (PageSnapshot)tuple.getValue();
+            try (WALIterator it = walMgr.replay(null)) {
+                for (IgniteBiTuple<WALPointer, WALRecord> tuple : it) {
+                    switch (tuple.getValue().type()) {
+                        case PAGE_RECORD:
+                            PageSnapshot snapshot = (PageSnapshot)tuple.getValue();
 
-                        if (snapshot.fullPageId().equals(fullId)) {
-                            if (tmpAddr == null) {
-                                assert snapshot.pageData().length <= pageSize() : snapshot.pageData().length;
+                            if (snapshot.fullPageId().equals(fullId)) {
+                                if (tmpAddr == null) {
+                                    assert snapshot.pageData().length <= pageSize() : snapshot.pageData().length;
 
-                                tmpAddr = GridUnsafe.allocateMemory(pageSize());
+                                    tmpAddr = GridUnsafe.allocateMemory(pageSize());
+                                }
+
+                                if (curPage == null)
+                                    curPage = wrapPointer(tmpAddr, pageSize());
+
+                                PageUtils.putBytes(tmpAddr, 0, snapshot.pageData());
                             }
 
-                            if (curPage == null)
-                                curPage = wrapPointer(tmpAddr, pageSize());
+                            break;
 
-                            PageUtils.putBytes(tmpAddr, 0, snapshot.pageData());
-                        }
+                        case CHECKPOINT_RECORD:
+                            CheckpointRecord rec = (CheckpointRecord)tuple.getValue();
 
-                        break;
+                            assert !rec.end();
 
-                    case CHECKPOINT_RECORD:
-                        CheckpointRecord rec = (CheckpointRecord)tuple.getValue();
+                            if (curPage != null) {
+                                lastValidPage = curPage;
+                                curPage = null;
+                            }
 
-                        assert !rec.end();
+                            break;
 
-                        if (curPage != null) {
-                            lastValidPage = curPage;
+                        case MEMORY_RECOVERY: // It means that previous checkpoint was broken.
                             curPage = null;
-                        }
 
-                        break;
+                            break;
 
-                    case MEMORY_RECOVERY: // It means that previous checkpoint was broken.
-                        curPage = null;
+                        default:
+                            if (tuple.getValue() instanceof PageDeltaRecord) {
+                                PageDeltaRecord deltaRecord = (PageDeltaRecord)tuple.getValue();
 
-                        break;
+                                if (curPage != null
+                                    && deltaRecord.pageId() == fullId.pageId()
+                                    && deltaRecord.groupId() == fullId.groupId()) {
+                                    assert tmpAddr != null;
 
-                    default:
-                        if (tuple.getValue() instanceof PageDeltaRecord) {
-                            PageDeltaRecord deltaRecord = (PageDeltaRecord)tuple.getValue();
-
-                            if (curPage != null
-                                && deltaRecord.pageId() == fullId.pageId()
-                                && deltaRecord.groupId() == fullId.groupId()) {
-                                assert tmpAddr != null;
-
-                                deltaRecord.applyDelta(this, tmpAddr);
+                                    deltaRecord.applyDelta(this, tmpAddr);
+                                }
                             }
-                        }
+                    }
                 }
             }
 

@@ -506,6 +506,16 @@ public interface CacheMetrics {
     public long getRebalancingBytesRate();
 
     /**
+     * @return Estimated rebalancing finished time.
+     */
+    public long estimateRebalancingFinishTime();
+
+    /**
+     * @return Rebalancing start time.
+     */
+    public long rebalancingStartTime();
+
+    /**
      * Checks whether statistics collection is enabled in this cache.
      * <p>
      * The default value is {@code false}.

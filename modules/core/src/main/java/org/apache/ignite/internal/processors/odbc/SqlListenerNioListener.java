@@ -48,8 +48,14 @@ public class SqlListenerNioListener extends GridNioServerListenerAdapter<byte[]>
     /** The value corresponds to JDBC driver of the parser field of the handshake request. */
     public static final byte JDBC_CLIENT = 1;
 
+    /** Version 2.1.0. */
+    private static final SqlListenerProtocolVersion VER_2_1_0 = SqlListenerProtocolVersion.create(2, 1, 0);
+
+    /** Version 2.1.5: added "lazy" flag. */
+    private static final SqlListenerProtocolVersion VER_2_1_5 = SqlListenerProtocolVersion.create(2, 1, 5);
+
     /** Current version. */
-    private static final SqlListenerProtocolVersion CURRENT_VER = SqlListenerProtocolVersion.create(2, 1, 0);
+    private static final SqlListenerProtocolVersion CURRENT_VER = VER_2_1_5;
 
     /** Supported versions. */
     private static final Set<SqlListenerProtocolVersion> SUPPORTED_VERS = new HashSet<>();
@@ -74,6 +80,7 @@ public class SqlListenerNioListener extends GridNioServerListenerAdapter<byte[]>
 
     static {
         SUPPORTED_VERS.add(CURRENT_VER);
+        SUPPORTED_VERS.add(VER_2_1_0);
     }
 
     /**
@@ -198,9 +205,11 @@ public class SqlListenerNioListener extends GridNioServerListenerAdapter<byte[]>
 
         String errMsg = null;
 
+        SqlListenerConnectionContext connCtx = null;
+
         if (SUPPORTED_VERS.contains(ver)) {
             // Prepare context.
-            SqlListenerConnectionContext connCtx = prepareContext(ver, reader);
+            connCtx = prepareContext(ver, reader);
 
             ses.addMeta(CONN_CTX_META_KEY, connCtx);
         }
@@ -213,9 +222,10 @@ public class SqlListenerNioListener extends GridNioServerListenerAdapter<byte[]>
         // Send response.
         BinaryWriterExImpl writer = new BinaryWriterExImpl(null, new BinaryHeapOutputStream(8), null, null);
 
-        if (errMsg == null)
-            writer.writeBoolean(true);
+        if (connCtx != null)
+            connCtx.handler().writeHandshake(writer);
         else {
+            // Failed handshake response
             writer.writeBoolean(false);
             writer.writeShort(CURRENT_VER.major());
             writer.writeShort(CURRENT_VER.minor());
@@ -256,8 +266,13 @@ public class SqlListenerNioListener extends GridNioServerListenerAdapter<byte[]>
             boolean replicatedOnly = reader.readBoolean();
             boolean autoCloseCursors = reader.readBoolean();
 
+            boolean lazyExec = false;
+
+            if (ver.compareTo(VER_2_1_5) >= 0)
+                lazyExec = reader.readBoolean();
+
             SqlListenerRequestHandler handler = new JdbcRequestHandler(ctx, busyLock, maxCursors, distributedJoins,
-                enforceJoinOrder, collocated, replicatedOnly, autoCloseCursors);
+                enforceJoinOrder, collocated, replicatedOnly, autoCloseCursors, lazyExec);
 
             SqlListenerMessageParser parser = new JdbcMessageParser(ctx);
 

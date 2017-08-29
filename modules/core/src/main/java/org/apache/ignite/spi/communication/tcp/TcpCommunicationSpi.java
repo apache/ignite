@@ -109,6 +109,7 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -132,6 +133,8 @@ import org.apache.ignite.spi.IgniteSpiThread;
 import org.apache.ignite.spi.IgniteSpiTimeoutObject;
 import org.apache.ignite.spi.communication.CommunicationListener;
 import org.apache.ignite.spi.communication.CommunicationSpi;
+import org.apache.ignite.spi.discovery.DiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentLinkedDeque8;
@@ -141,6 +144,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.SSL_META;
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.RecoveryLastReceivedMessage.ALREADY_CONNECTED;
+import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.RecoveryLastReceivedMessage.NEED_WAIT;
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.RecoveryLastReceivedMessage.NODE_STOPPING;
 
 /**
@@ -296,6 +300,12 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
      */
     public static final int DFLT_SELECTORS_CNT = Math.max(4, Runtime.getRuntime().availableProcessors() / 2);
 
+    /**
+     * Version when client is ready to wait to connect to server (could be needed when client tries to open connection
+     * before it starts being visible for server)
+     */
+    private static final IgniteProductVersion VERSION_SINCE_CLIENT_COULD_WAIT_TO_CONNECT = IgniteProductVersion.fromString("2.1.4");
+
     /** Connection index meta for session. */
     private static final int CONN_IDX_META = GridNioSessionMetaKey.nextUniqueKey();
 
@@ -442,7 +452,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
              * @param ses Session.
              * @param msg Message.
              */
-            private void onFirstMessage(GridNioSession ses, Message msg) {
+            private void onFirstMessage(final GridNioSession ses, Message msg) {
                 UUID sndId;
 
                 ConnectionKey connKey;
@@ -466,10 +476,35 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 final ClusterNode rmtNode = getSpiContext().node(sndId);
 
                 if (rmtNode == null) {
-                    U.warn(log, "Close incoming connection, unknown node [nodeId=" + sndId +
-                        ", ses=" + ses + ']');
+                    DiscoverySpi discoverySpi = ignite().configuration().getDiscoverySpi();
 
-                    ses.close();
+                    assert discoverySpi instanceof TcpDiscoverySpi;
+
+                    TcpDiscoverySpi tcpDiscoverySpi = (TcpDiscoverySpi) discoverySpi;
+
+                    ClusterNode node0 = tcpDiscoverySpi.getNode0(sndId);
+
+                    boolean unknownNode = true;
+
+                    if (node0 != null) {
+                        assert node0.isClient() : node0;
+
+                        if (node0.version().compareTo(VERSION_SINCE_CLIENT_COULD_WAIT_TO_CONNECT) >= 0)
+                            unknownNode = false;
+                    }
+
+                    if (unknownNode) {
+                        U.warn(log, "Close incoming connection, unknown node [nodeId=" + sndId + ", ses=" + ses + ']');
+
+                        ses.close();
+                    }
+                    else {
+                        ses.send(new RecoveryLastReceivedMessage(NEED_WAIT)).listen(new CI1<IgniteInternalFuture<?>>() {
+                            @Override public void apply(IgniteInternalFuture<?> fut) {
+                                ses.close();
+                            }
+                        });
+                    }
 
                     return;
                 }
@@ -2945,14 +2980,11 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     }
 
     /**
-     * Establish TCP connection to remote node and returns client.
-     *
-     * @param node Remote node.
-     * @param connIdx Connection index.
-     * @return Client.
-     * @throws IgniteCheckedException If failed.
+     * @param node Node.
+     * @return Node addresses.
+     * @throws IgniteCheckedException If node does not have addresses.
      */
-    protected GridCommunicationClient createTcpClient(ClusterNode node, int connIdx) throws IgniteCheckedException {
+    private LinkedHashSet<InetSocketAddress> nodeAddresses(ClusterNode node) throws IgniteCheckedException {
         Collection<String> rmtAddrs0 = node.attribute(createSpiAttributeName(ATTR_ADDRS));
         Collection<String> rmtHostNames0 = node.attribute(createSpiAttributeName(ATTR_HOST_NAMES));
         Integer boundPort = node.attribute(createSpiAttributeName(ATTR_PORT));
@@ -3017,6 +3049,20 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 log.debug("Addresses to connect for node [rmtNode=" + node.id() + ", addrs=" + addrs.toString() + ']');
         }
 
+        return addrs;
+    }
+
+    /**
+     * Establish TCP connection to remote node and returns client.
+     *
+     * @param node Remote node.
+     * @param connIdx Connection index.
+     * @return Client.
+     * @throws IgniteCheckedException If failed.
+     */
+    protected GridCommunicationClient createTcpClient(ClusterNode node, int connIdx) throws IgniteCheckedException {
+        LinkedHashSet<InetSocketAddress> addrs = nodeAddresses(node);
+
         boolean conn = false;
         GridCommunicationClient client = null;
         IgniteCheckedException errs = null;
@@ -3030,6 +3076,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
             IgniteSpiOperationTimeoutHelper timeoutHelper = new IgniteSpiOperationTimeoutHelper(this,
                 !node.isClient());
+
+            int lastWaitingTimeout = 1;
 
             while (!conn) { // Reconnection on handshake timeout.
                 try {
@@ -3101,6 +3149,18 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
                             throw new ClusterTopologyCheckedException("Remote node started stop procedure: " + node.id());
                         }
+                        else if (rcvCnt == NEED_WAIT) {
+                            recoveryDesc.release();
+
+                            U.closeQuiet(ch);
+
+                            if (lastWaitingTimeout < 60000)
+                                lastWaitingTimeout *= 2;
+
+                            U.sleep(lastWaitingTimeout);
+
+                            continue;
+                        }
                     }
                     finally {
                         if (recoveryDesc != null && rcvCnt == null)
@@ -3113,10 +3173,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         if (recoveryDesc != null) {
                             recoveryDesc.onHandshake(rcvCnt);
 
-                            meta.put(-1, recoveryDesc);
+                            meta.put(GridNioServer.RECOVERY_DESC_META_KEY, recoveryDesc);
                         }
 
-                        GridNioSession ses = nioSrvr.createSession(ch, meta).get();
+                        GridNioSession ses = nioSrvr.createSession(ch, meta, false, null).get();
 
                         client = new GridTcpNioCommunicationClient(connIdx, ses, log);
 
@@ -4558,6 +4618,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
         /** */
         static final long NODE_STOPPING = -2;
+
+        /** Need wait. */
+        static final long NEED_WAIT = -3;
 
         /** Message body size in bytes. */
         private static final int MESSAGE_SIZE = 8;
