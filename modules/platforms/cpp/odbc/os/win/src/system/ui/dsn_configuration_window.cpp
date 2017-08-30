@@ -178,7 +178,7 @@ namespace ignite
                     lazyCheckBox = CreateCheckBox(editPosX, rowPos, checkBoxSize, rowSize,
                         "Lazy", ChildId::LAZY_CHECK_BOX, config.IsLazy());
 
-                    lazyCheckBox->SetEnabled(version >= ProtocolVersion::VERSION_2_3_0);
+                    lazyCheckBox->SetEnabled(version >= ProtocolVersion::VERSION_2_1_5);
 
                     rowPos += interval * 2 + rowSize;
 
@@ -270,7 +270,7 @@ namespace ignite
                                     protocolVersionComboBox->GetText(versionStr);
 
                                     ProtocolVersion version = ProtocolVersion::FromString(versionStr);
-                                    lazyCheckBox->SetEnabled(version >= ProtocolVersion::VERSION_2_3_0);
+                                    lazyCheckBox->SetEnabled(version >= ProtocolVersion::VERSION_2_1_5);
 
                                     break;
                                 }
