@@ -81,16 +81,19 @@ public class IgniteClientReconnectBinaryContexTest extends IgniteClientReconnect
 
         int size = 0;
 
-        for (Cache.Entry<TestClass1, TestClass1> entry : client.<TestClass1, TestClass1>cache(DEFAULT_CACHE_NAME))
-            size++;
+        for (Cache.Entry<TestClass1, TestClass1> entry : client.<TestClass1, TestClass1>cache(DEFAULT_CACHE_NAME)) {
+            assertNotNull(entry);
 
-        assertTrue(size == 2);
+            size++;
+        }
+
+        assertEquals(2, size);
     }
 
     /**
      *
      */
-    static class TestClass1 {
+    private static class TestClass1 {
         /** */
         final String val;
 

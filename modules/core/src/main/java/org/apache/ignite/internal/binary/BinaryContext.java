@@ -1370,9 +1370,12 @@ public class BinaryContext {
      * Unregister user type descriptors.
      **/
     public void unregisterUserTypeDescriptors() {
-        for (Map.Entry<Class<?>, BinaryClassDescriptor> entry : descByCls.entrySet())
-            if (entry.getValue().userType())
-                descByCls.remove(entry.getKey());
+        for (Iterator<Map.Entry<Class<?>, BinaryClassDescriptor>> it = descByCls.entrySet().iterator(); it.hasNext();) {
+            Map.Entry<Class<?>, BinaryClassDescriptor> e = it.next();
+
+            if (e.getValue().userType())
+                    it.remove();
+        }
     }
 
     /**
