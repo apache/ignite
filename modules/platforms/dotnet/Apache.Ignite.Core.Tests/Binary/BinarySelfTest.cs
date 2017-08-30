@@ -1531,18 +1531,6 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual(nDateArr, obj2.NDateArr);
         }
 
-        [Test]
-        public void TestBinaryConfigurationValidation()
-        {
-            var cfg = new BinaryConfiguration(typeof (PropertyType))
-            {
-                Types = new[] {typeof(PropertyType).AssemblyQualifiedName}
-            };
-
-            // ReSharper disable once ObjectCreationAsStatement
-            Assert.Throws<BinaryObjectException>(() => new Marshaller(cfg));
-        }
-
         /// <summary>
         /// Tests the compact footer setting.
         /// </summary>
