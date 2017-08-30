@@ -84,7 +84,7 @@ namespace Apache.Ignite.Core.Impl.Deployment
 
             writer0.WriteGuid(writer0.Marshaller.Ignite.GetLocalNode().Id);
             writer0.WriteString(_object.GetType().AssemblyQualifiedName);
-            writer0.WithDetach(w => w.WriteObject(_object));
+            writer0.WriteObjectDetached(_object);
         }
     }
 }
