@@ -957,6 +957,7 @@ public class GridH2Table extends TableBase {
 
     /**
      * Add new columns to this table.
+     *
      * @param cols Columns to add.
      * @param ifNotExists Ignore this command if {@code cols} has size of 1 and column with given name already exists.
      */

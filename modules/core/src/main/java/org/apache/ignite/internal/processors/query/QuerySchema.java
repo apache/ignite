@@ -163,8 +163,8 @@ public class QuerySchema implements Serializable {
                 if (target == null)
                     return;
 
-                for (QueryField fld : op0.columns())
-                    target.getFields().put(fld.name(), fld.typeName());
+                for (QueryField field : op0.columns())
+                    target.getFields().put(field.name(), field.typeName());
             }
         }
     }
