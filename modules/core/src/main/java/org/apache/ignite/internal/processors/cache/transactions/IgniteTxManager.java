@@ -1510,31 +1510,30 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * Callback called by near finish future before sending near finish request to remote node. Will increment
      * per-thread counter so that further awaitAck call will wait for finish response.
      *
-     * @param rmtNodeId Remote node ID for which finish request is being sent.
      * @param threadId Near tx thread ID.
-     */
-    public void beforeFinishRemote(UUID rmtNodeId, long threadId) {
+     * @param rmtNodeId Remote node ID for which finish request is being sent.
+     * @param version */
+    public void beforeFinishRemote(UUID rmtNodeId, GridNearTxLocal tx) {
         if (finishSyncDisabled)
             return;
 
         assert txFinishSync != null;
 
-        txFinishSync.onFinishSend(rmtNodeId, threadId);
+        txFinishSync.onFinishSend(rmtNodeId, tx);
     }
 
     /**
      * Callback invoked when near finish response is received from remote node.
-     *
-     * @param rmtNodeId Remote node ID from which response is received.
+     *  @param rmtNodeId Remote node ID from which response is received.
      * @param threadId Near tx thread ID.
      */
-    public void onFinishedRemote(UUID rmtNodeId, long threadId) {
+    public void onFinishedRemote(UUID rmtNodeId, GridCacheVersion ver) {
         if (finishSyncDisabled)
             return;
 
         assert txFinishSync != null;
 
-        txFinishSync.onAckReceived(rmtNodeId, threadId);
+        txFinishSync.onAckReceived(rmtNodeId, ver);
     }
 
     /**
