@@ -29,6 +29,7 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.binary.BinaryInvalidTypeException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.DeploymentMode;
@@ -81,6 +82,9 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
 
     /** Local deployment. */
     private final AtomicReference<GridDeployment> locDep = new AtomicReference<>();
+
+    /** Can by Local deployment ownership. */
+    boolean disableDepOwner = Boolean.valueOf(System.getProperty(IgniteSystemProperties.IGNITE_DISABLE_P2P_DEPLOYMENT_OWNERSHIP, "false"));
 
     /** Local deployment ownership flag. */
     private volatile boolean locDepOwner;
@@ -164,15 +168,19 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
      * Callback on method enter.
      */
     public void onEnter() {
-        if (depEnabled && !locDepOwner && !ignoreOwnership.get()
+        if (depEnabled && !disableDepOwner && !locDepOwner && !ignoreOwnership.get()
             && !cctx.kernalContext().job().internal()) {
             ClassLoader ldr = Thread.currentThread().getContextClassLoader();
 
             // We mark node as deployment owner if accessing cache not from p2p deployed job
             // and not from internal job.
-            if (!U.p2pLoader(ldr))
+            if (!U.p2pLoader(ldr)) {
                 // If not deployment class loader, classes can be loaded from this node.
                 locDepOwner = true;
+
+                if (log.isDebugEnabled())
+                    log.debug("Local node was assigned as a local deployment ownership.");
+            }
         }
     }
 
