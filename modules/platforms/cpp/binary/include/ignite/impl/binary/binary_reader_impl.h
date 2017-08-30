@@ -949,10 +949,9 @@ namespace ignite
                             TemplatedBinaryIdResolver<T> idRslvr;
                             BinaryReaderImpl readerImpl(stream, &idRslvr, pos);
 
-                            BType::Read(reader, res);
                             ignite::binary::BinaryReader reader(&readerImpl);
 
-                            ignite::binary::BinaryType<T>::Read(reader, val);
+                            ignite::binary::BinaryType<T>::Read(reader, res);
 
                             stream->Position(pos + readerImpl.len);
 
@@ -1344,7 +1343,7 @@ namespace ignite
             void IGNITE_IMPORT_EXPORT BinaryReaderImpl::ReadTopObject0<Time>(Time& res);
 
             template<>
-            common::Decimal IGNITE_IMPORT_EXPORT BinaryReaderImpl::ReadTopObject<common::Decimal>();
+            void IGNITE_IMPORT_EXPORT BinaryReaderImpl::ReadTopObject0<common::Decimal>(common::Decimal& res);
 
             template<>
             void IGNITE_IMPORT_EXPORT BinaryReaderImpl::ReadTopObject0<std::string>(std::string& res);

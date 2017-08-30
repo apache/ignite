@@ -821,15 +821,16 @@ namespace ignite
 
                 if (typeId == IGNITE_TYPE_DATE)
                     res = BinaryUtils::ReadDate(stream);
-
+                else if (typeId == IGNITE_TYPE_TIMESTAMP)
                     res = Date(BinaryUtils::ReadTimestamp(stream).GetMilliseconds());
-
+                else if (typeId == IGNITE_HDR_NULL)
                     res = BinaryUtils::GetDefaultValue<Date>();
+                else {
+                    int32_t pos = stream->Position() - 1;
 
-                int32_t pos = stream->Position() - 1;
-
-                IGNITE_ERROR_FORMATTED_3(IgniteError::IGNITE_ERR_BINARY,
-                    "Invalid header", "position", pos, "expected", (int)IGNITE_TYPE_DATE, "actual", (int)typeId)
+                    IGNITE_ERROR_FORMATTED_3(IgniteError::IGNITE_ERR_BINARY,
+                        "Invalid header", "position", pos, "expected", (int)IGNITE_TYPE_DATE, "actual", (int)typeId)
+                }
             }
 
             template <>
@@ -845,21 +846,16 @@ namespace ignite
             }
 
             template<>
-            common::Decimal BinaryReaderImpl::ReadTopObject<common::Decimal>()
+            void BinaryReaderImpl::ReadTopObject0<common::Decimal>(common::Decimal& res)
             {
-                common::Decimal res;
                 ReadTopObject0<common::Decimal>(IGNITE_TYPE_DECIMAL, BinaryUtils::ReadDecimal, res);
-                return res;
             }
 
             template<>
-            std::string BinaryReaderImpl::ReadTopObject<std::string>()
+            void BinaryReaderImpl::ReadTopObject0<std::string>(std::string& res)
             {
-                std::string res;
                 ReadTopObject0<std::string>(IGNITE_TYPE_STRING, BinaryUtils::ReadString, res);
-                return res;
             }
-
 
             template<typename T>
             T BinaryReaderImpl::ReadRaw(T(*func)(InteropInputStream*))
