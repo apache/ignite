@@ -263,13 +263,16 @@ public interface GridDhtPartitionTopology {
      * @param partMap Update partition map.
      * @param cntrMap Partition update counters.
      * @param partsToReload Set of partitions that need to be reloaded.
+     * @param msgTopVer Topology version from incoming message. This value is not null only for case message is not
+     *      related to exchange. Value should be not less than previous 'Topology version from exchange'.
      * @return {@code True} if local state was changed.
      */
     public boolean update(
         @Nullable AffinityTopologyVersion exchangeResVer,
         GridDhtPartitionFullMap partMap,
         @Nullable CachePartitionFullCountersMap cntrMap,
-        Set<Integer> partsToReload);
+        Set<Integer> partsToReload,
+        @Nullable AffinityTopologyVersion msgTopVer);
 
     /**
      * @param exchId Exchange ID.
