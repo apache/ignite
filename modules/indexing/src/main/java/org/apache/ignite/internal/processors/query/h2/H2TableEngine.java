@@ -54,8 +54,8 @@ public class H2TableEngine implements TableEngine {
      * @throws SQLException If failed.
      * @return Created table.
      */
-    public static synchronized GridH2Table createTable(Connection conn, String sql,
-        @Nullable H2RowDescriptor rowDesc, H2RowFactory rowFactory, H2TableDescriptor tblDesc)
+    public static synchronized GridH2Table createTable(Connection conn, String sql, H2RowDescriptor rowDesc,
+        H2RowFactory rowFactory, H2TableDescriptor tblDesc)
         throws SQLException {
         rowDesc0 = rowDesc;
         rowFactory0 = rowFactory;
