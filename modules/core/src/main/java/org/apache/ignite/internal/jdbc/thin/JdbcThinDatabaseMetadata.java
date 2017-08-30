@@ -111,7 +111,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
 
     /** {@inheritDoc} */
     @Override public String getDatabaseProductName() throws SQLException {
-        return "Ignite";
+        return "Apache Ignite";
     }
 
     /** {@inheritDoc} */
