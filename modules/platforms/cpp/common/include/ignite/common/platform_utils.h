@@ -17,6 +17,8 @@
 #ifndef _IGNITE_COMMON_PLATFORM_UTILS
 #define _IGNITE_COMMON_PLATFORM_UTILS
 
+#include <string>
+
 #include <ignite/common/common.h>
 
 namespace ignite
@@ -65,6 +67,20 @@ namespace ignite
          * @return True if the environment variable with such name was found.
          */
         IGNITE_IMPORT_EXPORT bool GetEnv(const std::string& name, std::string& val);
+
+        /**
+         * Read system environment variable taking thread-safety in count.
+         *
+         * @param name Environment variable name.
+         * @return Environment variable value.
+         */
+        inline std::string GetEnv(const std::string& name)
+        {
+            std::string res;
+            GetEnv(name, res);
+
+            return res;
+        }
 
         /**
          * Ensure that file on the given path exists in the system.

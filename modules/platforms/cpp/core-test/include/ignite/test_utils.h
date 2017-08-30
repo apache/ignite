@@ -91,4 +91,14 @@ namespace ignite_test
     }
 }
 
+namespace std
+{
+    /*
+     * Specializations for debug print.
+     */
+    ostream& operator<<(ostream& os, const ignite::Date& obj);
+    ostream& operator<<(ostream& os, const ignite::Time& obj);
+    ostream& operator<<(ostream& os, const ignite::Timestamp& obj);
+}
+
 #endif // _IGNITE_CORE_TEST_TEST_UTILS

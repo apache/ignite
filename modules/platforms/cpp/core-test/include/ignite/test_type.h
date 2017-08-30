@@ -21,6 +21,7 @@
 #include <string>
 
 #include "ignite/ignite.h"
+#include "ignite/test_utils.h"
 
 namespace ignite
 {
@@ -80,6 +81,26 @@ namespace ignite
                 one.timeField == two.timeField &&
                 one.timestampField == two.timestampField &&
                 one.i8ArrayField == two.i8ArrayField;
+        }
+
+        friend std::ostream& operator<<(std::ostream& os, const TestType& obj)
+        {
+            os << "TestType["
+                << "i8Field=" << static_cast<int>(obj.i8Field) << ", "
+                << "i16Field=" << obj.i16Field << ", "
+                << "i32Field=" << obj.i32Field << ", "
+                << "i64Field=" << obj.i64Field << ", "
+                << "strField=" << obj.strField << ", "
+                << "floatField=" << obj.floatField << ", "
+                << "doubleField=" << obj.doubleField << ", "
+                << "boolField=" << obj.boolField << ", "
+                << "guidField=" << obj.guidField << ", "
+                << "dateField=" << obj.dateField << ", "
+                << "timeField=" << obj.timeField << ", "
+                << "timestampField=" << obj.timestampField << ", "
+                << "i8ArrayField=" << obj.i8ArrayField.size() << "]";
+
+            return os;
         }
 
         bool allNulls;

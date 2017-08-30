@@ -21,6 +21,7 @@
 #include <stdint.h>
 
 #include <ignite/common/utils.h>
+#include <ignite/common/decimal.h>
 
 #include <ignite/guid.h>
 #include <ignite/date.h>
@@ -28,6 +29,7 @@
 #include <ignite/time.h>
 
 #include <ignite/binary/binary_type.h>
+#include <ignite/impl/interop/interop_stream_position_guard.h>
 
 namespace ignite
 {
@@ -393,7 +395,7 @@ namespace ignite
                  * Utility method to read Guid from stream.
                  *
                  * @param stream Stream.
-                 * @param res Value.
+                 * @return Value.
                  */
                 static Guid ReadGuid(interop::InteropInputStream* stream);
 
@@ -409,7 +411,7 @@ namespace ignite
                  * Utility method to read Date from stream.
                  *
                  * @param stream Stream.
-                 * @param res Value.
+                 * @return Value.
                  */
                 static Date ReadDate(interop::InteropInputStream* stream);
 
@@ -452,6 +454,17 @@ namespace ignite
                  * @param val Value.
                  */
                 static void WriteTime(interop::InteropOutputStream* stream, const Time val);
+                
+                /**
+                 * Utility method to read string from stream.
+                 *
+                 * @param stream Stream.
+                 * @param buf Buffer.
+                 * @param len Length.
+                 * @param guard Stream guard.
+                 * @return Size.
+                 */
+                static int32_t ReadString(interop::InteropInputStream* stream, char* buf, const int32_t len, interop::InputStreamPositionGuard& guard);
 
                 /**
                  * Utility method to write string to stream.
@@ -461,6 +474,76 @@ namespace ignite
                  * @param len Length.
                  */
                 static void WriteString(interop::InteropOutputStream* stream, const char* val, const int32_t len);
+
+                /**
+                 * Utility method to read string from stream.
+                 *
+                 * @param stream Stream.
+                 * @param val Value.
+                 */
+                static void ReadString(interop::InteropInputStream* stream, std::string& val);
+
+                /**
+                 * Utility method to write string to stream.
+                 *
+                 * @param stream Stream.
+                 * @param val Value.
+                 */
+                static void WriteString(interop::InteropOutputStream* stream, const std::string& val);
+
+                /**
+                 * Read decimal value using reader.
+                 *
+                 * @param stream Stream.
+                 * @param decimal Decimal value.
+                 */
+                static void ReadDecimal(interop::InteropInputStream* stream, common::Decimal& decimal);
+
+                /**
+                 * Write decimal value using writer.
+                 *
+                 * @param stream Stream.
+                 * @param decimal Decimal value.
+                 */
+                static void WriteDecimal(interop::InteropOutputStream* stream, const common::Decimal& decimal);
+
+                /**
+                 * Utility method to read unsigned varint from stream.
+                 *
+                 * Refer to http://code.google.com/apis/protocolbuffers/docs/encoding.html
+                 * for varint encoding details.
+                 *
+                 * @param stream Stream.
+                 * @return Value.
+                 */
+                static int32_t ReadUnsignedVarint(interop::InteropInputStream* stream);
+
+                /**
+                 * Utility method to write unsigned varint to stream.
+                 *
+                 * Refer to http://code.google.com/apis/protocolbuffers/docs/encoding.html
+                 * for varint encoding details.
+                 *
+                 * @param stream Stream.
+                 * @param val Value.
+                 */
+                static void WriteUnsignedVarint(interop::InteropOutputStream* stream, int32_t val);
+
+                /**
+                 * Utility method to read array size from stream.
+                 *
+                 * @param stream Stream.
+                 * @return Value.
+                 */
+                static int32_t ReadArraySize(interop::InteropInputStream* stream);
+
+                /**
+                 * Utility method to write array size to stream.
+                 *
+                 * @param stream Stream.
+                 * @param val Value.
+                 */
+                static void WriteArraySize(interop::InteropOutputStream* stream, int32_t val);
 
                 /**
                  * Get default value for the type.
@@ -548,6 +631,12 @@ namespace ignite
             inline Time BinaryUtils::GetDefaultValue<Time>()
             {
                 return Time();
+            }
+
+            template<>
+            inline common::Decimal BinaryUtils::GetDefaultValue<common::Decimal>()
+            {
+                return common::Decimal();
             }
 
             template<>
