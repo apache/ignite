@@ -623,9 +623,11 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             var obj1 = new Container();
             var obj2 = new Container();
+            var obj3 = new Container();
 
             obj1.Inner = obj2;
             obj2.Inner = obj1;
+            obj3.Inner = obj2;
 
             cache2.PutAll(new Dictionary<int, Container>
             {
@@ -635,9 +637,11 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             var res1 = cache2[1];
             var res2 = cache2[2];
+            var res3 = cache2[3];
 
             Assert.AreEqual(res1, res1.Inner.Inner);
             Assert.AreEqual(res2, res2.Inner.Inner);
+            Assert.IsNotNull(res3.Inner.Inner.Inner);
         }
 
         /// <summary>
