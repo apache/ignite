@@ -1,7 +1,6 @@
 package org.apache.ignite.internal.processors.datastructures;
 
 import java.nio.ByteBuffer;
-import java.sql.Time;
 import java.util.ArrayDeque;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -335,8 +334,9 @@ public final class GridCacheLockImpl2Fair extends GridCacheLockEx2Default {
                     try {
                         EntryProcessorResult<Boolean> result = future.get();
 
-                        if (result.get())
+                        if (result.get()) {
                             listener.release();
+                        }
                     }
                     catch (IgniteCheckedException e) {
                         listener.fail(U.convertException(e));
@@ -398,7 +398,7 @@ public final class GridCacheLockImpl2Fair extends GridCacheLockEx2Default {
          * @return true if await finished well, false if InterruptedException has been thrown or timeout.
          */
         private final boolean waitForUpdate(long timeout, TimeUnit unit) throws InterruptedException {
-            return listeners.get(Thread.currentThread().getId()).await(timeout, unit);
+            return getListener().await(timeout, unit);
         }
 
         /** */
@@ -466,11 +466,11 @@ public final class GridCacheLockImpl2Fair extends GridCacheLockEx2Default {
             lockView.invokeAsync(key, processor).listen(new IgniteInClosure<IgniteInternalFuture<EntryProcessorResult<NodeThread>>>() {
                 @Override public void apply(IgniteInternalFuture<EntryProcessorResult<NodeThread>> future) {
                     try {
-                        EntryProcessorResult<NodeThread> result = future.result();
+                        EntryProcessorResult<NodeThread> result = future.get();
 
                         // invokeAsync return null if EntryProcessor return null too.
                         if (result != null) {
-                            NodeThread nextOwner = future.result().get();
+                            NodeThread nextOwner = result.get();
 
                             if (nextOwner != null) {
                                 if (nodeId.equals(nextOwner.nodeId)) {

@@ -257,8 +257,9 @@ public final class GridCacheLockImpl2Unfair extends GridCacheLockEx2Default {
         /** */
         GlobalUnfairSync(UUID nodeId, GridCacheInternalKey key,
             IgniteInternalCache<GridCacheInternalKey, GridCacheLockState2Base<UUID>> lockView,
-            final UpdateListener listener, final GridCacheContext<GridCacheInternalKey, ? extends GridCacheLockState2Base<UUID>> ctx,
-        final IgniteLogger log) {
+            final UpdateListener listener,
+            final GridCacheContext<GridCacheInternalKey, ? extends GridCacheLockState2Base<UUID>> ctx,
+            final IgniteLogger log) {
 
             assert nodeId != null;
             assert key != null;
@@ -297,11 +298,11 @@ public final class GridCacheLockImpl2Unfair extends GridCacheLockEx2Default {
             releaseListener = new IgniteInClosure<IgniteInternalFuture<EntryProcessorResult<UUID>>>() {
                 @Override public void apply(IgniteInternalFuture<EntryProcessorResult<UUID>> future) {
                     try {
-                        EntryProcessorResult<UUID> result = future.result();
+                        EntryProcessorResult<UUID> result = future.get();
 
                         // invokeAsync return null if EntryProcessor return null too.
                         if (result != null) {
-                            UUID nextNode = future.result().get();
+                            UUID nextNode = result.get();
 
                             if (nextNode != null && !nodeId.equals(nextNode))
                                 ctx.io().send(nextNode, new GridCacheLockImpl2Unfair.ReleasedMessage(ctx.cacheId()), P2P_POOL);
@@ -403,17 +404,16 @@ public final class GridCacheLockImpl2Unfair extends GridCacheLockEx2Default {
             return true;
         }
 
+        /** */
         GridCacheLockState2Base<UUID> forceGet() throws IgniteCheckedException {
             return lockView.get(key);
         }
 
-        /** {@inheritDoc} */
+        /** */
         private final void release() {
             lockView.invokeAsync(key, releaseProcessor).listen(releaseListener);
         }
     }
-
-
 
     /** Local gateway before global lock. */
     private static class LocalSync implements Lock {
