@@ -364,33 +364,40 @@ namespace Apache.Ignite.Core.Tests.Binary
         [Test]
         public void TestRegistrationMultithreaded()
         {
+            const int threads = 4;
+            const int iterations = 50;
+
             using (var ignite = Ignition.Start(TestUtils.GetTestConfiguration()))
             {
                 var cache = ignite.CreateCache<int, int>("c").WithKeepBinary<int, IBinaryObject>();
                 var bin = ignite.GetBinary();
+                var types = new[] { typeof(Foo), typeof(Bar), typeof(Bin) };
 
-                var countdown = new CountdownEvent(2);
-
-                Action registerType = () =>
+                foreach (var type in types)
                 {
-                    for (var i = 0; i < 100; i++)
+                    for (var i = 0; i < iterations; i++)
                     {
-                        countdown.Signal();
-                        Assert.IsTrue(countdown.Wait(500));
-                        countdown.Reset();
+                        var countdown = new CountdownEvent(threads);
+                        var typeName = type.FullName;
 
-                        var binObj = bin.GetBuilder("type-" + i).SetIntField(i.ToString(), i).Build();
+                        Action registerType = () =>
+                        {
+                            countdown.Signal();
+                            Assert.IsTrue(countdown.Wait(5000));
 
-                        cache[i] = binObj;
+                            var binObj = bin.GetBuilder(typeName).SetIntField("x", 1).Build();
+                            cache[1] = binObj;
 
-                        Assert.AreEqual(binObj, cache[i]);
+                            Assert.AreEqual(binObj, cache[1]);
+                        };
+
+                        var tasks = Enumerable.Range(0, threads)
+                            .Select(x => Task.Factory.StartNew(registerType))
+                            .ToArray();
+
+                        Task.WaitAll(tasks);
                     }
-                };
-
-                var task1 = Task.Factory.StartNew(registerType);
-                var task2 = Task.Factory.StartNew(registerType);
-
-                Task.WaitAny(task1, task2);
+                }
             }
         }
 
