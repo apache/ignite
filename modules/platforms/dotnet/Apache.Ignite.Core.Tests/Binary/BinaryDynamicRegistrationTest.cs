@@ -362,30 +362,34 @@ namespace Apache.Ignite.Core.Tests.Binary
         /// Tests registration in multiple threads.
         /// </summary>
         [Test]
-        public void TestRegistrationMultithreaded()
+        public void TestRegistrationMultithreaded([Values(true, false)] bool useTypeName)
         {
-            const int threads = 4;
             const int iterations = 50;
+            const int threads = 4;
 
             using (var ignite = Ignition.Start(TestUtils.GetTestConfiguration()))
             {
                 var cache = ignite.CreateCache<int, int>("c").WithKeepBinary<int, IBinaryObject>();
                 var bin = ignite.GetBinary();
+                Func<Type, IBinaryObjectBuilder> getBuilder = x =>
+                    useTypeName ? bin.GetBuilder(x.FullName) : bin.GetBuilder(x);
+                    
                 var types = new[] { typeof(Foo), typeof(Bar), typeof(Bin) };
 
                 foreach (var type in types)
                 {
+                    var type0 = type;  // Modified closure.
+
                     for (var i = 0; i < iterations; i++)
                     {
                         var countdown = new CountdownEvent(threads);
-                        var typeName = type.FullName;
 
                         Action registerType = () =>
                         {
                             countdown.Signal();
                             Assert.IsTrue(countdown.Wait(5000));
 
-                            var binObj = bin.GetBuilder(typeName).SetIntField("x", 1).Build();
+                            var binObj = getBuilder(type0).SetIntField("x", 1).Build();
                             cache[1] = binObj;
 
                             Assert.AreEqual(binObj, cache[1]);
