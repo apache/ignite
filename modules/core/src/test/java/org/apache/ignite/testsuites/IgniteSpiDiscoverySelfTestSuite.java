@@ -40,6 +40,8 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpiSelfTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpiStartStopSelfTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySslSecuredUnsecuredTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySslSelfTest;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySslTrustedSelfTest;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySslTrustedUntrustedTest;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.jdbc.TcpDiscoveryJdbcIpFinderSelfTest;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinderSelfTest;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.sharedfs.TcpDiscoverySharedFsIpFinderSelfTest;
@@ -98,7 +100,9 @@ public class IgniteSpiDiscoverySelfTestSuite extends TestSuite {
 
         // SSL.
         suite.addTest(new TestSuite(TcpDiscoverySslSelfTest.class));
+        suite.addTest(new TestSuite(TcpDiscoverySslTrustedSelfTest.class));
         suite.addTest(new TestSuite(TcpDiscoverySslSecuredUnsecuredTest.class));
+        suite.addTest(new TestSuite(TcpDiscoverySslTrustedUntrustedTest.class));
 
         return suite;
     }
