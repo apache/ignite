@@ -354,6 +354,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Cache key configuration. */
     private CacheKeyConfiguration[] keyCfg;
 
+    /** */
+    private boolean mvccEnabled;
+
     /** Empty constructor (all values are initialized to their defaults). */
     public CacheConfiguration() {
         /* No-op. */
@@ -408,6 +411,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         longQryWarnTimeout = cc.getLongQueryWarningTimeout();
         maxConcurrentAsyncOps = cc.getMaxConcurrentAsyncOperations();
         memPlcName = cc.getMemoryPolicyName();
+        mvccEnabled = cc.isMvccEnabled();
         name = cc.getName();
         nearCfg = cc.getNearConfiguration();
         nodeFilter = cc.getNodeFilter();
@@ -2003,6 +2007,27 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         synchronized (this) {
             return super.removeCacheEntryListenerConfiguration(cacheEntryLsnrCfg);
         }
+    }
+
+    /**
+     * TODO IGNITE-3478
+     *
+     * @return
+     */
+    public boolean isMvccEnabled() {
+        return mvccEnabled;
+    }
+
+    /**
+     * TODO IGNITE-3478
+     *
+     * @param mvccEnabled
+     * @return {@code this} for chaining.
+     */
+    public CacheConfiguration<K, V> setMvccEnabled(boolean mvccEnabled) {
+        this.mvccEnabled = mvccEnabled;
+
+        return this;
     }
 
     /**

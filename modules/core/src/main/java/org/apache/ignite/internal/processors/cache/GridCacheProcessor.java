@@ -86,6 +86,7 @@ import org.apache.ignite.internal.processors.cache.dr.GridCacheDrManager;
 import org.apache.ignite.internal.processors.cache.jta.CacheJtaManagerAdapter;
 import org.apache.ignite.internal.processors.cache.local.GridLocalCache;
 import org.apache.ignite.internal.processors.cache.local.atomic.GridLocalAtomicCache;
+import org.apache.ignite.internal.processors.cache.mvcc.CacheCoordinatorsSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.MemoryPolicy;
@@ -456,9 +457,15 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         ctx.igfsHelper().validateCacheConfiguration(cc);
 
-        if (cc.getAtomicityMode() == ATOMIC)
+        if (cc.getAtomicityMode() == ATOMIC) {
             assertParameter(cc.getTransactionManagerLookupClassName() == null,
                 "transaction manager can not be used with ATOMIC cache");
+
+            assertParameter(!cc.isMvccEnabled(), "MVCC can not used with ATOMIC cache");
+        }
+
+        if (cc.getCacheMode() == LOCAL)
+            assertParameter(!cc.isMvccEnabled(), "MVCC can not used with LOCAL cache");
 
         if (cc.getEvictionPolicy() != null && !cc.isOnheapCacheEnabled())
             throw new IgniteCheckedException("Onheap cache must be enabled if eviction policy is configured [cacheName="
@@ -2170,6 +2177,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     @SuppressWarnings("unchecked")
     private GridCacheSharedContext createSharedContext(GridKernalContext kernalCtx,
         Collection<CacheStoreSessionListener> storeSesLsnrs) throws IgniteCheckedException {
+        CacheCoordinatorsSharedManager coord = new CacheCoordinatorsSharedManager();
         IgniteTxManager tm = new IgniteTxManager();
         GridCacheMvccManager mvccMgr = new GridCacheMvccManager();
         GridCacheVersionManager verMgr = new GridCacheVersionManager();
@@ -2208,6 +2216,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         return new GridCacheSharedContext(
             kernalCtx,
+            coord,
             tm,
             verMgr,
             mvccMgr,

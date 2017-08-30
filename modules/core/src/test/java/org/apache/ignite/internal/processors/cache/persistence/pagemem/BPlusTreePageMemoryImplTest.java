@@ -51,6 +51,7 @@ public class BPlusTreePageMemoryImplTest extends BPlusTreeSelfTest {
             null,
             null,
             null,
+            null,
             new NoOpPageStoreManager(),
             new NoOpWALManager(),
             new IgniteCacheDatabaseSharedManager(),

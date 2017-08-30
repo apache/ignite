@@ -102,6 +102,12 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFi
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearUnlockRequest;
+import org.apache.ignite.internal.processors.cache.mvcc.CoordinatorMvccCounterResponse;
+import org.apache.ignite.internal.processors.cache.mvcc.CoordinatorQueryAckRequest;
+import org.apache.ignite.internal.processors.cache.mvcc.CoordinatorQueryCounterRequest;
+import org.apache.ignite.internal.processors.cache.mvcc.CoordinatorTxAckRequest;
+import org.apache.ignite.internal.processors.cache.mvcc.CoordinatorTxAckResponse;
+import org.apache.ignite.internal.processors.cache.mvcc.CoordinatorTxCounterRequest;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryRequest;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryResponse;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
@@ -872,6 +878,36 @@ public class GridIoMessageFactory implements MessageFactory {
 
             case 128:
                 msg = new CacheGroupAffinityMessage();
+
+                break;
+
+            case 129:
+                msg = new CoordinatorTxCounterRequest();
+
+                break;
+
+            case 130:
+                msg = new CoordinatorMvccCounterResponse();
+
+                break;
+
+            case 131:
+                msg = new CoordinatorTxAckRequest();
+
+                break;
+
+            case 132:
+                msg = new CoordinatorTxAckResponse();
+
+                break;
+
+            case 133:
+                msg = new CoordinatorQueryCounterRequest();
+
+                break;
+
+            case 134:
+                msg = new CoordinatorQueryAckRequest();
 
                 break;
 

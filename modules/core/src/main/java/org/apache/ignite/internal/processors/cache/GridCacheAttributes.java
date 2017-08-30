@@ -329,6 +329,13 @@ public class GridCacheAttributes implements Serializable {
     }
 
     /**
+     * @return MVCC enabled flag.
+     */
+    public boolean mvccEnabled() {
+        return ccfg.isMvccEnabled();
+    }
+
+    /**
      * @param obj Object to get class of.
      * @return Class name or {@code null}.
      */
