@@ -97,8 +97,14 @@
     <Compile Include="Cache\Configuration\MemoryPolicyConfiguration.cs" />
     <Compile Include="Cache\Configuration\PartitionLossPolicy.cs" />
     <Compile Include="Cache\IMemoryMetrics.cs" />
+    <Compile Include="Client\IgniteClientConfiguration.cs" />
     <Compile Include="Common\ExceptionFactory.cs" />
     <Compile Include="Configuration\Package-Info.cs" />
+    <Compile Include="Impl\Cache\CacheClient.cs" />
+    <Compile Include="Impl\Client\ClientOp.cs" />
+    <Compile Include="Impl\Client\ClientProtocolVersion.cs" />
+    <Compile Include="Impl\Client\ClientSocket.cs" />
+    <Compile Include="Impl\Client\IgniteClient.cs" />
     <Compile Include="Impl\IPlatformTargetInternal.cs" />
     <Compile Include="Impl\PersistentStore\PersistentStoreMetrics.cs" />
     <Compile Include="Impl\PlatformDisposableTargetAdapter.cs" />

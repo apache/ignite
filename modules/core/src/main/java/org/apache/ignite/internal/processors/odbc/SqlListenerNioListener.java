@@ -50,14 +50,14 @@ public class SqlListenerNioListener extends GridNioServerListenerAdapter<byte[]>
     /** JDBC driver handshake code. */
     public static final byte JDBC_CLIENT = 1;
 
+    /** Thin client handshake code. */
+    public static final byte THIN_CLIENT = 2;
+
     /** Version 2.1.0. */
     private static final SqlListenerProtocolVersion VER_2_1_0 = SqlListenerProtocolVersion.create(2, 1, 0);
 
     /** Version 2.1.5: added "lazy" flag. */
     private static final SqlListenerProtocolVersion VER_2_1_5 = SqlListenerProtocolVersion.create(2, 1, 5);
-
-    /** Thin client handshake code. */
-    public static final byte THIN_CLIENT = 2;
 
     /** Current version. */
     private static final SqlListenerProtocolVersion CURRENT_VER = VER_2_1_5;
