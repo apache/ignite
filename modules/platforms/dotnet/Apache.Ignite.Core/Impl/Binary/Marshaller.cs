@@ -385,7 +385,6 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             BinaryFullTypeDescriptor desc;
 
-            // TODO: RegisterType same as above.
             if (_typeNameToDesc.TryGetValue(typeName, out desc))
             {
                 return desc;
@@ -419,35 +418,53 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             var typeKey = BinaryUtils.TypeKey(userType, typeId);
 
-            // TODO: This can be unregistered type, or a descriptor without a type.
-            // We need to understand proper actions in these cases.
-            // Basically, both of these cases require full re-registration of the type, and we need only typeName for that.
-            // KnownType does not need to override existing type.
             if (_idToDesc.TryGetValue(typeKey, out desc) && (!requiresType || desc.Type != null))
-            {
                 return desc;
-            }
 
             if (!userType)
-            {
                 return null;
-            }
 
-            var binType = GetBinaryType(typeId);
-
-            typeName = typeName ?? (desc != null ? desc.TypeName : null)
-                       ?? (knownType != null ? GetTypeName(knownType) : null)
-                       ?? (binType != BinaryType.Empty ? binType.TypeName : null);
-
-            if (typeName != null)
+            if (requiresType && _ignite != null)
             {
-                return AddUserType(new BinaryTypeConfiguration(typeName)
+                // Check marshaller context for dynamically registered type.
+                var type = knownType;
+
+                if (type == null && _ignite != null)
                 {
-                    IsEnum = binType.IsEnum
-                }, new TypeResolver());
+                    typeName = typeName ?? _ignite.BinaryProcessor.GetTypeName(typeId);
+
+                    if (typeName != null)
+                    {
+                        type = ResolveType(typeName);
+
+                        if (type == null)
+                        {
+                            // Type is registered, but assembly is not present.
+                            return new BinarySurrogateTypeDescriptor(_cfg, typeId, typeName);
+                        }
+                    }
+                }
+
+                if (type != null)
+                {
+                    return AddUserType(type, typeId, GetTypeName(type), true, desc);
+                }
             }
 
-            return new BinarySurrogateTypeDescriptor(_cfg, typeId, null);
+            var meta = GetBinaryType(typeId);
+
+            if (meta != BinaryType.Empty)
+            {
+                var typeCfg = new BinaryTypeConfiguration(meta.TypeName)
+                {
+                    IsEnum = meta.IsEnum,
+                    AffinityKeyFieldName = meta.AffinityKeyFieldName
+                };
+
+                return AddUserType(typeCfg, new TypeResolver());
+            }
+
+            return new BinarySurrogateTypeDescriptor(_cfg, typeId, typeName);
         }
 
         /// <summary>
