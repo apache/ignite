@@ -460,12 +460,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 tx.topologyVersion(topVer);
         }
 
-        tx = onCreated(sysCacheCtx, tx);
-
-        if (tx != null && tx.timeout() > 0)
-            cctx.time().addTimeoutObject(new TxEagerTimeoutObject(tx));
-
-        return tx;
+        return onCreated(sysCacheCtx, tx);
     }
 
     /**
@@ -2401,41 +2396,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                     onTimeout0();
                 }
             });
-        }
-    }
-
-    /**
-     * Timeout object for tx timeout handler.
-     */
-    private final class TxEagerTimeoutObject extends GridTimeoutObjectAdapter {
-        /** */
-        private final GridNearTxLocal tx;
-
-        /**
-         * @param tx Tx.
-         */
-        public TxEagerTimeoutObject(final GridNearTxLocal tx) {
-            super(tx.timeout());
-
-            this.tx = tx;
-
-            tx.timeoutHandler(this);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onTimeout() {
-            GridTimeoutObject hnd = tx.timeoutHandler();
-
-            if (hnd == null)
-                return;
-
-            if (!tx.clearTimeoutHandler()) // Transaction is prepared or rolled back concurrently.
-                return;
-
-            log.error("Transaction is timed out and will be rolled back: [tx=" + tx + ']');
-
-            if (tx.setRollbackOnly())
-                tx.rollbackAsync();
         }
     }
 

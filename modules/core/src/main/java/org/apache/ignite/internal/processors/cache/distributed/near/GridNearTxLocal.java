@@ -34,7 +34,6 @@ import javax.cache.CacheException;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
@@ -119,7 +118,7 @@ import static org.apache.ignite.transactions.TransactionState.UNKNOWN;
  * Replicated user transaction.
  */
 @SuppressWarnings("unchecked")
-public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoCloseable  {
+public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeoutObject, AutoCloseable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -176,8 +175,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
     private TransactionProxyImpl proxy;
 
     /** */
-    @GridToStringExclude
-    private GridTimeoutObject timeoutHandler;
+    private long endTime;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -224,7 +222,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
             plc,
             concurrency,
             isolation,
-            timeout,
+            timeout == 0 ? 0 : Math.max(100, timeout),
             false,
             storeEnabled,
             false,
@@ -233,6 +231,12 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
             taskNameHash);
 
         mappings = implicitSingle ? new IgniteTxMappingsSingleImpl() : new IgniteTxMappingsImpl();
+
+        if (this.timeout > 0) {
+            endTime = U.currentTimeMillis() + this.timeout;
+
+            cctx.time().addTimeoutObject(this);
+        }
 
         initResult();
     }
@@ -3152,11 +3156,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
             // Prepare was called explicitly.
             return fut;
 
-        // Clears timeout handler before prepare, because prepare phase will clean up everything right up.
-        if (!clearTimeoutHandler()) {
-            // Timeout closure has been invoked, tx will be rolled back.
-            throw new IgniteException("Bad");
-        }
+        if (endTime > 0)
+            cctx.time().removeTimeoutObject(this);
 
         mapExplicitLocks();
 
@@ -3177,15 +3178,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
      */
     public final void prepare() throws IgniteCheckedException {
         prepareAsync().get();
-    }
-
-    /**
-     * Clears timeout handler.
-     */
-    public boolean clearTimeoutHandler() {
-        timeoutHandler = null;
-
-        return true;
     }
 
     /**
@@ -3269,7 +3261,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
      * @throws IgniteCheckedException If failed.
      */
     public void rollback() throws IgniteCheckedException {
-        clearTimeoutHandler();
+        if (endTime > 0)
+            cctx.time().removeTimeoutObject(this);
 
         rollbackNearTxLocalAsync().get();
     }
@@ -3786,20 +3779,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
     }
 
     /**
-     * @return Timeout handler.
-     */
-    public GridTimeoutObject timeoutHandler() {
-        return timeoutHandler;
-    }
-
-    /**
-     * @param timeoutHnd New timeout handler.
-     */
-    public void timeoutHandler(GridTimeoutObject timeoutHnd) {
-        timeoutHandler = timeoutHnd;
-    }
-
-    /**
      * @return Public API proxy.
      */
     public TransactionProxy proxy() {
@@ -4079,6 +4058,24 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
          * @throws IgniteCheckedException If failed.
          */
         abstract T finish(T t) throws IgniteCheckedException;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteUuid timeoutId() {
+        return xid();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long endTime() {
+        return endTime;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onTimeout() {
+        log.error("Transaction is timed out and will be rolled back: [tx=" + this + ']');
+
+        if (setRollbackOnly())
+            rollbackAsync();
     }
 
     /** {@inheritDoc} */
