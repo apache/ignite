@@ -201,7 +201,7 @@ namespace ignite
                         common::Decimal dec;
                         buf.GetDecimal(dec);
 
-                        utility::WriteDecimal(writer, dec);
+                        writer.WriteDecimal(dec);
 
                         break;
                     }

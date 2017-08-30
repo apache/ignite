@@ -6,7 +6,7 @@
 ## (the "License"); you may not use this file except in compliance with
 ## the License.  You may obtain a copy of the License at
 ##
-##      http://www.apache.org/licenses/LICENSE-2.0
+##	  http://www.apache.org/licenses/LICENSE-2.0
 ##
 ## Unless required by applicable law or agreed to in writing, software
 ## distributed under the License is distributed on an "AS IS" BASIS,
@@ -56,6 +56,7 @@ ignite_tests_SOURCES = \
 	src/reference_test.cpp \
 	src/bits_test.cpp \
 	src/binary_identity_resolver_test.cpp \
+	src/binary_utils_test.cpp \
 	src/cache_test.cpp \
 	src/cache_query_test.cpp \
 	src/cache_store_test.cpp \

@@ -456,6 +456,21 @@ namespace ignite
                 void WriteTimeArray(const char* fieldName, const Time* val, const int32_t len);
 
                 /**
+                 * Write Decimal. Maps to "Decimal" type in Java.
+                 *
+                 * @param val Value.
+                 */
+                void WriteDecimal(const common::Decimal& val);
+
+                /**
+                 * Write Decimal. Maps to "Decimal" type in Java.
+                 *
+                 * @param fieldName Field name.
+                 * @param val Value.
+                 */
+                void WriteDecimal(const char* fieldName, const common::Decimal& val);
+
+                /**
                  * Write string.
                  *
                  * @param val String.
@@ -822,15 +837,9 @@ namespace ignite
                  */
                 template<typename T>
                 void WritePrimitiveRaw(
-                    const T val, 
-                    void(*func)(interop::InteropOutputStream*, T)
-                )
-                {
-                    CheckRawMode(true);
-                    CheckSingleMode(true);
-
-                    func(stream, val);
-                }
+                    const T val,
+                    void (*func)(interop::InteropOutputStream*, T)
+                );
 
                 /**
                  * Write a primitive array to stream in raw mode.
@@ -844,22 +853,9 @@ namespace ignite
                 void WritePrimitiveArrayRaw(
                     const T* val,
                     const int32_t len,
-                    void(*func)(interop::InteropOutputStream*, const T*, const int32_t),
+                    void (*func)(interop::InteropOutputStream*, const T*, const int32_t),
                     const int8_t hdr
-                )
-                {
-                    CheckRawMode(true);
-                    CheckSingleMode(true);
-
-                    if (val)
-                    {
-                        stream->WriteInt8(hdr);
-                        stream->WriteInt32(len);
-                        func(stream, val, len);
-                    }
-                    else
-                        stream->WriteInt8(IGNITE_HDR_NULL);
-                }
+                );
 
                 /**
                  * Write a primitive value to stream.
@@ -872,22 +868,12 @@ namespace ignite
                  */
                 template<typename T>
                 void WritePrimitive(
-                    const char* fieldName, 
-                    const T val, 
-                    void(*func)(interop::InteropOutputStream*, T), 
-                    const int8_t typ, 
+                    const char* fieldName,
+                    const T val,
+                    void (*func)(interop::InteropOutputStream*, T),
+                    const int8_t typ,
                     const int32_t len
-                )
-                {
-                    CheckRawMode(false);
-                    CheckSingleMode(true);
-
-                    WriteFieldId(fieldName, typ);
-
-                    stream->WriteInt8(typ);
-
-                    func(stream, val);
-                }
+                );
 
                 /**
                  * Write a primitive array to stream.
@@ -901,30 +887,13 @@ namespace ignite
                  */
                 template<typename T>
                 void WritePrimitiveArray(
-                    const char* fieldName, 
-                    const T* val, 
-                    const int32_t len, 
-                    void(*func)(interop::InteropOutputStream*, const T*, const int32_t), 
-                    const int8_t hdr, 
+                    const char* fieldName,
+                    const T* val,
+                    const int32_t len,
+                    void (*func)(interop::InteropOutputStream*, const T*, const int32_t),
+                    const int8_t hdr,
                     const int32_t lenShift
-                )
-                {
-                    CheckRawMode(false);
-                    CheckSingleMode(true);
-
-                    WriteFieldId(fieldName, hdr);
-
-                    if (val)
-                    {
-                        stream->WriteInt8(hdr);
-                        stream->WriteInt32(len);
-                        func(stream, val, len);
-                    }
-                    else
-                    {
-                        stream->WriteInt8(IGNITE_HDR_NULL);
-                    }
-                }
+                );
 
                 /**
                  * Write values in interval [first, last).
@@ -991,11 +960,17 @@ namespace ignite
                  * @param hdr Header.
                  */
                 template<typename T>
-                void WriteTopObject0(const T obj, void(*func)(impl::interop::InteropOutputStream*, T), const int8_t hdr)
-                {
-                    stream->WriteInt8(hdr);
-                    func(stream, obj);
-                }
+                void WriteTopObject0(const T obj, void (*func)(impl::interop::InteropOutputStream*, T), const int8_t hdr);
+
+                /**
+                 * Write primitive value.
+                 *
+                 * @param obj Value.
+                 * @param func Stream function.
+                 * @param hdr Header.
+                 */
+                template<typename T>
+                void WriteTopObject0(const T obj, void (*func)(impl::interop::InteropOutputStream*, const T&), const int8_t hdr);
             };
 
             template<>
@@ -1033,6 +1008,9 @@ namespace ignite
 
             template<>
             void IGNITE_IMPORT_EXPORT BinaryWriterImpl::WriteTopObject0(const Time& obj);
+
+            template<>
+            void IGNITE_IMPORT_EXPORT BinaryWriterImpl::WriteTopObject(const common::Decimal& obj);
 
             template<>
             void IGNITE_IMPORT_EXPORT BinaryWriterImpl::WriteTopObject0(const std::string& obj);
