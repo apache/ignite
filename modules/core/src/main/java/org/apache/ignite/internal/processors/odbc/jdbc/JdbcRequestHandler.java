@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.odbc.jdbc;
 
 import java.sql.ParameterMetaData;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -42,6 +43,7 @@ import org.apache.ignite.internal.processors.odbc.SqlListenerResponse;
 import org.apache.ignite.internal.processors.odbc.odbc.OdbcQueryGetColumnsMetaRequest;
 import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.typedef.F;
@@ -100,6 +102,9 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
     /** Automatic close of cursors. */
     private final boolean autoCloseCursors;
 
+    /** */
+    private final boolean errorResponses;
+
     /**
      * Constructor.
      *
@@ -112,10 +117,11 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
      * @param replicatedOnly Replicated only flag.
      * @param autoCloseCursors Flag to automatically close server cursors.
      * @param lazy Lazy query execution flag.
+     * @param errorResponses Whether detailed {@link JdbcErrorResult} objects should be sent to client on error.
      */
     public JdbcRequestHandler(GridKernalContext ctx, GridSpinBusyLock busyLock, int maxCursors,
         boolean distributedJoins, boolean enforceJoinOrder, boolean collocated, boolean replicatedOnly,
-        boolean autoCloseCursors, boolean lazy) {
+        boolean autoCloseCursors, boolean lazy, boolean errorResponses) {
         this.ctx = ctx;
         this.busyLock = busyLock;
         this.maxCursors = maxCursors;
@@ -125,6 +131,7 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
         this.replicatedOnly = replicatedOnly;
         this.autoCloseCursors = autoCloseCursors;
         this.lazy = lazy;
+        this.errorResponses = errorResponses;
 
         log = ctx.log(getClass());
     }
@@ -186,7 +193,7 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
 
     /** {@inheritDoc} */
     @Override public SqlListenerResponse handleException(Exception e) {
-        return new JdbcResponse(SqlListenerResponse.STATUS_FAILED, e.toString());
+        return new JdbcResponse(exceptionToResult(e), SqlListenerResponse.STATUS_FAILED, e.toString());
     }
 
     /** {@inheritDoc} */
@@ -277,7 +284,7 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
 
             U.error(log, "Failed to execute SQL query [reqId=" + req.requestId() + ", req=" + req + ']', e);
 
-            return new JdbcResponse(SqlListenerResponse.STATUS_FAILED, e.toString());
+            return new JdbcResponse(exceptionToResult(e), SqlListenerResponse.STATUS_FAILED, e.toString());
         }
     }
 
@@ -304,7 +311,7 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
 
             U.error(log, "Failed to close SQL query [reqId=" + req.requestId() + ", req=" + req.queryId() + ']', e);
 
-            return new JdbcResponse(SqlListenerResponse.STATUS_FAILED, e.toString());
+            return new JdbcResponse(exceptionToResult(e), SqlListenerResponse.STATUS_FAILED, e.toString());
         }
     }
 
@@ -341,7 +348,7 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
         catch (Exception e) {
             U.error(log, "Failed to fetch SQL query result [reqId=" + req.requestId() + ", req=" + req + ']', e);
 
-            return new JdbcResponse(SqlListenerResponse.STATUS_FAILED, e.toString());
+            return new JdbcResponse(exceptionToResult(e), SqlListenerResponse.STATUS_FAILED, e.toString());
         }
     }
 
@@ -365,7 +372,7 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
         catch (Exception e) {
             U.error(log, "Failed to fetch SQL query result [reqId=" + req.requestId() + ", req=" + req + ']', e);
 
-            return new JdbcResponse(SqlListenerResponse.STATUS_FAILED, e.toString());
+            return new JdbcResponse(exceptionToResult(e), SqlListenerResponse.STATUS_FAILED, e.toString());
         }
     }
 
@@ -453,7 +460,7 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
         catch (Exception e) {
             U.error(log, "Failed to get tables metadata [reqId=" + req.requestId() + ", req=" + req + ']', e);
 
-            return new JdbcResponse(SqlListenerResponse.STATUS_FAILED, e.toString());
+            return new JdbcResponse(exceptionToResult(e), SqlListenerResponse.STATUS_FAILED, e.toString());
         }
     }
 
@@ -495,7 +502,7 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
         catch (Exception e) {
             U.error(log, "Failed to get columns metadata [reqId=" + req.requestId() + ", req=" + req + ']', e);
 
-            return new JdbcResponse(SqlListenerResponse.STATUS_FAILED, e.toString());
+            return new JdbcResponse(exceptionToResult(e), SqlListenerResponse.STATUS_FAILED, e.toString());
         }
     }
 
@@ -525,7 +532,7 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
         catch (Exception e) {
             U.error(log, "Failed to get parameters metadata [reqId=" + req.requestId() + ", req=" + req + ']', e);
 
-            return new JdbcResponse(SqlListenerResponse.STATUS_FAILED, e.toString());
+            return new JdbcResponse(exceptionToResult(e), SqlListenerResponse.STATUS_FAILED, e.toString());
         }
     }
 
@@ -552,7 +559,7 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
         catch (Exception e) {
             U.error(log, "Failed to get parameters metadata [reqId=" + req.requestId() + ", req=" + req + ']', e);
 
-            return new JdbcResponse(SqlListenerResponse.STATUS_FAILED, e.toString());
+            return new JdbcResponse(exceptionToResult(e), SqlListenerResponse.STATUS_FAILED, e.toString());
         }
     }
 
@@ -598,7 +605,7 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
         catch (Exception e) {
             U.error(log, "Failed to get parameters metadata [reqId=" + req.requestId() + ", req=" + req + ']', e);
 
-            return new JdbcResponse(SqlListenerResponse.STATUS_FAILED, e.toString());
+            return new JdbcResponse(exceptionToResult(e), SqlListenerResponse.STATUS_FAILED, e.toString());
         }
     }
 
@@ -624,7 +631,7 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
         catch (Exception e) {
             U.error(log, "Failed to get schemas metadata [reqId=" + req.requestId() + ", req=" + req + ']', e);
 
-            return new JdbcResponse(SqlListenerResponse.STATUS_FAILED, e.toString());
+            return new JdbcResponse(exceptionToResult(e), SqlListenerResponse.STATUS_FAILED, e.toString());
         }
     }
 
@@ -638,5 +645,22 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
     private static boolean matches(String str, String ptrn) {
         return str != null && (F.isEmpty(ptrn) ||
             str.matches(ptrn.replace("%", ".*").replace("_", ".")));
+    }
+
+    private JdbcErrorResult exceptionToResult(Exception e) {
+        if (!errorResponses)
+            return null;
+
+        SQLException sqlEx = null;
+
+        if (e instanceof SQLException)
+            sqlEx = (SQLException)e;
+        else if (e instanceof IgniteSQLException)
+            sqlEx = ((IgniteSQLException)e).toJdbcException();
+
+        if (sqlEx != null)
+            return new JdbcErrorResult(sqlEx.getErrorCode(), sqlEx.getSQLState());
+        else
+            return null;
     }
 }

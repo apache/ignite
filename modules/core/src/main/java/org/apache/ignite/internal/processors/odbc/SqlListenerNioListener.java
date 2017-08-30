@@ -51,7 +51,7 @@ public class SqlListenerNioListener extends GridNioServerListenerAdapter<byte[]>
     /** Version 2.1.0. */
     private static final SqlListenerProtocolVersion VER_2_1_0 = SqlListenerProtocolVersion.create(2, 1, 0);
 
-    /** Version 2.1.5: added "lazy" flag. */
+    /** Version 2.1.5: added "lazy" flag and SQL state code in response. */
     private static final SqlListenerProtocolVersion VER_2_1_5 = SqlListenerProtocolVersion.create(2, 1, 5);
 
     /** Current version. */
@@ -267,12 +267,16 @@ public class SqlListenerNioListener extends GridNioServerListenerAdapter<byte[]>
             boolean autoCloseCursors = reader.readBoolean();
 
             boolean lazyExec = false;
+            boolean errorResponses = false;
 
-            if (ver.compareTo(VER_2_1_5) >= 0)
+            if (ver.compareTo(VER_2_1_5) >= 0) {
                 lazyExec = reader.readBoolean();
 
+                errorResponses = true;
+            }
+
             SqlListenerRequestHandler handler = new JdbcRequestHandler(ctx, busyLock, maxCursors, distributedJoins,
-                enforceJoinOrder, collocated, replicatedOnly, autoCloseCursors, lazyExec);
+                enforceJoinOrder, collocated, replicatedOnly, autoCloseCursors, lazyExec, errorResponses);
 
             SqlListenerMessageParser parser = new JdbcMessageParser(ctx);
 

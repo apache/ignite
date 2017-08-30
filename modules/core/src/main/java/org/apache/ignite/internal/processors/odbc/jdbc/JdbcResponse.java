@@ -46,9 +46,7 @@ public class JdbcResponse extends SqlListenerResponse implements JdbcRawBinaryli
      * @param res Response result.
      */
     public JdbcResponse(JdbcResult res) {
-        super(STATUS_SUCCESS, null);
-
-        this.res = res;
+        this(res, res instanceof JdbcErrorResult ? STATUS_FAILED : STATUS_SUCCESS, null);
     }
 
     /**
@@ -58,9 +56,17 @@ public class JdbcResponse extends SqlListenerResponse implements JdbcRawBinaryli
      * @param err Error, {@code null} if success is {@code true}.
      */
     public JdbcResponse(int status, @Nullable String err) {
-        super(status, err);
+        this(null, status, err);
 
         assert status != STATUS_SUCCESS;
+    }
+
+    public JdbcResponse(JdbcResult res, int status, @Nullable String err) {
+        super(status, err);
+
+        assert res instanceof JdbcErrorResult ^ status == STATUS_SUCCESS;
+
+        this.res = res;
     }
 
     /**

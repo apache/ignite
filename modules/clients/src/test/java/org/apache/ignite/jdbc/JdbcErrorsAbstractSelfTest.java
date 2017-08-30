@@ -40,8 +40,6 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
         startGrid(getConfiguration(getTestIgniteInstanceName(0))
             .setCacheConfiguration(new CacheConfiguration("test")
                 .setQueryEntities(Collections.singletonList(new QueryEntity(Integer.class, Integer.class)))));
-
-        //startGrid(loadConfiguration(CFG_PATH).setIgniteInstanceName(getTestIgniteInstanceName(0)));
     }
 
     /** {@inheritDoc} */

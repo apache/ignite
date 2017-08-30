@@ -56,6 +56,9 @@ public class JdbcResult implements JdbcRawBinarylizable {
     /** Database schemas metadata result. */
     static final byte META_SCHEMAS = 12;
 
+    /** Data to compose JDBC exception. */
+    static final byte ERROR = 13;
+
     /** Success status. */
     private byte type;
 
@@ -136,6 +139,11 @@ public class JdbcResult implements JdbcRawBinarylizable {
 
             case META_SCHEMAS:
                 res = new JdbcMetaSchemasResult();
+
+                break;
+
+            case ERROR:
+                res = new JdbcErrorResult();
 
                 break;
 

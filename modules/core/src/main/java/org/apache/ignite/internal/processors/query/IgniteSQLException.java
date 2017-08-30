@@ -111,7 +111,7 @@ public class IgniteSQLException extends IgniteException {
      * @see <a href="http://en.wikibooks.org/wiki/Structured_Query_Language/SQLSTATE">Wikipedia: SQLSTATE spec.</a>
      * @see IgniteQueryErrorCode
      */
-    private static String codeToSqlState(int statusCode) {
+    public static String codeToSqlState(int statusCode) {
         switch (statusCode) {
             case DUPLICATE_KEY:
                 return "23000"; // Generic value for "integrity constraint violation" 23 class.
