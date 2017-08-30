@@ -137,9 +137,6 @@ public class H2RowDescriptor implements GridH2RowDescriptor {
         valType = DataType.getTypeFromClass(type.valueClass());
 
         refreshMetadataFromTypeDescriptor();
-
-        // Index is not snapshotable in db-x.
-        snapshotableIdx = false;
     }
 
     /**
