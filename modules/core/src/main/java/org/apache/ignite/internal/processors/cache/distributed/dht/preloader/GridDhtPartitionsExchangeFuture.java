@@ -977,15 +977,13 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             clientOnlyExchange,
             true);
 
-        if (log.isDebugEnabled())
-            log.debug("Sending local partitions [nodeId=" + node.id() + ", exchId=" + exchId + ", msg=" + m + ']');
+        log.info("Sending local partitions [nodeId=" + node.id() + ", exchId=" + exchId + ", msg=" + m + ']');
 
         try {
             cctx.io().send(node, m, SYSTEM_POOL);
         }
         catch (ClusterTopologyCheckedException ignored) {
-            if (log.isDebugEnabled())
-                log.debug("Node left during partition exchange [nodeId=" + node.id() + ", exchId=" + exchId + ']');
+            log.info("Node left during partition exchange [nodeId=" + node.id() + ", exchId=" + exchId + ']');
         }
     }
 
@@ -1012,9 +1010,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
         assert !nodes.contains(cctx.localNode());
 
-        if (log.isDebugEnabled())
-            log.debug("Sending full partition map [nodeIds=" + F.viewReadOnly(nodes, F.node2id()) +
-                ", exchId=" + exchId + ", msg=" + m + ']');
+        log.info("Sending full partition map [nodeIds=" + F.viewReadOnly(nodes, F.node2id()) +
+            ", exchId=" + exchId + ", msg=" + m + ']');
 
         cctx.io().safeSend(nodes, m, SYSTEM_POOL, null);
     }
@@ -1681,14 +1678,15 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                                 GridDhtPartitionsSingleRequest req = new GridDhtPartitionsSingleRequest(exchId);
 
                                 for (UUID nodeId : reqFrom) {
+                                    log.info("Sending message: [node=" + nodeId + ", req=" + req + ']');
+
                                     try {
                                         // It is possible that some nodes finished exchange with previous coordinator.
                                         cctx.io().send(nodeId, req, SYSTEM_POOL);
                                     }
                                     catch (ClusterTopologyCheckedException ignored) {
-                                        if (log.isDebugEnabled())
-                                            log.debug("Node left during partition exchange [nodeId=" + nodeId +
-                                                ", exchId=" + exchId + ']');
+                                        log.info("Node left during partition exchange [nodeId=" + nodeId +
+                                            ", exchId=" + exchId + ']');
                                     }
                                     catch (IgniteCheckedException e) {
                                         U.error(log, "Failed to request partitions from node: " + nodeId, e);

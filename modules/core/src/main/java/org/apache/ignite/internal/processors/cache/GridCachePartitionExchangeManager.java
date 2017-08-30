@@ -307,6 +307,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         cctx.io().addHandler(0, GridDhtPartitionsSingleMessage.class,
             new MessageHandler<GridDhtPartitionsSingleMessage>() {
                 @Override public void onMessage(ClusterNode node, GridDhtPartitionsSingleMessage msg) {
+                    log.info("Received message: " + msg);
+
                     processSinglePartitionUpdate(node, msg);
                 }
             });
@@ -314,6 +316,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         cctx.io().addHandler(0, GridDhtPartitionsFullMessage.class,
             new MessageHandler<GridDhtPartitionsFullMessage>() {
                 @Override public void onMessage(ClusterNode node, GridDhtPartitionsFullMessage msg) {
+                    log.info("Received message: " + msg);
+
                     processFullPartitionUpdate(node, msg);
                 }
             });
@@ -321,6 +325,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         cctx.io().addHandler(0, GridDhtPartitionsSingleRequest.class,
             new MessageHandler<GridDhtPartitionsSingleRequest>() {
                 @Override public void onMessage(ClusterNode node, GridDhtPartitionsSingleRequest msg) {
+                    log.info("Received message: " + msg);
+
                     processSinglePartitionRequest(node, msg);
                 }
             });
@@ -796,8 +802,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     private boolean sendAllPartitions(Collection<ClusterNode> nodes) {
         GridDhtPartitionsFullMessage m = createPartitionsFullMessage(nodes, null, null, true);
 
-        if (log.isDebugEnabled())
-            log.debug("Sending all partitions [nodeIds=" + U.nodeIds(nodes) + ", msg=" + m + ']');
+        log.info("Sending all partitions [nodeIds=" + U.nodeIds(nodes) + ", msg=" + m + ']');
 
         for (ClusterNode node : nodes) {
             try {
@@ -806,9 +811,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 cctx.io().sendNoRetry(node, m, SYSTEM_POOL);
             }
             catch (ClusterTopologyCheckedException ignore) {
-                if (log.isDebugEnabled())
-                    log.debug("Failed to send partition update to node because it left grid (will ignore) [node=" +
-                        node.id() + ", msg=" + m + ']');
+                log.info("Failed to send partition update to node because it left grid (will ignore) [node=" +
+                    node.id() + ", msg=" + m + ']');
             }
             catch (IgniteCheckedException e) {
                 U.warn(log, "Failed to send partitions full message [node=" + node + ", err=" + e + ']');
@@ -959,16 +963,14 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             cctx.kernalContext().clientNode(),
             false);
 
-        if (log.isDebugEnabled())
-            log.debug("Sending local partitions [nodeId=" + node.id() + ", msg=" + m + ']');
+        log.info("Sending local partitions [nodeId=" + node.id() + ", msg=" + m + ']');
 
         try {
             cctx.io().sendNoRetry(node, m, SYSTEM_POOL);
         }
         catch (ClusterTopologyCheckedException ignore) {
-            if (log.isDebugEnabled())
-                log.debug("Failed to send partition update to node because it left grid (will ignore) [node=" +
-                    node.id() + ", msg=" + m + ']');
+            log.info("Failed to send partition update to node because it left grid (will ignore) [node=" +
+                node.id() + ", msg=" + m + ']');
         }
         catch (IgniteCheckedException e) {
             U.error(log, "Failed to send local partition map to node [node=" + node + ", exchId=" + id + ']', e);
@@ -1266,9 +1268,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         try {
             if (msg.exchangeId() == null) {
-                if (log.isDebugEnabled())
-                    log.debug("Received local partition update [nodeId=" + node.id() + ", parts=" +
-                        msg + ']');
+                log.info("Received local partition update [nodeId=" + node.id() + ", parts=" +
+                    msg + ']');
 
                 boolean updated = false;
 
