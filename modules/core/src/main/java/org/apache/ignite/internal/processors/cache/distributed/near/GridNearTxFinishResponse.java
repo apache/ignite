@@ -48,9 +48,6 @@ public class GridNearTxFinishResponse extends GridDistributedTxFinishResponse {
     /** Mini future ID. */
     private int miniId;
 
-    /** Near tx thread ID. */
-    private long nearThreadId;
-
     /**
      * Empty constructor required by {@link Externalizable}.
      */
@@ -61,14 +58,12 @@ public class GridNearTxFinishResponse extends GridDistributedTxFinishResponse {
     /**
      * @param part Partition.
      * @param xid Xid version.
-     * @param nearThreadId Near tx thread ID.
      * @param futId Future ID.
      * @param miniId Mini future Id.
      * @param err Error.
      */
     public GridNearTxFinishResponse(int part,
         GridCacheVersion xid,
-        long nearThreadId,
         IgniteUuid futId,
         int miniId,
         @Nullable Throwable err)
@@ -77,7 +72,6 @@ public class GridNearTxFinishResponse extends GridDistributedTxFinishResponse {
 
         assert miniId != 0;
 
-        this.nearThreadId = nearThreadId;
         this.miniId = miniId;
         this.err = err;
     }
@@ -92,13 +86,6 @@ public class GridNearTxFinishResponse extends GridDistributedTxFinishResponse {
      */
     public int miniId() {
         return miniId;
-    }
-
-    /**
-     * @return Near thread ID.
-     */
-    public long threadId() {
-        return nearThreadId;
     }
 
     /** {@inheritDoc}
@@ -145,12 +132,6 @@ public class GridNearTxFinishResponse extends GridDistributedTxFinishResponse {
 
                 writer.incrementState();
 
-            case 8:
-                if (!writer.writeLong("nearThreadId", nearThreadId))
-                    return false;
-
-                writer.incrementState();
-
         }
 
         return true;
@@ -177,14 +158,6 @@ public class GridNearTxFinishResponse extends GridDistributedTxFinishResponse {
 
             case 7:
                 miniId = reader.readInt("miniId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 8:
-                nearThreadId = reader.readLong("nearThreadId");
 
                 if (!reader.isLastRead())
                     return false;
