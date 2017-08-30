@@ -93,6 +93,7 @@
         <module>modules/kubernetes</module>
         <module>modules/zeromq</module>
         <module>modules/rocketmq</module>
+        <module>modules/compatibility</module>
     </modules>
 
     <profiles>
@@ -101,6 +102,7 @@
             <modules> <!-- sorted alphabetically -->
                 <module>examples</module>
                 <module>modules/benchmarks</module>
+                <module>modules/compatibility</module>
                 <module>modules/geospatial</module>
                 <module>modules/hibernate-4.2</module>
                 <module>modules/hibernate-5.1</module>
@@ -161,6 +163,14 @@
                     </plugin>
                 </plugins>
             </build>
+        </profile>
+
+        <profile>
+            <id>compatibility-tests</id>
+            <modules>
+                <module>modules/core</module>
+                <module>modules/compatibility</module>
+            </modules>
         </profile>
 
         <profile>
