@@ -632,7 +632,8 @@ namespace Apache.Ignite.Core.Tests.Cache
             cache2.PutAll(new Dictionary<int, Container>
             {
                 {1, obj1},
-                {2, obj2}
+                {2, obj2},
+                {3, obj3}
             });
 
             var res1 = cache2[1];
