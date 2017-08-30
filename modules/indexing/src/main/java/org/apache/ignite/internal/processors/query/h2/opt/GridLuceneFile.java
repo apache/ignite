@@ -37,6 +37,9 @@ public class GridLuceneFile implements Accountable {
     private long length;
 
     /** */
+    private final String name;
+
+    /** */
     private final GridLuceneDirectory dir;
 
     /** */
@@ -53,8 +56,9 @@ public class GridLuceneFile implements Accountable {
      *
      * @param dir Directory.
      */
-    GridLuceneFile(GridLuceneDirectory dir) {
+    GridLuceneFile(GridLuceneDirectory dir, String name) {
         this.dir = dir;
+        this.name = name;
     }
 
     /**

@@ -30,7 +30,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.ml.math.IdentityValueMapper;
 import org.apache.ignite.ml.math.Vector;
-import org.apache.ignite.ml.math.VectorKeyMapper;
+import org.apache.ignite.ml.math.distributed.VectorKeyMapper;
 import org.apache.ignite.ml.math.exceptions.UnsupportedOperationException;
 import org.apache.ignite.ml.math.functions.Functions;
 import org.apache.ignite.ml.math.impls.MathTestConstants;

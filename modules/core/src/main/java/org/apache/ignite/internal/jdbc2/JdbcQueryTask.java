@@ -164,6 +164,8 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
             qry.setLocal(locQry);
             qry.setCollocated(collocatedQry);
             qry.setDistributedJoins(distributedJoins);
+            qry.setEnforceJoinOrder(enforceJoinOrder());
+            qry.setLazy(lazy());
             qry.setSchema(schemaName);
 
             QueryCursorImpl<List<?>> qryCursor = (QueryCursorImpl<List<?>>)cache.withKeepBinary().query(qry);
@@ -214,6 +216,20 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
         assert isQry != null : "Query flag must be set prior to returning result";
 
         return new QueryResult(uuid, finished, isQry, rows, cols, tbls, types);
+    }
+
+    /**
+     * @return Enforce join order flag (SQL hit).
+     */
+    protected boolean enforceJoinOrder() {
+        return false;
+    }
+
+    /**
+     * @return Lazy query execution flag (SQL hit).
+     */
+    protected boolean lazy() {
+        return false;
     }
 
     /**
