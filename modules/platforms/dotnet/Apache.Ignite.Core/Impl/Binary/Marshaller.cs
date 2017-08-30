@@ -651,9 +651,6 @@ namespace Apache.Ignite.Core.Impl.Binary
                 ThrowConflictingTypeError(typeName, conflictingType.TypeName, typeId);
             }
 
-            if (userType && _typeNameToDesc.ContainsKey(typeName))
-                throw new BinaryObjectException("Conflicting type name: " + typeName);
-
             var descriptor = new BinaryFullTypeDescriptor(type, typeId, typeName, userType, nameMapper, idMapper, 
                 serializer, keepDeserialized, affKeyFieldName, isEnum);
 
