@@ -706,6 +706,12 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_ENABLE_FORCIBLE_NODE_KILL = "IGNITE_ENABLE_FORCIBLE_NODE_KILL";
 
     /**
+     * If this property is set, a node will track transaction initiators, printing them in tx timeout error.
+     * Useful for debugging.
+     */
+    public static final String IGNITE_TRACK_TRANSACTION_INITIATOR = "IGNITE_TRACK_TRANSACTION_INITIATOR";
+
+    /**
      * Enforces singleton.
      */
     private IgniteSystemProperties() {

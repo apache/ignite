@@ -34,6 +34,7 @@ import javax.cache.CacheException;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
@@ -114,11 +115,17 @@ import static org.apache.ignite.transactions.TransactionState.ROLLED_BACK;
 import static org.apache.ignite.transactions.TransactionState.ROLLING_BACK;
 import static org.apache.ignite.transactions.TransactionState.UNKNOWN;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_TRACK_TRANSACTION_INITIATOR;
+
 /**
  * Replicated user transaction.
  */
 @SuppressWarnings("unchecked")
 public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeoutObject, AutoCloseable {
+    /** {@link IgniteSystemProperties#IGNITE_TRACK_TRANSACTION_INITIATOR} */
+    private static final boolean TRACK_TRANSACTION_INITIATOR =
+        IgniteSystemProperties.getBoolean(IGNITE_TRACK_TRANSACTION_INITIATOR, false);
+
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -177,6 +184,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     /** */
     private long endTime;
 
+    /** */
+    private transient Exception trackE;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -233,6 +243,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         mappings = implicitSingle ? new IgniteTxMappingsSingleImpl() : new IgniteTxMappingsImpl();
 
         if (this.timeout > 0) {
+            if (TRACK_TRANSACTION_INITIATOR)
+                trackE = new Exception();
+
             endTime = U.currentTimeMillis() + this.timeout;
 
             cctx.time().addTimeoutObject(this);
@@ -4072,7 +4085,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
     /** {@inheritDoc} */
     @Override public void onTimeout() {
-        log.error("Transaction is timed out and will be rolled back: [tx=" + this + ']');
+        log.error("Transaction is timed out and will be rolled back: [tx=" + this + ']', trackE);
 
         if (setRollbackOnly())
             rollbackAsync();

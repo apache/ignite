@@ -22,12 +22,14 @@ import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.GridConcurrentSkipListSet;
@@ -53,13 +55,13 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
     private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** */
+    private static final int GRID_CNT = 3;
+
+    /** */
     private final CountDownLatch blocked = new CountDownLatch(1);
 
     /** */
     private CountDownLatch unblocked = new CountDownLatch(1);
-
-    /** */
-    private static int GRID_CNT = 3;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -81,6 +83,20 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
         cfg.setCacheConfiguration(ccfg);
 
         return cfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
+        System.setProperty(IgniteSystemProperties.IGNITE_TRACK_TRANSACTION_INITIATOR, "true");
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        System.clearProperty(IgniteSystemProperties.IGNITE_TRACK_TRANSACTION_INITIATOR);
     }
 
     /** {@inheritDoc} */
@@ -114,11 +130,11 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
     /**
      * Tests if timeout on first tx unblocks second tx waiting for the locked key.
      */
-    public void testWaitingTxUnblockedOnTimeout3() throws Exception {
-        Ignite client = startGrid("client");
-
-        testWaitingTxUnblockedOnTimeout0(grid(0), client);
-    }
+//    public void testWaitingTxUnblockedOnTimeout3() throws Exception {
+//        Ignite client = startGrid("client");
+//
+//        testWaitingTxUnblockedOnTimeout0(grid(0), client);
+//    }
 
     /**
      * Tests if timeout on first tx unblocks second tx waiting for the locked key.
@@ -155,11 +171,11 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
     /**
      * Tests if timeout on first tx unblocks second tx waiting for the locked key.
      */
-    public void testWaitingTxUnblockedOnTimeout8() throws Exception {
-        Ignite client = startGrid("client");
-
-        testWaitingTxUnblockedOnThreadDeath0(grid(0), client);
-    }
+//    public void testWaitingTxUnblockedOnTimeout8() throws Exception {
+//        Ignite client = startGrid("client");
+//
+//        testWaitingTxUnblockedOnThreadDeath0(grid(0), client);
+//    }
 
     /**
      * Tests if timeout on first tx unblocks second tx waiting for the locked key.
@@ -259,6 +275,7 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
         fut1.get(5, TimeUnit.SECONDS);
     }
 
+    /** */
     private void testWaitingTxUnblockedOnThreadDeath0(final Ignite near, final Ignite other) throws Exception {
         final int recordsCnt = 100;
 
