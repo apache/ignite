@@ -25,6 +25,8 @@ namespace Apache.Ignite.Core.Tests.Binary
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
+    using System.Threading;
+    using System.Threading.Tasks;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Store;
@@ -352,6 +354,47 @@ namespace Apache.Ignite.Core.Tests.Binary
 
                     Assert.AreEqual(1, cache2[1].Id);  // Read ExamplesAccount as Account.
                     Assert.AreEqual(2, cache1[2].Id);  // Read Account as ExamplesAccount.
+                }
+            }
+        }
+
+        /// <summary>
+        /// Tests registration in multiple threads.
+        /// </summary>
+        [Test]
+        public void TestRegistrationMultithreaded()
+        {
+            using (var ignite = Ignition.Start(TestUtils.GetTestConfiguration()))
+            {
+                var cache = ignite.CreateCache<int, int>("c").WithKeepBinary<int, IBinaryObject>();
+                var bin = ignite.GetBinary();
+
+                var countdown = new CountdownEvent(3);
+                const int iterations = 1000;
+
+                Action registerType = () =>
+                {
+                    for (var i = 0; i < iterations; i++)
+                    {
+                        countdown.Signal();
+                        countdown.Wait();
+
+                        var binObj = bin.GetBuilder("type-" + i).SetIntField(i.ToString(), i).Build();
+
+                        cache[i] = binObj;
+
+                        Assert.AreEqual(binObj, cache[i]);
+                    }
+                };
+
+                Task.Factory.StartNew(registerType);
+                Task.Factory.StartNew(registerType);
+
+                for (int i = 0; i < iterations; i++)
+                {
+                    countdown.Signal();
+                    countdown.Wait();
+                    countdown.Reset();
                 }
             }
         }
