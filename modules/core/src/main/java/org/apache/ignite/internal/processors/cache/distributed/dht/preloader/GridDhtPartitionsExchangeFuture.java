@@ -2437,11 +2437,20 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      */
     private void assignPartitionsStates() {
         if (cctx.database().persistenceEnabled()) {
-            for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
-                if (grp.isLocal())
+            for (Map.Entry<Integer, CacheGroupDescriptor> e : cctx.affinity().cacheGroups().entrySet()) {
+                if (e.getValue().config().getCacheMode() == CacheMode.LOCAL)
                     continue;
 
-                assignPartitionStates(grp.topology());
+                GridDhtPartitionTopology top;
+
+                CacheGroupContext grpCtx = cctx.cache().cacheGroup(e.getKey());
+
+                if (grpCtx != null)
+                    top = grpCtx.topology();
+                else
+                    top = cctx.exchange().clientTopology(e.getKey());
+
+                assignPartitionStates(top);
             }
         }
     }
