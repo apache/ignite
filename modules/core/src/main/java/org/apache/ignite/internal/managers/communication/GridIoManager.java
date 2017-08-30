@@ -164,9 +164,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     /** Local node ID. */
     private final UUID locNodeId;
 
-    /** Discovery delay. */
-    private final long discoDelay;
-
     /** Cache for messages that were received prior to discovery. */
     private final ConcurrentMap<UUID, ConcurrentLinkedDeque8<DelayedMessage>> waitMap =
         new ConcurrentHashMap8<>();
@@ -227,8 +224,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
         locNodeId = ctx.localNodeId();
 
-        discoDelay = ctx.config().getDiscoveryStartupDelay();
-
         marsh = ctx.config().getMarshaller();
 
         synchronized (sysLsnrsMux) {
@@ -264,8 +259,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     /** {@inheritDoc} */
     @SuppressWarnings("deprecation")
     @Override public void start() throws IgniteCheckedException {
-        assertParameter(discoDelay > 0, "discoveryStartupDelay > 0");
-
         startSpi();
 
         getSpi().setListener(commLsnr = new CommunicationListener<Serializable>() {

@@ -15,27 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.math.impls.storage.matrix;
+package org.apache.ignite.ml.math.distributed;
 
-import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.ml.math.impls.matrix.SparseBlockDistributedMatrix;
+import org.apache.ignite.ml.math.KeyMapper;
+import org.apache.ignite.ml.math.Matrix;
 
 /**
- * Cache key for blocks in {@link SparseBlockDistributedMatrix}.
+ * Maps {@link Matrix} row and column index to cache key.
  */
-public interface BaseBlockMatrixKey {
+public interface MatrixKeyMapper<K> extends KeyMapper<K> {
     /**
-     * @return block id.
+     * @param x Matrix row index.
+     * @param y Matrix column index.
+     * @return Cache key for given row and column.
      */
-    public long blockId();
-
-    /**
-     * @return matrix id.
-     */
-    public IgniteUuid matrixId();
-
-    /**
-     * @return key affinity key.
-     */
-    public IgniteUuid affinityKey();
+    public K apply(int x, int y);
 }

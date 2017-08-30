@@ -115,6 +115,9 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     /** */
     private volatile DiscoCache discoCache;
 
+    /** */
+    private final int parts;
+
     /**
      * @param cctx Context.
      * @param grpId Group ID.
@@ -130,6 +133,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
         this.cctx = cctx;
         this.grpId = grpId;
         this.similarAffKey = similarAffKey;
+        this.parts = parts;
 
         topVer = AffinityTopologyVersion.NONE;
 
@@ -140,6 +144,11 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
             updateSeq.get());
 
         cntrMap = new CachePartitionFullCountersMap(parts);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int partitions() {
+        return parts;
     }
 
     /**
@@ -1083,20 +1092,26 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
 
         try {
             for (Map.Entry<UUID, GridDhtPartitionMap> e : node2part.entrySet()) {
-                if (!e.getValue().containsKey(p))
+                GridDhtPartitionMap partMap = e.getValue();
+
+                if (!partMap.containsKey(p))
                     continue;
 
-                if (e.getValue().get(p) == OWNING && !owners.contains(e.getKey())) {
+                if (partMap.get(p) == OWNING && !owners.contains(e.getKey())) {
                     if (haveHistory)
-                        e.getValue().put(p, MOVING);
+                        partMap.put(p, MOVING);
                     else {
-                        e.getValue().put(p, RENTING);
+                        partMap.put(p, RENTING);
 
                         result.add(e.getKey());
                     }
+
+                    partMap.updateSequence(partMap.updateSequence() + 1, partMap.topologyVersion());
+
+                    U.warn(log, "Partition has been scheduled for rebalancing due to outdated update counter " +
+                        "[nodeId=" + e.getKey() + ", groupId=" + grpId +
+                        ", partId=" + p + ", haveHistory=" + haveHistory + "]");
                 }
-                else if (owners.contains(e.getKey()))
-                    e.getValue().put(p, OWNING);
             }
 
             part2node.put(p, owners);

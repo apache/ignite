@@ -67,6 +67,11 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
+    @Override protected long getTestTimeout() {
+        return 10 * 60 * 1000;
+    }
+
+    /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);

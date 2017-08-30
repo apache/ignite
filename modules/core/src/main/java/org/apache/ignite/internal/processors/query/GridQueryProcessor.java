@@ -65,7 +65,6 @@ import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
@@ -837,8 +836,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
     /**
      * @param cctx Cache context.
+     * @param destroy Destroy flag.
      */
-    public void onCacheStop(GridCacheContext cctx) {
+    public void onCacheStop(GridCacheContext cctx, boolean destroy) {
         if (idx == null)
             return;
 
@@ -846,7 +846,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             return;
 
         try {
-            onCacheStop0(cctx.name());
+            onCacheStop0(cctx.name(), destroy);
         }
         finally {
             busyLock.leaveBusy();
@@ -1372,8 +1372,12 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param cands Candidates.
      * @throws IgniteCheckedException If failed.
      */
-    private void registerCache0(String cacheName, String schemaName, GridCacheContext<?, ?> cctx,
-        Collection<QueryTypeCandidate> cands) throws IgniteCheckedException {
+    private void registerCache0(
+        String cacheName,
+        String schemaName,
+        GridCacheContext<?, ?> cctx,
+        Collection<QueryTypeCandidate> cands
+    ) throws IgniteCheckedException {
         synchronized (stateMux) {
             if (idx != null)
                 idx.registerCache(cacheName, schemaName, cctx);
@@ -1413,7 +1417,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 cacheNames.add(CU.mask(cacheName));
             }
             catch (IgniteCheckedException | RuntimeException e) {
-                onCacheStop0(cacheName);
+                onCacheStop0(cacheName, true);
 
                 throw e;
             }
@@ -1425,8 +1429,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * Use with {@link #busyLock} where appropriate.
      *
      * @param cacheName Cache name.
+     * @param destroy Destroy flag.
      */
-    public void onCacheStop0(String cacheName) {
+    public void onCacheStop0(String cacheName, boolean destroy) {
         if (idx == null)
             return;
 
@@ -1464,7 +1469,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             // Notify indexing.
             try {
-                idx.unregisterCache(cacheName);
+                idx.unregisterCache(cacheName, destroy);
             }
             catch (Exception e) {
                 U.error(log, "Failed to clear indexing on cache unregister (will ignore): " + cacheName, e);

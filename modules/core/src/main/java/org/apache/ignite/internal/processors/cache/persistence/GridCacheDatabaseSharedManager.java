@@ -132,6 +132,7 @@ import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.mxbean.PersistenceMetricsMXBean;
 import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
@@ -512,6 +513,33 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         catch (Throwable e) {
             U.error(log, "Failed to unregister " + MBEAN_NAME + " MBean.", e);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteOutClosure<Float> fillFactorProvider(final String memPlcName) {
+        return new IgniteOutClosure<Float>() {
+            @Override public Float apply() {
+                long loadSize = 0L;
+                long totalSize = 0L;
+
+                for (CacheGroupContext grpCtx : cctx.cache().cacheGroups()) {
+                    if (!grpCtx.memoryPolicy().config().getName().equals(memPlcName))
+                        continue;
+
+                    assert grpCtx.offheap() instanceof GridCacheOffheapManager;
+
+                    T2<Long, Long> fillFactor = ((GridCacheOffheapManager)grpCtx.offheap()).fillFactor();
+
+                    loadSize += fillFactor.get1();
+                    totalSize += fillFactor.get2();
+                }
+
+                if (totalSize == 0)
+                    return (float) 0;
+
+                return (float) loadSize / totalSize;
+            }
+        };
     }
 
     /** {@inheritDoc} */
@@ -1305,8 +1333,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         boolean apply = status.needRestoreMemory();
 
         if (apply) {
-            U.quietAndWarn(log, "Ignite node crashed in the middle of checkpoint. Will restore memory state and " +
-                "enforce checkpoint on node start.");
+            U.quietAndWarn(log, "Ignite node stopped in the middle of checkpoint. Will restore memory state and " +
+                "finish checkpoint on node start.");
 
             cctx.pageStore().beginRecover();
         }
@@ -2101,6 +2129,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             tracker.onLockWaitStart();
 
+            boolean hasPages;
+
             checkpointLock.writeLock().lock();
 
             try {
@@ -2165,7 +2195,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 cpPagesTuple = beginAllCheckpoints();
 
-                if (!F.isEmpty(cpPagesTuple.get1())) {
+                hasPages = hasPageForWrite(cpPagesTuple.get1());
+
+                if (hasPages) {
                     // No page updates for this checkpoint are allowed from now on.
                     cpPtr = cctx.wal().log(cpRec);
 
@@ -2181,7 +2213,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             curr.cpBeginFut.onDone();
 
-            if (!F.isEmpty(cpPagesTuple.get1())) {
+            if (hasPages) {
                 assert cpPtr != null;
 
                 // Sync log outside the checkpoint write lock.
@@ -2229,6 +2261,24 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 return new Checkpoint(null, wrapper, curr);
             }
+        }
+
+        /**
+         * Check that at least one collection is not empty.
+         *
+         * @param cpPagesCollWrapper Collection of {@link GridMultiCollectionWrapper} checkpoint pages.
+         */
+        private boolean hasPageForWrite(Collection<GridMultiCollectionWrapper<FullPageId>> cpPagesCollWrapper) {
+            boolean hasPages = false;
+
+            for (Collection c : cpPagesCollWrapper)
+                if (!c.isEmpty()) {
+                    hasPages = true;
+
+                    break;
+                }
+
+            return hasPages;
         }
 
         /**
@@ -2306,7 +2356,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * @param cpPagesTuple Checkpoint pages tuple.
      */
     private GridMultiCollectionWrapper<FullPageId> splitAndSortCpPagesIfNeeded(
-        IgniteBiTuple<Collection<GridMultiCollectionWrapper<FullPageId>>, Integer> cpPagesTuple) {
+        IgniteBiTuple<Collection<GridMultiCollectionWrapper<FullPageId>>, Integer> cpPagesTuple
+    ) {
         List<FullPageId> cpPagesList = new ArrayList<>(cpPagesTuple.get2());
 
         for (GridMultiCollectionWrapper<FullPageId> col : cpPagesTuple.get1()) {
