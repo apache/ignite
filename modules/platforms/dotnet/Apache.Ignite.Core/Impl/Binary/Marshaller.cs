@@ -503,15 +503,17 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             desc = desc == null
                 ? new BinaryFullTypeDescriptor(type, typeId, typeName, true, _cfg.NameMapper,
-                    _cfg.IdMapper, ser, false, null, BinaryUtils.IsIgniteEnum(type), registered)
+                    _cfg.IdMapper, ser, false, GetAffinityKeyFieldNameFromAttribute(type), 
+                    BinaryUtils.IsIgniteEnum(type), registered)
                 : new BinaryFullTypeDescriptor(desc, type, ser, registered);
 
             if (RegistrationDisabled)
+            {
                 return desc;
+            }
 
             var typeKey = BinaryUtils.TypeKey(true, typeId);
 
-            // TODO: Deduplicate logic; handle attributes (like affinity field).
             var desc0 = _idToDesc.GetOrAdd(typeKey, x => desc);
             if (desc0.Type != null && desc0.TypeName != typeName)
             {
