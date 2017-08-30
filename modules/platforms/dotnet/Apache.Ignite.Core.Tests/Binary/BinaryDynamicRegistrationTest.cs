@@ -369,15 +369,15 @@ namespace Apache.Ignite.Core.Tests.Binary
                 var cache = ignite.CreateCache<int, int>("c").WithKeepBinary<int, IBinaryObject>();
                 var bin = ignite.GetBinary();
 
-                var countdown = new CountdownEvent(3);
-                const int iterations = 1000;
+                var countdown = new CountdownEvent(2);
 
                 Action registerType = () =>
                 {
-                    for (var i = 0; i < iterations; i++)
+                    for (var i = 0; i < 100; i++)
                     {
                         countdown.Signal();
-                        countdown.Wait();
+                        Assert.IsTrue(countdown.Wait(500));
+                        countdown.Reset();
 
                         var binObj = bin.GetBuilder("type-" + i).SetIntField(i.ToString(), i).Build();
 
@@ -387,15 +387,10 @@ namespace Apache.Ignite.Core.Tests.Binary
                     }
                 };
 
-                Task.Factory.StartNew(registerType);
-                Task.Factory.StartNew(registerType);
+                var task1 = Task.Factory.StartNew(registerType);
+                var task2 = Task.Factory.StartNew(registerType);
 
-                for (int i = 0; i < iterations; i++)
-                {
-                    countdown.Signal();
-                    countdown.Wait();
-                    countdown.Reset();
-                }
+                Task.WaitAny(task1, task2);
             }
         }
 
