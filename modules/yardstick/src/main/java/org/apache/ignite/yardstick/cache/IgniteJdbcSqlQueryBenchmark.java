@@ -73,9 +73,11 @@ public class IgniteJdbcSqlQueryBenchmark extends IgniteCacheAbstractBenchmark<In
             ctx.put(0, stm);
         }
 
+        stm.getConnection().setSchema(cache.getName());
+
         double salary = ThreadLocalRandom.current().nextDouble() * args.range() * 1000;
 
-        double maxSalary = salary + 1000;
+        double maxSalary = salary + 1000 * args.resultSetSize();
 
         stm.clearParameters();
 
@@ -112,7 +114,7 @@ public class IgniteJdbcSqlQueryBenchmark extends IgniteCacheAbstractBenchmark<In
 
     /**
      * @return Prepared statement.
-     * @throws Exception
+     * @throws Exception If failed.
      */
     private PreparedStatement createStatement() throws Exception {
         Class.forName("org.apache.ignite.IgniteJdbcDriver");

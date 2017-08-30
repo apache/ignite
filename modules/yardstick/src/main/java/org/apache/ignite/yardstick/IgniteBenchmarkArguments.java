@@ -29,6 +29,7 @@ import org.apache.ignite.transactions.TransactionIsolation;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.apache.ignite.yardstick.cache.IgniteJdbcSqlQueryBenchmark;
 import org.apache.ignite.yardstick.cache.IgniteStreamerBenchmark;
 import org.jetbrains.annotations.Nullable;
 
@@ -251,6 +252,12 @@ public class IgniteBenchmarkArguments {
     /** */
     @Parameter(names = {"-stbs", "--streamerBufSize"}, description = "Data streamer buffer size")
     private int streamerBufSize = IgniteDataStreamer.DFLT_PER_NODE_BUFFER_SIZE;
+
+    /** */
+    @Parameter(names = {"-res", "--resultSetSize"}, description = "Result set size")
+    @GridToStringInclude
+    private int resultSetSize = 1_000;
+
 
     /**
      * @return {@code True} if need set {@link PersistentStoreConfiguration}.
@@ -629,6 +636,13 @@ public class IgniteBenchmarkArguments {
      */
     public int streamerBufferSize() {
         return streamerBufSize;
+    }
+
+    /**
+     * @return Result set size {@link IgniteJdbcSqlQueryBenchmark}
+     */
+    public int resultSetSize() {
+        return resultSetSize;
     }
 
     /** {@inheritDoc} */
