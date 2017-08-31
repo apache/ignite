@@ -82,7 +82,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             var writer0 = (BinaryWriter)writer.GetRawWriter();
 
-            writer0.WithDetach(w => w.WriteObject(_pred));
+            writer0.WriteObjectDetached(_pred);
             
             writer0.WriteBoolean(_keepBinary);
         }
