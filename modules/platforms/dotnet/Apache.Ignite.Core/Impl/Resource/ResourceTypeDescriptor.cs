@@ -87,7 +87,7 @@ namespace Apache.Ignite.Core.Impl.Resource
         /// </summary>
         /// <param name="target">Target.</param>
         /// <param name="ignite">Grid.</param>
-        public void InjectIgnite(object target, Ignite ignite)
+        public void InjectIgnite(object target, IIgniteInternal ignite)
         {
             Inject0(target, ignite, _igniteInjectors);
         }
