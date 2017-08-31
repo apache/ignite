@@ -29,6 +29,7 @@ import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridKernalGateway;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.MarshallerContextImpl;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointManager;
 import org.apache.ignite.internal.managers.collision.GridCollisionManager;
@@ -92,7 +93,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     /**
      * @param log Logger.
      */
-    StandaloneGridKernalContext(IgniteLogger log) {
+    public StandaloneGridKernalContext(IgniteLogger log) {
         this.log = log;
 
         try {
@@ -141,7 +142,8 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
     /** {@inheritDoc} */
     @Override public IgniteEx grid() {
-        return null;
+        IgniteKernal kernal = new IgniteKernal();
+        return kernal;
     }
 
     /** {@inheritDoc} */
