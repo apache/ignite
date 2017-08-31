@@ -130,11 +130,11 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
     /**
      * Tests if timeout on first tx unblocks second tx waiting for the locked key.
      */
-//    public void testWaitingTxUnblockedOnTimeout3() throws Exception {
-//        Ignite client = startGrid("client");
-//
-//        testWaitingTxUnblockedOnTimeout0(grid(0), client);
-//    }
+    public void testWaitingTxUnblockedOnTimeout3() throws Exception {
+        Ignite client = startGrid("client");
+
+        testWaitingTxUnblockedOnTimeout0(grid(0), client);
+    }
 
     /**
      * Tests if timeout on first tx unblocks second tx waiting for the locked key.
@@ -171,11 +171,11 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
     /**
      * Tests if timeout on first tx unblocks second tx waiting for the locked key.
      */
-//    public void testWaitingTxUnblockedOnTimeout8() throws Exception {
-//        Ignite client = startGrid("client");
-//
-//        testWaitingTxUnblockedOnThreadDeath0(grid(0), client);
-//    }
+    public void testWaitingTxUnblockedOnTimeout8() throws Exception {
+        Ignite client = startGrid("client");
+
+        testWaitingTxUnblockedOnThreadDeath0(grid(0), client);
+    }
 
     /**
      * Tests if timeout on first tx unblocks second tx waiting for the locked key.
@@ -268,11 +268,11 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
             }
         }, 2, "Second");
 
-        fut2.get(5, TimeUnit.SECONDS);
+        fut2.get();
 
         unblocked.countDown();
 
-        fut1.get(5, TimeUnit.SECONDS);
+        fut1.get();
     }
 
     /** */
@@ -315,6 +315,6 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
             // No-op.
         }
 
-        fut2.get(5, TimeUnit.SECONDS);
+        fut2.get();
     }
 }
