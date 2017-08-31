@@ -176,8 +176,8 @@ public interface GridQueryIndexing {
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
-    public void dynamicAddColumn(String schemaName, String tblName, List<QueryField> cols,
-                                 boolean ifTblExists, boolean ifColNotExists) throws IgniteCheckedException;
+    public void dynamicAddColumn(String schemaName, String tblName, List<QueryField> cols, boolean ifTblExists,
+        boolean ifColNotExists) throws IgniteCheckedException;
 
     /**
      * Registers cache.

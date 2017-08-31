@@ -598,13 +598,13 @@ public class QueryUtils {
         throws IgniteCheckedException {
         List<GridQueryProperty> props = new ArrayList<>(cols.size());
 
-        for (QueryField fld : cols) {
+        for (QueryField col : cols) {
             try {
-                props.add(new QueryBinaryProperty(ctx, fld.name(), null, Class.forName(fld.typeName()),
+                props.add(new QueryBinaryProperty(ctx, col.name(), null, Class.forName(col.typeName()),
                     false, null));
             }
             catch (ClassNotFoundException e) {
-                throw new SchemaOperationException("Class not found for new property: " + fld.typeName());
+                throw new SchemaOperationException("Class not found for new property: " + col.typeName());
             }
         }
 

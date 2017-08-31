@@ -43,7 +43,8 @@ public class SchemaAlterTableAddColumnOperation extends SchemaAbstractAlterTable
 
     /**
      * Constructor.
-     *  @param opId Operation id.
+     *
+     * @param opId Operation id.
      * @param schemaName Schema name.
      * @param tblName Target table name.
      * @param cols Columns to add.
@@ -51,7 +52,7 @@ public class SchemaAlterTableAddColumnOperation extends SchemaAbstractAlterTable
      * @param ifNotExists Ignore operation if column exists.
      */
     public SchemaAlterTableAddColumnOperation(UUID opId, String cacheName, String schemaName, String tblName,
-                                              List<QueryField> cols, boolean ifTblExists, boolean ifNotExists) {
+        List<QueryField> cols, boolean ifTblExists, boolean ifNotExists) {
         super(opId, cacheName, schemaName);
 
         this.tblName = tblName;
