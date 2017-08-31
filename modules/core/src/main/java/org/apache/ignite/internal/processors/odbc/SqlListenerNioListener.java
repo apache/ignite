@@ -28,14 +28,17 @@ import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMessageParser;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequestHandler;
+import org.apache.ignite.internal.processors.odbc.odbc.OdbcConnectionContext;
 import org.apache.ignite.internal.processors.odbc.odbc.OdbcMessageParser;
 import org.apache.ignite.internal.processors.odbc.odbc.OdbcRequestHandler;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.nio.GridNioServerListenerAdapter;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.nio.GridNioSessionMetaKey;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -47,18 +50,6 @@ public class SqlListenerNioListener extends GridNioServerListenerAdapter<byte[]>
 
     /** The value corresponds to JDBC driver of the parser field of the handshake request. */
     public static final byte JDBC_CLIENT = 1;
-
-    /** Version 2.1.0. */
-    private static final SqlListenerProtocolVersion VER_2_1_0 = SqlListenerProtocolVersion.create(2, 1, 0);
-
-    /** Version 2.1.5: added "lazy" flag. */
-    private static final SqlListenerProtocolVersion VER_2_1_5 = SqlListenerProtocolVersion.create(2, 1, 5);
-
-    /** Current version. */
-    private static final SqlListenerProtocolVersion CURRENT_VER = VER_2_1_5;
-
-    /** Supported versions. */
-    private static final Set<SqlListenerProtocolVersion> SUPPORTED_VERS = new HashSet<>();
 
     /** Connection-related metadata key. */
     private static final int CONN_CTX_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
@@ -77,11 +68,6 @@ public class SqlListenerNioListener extends GridNioServerListenerAdapter<byte[]>
 
     /** Logger. */
     private final IgniteLogger log;
-
-    static {
-        SUPPORTED_VERS.add(CURRENT_VER);
-        SUPPORTED_VERS.add(VER_2_1_0);
-    }
 
     /**
      * Constructor.
@@ -152,8 +138,8 @@ public class SqlListenerNioListener extends GridNioServerListenerAdapter<byte[]>
             if (log.isDebugEnabled()) {
                 startTime = System.nanoTime();
 
-                log.debug("SQL client request received [reqId=" + req.requestId() + ", addr=" + ses.remoteAddress() +
-                    ", req=" + req + ']');
+                log.debug("SQL client request received [reqId=" + req.requestId() + ", addr=" +
+                    ses.remoteAddress() + ", req=" + req + ']');
             }
 
             SqlListenerResponse resp = handler.handle(req);
@@ -207,9 +193,10 @@ public class SqlListenerNioListener extends GridNioServerListenerAdapter<byte[]>
 
         SqlListenerConnectionContext connCtx = null;
 
-        if (SUPPORTED_VERS.contains(ver)) {
-            // Prepare context.
-            connCtx = prepareContext(ver, reader);
+        connCtx = prepareContext(ver, reader);
+
+        if (connCtx.isVersionSupported(ver)) {
+            connCtx.initFromHandshake(ver, reader);
 
             ses.addMeta(CONN_CTX_META_KEY, connCtx);
         }
@@ -222,14 +209,16 @@ public class SqlListenerNioListener extends GridNioServerListenerAdapter<byte[]>
         // Send response.
         BinaryWriterExImpl writer = new BinaryWriterExImpl(null, new BinaryHeapOutputStream(8), null, null);
 
-        if (connCtx != null)
+        if (errMsg == null)
             connCtx.handler().writeHandshake(writer);
         else {
+            SqlListenerProtocolVersion currentVer = connCtx.currentVersion();
+
             // Failed handshake response
             writer.writeBoolean(false);
-            writer.writeShort(CURRENT_VER.major());
-            writer.writeShort(CURRENT_VER.minor());
-            writer.writeShort(CURRENT_VER.maintenance());
+            writer.writeShort(currentVer.major());
+            writer.writeShort(currentVer.minor());
+            writer.writeShort(currentVer.maintenance());
             writer.doWriteString(errMsg);
         }
 
@@ -246,43 +235,15 @@ public class SqlListenerNioListener extends GridNioServerListenerAdapter<byte[]>
     private SqlListenerConnectionContext prepareContext(SqlListenerProtocolVersion ver, BinaryReaderExImpl reader) {
         byte clientType = reader.readByte();
 
-        if (clientType == ODBC_CLIENT) {
-            boolean distributedJoins = reader.readBoolean();
-            boolean enforceJoinOrder = reader.readBoolean();
-            boolean replicatedOnly = reader.readBoolean();
-            boolean collocated = reader.readBoolean();
-            boolean lazy = false;
+        switch (clientType) {
+            case ODBC_CLIENT:
+                return new OdbcConnectionContext(ctx, busyLock, maxCursors);
 
-            if (ver.compareTo(VER_2_1_5) >= 0)
-                lazy = reader.readBoolean();
+            case JDBC_CLIENT:
+                return new JdbcConnectionContext(ctx, busyLock, maxCursors);
 
-            SqlListenerRequestHandler handler = new OdbcRequestHandler(ctx, busyLock, maxCursors, distributedJoins,
-                enforceJoinOrder, replicatedOnly, collocated, lazy);
-
-            SqlListenerMessageParser parser = new OdbcMessageParser(ctx);
-
-            return new SqlListenerConnectionContext(handler, parser);
+            default:
+                throw new IgniteException("Unknown client type: " + clientType);
         }
-        else if (clientType == JDBC_CLIENT) {
-            boolean distributedJoins = reader.readBoolean();
-            boolean enforceJoinOrder = reader.readBoolean();
-            boolean collocated = reader.readBoolean();
-            boolean replicatedOnly = reader.readBoolean();
-            boolean autoCloseCursors = reader.readBoolean();
-
-            boolean lazyExec = false;
-
-            if (ver.compareTo(VER_2_1_5) >= 0)
-                lazyExec = reader.readBoolean();
-
-            SqlListenerRequestHandler handler = new JdbcRequestHandler(ctx, busyLock, maxCursors, distributedJoins,
-                enforceJoinOrder, collocated, replicatedOnly, autoCloseCursors, lazyExec);
-
-            SqlListenerMessageParser parser = new JdbcMessageParser(ctx);
-
-            return new SqlListenerConnectionContext(handler, parser);
-        }
-        else
-            throw new IgniteException("Unknown client type: " + clientType);
     }
 }
