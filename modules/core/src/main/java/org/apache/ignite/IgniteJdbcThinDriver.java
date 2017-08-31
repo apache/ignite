@@ -166,9 +166,9 @@ public class IgniteJdbcThinDriver implements Driver {
         if (!acceptsURL(url))
             return null;
 
-        parseUrl(url, props);
+        String schema = parseUrl(url, props);
 
-        return new JdbcThinConnection(url, props);
+        return new JdbcThinConnection(url, props, schema);
     }
 
     /** {@inheritDoc} */
@@ -218,9 +218,10 @@ public class IgniteJdbcThinDriver implements Driver {
      *
      * @param props Properties.
      * @param url URL.
+     * @return Scheme name. {@code null} in case the schema isn't specified in the url.
      * @throws SQLException On error.
      */
-    private void parseUrl(String url, Properties props) throws SQLException {
+    private String parseUrl(String url, Properties props) throws SQLException {
         if (F.isEmpty(url))
             throw new SQLException("URL cannot be null or empty.");
 
@@ -234,10 +235,9 @@ public class IgniteJdbcThinDriver implements Driver {
         if (nakedUrlParts.length > 2)
             throw new SQLException("Invalid URL format (only one ? character is allowed): " + url);
 
-        String endpoint = nakedUrlParts[0];
+        String[] pathParts = nakedUrlParts[0].split("/");
 
-        if (endpoint.endsWith("/"))
-            endpoint = endpoint.substring(0, endpoint.length() - 1);
+        String endpoint = pathParts[0];
 
         String[] endpointParts = endpoint.split(":");
 
@@ -251,6 +251,14 @@ public class IgniteJdbcThinDriver implements Driver {
 
         if (nakedUrlParts.length == 2)
             parseParameters(nakedUrlParts[1], props);
+
+        if (pathParts.length > 2) {
+            throw new SQLException("Invalid URL format (only schema name is allowed in URL path parameter " +
+                "'host:port[/schemaName]'): " + url);
+        }
+
+        // Gets schema from URL string & returns.
+        return pathParts.length == 2 ? pathParts[1] : null;
     }
 
     /**
