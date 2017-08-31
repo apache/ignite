@@ -338,8 +338,10 @@ public class GridAffinityAssignmentCache {
         float expectedCnt = (float)assignment.size() / dataNodesCnt;
         float expectedPercent = expectedCnt / partsCnt * 100;
 
-        float deltaPrimary = Math.abs((expectedCnt - localPrimaryCnt) / partsCnt);
-        float deltaBackup = Math.abs((expectedCnt * backups - localBackupCnt) / partsCnt);
+//        float deltaPrimary = Math.abs((expectedCnt - localPrimaryCnt) / partsCnt);
+        float deltaPrimary = Math.abs(1 - (float)localPrimaryCnt / expectedCnt);
+//        float deltaBackup = Math.abs((expectedCnt * backups - localBackupCnt) / partsCnt);
+        float deltaBackup = Math.abs(1 - (float)localBackupCnt / expectedCnt * backups);
 
         if (deltaPrimary > ignitePartDistribution || deltaBackup > ignitePartDistribution) {
             log.info(String.format("Local node affinity assignment distribution is not ideal " +

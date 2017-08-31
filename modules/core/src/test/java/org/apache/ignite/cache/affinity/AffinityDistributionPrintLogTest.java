@@ -129,7 +129,7 @@ public class AffinityDistributionPrintLogTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testDistributionCalculationIdeal() throws Exception {
-        String log = print(true, 0.5, 2);
+        String log = print(true, 0.7, 2);
 
         assertFalse(log.contains(CHECK_MESSAGE));
     }
