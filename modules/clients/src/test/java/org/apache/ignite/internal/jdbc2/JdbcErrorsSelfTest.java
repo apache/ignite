@@ -23,9 +23,12 @@ import java.sql.SQLException;
 import org.apache.ignite.jdbc.JdbcErrorsAbstractSelfTest;
 
 /**
- * Created by apaschenko on 29.08.17.
+ * Test SQLSTATE codes propagation with "JDBC2" driver.
  */
 public class JdbcErrorsSelfTest extends JdbcErrorsAbstractSelfTest {
+    /** Path to JDBC configuration for node that is to start. */
+    private static final String CFG_PATH = "modules/clients/src/test/config/jdbc-config.xml";
+
     /** {@inheritDoc} */
     @Override protected Connection getConnection() throws SQLException {
         return DriverManager.getConnection("jdbc:ignite:cfg://cache=test@" + CFG_PATH);

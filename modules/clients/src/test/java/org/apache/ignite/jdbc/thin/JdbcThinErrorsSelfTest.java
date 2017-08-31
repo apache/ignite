@@ -23,7 +23,7 @@ import java.sql.SQLException;
 import org.apache.ignite.jdbc.JdbcErrorsAbstractSelfTest;
 
 /**
- * Created by apaschenko on 29.08.17.
+ * Test SQLSTATE codes propagation with thin client driver.
  */
 public class JdbcThinErrorsSelfTest extends JdbcErrorsAbstractSelfTest {
     /** {@inheritDoc} */

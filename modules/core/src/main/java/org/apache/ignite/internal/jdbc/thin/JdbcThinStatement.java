@@ -33,6 +33,7 @@ import org.apache.ignite.internal.processors.odbc.SqlListenerResponse;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBatchExecuteResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQuery;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteResult;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 
 import static java.sql.ResultSet.CONCUR_READ_ONLY;
 import static java.sql.ResultSet.FETCH_FORWARD;
@@ -121,6 +122,9 @@ public class JdbcThinStatement implements Statement {
 
             rs = new JdbcThinResultSet(this, res.getQueryId(), pageSize, res.last(), res.items(),
                 res.isQuery(), conn.io().autoCloseServerCursor(), res.updateCount());
+        }
+        catch (IgniteSQLException e) {
+            throw e.toJdbcException();
         }
         catch (IOException e) {
             conn.close();

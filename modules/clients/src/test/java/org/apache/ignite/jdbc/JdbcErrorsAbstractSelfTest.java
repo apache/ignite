@@ -28,11 +28,9 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
- * Created by apaschenko on 29.08.17.
+ * Test SQLSTATE codes propagation with (any) Ignite JDBC driver.
  */
 public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest {
-    protected static final String CFG_PATH = "modules/clients/src/test/config/jdbc-config.xml";
-
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
@@ -49,22 +47,52 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
         super.afterTestsStopped();
     }
 
-    public void testTableErrors() {
-
+    /**
+     * Test that H2 specific error codes get propagated to Ignite SQL exceptions.
+     * @throws SQLException if failed.
+     */
+    public void testH2Errors() throws SQLException {
+        checkErrorState("gibberish", "42001");
     }
 
-    public void testIndexErrors() {
-
+    /**
+     * Test that error codes from tables related DDL operations get propagated to Ignite SQL exceptions.
+     * @throws SQLException if failed.
+     */
+    public void testTableErrors() throws SQLException {
+        checkErrorState("DROP TABLE \"PUBLIC\".missing", "42201");
     }
 
+    /**
+     * Test that error codes from indexes related DDL operations get propagated to Ignite SQL exceptions.
+     * @throws SQLException if failed.
+     */
+    public void testIndexErrors() throws SQLException {
+        checkErrorState("DROP INDEX \"PUBLIC\".missing", "42204");
+    }
+
+    /**
+     * Test that error codes from DML operations get propagated to Ignite SQL exceptions.
+     * @throws SQLException if failed.
+     */
     public void testDmlErrors() throws SQLException {
         checkErrorState("INSERT INTO \"test\".INTEGER(_key, _val) values(1, null)", "22004");
     }
 
+    /**
+     * @return Connection to execute statements on.
+     * @throws SQLException if failed.
+     */
     protected abstract Connection getConnection() throws SQLException;
 
+    /**
+     * Test that running given SQL statement yields expected SQLSTATE code.
+     * @param sql statement.
+     * @param expState expected SQLSTATE code.
+     * @throws SQLException if failed.
+     */
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
-    protected void checkErrorState(String sql, String expState) throws SQLException {
+    private void checkErrorState(String sql, String expState) throws SQLException {
         try (Connection conn = getConnection()) {
             try (final PreparedStatement stmt = conn.prepareStatement(sql)) {
                 SQLException ex = (SQLException)GridTestUtils.assertThrows(null, new IgniteCallable<Void>() {

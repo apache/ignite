@@ -102,13 +102,75 @@ public final class IgniteQueryErrorCode {
     }
 
     /**
-     * Create a {@link SQLException} for given code and message with null state.
+     * Create a {@link SQLException} for given code and message with detected state.
      *
      * @param msg Message.
      * @param code Ignite status code.
      * @return {@link SQLException} with given details.
      */
     public static SQLException createJdbcSqlException(String msg, int code) {
-        return new SQLException(msg, null, code);
+        return new SQLException(msg, codeToSqlState(code), code);
+    }
+
+    /**
+     * Map Ignite specific error code to standard SQL state.
+     * @param statusCode Ignite specific error code.
+     * @return SQL state string.
+     * @see <a href="http://en.wikibooks.org/wiki/Structured_Query_Language/SQLSTATE">Wikipedia: SQLSTATE spec.</a>
+     * @see IgniteQueryErrorCode
+     */
+    public static String codeToSqlState(int statusCode) {
+        switch (statusCode) {
+            case DUPLICATE_KEY:
+                return "23000"; // Generic value for "integrity constraint violation" 23 class.
+
+            case NULL_KEY:
+            case NULL_VALUE:
+                return "22004"; // "Null value not allowed".
+
+            case UNSUPPORTED_OPERATION:
+                return "0A000"; // Generic value for "feature not supported" 0A class.
+
+            case CONCURRENT_UPDATE:
+                return "40000"; // Generic value for "tx rollback" 40 class.
+
+            case PARSING:
+                return "42000"; // Generic value for "syntax error or access rule violation" 42 class.
+
+            // 42 - class for "syntax error or access rule violation" + error specific part.
+            // Note that Ignite specific codes start from 422 because H2 uses codes starting with 421.
+            case TABLE_NOT_FOUND:
+                return "42201";
+
+            case TABLE_ALREADY_EXISTS:
+                return "42202";
+
+            case INDEX_ALREADY_EXISTS:
+                return "42203";
+
+            case INDEX_NOT_FOUND:
+                return "42204";
+
+            case COLUMN_NOT_FOUND:
+                return "42205";
+
+            case COLUMN_ALREADY_EXISTS:
+                return "42206";
+
+            case STMT_TYPE_MISMATCH:
+                return "42207";
+
+            case UNEXPECTED_OPERATION:
+                return "42208";
+
+            case UNEXPECTED_ELEMENT_TYPE:
+                return "42209";
+
+            case KEY_UPDATE:
+                return "42210";
+
+            default:
+                return "50000";  // Generic value for custom "50" class.
+        }
     }
 }
