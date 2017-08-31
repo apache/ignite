@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.db.wal.reader;
 
 import java.io.File;
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -40,17 +41,26 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.events.WalSegmentArchivedEvent;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
+import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
+import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
+import org.apache.ignite.internal.pagemem.wal.record.LazyDataEntry;
+import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
+import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
+import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.transactions.Transaction;
 
 import static org.apache.ignite.events.EventType.EVT_WAL_SEGMENT_ARCHIVED;
 
@@ -71,7 +81,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
     private static final boolean deleteBefore = true;
 
     /** Delete DB dir after test. */
-    private static final boolean deleteAfter = true;
+    private static final boolean deleteAfter = false;
 
     /** Dump records to logger. Should be false for non local run */
     private static final boolean dumpRecords = false;
@@ -209,7 +219,6 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         assert cntUsingMockIter >= cntArchiveDir
             : "Mock based reader loaded " + cntUsingMockIter + " records but standalone has loaded only " + cntArchiveDir;
 
-
         final File[] workFiles = walWorkDirWithConsistentId.listFiles(FileWriteAheadLogManager.WAL_SEGMENT_FILE_FILTER);
         int cntWork = 0;
 
@@ -227,7 +236,6 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
             : "Work iterator loaded [" + cntWork + "] " +
             "Archive iterator loaded [" + cntArchiveFileByFile + "]; " +
             "mock iterator [" + cntUsingMockIter + "]";
-
     }
 
     /**
@@ -238,7 +246,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
     private int iterateAndCount(WALIterator walIter) throws IgniteCheckedException {
         int cntUsingMockIter = 0;
 
-        try(WALIterator it = walIter) {
+        try (WALIterator it = walIter) {
             while (it.hasNextX()) {
                 IgniteBiTuple<WALPointer, WALRecord> next = it.nextX();
                 if (dumpRecords)
@@ -298,6 +306,28 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Puts provided number of records to fill WAL under transactions
+     *
+     * @param ignite ignite instance
+     * @param recordsToWrite count
+     * @param txCnt transactions to run. If number is less then records count, txCnt records will be written
+     */
+    private void txPutDummyRecords(Ignite ignite, int recordsToWrite, int txCnt) {
+        IgniteCache<Object, Object> cache0 = ignite.cache(CACHE_NAME);
+        int keysPerTx = recordsToWrite / txCnt;
+        if (keysPerTx == 0)
+            keysPerTx = 1;
+        for (int t = 0; t < txCnt; t++) {
+            try (Transaction tx = ignite.transactions().txStart()) {
+                for (int i = t * keysPerTx; i < (t + 1) * keysPerTx; i++)
+                    cache0.put(i, new IndexedObject(i));
+
+                tx.commit();
+            }
+        }
+    }
+
+    /**
      * Tests time out based WAL segment archiving
      *
      * @throws Exception if failure occurs
@@ -337,6 +367,86 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         stopGrid("node0");
         assert recordedAfterSleep;
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    public void testTxFillWalAndExtractDataRecords() throws Exception {
+        final int cacheObjectsToWrite = 20;
+
+        if (fillWalBeforeTest) {
+            final Ignite ignite0 = startGrid("node0");
+
+            ignite0.active(true);
+
+            txPutDummyRecords(ignite0, cacheObjectsToWrite, 100);
+
+            stopGrid("node0");
+        }
+
+        final File db = U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false);
+        final File wal = new File(db, "wal");
+        final File walArchive = new File(wal, "archive");
+        final String consistentId = "127_0_0_1_47500";
+
+        final FileIOFactory fileIOFactory = getConfiguration("").getPersistentStoreConfiguration().getFileIOFactory();
+
+        final File walArchiveDirWithConsistentId = new File(walArchive, consistentId);
+        final File walWorkDirWithConsistentId = new File(wal, consistentId);
+
+        final IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory(log, fileIOFactory, PAGE_SIZE);
+        final WALIterator iter = factory.iteratorArchiveFiles(
+            walArchiveDirWithConsistentId.listFiles(FileWriteAheadLogManager.WAL_SEGMENT_FILE_FILTER));
+        final int cntArchiveFileByFile = iterateAndCountLogical(iter);
+
+        log.info("Total records loaded using archive directory (file-by-file): " + cntArchiveFileByFile);
+
+        assert cntArchiveFileByFile > cacheObjectsToWrite;
+
+        final File[] workFiles = walWorkDirWithConsistentId.listFiles(FileWriteAheadLogManager.WAL_SEGMENT_FILE_FILTER);
+
+        WALIterator tuples = factory.iteratorWorkFiles(workFiles);
+        int cntWork = iterateAndCountLogical(tuples);
+        log.info("Total records loaded from work: " + cntWork);
+
+    }
+
+    private int iterateAndCountLogical(WALIterator tuples) throws IgniteCheckedException {
+        int cntLogical = 0;
+        try (WALIterator stIt = tuples) {
+            while (stIt.hasNextX()) {
+                final IgniteBiTuple<WALPointer, WALRecord> next = stIt.nextX();
+                final WALRecord record = next.get2();
+                if (record instanceof DataRecord) {
+                    DataRecord dataRecord = (DataRecord)record;
+                    List<DataEntry> entries = dataRecord.writeEntries();
+                    for (DataEntry entry : entries) {
+                        log.info("Entry " + entry.op() + ": cache Id" + entry.cacheId());
+
+                        final GridKernalContext ctx = new StandaloneGridKernalContext(log);
+
+                        if(entry instanceof LazyDataEntry) {
+                            LazyDataEntry lazyDataEntry = (LazyDataEntry)entry;
+                            CacheObjectBinaryProcessorImpl processor = new CacheObjectBinaryProcessorImpl(ctx);
+
+                            CacheObject  val = processor.toCacheObject(null,
+                                lazyDataEntry.getValType(),
+                                lazyDataEntry.getValBytes());
+
+                            log.info("Entry value:" + val);
+                        }
+                    }
+                    cntLogical++;
+                }
+                else if (record instanceof TxRecord) {
+                    TxRecord txRecord = (TxRecord)record;
+
+                    log.info("Tx Record: " + txRecord);
+                }
+            }
+        }
+        return cntLogical;
     }
 
     /** Test object for placing into grid in this test */
