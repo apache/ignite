@@ -56,6 +56,8 @@ import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.MarshallerPlatformIds;
 import org.apache.ignite.internal.binary.builder.BinaryBuilderEnum;
 import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
 import org.apache.ignite.internal.binary.mutabletest.GridBinaryMarshalerAwareTestClass;
@@ -64,6 +66,7 @@ import org.apache.ignite.internal.binary.test.GridBinaryTestClass2;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.binary.IgniteBinaryImpl;
 import org.apache.ignite.internal.util.lang.GridMapEntry;
+import org.apache.ignite.marshaller.MarshallerContext;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
@@ -1577,6 +1580,25 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
 
         assertEquals(exp, ((BinaryObject)enumObj.field("testEnum")).deserialize());
         Assert.assertArrayEquals(expArr, (Object[])deserializeEnumBinaryArray(enumObj.field("testEnumArr")));
+    }
+
+    /**
+     * Test {@link BinaryObjectBuilder#build()} adds type mapping to the binary marshaller's cache.
+     */
+    public void testMarshallerMappings() throws IgniteCheckedException, ClassNotFoundException {
+        String typeName = "TestType";
+
+        int typeId = BinaryContext.defaultIdMapper().typeId(typeName);
+
+        BinaryObjectBuilder builder = newWrapper(typeName);
+
+        builder.build();
+
+        MarshallerContext marshCtx = grid(0).context().marshallerContext();
+
+        String actualTypeName = marshCtx.getClassName(MarshallerPlatformIds.JAVA_ID, typeId);
+
+        assertEquals(typeName, actualTypeName);
     }
 
     /**
