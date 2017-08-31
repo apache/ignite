@@ -45,6 +45,9 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     /** */
     private String name;
 
+    /** Schema name. */
+    private String schemaName;
+
     /** */
     private String tblName;
 
@@ -127,6 +130,11 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     /** {@inheritDoc} */
     @Override public String name() {
         return name;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String schemaName() {
+        return schemaName;
     }
 
     /**
@@ -377,6 +385,13 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
         }
 
         fields.put(name, prop.type());
+    }
+
+    /**
+     * @param schemaName Schema name.
+     */
+    public void schemaName(String schemaName) {
+        this.schemaName = schemaName;
     }
 
     /** {@inheritDoc} */

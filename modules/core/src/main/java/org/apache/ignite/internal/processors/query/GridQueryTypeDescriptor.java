@@ -33,6 +33,13 @@ public interface GridQueryTypeDescriptor {
     public String name();
 
     /**
+     * Gets schema name for type (database schema means here).
+     *
+     * @return Schema name.
+     */
+    public String schemaName();
+
+    /**
      * Gets table name for type.
      *
      * @return Table name.

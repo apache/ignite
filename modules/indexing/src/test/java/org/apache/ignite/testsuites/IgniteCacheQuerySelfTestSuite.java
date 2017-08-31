@@ -39,6 +39,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheQueryIndexDisabledSe
 import org.apache.ignite.internal.processors.cache.GridCacheQueryIndexingDisabledSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheQueryInternalKeysSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheQuerySerializationSelfTest;
+import org.apache.ignite.internal.processors.cache.GridCacheQuerySqlFieldInlineSizeSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteBinaryObjectFieldsQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteBinaryObjectLocalQueryArgumentsTest;
 import org.apache.ignite.internal.processors.cache.IgniteBinaryObjectQueryArgumentsTest;
@@ -47,6 +48,7 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheCollocatedQuerySel
 import org.apache.ignite.internal.processors.cache.IgniteCacheDeleteSqlQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheDuplicateEntityConfigurationSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheFieldsQueryNoDataSelfTest;
+import org.apache.ignite.internal.processors.cache.IgniteCacheFullTextQueryNodeJoiningSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheInsertSqlQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheJoinPartitionedAndReplicatedTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheJoinQueryWithAffinityKeyTest;
@@ -107,6 +109,7 @@ import org.apache.ignite.internal.processors.cache.index.H2DynamicIndexingComple
 import org.apache.ignite.internal.processors.cache.index.H2DynamicIndexingComplexServerTransactionalPartitionedTest;
 import org.apache.ignite.internal.processors.cache.index.H2DynamicIndexingComplexServerTransactionalReplicatedTest;
 import org.apache.ignite.internal.processors.cache.index.H2DynamicTableSelfTest;
+import org.apache.ignite.internal.processors.cache.index.LongIndexNameTest;
 import org.apache.ignite.internal.processors.cache.index.SchemaExchangeSelfTest;
 import org.apache.ignite.internal.processors.cache.local.IgniteCacheLocalAtomicQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.local.IgniteCacheLocalFieldsQuerySelfTest;
@@ -125,6 +128,7 @@ import org.apache.ignite.internal.processors.query.IgniteSqlSchemaIndexingTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlSegmentedIndexMultiNodeSelfTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlSegmentedIndexSelfTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlSplitterSelfTest;
+import org.apache.ignite.internal.processors.query.LazyQuerySelfTest;
 import org.apache.ignite.internal.processors.query.SqlSchemaSelfTest;
 import org.apache.ignite.internal.processors.query.h2.GridH2IndexingInMemSelfTest;
 import org.apache.ignite.internal.processors.query.h2.GridH2IndexingOffheapSelfTest;
@@ -182,6 +186,7 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
         suite.addTestSuite(IncorrectQueryEntityTest.class);
 
         // Queries tests.
+        suite.addTestSuite(LazyQuerySelfTest.class);
         suite.addTestSuite(IgniteSqlSplitterSelfTest.class);
         suite.addTestSuite(IgniteSqlSegmentedIndexSelfTest.class);
         suite.addTestSuite(IgniteSqlSegmentedIndexMultiNodeSelfTest.class);
@@ -274,6 +279,7 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
 
         // Full text queries.
         suite.addTestSuite(GridCacheFullTextQuerySelfTest.class);
+        suite.addTestSuite(IgniteCacheFullTextQueryNodeJoiningSelfTest.class);
 
         // Ignite cache and H2 comparison.
         suite.addTestSuite(BaseH2CompareQueryTest.class);
@@ -317,6 +323,9 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
         suite.addTestSuite(IgniteSqlKeyValueFieldsTest.class);
         suite.addTestSuite(IgniteSqlRoutingTest.class);
         suite.addTestSuite(IgniteSqlNotNullConstraintTest.class);
+        suite.addTestSuite(LongIndexNameTest.class);
+
+        suite.addTestSuite(GridCacheQuerySqlFieldInlineSizeSelfTest.class);
 
         return suite;
     }

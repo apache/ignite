@@ -66,7 +66,7 @@ namespace Apache.Ignite.Core.Impl.Compute.Closure
         {
             var writer0 = (BinaryWriter) writer.GetRawWriter();
 
-            writer0.WithDetach(w => w.WriteWithPeerDeployment(_action));
+            writer0.WriteWithPeerDeployment(_action);
         }
 
         /// <summary>

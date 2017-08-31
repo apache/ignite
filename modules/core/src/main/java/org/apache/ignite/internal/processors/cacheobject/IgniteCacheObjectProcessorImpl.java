@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cacheobject;
 
 import java.math.BigDecimal;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.UUID;
@@ -40,7 +39,6 @@ import org.apache.ignite.internal.processors.cache.IncompleteCacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.query.QueryUtils;
-import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
@@ -341,166 +339,4 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
         return false;
     }
 
-    /**
-     * Wraps key provided by user, must be serialized before stored in cache.
-     */
-    private static class UserKeyCacheObjectImpl extends KeyCacheObjectImpl {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /**
-         *
-         */
-        public UserKeyCacheObjectImpl() {
-            //No-op.
-        }
-
-        /**
-         * @param key Key.
-         * @param part Partition.
-         */
-        UserKeyCacheObjectImpl(Object key, int part) {
-            super(key, null, part);
-        }
-
-        /**
-         * @param key Key.
-         * @param valBytes Marshalled key.
-         * @param part Partition.
-         */
-        UserKeyCacheObjectImpl(Object key, byte[] valBytes, int part) {
-            super(key, valBytes, part);
-        }
-
-        /** {@inheritDoc} */
-        @Override public KeyCacheObject copy(int part) {
-            if (this.partition() == part)
-                return this;
-
-            return new UserKeyCacheObjectImpl(val, valBytes, part);
-        }
-
-        /** {@inheritDoc} */
-        @Override public CacheObject prepareForCache(CacheObjectContext ctx) {
-            try {
-                IgniteCacheObjectProcessor proc = ctx.kernalContext().cacheObjects();
-
-                if (!proc.immutable(val)) {
-                    if (valBytes == null)
-                        valBytes = proc.marshal(ctx, val);
-
-                    boolean p2pEnabled = ctx.kernalContext().config().isPeerClassLoadingEnabled();
-
-                    ClassLoader ldr = p2pEnabled ?
-                        IgniteUtils.detectClassLoader(IgniteUtils.detectClass(this.val)) : U.gridClassLoader();
-
-                    Object val = proc.unmarshal(ctx, valBytes, ldr);
-
-                    KeyCacheObject key = new KeyCacheObjectImpl(val, valBytes, partition());
-
-                    key.partition(partition());
-
-                    return key;
-                }
-
-                KeyCacheObject key = new KeyCacheObjectImpl(val, valBytes, partition());
-
-                key.partition(partition());
-
-                return key;
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException("Failed to marshal object: " + val, e);
-            }
-        }
-    }
-
-    /**
-     * Wraps value provided by user, must be serialized before stored in cache.
-     */
-    private static class UserCacheObjectImpl extends CacheObjectImpl {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /**
-         *
-         */
-        public UserCacheObjectImpl() {
-            //No-op.
-        }
-
-        /**
-         * @param val Value.
-         * @param valBytes Value bytes.
-         */
-        public UserCacheObjectImpl(Object val, byte[] valBytes) {
-            super(val, valBytes);
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public <T> T value(CacheObjectValueContext ctx, boolean cpy) {
-            return super.value(ctx, false); // Do not need copy since user value is not in cache.
-        }
-
-        /** {@inheritDoc} */
-        @Override public CacheObject prepareForCache(CacheObjectContext ctx) {
-            try {
-                IgniteCacheObjectProcessor proc = ctx.kernalContext().cacheObjects();
-
-                if (valBytes == null)
-                    valBytes = proc.marshal(ctx, val);
-
-                if (ctx.storeValue()) {
-                    boolean p2pEnabled = ctx.kernalContext().config().isPeerClassLoadingEnabled();
-
-                    ClassLoader ldr = p2pEnabled ?
-                        IgniteUtils.detectClass(this.val).getClassLoader() : val.getClass().getClassLoader();
-
-                    Object val = this.val != null && proc.immutable(this.val) ? this.val :
-                        proc.unmarshal(ctx, valBytes, ldr);
-
-                    return new CacheObjectImpl(val, valBytes);
-                }
-
-                return new CacheObjectImpl(null, valBytes);
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException("Failed to marshal object: " + val, e);
-            }
-        }
-    }
-
-    /**
-     * Wraps value provided by user, must be copied before stored in cache.
-     */
-    private static class UserCacheObjectByteArrayImpl extends CacheObjectByteArrayImpl {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /**
-         *
-         */
-        public UserCacheObjectByteArrayImpl() {
-            // No-op.
-        }
-
-        /**
-         * @param val Value.
-         */
-        public UserCacheObjectByteArrayImpl(byte[] val) {
-            super(val);
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public <T> T value(CacheObjectValueContext ctx, boolean cpy) {
-            return super.value(ctx, false); // Do not need copy since user value is not in cache.
-        }
-
-        /** {@inheritDoc} */
-        @Override public CacheObject prepareForCache(CacheObjectContext ctx) {
-            byte[] valCpy = Arrays.copyOf(val, val.length);
-
-            return new CacheObjectByteArrayImpl(valCpy);
-        }
-    }
 }

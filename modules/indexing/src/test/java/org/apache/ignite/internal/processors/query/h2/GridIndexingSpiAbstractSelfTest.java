@@ -104,13 +104,13 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
     }
 
     /** */
-    private static TypeDesc typeAA = new TypeDesc("A", "A", Collections.<String, Class<?>>emptyMap(), null);
+    private static TypeDesc typeAA = new TypeDesc("A", "A", "A", Collections.<String, Class<?>>emptyMap(), null);
 
     /** */
-    private static TypeDesc typeAB = new TypeDesc("A", "B", Collections.<String, Class<?>>emptyMap(), textIdx);
+    private static TypeDesc typeAB = new TypeDesc("A", "A", "B", Collections.<String, Class<?>>emptyMap(), textIdx);
 
     /** */
-    private static TypeDesc typeBA = new TypeDesc("B", "A", Collections.<String, Class<?>>emptyMap(), null);
+    private static TypeDesc typeBA = new TypeDesc("B", "B", "A", Collections.<String, Class<?>>emptyMap(), null);
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -467,6 +467,9 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         private final String cacheName;
 
         /** */
+        private final String schemaName;
+
+        /** */
         private final Map<String, Class<?>> valFields;
 
         /** */
@@ -474,13 +477,15 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
 
         /**
          * @param cacheName Cache name.
+         * @param schemaName Schema name.
          * @param name Type name.
          * @param valFields Fields.
          * @param textIdx Fulltext index.
          */
-        private TypeDesc(String cacheName, String name, Map<String, Class<?>> valFields, GridQueryIndexDescriptor textIdx) {
+        private TypeDesc(String cacheName, String schemaName, String name, Map<String, Class<?>> valFields, GridQueryIndexDescriptor textIdx) {
             this.name = name;
             this.cacheName = cacheName;
+            this.schemaName = schemaName;
             this.valFields = Collections.unmodifiableMap(valFields);
             this.textIdx = textIdx;
         }
@@ -493,6 +498,11 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         /** {@inheritDoc} */
         @Override public String name() {
             return name;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String schemaName() {
+            return schemaName;
         }
 
         /** {@inheritDoc} */
