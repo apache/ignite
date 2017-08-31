@@ -707,7 +707,8 @@ public class QueryUtils {
      * @throws IgniteCheckedException If failed.
      */
     public static QueryClassProperty buildClassProperty(Class<?> keyCls, Class<?> valCls, String pathStr,
-        Class<?> resType, Map<String,String> aliases, boolean notNull, CacheObjectContext coCtx) throws IgniteCheckedException {
+        Class<?> resType, Map<String,String> aliases, boolean notNull, CacheObjectContext coCtx)
+        throws IgniteCheckedException {
         QueryClassProperty res = buildClassProperty(
             true,
             keyCls,
