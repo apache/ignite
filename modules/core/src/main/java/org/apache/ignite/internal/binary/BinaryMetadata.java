@@ -186,6 +186,9 @@ public class BinaryMetadata implements Externalizable {
      * @return {@code true} if <b>BinaryMetadata</b> instance has schema with ID specified, {@code false} otherwise.
      */
     public boolean hasSchema(int schemaId) {
+        if (schemaIds == null)
+            return false;
+        
         return schemaIds.contains(schemaId);
     }
 
