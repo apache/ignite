@@ -35,7 +35,7 @@ import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
- * Multinode update test.
+ * Put-get tests for nodes with distinct binary string encodings.
  */
 @SuppressWarnings("unchecked")
 public class GridCacheMixedBinaryStringEncodingsTest extends GridCommonAbstractTest {
@@ -118,15 +118,17 @@ public class GridCacheMixedBinaryStringEncodingsTest extends GridCommonAbstractT
 
             startGrid(nodeName1);
 
+            IgniteCache cache = node.cache(DEFAULT_CACHE_NAME);
+
             for (int i = 0; i < data.length; i++)
-                node.cache(DEFAULT_CACHE_NAME).put(i, data[i]);
+                cache.put(i, data[i]);
 
             stopGrid(nodeName0);
 
-            IgniteCache cache = startGrid(nodeName0).getOrCreateCache(DEFAULT_CACHE_NAME);
+            IgniteCache cacheAgain = startGrid(nodeName0).getOrCreateCache(DEFAULT_CACHE_NAME);
 
             for (int i = 0; i < data.length; i++)
-                assertEquals(shouldMatch, data[i].equals(cache.get(i)));
+                assertEquals(shouldMatch, data[i].equals(cacheAgain.get(i)));
         }
         finally {
             stopAllGrids();
