@@ -81,7 +81,7 @@ public class MemoryConfiguration implements Serializable {
     private static final long DFLT_SYS_CACHE_MAX_SIZE = 100 * 1024 * 1024;
 
     /** Default memory page size. */
-    public static final int DFLT_PAGE_SIZE = 2 * 1024;
+    public static final int DFLT_PAGE_SIZE = 4 * 1024;
 
     /** This name is assigned to default MemoryPolicy if no user-defined default MemPlc is specified */
     public static final String DFLT_MEM_PLC_DEFAULT_NAME = "default";
@@ -93,7 +93,7 @@ public class MemoryConfiguration implements Serializable {
     private long sysCacheMaxSize = DFLT_SYS_CACHE_MAX_SIZE;
 
     /** Memory page size. */
-    private int pageSize = DFLT_PAGE_SIZE;
+    private int pageSize;
 
     /** Concurrency level. */
     private int concLvl;
