@@ -1004,7 +1004,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
         try {
             int cnt = 2000;
 
-            IgniteEx ignite0 = (IgniteEx)startGrid(1);
+            IgniteEx ignite0 = (IgniteEx)startGrid(0);
 
             ignite0.active(true);
 
@@ -1023,9 +1023,9 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
                 assert row.value().length == 3;
             }
 
-            stopGrid(1);
+            stopGrid(0);
 
-            ignite0 = (IgniteEx)startGrid(1);
+            ignite0 = (IgniteEx)startGrid(0);
 
             ignite0.active(true);
 

@@ -26,6 +26,8 @@ import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageInitRecord;
 import org.apache.ignite.internal.processors.cache.IncompleteObject;
+import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListener;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.MemoryMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.MemoryPolicy;
@@ -49,7 +51,7 @@ import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
 /**
  *
  */
-public class MetaStorage {
+public class MetaStorage implements DbCheckpointListener {
     /** */
     public static final int METASTORAGE_CACHE_ID = CU.cacheId("MetaStorage");
 
@@ -69,6 +71,8 @@ public class MetaStorage {
     private RootPage treeRoot;
     /** */
     private RootPage reuseListRoot;
+    /** */
+    private FreeListImpl freeList;
 
     /** */
     public MetaStorage(IgniteWriteAheadLogManager wal, MemoryPolicy memPlc, MemoryMetricsImpl memMetrics,
@@ -88,7 +92,7 @@ public class MetaStorage {
     public void start(IgniteCacheDatabaseSharedManager db) throws IgniteCheckedException {
         getOrAllocateMetas();
 
-        FreeListImpl freeList = new FreeListImpl(METASTORAGE_CACHE_ID, "metastorage",
+        freeList = new FreeListImpl(METASTORAGE_CACHE_ID, "metastorage",
             memMetrics, memPlc, null, wal, reuseListRoot.pageId().pageId(),
             reuseListRoot.isAllocated());
 
@@ -96,6 +100,8 @@ public class MetaStorage {
 
         tree = new MetastorageTree(METASTORAGE_CACHE_ID, memPlc.pageMemory(), wal, rmvId,
             freeList, rowStore, treeRoot.pageId().pageId(), treeRoot.isAllocated());
+
+        ((GridCacheDatabaseSharedManager)db).addCheckpointListener(this);
     }
 
     /** */
@@ -136,8 +142,7 @@ public class MetaStorage {
             }
     }
 
-    /**
-     */
+    /** */
     private void getOrAllocateMetas() throws IgniteCheckedException {
         PageMemoryEx pageMem = (PageMemoryEx)memPlc.pageMemory();
 
@@ -154,6 +159,7 @@ public class MetaStorage {
 
                 // Initialize new page.
                 int type = PageIO.getType(pageAddr);
+
                 if (PageIO.getType(pageAddr) != PageIO.T_PART_META) {
                     if (readOnly)
                         throw new IgniteCheckedException("metastorage is not initialized");
@@ -171,7 +177,7 @@ public class MetaStorage {
                     io.setTreeRoot(pageAddr, treeRoot);
                     io.setReuseListRoot(pageAddr, reuseListRoot);
 
-                    if (PageHandler.isWalDeltaRecordNeeded(pageMem, METASTORAGE_CACHE_ID, partMetaId, partMetaPage, wal, Boolean.FALSE))
+                    if (PageHandler.isWalDeltaRecordNeeded(pageMem, METASTORAGE_CACHE_ID, partMetaId, partMetaPage, wal, null))
                         wal.log(new MetaPageInitRecord(
                             METASTORAGE_CACHE_ID,
                             partMetaId,
@@ -207,10 +213,42 @@ public class MetaStorage {
         }
     }
 
+    /**
+     * @return Page memory.
+     */
+    public PageMemory pageMemory() {
+        return memPlc.pageMemory();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onCheckpointBegin(Context ctx) throws IgniteCheckedException {
+
+        freeList.saveMetadata();
+
+        MetastorageRowStore rowStore = tree.rowStore();
+
+        saveStoreMetadata(rowStore, ctx);
+    }
+
+    /**
+     * @param rowStore Store to save metadata.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void saveStoreMetadata(MetastorageRowStore rowStore, Context ctx) throws IgniteCheckedException {
+
+        boolean needSnapshot = ctx != null && ctx.nextSnapshot();
+
+        boolean wasSaveToMeta = false;
+
+        FreeListImpl freeList = (FreeListImpl)rowStore.freeList();
+
+        freeList.saveMetadata();
+    }
+
     /** */
     public static class FreeListImpl extends AbstractFreeList<MetastorageDataRow> {
         /** {@inheritDoc} */
-        public FreeListImpl(int cacheId, String name, MemoryMetricsImpl memMetrics, MemoryPolicy memPlc,
+        FreeListImpl(int cacheId, String name, MemoryMetricsImpl memMetrics, MemoryPolicy memPlc,
             ReuseList reuseList,
             IgniteWriteAheadLogManager wal, long metaPageId, boolean initNew) throws IgniteCheckedException {
             super(cacheId, name, memMetrics, memPlc, reuseList, wal, metaPageId, initNew);
