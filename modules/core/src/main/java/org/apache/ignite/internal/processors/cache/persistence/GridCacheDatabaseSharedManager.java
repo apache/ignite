@@ -478,6 +478,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /**
      * Try to register Metrics MBean.
+     *
      * @throws IgniteCheckedException If failed.
      */
     private void registrateMetricsMBean() throws IgniteCheckedException {
@@ -535,15 +536,16 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 }
 
                 if (totalSize == 0)
-                    return (float) 0;
+                    return (float)0;
 
-                return (float) loadSize / totalSize;
+                return (float)loadSize / totalSize;
             }
         };
     }
 
     /** {@inheritDoc} */
-    @Override public void readCheckpointAndRestoreMemory(List<DynamicCacheDescriptor> cachesToStart) throws IgniteCheckedException {
+    @Override public void readCheckpointAndRestoreMemory(
+        List<DynamicCacheDescriptor> cachesToStart) throws IgniteCheckedException {
         checkpointReadLock();
 
         try {
@@ -688,7 +690,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     @Override protected void checkPolicyEvictionProperties(MemoryPolicyConfiguration plcCfg, MemoryConfiguration dbCfg)
         throws IgniteCheckedException {
         if (plcCfg.getPageEvictionMode() != DataPageEvictionMode.DISABLED)
-            throw new IgniteCheckedException("Page eviction is not compatible with persistence: " + plcCfg.getName());
+            U.warn(log, "Page eviction mode for [" + plcCfg.getName() + "] memory region is ignored " +
+                "because Ignite Native Persistence is enabled");
     }
 
     /**
@@ -858,7 +861,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /**
-     * Gets the checkpoint read lock. While this lock is held, checkpoint thread will not acquiSnapshotWorkerre memory state.
+     * Gets the checkpoint read lock. While this lock is held, checkpoint thread will not acquiSnapshotWorkerre memory
+     * state.
      */
     @SuppressWarnings("LockAcquiredButNotSafelyReleased")
     @Override public void checkpointReadLock() {
@@ -909,7 +913,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             return true;
 
         for (MemoryPolicy memPlc : memPlcs) {
-            PageMemoryEx pageMemEx = (PageMemoryEx) memPlc.pageMemory();
+            PageMemoryEx pageMemEx = (PageMemoryEx)memPlc.pageMemory();
 
             if (!pageMemEx.safeToUpdate())
                 return false;
@@ -1302,6 +1306,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /**
      * Loads WAL pointer from CP file
+     *
      * @param cpMarkerFile Checkpoint mark file.
      * @return WAL pointer.
      * @throws IgniteCheckedException If failed to read mark file.
@@ -1333,8 +1338,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         boolean apply = status.needRestoreMemory();
 
         if (apply) {
-            U.quietAndWarn(log, "Ignite node crashed in the middle of checkpoint. Will restore memory state and " +
-                "enforce checkpoint on node start.");
+            U.quietAndWarn(log, "Ignite node stopped in the middle of checkpoint. Will restore memory state and " +
+                "finish checkpoint on node start.");
 
             cctx.pageStore().beginRecover();
         }
@@ -1706,7 +1711,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         List<IgniteBiTuple<PageMemory, Collection<FullPageId>>> cpEntities = new ArrayList<>(memPolicies.size());
 
         for (MemoryPolicy memPlc : memPolicies) {
-            PageMemoryEx pageMem = (PageMemoryEx) memPlc.pageMemory();
+            PageMemoryEx pageMem = (PageMemoryEx)memPlc.pageMemory();
             cpEntities.add(new IgniteBiTuple<PageMemory, Collection<FullPageId>>(pageMem,
                 (pageMem).beginCheckpoint()));
         }
@@ -1719,7 +1724,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         int cpPagesCnt = 0;
 
         for (IgniteBiTuple<PageMemory, Collection<FullPageId>> e : cpEntities) {
-            PageMemoryEx pageMem = (PageMemoryEx) e.get1();
+            PageMemoryEx pageMem = (PageMemoryEx)e.get1();
 
             Collection<FullPageId> cpPages = e.get2();
 
@@ -2251,7 +2256,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 if (printCheckpointStats) {
                     if (log.isInfoEnabled())
                         LT.info(log, String.format("Skipping checkpoint (no pages were modified) [" +
-                            "checkpointLockWait=%dms, checkpointLockHoldTime=%dms, reason='%s']",
+                                "checkpointLockWait=%dms, checkpointLockHoldTime=%dms, reason='%s']",
                             tracker.lockWaitDuration(),
                             tracker.lockHoldDuration(),
                             curr.reason));
@@ -2290,7 +2295,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             int pagesNum = 0;
 
             for (MemoryPolicy memPlc : memoryPolicies()) {
-                GridMultiCollectionWrapper<FullPageId> nextCpPagesCol = ((PageMemoryEx) memPlc.pageMemory()).beginCheckpoint();
+                GridMultiCollectionWrapper<FullPageId> nextCpPagesCol = ((PageMemoryEx)memPlc.pageMemory()).beginCheckpoint();
 
                 pagesNum += nextCpPagesCol.size();
 
@@ -2403,7 +2408,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         /** */
         private CheckpointMetricsTracker tracker;
 
-        /** Collection of page IDs to write under this task. Overall pages to write may be greater than this collection*/
+        /** Collection of page IDs to write under this task. Overall pages to write may be greater than this collection */
         private Collection<FullPageId> writePageIds;
 
         /** */
@@ -2415,11 +2420,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         /** Counter for all written pages. May be shared between several workers */
         private AtomicInteger writtenPagesCntr;
 
-        /** Total pages to write, counter may be greater than {@link #writePageIds} size*/
+        /** Total pages to write, counter may be greater than {@link #writePageIds} size */
         private final int totalPagesToWrite;
 
         /**
          * Creates task for write pages
+         *
          * @param tracker
          * @param writePageIds Collection of page IDs to write.
          * @param updStores
@@ -2810,7 +2816,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
 
         /**
-         *
          * @param cacheId Cache ID.
          * @param partId Partition ID.
          * @return Reserved counter or null if couldn't reserve.
