@@ -383,6 +383,9 @@ public class InlineIndexHelper {
         if (type == Value.NULL)
             return Integer.MIN_VALUE;
 
+        if (v == ValueNull.INSTANCE)
+            return fixSort(1, sortType());
+
         if (this.type != type)
             throw new UnsupportedOperationException("Invalid fast index type: " + type);
 
