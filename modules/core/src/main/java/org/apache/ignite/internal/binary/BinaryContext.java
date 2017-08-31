@@ -611,19 +611,10 @@ public class BinaryContext {
     /**
      * @param cls Class.
      * @param deserialize Deserialize.
-     */
-    public BinaryClassDescriptor descriptorForClass(Class<?> cls, boolean deserialize) {
-        return descriptorForClass(cls, deserialize, true);
-    }
-
-    /**
-     * @param cls Class.
-     * @param deserialize Deserialize.
-     * @param useCache If true a classes cache will be used, false at otherwise.
      * @return Class descriptor.
      * @throws BinaryObjectException In case of error.
      */
-    public BinaryClassDescriptor descriptorForClass(Class<?> cls, boolean deserialize, boolean useCache)
+    public BinaryClassDescriptor descriptorForClass(Class<?> cls, boolean deserialize)
         throws BinaryObjectException {
         assert cls != null;
 
@@ -631,9 +622,6 @@ public class BinaryContext {
 
         if (desc != null && desc.registered())
             return desc;
-        else
-            if (!useCache)
-                return createNoneCacheClassDescriptor(cls);
 
         if (desc == null)
             desc = registerClassDescriptor(cls, deserialize);
@@ -680,15 +668,13 @@ public class BinaryContext {
      * @param typeId Type ID.
      * @param ldr Class loader.
      * @param deserialize Deserialize.
-     * @param useCache If true a classes cache will be used, false at otherwise.
      * @return Class descriptor.
      */
     public BinaryClassDescriptor descriptorForTypeId(
         boolean userType,
         int typeId,
         ClassLoader ldr,
-        boolean deserialize,
-        boolean useCache
+        boolean deserialize
     ) {
         assert typeId != GridBinaryMarshaller.UNREGISTERED_TYPE_ID;
 
@@ -704,7 +690,7 @@ public class BinaryContext {
         Class cls;
 
         try {
-            if (useCache) {
+            if (BinaryUtils.isClassCacheWillUsed(this, ldr)) {
                 cls = marshCtx.getClass(typeId, ldr);
 
                 desc = descByCls.get(cls);
@@ -726,14 +712,14 @@ public class BinaryContext {
         }
         catch (ClassNotFoundException e) {
             // Class might have been loaded by default class loader.
-            if (userType && !ldr.equals(sysLdr) && (desc = descriptorForTypeId(true, typeId, sysLdr, deserialize, true)) != null)
+            if (userType && !ldr.equals(sysLdr) && (desc = descriptorForTypeId(true, typeId, sysLdr, deserialize)) != null)
                 return desc;
 
             throw new BinaryInvalidTypeException(e);
         }
         catch (IgniteCheckedException e) {
             // Class might have been loaded by default class loader.
-            if (userType && !ldr.equals(sysLdr) && (desc = descriptorForTypeId(true, typeId, sysLdr, deserialize, true)) != null)
+            if (userType && !ldr.equals(sysLdr) && (desc = descriptorForTypeId(true, typeId, sysLdr, deserialize)) != null)
                 return desc;
 
             throw new BinaryObjectException("Failed resolve class for ID: " + typeId, e);
@@ -811,10 +797,12 @@ public class BinaryContext {
                 true /* registered */
             );
 
-            BinaryClassDescriptor old = descByCls.putIfAbsent(cls, desc);
+            if (BinaryUtils.isClassCacheWillUsed(this, cls.getClassLoader())) {
+                BinaryClassDescriptor old = descByCls.putIfAbsent(cls, desc);
 
-            if (old != null)
-                desc = old;
+                if (old != null)
+                    desc = old;
+            }
         }
         else
             desc = registerUserClassDescriptor(cls, deserialize);

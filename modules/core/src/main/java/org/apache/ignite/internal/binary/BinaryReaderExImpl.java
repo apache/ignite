@@ -150,9 +150,6 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
     /** Whether stream is in raw mode. */
     private boolean raw;
 
-    /** The flag shown, the reader uses class loader cache used or not. */
-    private boolean useCache;
-
     /**
      * Constructor.
      *
@@ -186,7 +183,6 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
         this(ctx,
             in,
             ldr,
-            true,
             hnds,
             false,
             forUnmarshal);
@@ -198,7 +194,6 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
      * @param ctx Context.
      * @param in Input stream.
      * @param ldr Class loader.
-     * @param useCache If true class loader and result should be cached internally, false otherwise.
      * @param hnds Context.
      * @param skipHdrCheck Whether to skip header check.
      * @param forUnmarshal {@code True} if reader is need to unmarshal object.
@@ -206,7 +201,6 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
     public BinaryReaderExImpl(BinaryContext ctx,
         BinaryInputStream in,
         ClassLoader ldr,
-        boolean useCache,
         @Nullable BinaryReaderHandles hnds,
         boolean skipHdrCheck,
         boolean forUnmarshal) {
@@ -215,7 +209,6 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
         this.in = in;
         this.ldr = ldr;
         this.hnds = hnds;
-        this.useCache = useCache;
 
         start = in.position();
 
@@ -270,7 +263,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
                 if (forUnmarshal) {
                     // Registers class by type ID, at least locally if the cache is not ready yet.
-                    desc = ctx.descriptorForClass(BinaryUtils.doReadClass(in, ctx, ldr, typeId0, useCache), false, useCache);
+                    desc = ctx.descriptorForClass(BinaryUtils.doReadClass(in, ctx, ldr, typeId0), false);
 
                     typeId = desc.typeId();
                 }
@@ -319,7 +312,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
      */
     BinaryClassDescriptor descriptor() {
         if (desc == null)
-            desc = ctx.descriptorForTypeId(userType, typeId, ldr, true, useCache);
+            desc = ctx.descriptorForTypeId(userType, typeId, ldr, true);
 
         return desc;
     }
@@ -332,7 +325,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
     public Object unmarshal(int offset) throws BinaryObjectException {
         streamPosition(offset);
 
-        return in.position() >= 0 ? BinaryUtils.unmarshal(in, ctx, ldr, useCache, this) : null;
+        return in.position() >= 0 ? BinaryUtils.unmarshal(in, ctx, ldr, this) : null;
     }
 
     /**
@@ -342,7 +335,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
      */
     @Nullable Object unmarshalField(String fieldName) throws BinaryObjectException {
         try {
-            return findFieldByName(fieldName) ? BinaryUtils.unmarshal(in, ctx, ldr, useCache, this) : null;
+            return findFieldByName(fieldName) ? BinaryUtils.unmarshal(in, ctx, ldr, this) : null;
         }
         catch (Exception ex) {
             throw wrapFieldException(fieldName, ex);
@@ -355,7 +348,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
      * @throws BinaryObjectException In case of error.
      */
     @Nullable Object unmarshalField(int fieldId) throws BinaryObjectException {
-        return findFieldById(fieldId) ? BinaryUtils.unmarshal(in, ctx, ldr, useCache, this) : null;
+        return findFieldById(fieldId) ? BinaryUtils.unmarshal(in, ctx, ldr, this) : null;
     }
 
     /**
@@ -384,7 +377,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
             if (checkFlag(CLASS) == Flag.NULL)
                 return null;
 
-            return BinaryUtils.doReadClass(in, ctx, ldr, useCache);
+            return BinaryUtils.doReadClass(in, ctx, ldr);
         }
 
         return null;
@@ -431,7 +424,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
             streamPosition(handlePos);
 
-            obj = BinaryUtils.doReadObject(in, ctx, ldr, useCache, this);
+            obj = BinaryUtils.doReadObject(in, ctx, ldr, this);
 
             streamPosition(retPos);
         }
@@ -1315,7 +1308,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
     @SuppressWarnings("unchecked")
     @Nullable @Override public <T> T readObject(String fieldName) throws BinaryObjectException {
         try {
-            return findFieldByName(fieldName) ? (T)BinaryUtils.doReadObject(in, ctx, ldr, useCache, this) : null;
+            return findFieldByName(fieldName) ? (T)BinaryUtils.doReadObject(in, ctx, ldr, this) : null;
         }
         catch (Exception ex) {
             throw wrapFieldException(fieldName, ex);
@@ -1328,17 +1321,17 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
      * @throws BinaryObjectException In case of error.
      */
     @Nullable Object readObject(int fieldId) throws BinaryObjectException {
-        return findFieldById(fieldId) ? BinaryUtils.doReadObject(in, ctx, ldr, useCache, this) : null;
+        return findFieldById(fieldId) ? BinaryUtils.doReadObject(in, ctx, ldr, this) : null;
     }
 
     /** {@inheritDoc} */
     @Override public Object readObject() throws BinaryObjectException {
-        return BinaryUtils.doReadObject(in, ctx, ldr, useCache, this);
+        return BinaryUtils.doReadObject(in, ctx, ldr, this);
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public Object readObjectDetached() throws BinaryObjectException {
-        return BinaryUtils.unmarshal(in, ctx, ldr, useCache, this, true);
+        return BinaryUtils.unmarshal(in, ctx, ldr, this, true);
     }
 
     /** {@inheritDoc} */
@@ -1364,7 +1357,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
     @Nullable @Override public Object[] readObjectArray() throws BinaryObjectException {
         switch (checkFlag(OBJ_ARR)) {
             case NORMAL:
-                return BinaryUtils.doReadObjectArray(in, ctx, ldr, useCache, this, true);
+                return BinaryUtils.doReadObjectArray(in, ctx, ldr, this, true);
 
             case HANDLE:
                 return readHandleField();
@@ -1409,12 +1402,12 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
     private Enum<?> readEnum0(@Nullable Class<?> cls) throws BinaryObjectException {
         if (checkFlagNoHandles(ENUM) == Flag.NORMAL) {
             // Read class even if we know it in advance to set correct stream position.
-            Class<?> cls0 = BinaryUtils.doReadClass(in, ctx, ldr, useCache);
+            Class<?> cls0 = BinaryUtils.doReadClass(in, ctx, ldr);
 
             if (cls == null)
                 cls = cls0;
 
-            return BinaryUtils.doReadEnum(in, cls, useCache);
+            return BinaryUtils.doReadEnum(in, cls, BinaryUtils.isClassCacheWillUsed(ctx, ldr));
         }
         else
             return null;
@@ -1467,12 +1460,12 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
         switch (checkFlag(ENUM_ARR)) {
             case NORMAL:
                 // Read class even if we know it in advance to set correct stream position.
-                Class<?> cls0 = BinaryUtils.doReadClass(in, ctx, ldr, useCache);
+                Class<?> cls0 = BinaryUtils.doReadClass(in, ctx, ldr);
 
                 if (cls == null)
                     cls = cls0;
 
-                return BinaryUtils.doReadEnumArray(in, ctx, ldr, useCache, cls);
+                return BinaryUtils.doReadEnumArray(in, ctx, ldr, cls);
 
             case HANDLE:
                 return readHandleField();
@@ -1537,7 +1530,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
         throws BinaryObjectException {
         switch (checkFlag(COL)) {
             case NORMAL:
-                return (Collection)BinaryUtils.doReadCollection(in, ctx, ldr, useCache, this, true, factory);
+                return (Collection)BinaryUtils.doReadCollection(in, ctx, ldr, this, true, factory);
 
             case HANDLE: {
                 int handlePos = BinaryUtils.positionForHandle(in) - in.readInt();
@@ -1615,7 +1608,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
     private Map readMap0(@Nullable BinaryMapFactory factory) throws BinaryObjectException {
         switch (checkFlag(MAP)) {
             case NORMAL:
-                return (Map)BinaryUtils.doReadMap(in, ctx, ldr, useCache, this, true, factory);
+                return (Map)BinaryUtils.doReadMap(in, ctx, ldr, this, true, factory);
 
             case HANDLE: {
                 int handlePos = BinaryUtils.positionForHandle(in) - in.readInt();
@@ -1750,7 +1743,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
                     streamPosition(handlePos);
 
-                    obj = BinaryUtils.doReadObject(in, ctx, ldr, useCache, this);
+                    obj = BinaryUtils.doReadObject(in, ctx, ldr, this);
 
                     streamPosition(retPos);
                 }
@@ -1759,7 +1752,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
             case OBJ:
                 if (desc == null)
-                    desc = ctx.descriptorForTypeId(userType, typeId, ldr, true, useCache);
+                    desc = ctx.descriptorForTypeId(userType, typeId, ldr, true);
 
                 streamPosition(dataStart);
 
@@ -1913,17 +1906,17 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
                 break;
 
             case OBJ_ARR:
-                obj = BinaryUtils.doReadObjectArray(in, ctx, ldr, useCache, this, true);
+                obj = BinaryUtils.doReadObjectArray(in, ctx, ldr, this, true);
 
                 break;
 
             case COL:
-                obj = BinaryUtils.doReadCollection(in, ctx, ldr, useCache, this, true, null);
+                obj = BinaryUtils.doReadCollection(in, ctx, ldr, this, true, null);
 
                 break;
 
             case MAP:
-                obj = BinaryUtils.doReadMap(in, ctx, ldr, useCache, this, true, null);
+                obj = BinaryUtils.doReadMap(in, ctx, ldr, this, true, null);
 
                 break;
 
@@ -1938,12 +1931,13 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
                 break;
 
             case ENUM:
-                obj = BinaryUtils.doReadEnum(in, BinaryUtils.doReadClass(in, ctx, ldr, useCache), useCache);
+                obj = BinaryUtils.doReadEnum(in, BinaryUtils.doReadClass(in, ctx, ldr),
+                    BinaryUtils.isClassCacheWillUsed(ctx, ldr));
 
                 break;
 
             case ENUM_ARR:
-                obj = BinaryUtils.doReadEnumArray(in, ctx, ldr, useCache, BinaryUtils.doReadClass(in, ctx, ldr, useCache));
+                obj = BinaryUtils.doReadEnumArray(in, ctx, ldr, BinaryUtils.doReadClass(in, ctx, ldr));
 
                 break;
 
@@ -1956,17 +1950,17 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
                 break;
 
             case CLASS:
-                obj = BinaryUtils.doReadClass(in, ctx, ldr, useCache);
+                obj = BinaryUtils.doReadClass(in, ctx, ldr);
 
                 break;
 
             case PROXY:
-                obj = BinaryUtils.doReadProxy(in, ctx, ldr, useCache, this);
+                obj = BinaryUtils.doReadProxy(in, ctx, ldr, this);
 
                 break;
 
             case OPTM_MARSH:
-                obj = BinaryUtils.doReadOptimized(in, ctx, ldr, useCache);
+                obj = BinaryUtils.doReadOptimized(in, ctx, ldr);
 
                 break;
 
@@ -1986,7 +1980,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
         if (!findFieldById(fieldId))
             return null;
 
-        return new BinaryReaderExImpl(ctx, in, ldr, useCache, hnds, false, true).deserialize();
+        return new BinaryReaderExImpl(ctx, in, ldr, hnds, false, true).deserialize();
     }
 
     /**

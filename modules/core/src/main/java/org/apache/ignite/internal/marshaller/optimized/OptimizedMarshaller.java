@@ -217,7 +217,7 @@ public class OptimizedMarshaller extends AbstractNodeNameAwareMarshaller {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override protected <T> T unmarshal0(InputStream in, @Nullable ClassLoader clsLdr) throws IgniteCheckedException {
-        return unmarshal0(in, clsLdr, true);
+        return unmarshal0(in, clsLdr, clsLdr == dfltClsLdr);
     }
 
     /**
@@ -330,27 +330,5 @@ public class OptimizedMarshaller extends AbstractNodeNameAwareMarshaller {
         }
 
         U.clearClassCache(ldr);
-    }
-
-    /**
-     * Unmarshals object from the input stream using given class loader.
-     * This method should not close given input stream.
-     *
-     * @param <T> Type of unmarshalled object.
-     * @param in Input stream.
-     * @param clsLdr Class loader to use.
-     * @param useCache True if class loader cache will be used, false otherwise.
-     * @return Unmarshalled object.
-     * @throws IgniteCheckedException If unmarshalling failed.
-     */
-    public <T> T unmarshal(InputStream in, @Nullable ClassLoader clsLdr, boolean useCache) throws IgniteCheckedException {
-        String oldNodeName = IgniteUtils.setCurrentIgniteName(nodeName);
-
-        try {
-            return unmarshal0(in, clsLdr, useCache);
-        }
-        finally {
-            IgniteUtils.restoreOldIgniteName(oldNodeName, nodeName);
-        }
     }
 }

@@ -495,7 +495,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
                 break;
 
             default:
-                val = BinaryUtils.unmarshal(BinaryHeapInputStream.create(arr, fieldPos), ctx, null, true);
+                val = BinaryUtils.unmarshal(BinaryHeapInputStream.create(arr, fieldPos), ctx, null);
 
                 break;
         }
@@ -636,7 +636,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
         if (ldr == null)
             return deserialize();
 
-        return (T)reader(null, ldr, true, false).deserialize();
+        return (T)reader(null, ldr, true).deserialize();
     }
 
     /** {@inheritDoc} */
@@ -801,7 +801,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
      */
     private Object deserializeValue(@Nullable CacheObjectValueContext coCtx) {
         BinaryReaderExImpl reader = reader(null, coCtx != null ?
-            coCtx.kernalContext().config().getClassLoader() : ctx.configuration().getClassLoader(), true, true);
+            coCtx.kernalContext().config().getClassLoader() : ctx.configuration().getClassLoader(), true);
 
         Object obj0 = reader.deserialize();
 
@@ -829,18 +829,16 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
      * @param rCtx Reader context.
      * @param ldr Class loader.
      * @param forUnmarshal {@code True} if reader is need to unmarshal object.
-     * @param useCache If true a classes cache will be used, false at otherwise.
      * @return Reader.
      */
     private BinaryReaderExImpl reader(@Nullable BinaryReaderHandles rCtx, @Nullable ClassLoader ldr,
-        boolean forUnmarshal, boolean useCache) {
+        boolean forUnmarshal) {
         if (ldr == null)
             ldr = ctx.configuration().getClassLoader();
 
         return new BinaryReaderExImpl(ctx,
             BinaryHeapInputStream.create(arr, start),
             ldr,
-            useCache,
             rCtx,
             false,
             forUnmarshal);
@@ -854,7 +852,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
      * @return Reader.
      */
     private BinaryReaderExImpl reader(@Nullable BinaryReaderHandles rCtx, boolean forUnmarshal) {
-        return reader(rCtx, null, forUnmarshal, true);
+        return reader(rCtx, null, forUnmarshal);
     }
 
     /** {@inheritDoc} */
