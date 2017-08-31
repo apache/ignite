@@ -114,6 +114,7 @@ public class JdbcThinConnection implements Connection {
         txIsolation = Connection.TRANSACTION_NONE;
 
         this.schema = schema;
+
         String host = extractHost(props);
         int port = extractPort(props);
 
