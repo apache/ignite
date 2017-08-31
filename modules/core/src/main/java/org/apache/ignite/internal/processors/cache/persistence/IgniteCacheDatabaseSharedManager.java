@@ -901,7 +901,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @param pageMem Page memory.
      */
     private PageEvictionTracker createPageEvictionTracker(MemoryPolicyConfiguration plc, PageMemory pageMem) {
-        if (plc.getPageEvictionMode() == DataPageEvictionMode.DISABLED)
+        if (plc.getPageEvictionMode() == DataPageEvictionMode.DISABLED || cctx.gridConfig().isPersistentStoreEnabled())
             return new NoOpPageEvictionTracker();
 
         assert pageMem instanceof PageMemoryNoStoreImpl : pageMem.getClass();
