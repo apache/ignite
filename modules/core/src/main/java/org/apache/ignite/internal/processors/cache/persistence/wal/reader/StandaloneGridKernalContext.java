@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.wal.reader;
 
+import java.lang.reflect.Field;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -31,6 +32,7 @@ import org.apache.ignite.internal.GridKernalGateway;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.MarshallerContextImpl;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointManager;
 import org.apache.ignite.internal.managers.collision.GridCollisionManager;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
@@ -84,6 +86,7 @@ import org.jetbrains.annotations.Nullable;
  * Dummy grid kernal context
  */
 public class StandaloneGridKernalContext implements GridKernalContext {
+    private final IgniteConfiguration cfg;
     /** */
     private IgniteLogger log;
 
@@ -103,6 +106,8 @@ public class StandaloneGridKernalContext implements GridKernalContext {
         catch (IgniteCheckedException e) {
             throw new IllegalStateException("Must not fail on empty providers list.", e);
         }
+
+        this.cfg = new IgniteConfiguration();
     }
 
     /** {@inheritDoc} */
@@ -143,12 +148,21 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     /** {@inheritDoc} */
     @Override public IgniteEx grid() {
         IgniteKernal kernal = new IgniteKernal();
+        try {
+            Field fieldCfg = kernal.getClass().getDeclaredField("cfg");
+            fieldCfg.setAccessible(true);
+            cfg.setMarshaller(new BinaryMarshaller());
+            fieldCfg.set(kernal, cfg);
+        }
+        catch (NoSuchFieldException | IllegalAccessException e) {
+            log.error("", e);
+        }
         return kernal;
     }
 
     /** {@inheritDoc} */
     @Override public IgniteConfiguration config() {
-        return null;
+        return cfg;
     }
 
     /** {@inheritDoc} */

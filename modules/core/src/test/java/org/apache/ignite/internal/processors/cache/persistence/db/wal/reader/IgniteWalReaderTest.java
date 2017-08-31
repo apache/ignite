@@ -23,10 +23,12 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import javax.xml.bind.DatatypeConverter;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteEvents;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -42,6 +44,10 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.events.WalSegmentArchivedEvent;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.binary.BinaryCachingMetadataHandler;
+import org.apache.ignite.internal.binary.BinaryContext;
+import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
+import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
@@ -59,6 +65,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 
@@ -402,8 +409,6 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         log.info("Total records loaded using archive directory (file-by-file): " + cntArchiveFileByFile);
 
-        assert cntArchiveFileByFile > cacheObjectsToWrite;
-
         final File[] workFiles = walWorkDirWithConsistentId.listFiles(FileWriteAheadLogManager.WAL_SEGMENT_FILE_FILTER);
 
         WALIterator tuples = factory.iteratorWorkFiles(workFiles);
@@ -430,9 +435,17 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
                             LazyDataEntry lazyDataEntry = (LazyDataEntry)entry;
                             CacheObjectBinaryProcessorImpl processor = new CacheObjectBinaryProcessorImpl(ctx);
 
-                            CacheObject  val = processor.toCacheObject(null,
-                                lazyDataEntry.getValType(),
-                                lazyDataEntry.getValBytes());
+                            byte[] bytes = lazyDataEntry.getValBytes();
+                            byte type = lazyDataEntry.getValType();
+                            log.info("Entry value binary:" + DatatypeConverter.printHexBinary(bytes));
+
+                            log.info("Entry type:" + type);
+                            BinaryContext bctx = new BinaryContext(BinaryCachingMetadataHandler.create(), ctx.config(), new NullLogger()) {
+                                @Override public int typeId(String typeName) {
+                                    return typeName.hashCode();
+                                }
+                            };
+                            CacheObject val = toCacheObject(ctx, processor, bctx, bytes, type);
 
                             log.info("Entry value:" + val);
                         }
@@ -449,6 +462,49 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         return cntLogical;
     }
 
+    public void testParseBinary() {
+        final GridKernalContext ctx = new StandaloneGridKernalContext(log);
+
+        CacheObjectBinaryProcessorImpl processor = new CacheObjectBinaryProcessorImpl(ctx);
+        BinaryContext bctx = new BinaryContext(BinaryCachingMetadataHandler.create(), ctx.config(), new NullLogger()) {
+            @Override public int typeId(String typeName) {
+                return typeName.hashCode();
+            }
+        };
+        byte[] bytes = DatatypeConverter.parseHexBinary(
+            "67010B00055724EC162AF496540000005F121E934A00000003000000000C280000004142434445464748494A4142434445464748494A4142434445464748494A4142434445464748494A1882310018AAEF2E001D"  );
+        byte type = 100;
+        log.info("Entry value binary:" + DatatypeConverter.printHexBinary(bytes));
+
+        log.info("Entry type:" + type);
+
+        CacheObject obj = toCacheObject(ctx, processor, bctx, bytes, type);
+        log.info("Cache Object: " + obj);
+        byte b = obj.fieldsCount();
+        log.info("Cache Object fields: " + b);
+        BinaryObject binaryObject = (BinaryObject)obj;
+        int id = binaryObject.type().typeId();
+
+        log.info("Cache Object type id: " + id  );
+        log.info("IndexedObjec hash code: " + IndexedObject.class.getName().hashCode());
+        //assert IndexedObject.class.getName().hashCode() == id;
+        String s = binaryObject.type().typeName();
+
+        log.info("Cache Object type name: " + s  );
+    }
+
+    private CacheObject toCacheObject(GridKernalContext ctx, CacheObjectBinaryProcessorImpl processor, BinaryContext bctx,
+        byte[] bytes, byte type) {
+        if (type == BinaryObjectImpl.TYPE_BINARY)
+            return new BinaryObjectImpl(bctx, bytes, 0);
+        else if (type == BinaryObjectImpl.TYPE_BINARY_ENUM)
+            return new BinaryEnumObjectImpl(bctx, bytes);
+        else
+            return processor.toCacheObject(null,
+                type,
+                bytes);
+    }
+
     /** Test object for placing into grid in this test */
     private static class IndexedObject {
         /** */
@@ -463,7 +519,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
          */
         private IndexedObject(int iVal) {
             this.iVal = iVal;
-            int sz = 40000;
+            int sz = 40;
             data = new byte[sz];
             for (int i = 0; i < sz; i++)
                 data[i] = (byte)('A' + (i % 10));
