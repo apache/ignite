@@ -124,7 +124,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         public IBinaryObjectBuilder SetField<T>(string fieldName, T val)
         {
             return SetField0(fieldName,
-                new BinaryBuilderField(typeof (T), val, BinarySystemHandlers.GetTypeId(typeof (T))));
+                new BinaryBuilderField(typeof (T), val, BinaryTypeId.GetTypeId(typeof (T))));
         }
 
         /** <inheritDoc /> */

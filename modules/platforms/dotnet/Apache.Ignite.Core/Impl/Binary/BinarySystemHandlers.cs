@@ -37,45 +37,6 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** Read handlers. */
         private static readonly IBinarySystemReader[] ReadHandlers = new IBinarySystemReader[255];
 
-        /** Type ids. */
-        private static readonly Dictionary<Type, byte> TypeIds = new Dictionary<Type, byte>
-        {
-            {typeof (bool), BinaryUtils.TypeBool},
-            {typeof (byte), BinaryUtils.TypeByte},
-            {typeof (sbyte), BinaryUtils.TypeByte},
-            {typeof (short), BinaryUtils.TypeShort},
-            {typeof (ushort), BinaryUtils.TypeShort},
-            {typeof (char), BinaryUtils.TypeChar},
-            {typeof (int), BinaryUtils.TypeInt},
-            {typeof (uint), BinaryUtils.TypeInt},
-            {typeof (long), BinaryUtils.TypeLong},
-            {typeof (ulong), BinaryUtils.TypeLong},
-            {typeof (float), BinaryUtils.TypeFloat},
-            {typeof (double), BinaryUtils.TypeDouble},
-            {typeof (string), BinaryUtils.TypeString},
-            {typeof (decimal), BinaryUtils.TypeDecimal},
-            {typeof (Guid), BinaryUtils.TypeGuid},
-            {typeof (Guid?), BinaryUtils.TypeGuid},
-            {typeof (ArrayList), BinaryUtils.TypeCollection},
-            {typeof (Hashtable), BinaryUtils.TypeDictionary},
-            {typeof (bool[]), BinaryUtils.TypeArrayBool},
-            {typeof (byte[]), BinaryUtils.TypeArrayByte},
-            {typeof (sbyte[]), BinaryUtils.TypeArrayByte},
-            {typeof (short[]), BinaryUtils.TypeArrayShort},
-            {typeof (ushort[]), BinaryUtils.TypeArrayShort},
-            {typeof (char[]), BinaryUtils.TypeArrayChar},
-            {typeof (int[]), BinaryUtils.TypeArrayInt},
-            {typeof (uint[]), BinaryUtils.TypeArrayInt},
-            {typeof (long[]), BinaryUtils.TypeArrayLong},
-            {typeof (ulong[]), BinaryUtils.TypeArrayLong},
-            {typeof (float[]), BinaryUtils.TypeArrayFloat},
-            {typeof (double[]), BinaryUtils.TypeArrayDouble},
-            {typeof (string[]), BinaryUtils.TypeArrayString},
-            {typeof (decimal?[]), BinaryUtils.TypeArrayDecimal},
-            {typeof (Guid?[]), BinaryUtils.TypeArrayGuid},
-            {typeof (object[]), BinaryUtils.TypeArray}
-        };
-        
         /// <summary>
         /// Initializes the <see cref="BinarySystemHandlers"/> class.
         /// </summary>
@@ -263,27 +224,6 @@ namespace Apache.Ignite.Core.Impl.Binary
             }
 
             return null;
-        }
-
-        /// <summary>
-        /// Find write handler for type.
-        /// </summary>
-        /// <param name="type">Type.</param>
-        /// <returns>Write handler or NULL.</returns>
-        public static byte GetTypeId(Type type)
-        {
-            byte res;
-
-            if (TypeIds.TryGetValue(type, out res))
-                return res;
-
-            if (BinaryUtils.IsIgniteEnum(type))
-                return BinaryUtils.TypeEnum;
-
-            if (type.IsArray && BinaryUtils.IsIgniteEnum(type.GetElementType()))
-                return BinaryUtils.TypeArrayEnum;
-
-            return BinaryUtils.TypeObject;
         }
 
         /// <summary>
