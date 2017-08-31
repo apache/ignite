@@ -254,7 +254,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         private static int[] GetFieldIds(BinaryObjectHeader hdr, IIgniteInternal ignite)
         {
-            Debug.Assert(hdr.TypeId != BinaryTypeId.TypeUnregistered);
+            Debug.Assert(hdr.TypeId != BinaryTypeId.Unregistered);
 
             int[] fieldIds = null;
 

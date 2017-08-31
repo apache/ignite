@@ -27,183 +27,183 @@ namespace Apache.Ignite.Core.Impl.Binary
     internal static class BinaryTypeId
     {
         /** Type: object. */
-        public const byte TypeObject = BinaryUtils.HdrFull;
+        public const byte Object = BinaryUtils.HdrFull;
 
         /** Type: unregistered. */
-        public const byte TypeUnregistered = 0;
+        public const byte Unregistered = 0;
 
         /** Type: unsigned byte. */
-        public const byte TypeByte = 1;
+        public const byte Byte = 1;
 
         /** Type: short. */
-        public const byte TypeShort = 2;
+        public const byte Short = 2;
 
         /** Type: int. */
-        public const byte TypeInt = 3;
+        public const byte Int = 3;
 
         /** Type: long. */
-        public const byte TypeLong = 4;
+        public const byte Long = 4;
 
         /** Type: float. */
-        public const byte TypeFloat = 5;
+        public const byte Float = 5;
 
         /** Type: double. */
-        public const byte TypeDouble = 6;
+        public const byte Double = 6;
 
         /** Type: char. */
-        public const byte TypeChar = 7;
+        public const byte Char = 7;
 
         /** Type: boolean. */
-        public const byte TypeBool = 8;
+        public const byte Bool = 8;
 
         /** Type: decimal. */
-        public const byte TypeDecimal = 30;
+        public const byte Decimal = 30;
 
         /** Type: string. */
-        public const byte TypeString = 9;
+        public const byte String = 9;
 
         /** Type: GUID. */
-        public const byte TypeGuid = 10;
+        public const byte Guid = 10;
 
         /** Type: date. */
-        public const byte TypeTimestamp = 33;
+        public const byte Timestamp = 33;
 
         /** Type: unsigned byte array. */
-        public const byte TypeArrayByte = 12;
+        public const byte ArrayByte = 12;
 
         /** Type: short array. */
-        public const byte TypeArrayShort = 13;
+        public const byte ArrayShort = 13;
 
         /** Type: int array. */
-        public const byte TypeArrayInt = 14;
+        public const byte ArrayInt = 14;
 
         /** Type: long array. */
-        public const byte TypeArrayLong = 15;
+        public const byte ArrayLong = 15;
 
         /** Type: float array. */
-        public const byte TypeArrayFloat = 16;
+        public const byte ArrayFloat = 16;
 
         /** Type: double array. */
-        public const byte TypeArrayDouble = 17;
+        public const byte ArrayDouble = 17;
 
         /** Type: char array. */
-        public const byte TypeArrayChar = 18;
+        public const byte ArrayChar = 18;
 
         /** Type: boolean array. */
-        public const byte TypeArrayBool = 19;
+        public const byte ArrayBool = 19;
 
         /** Type: decimal array. */
-        public const byte TypeArrayDecimal = 31;
+        public const byte ArrayDecimal = 31;
 
         /** Type: string array. */
-        public const byte TypeArrayString = 20;
+        public const byte ArrayString = 20;
 
         /** Type: GUID array. */
-        public const byte TypeArrayGuid = 21;
+        public const byte ArrayGuid = 21;
 
         /** Type: date array. */
-        public const byte TypeArrayTimestamp = 34;
+        public const byte ArrayTimestamp = 34;
 
         /** Type: object array. */
-        public const byte TypeArray = 23;
+        public const byte Array = 23;
 
         /** Type: collection. */
-        public const byte TypeCollection = 24;
+        public const byte Collection = 24;
 
         /** Type: map. */
-        public const byte TypeDictionary = 25;
+        public const byte Dictionary = 25;
 
         /** Type: binary object. */
-        public const byte TypeBinary = 27;
+        public const byte Binary = 27;
 
         /** Type: enum. */
-        public const byte TypeEnum = 28;
+        public const byte Enum = 28;
 
         /** Type: enum array. */
-        public const byte TypeArrayEnum = 29;
+        public const byte ArrayEnum = 29;
 
         /** Type: binary enum. */
-        public const byte TypeBinaryEnum = 38;
+        public const byte BinaryEnum = 38;
 
         /** Type: native job holder. */
-        public const byte TypeNativeJobHolder = 77;
+        public const byte NativeJobHolder = 77;
 
         /** Type: function wrapper. */
-        public const byte TypeComputeOutFuncJob = 80;
+        public const byte ComputeOutFuncJob = 80;
 
         /** Type: function wrapper. */
-        public const byte TypeComputeFuncJob = 81;
+        public const byte ComputeFuncJob = 81;
 
         /** Type: continuous query remote filter. */
-        public const byte TypeContinuousQueryRemoteFilterHolder = 82;
+        public const byte ContinuousQueryRemoteFilterHolder = 82;
 
         /** Type: Compute out func wrapper. */
-        public const byte TypeComputeOutFuncWrapper = 83;
+        public const byte ComputeOutFuncWrapper = 83;
 
         /** Type: Compute func wrapper. */
-        public const byte TypeComputeFuncWrapper = 85;
+        public const byte ComputeFuncWrapper = 85;
 
         /** Type: Compute job wrapper. */
-        public const byte TypeComputeJobWrapper = 86;
+        public const byte ComputeJobWrapper = 86;
 
         /** Type: action wrapper. */
-        public const byte TypeComputeActionJob = 88;
+        public const byte ComputeActionJob = 88;
 
         /** Type: entry processor holder. */
-        public const byte TypeCacheEntryProcessorHolder = 89;
+        public const byte CacheEntryProcessorHolder = 89;
 
         /** Type: entry predicate holder. */
-        public const byte TypeCacheEntryPredicateHolder = 90;
+        public const byte CacheEntryPredicateHolder = 90;
 
         /** Type: message filter holder. */
-        public const byte TypeMessageListenerHolder = 92;
+        public const byte MessageListenerHolder = 92;
 
         /** Type: stream receiver holder. */
-        public const byte TypeStreamReceiverHolder = 94;
+        public const byte StreamReceiverHolder = 94;
 
         /** Type: platform object proxy. */
-        public const byte TypePlatformJavaObjectFactoryProxy = 99;
+        public const byte PlatformJavaObjectFactoryProxy = 99;
 
         /** Type: platform object proxy. */
-        public const int TypeIgniteUuid = 2018070327;
+        public const int IgniteUuid = 2018070327;
 
         /** Type ids. */
         private static readonly Dictionary<Type, byte> TypeIds = new Dictionary<Type, byte>
         {
-            {typeof (bool), TypeBool},
-            {typeof (byte), TypeByte},
-            {typeof (sbyte), TypeByte},
-            {typeof (short), TypeShort},
-            {typeof (ushort), TypeShort},
-            {typeof (char), TypeChar},
-            {typeof (int), TypeInt},
-            {typeof (uint), TypeInt},
-            {typeof (long), TypeLong},
-            {typeof (ulong), TypeLong},
-            {typeof (float), TypeFloat},
-            {typeof (double), TypeDouble},
-            {typeof (string), TypeString},
-            {typeof (decimal), TypeDecimal},
-            {typeof (Guid), TypeGuid},
-            {typeof (Guid?), TypeGuid},
-            {typeof (ArrayList), TypeCollection},
-            {typeof (Hashtable), TypeDictionary},
-            {typeof (bool[]), TypeArrayBool},
-            {typeof (byte[]), TypeArrayByte},
-            {typeof (sbyte[]), TypeArrayByte},
-            {typeof (short[]), TypeArrayShort},
-            {typeof (ushort[]), TypeArrayShort},
-            {typeof (char[]), TypeArrayChar},
-            {typeof (int[]), TypeArrayInt},
-            {typeof (uint[]), TypeArrayInt},
-            {typeof (long[]), TypeArrayLong},
-            {typeof (ulong[]), TypeArrayLong},
-            {typeof (float[]), TypeArrayFloat},
-            {typeof (double[]), TypeArrayDouble},
-            {typeof (string[]), TypeArrayString},
-            {typeof (decimal?[]), TypeArrayDecimal},
-            {typeof (Guid?[]), TypeArrayGuid},
-            {typeof (object[]), TypeArray}
+            {typeof (bool), Bool},
+            {typeof (byte), Byte},
+            {typeof (sbyte), Byte},
+            {typeof (short), Short},
+            {typeof (ushort), Short},
+            {typeof (char), Char},
+            {typeof (int), Int},
+            {typeof (uint), Int},
+            {typeof (long), Long},
+            {typeof (ulong), Long},
+            {typeof (float), Float},
+            {typeof (double), Double},
+            {typeof (string), String},
+            {typeof (decimal), Decimal},
+            {typeof (Guid), Guid},
+            {typeof (Guid?), Guid},
+            {typeof (ArrayList), Collection},
+            {typeof (Hashtable), Dictionary},
+            {typeof (bool[]), ArrayBool},
+            {typeof (byte[]), ArrayByte},
+            {typeof (sbyte[]), ArrayByte},
+            {typeof (short[]), ArrayShort},
+            {typeof (ushort[]), ArrayShort},
+            {typeof (char[]), ArrayChar},
+            {typeof (int[]), ArrayInt},
+            {typeof (uint[]), ArrayInt},
+            {typeof (long[]), ArrayLong},
+            {typeof (ulong[]), ArrayLong},
+            {typeof (float[]), ArrayFloat},
+            {typeof (double[]), ArrayDouble},
+            {typeof (string[]), ArrayString},
+            {typeof (decimal?[]), ArrayDecimal},
+            {typeof (Guid?[]), ArrayGuid},
+            {typeof (object[]), Array}
         };
 
         /// <summary>
@@ -217,12 +217,12 @@ namespace Apache.Ignite.Core.Impl.Binary
                 return res;
 
             if (BinaryUtils.IsIgniteEnum(type))
-                return TypeEnum;
+                return Enum;
 
             if (type.IsArray && BinaryUtils.IsIgniteEnum(type.GetElementType()))
-                return TypeArrayEnum;
+                return ArrayEnum;
 
-            return TypeObject;
+            return Object;
         }
     }
 }

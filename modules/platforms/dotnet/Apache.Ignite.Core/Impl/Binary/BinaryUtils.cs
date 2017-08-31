@@ -422,7 +422,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             {
                 if (val.HasValue)
                 {
-                    stream.WriteByte(BinaryTypeId.TypeTimestamp);
+                    stream.WriteByte(BinaryTypeId.Timestamp);
 
                     WriteTimestamp(val.Value, stream);
                 }
@@ -640,7 +640,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             {
                 if (val != null)
                 {
-                    stream.WriteByte(BinaryTypeId.TypeString);
+                    stream.WriteByte(BinaryTypeId.String);
                     WriteString(val, stream);
                 }
                 else
@@ -844,7 +844,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             {
                 if (val.HasValue)
                 {
-                    stream.WriteByte(BinaryTypeId.TypeDecimal);
+                    stream.WriteByte(BinaryTypeId.Decimal);
 
                     WriteDecimal(val.Value, stream);
                 }
@@ -1006,7 +1006,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             {
                 if (val.HasValue)
                 {
-                    stream.WriteByte(BinaryTypeId.TypeGuid);
+                    stream.WriteByte(BinaryTypeId.Guid);
 
                     WriteGuid(val.Value, stream);
                 }
@@ -1027,7 +1027,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             IBinaryStream stream = ctx.Stream;
 
-            if (elemTypeId != null && elemTypeId != BinaryTypeId.TypeUnregistered)
+            if (elemTypeId != null && elemTypeId != BinaryTypeId.Unregistered)
             {
                 stream.WriteInt(elemTypeId.Value);
             }
@@ -1042,7 +1042,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                 stream.WriteInt(typeId);
 
-                if (typeId == BinaryTypeId.TypeUnregistered)
+                if (typeId == BinaryTypeId.Unregistered)
                     ctx.WriteString(elemType.FullName);
             }
 
@@ -1088,7 +1088,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             {
                 int typeId = stream.ReadInt();
 
-                if (typeId == BinaryTypeId.TypeUnregistered)
+                if (typeId == BinaryTypeId.Unregistered)
                     ctx.ReadString();
             }
 

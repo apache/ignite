@@ -32,7 +32,7 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
     {
         /** Empty metadata. */
         public static readonly BinaryType Empty =
-            new BinaryType(BinaryTypeId.TypeObject, BinaryTypeNames.TypeNameObject, null, null, false, null, null);
+            new BinaryType(BinaryTypeId.Object, BinaryTypeNames.TypeNameObject, null, null, false, null, null);
 
         /** Empty dictionary. */
         private static readonly IDictionary<string, BinaryField> EmptyDict = new Dictionary<string, BinaryField>();
@@ -77,36 +77,36 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
             Justification = "Readability.")]
         static BinaryType()
         {
-            TypeNames[BinaryTypeId.TypeBool] = BinaryTypeNames.TypeNameBool;
-            TypeNames[BinaryTypeId.TypeByte] = BinaryTypeNames.TypeNameByte;
-            TypeNames[BinaryTypeId.TypeShort] = BinaryTypeNames.TypeNameShort;
-            TypeNames[BinaryTypeId.TypeChar] = BinaryTypeNames.TypeNameChar;
-            TypeNames[BinaryTypeId.TypeInt] = BinaryTypeNames.TypeNameInt;
-            TypeNames[BinaryTypeId.TypeLong] = BinaryTypeNames.TypeNameLong;
-            TypeNames[BinaryTypeId.TypeFloat] = BinaryTypeNames.TypeNameFloat;
-            TypeNames[BinaryTypeId.TypeDouble] = BinaryTypeNames.TypeNameDouble;
-            TypeNames[BinaryTypeId.TypeDecimal] = BinaryTypeNames.TypeNameDecimal;
-            TypeNames[BinaryTypeId.TypeString] = BinaryTypeNames.TypeNameString;
-            TypeNames[BinaryTypeId.TypeGuid] = BinaryTypeNames.TypeNameGuid;
-            TypeNames[BinaryTypeId.TypeTimestamp] = BinaryTypeNames.TypeNameTimestamp;
-            TypeNames[BinaryTypeId.TypeEnum] = BinaryTypeNames.TypeNameEnum;
-            TypeNames[BinaryTypeId.TypeObject] = BinaryTypeNames.TypeNameObject;
-            TypeNames[BinaryTypeId.TypeArrayBool] = BinaryTypeNames.TypeNameArrayBool;
-            TypeNames[BinaryTypeId.TypeArrayByte] = BinaryTypeNames.TypeNameArrayByte;
-            TypeNames[BinaryTypeId.TypeArrayShort] = BinaryTypeNames.TypeNameArrayShort;
-            TypeNames[BinaryTypeId.TypeArrayChar] = BinaryTypeNames.TypeNameArrayChar;
-            TypeNames[BinaryTypeId.TypeArrayInt] = BinaryTypeNames.TypeNameArrayInt;
-            TypeNames[BinaryTypeId.TypeArrayLong] = BinaryTypeNames.TypeNameArrayLong;
-            TypeNames[BinaryTypeId.TypeArrayFloat] = BinaryTypeNames.TypeNameArrayFloat;
-            TypeNames[BinaryTypeId.TypeArrayDouble] = BinaryTypeNames.TypeNameArrayDouble;
-            TypeNames[BinaryTypeId.TypeArrayDecimal] = BinaryTypeNames.TypeNameArrayDecimal;
-            TypeNames[BinaryTypeId.TypeArrayString] = BinaryTypeNames.TypeNameArrayString;
-            TypeNames[BinaryTypeId.TypeArrayGuid] = BinaryTypeNames.TypeNameArrayGuid;
-            TypeNames[BinaryTypeId.TypeArrayTimestamp] = BinaryTypeNames.TypeNameArrayTimestamp;
-            TypeNames[BinaryTypeId.TypeArrayEnum] = BinaryTypeNames.TypeNameArrayEnum;
-            TypeNames[BinaryTypeId.TypeArray] = BinaryTypeNames.TypeNameArrayObject;
-            TypeNames[BinaryTypeId.TypeCollection] = BinaryTypeNames.TypeNameCollection;
-            TypeNames[BinaryTypeId.TypeDictionary] = BinaryTypeNames.TypeNameMap;
+            TypeNames[BinaryTypeId.Bool] = BinaryTypeNames.TypeNameBool;
+            TypeNames[BinaryTypeId.Byte] = BinaryTypeNames.TypeNameByte;
+            TypeNames[BinaryTypeId.Short] = BinaryTypeNames.TypeNameShort;
+            TypeNames[BinaryTypeId.Char] = BinaryTypeNames.TypeNameChar;
+            TypeNames[BinaryTypeId.Int] = BinaryTypeNames.TypeNameInt;
+            TypeNames[BinaryTypeId.Long] = BinaryTypeNames.TypeNameLong;
+            TypeNames[BinaryTypeId.Float] = BinaryTypeNames.TypeNameFloat;
+            TypeNames[BinaryTypeId.Double] = BinaryTypeNames.TypeNameDouble;
+            TypeNames[BinaryTypeId.Decimal] = BinaryTypeNames.TypeNameDecimal;
+            TypeNames[BinaryTypeId.String] = BinaryTypeNames.TypeNameString;
+            TypeNames[BinaryTypeId.Guid] = BinaryTypeNames.TypeNameGuid;
+            TypeNames[BinaryTypeId.Timestamp] = BinaryTypeNames.TypeNameTimestamp;
+            TypeNames[BinaryTypeId.Enum] = BinaryTypeNames.TypeNameEnum;
+            TypeNames[BinaryTypeId.Object] = BinaryTypeNames.TypeNameObject;
+            TypeNames[BinaryTypeId.ArrayBool] = BinaryTypeNames.TypeNameArrayBool;
+            TypeNames[BinaryTypeId.ArrayByte] = BinaryTypeNames.TypeNameArrayByte;
+            TypeNames[BinaryTypeId.ArrayShort] = BinaryTypeNames.TypeNameArrayShort;
+            TypeNames[BinaryTypeId.ArrayChar] = BinaryTypeNames.TypeNameArrayChar;
+            TypeNames[BinaryTypeId.ArrayInt] = BinaryTypeNames.TypeNameArrayInt;
+            TypeNames[BinaryTypeId.ArrayLong] = BinaryTypeNames.TypeNameArrayLong;
+            TypeNames[BinaryTypeId.ArrayFloat] = BinaryTypeNames.TypeNameArrayFloat;
+            TypeNames[BinaryTypeId.ArrayDouble] = BinaryTypeNames.TypeNameArrayDouble;
+            TypeNames[BinaryTypeId.ArrayDecimal] = BinaryTypeNames.TypeNameArrayDecimal;
+            TypeNames[BinaryTypeId.ArrayString] = BinaryTypeNames.TypeNameArrayString;
+            TypeNames[BinaryTypeId.ArrayGuid] = BinaryTypeNames.TypeNameArrayGuid;
+            TypeNames[BinaryTypeId.ArrayTimestamp] = BinaryTypeNames.TypeNameArrayTimestamp;
+            TypeNames[BinaryTypeId.ArrayEnum] = BinaryTypeNames.TypeNameArrayEnum;
+            TypeNames[BinaryTypeId.Array] = BinaryTypeNames.TypeNameArrayObject;
+            TypeNames[BinaryTypeId.Collection] = BinaryTypeNames.TypeNameCollection;
+            TypeNames[BinaryTypeId.Dictionary] = BinaryTypeNames.TypeNameMap;
         }
 
         /// <summary>
