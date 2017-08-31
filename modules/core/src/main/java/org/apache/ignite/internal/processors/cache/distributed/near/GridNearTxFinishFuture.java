@@ -42,6 +42,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishResponse;
+import org.apache.ignite.internal.processors.cache.mvcc.TxMvccVersion;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -847,7 +848,8 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
             0,
             tx.activeCachesDeploymentEnabled(),
             !waitRemoteTxs && (tx.needReturnValue() && tx.implicit()),
-            waitRemoteTxs);
+            waitRemoteTxs,
+            TxMvccVersion.COUNTER_NA);
 
         finishReq.checkCommitted(true);
 

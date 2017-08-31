@@ -634,4 +634,9 @@ public interface IgniteInternalTx {
      * @param e Commit error.
      */
     public void commitError(Throwable e);
+
+    /**
+     * @param mvccCrdCntr Update counter assigned by MVCC coordinator.
+     */
+    public void mvccCoordinatorCounter(long mvccCrdCntr);
 }

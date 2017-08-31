@@ -254,11 +254,7 @@ public class IgniteTxHandler {
     ) {
         req.txState(locTx.txState());
 
-        IgniteInternalFuture<GridNearTxPrepareResponse> fut = locTx.prepareAsyncLocal(
-            req.reads(),
-            req.writes(),
-            req.transactionNodes(),
-            req.last());
+        IgniteInternalFuture<GridNearTxPrepareResponse> fut = locTx.prepareAsyncLocal(req);
 
         if (locTx.isRollbackOnly())
             locTx.rollbackNearTxLocalAsync();
@@ -520,14 +516,7 @@ public class IgniteTxHandler {
             if (req.needReturnValue())
                 tx.needReturnValue(true);
 
-            IgniteInternalFuture<GridNearTxPrepareResponse> fut = tx.prepareAsync(
-                req.reads(),
-                req.writes(),
-                req.dhtVersions(),
-                req.messageId(),
-                req.miniId(),
-                req.transactionNodes(),
-                req.last());
+            IgniteInternalFuture<GridNearTxPrepareResponse> fut = tx.prepareAsync(req);
 
             if (tx.isRollbackOnly() && !tx.commitOnPrepare()) {
                 if (tx.state() != TransactionState.ROLLED_BACK && tx.state() != TransactionState.ROLLING_BACK)
@@ -1322,6 +1311,7 @@ public class IgniteTxHandler {
                 tx.commitVersion(req.commitVersion());
                 tx.invalidate(req.isInvalidate());
                 tx.systemInvalidate(req.isSystemInvalidate());
+                tx.mvccCoordinatorCounter(req.mvccCoordinatorCounter());
 
                 // Complete remote candidates.
                 tx.doneRemote(req.baseVersion(), null, null, null);
@@ -1368,6 +1358,7 @@ public class IgniteTxHandler {
         try {
             tx.commitVersion(req.writeVersion());
             tx.invalidate(req.isInvalidate());
+            tx.mvccCoordinatorCounter(req.mvccCoordinatorCounter());
 
             // Complete remote candidates.
             tx.doneRemote(req.version(), null, null, null);

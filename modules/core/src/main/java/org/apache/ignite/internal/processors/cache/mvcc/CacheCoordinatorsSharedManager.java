@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.mvcc;
 
-import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -31,9 +30,12 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
@@ -46,6 +48,9 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYS
  *
  */
 public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
+    /** */
+    private final CoordinatorAssignmentHistory assignHist = new CoordinatorAssignmentHistory();
+
     /** */
     private final AtomicLong mvccCntr = new AtomicLong(0L);
 
@@ -74,20 +79,28 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
         cctx.gridIO().addMessageListener(TOPIC_CACHE_COORDINATOR, new CoordinatorMessageListener());
     }
 
+    public long requestTxCounterOnCoordinator(GridCacheVersion txVer) {
+        assert cctx.localNode().equals(assignHist.currentCoordinator());
+
+        return assignTxCounter(txVer);
+    }
+
     /**
      * @param crd Coordinator.
-     * @param txId Transaction ID.
+     * @param tx Transaction.
      * @return Counter request future.
      */
-    public IgniteInternalFuture<Long> requestTxCounter(ClusterNode crd, GridCacheVersion txId) {
-        MvccCounterFuture fut = new MvccCounterFuture(futIdCntr.incrementAndGet(), crd);
+    public IgniteInternalFuture<Long> requestTxCounter(ClusterNode crd, IgniteInternalTx tx) {
+        assert !crd.isLocal() : crd;
+
+        MvccCounterFuture fut = new MvccCounterFuture(futIdCntr.incrementAndGet(), crd, tx);
 
         cntrFuts.put(fut.id, fut);
 
         try {
             cctx.gridIO().sendToGridTopic(crd,
                 TOPIC_CACHE_COORDINATOR,
-                new CoordinatorTxCounterRequest(fut.id, txId),
+                new CoordinatorTxCounterRequest(fut.id, tx.nearXidVersion()),
                 SYSTEM_POOL);
         }
         catch (IgniteCheckedException e) {
@@ -98,8 +111,12 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
         return fut;
     }
 
+    /**
+     * @param crd Coordinator.
+     * @return Counter request future.
+     */
     public IgniteInternalFuture<Long> requestQueryCounter(ClusterNode crd) {
-        MvccCounterFuture fut = new MvccCounterFuture(futIdCntr.incrementAndGet(), crd);
+        MvccCounterFuture fut = new MvccCounterFuture(futIdCntr.incrementAndGet(), crd, null);
 
         cntrFuts.put(fut.id, fut);
 
@@ -118,6 +135,7 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
     }
 
     /**
+     * @param crd Coordinator.
      * @param txId Transaction ID.
      * @return Acknowledge future.
      */
@@ -144,6 +162,10 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
         return fut;
     }
 
+    /**
+     * @param crd Coordinator.
+     * @param txId Transaction ID.
+     */
     public void ackTxRollback(ClusterNode crd, GridCacheVersion txId) {
         CoordinatorTxAckRequest msg = new CoordinatorTxAckRequest(0, txId);
 
@@ -329,14 +351,32 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
     }
 
     /**
-     * @param discoCache Cluster topology.
-     * @return Assigned coordinator.
+     * @param topVer Topology version.
+     * @return MVCC coordinator for given topology version.
      */
-    @Nullable public ClusterNode assignCoordinator(DiscoCache discoCache) {
-        // TODO IGNITE-3478
-        List<ClusterNode> srvNodes = discoCache.serverNodes();
+    @Nullable public ClusterNode coordinator(AffinityTopologyVersion topVer) {
+        return assignHist.coordinator(topVer);
+    }
 
-        return srvNodes.isEmpty() ? null : srvNodes.get(0);
+    /**
+     * @param discoCache Discovery snapshot.
+     */
+    public void assignCoordinator(DiscoCache discoCache) {
+        ClusterNode curCrd = assignHist.currentCoordinator();
+
+        if (curCrd == null || !discoCache.allNodes().contains(curCrd)) {
+            ClusterNode newCrd = null;
+
+            if (!discoCache.serverNodes().isEmpty())
+                newCrd = discoCache.serverNodes().get(0);
+
+            if (!F.eq(curCrd, newCrd)) {
+                assignHist.addAssignment(discoCache.version(), newCrd);
+
+                log.info("Assigned mvcc coordinator [topVer=" + discoCache.version() +
+                    ", crd=" + newCrd + ']');
+            }
+        }
     }
 
     /**
@@ -347,21 +387,30 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
         private final Long id;
 
         /** */
+        private IgniteInternalTx tx;
+
+        /** */
         private final ClusterNode crd;
 
         /**
          * @param id Future ID.
          * @param crd Coordinator.
          */
-        MvccCounterFuture(Long id, ClusterNode crd) {
+        MvccCounterFuture(Long id, ClusterNode crd, IgniteInternalTx tx) {
             this.id = id;
             this.crd = crd;
+            this.tx = tx;
         }
 
         /**
          * @param cntr Counter.
          */
         void onResponse(long cntr) {
+            assert cntr != TxMvccVersion.COUNTER_NA;
+
+            if (tx != null)
+                tx.mvccCoordinatorCounter(cntr);
+
             onDone(cntr);
         }
 
@@ -448,7 +497,7 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
             else if (msg instanceof CoordinatorQueryCounterRequest)
                 processCoordinatorQueryStateRequest(nodeId, (CoordinatorQueryCounterRequest)msg);
             else
-                U.warn(log, "Unexpected message received: " + msg);
+                U.warn(log, "Unexpected message received [node=" + nodeId + ", msg=" + msg + ']');
         }
     }
 }

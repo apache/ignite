@@ -1418,6 +1418,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
        }
 
         if (err == null) {
+            cctx.coordinators().assignCoordinator(exchCtx.events().discoveryCache());
+
             if (centralizedAff) {
                 assert !exchCtx.mergeExchanges();
 

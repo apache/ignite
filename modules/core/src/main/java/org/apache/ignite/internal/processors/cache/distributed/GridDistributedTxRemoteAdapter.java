@@ -47,6 +47,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheReturnCompletableWra
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
+import org.apache.ignite.internal.processors.cache.mvcc.TxMvccVersion;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxAdapter;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
@@ -474,6 +475,8 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                     cctx.database().checkpointReadLock();
 
                     try {
+                        TxMvccVersion mvccVer = createMvccVersion();
+
                         Collection<IgniteTxEntry> entries = near() ? allEntries() : writeEntries();
 
                         List<DataEntry> dataEntries = null;
@@ -594,7 +597,8 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                                         CU.subjectId(this, cctx),
                                                         resolveTaskName(),
                                                         dhtVer,
-                                                        txEntry.updateCounter());
+                                                        txEntry.updateCounter(),
+                                                        mvccVer);
                                                 else {
                                                     assert val != null : txEntry;
 
@@ -618,7 +622,8 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                                         CU.subjectId(this, cctx),
                                                         resolveTaskName(),
                                                         dhtVer,
-                                                        txEntry.updateCounter());
+                                                        txEntry.updateCounter(),
+                                                        mvccVer);
 
                                                     // Keep near entry up to date.
                                                     if (nearCached != null) {
@@ -650,7 +655,8 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                                     CU.subjectId(this, cctx),
                                                     resolveTaskName(),
                                                     dhtVer,
-                                                    txEntry.updateCounter());
+                                                    txEntry.updateCounter(),
+                                                    mvccVer);
 
                                                 // Keep near entry up to date.
                                                 if (nearCached != null)

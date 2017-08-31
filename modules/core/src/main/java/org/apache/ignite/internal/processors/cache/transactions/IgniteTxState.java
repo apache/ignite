@@ -180,4 +180,10 @@ public interface IgniteTxState {
      * @return {@code True} if transaction is empty.
      */
     public boolean empty();
+
+    /**
+     * @param cctx Context.
+     * @return {@code True} if MVCC mode is enabled for transaction.
+     */
+    public boolean mvccEnabled(GridCacheSharedContext cctx);
 }

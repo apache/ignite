@@ -54,6 +54,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheUpdateTxResult;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.mvcc.TxMvccVersion;
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConflictContext;
@@ -507,6 +508,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
             try {
                 cctx.tm().txContext(this);
 
+                TxMvccVersion mvccVer = createMvccVersion();
+
                 AffinityTopologyVersion topVer = topologyVersion();
 
                 /*
@@ -684,7 +687,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                             CU.subjectId(this, cctx),
                                             resolveTaskName(),
                                             dhtVer,
-                                            null);
+                                            null,
+                                            mvccVer);
 
                                         if (updRes.success())
                                             txEntry.updateCounter(updRes.updatePartitionCounter());
@@ -711,7 +715,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                                 CU.subjectId(this, cctx),
                                                 resolveTaskName(),
                                                 dhtVer,
-                                                null);
+                                                null,
+                                                mvccVer);
                                         }
                                     }
                                     else if (op == DELETE) {
@@ -732,7 +737,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                             CU.subjectId(this, cctx),
                                             resolveTaskName(),
                                             dhtVer,
-                                            null);
+                                            null,
+                                            mvccVer);
 
                                         if (updRes.success())
                                             txEntry.updateCounter(updRes.updatePartitionCounter());
@@ -755,7 +761,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                                 CU.subjectId(this, cctx),
                                                 resolveTaskName(),
                                                 dhtVer,
-                                                null);
+                                                null,
+                                                mvccVer);
                                         }
                                     }
                                     else if (op == RELOAD) {

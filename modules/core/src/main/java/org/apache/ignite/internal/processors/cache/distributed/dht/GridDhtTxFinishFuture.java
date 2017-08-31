@@ -35,6 +35,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheCompoundIdentityFutu
 import org.apache.ignite.internal.processors.cache.GridCacheFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
+import org.apache.ignite.internal.processors.cache.mvcc.TxMvccVersion;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -347,7 +348,8 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                 tx.taskNameHash(),
                 tx.activeCachesDeploymentEnabled(),
                 false,
-                false);
+                false,
+                TxMvccVersion.COUNTER_NA);
 
             try {
                 cctx.io().send(n, req, tx.ioPolicy());
@@ -394,6 +396,8 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
         Map<UUID, GridDistributedTxMapping> nearMap) {
         if (tx.onePhaseCommit())
             return false;
+
+        assert !commit || !tx.txState().mvccEnabled(cctx) || tx.mvccCoordinatorCounter() != TxMvccVersion.COUNTER_NA;
 
         boolean sync = tx.syncMode() == FULL_SYNC;
 
@@ -450,7 +454,8 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                 tx.activeCachesDeploymentEnabled(),
                 updCntrs,
                 false,
-                false);
+                false,
+                tx.mvccCoordinatorCounter());
 
             req.writeVersion(tx.writeVersion() != null ? tx.writeVersion() : tx.xidVersion());
 
@@ -519,7 +524,8 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                     tx.taskNameHash(),
                     tx.activeCachesDeploymentEnabled(),
                     false,
-                    false);
+                    false,
+                    tx.mvccCoordinatorCounter());
 
                 req.writeVersion(tx.writeVersion());
 
