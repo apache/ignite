@@ -45,12 +45,6 @@ namespace Apache.Ignite.Core.Impl
         HandleRegistry HandleRegistry { get; }
 
         /// <summary>
-        /// Updates the node information from stream.
-        /// </summary>
-        /// <param name="memPtr">Stream ptr.</param>
-        void UpdateNodeInfo(long memPtr);
-
-        /// <summary>
         /// Gets the node from cache.
         /// </summary>
         /// <param name="id">Node id.</param>
