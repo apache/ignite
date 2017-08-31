@@ -223,7 +223,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         {
             BinaryWriter writer0 = (BinaryWriter) writer.GetRawWriter();
 
-            writer0.WithDetach(w => w.WriteObject(_job));
+            writer0.WriteObjectDetached(_job);
         }
 
         /// <summary>
