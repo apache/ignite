@@ -209,7 +209,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Get binary type id for a type.
         /// </summary>
-        public static byte GetTypeId(Type type)
+        internal static byte GetTypeId(Type type)
         {
             byte res;
 
