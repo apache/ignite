@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.MemoryPolicyConfiguration;
@@ -84,6 +85,7 @@ public class IgnitePdsEvictionTest extends GridCommonAbstractTest {
         MemoryPolicyConfiguration memPlcCfg = new MemoryPolicyConfiguration();
         memPlcCfg.setInitialSize(MEMORY_LIMIT);
         memPlcCfg.setMaxSize(MEMORY_LIMIT);
+        memPlcCfg.setPageEvictionMode(DataPageEvictionMode.RANDOM_LRU);
         memPlcCfg.setName("dfltMemPlc");
 
         memCfg.setPageSize(PAGE_SIZE);
@@ -93,7 +95,6 @@ public class IgnitePdsEvictionTest extends GridCommonAbstractTest {
 
         return memCfg;
     }
-
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
