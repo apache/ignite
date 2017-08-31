@@ -20,8 +20,8 @@ package org.apache.ignite.internal;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.Callable;
-import javax.cache.Cache;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -52,56 +52,65 @@ public class IgniteClientReconnectBinaryContexTest extends IgniteClientReconnect
     /**
      * @throws Exception If failed.
      */
-    public void testBinaryContexReconnectClusterRestart() throws Exception {
+    public void testReconnectCleaningUsersMetadata() throws Exception {
         Ignite client = grid(serverCount());
 
         assertTrue(client.cluster().localNode().isClient());
 
         Ignite srv = grid(0);
 
-        CacheConfiguration<TestClass1, TestClass1> personCache = new CacheConfiguration<TestClass1, TestClass1>()
+        CacheConfiguration<Integer, UserClass> cacheCfg = new CacheConfiguration<Integer, UserClass>()
             .setName(DEFAULT_CACHE_NAME)
             .setCacheMode(CacheMode.REPLICATED);
 
-        srv.createCache(personCache);
+        IgniteCache<Integer, UserClass> cache = client.createCache(cacheCfg);
 
-        client.cache(DEFAULT_CACHE_NAME).put(new TestClass1("1"), new TestClass1("1"));
-        client.cache(DEFAULT_CACHE_NAME).put(new TestClass1("2"), new TestClass1("2"));
+        cache.put(1, new UserClass(1)); // For registering user types binary metadata
 
-        Collection<Ignite> ignites = reconnectServersRestart(log, client, Collections.singleton(srv), new Callable<Collection<Ignite>>() {
+        reconnectServersRestart(log, client, Collections.singleton(srv), new Callable<Collection<Ignite>>() {
             @Override public Collection<Ignite> call() throws Exception {
                 return Collections.singleton((Ignite)startGrid(0));
             }
         });
 
-        ignites.iterator().next().createCache(personCache);
+        cache = client.createCache(cacheCfg);
 
-        client.cache(DEFAULT_CACHE_NAME).put(new TestClass1("2"), new TestClass1("2"));
-        client.cache(DEFAULT_CACHE_NAME).put(new TestClass1("3"), new TestClass1("3"));
+        for (int key = 0; key < 3; key++) {
+            UserClass val = new UserClass(key);
 
-        int size = 0;
+            cache.put(key, val);
 
-        for (Cache.Entry<TestClass1, TestClass1> entry : client.<TestClass1, TestClass1>cache(DEFAULT_CACHE_NAME)) {
-            assertNotNull(entry);
-
-            size++;
+            assertEquals(val, cache.get(key));
         }
-
-        assertEquals(2, size);
     }
 
-    /**
-     *
-     */
-    private static class TestClass1 {
+    /** */
+    private static class UserClass {
         /** */
-        final String val;
+        private final int field;
 
         /**
-         * @param val Value.
+         * @param field Value.
          */
-        TestClass1(String val) {
-            this.val = val;
+        private UserClass(int field) {
+            this.field = field;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            UserClass val = (UserClass)o;
+
+            return field == val.field;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return field;
         }
     }
 }
