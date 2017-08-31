@@ -18,8 +18,12 @@
 namespace Apache.Ignite.Core.Impl
 {
     using System;
+    using Apache.Ignite.Core.Cluster;
+    using Apache.Ignite.Core.Datastream;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Cluster;
+    using Apache.Ignite.Core.Impl.Handle;
+    using Apache.Ignite.Core.Impl.Plugin;
 
     /// <summary>
     /// Internal Ignite interface.
@@ -37,6 +41,11 @@ namespace Apache.Ignite.Core.Impl
         IgniteConfiguration Configuration { get; }
 
         /// <summary>
+        /// Handle registry.
+        /// </summary>
+        HandleRegistry HandleRegistry { get; }
+
+        /// <summary>
         /// Updates the node information from stream.
         /// </summary>
         /// <param name="memPtr">Stream ptr.</param>
@@ -48,5 +57,20 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="id">Node id.</param>
         /// <returns>Cached node.</returns>
         ClusterNodeImpl GetNode(Guid? id);
+
+        /// <summary>
+        /// Gets the marshaller.
+        /// </summary>
+        Marshaller Marshaller { get; }
+
+        /// <summary>
+        /// Gets the plugin processor.
+        /// </summary>
+        PluginProcessor PluginProcessor { get; }
+
+        /// <summary>
+        /// Gets the data streamer.
+        /// </summary>
+        IDataStreamer<TK, TV> GetDataStreamer<TK, TV>(string cacheName, bool keepBinary);
     }
 }
