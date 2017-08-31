@@ -6272,28 +6272,10 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 // Check that joining node can accept incoming connections.
                 if (!node.isClient()) {
-                    for (InetSocketAddress addr : spi.getNodeAddresses(node, U.sameMacs(locNode, node))) {
-                        try {
-                            IgniteBiTuple<UUID, Boolean> t = pingNode(addr, node.id(), null);
+                    if (!pingJoiningNode(node)) {
+                        spi.writeToSocket(msg, sock, RES_JOIN_IMPOSSIBLE, sockTimeout);
 
-                            if (t == null) {
-                                if (log.isDebugEnabled())
-                                    log.debug("Failed to ping joining node, closing connection. [node=" + node + ']');
-
-                                spi.writeToSocket(msg, sock, RES_JOIN_IMPOSSIBLE, sockTimeout);
-
-                                return false;
-                            }
-                        }
-                        catch (IgniteCheckedException e) {
-                            if (log.isDebugEnabled())
-                                log.debug("Failed to ping joining node, closing connection. [node=" + node +
-                                    ", err=" + e.getMessage() + ']');
-
-                            spi.writeToSocket(msg, sock, RES_JOIN_IMPOSSIBLE, sockTimeout);
-
-                            return false;
-                        }
+                        return false;
                     }
                 }
 
@@ -6345,6 +6327,30 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 return false;
             }
+        }
+
+        /**
+         * @param node Node.
+         */
+        private boolean pingJoiningNode(TcpDiscoveryNode node) throws IOException {
+            for (InetSocketAddress addr : spi.getNodeAddresses(node, U.sameMacs(locNode, node))) {
+                try {
+                    IgniteBiTuple<UUID, Boolean> t = pingNode(addr, node.id(), null);
+
+                    if (t != null)
+                        return true;
+                }
+                catch (IgniteCheckedException e) {
+                    if (log.isDebugEnabled())
+                        log.debug("Failed to ping joining node, closing connection. [node=" + node +
+                            ", err=" + e.getMessage() + ']');
+                }
+            }
+
+            if (log.isDebugEnabled())
+                log.debug("Failed to ping joining node, closing connection. [node=" + node + ']');
+
+            return false;
         }
 
         /** {@inheritDoc} */
