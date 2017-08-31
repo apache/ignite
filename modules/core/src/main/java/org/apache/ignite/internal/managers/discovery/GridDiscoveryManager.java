@@ -83,6 +83,7 @@ import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
 import org.apache.ignite.internal.processors.jobmetrics.GridJobMetrics;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
+import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -205,7 +206,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     private IgniteThread segChkThread;
 
     /** Last logged topology. */
-    private final AtomicLong lastLoggedTop = new AtomicLong();
+    private final GridAtomicLong lastLoggedTop = new GridAtomicLong();
 
     /** Local node. */
     private ClusterNode locNode;
@@ -620,7 +621,10 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 ChangeGlobalStateFinishMessage stateFinishMsg = null;
 
                 if (locJoinEvt) {
-                    discoCache = createDiscoCache(ctx.state().clusterState(), locNode, topSnapshot);
+                    discoCache = createDiscoCache(new AffinityTopologyVersion(topVer, minorTopVer),
+                        ctx.state().clusterState(),
+                        locNode,
+                        topSnapshot);
 
                     transitionWaitFut = ctx.state().onLocalJoin(discoCache);
                 }
@@ -643,7 +647,10 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     else if (customMsg instanceof ChangeGlobalStateFinishMessage) {
                         ctx.state().onStateFinishMessage((ChangeGlobalStateFinishMessage)customMsg);
 
-                        discoCache = createDiscoCache(ctx.state().clusterState(), locNode, topSnapshot);
+                        discoCache = createDiscoCache(topSnap.get().topVer,
+                            ctx.state().clusterState(),
+                            locNode,
+                            topSnapshot);
 
                         topSnap.set(new Snapshot(topSnap.get().topVer, discoCache));
 
@@ -690,8 +697,12 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 // There is no race possible between history maintenance and concurrent discovery
                 // event notifications, since SPI notifies manager about all events from this listener.
                 if (verChanged) {
-                    if (discoCache == null)
-                        discoCache = createDiscoCache(ctx.state().clusterState(), locNode, topSnapshot);
+                    if (discoCache == null) {
+                        discoCache = createDiscoCache(nextTopVer,
+                            ctx.state().clusterState(),
+                            locNode,
+                            topSnapshot);
+                    }
 
                     discoCacheHist.put(nextTopVer, discoCache);
 
@@ -762,7 +773,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     topHist.clear();
 
                     topSnap.set(new Snapshot(AffinityTopologyVersion.ZERO,
-                        createDiscoCache(ctx.state().clusterState(), locNode, Collections.<ClusterNode>emptySet())));
+                        createDiscoCache(AffinityTopologyVersion.ZERO, ctx.state().clusterState(), locNode, Collections.<ClusterNode>emptySet())));
                 }
                 else if (type == EVT_CLIENT_NODE_RECONNECTED) {
                     assert locNode.isClient() : locNode;
@@ -1449,11 +1460,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         Collection<ClusterNode> allNodes = discoCache.allNodes();
 
-        long hash = topologyHash(allNodes);
-
         // Prevent ack-ing topology for the same topology.
         // Can happen only during node startup.
-        if (throttle && lastLoggedTop.getAndSet(hash) == hash)
+        if (throttle && !lastLoggedTop.setIfGreater(topVer))
             return;
 
         int totalCpus = cpus(allNodes);
@@ -1474,8 +1483,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 (ctx.igniteInstanceName() == null ? "default" : ctx.igniteInstanceName()) + U.nl() +
                 ">>> Number of server nodes: " + srvNodes.size() + U.nl() +
                 ">>> Number of client nodes: " + clientNodes.size() + U.nl() +
-                (discoOrdered ? ">>> Topology version: " + topVer + U.nl() : "") +
-                ">>> Topology hash: 0x" + Long.toHexString(hash).toUpperCase() + U.nl();
+                (discoOrdered ? ">>> Topology version: " + topVer + U.nl() : "");
 
             dbg += ">>> Local: " +
                 locNode.id().toString().toUpperCase() + ", " +
@@ -1683,35 +1691,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             F.view(
                 F.viewReadOnly(ids, U.id2Node(ctx), p),
                 F.notNull());
-    }
-
-    /**
-     * Gets topology hash for given set of nodes.
-     *
-     * @param nodes Subset of grid nodes for hashing.
-     * @return Hash for given topology.
-     */
-    public long topologyHash(Iterable<? extends ClusterNode> nodes) {
-        assert nodes != null;
-
-        Iterator<? extends ClusterNode> iter = nodes.iterator();
-
-        if (!iter.hasNext())
-            return 0; // Special case.
-
-        List<String> uids = new ArrayList<>();
-
-        for (ClusterNode node : nodes)
-            uids.add(node.id().toString());
-
-        Collections.sort(uids);
-
-        CRC32 hash = new CRC32();
-
-        for (String uuid : uids)
-            hash.update(uuid.getBytes());
-
-        return hash.getValue();
     }
 
     /**
@@ -2180,12 +2159,15 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     /**
      * Called from discovery thread.
      *
+     * @param topVer Topology version.
      * @param state Current state.
      * @param loc Local node.
      * @param topSnapshot Topology snapshot.
      * @return Newly created discovery cache.
      */
-    @NotNull private DiscoCache createDiscoCache(DiscoveryDataClusterState state,
+    @NotNull private DiscoCache createDiscoCache(
+        AffinityTopologyVersion topVer,
+        DiscoveryDataClusterState state,
         ClusterNode loc,
         Collection<ClusterNode> topSnapshot) {
         HashSet<UUID> alives = U.newHashSet(topSnapshot.size());
@@ -2262,6 +2244,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         }
 
         return new DiscoCache(
+            topVer,
             state,
             loc,
             Collections.unmodifiableList(rmtNodes),
@@ -2404,7 +2387,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                         discoWrk.addEvent(EVT_NODE_SEGMENTED,
                             AffinityTopologyVersion.NONE,
                             node,
-                            createDiscoCache(null, node, empty),
+                            createDiscoCache(AffinityTopologyVersion.NONE, null, node, empty),
                             empty,
                             null);
 

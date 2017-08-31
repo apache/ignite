@@ -42,6 +42,7 @@ import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTx
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishResponse;
@@ -74,6 +75,7 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFutureCancelledException;
+import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.Nullable;
 
@@ -109,10 +111,10 @@ public class IgniteTxHandler {
     private GridCacheSharedContext<?, ?> ctx;
 
     /**
-     * @param nearNodeId Node ID.
+     * @param nearNodeId Sender node ID.
      * @param req Request.
      */
-    private void processNearTxPrepareRequest(final UUID nearNodeId, GridNearTxPrepareRequest req) {
+    private void processNearTxPrepareRequest(UUID nearNodeId, GridNearTxPrepareRequest req) {
         if (txPrepareMsgLog.isDebugEnabled()) {
             txPrepareMsgLog.debug("Received near prepare request [txId=" + req.version() +
                 ", node=" + nearNodeId + ']');
@@ -130,7 +132,29 @@ public class IgniteTxHandler {
             return;
         }
 
-        IgniteInternalFuture<GridNearTxPrepareResponse> fut = prepareNearTx(nearNode, req);
+        processNearTxPrepareRequest0(nearNode, req);
+    }
+
+    /**
+     * @param nearNode Sender node.
+     * @param req Request.
+     */
+    private void processNearTxPrepareRequest0(ClusterNode nearNode, GridNearTxPrepareRequest req) {
+        IgniteInternalFuture<GridNearTxPrepareResponse> fut;
+
+        if (req.firstClientRequest() && req.allowWaitTopologyFuture()) {
+            for (;;) {
+                if (waitForExchangeFuture(nearNode, req))
+                    return;
+
+                fut = prepareNearTx(nearNode, req);
+
+                if (fut != null)
+                    break;
+            }
+        }
+        else
+            fut = prepareNearTx(nearNode, req);
 
         assert req.txState() != null || fut == null || fut.error() != null ||
             (ctx.tm().tx(req.version()) == null && ctx.tm().nearTx(req.version()) == null);
@@ -303,9 +327,9 @@ public class IgniteTxHandler {
     /**
      * @param nearNode Node that initiated transaction.
      * @param req Near prepare request.
-     * @return Prepare future.
+     * @return Prepare future or {@code null} if need retry operation.
      */
-    private IgniteInternalFuture<GridNearTxPrepareResponse> prepareNearTx(
+    @Nullable private IgniteInternalFuture<GridNearTxPrepareResponse> prepareNearTx(
         final ClusterNode nearNode,
         final GridNearTxPrepareRequest req
     ) {
@@ -348,55 +372,90 @@ public class IgniteTxHandler {
                 top = firstEntry.context().topology();
 
                 top.readLock();
+
+                if (req.allowWaitTopologyFuture()) {
+                    GridDhtTopologyFuture topFut = top.topologyVersionFuture();
+
+                    if (!topFut.isDone()) {
+                        top.readUnlock();
+
+                        return null;
+                    }
+                }
             }
 
             try {
-                if (top != null && needRemap(req.topologyVersion(), top.topologyVersion(), req)) {
-                    if (txPrepareMsgLog.isDebugEnabled()) {
-                        txPrepareMsgLog.debug("Topology version mismatch for near prepare, need remap transaction [" +
-                            "txId=" + req.version() +
-                            ", node=" + nearNode.id() +
-                            ", reqTopVer=" + req.topologyVersion() +
-                            ", locTopVer=" + top.topologyVersion() +
-                            ", req=" + req + ']');
-                    }
+                if (top != null ) {
+                    boolean retry = false;
 
-                    GridNearTxPrepareResponse res = new GridNearTxPrepareResponse(
-                        req.partition(),
-                        req.version(),
-                        req.futureId(),
-                        req.miniId(),
-                        req.version(),
-                        req.version(),
-                        null,
-                        null,
-                        top.topologyVersion(),
-                        req.onePhaseCommit(),
-                        req.deployInfo() != null);
+                    GridDhtTopologyFuture topFut = top.topologyVersionFuture();
 
-                    try {
-                        ctx.io().send(nearNode, res, req.policy());
+                    if (!req.allowWaitTopologyFuture() && !topFut.isDone()) {
+                        retry = true;
 
                         if (txPrepareMsgLog.isDebugEnabled()) {
-                            txPrepareMsgLog.debug("Sent remap response for near prepare [txId=" + req.version() +
-                                ", node=" + nearNode.id() + ']');
-                        }
-                    }
-                    catch (ClusterTopologyCheckedException ignored) {
-                        if (txPrepareMsgLog.isDebugEnabled()) {
-                            txPrepareMsgLog.debug("Failed to send remap response for near prepare, node failed [" +
+                            txPrepareMsgLog.debug("Topology change is in progress, need remap transaction [" +
                                 "txId=" + req.version() +
-                                ", node=" + nearNode.id() + ']');
+                                ", node=" + nearNode.id() +
+                                ", reqTopVer=" + req.topologyVersion() +
+                                ", locTopVer=" + top.readyTopologyVersion() +
+                                ", req=" + req + ']');
                         }
                     }
-                    catch (IgniteCheckedException e) {
-                        U.error(txPrepareMsgLog, "Failed to send remap response for near prepare " +
-                            "[txId=" + req.version() +
-                            ", node=" + nearNode.id() +
-                            ", req=" + req + ']', e);
+
+                    if (!retry && needRemap(req.topologyVersion(), top.readyTopologyVersion(), req)) {
+                        retry = true;
+
+                        if (txPrepareMsgLog.isDebugEnabled()) {
+                            txPrepareMsgLog.debug("Topology version mismatch for near prepare, need remap transaction [" +
+                                "txId=" + req.version() +
+                                ", node=" + nearNode.id() +
+                                ", reqTopVer=" + req.topologyVersion() +
+                                ", locTopVer=" + top.readyTopologyVersion() +
+                                ", req=" + req + ']');
+                        }
                     }
 
-                    return new GridFinishedFuture<>(res);
+                    if (retry) {
+                        GridNearTxPrepareResponse res = new GridNearTxPrepareResponse(
+                            req.partition(),
+                            req.version(),
+                            req.futureId(),
+                            req.miniId(),
+                            req.version(),
+                            req.version(),
+                            null,
+                            null,
+                            top.lastTopologyChangeVersion(),
+                            req.onePhaseCommit(),
+                            req.deployInfo() != null);
+
+                        try {
+                            ctx.io().send(nearNode, res, req.policy());
+
+                            if (txPrepareMsgLog.isDebugEnabled()) {
+                                txPrepareMsgLog.debug("Sent remap response for near prepare [txId=" + req.version() +
+                                    ", node=" + nearNode.id() + ']');
+                            }
+                        }
+                        catch (ClusterTopologyCheckedException ignored) {
+                            if (txPrepareMsgLog.isDebugEnabled()) {
+                                txPrepareMsgLog.debug("Failed to send remap response for near prepare, node failed [" +
+                                    "txId=" + req.version() +
+                                    ", node=" + nearNode.id() + ']');
+                            }
+                        }
+                        catch (IgniteCheckedException e) {
+                            U.error(txPrepareMsgLog, "Failed to send remap response for near prepare " +
+                                "[txId=" + req.version() +
+                                ", node=" + nearNode.id() +
+                                ", req=" + req + ']', e);
+                        }
+
+                        return new GridFinishedFuture<>(res);
+                    }
+
+                    assert topFut.isDone();
                 }
 
                 tx = new GridDhtTxLocal(
@@ -496,6 +555,53 @@ public class IgniteTxHandler {
         }
         else
             return new GridFinishedFuture<>((GridNearTxPrepareResponse)null);
+    }
+
+    /**
+     * @param node Sender node.
+     * @param req Request.
+     * @return {@code True} if update will be retried from future listener.
+     */
+    private boolean waitForExchangeFuture(final ClusterNode node, final GridNearTxPrepareRequest req) {
+        assert req.firstClientRequest() : req;
+
+        GridDhtTopologyFuture topFut = ctx.exchange().lastTopologyFuture();
+
+        if (!topFut.isDone()) {
+            Thread curThread = Thread.currentThread();
+
+            if (curThread instanceof IgniteThread) {
+                final IgniteThread thread = (IgniteThread)curThread;
+
+                if (thread.cachePoolThread()) {
+                    topFut.listen(new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
+                        @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> fut) {
+                            ctx.kernalContext().closure().runLocalWithThreadPolicy(thread, new Runnable() {
+                                @Override public void run() {
+                                    try {
+                                        processNearTxPrepareRequest0(node, req);
+                                    }
+                                    finally {
+                                        ctx.io().onMessageProcessed(req);
+                                    }
+                                }
+                            });
+                        }
+                    });
+
+                    return true;
+                }
+            }
+
+            try {
+                topFut.get();
+            }
+            catch (IgniteCheckedException e) {
+                U.error(log, "Topology future failed: " + e, e);
+            }
+        }
+
+        return false;
     }
 
     /**

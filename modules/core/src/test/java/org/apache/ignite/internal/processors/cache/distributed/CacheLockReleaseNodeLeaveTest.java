@@ -29,6 +29,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -249,10 +250,10 @@ public class CacheLockReleaseNodeLeaveTest extends GridCommonAbstractTest {
         // Wait when affinity change exchange start.
         boolean wait = GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
-                AffinityTopologyVersion topVer0 =
-                    ((IgniteKernal)ignite0).context().cache().context().exchange().topologyVersion();
+                GridDhtTopologyFuture topFut =
+                    ((IgniteKernal)ignite0).context().cache().context().exchange().lastTopologyFuture();
 
-                return topVer.compareTo(topVer0) < 0;
+                return topFut != null && topVer.compareTo(topFut.initialVersion()) < 0;
             }
         }, 10_000);
 
@@ -330,10 +331,10 @@ public class CacheLockReleaseNodeLeaveTest extends GridCommonAbstractTest {
         // Wait when affinity change exchange start.
         boolean wait = GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
-                AffinityTopologyVersion topVer0 =
-                    ((IgniteKernal)ignite0).context().cache().context().exchange().topologyVersion();
+                GridDhtTopologyFuture topFut =
+                    ((IgniteKernal)ignite0).context().cache().context().exchange().lastTopologyFuture();
 
-                return topVer.compareTo(topVer0) < 0;
+                return topFut != null && topVer.compareTo(topFut.initialVersion()) < 0;
             }
         }, 10_000);
 

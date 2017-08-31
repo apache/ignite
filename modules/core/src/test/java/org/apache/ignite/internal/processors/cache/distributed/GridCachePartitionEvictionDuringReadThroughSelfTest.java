@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.processors.cache.distributed;
 
 import java.util.LinkedHashSet;
+import java.util.Set;
 import java.util.concurrent.Callable;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.cache.Cache;
@@ -36,6 +36,8 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -43,6 +45,12 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  *
  */
 public class GridCachePartitionEvictionDuringReadThroughSelfTest extends GridCommonAbstractTest {
+    /** Failing key. */
+    private static final int FAILING_KEY = 3;
+
+    /** Data read grid index. */
+    private static final int DATA_READ_GRID_IDX = 0;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
@@ -76,28 +84,32 @@ public class GridCachePartitionEvictionDuringReadThroughSelfTest extends GridCom
      * @throws Exception if failed.
      */
     public void testPartitionRent() throws Exception {
-        startGrid(0);
+        fail("https://issues.apache.org/jira/browse/IGNITE-5759");
+
+        startGrid(DATA_READ_GRID_IDX);
 
         final AtomicBoolean done = new AtomicBoolean();
 
-        IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(new Callable<Integer>() {
+        IgniteInternalFuture<Long> gridAndCacheAccessFut = GridTestUtils.runMultiThreadedAsync(new Callable<Integer>() {
             @Override
             public Integer call() throws Exception {
-                LinkedHashSet<Integer> set = new LinkedHashSet<>();
+                final Set<Integer> keysSet = new LinkedHashSet<>();
 
-                set.add(1);
-                set.add(2);
-                set.add(3);
-                set.add(4);
-                set.add(5);
+                keysSet.add(1);
+                keysSet.add(2);
+                keysSet.add(FAILING_KEY);
+                keysSet.add(4);
+                keysSet.add(5);
 
                 while (!done.get()) {
                     try {
-                        grid(0).<Integer, Integer>cache("config").getAll(set);
+                        grid(DATA_READ_GRID_IDX).<Integer, Integer>cache("config").getAll(keysSet);
                     }
                     catch (Throwable ignore) {
                         // No-op.
                     }
+                    if(Thread.currentThread().isInterrupted())
+                        throw new IgniteInterruptedCheckedException("Execution of ["+Thread.currentThread().getName()+"] Interrupted. Test is probably timed out");
                 }
 
                 return null;
@@ -116,11 +128,18 @@ public class GridCachePartitionEvictionDuringReadThroughSelfTest extends GridCom
             }
         });
 
-        startFut.get();
+        try {
+            startFut.get();
+        }
+        catch (Exception e) {
+            gridAndCacheAccessFut.cancel();
+            U.error(log, e);
+            throw e;
+        }
 
         done.set(true);
 
-        fut.get();
+        gridAndCacheAccessFut.get();
     }
 
     /**
@@ -137,13 +156,10 @@ public class GridCachePartitionEvictionDuringReadThroughSelfTest extends GridCom
      *
      */
     private static class HangingCacheStore extends CacheStoreAdapter<Integer, Integer> {
-        /** */
-        private CountDownLatch releaseLatch = new CountDownLatch(1);
-
         /** {@inheritDoc} */
         @Override public Integer load(Integer key) throws CacheLoaderException {
-            if (key == 3)
-                throw new CacheLoaderException();
+            if (key == FAILING_KEY)
+                throw new TestCacheLoaderExpectedException();
 
             return key;
         }
@@ -156,6 +172,16 @@ public class GridCachePartitionEvictionDuringReadThroughSelfTest extends GridCom
         /** {@inheritDoc} */
         @Override public void delete(Object key) throws CacheWriterException {
 
+        }
+    }
+
+    /**
+     *
+     */
+    private static class TestCacheLoaderExpectedException extends CacheLoaderException {
+        /** {@inheritDoc} to reduce amount of logging, trace is not filled */
+        @Override public synchronized Throwable fillInStackTrace() {
+            return this;
         }
     }
 }
