@@ -131,202 +131,202 @@ namespace Apache.Ignite.Core.Impl.Binary
         public IBinaryObjectBuilder SetArrayField<T>(string fieldName, T[] val)
         {
             return SetField0(fieldName,
-                new BinaryBuilderField(typeof (T[]), val, BinaryUtils.TypeArray, WriteArrayAction));
+                new BinaryBuilderField(typeof (T[]), val, BinaryTypeId.TypeArray, WriteArrayAction));
         }
  
         /** <inheritDoc /> */
         public IBinaryObjectBuilder SetBooleanField(string fieldName, bool val)
         {
-            return SetField0(fieldName, new BinaryBuilderField(typeof (bool), val, BinaryUtils.TypeBool, 
+            return SetField0(fieldName, new BinaryBuilderField(typeof (bool), val, BinaryTypeId.TypeBool, 
                 (w, o) => w.WriteBooleanField((bool) o)));
         }
  
         /** <inheritDoc /> */
         public IBinaryObjectBuilder SetBooleanArrayField(string fieldName, bool[] val)
         {
-            return SetField0(fieldName, new BinaryBuilderField(typeof (bool[]), val, BinaryUtils.TypeArrayBool,
+            return SetField0(fieldName, new BinaryBuilderField(typeof (bool[]), val, BinaryTypeId.TypeArrayBool,
                 (w, o) => w.WriteBooleanArray((bool[]) o)));
         }
  
         /** <inheritDoc /> */
         public IBinaryObjectBuilder SetByteField(string fieldName, byte val)
         {
-            return SetField0(fieldName, new BinaryBuilderField(typeof (byte), val, BinaryUtils.TypeByte,
+            return SetField0(fieldName, new BinaryBuilderField(typeof (byte), val, BinaryTypeId.TypeByte,
                 (w, o) => w.WriteByteField((byte) o)));
         }
  
         /** <inheritDoc /> */
         public IBinaryObjectBuilder SetByteArrayField(string fieldName, byte[] val)
         {
-            return SetField0(fieldName, new BinaryBuilderField(typeof (byte[]), val, BinaryUtils.TypeArrayByte,
+            return SetField0(fieldName, new BinaryBuilderField(typeof (byte[]), val, BinaryTypeId.TypeArrayByte,
                 (w, o) => w.WriteByteArray((byte[]) o)));
         }
  
         /** <inheritDoc /> */
         public IBinaryObjectBuilder SetCharField(string fieldName, char val)
         {
-            return SetField0(fieldName, new BinaryBuilderField(typeof (char), val, BinaryUtils.TypeChar,
+            return SetField0(fieldName, new BinaryBuilderField(typeof (char), val, BinaryTypeId.TypeChar,
                 (w, o) => w.WriteCharField((char) o)));
         }
  
         /** <inheritDoc /> */
         public IBinaryObjectBuilder SetCharArrayField(string fieldName, char[] val)
         {
-            return SetField0(fieldName, new BinaryBuilderField(typeof (char[]), val, BinaryUtils.TypeArrayChar,
+            return SetField0(fieldName, new BinaryBuilderField(typeof (char[]), val, BinaryTypeId.TypeArrayChar,
                 (w, o) => w.WriteCharArray((char[]) o)));
         }
  
         /** <inheritDoc /> */
         public IBinaryObjectBuilder SetCollectionField(string fieldName, ICollection val)
         {
-            return SetField0(fieldName, new BinaryBuilderField(typeof (ICollection), val, BinaryUtils.TypeCollection,
+            return SetField0(fieldName, new BinaryBuilderField(typeof (ICollection), val, BinaryTypeId.TypeCollection,
                 WriteCollectionAction));
         }
  
         /** <inheritDoc /> */
         public IBinaryObjectBuilder SetDecimalField(string fieldName, decimal? val)
         {
-            return SetField0(fieldName, new BinaryBuilderField(typeof (decimal?), val, BinaryUtils.TypeDecimal,
+            return SetField0(fieldName, new BinaryBuilderField(typeof (decimal?), val, BinaryTypeId.TypeDecimal,
                 (w, o) => w.WriteDecimal((decimal?) o)));
         }
  
         /** <inheritDoc /> */
         public IBinaryObjectBuilder SetDecimalArrayField(string fieldName, decimal?[] val)
         {
-            return SetField0(fieldName, new BinaryBuilderField(typeof (decimal?[]), val, BinaryUtils.TypeArrayDecimal,
+            return SetField0(fieldName, new BinaryBuilderField(typeof (decimal?[]), val, BinaryTypeId.TypeArrayDecimal,
                 (w, o) => w.WriteDecimalArray((decimal?[]) o)));
         }
  
         /** <inheritDoc /> */
         public IBinaryObjectBuilder SetDictionaryField(string fieldName, IDictionary val)
         {
-            return SetField0(fieldName, new BinaryBuilderField(typeof (IDictionary), val, BinaryUtils.TypeDictionary,
+            return SetField0(fieldName, new BinaryBuilderField(typeof (IDictionary), val, BinaryTypeId.TypeDictionary,
                 (w, o) => w.WriteDictionary((IDictionary) o)));
         }
  
         /** <inheritDoc /> */
         public IBinaryObjectBuilder SetDoubleField(string fieldName, double val)
         {
-            return SetField0(fieldName, new BinaryBuilderField(typeof (double), val, BinaryUtils.TypeDouble,
+            return SetField0(fieldName, new BinaryBuilderField(typeof (double), val, BinaryTypeId.TypeDouble,
                 (w, o) => w.WriteDoubleField((double) o)));
         }
  
         /** <inheritDoc /> */
         public IBinaryObjectBuilder SetDoubleArrayField(string fieldName, double[] val)
         {
-            return SetField0(fieldName, new BinaryBuilderField(typeof (double[]), val, BinaryUtils.TypeArrayDouble,
+            return SetField0(fieldName, new BinaryBuilderField(typeof (double[]), val, BinaryTypeId.TypeArrayDouble,
                 (w, o) => w.WriteDoubleArray((double[]) o)));
         }
  
         /** <inheritDoc /> */
         public IBinaryObjectBuilder SetEnumField<T>(string fieldName, T val)
         {
-            return SetField0(fieldName, new BinaryBuilderField(typeof (T), val, BinaryUtils.TypeEnum,
+            return SetField0(fieldName, new BinaryBuilderField(typeof (T), val, BinaryTypeId.TypeEnum,
                 (w, o) => w.WriteEnum((T) o)));
         }
  
         /** <inheritDoc /> */
         public IBinaryObjectBuilder SetEnumArrayField<T>(string fieldName, T[] val)
         {
-            return SetField0(fieldName, new BinaryBuilderField(typeof (T[]), val, BinaryUtils.TypeArrayEnum,
+            return SetField0(fieldName, new BinaryBuilderField(typeof (T[]), val, BinaryTypeId.TypeArrayEnum,
                 (w, o) => w.WriteEnumArray((T[]) o)));
         }
  
         /** <inheritDoc /> */
         public IBinaryObjectBuilder SetFloatField(string fieldName, float val)
         {
-            return SetField0(fieldName, new BinaryBuilderField(typeof (float), val, BinaryUtils.TypeFloat,
+            return SetField0(fieldName, new BinaryBuilderField(typeof (float), val, BinaryTypeId.TypeFloat,
                 (w, o) => w.WriteFloatField((float) o)));
         }
  
         /** <inheritDoc /> */
         public IBinaryObjectBuilder SetFloatArrayField(string fieldName, float[] val)
         {
-            return SetField0(fieldName, new BinaryBuilderField(typeof (float[]), val, BinaryUtils.TypeArrayFloat,
+            return SetField0(fieldName, new BinaryBuilderField(typeof (float[]), val, BinaryTypeId.TypeArrayFloat,
                 (w, o) => w.WriteFloatArray((float[]) o)));
         }
  
         /** <inheritDoc /> */
         public IBinaryObjectBuilder SetGuidField(string fieldName, Guid? val)
         {
-            return SetField0(fieldName, new BinaryBuilderField(typeof (Guid?), val, BinaryUtils.TypeGuid,
+            return SetField0(fieldName, new BinaryBuilderField(typeof (Guid?), val, BinaryTypeId.TypeGuid,
                 (w, o) => w.WriteGuid((Guid?) o)));
         }
  
         /** <inheritDoc /> */
         public IBinaryObjectBuilder SetGuidArrayField(string fieldName, Guid?[] val)
         {
-            return SetField0(fieldName, new BinaryBuilderField(typeof (Guid?[]), val, BinaryUtils.TypeArrayGuid,
+            return SetField0(fieldName, new BinaryBuilderField(typeof (Guid?[]), val, BinaryTypeId.TypeArrayGuid,
                 (w, o) => w.WriteGuidArray((Guid?[]) o)));
         }
  
         /** <inheritDoc /> */
         public IBinaryObjectBuilder SetIntField(string fieldName, int val)
         {
-            return SetField0(fieldName, new BinaryBuilderField(typeof (int), val, BinaryUtils.TypeInt,
+            return SetField0(fieldName, new BinaryBuilderField(typeof (int), val, BinaryTypeId.TypeInt,
                 (w, o) => w.WriteIntField((int) o)));
         }
  
         /** <inheritDoc /> */
         public IBinaryObjectBuilder SetIntArrayField(string fieldName, int[] val)
         {
-            return SetField0(fieldName, new BinaryBuilderField(typeof (int[]), val, BinaryUtils.TypeArrayInt,
+            return SetField0(fieldName, new BinaryBuilderField(typeof (int[]), val, BinaryTypeId.TypeArrayInt,
                 (w, o) => w.WriteIntArray((int[]) o)));
         }
  
         /** <inheritDoc /> */
         public IBinaryObjectBuilder SetLongField(string fieldName, long val)
         {
-            return SetField0(fieldName, new BinaryBuilderField(typeof (long), val, BinaryUtils.TypeLong,
+            return SetField0(fieldName, new BinaryBuilderField(typeof (long), val, BinaryTypeId.TypeLong,
                 (w, o) => w.WriteLongField((long) o)));
         }
  
         /** <inheritDoc /> */
         public IBinaryObjectBuilder SetLongArrayField(string fieldName, long[] val)
         {
-            return SetField0(fieldName, new BinaryBuilderField(typeof (long[]), val, BinaryUtils.TypeArrayLong,
+            return SetField0(fieldName, new BinaryBuilderField(typeof (long[]), val, BinaryTypeId.TypeArrayLong,
                 (w, o) => w.WriteLongArray((long[]) o)));
         }
  
         /** <inheritDoc /> */
         public IBinaryObjectBuilder SetShortField(string fieldName, short val)
         {
-            return SetField0(fieldName, new BinaryBuilderField(typeof (short), val, BinaryUtils.TypeShort,
+            return SetField0(fieldName, new BinaryBuilderField(typeof (short), val, BinaryTypeId.TypeShort,
                 (w, o) => w.WriteShortField((short) o)));
         }
  
         /** <inheritDoc /> */
         public IBinaryObjectBuilder SetShortArrayField(string fieldName, short[] val)
         {
-            return SetField0(fieldName, new BinaryBuilderField(typeof (short[]), val, BinaryUtils.TypeArrayShort,
+            return SetField0(fieldName, new BinaryBuilderField(typeof (short[]), val, BinaryTypeId.TypeArrayShort,
                 (w, o) => w.WriteShortArray((short[]) o)));
         }
  
         /** <inheritDoc /> */
         public IBinaryObjectBuilder SetStringField(string fieldName, string val)
         {
-            return SetField0(fieldName, new BinaryBuilderField(typeof (string), val, BinaryUtils.TypeString,
+            return SetField0(fieldName, new BinaryBuilderField(typeof (string), val, BinaryTypeId.TypeString,
                 (w, o) => w.WriteString((string) o)));
         }
  
         /** <inheritDoc /> */
         public IBinaryObjectBuilder SetStringArrayField(string fieldName, string[] val)
         {
-            return SetField0(fieldName, new BinaryBuilderField(typeof (string[]), val, BinaryUtils.TypeArrayString,
+            return SetField0(fieldName, new BinaryBuilderField(typeof (string[]), val, BinaryTypeId.TypeArrayString,
                 (w, o) => w.WriteStringArray((string[]) o)));
         }
  
         /** <inheritDoc /> */
         public IBinaryObjectBuilder SetTimestampField(string fieldName, DateTime? val)
         {
-            return SetField0(fieldName, new BinaryBuilderField(typeof (DateTime?), val, BinaryUtils.TypeTimestamp,
+            return SetField0(fieldName, new BinaryBuilderField(typeof (DateTime?), val, BinaryTypeId.TypeTimestamp,
                 WriteTimestampAction));
         }
  
         /** <inheritDoc /> */
         public IBinaryObjectBuilder SetTimestampArrayField(string fieldName, DateTime?[] val)
         {
-            return SetField0(fieldName, new BinaryBuilderField(typeof (DateTime?[]), val, BinaryUtils.TypeArrayTimestamp,
+            return SetField0(fieldName, new BinaryBuilderField(typeof (DateTime?[]), val, BinaryTypeId.TypeArrayTimestamp,
                 WriteTimestampArrayAction));
         } 
 
@@ -440,19 +440,19 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             switch (header)
             {
-                case BinaryUtils.TypeArray:
+                case BinaryTypeId.TypeArray:
                     return WriteArrayAction;
 
-                case BinaryUtils.TypeCollection:
+                case BinaryTypeId.TypeCollection:
                     return WriteCollectionAction;
 
-                case BinaryUtils.TypeTimestamp:
+                case BinaryTypeId.TypeTimestamp:
                     return WriteTimestampAction;
 
-                case BinaryUtils.TypeArrayTimestamp:
+                case BinaryTypeId.TypeArrayTimestamp:
                     return WriteTimestampArrayAction;
 
-                case BinaryUtils.TypeArrayEnum:
+                case BinaryTypeId.TypeArrayEnum:
                     using (var stream = new BinaryHeapStream(_obj.Data))
                     {
                         stream.Seek(pos, SeekOrigin.Begin + 1);
@@ -826,47 +826,47 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             switch (hdr)
             {
-                case BinaryUtils.TypeByte:
+                case BinaryTypeId.TypeByte:
                     TransferBytes(inStream, outStream, 1);
 
                     break;
 
-                case BinaryUtils.TypeShort:
+                case BinaryTypeId.TypeShort:
                     TransferBytes(inStream, outStream, 2);
 
                     break;
 
-                case BinaryUtils.TypeInt:
+                case BinaryTypeId.TypeInt:
                     TransferBytes(inStream, outStream, 4);
 
                     break;
 
-                case BinaryUtils.TypeLong:
+                case BinaryTypeId.TypeLong:
                     TransferBytes(inStream, outStream, 8);
 
                     break;
 
-                case BinaryUtils.TypeFloat:
+                case BinaryTypeId.TypeFloat:
                     TransferBytes(inStream, outStream, 4);
 
                     break;
 
-                case BinaryUtils.TypeDouble:
+                case BinaryTypeId.TypeDouble:
                     TransferBytes(inStream, outStream, 8);
 
                     break;
 
-                case BinaryUtils.TypeChar:
+                case BinaryTypeId.TypeChar:
                     TransferBytes(inStream, outStream, 2);
 
                     break;
 
-                case BinaryUtils.TypeBool:
+                case BinaryTypeId.TypeBool:
                     TransferBytes(inStream, outStream, 1);
 
                     break;
 
-                case BinaryUtils.TypeDecimal:
+                case BinaryTypeId.TypeDecimal:
                     TransferBytes(inStream, outStream, 4); // Transfer scale
 
                     int magLen = inStream.ReadInt(); // Transfer magnitude length.
@@ -877,65 +877,65 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                     break;
 
-                case BinaryUtils.TypeString:
+                case BinaryTypeId.TypeString:
                     BinaryUtils.WriteString(BinaryUtils.ReadString(inStream), outStream);
 
                     break;
 
-                case BinaryUtils.TypeGuid:
+                case BinaryTypeId.TypeGuid:
                     TransferBytes(inStream, outStream, 16);
 
                     break;
 
-                case BinaryUtils.TypeTimestamp:
+                case BinaryTypeId.TypeTimestamp:
                     TransferBytes(inStream, outStream, 12);
 
                     break;
 
-                case BinaryUtils.TypeArrayByte:
+                case BinaryTypeId.TypeArrayByte:
                     TransferArray(inStream, outStream, 1);
 
                     break;
 
-                case BinaryUtils.TypeArrayShort:
+                case BinaryTypeId.TypeArrayShort:
                     TransferArray(inStream, outStream, 2);
 
                     break;
 
-                case BinaryUtils.TypeArrayInt:
+                case BinaryTypeId.TypeArrayInt:
                     TransferArray(inStream, outStream, 4);
 
                     break;
 
-                case BinaryUtils.TypeArrayLong:
+                case BinaryTypeId.TypeArrayLong:
                     TransferArray(inStream, outStream, 8);
 
                     break;
 
-                case BinaryUtils.TypeArrayFloat:
+                case BinaryTypeId.TypeArrayFloat:
                     TransferArray(inStream, outStream, 4);
 
                     break;
 
-                case BinaryUtils.TypeArrayDouble:
+                case BinaryTypeId.TypeArrayDouble:
                     TransferArray(inStream, outStream, 8);
 
                     break;
 
-                case BinaryUtils.TypeArrayChar:
+                case BinaryTypeId.TypeArrayChar:
                     TransferArray(inStream, outStream, 2);
 
                     break;
 
-                case BinaryUtils.TypeArrayBool:
+                case BinaryTypeId.TypeArrayBool:
                     TransferArray(inStream, outStream, 1);
 
                     break;
 
-                case BinaryUtils.TypeArrayDecimal:
-                case BinaryUtils.TypeArrayString:
-                case BinaryUtils.TypeArrayGuid:
-                case BinaryUtils.TypeArrayTimestamp:
+                case BinaryTypeId.TypeArrayDecimal:
+                case BinaryTypeId.TypeArrayString:
+                case BinaryTypeId.TypeArrayGuid:
+                case BinaryTypeId.TypeArrayTimestamp:
                     int arrLen = inStream.ReadInt();
 
                     outStream.WriteInt(arrLen);
@@ -945,13 +945,13 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                     break;
 
-                case BinaryUtils.TypeArrayEnum:
-                case BinaryUtils.TypeArray:
+                case BinaryTypeId.TypeArrayEnum:
+                case BinaryTypeId.TypeArray:
                     int type = inStream.ReadInt();
 
                     outStream.WriteInt(type);
 
-                    if (type == BinaryUtils.TypeUnregistered)
+                    if (type == BinaryTypeId.TypeUnregistered)
                     {
                         outStream.WriteByte(inStream.ReadByte());  // String header.
 
@@ -967,7 +967,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                     break;
 
-                case BinaryUtils.TypeCollection:
+                case BinaryTypeId.TypeCollection:
                     int colLen = inStream.ReadInt();
 
                     outStream.WriteInt(colLen);
@@ -979,7 +979,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                     break;
 
-                case BinaryUtils.TypeDictionary:
+                case BinaryTypeId.TypeDictionary:
                     int dictLen = inStream.ReadInt();
 
                     outStream.WriteInt(dictLen);
@@ -994,13 +994,13 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                     break;
                     
-                case BinaryUtils.TypeBinary:
+                case BinaryTypeId.TypeBinary:
                     TransferArray(inStream, outStream, 1); // Data array.
                     TransferBytes(inStream, outStream, 4); // Offset in array.
 
                     break;
 
-                case BinaryUtils.TypeEnum:
+                case BinaryTypeId.TypeEnum:
                     TransferBytes(inStream, outStream, 8); // int typeId, int value.
 
                     break;
