@@ -148,7 +148,7 @@ namespace Apache.Ignite.Core.Impl.Messaging
         {
             var writer0 = (BinaryWriter)writer.GetRawWriter();
 
-            writer0.WithDetach(w => w.WriteObject(Filter));
+            writer0.WriteObjectDetached(Filter);
         }
 
         /// <summary>

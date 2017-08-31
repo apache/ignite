@@ -1413,11 +1413,12 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Perform action with detached semantics.
         /// </summary>
-        /// <param name="a"></param>
-        internal void WithDetach(Action<BinaryWriter> a)
+        internal void WriteObjectDetached<T>(T o)
         {
             if (_detaching)
-                a(this);
+            {
+                Write(o);
+            }
             else
             {
                 _detaching = true;
@@ -1427,7 +1428,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                 try
                 {
-                    a(this);
+                    Write(o);
                 }
                 finally
                 {
