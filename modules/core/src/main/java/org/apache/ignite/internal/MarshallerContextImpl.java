@@ -238,7 +238,7 @@ public class MarshallerContextImpl implements MarshallerContext {
 
         if (mappedName != null) {
             if (!mappedName.className().equals(clsName))
-                throw duplicateIdException(platformId, typeId, mappedName.className(), clsName);
+                throw new DuplicateTypeIdException(platformId, typeId, mappedName.className(), clsName);
             else {
                 if (mappedName.accepted())
                     return true;
@@ -286,28 +286,6 @@ public class MarshallerContextImpl implements MarshallerContext {
             assert res.error() != null;
             throw res.error();
         }
-    }
-
-    /**
-     * @param platformId Platform id.
-     * @param typeId Type id.
-     * @param conflictingClsName Conflicting class name.
-     * @param clsName Class name.
-     */
-    private IgniteCheckedException duplicateIdException(
-            byte platformId,
-            int typeId,
-            String conflictingClsName,
-            String clsName
-    ) {
-        return new IgniteCheckedException("Duplicate ID [platformId="
-            + platformId
-            + ", typeId="
-            + typeId
-            + ", oldCls="
-            + conflictingClsName
-            + ", newCls="
-            + clsName + "]");
     }
 
     /**
