@@ -46,7 +46,7 @@ public class JdbcThinUtils {
     public static final String URL_PREFIX = "jdbc:ignite:thin://";
 
     /** Prefix for property names. */
-    public static final String PROP_PREFIX = "ignite.jdbc";
+    public static final String PROP_PREFIX = "ignite.jdbc.";
 
     /** Port number property name. */
     public static final String PROP_PORT = PROP_PREFIX + "port";
