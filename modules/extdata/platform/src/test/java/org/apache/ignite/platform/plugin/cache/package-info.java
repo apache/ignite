@@ -17,6 +17,6 @@
 
 /**
  * <!-- Package description. -->
- * Contains .NET tests related classes and interfaces.
+ * Contains platform tests related classes and interfaces.
  */
 package org.apache.ignite.platform.plugin.cache;

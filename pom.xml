@@ -54,6 +54,7 @@
         <module>modules/hadoop</module>
         <module>modules/extdata/p2p</module>
         <module>modules/extdata/uri</module>
+        <module>modules/extdata/platform</module>
         <module>modules/clients</module>
         <module>modules/spring</module>
         <module>modules/spring-data</module>
@@ -93,7 +94,6 @@
         <module>modules/kubernetes</module>
         <module>modules/zeromq</module>
         <module>modules/rocketmq</module>
-        <module>modules/dotnet-tests</module>
     </modules>
 
     <profiles>
@@ -102,7 +102,6 @@
             <modules> <!-- sorted alphabetically -->
                 <module>examples</module>
                 <module>modules/benchmarks</module>
-                <module>modules/dotnet-tests</module>
                 <module>modules/geospatial</module>
                 <module>modules/hibernate-4.2</module>
                 <module>modules/hibernate-5.1</module>
@@ -538,14 +537,6 @@
             <id>ignored-tests</id>
             <modules>
                 <module>modules/ignored-tests</module>
-            </modules>
-        </profile>
-
-        <profile>
-            <id>dotnet-tests</id>
-            <modules>
-                <module>modules/core</module>
-                <module>modules/dotnet-tests</module>
             </modules>
         </profile>
 
