@@ -1514,6 +1514,8 @@ public class GridSqlQuerySplitter {
         // -- SUB-QUERIES
         boolean hasSubQueries = hasSubQueries(mapQry.where());
 
+        hasSubQueries |= hasSubQueries(mapQry.from());
+
         for (int i = 0; i < mapQry.columns(false).size(); i++)
             hasSubQueries |= hasSubQueries(mapQry.column(i));
 

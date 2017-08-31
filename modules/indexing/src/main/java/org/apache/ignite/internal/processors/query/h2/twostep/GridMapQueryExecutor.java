@@ -784,8 +784,41 @@ public class GridMapQueryExecutor {
             fldsQry.setEnforceJoinOrder(req.isFlagSet(GridH2QueryRequest.FLAG_ENFORCE_JOIN_ORDER));
             fldsQry.setTimeout(req.timeout(), TimeUnit.MILLISECONDS);
             fldsQry.setPageSize(req.pageSize());
+            fldsQry.setLocal(true);
 
-            UpdateResult updRes = h2.mapDistributedUpdate(req.schemaName(), fldsQry, filter, cancel);
+            boolean local = true;
+
+            final boolean replicated = req.isFlagSet(GridH2QueryRequest.FLAG_REPLICATED);
+
+            if (!replicated && !F.isEmpty(cacheIds) &&
+                findFirstPartitioned(cacheIds).config().getQueryParallelism() > 1) {
+                fldsQry.setDistributedJoins(true);
+
+                local = false;
+            }
+
+            UpdateResult updRes = h2.mapDistributedUpdate(req.schemaName(), fldsQry, filter, cancel, local);
+
+            GridCacheContext<?, ?> mainCctx =
+                !F.isEmpty(cacheIds) ? ctx.cache().context().cacheContext(cacheIds.get(0)) : null;
+
+            boolean evt = local && mainCctx != null && ctx.event().isRecordable(EVT_CACHE_QUERY_EXECUTED);
+
+            if (evt) {
+                ctx.event().record(new CacheQueryExecutedEvent<>(
+                    node,
+                    "SQL query executed.",
+                    EVT_CACHE_QUERY_EXECUTED,
+                    CacheQueryType.SQL.name(),
+                    mainCctx.name(),
+                    null,
+                    req.query(),
+                    null,
+                    null,
+                    req.parameters(),
+                    node.id(),
+                    null));
+            }
 
             sendUpdateResponse(node, reqId, updRes, null);
         }
@@ -804,6 +837,10 @@ public class GridMapQueryExecutor {
 
             nodeResults.removeUpdate(reqId);
         }
+    }
+
+    private void onDmlRequest0() {
+
     }
 
     /**
@@ -838,6 +875,7 @@ public class GridMapQueryExecutor {
      * @param updResult Update result.
      * @param error Error message.
      */
+    @SuppressWarnings("deprecation")
     private void sendUpdateResponse(ClusterNode node, long reqId, UpdateResult updResult, String error) {
         try {
             GridH2DmlResponse rsp = new GridH2DmlResponse(reqId, updResult == null ? 0 : updResult.counter(),
@@ -848,8 +886,11 @@ public class GridMapQueryExecutor {
 
             if (node.isLocal())
                 h2.reduceQueryExecutor().onMessage(ctx.localNodeId(), rsp);
-            else
+            else {
+                rsp.marshall(ctx.config().getMarshaller());
+
                 ctx.io().sendToGridTopic(node, GridTopic.TOPIC_QUERY, rsp, QUERY_POOL);
+            }
         }
         catch (Exception e) {
             U.error(log, "Failed to send message.", e);

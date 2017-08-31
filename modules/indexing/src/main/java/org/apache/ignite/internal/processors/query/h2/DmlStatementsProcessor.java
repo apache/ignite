@@ -265,6 +265,8 @@ public class DmlStatementsProcessor {
         SqlFieldsQuery fieldsQry, GridQueryCancel cancel) throws IgniteCheckedException {
         UpdateResult res = updateSqlFields(schemaName, stmt, fieldsQry, false, null, cancel);
 
+        checkUpdateResult(res);
+
         QueryCursorImpl<List<?>> resCur = (QueryCursorImpl<List<?>>)new QueryCursorImpl(Collections.singletonList
             (Collections.singletonList(res.cnt)), cancel, false);
 
@@ -404,7 +406,7 @@ public class DmlStatementsProcessor {
             return doFastUpdate(plan, fieldsQry.getArgs());
         }
 
-        if (plan.distributed && !loc)
+        if (plan.distributed && !loc && !fieldsQry.isLocal())
             return doDistributedUpdate(schemaName, fieldsQry, plan, cancel);
 
         assert !F.isEmpty(plan.selectQry);
@@ -1040,12 +1042,13 @@ public class DmlStatementsProcessor {
      * @param fldsQry Query.
      * @param filter Filter.
      * @param cancel Cancel state.
+     * @param local Locality flag.
      * @return Update result.
      * @throws IgniteCheckedException if failed.
      */
     UpdateResult mapDistributedUpdate(String schemaName, PreparedStatement stmt, SqlFieldsQuery fldsQry,
-        IndexingQueryFilter filter, GridQueryCancel cancel) throws IgniteCheckedException {
-        return updateSqlFields(schemaName, stmt, fldsQry, true, filter, cancel);
+        IndexingQueryFilter filter, GridQueryCancel cancel, boolean local) throws IgniteCheckedException {
+        return updateSqlFields(schemaName, stmt, fldsQry, local, filter, cancel);
     }
 
     /** */
@@ -1142,6 +1145,18 @@ public class DmlStatementsProcessor {
      */
     static boolean isDmlStatement(Prepared stmt) {
         return stmt instanceof Merge || stmt instanceof Insert || stmt instanceof Update || stmt instanceof Delete;
+    }
+
+    /** */
+    static void checkUpdateResult(UpdateResult r) {
+        if (!F.isEmpty(r.errorKeys())) {
+            String msg = "Failed to update some keys because they had been modified concurrently " +
+                "[keys=" + r.errorKeys() + ']';
+
+            SQLException conEx = createJdbcSqlException(msg, IgniteQueryErrorCode.CONCURRENT_UPDATE);
+
+            throw new IgniteSQLException(conEx);
+        }
     }
 
     /** Result of processing an individual page with {@link IgniteCache#invokeAll} including error details, if any. */

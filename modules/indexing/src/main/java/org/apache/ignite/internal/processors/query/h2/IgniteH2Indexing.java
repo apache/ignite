@@ -1452,11 +1452,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param fldsQry Query.
      * @param filter Filter.
      * @param cancel Cancel state.
+     * @param local Locality flag.
      * @return Update result.
      * @throws IgniteCheckedException if failed.
      */
     public UpdateResult mapDistributedUpdate(String schemaName, SqlFieldsQuery fldsQry, IndexingQueryFilter filter,
-        GridQueryCancel cancel) throws IgniteCheckedException {
+        GridQueryCancel cancel, boolean local) throws IgniteCheckedException {
         Connection conn = connectionForSchema(schemaName);
 
         H2Utils.setupConnection(conn, false, fldsQry.isEnforceJoinOrder());
@@ -1464,7 +1465,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         PreparedStatement stmt = preparedStatementWithParams(conn, fldsQry.getSql(),
             Arrays.asList(fldsQry.getArgs()), true);
 
-        return dmlProc.mapDistributedUpdate(schemaName, stmt, fldsQry, filter, cancel);
+        return dmlProc.mapDistributedUpdate(schemaName, stmt, fldsQry, filter, cancel, local);
     }
 
     /**

@@ -896,6 +896,11 @@ public class GridReduceQueryExecutor {
 
         final DistributedUpdateRun r = new DistributedUpdateRun(nodes.size(), qryInfo);
 
+        int flags = enforceJoinOrder ? GridH2QueryRequest.FLAG_ENFORCE_JOIN_ORDER : 0;
+
+        if (isReplicatedOnly)
+            flags |= GridH2QueryRequest.FLAG_REPLICATED;
+
         GridH2DmlRequest req = new GridH2DmlRequest()
             .requestId(reqId)
             .topologyVersion(topVer)
@@ -905,7 +910,7 @@ public class GridReduceQueryExecutor {
             .pageSize(pageSize)
             .parameters(params)
             .timeout(timeoutMillis)
-            .flags(enforceJoinOrder ? GridH2QueryRequest.FLAG_ENFORCE_JOIN_ORDER : 0);
+            .flags(flags);
 
         updRuns.put(reqId, r);
 
