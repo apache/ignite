@@ -45,7 +45,7 @@ namespace Apache.Ignite.Core.Impl.Cache
     internal class CacheImpl<TK, TV> : PlatformTargetAdapter, ICache<TK, TV>, ICacheInternal, ICacheLockInternal
     {
         /** Ignite instance. */
-        private readonly Ignite _ignite;
+        private readonly IIgniteInternal _ignite;
         
         /** Flag: skip store. */
         private readonly bool _flagSkipStore;

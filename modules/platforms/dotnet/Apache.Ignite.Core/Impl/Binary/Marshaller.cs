@@ -61,7 +61,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         private volatile IDictionary<int, BinaryTypeHolder> _metas = new Dictionary<int, BinaryTypeHolder>();
 
         /** */
-        private volatile Ignite _ignite;
+        private volatile IIgniteInternal _ignite;
 
         /** */
         private readonly ILogger _log;
@@ -110,7 +110,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Gets or sets the backing grid.
         /// </summary>
-        public Ignite Ignite
+        public IIgniteInternal Ignite
         {
             get { return _ignite; }
             set
