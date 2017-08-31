@@ -70,6 +70,7 @@
   <ItemGroup>
     <ClCompile Include="..\..\src\binary_object_test.cpp" />
     <ClCompile Include="..\..\src\binary_identity_resolver_test.cpp" />
+    <ClCompile Include="..\..\src\binary_utils_test.cpp" />
     <ClCompile Include="..\..\src\cache_store_test.cpp" />
     <ClCompile Include="..\..\src\cache_test.cpp" />
     <ClCompile Include="..\..\src\cluster_test.cpp" />
