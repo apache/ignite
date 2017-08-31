@@ -32,7 +32,7 @@ namespace Apache.Ignite.Core.PersistentStore
         /// <summary>
         /// Default value for <see cref="CheckpointingThreads"/>.
         /// </summary>
-        public const int DefaultCheckpointingThreads = 1;
+        public const int DefaultCheckpointingThreads = 4;
 
         /// <summary>
         /// Default value for <see cref="CheckpointingFrequency"/>.
