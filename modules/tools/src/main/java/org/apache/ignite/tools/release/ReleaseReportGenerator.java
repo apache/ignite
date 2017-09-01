@@ -111,10 +111,14 @@ public class ReleaseReportGenerator {
      */
     private static void parseArguments(String... args) {
         for (String arg : args) {
-            if (arg.toLowerCase().startsWith("--templatePath=") || arg.toLowerCase().startsWith("-tm="))
-                templatePath = arg.toLowerCase().replace("--templatePath=", "").replace("-tm=", "");
-            else if ((arg.toLowerCase().startsWith("--cssPath=") || arg.toLowerCase().startsWith("-css=")))
-                cssPath = arg.toLowerCase().replace("--cssPath=", "").replace("-css=", "");
+            if (arg.toLowerCase().startsWith("--templatepath="))
+                templatePath = arg.substring(15);
+            else if (arg.toLowerCase().startsWith("-tm="))
+                templatePath = arg.substring(4);
+            else if (arg.toLowerCase().startsWith("--csspath="))
+                cssPath = arg.substring(10);
+            else if (arg.toLowerCase().startsWith("-css="))
+                cssPath = arg.substring(5);
         }
     }
 
