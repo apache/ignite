@@ -6068,11 +6068,15 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                                     if (worker != null) {
                                         msg.verify(getLocalNodeId());
+
                                         worker.addMessage(msg);
                                     }
-                                    else if (log.isDebugEnabled())
-                                        log.debug("Failed to find client message worker " +
+                                    else {
+                                        if (log.isDebugEnabled()) {
+                                            log.debug("Failed to find client message worker " +
                                                 "[clientNode=" + msg.creatorNodeId() + ']');
+                                        }
+                                    }
 
                                     state = spiState;
                                 }
