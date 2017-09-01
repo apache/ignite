@@ -241,7 +241,9 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
             return;
         }
 
-        ctx.query().cancelQueries(Collections.singleton(cur.queryId()));
+        cur.close();
+
+        qryCursors.remove(qryId);
     }
 
     /**
@@ -372,7 +374,7 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
 
             if (cur == null)
                 return new JdbcResponse(SqlListenerResponse.STATUS_FAILED,
-                    "Failed to find query cursor with ID: " + req.queryId());
+                    "Failed to find query cursor with ID: " + req.queryId() + ". Query mey be canceled");
 
             if (req.pageSize() <= 0)
                 return new JdbcResponse(SqlListenerResponse.STATUS_FAILED,

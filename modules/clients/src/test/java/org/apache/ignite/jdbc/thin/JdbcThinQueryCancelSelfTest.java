@@ -23,6 +23,8 @@ import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -42,9 +44,6 @@ public class JdbcThinQueryCancelSelfTest extends JdbcThinAbstractSelfTest {
     /** Max table rows. */
     private static final int MAX_ROWS = 100;
 
-    /** Max cross joins. */
-    private static final int MAX_CROSS_JOINS = 10;
-
     /** Connection. */
     private Connection conn;
 
@@ -61,6 +60,14 @@ public class JdbcThinQueryCancelSelfTest extends JdbcThinAbstractSelfTest {
 
         cfg.setDiscoverySpi(disco);
 
+        CacheConfiguration<Integer, Integer> cc = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
+
+        cc.setCopyOnRead(true);
+        cc.setIndexedTypes(Integer.class, Integer.class);
+        cc.setSqlFunctionClasses(TestSQLFunctions.class);
+
+        cfg.setCacheConfiguration(cc);
+
         return cfg;
     }
 
@@ -68,16 +75,10 @@ public class JdbcThinQueryCancelSelfTest extends JdbcThinAbstractSelfTest {
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        startGridsMultiThreaded(3);
+        startGrids(3);
 
-        try(Connection conn = DriverManager.getConnection(URL)) {
-            Statement stmt = conn.createStatement();
-
-            stmt.execute("CREATE TABLE TEST (ID INT primary key, NAME VARCHAR(50))");
-
-            for (int i = 0; i < MAX_ROWS; i++)
-                stmt.execute("INSERT INTO TEST (ID, NAME) values (" + i + ", 'name_" + i + "')");
-        }
+        for (int i = 0; i < MAX_ROWS; ++i)
+            grid(0).cache(DEFAULT_CACHE_NAME).put(i, i);
     }
 
     /** {@inheritDoc} */
@@ -88,6 +89,8 @@ public class JdbcThinQueryCancelSelfTest extends JdbcThinAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         conn = DriverManager.getConnection(URL);
+
+        conn.setSchema(DEFAULT_CACHE_NAME);
 
         stmt = conn.createStatement();
 
@@ -119,14 +122,9 @@ public class JdbcThinQueryCancelSelfTest extends JdbcThinAbstractSelfTest {
             stmt2.setFetchSize(1);
 
             // Open the second cursor
-            ResultSet rs = stmt2.executeQuery("SELECT * from TEST");
+            ResultSet rs = stmt2.executeQuery("SELECT * from Integer");
 
             assert rs.next();
-
-            final StringBuilder sql = new StringBuilder("SELECT * from TEST as t0");
-
-            for (int i = 1; i < MAX_CROSS_JOINS; i++)
-                sql.append(", TEST as t" + i);
 
             GridTestUtils.runAsync(new Runnable() {
                 @Override public void run() {
@@ -146,7 +144,7 @@ public class JdbcThinQueryCancelSelfTest extends JdbcThinAbstractSelfTest {
             GridTestUtils.assertThrowsAnyCause(log, new Callable<Object>() {
                 @Override public Object call() throws Exception {
                     // Execute long running query
-                    stmt.executeQuery(sql.toString());
+                    stmt.executeQuery("select * from (select _val, sleep(500) as s from Integer limit 50)");
 
                     return null;
                 }
@@ -155,6 +153,30 @@ public class JdbcThinQueryCancelSelfTest extends JdbcThinAbstractSelfTest {
             assert rs.next() : "The other cursor mustn't be closed";
         } finally {
             stmt2.close();
+        }
+    }
+
+    /**
+     * Utility class with custom SQL functions.
+     */
+    public static class TestSQLFunctions {
+        /**
+         * Sleep function to simulate long running queries.
+         *
+         * @param x Time to sleep.
+         * @return Return specified argument.
+         */
+        @QuerySqlFunction
+        public static long sleep(long x) {
+            if (x >= 0)
+                try {
+                    Thread.sleep(x);
+                }
+                catch (InterruptedException ignored) {
+                    // No-op.
+                }
+
+            return x;
         }
     }
 }
