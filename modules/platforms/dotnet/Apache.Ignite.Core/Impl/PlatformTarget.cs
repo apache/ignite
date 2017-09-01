@@ -224,8 +224,10 @@ namespace Apache.Ignite.Core.Impl
 
             foreach (var pair in vals)
             {
-                writer.Write(pair.Key);
-                writer.Write(pair.Value);
+                var p = pair;
+
+                writer.WithDetach(w => w.Write(p.Key));
+                writer.WithDetach(w => w.Write(p.Value));
 
                 cnt++;
             }
