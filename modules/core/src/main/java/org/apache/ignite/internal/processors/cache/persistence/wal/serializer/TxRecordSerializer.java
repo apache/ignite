@@ -89,6 +89,8 @@ public class TxRecordSerializer {
         if (record.remote()) {
             writeConsistentId(record.primaryNode(), buf);
         }
+
+        buf.putLong(record.timestamp());
     }
 
     /**
@@ -130,7 +132,9 @@ public class TxRecordSerializer {
         if (hasRemote)
             primaryNode = readConsistentId(in);
 
-        return new TxRecord(state, nearXidVer, writeVer, participatingNodes, primaryNode);
+        long timestamp = in.readLong();
+
+        return new TxRecord(state, nearXidVer, writeVer, participatingNodes, primaryNode, timestamp);
     }
 
     /**
@@ -171,6 +175,8 @@ public class TxRecordSerializer {
             size += /* byte array length. */ 4;
             size += marshalConsistentId(record.primaryNode()).length;
         }
+
+        size += /* Timestamp */ 8;
 
         return size;
     }

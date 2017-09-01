@@ -47,6 +47,9 @@ public class TxRecord extends WALRecord {
     /** If transaction is remote, primary node for this backup node. */
     @Nullable private Object primaryNode;
 
+    /** Timestamp of Tx state change. */
+    private long timestamp;
+
     /**
      *
      * @param state Transaction state.
@@ -58,12 +61,14 @@ public class TxRecord extends WALRecord {
                     GridCacheVersion nearXidVer,
                     GridCacheVersion writeVer,
                     @Nullable Map<Object, Collection<Object>> participatingNodes,
-                    @Nullable Object primaryNode) {
+                    @Nullable Object primaryNode,
+                    long timestamp) {
         this.state = state;
         this.nearXidVer = nearXidVer;
         this.writeVer = writeVer;
         this.participatingNodes = participatingNodes;
         this.primaryNode = primaryNode;
+        this.timestamp = timestamp;
     }
 
     /** {@inheritDoc} */
@@ -139,5 +144,12 @@ public class TxRecord extends WALRecord {
      */
     @Nullable public Object primaryNode() {
         return primaryNode;
+    }
+
+    /**
+     * @return Timestamp of Tx state change in millis.
+     */
+    public long timestamp() {
+        return timestamp;
     }
 }
