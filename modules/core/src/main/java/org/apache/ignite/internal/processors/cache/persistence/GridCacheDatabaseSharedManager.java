@@ -380,8 +380,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      *
      */
     private void initDataBase() {
-        long cpBufSize = persistenceCfg.getCheckpointingPageBufferSize();
-
         if (persistenceCfg.getCheckpointingThreads() > 1)
             asyncRunner = new IgniteThreadPoolExecutor(
                 "checkpoint-runner",
@@ -392,12 +390,27 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 new LinkedBlockingQueue<Runnable>()
             );
 
-        // Intentionally use identity comparison to check if configuration default has changed.
-        //noinspection NumberEquality
-        if (cpBufSize == 0L) {
-            cpBufSize = DFLT_CHECKPOINTING_PAGE_BUFFER_SIZE;
+        checkpointPageBufSize = checkpointBufferSize(cctx.kernalContext().config());
+    }
 
-            MemoryConfiguration memCfg = cctx.kernalContext().config().getMemoryConfiguration();
+    /**
+     * Get checkpoint buffer size for the given configuration.
+     *
+     * @param cfg Configuration.
+     * @return Checkpoint buffer size.
+     */
+    public static long checkpointBufferSize(IgniteConfiguration cfg) {
+        PersistentStoreConfiguration persistenceCfg = cfg.getPersistentStoreConfiguration();
+
+        if (persistenceCfg == null)
+            return 0L;
+
+        long res = persistenceCfg.getCheckpointingPageBufferSize();
+
+        if (res == 0L) {
+            res = DFLT_CHECKPOINTING_PAGE_BUFFER_SIZE;
+
+            MemoryConfiguration memCfg = cfg.getMemoryConfiguration();
 
             assert memCfg != null;
 
@@ -424,17 +437,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             long adjusted = Math.min(totalSize / 4, dfltSize);
 
-            if (cpBufSize < adjusted) {
-                U.quietAndInfo(log,
-                    "Default checkpoint page buffer size is too small, setting to an adjusted value: "
-                        + U.readableSize(adjusted, false)
-                );
-
-                cpBufSize = adjusted;
-            }
+            if (res < adjusted)
+                res = adjusted;
         }
 
-        checkpointPageBufSize = cpBufSize;
+        return res;
     }
 
     /** {@inheritDoc} */
