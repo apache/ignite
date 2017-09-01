@@ -190,7 +190,7 @@ public class ReleaseReportGenerator {
      * @return HTML formatted string
      */
     private static String buildReportForSearch(JSONObject search, JSONObject srv) throws HttpException, ParseException{
-        StringBuilder searchReport = new StringBuilder();
+        StringBuilder sr = new StringBuilder();
 
         List<JSONObject> issues = searchIssues((String) srv.get("apiurl"),
                 (String) srv.get("username"),
@@ -204,18 +204,25 @@ public class ReleaseReportGenerator {
             if (summary.lastIndexOf(".") == summary.length() - 1)
                 summary = summary.substring(0, summary.length() - 1);
 
-                searchReport.append("<li>").append(summary);
+            sr.append("<li>").append(summary);
 
-                if ((boolean) search.get("showlink"))
-                    searchReport.append("<a href=\"").append((String) srv.get("baseUrl"))
-                            .append((String) issue.get("key")).append("\"> [#")
-                            .append((String) issue.get("key")).append("]</a>\n");
-                else
-                    searchReport.append(" <span>[#").append((String) issue.get("key")).append("]</span>");
+                if ((boolean) search.get("showlink")) {
+                    sr.append("<a href=\"");
+                    sr.append((String) srv.get("baseUrl"));
+                    sr.append((String) issue.get("key"));
+                    sr.append("\"> [#");
+                    sr.append((String) issue.get("key"));
+                    sr.append("]</a>\n");
+                }
+                else {
+                    sr.append(" <span>[#");
+                    sr.append((String) issue.get("key"));
+                    sr.append("]</span>");
+                }
 
-            searchReport.append("</li>\n");
+            sr.append("</li>\n");
         }
-        return searchReport.toString();
+        return sr.toString();
     }
 
     /**
