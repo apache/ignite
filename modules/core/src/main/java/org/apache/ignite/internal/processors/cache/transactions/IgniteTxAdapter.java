@@ -1096,9 +1096,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                 if (state == PREPARED || state == COMMITTED || state == ROLLED_BACK) {
                     assert txNodes != null || state == ROLLED_BACK;
 
-                    Map<Object, Collection<Object>> participatingNodes = state != ROLLED_BACK
-                            ? consistentIdMapper.mapToConsistentIds(txNodes)
-                            : null;
+                    Map<Object, Collection<Object>> participatingNodes = consistentIdMapper.mapToConsistentIds(topVer, txNodes);
 
                     TxRecord txRecord = new TxRecord(
                             state,

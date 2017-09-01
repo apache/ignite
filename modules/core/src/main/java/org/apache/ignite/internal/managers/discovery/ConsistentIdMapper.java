@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -44,11 +45,12 @@ public class ConsistentIdMapper {
     /**
      * Map UUID to consistent id.
      *
+     * @param topVer Topology version.
      * @param nodeId UUID of node.
      * @return Consistent id of node.
      */
-    public Object mapToConsistentId(UUID nodeId) {
-        ClusterNode node = discoveryManager.node(nodeId);
+    public Object mapToConsistentId(AffinityTopologyVersion topVer, UUID nodeId) {
+        ClusterNode node = discoveryManager.node(topVer, nodeId);
         if (node == null)
             throw new IllegalStateException("Unable to find node by UUID " + nodeId);
 
@@ -75,7 +77,7 @@ public class ConsistentIdMapper {
      * @param txNodes Primary -> backup UUID nodes.
      * @return Primary -> backup consistent id nodes.
      */
-    public Map<Object, Collection<Object>> mapToConsistentIds(@Nullable Map<UUID, Collection<UUID>> txNodes) {
+    public Map<Object, Collection<Object>> mapToConsistentIds(AffinityTopologyVersion topVer, @Nullable Map<UUID, Collection<UUID>> txNodes) {
         if (txNodes == null)
             return null;
 
@@ -85,9 +87,9 @@ public class ConsistentIdMapper {
 
             Collection<Object> consistentIdsBackups = new ArrayList<>(backupNodes.size());
             for (UUID backup : backupNodes)
-                consistentIdsBackups.add(mapToConsistentId(backup));
+                consistentIdsBackups.add(mapToConsistentId(topVer, backup));
 
-            consistentMap.put(mapToConsistentId(node), consistentIdsBackups);
+            consistentMap.put(mapToConsistentId(topVer, node), consistentIdsBackups);
         }
 
         return consistentMap;
