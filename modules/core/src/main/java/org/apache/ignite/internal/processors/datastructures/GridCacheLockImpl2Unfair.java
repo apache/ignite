@@ -63,7 +63,6 @@ public final class GridCacheLockImpl2Unfair extends GridCacheLockEx2Default {
      * @param key Reentrant lock key.
      * @param lockView Reentrant lock projection.
      */
-    @SuppressWarnings("unchecked")
     public GridCacheLockImpl2Unfair(String name, GridCacheInternalKey key,
         IgniteInternalCache<GridCacheInternalKey, GridCacheLockState2Base<UUID>> lockView) {
 
