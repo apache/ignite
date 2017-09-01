@@ -146,7 +146,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
     /** {@inheritDoc} */
     @Override public IgniteConfiguration config() {
-        return null;
+        return new IgniteConfiguration();
     }
 
     /** {@inheritDoc} */
