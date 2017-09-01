@@ -24,6 +24,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Random;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadLocalRandom;
@@ -34,7 +35,9 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
@@ -75,6 +78,9 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
+import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.Assert;
 import sun.nio.ch.DirectBuffer;
 
@@ -1010,6 +1016,130 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
         }
         finally {
             stopAllGrids();
+        }
+    }
+
+    /**
+     * Test recovery from WAL on 3 nodes in case of transactional cache.
+     *
+     * @throws Exception If fail.
+     */
+    public void testRecoveryOnTransactionalAndPartitionedCache() throws Exception {
+        IgniteEx ignite = (IgniteEx) startGrids(3);
+        ignite.active(true);
+
+        try {
+            final String cacheName = "transactional";
+
+            CacheConfiguration<Object, Object> cacheConfiguration = new CacheConfiguration<>(cacheName)
+                    .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+                    .setAffinity(new RendezvousAffinityFunction(false, 32))
+                    .setCacheMode(CacheMode.PARTITIONED)
+                    .setRebalanceMode(CacheRebalanceMode.SYNC)
+                    .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
+                    .setBackups(2);
+
+            ignite.createCache(cacheConfiguration);
+
+            IgniteCache<Object, Object> cache = ignite.cache(cacheName);
+            Map<Object, Object> map = new HashMap<>();
+
+            final int transactions = 100;
+            final int operationsPerTransaction = 40;
+
+            Random random = new Random();
+
+            for (int t = 1; t <= transactions; t++) {
+                Transaction tx = ignite.transactions().txStart(
+                        TransactionConcurrency.OPTIMISTIC, TransactionIsolation.READ_COMMITTED);
+
+                Map<Object, Object> changesInTransaction = new HashMap<>();
+
+                for (int op = 0; op < operationsPerTransaction; op++) {
+                    int key = random.nextInt(1000) + 1;
+
+                    Object value;
+                    if (random.nextBoolean())
+                        value = randomString(random) + key;
+                    else
+                        value = new BigObject(key);
+
+                    changesInTransaction.put(key, value);
+
+                    cache.put(key, value);
+                }
+
+                if (random.nextBoolean()) {
+                    tx.commit();
+                    map.putAll(changesInTransaction);
+                }
+                else {
+                    tx.rollback();
+                }
+
+                if (t % 50 == 0)
+                    log.info("Finished transaction " + t);
+            }
+
+            stopAllGrids();
+
+            ignite = (IgniteEx) startGrids(3);
+            ignite.active(true);
+
+            cache = ignite.cache(cacheName);
+
+            for (Object key : map.keySet()) {
+                Object expectedValue = map.get(key);
+                Object actualValue = cache.get(key);
+                Assert.assertEquals("Unexpected value for key " + key, expectedValue, actualValue);
+            }
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
+     * Generate random lowercase string for test purposes.
+     */
+    private String randomString(Random random) {
+        int len = random.nextInt(50) + 1;
+
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < len; i++)
+            sb.append(random.nextInt(26) + 'a');
+
+        return sb.toString();
+    }
+
+    /**
+     * BigObject for test purposes that don't fit in page size.
+     */
+    private static class BigObject {
+        private final int index;
+
+        private final byte[] payload = new byte[4096];
+
+        BigObject(int index) {
+            this.index = index;
+            // Create pseudo-random array.
+            for (int i = 0; i < payload.length; i++)
+                if (i % index == 0)
+                    payload[i] = (byte) index;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            BigObject bigObject = (BigObject) o;
+            return index == bigObject.index &&
+                    Arrays.equals(payload, bigObject.payload);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(index, payload);
         }
     }
 
