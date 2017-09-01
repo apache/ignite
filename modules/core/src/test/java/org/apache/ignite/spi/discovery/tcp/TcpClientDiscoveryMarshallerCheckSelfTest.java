@@ -17,11 +17,9 @@
 
 package org.apache.ignite.spi.discovery.tcp;
 
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.spi.IgniteSpiException;
@@ -53,10 +51,11 @@ public class TcpClientDiscoveryMarshallerCheckSelfTest extends GridCommonAbstrac
             cfg.setDiscoverySpi(spi);
 
             if (igniteInstanceName.endsWith("0")) {
-                cfg.setClientMode(true);
                 BinaryConfiguration bc = new BinaryConfiguration();
                 bc.setCompactFooter(false);
+
                 cfg.setBinaryConfiguration(bc);
+                cfg.setClientMode(true);
             }
         }
         else {
@@ -100,48 +99,48 @@ public class TcpClientDiscoveryMarshallerCheckSelfTest extends GridCommonAbstrac
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testInconsistentCompactFooterSingle() throws Exception {
+        clientServerInconsistentConfigFail(false, 1, 1);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testInconsistentCompactFooterMulti() throws Exception {
+        clientServerInconsistentConfigFail(true, 2, 10);
+    }
+
+    /**
      * Starts client-server grid with different binary configurations.
      *
      * @throws Exception If failed.
      */
-    private void clientServerInconsistentConfigFail(boolean multiNodes) throws Exception {
+    private void clientServerInconsistentConfigFail(boolean multiNodes, int cnt, int iters) throws Exception {
         testFooter = true;
 
-        IgniteEx ig0 = startGrid(1);
-        IgniteCache ic = ig0.getOrCreateCache("cahe_name");
-        if (multiNodes)
-            startGrid(2);
+        for (int i = 1; i <= cnt; i++)
+            startGrid(i);
 
-        try {
-            IgniteEx ig = startGrid(0);
+        for (int i = 0; i < iters; i++) {
+            try {
+                startGrid(0);
 
-            for (String c : ig.cacheNames())
-                System.out.println(c);
+                fail("Expected SPI exception was not thrown, multiNodes=" + multiNodes);
+            }
+            catch (IgniteCheckedException expect) {
+                Throwable ex = expect.getCause().getCause();
 
-            fail("Expected SPI exception was not thrown, multiNodes=" + multiNodes);
-        } catch (IgniteCheckedException expect) {
-            Throwable ex = expect.getCause().getCause();
+                String msg = ex.getMessage();
 
-            assertTrue(ex instanceof IgniteSpiException);
-            assertTrue("Catched exception: " + ex.getMessage(), ex.getMessage().contains("Local node's binary " +
+                assertTrue(ex instanceof IgniteSpiException);
+                assertTrue("Caught exception: " + msg, msg.contains("Local node's binary " +
                     "configuration is not equal to remote node's binary configuration"));
-        } finally {
-            stopAllGrids();
+            }
+            finally {
+                stopGrid(0);
+            }
         }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testInconsistentFooterConfigSingle() throws Exception {
-        clientServerInconsistentConfigFail(false);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testInconsistentFooterConfigMulti() throws Exception {
-        for (int i = 0; i < 10; ++i)
-            clientServerInconsistentConfigFail(true);
     }
 }
