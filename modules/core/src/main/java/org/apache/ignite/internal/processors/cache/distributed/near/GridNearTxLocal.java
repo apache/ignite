@@ -109,6 +109,7 @@ import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxE
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry.SER_READ_NOT_EMPTY_VER;
 import static org.apache.ignite.transactions.TransactionState.COMMITTED;
 import static org.apache.ignite.transactions.TransactionState.COMMITTING;
+import static org.apache.ignite.transactions.TransactionState.MARKED_ROLLBACK;
 import static org.apache.ignite.transactions.TransactionState.PREPARED;
 import static org.apache.ignite.transactions.TransactionState.PREPARING;
 import static org.apache.ignite.transactions.TransactionState.ROLLED_BACK;
@@ -182,9 +183,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     private TransactionProxyImpl proxy;
 
     /** */
-    private long endTime;
-
-    /** */
     private transient Exception trackE;
 
     /**
@@ -245,8 +243,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         if (this.timeout > 0) {
             if (TRACK_TRANSACTION_INITIATOR)
                 trackE = new Exception();
-
-            endTime = U.currentTimeMillis() + this.timeout;
 
             cctx.time().addTimeoutObject(this);
         }
@@ -3169,7 +3165,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             // Prepare was called explicitly.
             return fut;
 
-        if (endTime > 0)
+        if (timeout() > 0)
             cctx.time().removeTimeoutObject(this);
 
         mapExplicitLocks();
@@ -3274,7 +3270,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      * @throws IgniteCheckedException If failed.
      */
     public void rollback() throws IgniteCheckedException {
-        if (endTime > 0)
+        if (timeout() > 0)
             cctx.time().removeTimeoutObject(this);
 
         rollbackNearTxLocalAsync().get();
@@ -3719,6 +3715,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         if (state != ROLLING_BACK && state != ROLLED_BACK && state != COMMITTING && state != COMMITTED)
             rollback();
 
+        cctx.tm().onLocalClose(threadId(), this);
+
         synchronized (this) {
             try {
                 while (!done())
@@ -4080,15 +4078,16 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
     /** {@inheritDoc} */
     @Override public long endTime() {
-        return endTime;
+        return startTime() + timeout();
     }
 
     /** {@inheritDoc} */
     @Override public void onTimeout() {
-        log.error("Transaction is timed out and will be rolled back: [tx=" + this + ']', trackE);
+        if (state(MARKED_ROLLBACK, true)) {
+            log.error("Transaction is timed out and will be rolled back: [" + this + ']', trackE);
 
-        if (setRollbackOnly())
-            rollbackAsync();
+            rollbackNearTxLocalAsync();
+        }
     }
 
     /** {@inheritDoc} */

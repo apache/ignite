@@ -31,6 +31,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.cluster.ClusterNode;
@@ -1423,8 +1424,14 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      */
     private void clearThreadMap(IgniteInternalTx tx) {
         if (tx.local() && !tx.dht()) {
-            if (!tx.system())
-                threadMap.remove(tx.threadId(), tx);
+            if (!tx.system()) {
+                /**
+                 * Timed out local transactions are cleared in {@link #onLocalClose}
+                 * TODO reduce heap size of timed out transaction.
+                 */
+                if (!(tx.timedOut() && tx.pessimistic() && tx.local() && !tx.dht()))
+                    threadMap.remove(tx.threadId(), tx);
+            }
             else {
                 Integer cacheId = tx.txState().firstCacheId();
 
@@ -2313,6 +2320,15 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         }
 
         return false;
+    }
+
+    /**
+     * Remove thread completely.
+     * @param threadId Thread ID.
+     * @param tx Local transaction.
+     */
+    public void onLocalClose(long threadId, GridNearTxLocal tx) {
+        threadMap.remove(threadId, tx);
     }
 
     /**

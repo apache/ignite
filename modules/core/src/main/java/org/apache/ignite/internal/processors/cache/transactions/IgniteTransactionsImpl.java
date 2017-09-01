@@ -29,6 +29,7 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionMetrics;
 import org.apache.ignite.transactions.TransactionException;
+import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -154,7 +155,8 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
         try {
             GridNearTxLocal tx = cctx.tm().userTx(sysCacheCtx);
 
-            if (tx != null)
+            // Allow to start new transaction if previous transaction was rolled back by timeout.
+            if (tx != null && !(tx.state() == TransactionState.ROLLED_BACK && tx.timedOut()))
                 throw new IllegalStateException("Failed to start new transaction " +
                     "(current thread already has a transaction): " + tx);
 

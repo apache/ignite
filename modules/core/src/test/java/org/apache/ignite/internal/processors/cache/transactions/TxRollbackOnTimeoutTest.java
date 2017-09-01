@@ -266,7 +266,7 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
                     tx.commit();
                 }
             }
-        }, 2, "Second");
+        }, 1, "Second");
 
         fut2.get();
 
