@@ -748,8 +748,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             int pageSize = hdr.getInt();
 
             if (pageSize == 2048) {
-                U.quietAndWarn(log, "You are currently using persistent store with 2K pages. " +
-                    "If you use SSD disk, consider migrating to 4K pages for better IO performance.");
+                U.quietAndWarn(log, "You are currently using persistent store with 2K pages (MemoryConfiguration#" +
+                    "pageSize). If you use SSD disk, consider migrating to 4K pages for better IO performance.");
             }
 
             return pageSize;

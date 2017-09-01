@@ -10060,7 +10060,7 @@ public abstract class IgniteUtils {
      * @param path Path.
      * @param name Name.
      */
-    public static Path searchFileRecursively(Path path, @NotNull String name) throws IgniteCheckedException {
+    public static Path searchFileRecursively(Path path, @NotNull final String name) throws IgniteCheckedException {
         final AtomicReference<Path> res = new AtomicReference<>();
 
         try {
