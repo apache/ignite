@@ -68,7 +68,7 @@ import org.apache.ignite.lang.IgniteProductVersion;
  */
 public class JdbcThinTcpIo implements AutoCloseable {
     /** Current version. */
-    private static final SqlListenerProtocolVersion CURRENT_VER = SqlListenerProtocolVersion.create(2, 1, 0);
+    private static final SqlListenerProtocolVersion CURRENT_VER = SqlListenerProtocolVersion.create(2, 1, 5);
 
     /** Initial output stream capacity for handshake. */
     private static final int HANDSHAKE_MSG_SIZE = 13;
@@ -105,6 +105,9 @@ public class JdbcThinTcpIo implements AutoCloseable {
 
     /** Replicated only flag. */
     private final boolean replicatedOnly;
+
+    /** Lazy execution query flag. */
+    private final boolean lazy;
 
     /** Flag to automatically close server cursor. */
     private final boolean autoCloseServerCursor;
@@ -149,12 +152,14 @@ public class JdbcThinTcpIo implements AutoCloseable {
      * @param collocated Collocated flag.
      * @param replicatedOnly Replicated only flag.
      * @param autoCloseServerCursor Flag to automatically close server cursors.
+     * @param lazy Lazy execution query flag.
      * @param sockSndBuf Socket send buffer.
      * @param sockRcvBuf Socket receive buffer.
      * @param tcpNoDelay TCP no delay flag.
      */
     JdbcThinTcpIo(String host, int port, boolean distributedJoins, boolean enforceJoinOrder, boolean collocated,
-        boolean replicatedOnly, boolean autoCloseServerCursor, int sockSndBuf, int sockRcvBuf, boolean tcpNoDelay) {
+        boolean replicatedOnly, boolean autoCloseServerCursor, boolean lazy, int sockSndBuf, int sockRcvBuf,
+        boolean tcpNoDelay) {
         this.host = host;
         this.port = port;
         this.distributedJoins = distributedJoins;
@@ -162,6 +167,7 @@ public class JdbcThinTcpIo implements AutoCloseable {
         this.collocated = collocated;
         this.replicatedOnly = replicatedOnly;
         this.autoCloseServerCursor = autoCloseServerCursor;
+        this.lazy = lazy;
         this.sockSndBuf = sockSndBuf;
         this.sockRcvBuf = sockRcvBuf;
         this.tcpNoDelay = tcpNoDelay;
@@ -218,6 +224,7 @@ public class JdbcThinTcpIo implements AutoCloseable {
         writer.writeBoolean(collocated);
         writer.writeBoolean(replicatedOnly);
         writer.writeBoolean(autoCloseServerCursor);
+        writer.writeBoolean(lazy);
 
         send(writer.array());
 
@@ -227,32 +234,35 @@ public class JdbcThinTcpIo implements AutoCloseable {
         boolean accepted = reader.readBoolean();
 
         if (accepted) {
-            byte maj = reader.readByte();
-            byte min = reader.readByte();
-            byte maintenance = reader.readByte();
+            if (reader.available() > 0) {
+                byte maj = reader.readByte();
+                byte min = reader.readByte();
+                byte maintenance = reader.readByte();
 
-            String stage = reader.readString();
+                String stage = reader.readString();
 
-            long ts = reader.readLong();
-            byte[] hash = reader.readByteArray();
+                long ts = reader.readLong();
+                byte[] hash = reader.readByteArray();
 
-            igniteVer = new IgniteProductVersion(maj, min, maintenance, stage, ts, hash);
+                igniteVer = new IgniteProductVersion(maj, min, maintenance, stage, ts, hash);
 
-            connId = reader.readLong();
-
-            return;
+                connId = reader.readLong();
+            }
+            else
+                igniteVer = new IgniteProductVersion((byte)2, (byte)0, (byte)0, "Unknown", 0L, null);
         }
+        else {
+            short maj = reader.readShort();
+            short min = reader.readShort();
+            short maintenance = reader.readShort();
 
-        short maj = reader.readShort();
-        short min = reader.readShort();
-        short maintenance = reader.readShort();
+            String err = reader.readString();
 
-        String err = reader.readString();
+            SqlListenerProtocolVersion ver = SqlListenerProtocolVersion.create(maj, min, maintenance);
 
-        SqlListenerProtocolVersion ver = SqlListenerProtocolVersion.create(maj, min, maintenance);
-
-        throw new IgniteCheckedException("Handshake failed [driverProtocolVer=" + CURRENT_VER +
-            ", remoteNodeProtocolVer=" + ver + ", err=" + err + ']');
+            throw new IgniteCheckedException("Handshake failed [driverProtocolVer=" + CURRENT_VER +
+                ", remoteNodeProtocolVer=" + ver + ", err=" + err + ']');
+        }
     }
 
     /**
@@ -572,6 +582,13 @@ public class JdbcThinTcpIo implements AutoCloseable {
     }
 
     /**
+     * @return Lazy query execution flag.
+     */
+    public boolean lazy() {
+        return lazy;
+    }
+
+    /**
      * @return Connection ID.
      */
     public long connectionId() {
@@ -593,7 +610,8 @@ public class JdbcThinTcpIo implements AutoCloseable {
      */
     public static JdbcThinTcpIo newIo(JdbcThinTcpIo io) throws IgniteCheckedException, IOException {
         JdbcThinTcpIo newIo = new JdbcThinTcpIo(io.host, io.port, io.distributedJoins, io.enforceJoinOrder,
-            io.collocated, io.replicatedOnly, io.autoCloseServerCursor, io.sockSndBuf, io.sockRcvBuf, io.tcpNoDelay);
+            io.collocated, io.replicatedOnly, io.autoCloseServerCursor, io.lazy,
+            io.sockSndBuf, io.sockRcvBuf, io.tcpNoDelay);
 
         newIo.start();
 

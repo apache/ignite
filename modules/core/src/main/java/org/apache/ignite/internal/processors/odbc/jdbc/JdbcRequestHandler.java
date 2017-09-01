@@ -97,6 +97,9 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
     /** Replicated only flag. */
     private final boolean replicatedOnly;
 
+    /** Lazy query execution flag. */
+    private final boolean lazy;
+
     /** Automatic close of cursors. */
     private final boolean autoCloseCursors;
 
@@ -117,12 +120,13 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
      * @param collocated Collocated flag.
      * @param replicatedOnly Replicated only flag.
      * @param autoCloseCursors Flag to automatically close server cursors.
+     * @param lazy Lazy query execution flag.
      * @param connId Connection ID.
      * @param handlers Connection Id to handler map.
      */
     public JdbcRequestHandler(GridKernalContext ctx, GridSpinBusyLock busyLock, int maxCursors,
         boolean distributedJoins, boolean enforceJoinOrder, boolean collocated, boolean replicatedOnly,
-        boolean autoCloseCursors, long connId, ConcurrentHashMap<Long, JdbcRequestHandler> handlers) {
+        boolean autoCloseCursors, boolean lazy, long connId, ConcurrentHashMap<Long, JdbcRequestHandler> handlers) {
         this.ctx = ctx;
         this.busyLock = busyLock;
         this.maxCursors = maxCursors;
@@ -131,6 +135,7 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
         this.collocated = collocated;
         this.replicatedOnly = replicatedOnly;
         this.autoCloseCursors = autoCloseCursors;
+        this.lazy = lazy;
         this.connId = connId;
         this.handlers = handlers;
 
@@ -268,6 +273,7 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
             qry.setEnforceJoinOrder(enforceJoinOrder);
             qry.setCollocated(collocated);
             qry.setReplicatedOnly(replicatedOnly);
+            qry.setLazy(lazy);
 
             if (req.pageSize() <= 0)
                 return new JdbcResponse(SqlListenerResponse.STATUS_FAILED,
@@ -443,6 +449,7 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
                 qry.setEnforceJoinOrder(enforceJoinOrder);
                 qry.setCollocated(collocated);
                 qry.setReplicatedOnly(replicatedOnly);
+                qry.setLazy(lazy);
 
                 qry.setSchema(schemaName);
 

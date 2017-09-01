@@ -430,7 +430,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
 
         GridChangeGlobalStateFuture fut = stateChangeFut.get();
 
-        while (fut == null) {
+        while (fut == null || fut.isDone()) {
             fut = new GridChangeGlobalStateFuture(UUID.randomUUID(), activate, ctx);
 
             if (stateChangeFut.compareAndSet(null, fut)) {
@@ -501,12 +501,12 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
             log.info("Sending " + prettyStr(activate) + " request from node [id=" + ctx.localNodeId() +
                 ", topVer=" + topVer +
                 ", client=" + ctx.clientNode() +
-                ", daemon" + ctx.isDaemon() + "]");
+                ", daemon=" + ctx.isDaemon() + "]");
         }
 
         IgniteCompute comp = ((ClusterGroupAdapter)ctx.cluster().get().forServers()).compute();
 
-        IgniteFuture<Void> fut = comp.runAsync(new ChangeGlobalStateComputeRequest(activate));
+        IgniteFuture<Void> fut = comp.runAsync(new ClientChangeGlobalStateComputeRequest(activate));
 
         fut.listen(new CI1<IgniteFuture>() {
             @Override public void apply(IgniteFuture fut) {
@@ -884,7 +884,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
     /**
      *
      */
-    private static class ChangeGlobalStateComputeRequest implements IgniteRunnable {
+    private static class ClientChangeGlobalStateComputeRequest implements IgniteRunnable {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -898,7 +898,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
         /**
          * @param activate New cluster state.
          */
-        private ChangeGlobalStateComputeRequest(boolean activate) {
+        private ClientChangeGlobalStateComputeRequest(boolean activate) {
             this.activate = activate;
         }
 

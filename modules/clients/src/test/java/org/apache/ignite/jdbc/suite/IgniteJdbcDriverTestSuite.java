@@ -19,6 +19,7 @@ package org.apache.ignite.jdbc.suite;
 
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.jdbc2.JdbcBlobTest;
+import org.apache.ignite.internal.jdbc2.JdbcConnectionReopenTest;
 import org.apache.ignite.internal.jdbc2.JdbcDistributedJoinsQueryTest;
 import org.apache.ignite.jdbc.JdbcComplexQuerySelfTest;
 import org.apache.ignite.jdbc.JdbcConnectionSelfTest;
@@ -53,6 +54,7 @@ import org.apache.ignite.jdbc.thin.JdbcThinQueryCancelSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinResultSetSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinStatementSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinUpdateStatementSelfTest;
+import org.apache.ignite.jdbc.thin.JdbcThinComplexDmlDdlSelfTest;
 
 /**
  * JDBC driver test suite.
@@ -78,6 +80,7 @@ public class IgniteJdbcDriverTestSuite extends TestSuite {
         suite.addTest(new TestSuite(JdbcDefaultNoOpCacheTest.class));
         suite.addTest(new TestSuite(JdbcPojoQuerySelfTest.class));
         suite.addTest(new TestSuite(JdbcPojoLegacyQuerySelfTest.class));
+        suite.addTest(new TestSuite(JdbcConnectionReopenTest.class));
 
         // Ignite client node based driver tests
         suite.addTest(new TestSuite(org.apache.ignite.internal.jdbc2.JdbcConnectionSelfTest.class));
@@ -136,6 +139,9 @@ public class IgniteJdbcDriverTestSuite extends TestSuite {
         suite.addTest(new TestSuite(JdbcThinDynamicIndexTransactionalPartitionedNearSelfTest.class));
         suite.addTest(new TestSuite(JdbcThinDynamicIndexTransactionalPartitionedSelfTest.class));
         suite.addTest(new TestSuite(JdbcThinDynamicIndexTransactionalReplicatedSelfTest.class));
+
+        // New thin JDBC driver, full SQL tests
+        suite.addTest(new TestSuite(JdbcThinComplexDmlDdlSelfTest.class));
 
         return suite;
     }

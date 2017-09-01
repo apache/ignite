@@ -19,9 +19,6 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
 import java.io.Externalizable;
 import java.nio.ByteBuffer;
-import java.util.Collections;
-import java.util.Map;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -32,6 +29,9 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 public class GridDhtPartitionsSingleRequest extends GridDhtPartitionsAbstractMessage {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** */
+    private GridDhtPartitionExchangeId restoreExchId;
 
     /**
      * Required by {@link Externalizable}.
@@ -47,14 +47,31 @@ public class GridDhtPartitionsSingleRequest extends GridDhtPartitionsAbstractMes
         super(id, null);
     }
 
-    /** {@inheritDoc} */
-    @Override public int handlerId() {
-        return 0;
+    /**
+     * @param msgExchId Exchange ID for message.
+     * @param restoreExchId Initial exchange ID for current exchange.
+     * @return Message.
+     */
+    static GridDhtPartitionsSingleRequest restoreStateRequest(GridDhtPartitionExchangeId msgExchId, GridDhtPartitionExchangeId restoreExchId) {
+        GridDhtPartitionsSingleRequest msg = new GridDhtPartitionsSingleRequest(msgExchId);
+
+        msg.restoreState(true);
+
+        msg.restoreExchId = restoreExchId;
+
+        return msg;
+    }
+
+    /**
+     * @return ID of current exchange on new coordinator.
+     */
+    GridDhtPartitionExchangeId restoreExchangeId() {
+        return restoreExchId;
     }
 
     /** {@inheritDoc} */
-    @Override public Map<Integer, T2<Long, Long>> partitionUpdateCounters(int cacheId) {
-        return Collections.emptyMap();
+    @Override public int handlerId() {
+        return 0;
     }
 
     /** {@inheritDoc} */
@@ -71,6 +88,15 @@ public class GridDhtPartitionsSingleRequest extends GridDhtPartitionsAbstractMes
             writer.onHeaderWritten();
         }
 
+        switch (writer.state()) {
+            case 5:
+                if (!writer.writeMessage("restoreExchId", restoreExchId))
+                    return false;
+
+                writer.incrementState();
+
+        }
+
         return true;
     }
 
@@ -84,6 +110,17 @@ public class GridDhtPartitionsSingleRequest extends GridDhtPartitionsAbstractMes
         if (!super.readFrom(buf, reader))
             return false;
 
+        switch (reader.state()) {
+            case 5:
+                restoreExchId = reader.readMessage("restoreExchId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+        }
+
         return reader.afterMessageRead(GridDhtPartitionsSingleRequest.class);
     }
 
@@ -94,7 +131,7 @@ public class GridDhtPartitionsSingleRequest extends GridDhtPartitionsAbstractMes
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 5;
+        return 6;
     }
 
     /** {@inheritDoc} */

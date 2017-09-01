@@ -83,13 +83,13 @@ import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.affinity.GridCacheAffinityImpl;
-import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteExternalizableExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalAdapter;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
@@ -3328,8 +3328,10 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         try {
             KeyCacheObject cacheKey = ctx.toCacheKeyObject(key);
 
-            GridCacheEntryEx e = entry0(cacheKey, ctx.discovery().topologyVersionEx(),
-                false, false);
+            GridCacheEntryEx e = entry0(cacheKey,
+                ctx.shared().exchange().readyAffinityVersion(),
+                false,
+                false);
 
             if (e == null)
                 return false;
@@ -3914,7 +3916,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         return ctx.itHolder().iterator(iter, new CacheIteratorConverter<Cache.Entry<K, V>, Map.Entry<K, V>>() {
             @Override protected Cache.Entry<K, V> convert(Map.Entry<K, V> e) {
-                return new CacheEntryImpl<>(e.getKey(), e.getValue());
+                // Actually Scan Query returns Iterator<CacheQueryEntry> by default,
+                // CacheQueryEntry implements both Map.Entry and Cache.Entry interfaces.
+                return (Cache.Entry<K, V>) e;
             }
 
             @Override protected void remove(Cache.Entry<K, V> item) {
@@ -5078,7 +5082,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 return op(tx, (AffinityTopologyVersion)null);
 
             // Tx needs affinity for entry creation, wait when affinity is ready to avoid blocking inside async operation.
-            final AffinityTopologyVersion topVer = ctx.shared().exchange().topologyVersion();
+            final AffinityTopologyVersion topVer = ctx.shared().exchange().readyAffinityVersion();
 
             IgniteInternalFuture<?> topFut = ctx.shared().exchange().affinityReadyFuture(topVer);
 

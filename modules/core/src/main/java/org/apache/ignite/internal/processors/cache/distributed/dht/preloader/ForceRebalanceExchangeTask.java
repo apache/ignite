@@ -42,6 +42,11 @@ public class ForceRebalanceExchangeTask implements CachePartitionExchangeWorkerT
         this.forcedRebFut = forcedRebFut;
     }
 
+    /** {@inheritDoc} */
+    @Override public boolean skipForExchangeMerge() {
+        return true;
+    }
+
     /**
      * @return Exchange ID.
      */

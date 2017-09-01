@@ -79,7 +79,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         private readonly bool _keepBinary;
         
         /** Grid. */
-        private readonly Ignite _ignite;
+        private readonly IIgniteInternal _ignite;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CacheAffinityImpl" /> class.
