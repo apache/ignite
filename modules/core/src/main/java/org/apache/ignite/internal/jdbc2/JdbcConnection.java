@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.jdbc2;
 
+import java.net.URL;
 import java.sql.Array;
 import java.sql.Blob;
 import java.sql.CallableStatement;
@@ -50,7 +51,6 @@ import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteJdbcDriver;
-import org.apache.ignite.Ignition;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.compute.ComputeTaskTimeoutException;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -64,6 +64,7 @@ import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.resources.IgniteInstanceResource;
@@ -76,6 +77,8 @@ import static org.apache.ignite.IgniteJdbcDriver.PROP_CACHE;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_CFG;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_COLLOCATED;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_DISTRIBUTED_JOINS;
+import static org.apache.ignite.IgniteJdbcDriver.PROP_ENFORCE_JOIN_ORDER;
+import static org.apache.ignite.IgniteJdbcDriver.PROP_LAZY;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_LOCAL;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_NODE_ID;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_TX_ALLOWED;
@@ -132,6 +135,12 @@ public class JdbcConnection implements Connection {
     /** Distributed joins flag. */
     private boolean distributedJoins;
 
+    /** Enforced join order flag. */
+    private boolean enforceJoinOrder;
+
+    /** Lazy query execution flag. */
+    private boolean lazy;
+
     /** Transactions allowed flag. */
     private boolean txAllowed;
 
@@ -174,6 +183,8 @@ public class JdbcConnection implements Connection {
         locQry = Boolean.parseBoolean(props.getProperty(PROP_LOCAL));
         collocatedQry = Boolean.parseBoolean(props.getProperty(PROP_COLLOCATED));
         distributedJoins = Boolean.parseBoolean(props.getProperty(PROP_DISTRIBUTED_JOINS));
+        enforceJoinOrder = Boolean.parseBoolean(props.getProperty(PROP_ENFORCE_JOIN_ORDER));
+        lazy = Boolean.parseBoolean(props.getProperty(PROP_LAZY));
         txAllowed = Boolean.parseBoolean(props.getProperty(PROP_TX_ALLOWED));
 
         stream = Boolean.parseBoolean(props.getProperty(PROP_STREAMING));
@@ -241,21 +252,30 @@ public class JdbcConnection implements Connection {
                     fut = old;
                 else {
                     try {
-                        Ignite ignite;
+                        final IgniteBiTuple<IgniteConfiguration, ? extends GridSpringResourceContext> cfgAndCtx;
+
+                        String jdbcName = "ignite-jdbc-driver-" + UUID.randomUUID().toString();
 
                         if (NULL.equals(cfg)) {
-                            Ignition.setClientMode(true);
+                            URL url = U.resolveIgniteUrl(IgnitionEx.DFLT_CFG);
 
-                            ignite = Ignition.start();
+                            if (url != null)
+                                cfgAndCtx = loadConfiguration(IgnitionEx.DFLT_CFG, jdbcName);
+                            else {
+                                U.warn(null, "Default Spring XML file not found (is IGNITE_HOME set?): "
+                                    + IgnitionEx.DFLT_CFG);
+
+                                IgniteConfiguration cfg = new IgniteConfiguration()
+                                    .setIgniteInstanceName(jdbcName)
+                                    .setClientMode(true);
+
+                                cfgAndCtx = new IgniteBiTuple<>(cfg, null);
+                            }
                         }
-                        else {
-                            IgniteBiTuple<IgniteConfiguration, ? extends GridSpringResourceContext> cfgAndCtx =
-                                loadConfiguration(cfgUrl);
+                        else
+                            cfgAndCtx = loadConfiguration(cfgUrl, jdbcName);
 
-                            ignite = IgnitionEx.start(cfgAndCtx.get1(), cfgAndCtx.get2());
-                        }
-
-                        fut.onDone(ignite);
+                        fut.onDone(IgnitionEx.start(cfgAndCtx.get1(), cfgAndCtx.get2()));
                     }
                     catch (IgniteException e) {
                         fut.onDone(e);
@@ -274,9 +294,11 @@ public class JdbcConnection implements Connection {
 
     /**
      * @param cfgUrl Config URL.
+     * @param jdbcName Appended to instance name or used as default.
      * @return Ignite config and Spring context.
      */
-    private IgniteBiTuple<IgniteConfiguration, ? extends GridSpringResourceContext> loadConfiguration(String cfgUrl) {
+    private IgniteBiTuple<IgniteConfiguration, ? extends GridSpringResourceContext> loadConfiguration(String cfgUrl,
+        String jdbcName) {
         try {
             IgniteBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext> cfgMap =
                 IgnitionEx.loadConfigurations(cfgUrl);
@@ -284,7 +306,9 @@ public class JdbcConnection implements Connection {
             IgniteConfiguration cfg = F.first(cfgMap.get1());
 
             if (cfg.getIgniteInstanceName() == null)
-                cfg.setIgniteInstanceName("ignite-jdbc-driver-" + UUID.randomUUID().toString());
+                cfg.setIgniteInstanceName(jdbcName);
+            else
+                cfg.setIgniteInstanceName(cfg.getIgniteInstanceName() + "-" + jdbcName);
 
             cfg.setClientMode(true); // Force client mode.
 
@@ -826,6 +850,20 @@ public class JdbcConnection implements Connection {
      */
     boolean isDistributedJoins() {
         return distributedJoins;
+    }
+
+    /**
+     * @return Enforce join order flag.
+     */
+    boolean isEnforceJoinOrder() {
+        return enforceJoinOrder;
+    }
+
+    /**
+     * @return Lazy query execution flag.
+     */
+    boolean isLazy() {
+        return lazy;
     }
 
     /**

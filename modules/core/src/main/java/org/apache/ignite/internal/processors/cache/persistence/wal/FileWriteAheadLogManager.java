@@ -2129,6 +2129,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                 flushOrWait(ptr, stop);
 
+                if (stopped())
+                    return;
+
                 if (lastFsyncPos != written) {
                     assert lastFsyncPos < written; // Fsync position must be behind.
 
@@ -2166,53 +2169,59 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
          */
         private boolean close(boolean rollOver) throws IgniteCheckedException, StorageException {
             if (stop.compareAndSet(false, true)) {
-                flushOrWait(null, true);
-
-                assert stopped() : "Segment is not closed after close flush: " + head.get();
+                lock.lock();
 
                 try {
-                    int switchSegmentRecSize = RecordV1Serializer.REC_TYPE_SIZE + RecordV1Serializer.FILE_WAL_POINTER_SIZE + RecordV1Serializer.CRC_SIZE;
+                    flushOrWait(null, true);
+
+                    assert stopped() : "Segment is not closed after close flush: " + head.get();
+
+                    try {
+                        int switchSegmentRecSize = RecordV1Serializer.REC_TYPE_SIZE + RecordV1Serializer.FILE_WAL_POINTER_SIZE + RecordV1Serializer.CRC_SIZE;
 
                     if (rollOver && written < (maxSegmentSize - switchSegmentRecSize)) {
                         RecordV1Serializer backwardSerializer = new RecordV1Serializer(new RecordDataV1Serializer(cctx));
-
                         final ByteBuffer buf = ByteBuffer.allocate(switchSegmentRecSize);
 
+
                         SwitchSegmentRecord segmentRecord = new SwitchSegmentRecord();
-                        segmentRecord.position(new FileWALPointer(idx, (int) written, -1));
+                        segmentRecord.position( new FileWALPointer(idx, (int)written, -1));
+                        backwardSerializer.writeRecord(segmentRecord,buf);
 
-                        backwardSerializer.writeRecord(segmentRecord, buf);
+                            buf.rewind();
 
-                        buf.rewind();
+                            int rem = buf.remaining();
 
-                        int rem = buf.remaining();
+                            while (rem > 0) {
+                                int written0 = fileIO.write(buf, written);
 
-                        while (rem > 0) {
-                            int written0 = fileIO.write(buf, written);
+                                written += written0;
 
-                            written += written0;
-
-                            rem -= written0;
+                                rem -= written0;
+                            }
                         }
+
+                        // Do the final fsync.
+                        if (mode == WALMode.DEFAULT) {
+                            fileIO.force();
+
+                            lastFsyncPos = written;
+                        }
+
+                        fileIO.close();
+                    }
+                    catch (IOException e) {
+                        throw new IgniteCheckedException(e);
                     }
 
-                    // Do the final fsync.
-                    if (mode == WALMode.DEFAULT) {
-                        fileIO.force();
+                    if (log.isDebugEnabled())
+                        log.debug("Closed WAL write handle [idx=" + idx + "]");
 
-                        lastFsyncPos = written;
-                    }
-
-                    fileIO.close();
+                    return true;
                 }
-                catch (IOException e) {
-                    throw new IgniteCheckedException(e);
+                finally {
+                    lock.unlock();
                 }
-
-                if (log.isDebugEnabled())
-                    log.debug("Closed WAL write handle [idx=" + idx + "]");
-
-                return true;
             }
             else
                 return false;

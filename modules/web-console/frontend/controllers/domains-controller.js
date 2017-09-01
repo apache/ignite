@@ -28,7 +28,7 @@ export default ['$rootScope', '$scope', '$http', '$state', '$filter', '$timeout'
 
         let __original_value;
 
-        const blank = {};
+        const blank = {queryKeyFields: []};
 
         // We need to initialize backupItem with empty object in order to properly used from angular directives.
         $scope.backupItem = emptyDomain;
@@ -63,6 +63,7 @@ export default ['$rootScope', '$scope', '$http', '$state', '$filter', '$timeout'
 
         $scope.ui.generatePojo = true;
         $scope.ui.builtinKeys = true;
+        $scope.ui.generateKeyFields = true;
         $scope.ui.usePrimitives = true;
         $scope.ui.generateTypeAliases = true;
         $scope.ui.generateFieldAliases = true;
@@ -145,13 +146,17 @@ export default ['$rootScope', '$scope', '$http', '$state', '$filter', '$timeout'
 
         $scope.tableRemove = function(item, field, index) {
             if ($scope.tableReset(true)) {
-                // Remove field from indexes.
                 if (field.type === 'fields') {
+                    // Remove field from indexes.
                     _.forEach($scope.backupItem.indexes, (modelIndex) => {
                         modelIndex.fields = _.filter(modelIndex.fields, (indexField) => {
                             return indexField.name !== $scope.backupItem.fields[index].name;
                         });
                     });
+
+                    // Remove field from query key fields.
+                    $scope.backupItem.queryKeyFields = _.filter($scope.backupItem.queryKeyFields,
+                        (keyField) => keyField !== $scope.backupItem.fields[index].name);
                 }
 
                 LegacyTable.tableRemove(item, field, index);
@@ -212,8 +217,10 @@ export default ['$rootScope', '$scope', '$http', '$state', '$filter', '$timeout'
             if (prefix === 'new')
                 return fields;
 
-            if (cur && !_.find(fields, {value: cur}))
-                fields.push({value: cur, label: cur + ' (Unknown field)'});
+            _.forEach(_.isArray(cur) ? cur : [cur], (value) => {
+                if (!_.find(fields, {value}))
+                    fields.push({value, label: value + ' (Unknown field)'});
+            });
 
             return fields;
         };
@@ -929,6 +936,7 @@ export default ['$rootScope', '$scope', '$http', '$state', '$filter', '$timeout'
                     newDomain.databaseSchema = table.schema;
                     newDomain.databaseTable = tableName;
                     newDomain.fields = qryFields;
+                    newDomain.queryKeyFields = _.map(keyFields, (field) => field.javaFieldName);
                     newDomain.indexes = indexes;
                     newDomain.keyFields = keyFields;
                     newDomain.aliases = aliases;
@@ -945,8 +953,12 @@ export default ['$rootScope', '$scope', '$http', '$state', '$filter', '$timeout'
                         newDomain.keyType = keyField.javaType;
                         newDomain.keyFieldName = keyField.javaFieldName;
 
-                        // Exclude key column from query fields.
-                        newDomain.fields = _.filter(newDomain.fields, (field) => field.name !== keyField.javaFieldName);
+                        if (!$scope.ui.generateKeyFields) {
+                            // Exclude key column from query fields.
+                            newDomain.fields = _.filter(newDomain.fields, (field) => field.name !== keyField.javaFieldName);
+
+                            newDomain.queryKeyFields = [];
+                        }
 
                         // Exclude key column from indexes.
                         _.forEach(newDomain.indexes, (index) => {
