@@ -1196,8 +1196,17 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @throws IgniteCheckedException In case of error.
      */
     private void clear(@Nullable Set<? extends K> keys) throws IgniteCheckedException {
-        executeClearTask(keys, false).get();
-        executeClearTask(keys, true).get();
+        if (isLocal()) {
+            if (keys == null)
+                clearLocally(true, false, false);
+            else
+                clearLocallyAll(keys, true, false, false);
+        }
+        else {
+            executeClearTask(keys, false).get();
+
+            executeClearTask(keys, true).get();
+        }
     }
 
     /**
@@ -1205,13 +1214,34 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @return Future.
      */
     private IgniteInternalFuture<?> clearAsync(@Nullable final Set<? extends K> keys) {
-        return executeClearTask(keys, false).chain(new CX1<IgniteInternalFuture<?>, Object>() {
-            @Override public Object applyx(IgniteInternalFuture<?> fut) throws IgniteCheckedException {
-                executeClearTask(keys, true).get();
+        if (isLocal())
+            return clearLocallyAsync(keys);
+        else {
+            return executeClearTask(keys, false).chain(new CX1<IgniteInternalFuture<?>, Object>() {
+                @Override public Object applyx(IgniteInternalFuture<?> fut) throws IgniteCheckedException {
+                    executeClearTask(keys, true).get();
+
+                    return null;
+                }
+            });
+        }
+    }
+
+    /**
+     * @param keys Keys to clear.
+     * @return Clear future.
+     */
+    private IgniteInternalFuture<?> clearLocallyAsync(@Nullable Set<? extends K> keys) {
+        return ctx.closures().callLocalSafe(new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                if (keys == null)
+                    clearLocally(true, false, false);
+                else
+                    clearLocallyAll(keys, true, false, false);
 
                 return null;
             }
-        });
+        }, false);
     }
 
     /**
