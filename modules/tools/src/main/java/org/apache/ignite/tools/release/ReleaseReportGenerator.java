@@ -176,7 +176,7 @@ public class ReleaseReportGenerator {
      */
     private static JSONObject getJsonObjectFromArrayById(long id, String fieldName, JSONArray arr) {
         for (Object item : arr) {
-            if ((int)((JSONObject)item).get(fieldName) == id)
+            if ((long)((JSONObject)item).get(fieldName) == id)
                 return (JSONObject)item;
         }
 
