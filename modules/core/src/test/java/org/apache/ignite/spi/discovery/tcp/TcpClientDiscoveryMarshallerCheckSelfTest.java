@@ -17,8 +17,11 @@
 
 package org.apache.ignite.spi.discovery.tcp;
 
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.spi.IgniteSpiException;
@@ -33,19 +36,41 @@ public class TcpClientDiscoveryMarshallerCheckSelfTest extends GridCommonAbstrac
     /** */
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
+    /** */
+    private boolean testFooter;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg =  super.getConfiguration(igniteInstanceName);
 
-        if (igniteInstanceName.endsWith("0"))
-            cfg.setMarshaller(new JdkMarshaller());
-        else {
-            cfg.setClientMode(true);
-
+        if (testFooter) {
             cfg.setMarshaller(new BinaryMarshaller());
-        }
 
-        cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(ipFinder));
+            TcpDiscoverySpi spi = new TcpDiscoverySpi();
+
+            spi.setJoinTimeout(-1); // IGNITE-605, and further tests limitation bypass
+
+            cfg.setDiscoverySpi(spi);
+
+            if (igniteInstanceName.endsWith("0")) {
+                cfg.setClientMode(true);
+                BinaryConfiguration bc = new BinaryConfiguration();
+                bc.setCompactFooter(false);
+                cfg.setBinaryConfiguration(bc);
+            }
+        }
+        else {
+            if (igniteInstanceName.endsWith("0"))
+                cfg.setMarshaller(new JdkMarshaller());
+            else {
+                cfg.setClientMode(true);
+                cfg.setMarshaller(new BinaryMarshaller());
+            }
+
+            TcpDiscoverySpi spi = new TcpDiscoverySpi().setIpFinder(ipFinder);
+
+            cfg.setDiscoverySpi(spi);
+        }
 
         return cfg;
     }
@@ -72,5 +97,51 @@ public class TcpClientDiscoveryMarshallerCheckSelfTest extends GridCommonAbstrac
             assertTrue(ex instanceof IgniteSpiException);
             assertTrue(ex.getMessage().contains("Local node's marshaller differs from remote node's marshaller"));
         }
+    }
+
+    /**
+     * Starts client-server grid with different binary configurations.
+     *
+     * @throws Exception If failed.
+     */
+    private void clientServerInconsistentConfigFail(boolean multiNodes) throws Exception {
+        testFooter = true;
+
+        IgniteEx ig0 = startGrid(1);
+        IgniteCache ic = ig0.getOrCreateCache("cahe_name");
+        if (multiNodes)
+            startGrid(2);
+
+        try {
+            IgniteEx ig = startGrid(0);
+
+            for (String c : ig.cacheNames())
+                System.out.println(c);
+
+            fail("Expected SPI exception was not thrown, multiNodes=" + multiNodes);
+        } catch (IgniteCheckedException expect) {
+            Throwable ex = expect.getCause().getCause();
+
+            assertTrue(ex instanceof IgniteSpiException);
+            assertTrue("Catched exception: " + ex.getMessage(), ex.getMessage().contains("Local node's binary " +
+                    "configuration is not equal to remote node's binary configuration"));
+        } finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testInconsistentFooterConfigSingle() throws Exception {
+        clientServerInconsistentConfigFail(false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testInconsistentFooterConfigMulti() throws Exception {
+        for (int i = 0; i < 10; ++i)
+            clientServerInconsistentConfigFail(true);
     }
 }
