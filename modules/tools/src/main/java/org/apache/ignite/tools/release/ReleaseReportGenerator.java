@@ -148,13 +148,13 @@ public class ReleaseReportGenerator {
      * @return String with report if issues founded for conditions in jql's
      * @throws HttpException If Jira search throw exception
      */
-    private static String buildReportForTemplateItem(JSONObject template, JSONObject item) throws HttpException, ParseException{
+    private static String buildReportForTemplateItem(JSONObject template, JSONObject item) throws HttpException, ParseException {
         StringBuilder itemReport = new StringBuilder("<h2>" + item.get("header") + "</h2>\n");
 
         itemReport.append("<ul>\n");
 
         for (Object search : (JSONArray) item.get("search")) {
-            JSONObject srv = getJsonObjectFromArrayById((int)((JSONObject)search).get("server"),
+            JSONObject srv = getJsonObjectFromArrayById((long)((JSONObject)search).get("server"),
                 "id", (JSONArray) template.get("servers"));
 
             if (srv != null)
@@ -174,7 +174,7 @@ public class ReleaseReportGenerator {
      * @param arr JsonArray for search
      * @return JsonObject of id exist in arr of null if none
      */
-    private static JSONObject getJsonObjectFromArrayById(int id, String fieldName, JSONArray arr) {
+    private static JSONObject getJsonObjectFromArrayById(long id, String fieldName, JSONArray arr) {
         for (Object item : arr) {
             if ((int)((JSONObject)item).get(fieldName) == id)
                 return (JSONObject)item;
@@ -189,7 +189,7 @@ public class ReleaseReportGenerator {
      * @param search JsonObject with search settings
      * @return HTML formatted string
      */
-    private static String buildReportForSearch(JSONObject search, JSONObject srv) throws HttpException, ParseException{
+    private static String buildReportForSearch(JSONObject search, JSONObject srv) throws HttpException, ParseException {
         StringBuilder sr = new StringBuilder();
 
         List<JSONObject> issues = searchIssues((String) srv.get("apiurl"),
