@@ -17,22 +17,6 @@
 
 package org.apache.ignite.internal.processors.platform.utils;
 
-import java.lang.reflect.Field;
-import java.math.BigDecimal;
-import java.security.Timestamp;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-import javax.cache.CacheException;
-import javax.cache.event.CacheEntryEvent;
-import javax.cache.event.CacheEntryListenerException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -44,12 +28,18 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.MarshallerContextImpl;
 import org.apache.ignite.internal.binary.BinaryContext;
+import org.apache.ignite.internal.binary.BinaryFieldMetadata;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryNoopMetadataHandler;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinarySchema;
+import org.apache.ignite.internal.binary.BinarySchemaRegistry;
+import org.apache.ignite.internal.binary.BinaryTypeImpl;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
+import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.PlatformExtendedException;
 import org.apache.ignite.internal.processors.platform.PlatformNativeException;
@@ -67,6 +57,23 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.logger.NullLogger;
 import org.jetbrains.annotations.Nullable;
+
+import javax.cache.CacheException;
+import javax.cache.event.CacheEntryEvent;
+import javax.cache.event.CacheEntryListenerException;
+import java.lang.reflect.Field;
+import java.math.BigDecimal;
+import java.security.Timestamp;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PREFIX;
 
@@ -1050,6 +1057,106 @@ public class PlatformUtils {
      */
     public static String getFullStackTrace(Throwable throwable) {
         return X.getFullStackTrace(throwable);
+    }
+
+    /**
+     * Gets the schema.
+     *
+     * @param cacheObjProc Cache object processor.
+     * @param typeId Type id.
+     * @param schemaId Schema id.
+     */
+    public static int[] getSchema(CacheObjectBinaryProcessorImpl cacheObjProc, int typeId, int schemaId) {
+        assert cacheObjProc != null;
+
+        BinarySchemaRegistry schemaReg = cacheObjProc.binaryContext().schemaRegistry(typeId);
+        BinarySchema schema = schemaReg.schema(schemaId);
+
+        if (schema == null) {
+            BinaryTypeImpl meta = (BinaryTypeImpl)cacheObjProc.metadata(typeId);
+
+            if (meta != null) {
+                for (BinarySchema typeSchema : meta.metadata().schemas()) {
+                    if (schemaId == typeSchema.schemaId()) {
+                        schema = typeSchema;
+                        break;
+                    }
+                }
+            }
+
+            if (schema != null) {
+                schemaReg.addSchema(schemaId, schema);
+            }
+        }
+
+        return schema == null ? null : schema.fieldIds();
+    }
+
+    /**
+     * Reads the binary metadata.
+     *
+     * @param reader Reader.
+     * @return Collection of metas.
+     */
+    public static Collection<BinaryMetadata> readBinaryMetadata(BinaryRawReaderEx reader) {
+        return readCollection(reader,
+                new PlatformReaderClosure<BinaryMetadata>() {
+                    @Override
+                    public BinaryMetadata read(BinaryRawReaderEx reader) {
+                        int typeId = reader.readInt();
+                        String typeName = reader.readString();
+                        String affKey = reader.readString();
+
+                        Map<String, BinaryFieldMetadata> fields = readLinkedMap(reader,
+                                new PlatformReaderBiClosure<String, BinaryFieldMetadata>() {
+                                    @Override
+                                    public IgniteBiTuple<String, BinaryFieldMetadata> read(BinaryRawReaderEx reader) {
+                                        String name = reader.readString();
+                                        int typeId = reader.readInt();
+                                        int fieldId = reader.readInt();
+
+                                        return new IgniteBiTuple<String, BinaryFieldMetadata>(name,
+                                                new BinaryFieldMetadata(typeId, fieldId));
+                                    }
+                                });
+
+                        Map<String, Integer> enumMap = null;
+
+                        boolean isEnum = reader.readBoolean();
+
+                        if (isEnum) {
+                            int size = reader.readInt();
+
+                            enumMap = new LinkedHashMap<>(size);
+
+                            for (int idx = 0; idx < size; idx++)
+                                enumMap.put(reader.readString(), reader.readInt());
+                        }
+
+                        // Read schemas
+                        int schemaCnt = reader.readInt();
+
+                        List<BinarySchema> schemas = null;
+
+                        if (schemaCnt > 0) {
+                            schemas = new ArrayList<>(schemaCnt);
+
+                            for (int i = 0; i < schemaCnt; i++) {
+                                int id = reader.readInt();
+                                int fieldCnt = reader.readInt();
+                                List<Integer> fieldIds = new ArrayList<>(fieldCnt);
+
+                                for (int j = 0; j < fieldCnt; j++)
+                                    fieldIds.add(reader.readInt());
+
+                                schemas.add(new BinarySchema(id, fieldIds));
+                            }
+                        }
+
+                        return new BinaryMetadata(typeId, typeName, fields, affKey, schemas, isEnum, enumMap);
+                    }
+                }
+        );
     }
 
     /**

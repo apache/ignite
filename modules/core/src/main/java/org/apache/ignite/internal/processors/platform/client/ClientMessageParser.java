@@ -37,6 +37,21 @@ public class ClientMessageParser implements SqlListenerMessageParser {
     /** */
     private static final short OP_CACHE_GET = 1;
 
+    /** */
+    private static final short OP_GET_BINARY_TYPE_NAME = 2;
+
+    /** */
+    private static final short OP_GET_BINARY_TYPE_SCHEMA = 3;
+
+    /** */
+    private static final short OP_CACHE_PUT = 4;
+
+    /** */
+    private static final short OP_REGISTER_BINARY_TYPE_NAME = 5;
+
+    /** */
+    private static final short OP_PUT_BINARY_TYPES = 6;
+
     /** Marshaller. */
     private final GridBinaryMarshaller marsh;
 
@@ -62,9 +77,23 @@ public class ClientMessageParser implements SqlListenerMessageParser {
         short opCode = reader.readShort();
 
         switch (opCode) {
-            case OP_CACHE_GET: {
-                return new ClientGetRequest(reader);
-            }
+            case OP_CACHE_GET:
+                return new ClientCacheGetRequest(reader);
+
+            case OP_GET_BINARY_TYPE_NAME:
+                return new ClientGetBinaryTypeNameRequest(reader);
+
+            case OP_GET_BINARY_TYPE_SCHEMA:
+                return new ClientGetBinaryTypeSchemaRequest(reader);
+
+            case OP_CACHE_PUT:
+                return new ClientCachePutRequest(reader);
+
+            case OP_REGISTER_BINARY_TYPE_NAME:
+                return new ClientRegisterBinaryTypeNameRequest(reader);
+
+            case OP_PUT_BINARY_TYPES:
+                return new ClientPutBinaryTypesRequest(reader);
         }
 
         throw new IgniteException("Invalid operation: " + opCode);

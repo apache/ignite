@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Client
 {
     using System.ComponentModel;
+    using Apache.Ignite.Core.Binary;
 
     /// <summary>
     /// Ignite thin client configuration.
@@ -88,5 +89,10 @@ namespace Apache.Ignite.Core.Client
         /// </summary>
         [DefaultValue(DefaultTcpNoDelay)]
         public bool TcpNoDelay { get; set; }
+
+        /// <summary>
+        /// Gets or sets the binary configuration.
+        /// </summary>
+        public BinaryConfiguration BinaryConfiguration { get; set; }
     }
 }

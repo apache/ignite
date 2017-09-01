@@ -29,8 +29,12 @@ namespace Apache.Ignite.Core.Impl.Client
     using Apache.Ignite.Core.Datastream;
     using Apache.Ignite.Core.DataStructures;
     using Apache.Ignite.Core.Events;
+    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Cache;
+    using Apache.Ignite.Core.Impl.Cluster;
     using Apache.Ignite.Core.Impl.Common;
+    using Apache.Ignite.Core.Impl.Handle;
+    using Apache.Ignite.Core.Impl.Plugin;
     using Apache.Ignite.Core.Lifecycle;
     using Apache.Ignite.Core.Log;
     using Apache.Ignite.Core.Messaging;
@@ -41,10 +45,16 @@ namespace Apache.Ignite.Core.Impl.Client
     /// <summary>
     /// Thin client implementation
     /// </summary>
-    internal class IgniteClient : IIgnite
+    internal class IgniteClient : IIgniteInternal
     {
         /** Socket. */
         private readonly ClientSocket _socket;
+
+        /** Marshaller. */
+        private readonly Marshaller _marsh;
+
+        /** Binary processor. */
+        private readonly BinaryProcessorClient _binProc;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="IgniteClient"/> class.
@@ -55,6 +65,21 @@ namespace Apache.Ignite.Core.Impl.Client
             Debug.Assert(clientConfiguration != null);
 
             _socket = new ClientSocket(clientConfiguration);
+
+            _marsh = new Marshaller(clientConfiguration.BinaryConfiguration)
+            {
+                Ignite = this
+            };
+
+            _binProc = new BinaryProcessorClient(_socket);
+        }
+
+        /// <summary>
+        /// Gets the socket.
+        /// </summary>
+        public ClientSocket Socket
+        {
+            get { return _socket; }
         }
 
         /** <inheritDoc /> */
@@ -66,19 +91,19 @@ namespace Apache.Ignite.Core.Impl.Client
         /** <inheritDoc /> */
         public string Name
         {
-            get { throw new NotImplementedException(); }
+            get { throw GetClientNotSupportedException(); }
         }
 
         /** <inheritDoc /> */
         public ICluster GetCluster()
         {
-            throw new NotImplementedException();
+            throw GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public ICompute GetCompute()
         {
-            throw new NotImplementedException();
+            throw GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
@@ -86,215 +111,265 @@ namespace Apache.Ignite.Core.Impl.Client
         {
             IgniteArgumentCheck.NotNull(name, "name");
 
-            return new CacheClient<TK, TV>(_socket, name);
+            return new CacheClient<TK, TV>(this, name);
         }
 
         /** <inheritDoc /> */
         public ICache<TK, TV> GetOrCreateCache<TK, TV>(string name)
         {
-            throw new NotImplementedException();
+            throw GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public ICache<TK, TV> GetOrCreateCache<TK, TV>(CacheConfiguration configuration)
         {
-            throw new NotImplementedException();
+            throw GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public ICache<TK, TV> GetOrCreateCache<TK, TV>(CacheConfiguration configuration, NearCacheConfiguration nearConfiguration)
         {
-            throw new NotImplementedException();
+            throw GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public ICache<TK, TV> CreateCache<TK, TV>(string name)
         {
-            throw new NotImplementedException();
+            throw GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public ICache<TK, TV> CreateCache<TK, TV>(CacheConfiguration configuration)
         {
-            throw new NotImplementedException();
+            throw GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public ICache<TK, TV> CreateCache<TK, TV>(CacheConfiguration configuration, NearCacheConfiguration nearConfiguration)
         {
-            throw new NotImplementedException();
+            throw GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public void DestroyCache(string name)
         {
-            throw new NotImplementedException();
+            throw GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public IDataStreamer<TK, TV> GetDataStreamer<TK, TV>(string cacheName)
         {
-            throw new NotImplementedException();
+            throw GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public IBinary GetBinary()
         {
-            throw new NotImplementedException();
+            throw GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public ICacheAffinity GetAffinity(string name)
         {
-            throw new NotImplementedException();
+            throw GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public ITransactions GetTransactions()
         {
-            throw new NotImplementedException();
+            throw GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public IMessaging GetMessaging()
         {
-            throw new NotImplementedException();
+            throw GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public IEvents GetEvents()
         {
-            throw new NotImplementedException();
+            throw GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public IServices GetServices()
         {
-            throw new NotImplementedException();
+            throw GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public IAtomicLong GetAtomicLong(string name, long initialValue, bool create)
         {
-            throw new NotImplementedException();
+            throw GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public IAtomicSequence GetAtomicSequence(string name, long initialValue, bool create)
         {
-            throw new NotImplementedException();
+            throw GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public IAtomicReference<T> GetAtomicReference<T>(string name, T initialValue, bool create)
         {
-            throw new NotImplementedException();
+            throw GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public IgniteConfiguration GetConfiguration()
         {
-            throw new NotImplementedException();
+            throw GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public ICache<TK, TV> CreateNearCache<TK, TV>(string name, NearCacheConfiguration configuration)
         {
-            throw new NotImplementedException();
+            throw GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public ICache<TK, TV> GetOrCreateNearCache<TK, TV>(string name, NearCacheConfiguration configuration)
         {
-            throw new NotImplementedException();
+            throw GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public ICollection<string> GetCacheNames()
         {
-            throw new NotImplementedException();
+            throw GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public ILogger Logger
         {
-            get { throw new NotImplementedException(); }
+            get { throw GetClientNotSupportedException(); }
         }
 
         /** <inheritDoc /> */
         public event EventHandler Stopping
         {
-            add { throw new NotImplementedException(); }
-            remove { throw new NotImplementedException(); }
+            add { throw GetClientNotSupportedException(); }
+            remove { throw GetClientNotSupportedException(); }
         }
 
         /** <inheritDoc /> */
         public event EventHandler Stopped
         {
-            add { throw new NotImplementedException(); }
-            remove { throw new NotImplementedException(); }
+            add { throw GetClientNotSupportedException(); }
+            remove { throw GetClientNotSupportedException(); }
         }
 
         /** <inheritDoc /> */
         public event EventHandler ClientDisconnected
         {
-            add { throw new NotImplementedException(); }
-            remove { throw new NotImplementedException(); }
+            add { throw GetClientNotSupportedException(); }
+            remove { throw GetClientNotSupportedException(); }
         }
 
         /** <inheritDoc /> */
         public event EventHandler<ClientReconnectEventArgs> ClientReconnected
         {
-            add { throw new NotImplementedException(); }
-            remove { throw new NotImplementedException(); }
+            add { throw GetClientNotSupportedException(); }
+            remove { throw GetClientNotSupportedException(); }
         }
 
         /** <inheritDoc /> */
         public T GetPlugin<T>(string name) where T : class
         {
-            throw new NotImplementedException();
+            throw GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public void ResetLostPartitions(IEnumerable<string> cacheNames)
         {
-            throw new NotImplementedException();
+            throw GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public void ResetLostPartitions(params string[] cacheNames)
         {
-            throw new NotImplementedException();
+            throw GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public ICollection<IMemoryMetrics> GetMemoryMetrics()
         {
-            throw new NotImplementedException();
+            throw GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public IMemoryMetrics GetMemoryMetrics(string memoryPolicyName)
         {
-            throw new NotImplementedException();
+            throw GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public void SetActive(bool isActive)
         {
-            throw new NotImplementedException();
+            throw GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public bool IsActive()
         {
-            throw new NotImplementedException();
+            throw GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public IPersistentStoreMetrics GetPersistentStoreMetrics()
         {
-            throw new NotImplementedException();
+            throw GetClientNotSupportedException();
+        }
+
+        /** <inheritDoc /> */
+        public IBinaryProcessor BinaryProcessor
+        {
+            get { return _binProc; }
+        }
+
+        /** <inheritDoc /> */
+        public IgniteConfiguration Configuration
+        {
+            get { throw GetClientNotSupportedException(); }
+        }
+
+        /** <inheritDoc /> */
+        public HandleRegistry HandleRegistry
+        {
+            get { throw GetClientNotSupportedException(); }
+        }
+
+        /** <inheritDoc /> */
+        public ClusterNodeImpl GetNode(Guid? id)
+        {
+            throw GetClientNotSupportedException();
+        }
+
+        /** <inheritDoc /> */
+        public Marshaller Marshaller
+        {
+            get { return _marsh; }
+        }
+
+        /** <inheritDoc /> */
+        public PluginProcessor PluginProcessor
+        {
+            get { throw GetClientNotSupportedException(); }
+        }
+
+        /** <inheritDoc /> */
+        public IDataStreamer<TK, TV> GetDataStreamer<TK, TV>(string cacheName, bool keepBinary)
+        {
+            throw GetClientNotSupportedException();
+        }
+
+        /// <summary>
+        /// Gets the client not supported exception.
+        /// </summary>
+        private static NotSupportedException GetClientNotSupportedException()
+        {
+            return new NotSupportedException("Operation is not supported in thin client mode.");
         }
     }
 }

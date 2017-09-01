@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,18 +15,32 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Impl.Client
-{
-    /// <summary>
-    /// Client op code.
-    /// </summary>
-    internal enum ClientOp : short
-    {
-        CacheGet = 1,
-        GetBinaryTypeName = 2,
-        GetBinaryTypeSchema = 3,
-        CachePut = 4,
-        RegisterBinaryTypeName = 5,
-        PutBinaryTypes = 6
+package org.apache.ignite.internal.processors.platform.client;
+
+import org.apache.ignite.binary.BinaryRawWriter;
+
+/**
+ * Single object response.
+ */
+class ClientObjectResponse extends ClientResponse {
+    /** */
+    private final Object val;
+
+    /**
+     * Ctor.
+     *
+     * @param requestId Request id.
+     */
+    ClientObjectResponse(int requestId, Object val) {
+        super(requestId);
+
+        this.val = val;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void encode(BinaryRawWriter writer) {
+        super.encode(writer);
+
+        writer.writeObject(val);
     }
 }

@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,18 +15,34 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Impl.Client
-{
-    /// <summary>
-    /// Client op code.
-    /// </summary>
-    internal enum ClientOp : short
-    {
-        CacheGet = 1,
-        GetBinaryTypeName = 2,
-        GetBinaryTypeSchema = 3,
-        CachePut = 4,
-        RegisterBinaryTypeName = 5,
-        PutBinaryTypes = 6
+package org.apache.ignite.internal.processors.platform.client;
+
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+
+/**
+ * Cache get request.
+ */
+class ClientCacheGetRequest extends ClientCacheRequest {
+    /** */
+    private final Object key;
+
+    /**
+     * Ctor.
+     *
+     * @param reader Reader.
+     */
+    ClientCacheGetRequest(BinaryRawReaderEx reader) {
+        super(reader);
+
+        key = reader.readObjectDetached();
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    @Override public ClientResponse process(GridKernalContext ctx) {
+        Object val = getCache(ctx).get(key);
+
+        return new ClientObjectResponse(getRequestId(), val);
     }
 }

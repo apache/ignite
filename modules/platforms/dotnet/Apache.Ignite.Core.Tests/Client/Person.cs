@@ -15,18 +15,34 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Impl.Client
+namespace Apache.Ignite.Core.Tests.Client
 {
     /// <summary>
-    /// Client op code.
+    /// Test person.
     /// </summary>
-    internal enum ClientOp : short
+    public class Person
     {
-        CacheGet = 1,
-        GetBinaryTypeName = 2,
-        GetBinaryTypeSchema = 3,
-        CachePut = 4,
-        RegisterBinaryTypeName = 5,
-        PutBinaryTypes = 6
+        /// <summary>
+        /// Gets or sets the identifier.
+        /// </summary>
+        public int Id { get; set; }
+
+        /// <summary>
+        /// Gets or sets the name.
+        /// </summary>
+        public string Name { get; set; }
+
+        /// <summary>
+        /// Gets or sets the parent.
+        /// </summary>
+        public Person Parent { get;set; }
+    }
+
+    /// <summary>
+    /// Test person 2.
+    /// </summary>
+    public class Person2 : Person
+    {
+        // No-op.
     }
 }

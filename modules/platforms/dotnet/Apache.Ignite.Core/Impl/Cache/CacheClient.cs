@@ -23,7 +23,6 @@ namespace Apache.Ignite.Core.Impl.Cache
     using System.Diagnostics;
     using System.IO;
     using System.Threading.Tasks;
-    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Expiry;
@@ -34,36 +33,38 @@ namespace Apache.Ignite.Core.Impl.Cache
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Client;
     using Apache.Ignite.Core.Impl.Common;
+    using BinaryWriter = Apache.Ignite.Core.Impl.Binary.BinaryWriter;
 
     /// <summary>
     /// Client cache implementation.
     /// </summary>
     internal class CacheClient<TK, TV> : ICache<TK, TV>
     {
-        /** Socket. */
-        private readonly ClientSocket _socket;
-
         /** Cache name. */
         private readonly string _name;
 
         /** Cache id. */
         private readonly int _id;
 
-        /** Marshaller */
-        private readonly Marshaller _marsh = BinaryUtils.Marshaller;
+        /** Ignite. */
+        private readonly IgniteClient _ignite;
+
+        /** Marshaller. */
+        private readonly Marshaller _marsh;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CacheClient{TK, TV}" /> class.
         /// </summary>
-        /// <param name="socket">The socket.</param>
+        /// <param name="ignite">Ignite.</param>
         /// <param name="name">Cache name.</param>
-        public CacheClient(ClientSocket socket, string name)
+        public CacheClient(IgniteClient ignite, string name)
         {
-            Debug.Assert(socket != null);
+            Debug.Assert(ignite != null);
             Debug.Assert(name != null);
 
-            _socket = socket;
             _name = name;
+            _ignite = ignite;
+            _marsh = _ignite.Marshaller;
             _id = BinaryUtils.GetCacheId(name);
         }
 
@@ -202,19 +203,15 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public TV this[TK key]
         {
-            get
-            {
-                return Get(key);
-            }
-            set
-            {
-                Put(key, value);
-            }
+            get { return Get(key); }
+            set { Put(key, value); }
         }
 
         /** <inheritDoc /> */
         public TV Get(TK key)
         {
+            IgniteArgumentCheck.NotNull(key, "key");
+
             return DoOutInOp(ClientOp.CacheGet, w => w.WriteObject(key), UnmarshalNotNull<TV>);
         }
 
@@ -254,7 +251,11 @@ namespace Apache.Ignite.Core.Impl.Cache
             IgniteArgumentCheck.NotNull(key, "key");
             IgniteArgumentCheck.NotNull(val, "val");
 
-            throw new NotImplementedException();
+            DoOutOp(ClientOp.CachePut, w =>
+            {
+                w.WriteObjectDetached(key);
+                w.WriteObjectDetached(val);
+            });
         }
 
         /** <inheritDoc /> */
@@ -596,19 +597,31 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <summary>
         /// Does the out in op.
         /// </summary>
-        private T DoOutInOp<T>(ClientOp opId, Action<IBinaryRawWriter> writeAction,
+        private T DoOutInOp<T>(ClientOp opId, Action<BinaryWriter> writeAction,
             Func<IBinaryStream, T> readFunc)
         {
-            return _socket.DoOutInOp(opId, stream =>
+            return _ignite.Socket.DoOutInOp(opId, stream =>
             {
                 stream.WriteInt(_id);
                 stream.WriteByte(0);  // Flags (skipStore, etc).
 
                 if (writeAction != null)
                 {
-                    writeAction(_marsh.StartMarshal(stream));
+                    var writer = _marsh.StartMarshal(stream);
+
+                    writeAction(writer);
+
+                    _marsh.FinishMarshal(writer);
                 }
             }, readFunc);
+        }
+
+        /// <summary>
+        /// Does the out op.
+        /// </summary>
+        private void DoOutOp(ClientOp opId, Action<BinaryWriter> writeAction)
+        {
+            DoOutInOp<object>(opId, writeAction, null);
         }
 
         /// <summary>

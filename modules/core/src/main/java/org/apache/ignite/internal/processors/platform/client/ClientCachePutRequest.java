@@ -17,30 +17,36 @@
 
 package org.apache.ignite.internal.processors.platform.client;
 
-import org.apache.ignite.binary.BinaryRawWriter;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 
 /**
- * Cache get response.
+ * Cache put request.
  */
-class ClientGetResponse extends ClientResponse {
+class ClientCachePutRequest extends ClientCacheRequest {
+    /** */
+    private final Object key;
+
     /** */
     private final Object val;
 
     /**
      * Ctor.
      *
-     * @param requestId Request id.
+     * @param reader Reader.
      */
-    ClientGetResponse(int requestId, Object val) {
-        super(requestId);
+    ClientCachePutRequest(BinaryRawReaderEx reader) {
+        super(reader);
 
-        this.val = val;
+        key = reader.readObjectDetached();
+        val = reader.readObjectDetached();
     }
 
     /** {@inheritDoc} */
-    @Override public void encode(BinaryRawWriter writer) {
-        super.encode(writer);
+    @SuppressWarnings("unchecked")
+    @Override public ClientResponse process(GridKernalContext ctx) {
+        getCache(ctx).put(key, val);
 
-        writer.writeObject(val);
+        return super.process(ctx);
     }
 }
