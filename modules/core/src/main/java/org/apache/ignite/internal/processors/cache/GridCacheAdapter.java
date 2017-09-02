@@ -1148,7 +1148,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @param keys Keys to clear.
      * @return Clear future.
      */
-    private IgniteInternalFuture<?> clearLocallyAsync(@Nullable Set<? extends K> keys) {
+    private IgniteInternalFuture<?> clearLocallyAsync(@Nullable final Set<? extends K> keys) {
         return ctx.closures().callLocalSafe(new Callable<Object>() {
             @Override public Object call() throws Exception {
                 if (keys == null)
@@ -1158,7 +1158,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
                 return null;
             }
-        });
+        }, false);
     }
 
     /**
