@@ -30,7 +30,7 @@ namespace Apache.Ignite.Core.Tests.Client
     /// <summary>
     /// Thin client cache test.
     /// </summary>
-    public class CacheTest
+    public sealed class CacheTest
     {
         /** Cache name. */
         private const string CacheName = "cache";
@@ -182,7 +182,7 @@ namespace Apache.Ignite.Core.Tests.Client
         /// <summary>
         /// Gets the client.
         /// </summary>
-        private IIgnite GetClient()
+        private static IIgnite GetClient()
         {
             return Ignition.GetClient(GetClientConfiguration());
         }
@@ -190,7 +190,7 @@ namespace Apache.Ignite.Core.Tests.Client
         /// <summary>
         /// Gets the client configuration.
         /// </summary>
-        protected virtual IgniteClientConfiguration GetClientConfiguration()
+        private static IgniteClientConfiguration GetClientConfiguration()
         {
             return new IgniteClientConfiguration();
         }

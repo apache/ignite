@@ -27,17 +27,63 @@ namespace Apache.Ignite.Core.Tests.Client
     /// <summary>
     /// Client cache test without metadata (no-op binary processor).
     /// </summary>
-    [TestFixture]
-    public class CacheTestNoMeta : CacheTest
+    public class CacheTestNoMeta
     {
-        /** <inheritdoc /> */
-        protected override IgniteClientConfiguration GetClientConfiguration()
+        /** Cache name. */
+        private const string CacheName = "cache";
+
+        /// <summary>
+        /// Fixture tear down.
+        /// </summary>
+        [TestFixtureSetUp]
+        public void FixtureSetUp()
         {
-            var cfg = base.GetClientConfiguration();
+            Ignition.Start(TestUtils.GetTestConfiguration());
+        }
 
-            cfg.BinaryProcessor = new NoopBinaryProcessor();
+        /// <summary>
+        /// Fixture tear down.
+        /// </summary>
+        [TestFixtureTearDown]
+        public void FixtureTearDown()
+        {
+            Ignition.StopAll(true);
+        }
 
-            return cfg;
+        /// <summary>
+        /// Tests the cache put / get with user data types.
+        /// </summary>
+        [Test]
+        public void TestPutGetUserObjects()
+        {
+            var cfg = new IgniteClientConfiguration {BinaryProcessor = new NoopBinaryProcessor()};
+
+            using (var client = Ignition.GetClient(cfg))
+            {
+                var person = new Person { Id = 100, Name = "foo" };
+                var person2 = new Person2 { Id = 200, Name = "bar" };
+
+                var serverCache = Ignition.GetIgnite().GetCache<int?, Person>(CacheName);
+                var clientCache = client.GetCache<int?, Person>(CacheName);
+
+                // Put through client cache.
+                clientCache.Put(1, person);
+                clientCache[2] = person2;
+
+                // Read from client cache.
+                Assert.AreEqual("foo", clientCache.Get(1).Name);
+                Assert.AreEqual(100, clientCache[1].Id);
+                Assert.AreEqual(200, clientCache[2].Id);
+
+                // Read from server cache.
+                Assert.AreEqual("foo", serverCache.Get(1).Name);
+                Assert.AreEqual(100, serverCache[1].Id);
+                Assert.AreEqual(200, serverCache[2].Id);
+                Assert.AreEqual(200, serverCache[3].Id);
+
+                // SQL from server cache.
+                // TODO
+            }
         }
 
         private class NoopBinaryProcessor : IBinaryProcessor
