@@ -304,10 +304,10 @@ public class CassandraSessionImpl implements CassandraSession {
                     throw new IgniteException(errorMsg, unknownEx);
 
                 // If there are no errors occurred it means that operation successfully completed and we can return.
-                if (tblAbsenceEx == null && hostsAvailEx == null && prepStatEx == null)
+                if (tblAbsenceEx == null && hostsAvailEx == null && prepStatEx == null && error!=null)
                     return assistant.processedData();
 
-                if (tblAbsenceEx != null) {
+                if (tblAbsenceEx != null && CassandraHelper.isTableAbsenceError(error)) {
                     // If there are table absence error and it is not required for the operation we can return.
                     if (!assistant.tableExistenceRequired())
                         return assistant.processedData();
