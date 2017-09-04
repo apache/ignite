@@ -117,7 +117,6 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     private final GridLocalEventListener clientDisconLsnr = new GridLocalEventListener() {
         @Override public void onEvent(Event evt) {
             binaryContext().unregisterUserTypeDescriptors();
-
             binaryContext().unregisterBinarySchemas();
 
             metadataLocCache.clear();
