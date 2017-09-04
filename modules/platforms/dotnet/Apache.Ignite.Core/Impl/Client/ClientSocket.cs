@@ -74,7 +74,6 @@ namespace Apache.Ignite.Core.Impl.Client
             var resBytes = SendReceive(_socket, stream =>
             {
                 stream.WriteShort((short) opId);
-                stream.WriteByte(0); // Flags (compression, etc)
                 stream.WriteInt(requestId);
 
                 if (writeAction != null)
@@ -87,8 +86,6 @@ namespace Apache.Ignite.Core.Impl.Client
             {
                 var resRequestId = stream.ReadInt();
                 Debug.Assert(requestId == resRequestId);
-
-                stream.ReadByte(); // Flags
 
                 if (readFunc != null)
                 {
