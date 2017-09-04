@@ -8,7 +8,7 @@
 
 <a href="https://www.myget.org/gallery/apache-ignite-net-nightly"><img src="https://img.shields.io/myget/apache-ignite-net-nightly/vpre/Apache.Ignite.svg" /></a>
 
-<a href="http://ci.ignite.apache.org/viewType.html?buildTypeId=IgniteTests_IgnitePlatformNet&branch_IgniteTests=%3Cdefault%3E"><img src="http://ci.ignite.apache.org/app/rest/builds/buildType:(id:IgniteTests_IgnitePlatformNet)/statusIcon" /></a>
+<a href="http://ci.ignite.apache.org/viewType.html?buildTypeId=Ignite20Tests_IgnitePlatformNet&branch_IgniteTests=%3Cdefault%3E"><img src="http://ci.ignite.apache.org/app/rest/builds/buildType:(id:Ignite20Tests_IgnitePlatformNet)/statusIcon" /></a>
 
 Apache Ignite In-Memory Data Fabric is designed to deliver uncompromised performance for a wide set of in-memory computing use cases from 
 [high performance computing](https://ignite.apache.org/features.html), to the industry most advanced [data grid](https://ignite.apache.org/features.html), 
