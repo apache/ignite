@@ -32,7 +32,9 @@ import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.internal.processors.odbc.SqlListenerResponse;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBatchExecuteResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQuery;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteMultipleStatementsResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteResult;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResult;
 
 import static java.sql.ResultSet.CONCUR_READ_ONLY;
 import static java.sql.ResultSet.FETCH_FORWARD;
@@ -114,13 +116,24 @@ public class JdbcThinStatement implements Statement {
             throw new SQLException("SQL query is empty.");
 
         try {
-            JdbcQueryExecuteResult res = conn.io().queryExecute(conn.getSchema(), pageSize, maxRows,
+            JdbcResult res0 = conn.io().queryExecute(conn.getSchema(), pageSize, maxRows,
                 sql, args);
 
-            assert res != null;
+            assert res0 != null;
 
-            rs = new JdbcThinResultSet(this, res.getQueryId(), pageSize, res.last(), res.items(),
-                res.isQuery(), conn.io().autoCloseServerCursor(), res.updateCount());
+            if (res0 instanceof JdbcQueryExecuteResult) {
+                JdbcQueryExecuteResult res = (JdbcQueryExecuteResult)res0;
+
+                rs = new JdbcThinResultSet(this, res.getQueryId(), pageSize, res.last(), res.items(),
+                    res.isQuery(), conn.io().autoCloseServerCursor(), res.updateCount());
+            }
+            else if (res0 instanceof JdbcQueryExecuteMultipleStatementsResult) {
+                JdbcQueryExecuteMultipleStatementsResult res = (JdbcQueryExecuteMultipleStatementsResult)res0;
+
+            }
+            else {
+                throw new SQLException("Unexpected result [res=" + res0 + ']');
+            }
         }
         catch (IOException e) {
             conn.close();
