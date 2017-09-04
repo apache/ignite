@@ -473,12 +473,14 @@ public class JdbcThinConnection implements Connection {
 
     /** {@inheritDoc} */
     @Override public void setClientInfo(String name, String val) throws SQLClientInfoException {
-        throw new UnsupportedOperationException("Client info is not supported.");
+        if (closed)
+            throw new SQLClientInfoException("Connection is closed.", null);
     }
 
     /** {@inheritDoc} */
     @Override public void setClientInfo(Properties props) throws SQLClientInfoException {
-        throw new UnsupportedOperationException("Client info is not supported.");
+        if (closed)
+            throw new SQLClientInfoException("Connection is closed.", null);
     }
 
     /** {@inheritDoc} */
