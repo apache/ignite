@@ -495,7 +495,7 @@ export default class IgniteAgentManager {
      */
     querySql(nid, cacheName, query, nonCollocatedJoins, enforceJoinOrder, replicatedOnly, local, pageSz, lazy) {
         if (this.available('2.0.0')) {
-            const task = this.available('2.1.4') ?
+            const task = this.available('2.1.4-p1') ?
                 this.visorTask('querySqlX2', nid, cacheName, query, nonCollocatedJoins, enforceJoinOrder, replicatedOnly, local, pageSz, lazy) :
                 this.visorTask('querySqlX2', nid, cacheName, query, nonCollocatedJoins, enforceJoinOrder, replicatedOnly, local, pageSz);
 

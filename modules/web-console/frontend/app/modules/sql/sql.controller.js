@@ -30,7 +30,7 @@ const NON_COLLOCATED_JOINS_SINCE = '1.7.0';
 
 const ENFORCE_JOIN_VERS = [['1.7.9', '1.8.0'], ['1.8.4', '1.9.0'], ['1.9.1']];
 
-const LAZY_QUERY_VERS = ['2.1.4'];
+const LAZY_QUERY_VERS = ['2.1.4-p1'];
 
 const _fullColName = (col) => {
     const res = [];

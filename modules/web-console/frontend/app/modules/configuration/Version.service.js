@@ -68,7 +68,7 @@ const compare = (a, b) => {
     if (res !== 0)
         return res;
 
-    return numberComparator(a.revTs, b.revTs);
+    return numberComparator(a.stage, b.stage);
 };
 
 export default class IgniteVersion {
