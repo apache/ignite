@@ -932,12 +932,8 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
                     try {
                         CacheDataRow row = it0.next();
 
-                        if (grp.sharedGroup() && (hld == null || hld.cctx.cacheId() != row.cacheId())) {
-                            hld = cacheMaps.get(row.cacheId());
-
-                            if (hld == null)
-                                continue;
-                        }
+                        if (grp.sharedGroup() && (hld == null || hld.cctx.cacheId() != row.cacheId()))
+                            hld = cacheMapHolder(ctx.cacheContext(row.cacheId()));
 
                         assert hld != null;
 

@@ -1996,4 +1996,55 @@ BOOST_AUTO_TEST_CASE(TestExecuteAfterCursorClose)
     BOOST_CHECK_EQUAL(ret, SQL_NO_DATA);
 }
 
+BOOST_AUTO_TEST_CASE(TestBindNullParameter)
+{
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
+
+    SQLLEN paramInd = SQL_NULL_DATA;
+
+    // Binding NULL parameter.
+    SQLRETURN ret = SQLBindParameter(stmt, 1, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_CHAR, 100, 100, 0, 0, &paramInd);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    // Just selecting everything to make sure everything is OK
+    SQLCHAR insertReq[] = "INSERT INTO TestType(_key, strField) VALUES(1, ?)";
+
+    ret = SQLExecDirect(stmt, insertReq, SQL_NTS);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    // Unbindning parameter.
+    ret = SQLFreeStmt(stmt, SQL_RESET_PARAMS);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    // Selecting inserted column to make sure that everything is OK
+    SQLCHAR selectReq[] = "SELECT strField FROM TestType";
+
+    char strField[1024] = { 0 };
+    SQLLEN strFieldLen = 0;
+
+    // Binding column.
+    ret = SQLBindCol(stmt, 1, SQL_C_CHAR, &strField, sizeof(strField), &strFieldLen);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    ret = SQLExecDirect(stmt, selectReq, sizeof(selectReq));
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    ret = SQLFetch(stmt);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    BOOST_CHECK_EQUAL(strFieldLen, SQL_NULL_DATA);
+}
+
 BOOST_AUTO_TEST_SUITE_END()

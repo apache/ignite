@@ -764,6 +764,13 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
             GridCacheGateway gate = null;
 
+            AffinityTopologyVersion topVer;
+
+            if (!cctx.isLocal())
+                topVer = ctx.cache().context().exchange().lastTopologyFuture().get();
+            else
+                topVer = ctx.cache().context().exchange().readyAffinityVersion();
+
             if (!allowOverwrite() && !cctx.isLocal()) { // Cases where cctx required.
                 gate = cctx.gate();
 
@@ -771,13 +778,6 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
             }
 
             try {
-                AffinityTopologyVersion topVer;
-
-                if (!cctx.isLocal())
-                    topVer = ctx.cache().context().exchange().lastTopologyFuture().get();
-                else
-                    topVer = ctx.cache().context().exchange().readyAffinityVersion();
-
                 for (DataStreamerEntry entry : entries) {
                     List<ClusterNode> nodes;
 
