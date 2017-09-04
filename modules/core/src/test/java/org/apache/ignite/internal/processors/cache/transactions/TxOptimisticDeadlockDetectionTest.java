@@ -44,6 +44,7 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
+import org.apache.ignite.internal.processors.cache.GridCacheAffinityManager;
 import org.apache.ignite.internal.processors.cache.GridCacheConcurrentMap;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -92,7 +93,7 @@ public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
     private static final NoOpTransformer NO_OP_TRANSFORMER = new NoOpTransformer();
 
     /** Wrapping transformer. */
-    private static final WrappingTransformer WRAPPING_TRANSFORMER = new WrappingTransformer();
+    private final WrappingTransformer WRAPPING_TRANSFORMER = new WrappingTransformer();
 
     /** Client mode flag. */
     private static boolean client;
@@ -148,7 +149,6 @@ public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testDeadlocksPartitioned() throws Exception {
-        fail("IGNITE-5865");
         for (CacheWriteSynchronizationMode syncMode : CacheWriteSynchronizationMode.values()) {
             doTestDeadlocks(createCache(PARTITIONED, syncMode, false), NO_OP_TRANSFORMER);
             doTestDeadlocks(createCache(PARTITIONED, syncMode, false), WRAPPING_TRANSFORMER);
@@ -159,7 +159,6 @@ public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testDeadlocksPartitionedNear() throws Exception {
-        fail("IGNITE-5865");
         for (CacheWriteSynchronizationMode syncMode : CacheWriteSynchronizationMode.values()) {
             doTestDeadlocks(createCache(PARTITIONED, syncMode, true), NO_OP_TRANSFORMER);
             doTestDeadlocks(createCache(PARTITIONED, syncMode, true), WRAPPING_TRANSFORMER);
@@ -478,10 +477,22 @@ public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private static class WrappingTransformer implements IgniteClosure<Integer, Object> {
+    @SuppressWarnings("ConstantConditions")
+    private class WrappingTransformer implements IgniteClosure<Integer, Object> {
         /** {@inheritDoc} */
         @Override public Object apply(Integer val) {
-            return new KeyObject(val);
+            GridCacheAffinityManager affinity = grid(0).cachex(CACHE_NAME).context().affinity();
+
+            ClusterNode primaryKey = affinity.primaryByKey(val, NONE);
+
+            KeyObject key;
+
+            while (true) {
+                key = new KeyObject(val++);
+
+                if (primaryKey.equals(affinity.primaryByKey(key, NONE)))
+                    return key;
+            }
         }
     }
 
