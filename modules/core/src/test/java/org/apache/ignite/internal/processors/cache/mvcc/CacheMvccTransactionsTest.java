@@ -24,15 +24,21 @@ import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.util.typedef.CI1;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 
@@ -73,20 +79,10 @@ public class CacheMvccTransactionsTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testPessimisticTx1() throws Exception {
-        startGridsMultiThreaded(SRVS);
-
-        try {
-            for (CacheConfiguration<Integer, Integer> ccfg : cacheConfigurations()) {
-                logCacheInfo(ccfg);
-
-                ignite(0).createCache(ccfg);
-
+        checkPessimisticTx(new CI1<IgniteCache<Integer, Integer>>() {
+            @Override public void apply(IgniteCache<Integer, Integer> cache) {
                 try {
-                    Ignite node = ignite(0);
-
-                    IgniteTransactions txs = node.transactions();
-
-                    IgniteCache<Integer, Integer> cache = node.cache(ccfg.getName());
+                    IgniteTransactions txs = cache.unwrap(Ignite.class).transactions();
 
                     List<Integer> keys = testKeys(cache);
 
@@ -112,10 +108,74 @@ public class CacheMvccTransactionsTest extends GridCommonAbstractTest {
                         assertEquals(key, val);
                     }
                 }
+                catch (Exception e) {
+                    throw new IgniteException(e);
+                }
+            }
+        });
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPessimisticTx2() throws Exception {
+        checkPessimisticTx(new CI1<IgniteCache<Integer, Integer>>() {
+            @Override public void apply(IgniteCache<Integer, Integer> cache) {
+                try {
+                    IgniteTransactions txs = cache.unwrap(Ignite.class).transactions();
+
+                    List<Integer> keys = testKeys(cache);
+
+                    for (Integer key : keys) {
+                        log.info("Test key: " + key);
+
+                        try (Transaction tx = txs.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                            cache.put(key, key);
+                            cache.put(key + 1, key + 1);
+
+                            assertEquals(key, cache.get(key));
+                            assertEquals(key + 1, (Object)cache.get(key + 1));
+
+                            tx.commit();
+                        }
+
+                        assertEquals(key, cache.get(key));
+                        assertEquals(key + 1, (Object)cache.get(key + 1));
+                    }
+                }
+                catch (Exception e) {
+                    throw new IgniteException(e);
+                }
+            }
+        });
+    }
+
+    /**
+     * @param c Closure to run.
+     * @throws Exception If failed.
+     */
+    private void checkPessimisticTx(IgniteInClosure<IgniteCache<Integer, Integer>> c) throws Exception {
+        startGridsMultiThreaded(SRVS);
+
+        try {
+            for (CacheConfiguration<Integer, Integer> ccfg : cacheConfigurations()) {
+                logCacheInfo(ccfg);
+
+                ignite(0).createCache(ccfg);
+
+                try {
+                    Ignite node = ignite(0);
+
+                    IgniteCache<Integer, Integer> cache = node.cache(ccfg.getName());
+
+                    c.apply(cache);
+                }
                 finally {
                     ignite(0).destroyCache(ccfg.getName());
                 }
             }
+
+            verifyCoordinatorInternalState();
         }
         finally {
             stopAllGrids();
@@ -142,6 +202,8 @@ public class CacheMvccTransactionsTest extends GridCommonAbstractTest {
             keys.addAll(primaryKeys(ignite(0).cache(ccfg.getName()), 2));
 
             Map<Integer, Integer> res = cache.getAll(keys);
+
+            verifyCoordinatorInternalState();
         }
         finally {
             stopAllGrids();
@@ -215,5 +277,26 @@ public class CacheMvccTransactionsTest extends GridCommonAbstractTest {
             ccfg.setBackups(backups);
 
         return ccfg;
+    }
+
+    /**
+     *
+     */
+    private void verifyCoordinatorInternalState() {
+        for (Ignite node : G.allGrids()) {
+            CacheCoordinatorsSharedManager crd = ((IgniteKernal)node).context().cache().context().coordinators();
+
+            Map activeTxs = GridTestUtils.getFieldValue(crd, "activeTxs");
+
+            assertTrue(activeTxs.isEmpty());
+
+            Map cntrFuts = GridTestUtils.getFieldValue(crd, "cntrFuts");
+
+            assertTrue(cntrFuts.isEmpty());
+
+            Map ackFuts = GridTestUtils.getFieldValue(crd, "ackFuts");
+
+            assertTrue(ackFuts.isEmpty());
+        }
     }
 }

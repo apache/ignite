@@ -775,7 +775,8 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         @Nullable IgniteCacheExpiryPolicy expiry,
         boolean skipVals,
         boolean canRemap,
-        boolean recovery
+        boolean recovery,
+        long mvccCrdCntr
     ) {
         return getAllAsync0(keys,
             readerArgs,
@@ -789,7 +790,8 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             /*keep cache objects*/true,
             recovery,
             canRemap,
-            /*need version*/true);
+            /*need version*/true,
+            mvccCrdCntr);
     }
 
     /**
@@ -815,7 +817,8 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         int taskNameHash,
         @Nullable IgniteCacheExpiryPolicy expiry,
         boolean skipVals,
-        boolean recovery
+        boolean recovery,
+        long mvccCrdCntr
     ) {
         GridDhtGetFuture<K, V> fut = new GridDhtGetFuture<>(ctx,
             msgId,
@@ -828,7 +831,8 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             expiry,
             skipVals,
             recovery,
-            addReaders);
+            addReaders,
+            mvccCrdCntr);
 
         fut.init();
 
@@ -1000,7 +1004,8 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                 req.taskNameHash(),
                 expiryPlc,
                 req.skipValues(),
-                req.recovery());
+                req.recovery(),
+                req.mvccCoordinatorCounter());
 
         fut.listen(new CI1<IgniteInternalFuture<Collection<GridCacheEntryInfo>>>() {
             @Override public void apply(IgniteInternalFuture<Collection<GridCacheEntryInfo>> f) {

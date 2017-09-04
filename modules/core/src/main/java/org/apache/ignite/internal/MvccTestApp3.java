@@ -54,12 +54,12 @@ import org.jsr166.ConcurrentHashMap8;
 /**
  *
  */
-public class MvccTestApp2 {
+public class MvccTestApp3 {
     /** */
     private static final boolean DEBUG_LOG = false;
 
     /** */
-    private static final boolean SQL = true;
+    private static final boolean SQL = false;
 
     public static void main1(String[] args) throws Exception {
         final TestCluster cluster = new TestCluster(1);
@@ -712,13 +712,13 @@ public class MvccTestApp2 {
         private final GridAtomicLong commitCntr = new GridAtomicLong(-1);
 
         /** */
-        private final Map<Long, Integer> activeQueries = new ConcurrentHashMap8<>();
+        private final ConcurrentHashMap8<Long, QueryCounter> activeQueries = new ConcurrentHashMap8<>();
 
         /** */
         @GridToStringInclude
         private final ConcurrentHashMap8<TxId, Long> activeTxs = new ConcurrentHashMap8<>();
 
-        synchronized CoordinatorCounter nextTxCounter(TxId txId) {
+        CoordinatorCounter nextTxCounter(TxId txId) {
             long cur = cntr.get();
 
             activeTxs.put(txId, cur + 1);
@@ -728,13 +728,15 @@ public class MvccTestApp2 {
             return newCtr;
         }
 
-        synchronized void txDone(TxId txId, long cntr) {
+        void txDone(TxId txId, long cntr) {
             Long rmvd = activeTxs.remove(txId);
 
             assert rmvd != null;
 
             commitCntr.setIfGreater(cntr);
         }
+
+        private GridAtomicLong minActive0 = new GridAtomicLong(0);
 
         private Long minActive(Set<TxId> txs) {
             Long minActive = null;
@@ -756,10 +758,38 @@ public class MvccTestApp2 {
                     minActive = cntr;
             }
 
+            if (minActive != null) {
+                if (!minActive0.setIfGreater(minActive))
+                    return minActive0.get();
+            }
+
             return minActive;
         }
 
-        synchronized MvccQueryVersion queryVersion() {
+        static class QueryCounter extends AtomicInteger {
+            public QueryCounter(int initialValue) {
+                super(initialValue);
+            }
+
+            boolean increment2() {
+                for (;;) {
+                    int current = get();
+                    int next = current + 1;
+
+                    if (current == 0)
+                        return false;
+
+                    if (compareAndSet(current, next))
+                        return true;
+                }
+            }
+        }
+
+        private ReadWriteLock rwLock = new ReentrantReadWriteLock();
+
+        MvccQueryVersion queryVersion() {
+            rwLock.readLock().lock();
+
             long useCntr = commitCntr.get();
 
             Set<TxId> txs = new HashSet<>();
@@ -771,31 +801,49 @@ public class MvccTestApp2 {
 
             MvccQueryVersion qryVer = new MvccQueryVersion(new CoordinatorCounter(useCntr), txs);
 
-            Integer qryCnt = activeQueries.get(useCntr);
+            for (;;) {
+                QueryCounter qryCnt = activeQueries.get(useCntr);
 
-            if (qryCnt != null)
-                activeQueries.put(useCntr, qryCnt + 1);
-            else
-                activeQueries.put(useCntr, 1);
+                if (qryCnt != null) {
+                    boolean inc = qryCnt.increment2();
 
+                    if (!inc) {
+                        activeQueries.remove(useCntr, qryCnt);
+
+                        continue;
+                    }
+                }
+                else {
+                    qryCnt = new QueryCounter(1);
+
+                    if (activeQueries.putIfAbsent(useCntr, qryCnt) != null)
+                        continue;
+                }
+
+                break;
+            }
+
+            rwLock.readLock().unlock();
 
             return qryVer;
         }
 
-        synchronized void queryDone(CoordinatorCounter cntr) {
-            Integer qryCnt = activeQueries.get(cntr.cntr);
+        void queryDone(CoordinatorCounter cntr) {
+            AtomicInteger qryCnt = activeQueries.get(cntr.cntr);
 
             assert qryCnt != null : cntr.cntr;
 
-            int left = qryCnt - 1;
+            int left = qryCnt.decrementAndGet();
 
             assert left >= 0 : left;
 
             if (left == 0)
-                activeQueries.remove(cntr.cntr);
+                activeQueries.remove(cntr.cntr, qryCnt);
         }
 
-        synchronized CoordinatorCounter cleanupVersion() {
+        CoordinatorCounter cleanupVersion() {
+            rwLock.writeLock().lock();
+
             long useCntr = commitCntr.get();
 
             Long minActive = minActive(null);
@@ -807,6 +855,8 @@ public class MvccTestApp2 {
                 if (qryCntr <= useCntr)
                     useCntr = qryCntr - 1;
             }
+
+            rwLock.writeLock().unlock();
 
             return new CoordinatorCounter(useCntr);
         }

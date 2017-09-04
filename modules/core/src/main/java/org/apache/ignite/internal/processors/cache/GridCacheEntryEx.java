@@ -269,7 +269,8 @@ public interface GridCacheEntryEx {
         Object transformClo,
         String taskName,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
-        boolean keepBinary)
+        boolean keepBinary,
+        long mvccCntr)
         throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**
@@ -297,6 +298,7 @@ public interface GridCacheEntryEx {
         String taskName,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean keepBinary,
+        long mvccCntr,
         @Nullable ReaderArguments readerArgs)
         throws IgniteCheckedException, GridCacheEntryRemovedException;
 
@@ -318,6 +320,7 @@ public interface GridCacheEntryEx {
         String taskName,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean keepBinary,
+        long mvccCntr,
         @Nullable ReaderArguments readerArgs) throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**

@@ -114,6 +114,9 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
     /** */
     private final boolean addReaders;
 
+    /** */
+    private final long mvccCrdCntr;
+
     /**
      * @param cctx Context.
      * @param msgId Message ID.
@@ -138,7 +141,8 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean skipVals,
         boolean recovery,
-        boolean addReaders
+        boolean addReaders,
+        long mvccCrdCntr
     ) {
         super(CU.<GridCacheEntryInfo>collectionsReducer(keys.size()));
 
@@ -157,6 +161,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
         this.skipVals = skipVals;
         this.recovery = recovery;
         this.addReaders = addReaders;
+        this.mvccCrdCntr = mvccCrdCntr;
 
         futId = IgniteUuid.randomUuid();
 
@@ -423,7 +428,8 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
                 expiryPlc,
                 skipVals,
                 /*can remap*/true,
-                recovery);
+                recovery,
+                mvccCrdCntr);
         }
         else {
             final ReaderArguments args = readerArgs;
@@ -447,7 +453,8 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
                             expiryPlc,
                             skipVals,
                             /*can remap*/true,
-                            recovery);
+                            recovery,
+                            mvccCrdCntr);
                     }
                 }
             );

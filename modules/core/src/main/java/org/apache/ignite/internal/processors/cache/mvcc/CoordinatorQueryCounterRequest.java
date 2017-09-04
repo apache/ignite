@@ -101,7 +101,7 @@ public class CoordinatorQueryCounterRequest implements Message {
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return -33;
+        return 133;
     }
 
     /** {@inheritDoc} */

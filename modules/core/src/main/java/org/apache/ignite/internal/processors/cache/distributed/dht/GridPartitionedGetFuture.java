@@ -41,6 +41,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedExceptio
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.mvcc.TxMvccVersion;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetResponse;
@@ -57,6 +58,7 @@ import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
@@ -75,6 +77,12 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
 
     /** Topology version. */
     private AffinityTopologyVersion topVer;
+
+    /** */
+    private ClusterNode mvccCrd;
+
+    /** */
+    private long mvccCntr = TxMvccVersion.COUNTER_NA;
 
     /**
      * @param cctx Context.
@@ -135,16 +143,48 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
         AffinityTopologyVersion lockedTopVer = cctx.shared().lockedTopologyVersion(null);
 
         if (lockedTopVer != null) {
-            canRemap = false;
+            topVer = lockedTopVer;
 
-            map(keys, Collections.<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>>emptyMap(), lockedTopVer);
+            canRemap = false;
         }
         else {
-            AffinityTopologyVersion topVer = this.topVer.topologyVersion() > 0 ? this.topVer :
+            topVer = this.topVer.topologyVersion() > 0 ? this.topVer :
                 canRemap ? cctx.affinity().affinityTopologyVersion() : cctx.shared().exchange().readyAffinityVersion();
-
-            map(keys, Collections.<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>>emptyMap(), topVer);
         }
+
+        // TODO IGNITE-3478 (correct failover and remap).
+        if (cctx.mvccEnabled()) {
+            mvccCrd = cctx.shared().coordinators().coordinator(topVer);
+
+            if (mvccCrd == null) {
+                onDone(new ClusterTopologyCheckedException("Mvcc coordinator is not assigned: " + topVer));
+
+                return;
+            }
+
+            IgniteInternalFuture<Long> cntrFut = cctx.shared().coordinators().requestQueryCounter(mvccCrd);
+
+            cntrFut.listen(new IgniteInClosure<IgniteInternalFuture<Long>>() {
+                @Override public void apply(IgniteInternalFuture<Long> fut) {
+                    try {
+                        mvccCntr = fut.get();
+
+                        map(keys,
+                            Collections.<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>>emptyMap(),
+                            GridPartitionedGetFuture.this.topVer);
+
+                        markInitialized();
+                    }
+                    catch (IgniteCheckedException e) {
+                        onDone(e);
+                    }
+                }
+            });
+
+            return;
+        }
+
+        map(keys, Collections.<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>>emptyMap(), topVer);
 
         markInitialized();
     }
@@ -203,9 +243,14 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
     /** {@inheritDoc} */
     @Override public boolean onDone(Map<K, V> res, Throwable err) {
         if (super.onDone(res, err)) {
-            // Don't forget to clean up.
             if (trackable)
                 cctx.mvcc().removeFuture(futId);
+
+            if (mvccCntr != TxMvccVersion.COUNTER_NA) {
+                assert mvccCrd != null;
+
+                cctx.shared().coordinators().ackQueryDone(mvccCrd, mvccCntr);
+            }
 
             cache().sendTtlUpdateRequest(expiryPlc);
 
@@ -299,7 +344,8 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                         taskName == null ? 0 : taskName.hashCode(),
                         expiryPlc,
                         skipVals,
-                        recovery);
+                        recovery,
+                        mvccCntr);
 
                 final Collection<Integer> invalidParts = fut.invalidPartitions();
 
@@ -355,7 +401,8 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                     false,
                     skipVals,
                     cctx.deploymentEnabled(),
-                    recovery);
+                    recovery,
+                    mvccCntr);
 
                 add(fut); // Append new future.
 
@@ -460,7 +507,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                 GridCacheVersion ver = null;
 
                 if (readNoEntry) {
-                    CacheDataRow row = cctx.offheap().read(cctx, key);
+                    CacheDataRow row = cctx.offheap().read(cctx, key, mvccCntr);
 
                     if (row != null) {
                         long expireTime = row.expireTime();
@@ -503,6 +550,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                                 taskName,
                                 expiryPlc,
                                 !deserializeBinary,
+                                mvccCntr,
                                 null);
 
                             if (getRes != null) {
@@ -521,7 +569,8 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                                 null,
                                 taskName,
                                 expiryPlc,
-                                !deserializeBinary);
+                                !deserializeBinary,
+                                mvccCntr);
                         }
 
                         cache.context().evicts().touch(entry, topVer);

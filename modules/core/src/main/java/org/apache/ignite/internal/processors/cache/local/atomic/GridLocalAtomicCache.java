@@ -54,6 +54,7 @@ import org.apache.ignite.internal.processors.cache.GridCachePreloaderAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.mvcc.TxMvccVersion;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.local.GridLocalCache;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
@@ -403,7 +404,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
             boolean skipEntry = readNoEntry;
 
             if (readNoEntry) {
-                CacheDataRow row = ctx.offheap().read(ctx, cacheKey);
+                CacheDataRow row = ctx.offheap().read(ctx, cacheKey, TxMvccVersion.COUNTER_NA);
 
                 if (row != null) {
                     long expireTime = row.expireTime();
@@ -462,6 +463,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
                                     taskName,
                                     expiry,
                                     !deserializeBinary,
+                                    TxMvccVersion.COUNTER_NA,
                                     null);
 
                                 if (res != null) {
@@ -489,7 +491,8 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
                                     null,
                                     taskName,
                                     expiry,
-                                    !deserializeBinary);
+                                    !deserializeBinary,
+                                    TxMvccVersion.COUNTER_NA);
 
                                 if (v != null) {
                                     ctx.addResult(vals,
@@ -1044,7 +1047,8 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
                             entryProcessor,
                             taskName,
                             null,
-                            keepBinary);
+                            keepBinary,
+                            TxMvccVersion.COUNTER_NA);
 
                         Object oldVal = null;
 
@@ -1164,7 +1168,8 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
                                 null,
                                 taskName,
                                 null,
-                                keepBinary);
+                                keepBinary,
+                                TxMvccVersion.COUNTER_NA);
 
                             Object interceptorVal = ctx.config().getInterceptor().onBeforePut(new CacheLazyEntry(
                                 ctx, entry.key(), old, keepBinary), val);
@@ -1197,7 +1202,8 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
                                 null,
                                 taskName,
                                 null,
-                                keepBinary);
+                                keepBinary,
+                                TxMvccVersion.COUNTER_NA);
 
                             IgniteBiTuple<Boolean, ?> interceptorRes = ctx.config().getInterceptor()
                                 .onBeforeRemove(new CacheLazyEntry(ctx, entry.key(), old, keepBinary));

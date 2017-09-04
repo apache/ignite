@@ -1097,7 +1097,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                     null,
                                     resolveTaskName(),
                                     null,
-                                    txEntry.keepBinary());
+                                    txEntry.keepBinary(),
+                                    TxMvccVersion.COUNTER_NA); // TODO IGNITE-3478
                             }
                         }
                         else {

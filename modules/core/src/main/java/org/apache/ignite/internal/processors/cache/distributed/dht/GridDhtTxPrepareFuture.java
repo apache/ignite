@@ -393,7 +393,8 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                         entryProc,
                         tx.resolveTaskName(),
                         null,
-                        keepBinary);
+                        keepBinary,
+                        TxMvccVersion.COUNTER_NA); // TODO IGNITE-3478
 
                     if (retVal || txEntry.op() == TRANSFORM) {
                         if (!F.isEmpty(txEntry.entryProcessors())) {
@@ -493,7 +494,8 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                             /*transformClo*/null,
                             /*taskName*/null,
                             /*expiryPlc*/null,
-                            /*keepBinary*/true);
+                            /*keepBinary*/true,
+                            TxMvccVersion.COUNTER_NA); // TODO IGNITE-3478
                     }
 
                     if (oldVal != null)

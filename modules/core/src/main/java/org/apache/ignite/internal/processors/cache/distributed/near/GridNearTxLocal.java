@@ -61,6 +61,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxLoca
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtDetachedCacheEntry;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
+import org.apache.ignite.internal.processors.cache.mvcc.TxMvccVersion;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
@@ -126,8 +127,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
         AtomicReferenceFieldUpdater.newUpdater(GridNearTxLocal.class, IgniteInternalFuture.class, "prepFut");
 
     /** Prepare future updater. */
-    private static final AtomicReferenceFieldUpdater<GridNearTxLocal, GridNearTxFinishFuture> COMMIT_FUT_UPD =
-        AtomicReferenceFieldUpdater.newUpdater(GridNearTxLocal.class, GridNearTxFinishFuture.class, "commitFut");
+    private static final AtomicReferenceFieldUpdater<GridNearTxLocal, NearTxFinishFuture> COMMIT_FUT_UPD =
+        AtomicReferenceFieldUpdater.newUpdater(GridNearTxLocal.class, NearTxFinishFuture.class, "commitFut");
 
     /** Rollback future updater. */
     private static final AtomicReferenceFieldUpdater<GridNearTxLocal, GridNearTxFinishFuture> ROLLBACK_FUT_UPD =
@@ -144,7 +145,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
     /** Commit future. */
     @SuppressWarnings("UnusedDeclaration")
     @GridToStringExclude
-    private volatile GridNearTxFinishFuture commitFut;
+    private volatile NearTxFinishFuture commitFut;
 
     /** Rollback future. */
     @SuppressWarnings("UnusedDeclaration")
@@ -1167,7 +1168,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
                                         resolveTaskName(),
                                         null,
                                         keepBinary,
-                                        null) : null;
+                                        TxMvccVersion.COUNTER_NA,
+                                        null) : null; // TODO IGNITE-3478
 
                                 if (res != null) {
                                     old = res.value();
@@ -1185,7 +1187,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
                                     entryProcessor,
                                     resolveTaskName(),
                                     null,
-                                    keepBinary);
+                                    keepBinary,
+                                    TxMvccVersion.COUNTER_NA); // TODO IGNITE-3478
                             }
                         }
                         catch (ClusterTopologyCheckedException e) {
@@ -1770,7 +1773,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
                                             resolveTaskName(),
                                             null,
                                             txEntry.keepBinary(),
-                                            null);
+                                            TxMvccVersion.COUNTER_NA,
+                                            null); // TODO IGNITE-3478
 
                                         if (getRes != null) {
                                             val = getRes.value();
@@ -1788,7 +1792,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
                                             transformClo,
                                             resolveTaskName(),
                                             null,
-                                            txEntry.keepBinary());
+                                            txEntry.keepBinary(),
+                                            TxMvccVersion.COUNTER_NA); // TODO IGNITE-3478
                                     }
 
                                     // If value is in cache and passed the filter.
@@ -2064,7 +2069,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
                                     resolveTaskName(),
                                     null,
                                     txEntry.keepBinary(),
-                                    null);
+                                    TxMvccVersion.COUNTER_NA,
+                                    null); // TODO IGNITE-3478
 
                                 if (getRes != null) {
                                     val = getRes.value();
@@ -2082,7 +2088,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
                                     transformClo,
                                     resolveTaskName(),
                                     null,
-                                    txEntry.keepBinary());
+                                    txEntry.keepBinary(),
+                                    TxMvccVersion.COUNTER_NA); // TODO IGNITE-3478
                             }
 
                             if (val != null) {
@@ -2150,7 +2157,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
                                         resolveTaskName(),
                                         accessPlc,
                                         !deserializeBinary,
-                                        null) : null;
+                                        TxMvccVersion.COUNTER_NA,
+                                        null) : null; // TODO IGNITE-3478
 
                                 if (getRes != null) {
                                     val = getRes.value();
@@ -2168,7 +2176,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
                                     null,
                                     resolveTaskName(),
                                     accessPlc,
-                                    !deserializeBinary);
+                                    !deserializeBinary,
+                                    TxMvccVersion.COUNTER_NA); // TODO IGNITE-3478
                             }
 
                             if (val != null) {
@@ -2636,7 +2645,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
                             resolveTaskName(),
                             expiryPlc0,
                             txEntry == null ? keepBinary : txEntry.keepBinary(),
-                            null);
+                            TxMvccVersion.COUNTER_NA,
+                            null); // TODO IGNITE-3478
 
                         if (res == null) {
                             if (misses == null)
@@ -3206,17 +3216,23 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
 
         final IgniteInternalFuture<?> prepareFut = prepareNearTxLocal();
 
-        GridNearTxFinishFuture fut = commitFut;
+        NearTxFinishFuture fut = commitFut;
 
-        if (fut == null &&
-            !COMMIT_FUT_UPD.compareAndSet(this, null, fut = new GridNearTxFinishFuture<>(cctx, this, true)))
+        if (fut != null)
+            return fut;
+
+        GridNearTxFinishFuture nearFinishFut = new GridNearTxFinishFuture<>(cctx, this, true);
+
+        fut = txState.mvccEnabled(cctx) ? new GridNearTxFinishAndAckFuture(nearFinishFut) : nearFinishFut;
+
+        if (!COMMIT_FUT_UPD.compareAndSet(this, null, fut))
             return commitFut;
 
-        cctx.mvcc().addFuture(fut, fut.futureId());
+        cctx.mvcc().addFuture(nearFinishFut, nearFinishFut.futureId());
 
         prepareFut.listen(new CI1<IgniteInternalFuture<?>>() {
             @Override public void apply(IgniteInternalFuture<?> f) {
-                GridNearTxFinishFuture fut0 = commitFut;
+                NearTxFinishFuture fut0 = commitFut;
 
                 try {
                     // Make sure that here are no exceptions.

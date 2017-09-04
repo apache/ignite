@@ -106,7 +106,7 @@ public interface IgniteCacheOffheapManager {
      * @return Cached row, if available, null otherwise.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public CacheDataRow read(GridCacheContext cctx, KeyCacheObject key) throws IgniteCheckedException;
+    @Nullable public CacheDataRow read(GridCacheContext cctx, KeyCacheObject key, long mvccCntr) throws IgniteCheckedException;
 
     /**
      * @param p Partition.

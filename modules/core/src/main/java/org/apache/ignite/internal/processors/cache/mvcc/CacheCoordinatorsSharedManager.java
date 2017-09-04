@@ -113,6 +113,26 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
 
     /**
      * @param crd Coordinator.
+     * @param cntr Counter assigned to query.
+     */
+    public void ackQueryDone(ClusterNode crd, long cntr) {
+        try {
+            cctx.gridIO().sendToGridTopic(crd,
+                TOPIC_CACHE_COORDINATOR,
+                new CoordinatorQueryAckRequest(cntr),
+                SYSTEM_POOL);
+        }
+        catch (ClusterTopologyCheckedException e) {
+            if (log.isDebugEnabled())
+                log.debug("Failed to send query ack, node left [crd=" + crd + ']');
+        }
+        catch (IgniteCheckedException e) {
+            U.error(log, "Failed to send query ack [crd=" + crd + ", cntr=" + cntr + ']', e);
+        }
+    }
+
+    /**
+     * @param crd Coordinator.
      * @return Counter request future.
      */
     public IgniteInternalFuture<Long> requestQueryCounter(ClusterNode crd) {
@@ -253,7 +273,7 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
      * @param nodeId Sender node ID.
      * @param msg Message.
      */
-    private void processCoordinatorQueryStateRequest(UUID nodeId, CoordinatorQueryCounterRequest msg) {
+    private void processCoordinatorQueryCounterRequest(UUID nodeId, CoordinatorQueryCounterRequest msg) {
         ClusterNode node = cctx.discovery().node(nodeId);
 
         if (node == null) {
@@ -265,7 +285,7 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
 
         long qryCntr = assignQueryCounter(nodeId);
 
-        CoordinatorMvccCounterResponse res = new CoordinatorMvccCounterResponse(msg.futureId(), qryCntr);
+        CoordinatorMvccCounterResponse res = new CoordinatorMvccCounterResponse(qryCntr, msg.futureId());
 
         try {
             cctx.gridIO().sendToGridTopic(node,
@@ -322,7 +342,7 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
      * @param msg Message.
      */
     private void processCoordinatorTxAckResponse(UUID nodeId, CoordinatorTxAckResponse msg) {
-        TxAckFuture fut = ackFuts.get(msg.futureId());
+        TxAckFuture fut = ackFuts.remove(msg.futureId());
 
         if (fut != null)
             fut.onResponse();
@@ -340,7 +360,7 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
      */
     private long assignQueryCounter(UUID qryNodeId) {
         // TODO IGNITE-3478
-        return committedCntr.get();
+        return committedCntr.get() + 1;
     }
 
     /**
@@ -432,7 +452,7 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
      */
     private class TxAckFuture extends GridFutureAdapter<Void> {
         /** */
-        private final Long id;
+        private final long id;
 
         /** */
         private final ClusterNode crd;
@@ -441,7 +461,7 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
          * @param id Future ID.
          * @param crd Coordinator.
          */
-        TxAckFuture(Long id, ClusterNode crd) {
+        TxAckFuture(long id, ClusterNode crd) {
             this.id = id;
             this.crd = crd;
         }
@@ -477,9 +497,8 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
             for (MvccCounterFuture fut : cntrFuts.values())
                 fut.onNodeLeft(nodeId);
 
-//            for (AckFuture fut : ackFuts.values())
-//                fut.onNodeLeft(nodeId);
-//
+            for (TxAckFuture fut : ackFuts.values())
+                fut.onNodeLeft(nodeId);
         }
     }
     /**
@@ -499,7 +518,7 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
             else if (msg instanceof CoordinatorQueryAckRequest)
                 processCoordinatorQueryAckRequest((CoordinatorQueryAckRequest)msg);
             else if (msg instanceof CoordinatorQueryCounterRequest)
-                processCoordinatorQueryStateRequest(nodeId, (CoordinatorQueryCounterRequest)msg);
+                processCoordinatorQueryCounterRequest(nodeId, (CoordinatorQueryCounterRequest)msg);
             else
                 U.warn(log, "Unexpected message received [node=" + nodeId + ", msg=" + msg + ']');
         }

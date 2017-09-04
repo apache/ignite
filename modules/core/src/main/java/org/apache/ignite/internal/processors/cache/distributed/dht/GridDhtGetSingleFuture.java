@@ -35,6 +35,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedExceptio
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.ReaderArguments;
+import org.apache.ignite.internal.processors.cache.mvcc.TxMvccVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
@@ -366,7 +367,8 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
                 expiryPlc,
                 skipVals,
                 /*can remap*/true,
-                recovery);
+                recovery,
+                TxMvccVersion.COUNTER_NA); // TODO IGNITE-3478
         }
         else {
             final ReaderArguments args = readerArgs;
@@ -392,7 +394,8 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
                                 expiryPlc,
                                 skipVals,
                                 /*can remap*/true,
-                                recovery);
+                                recovery,
+                                TxMvccVersion.COUNTER_NA); // TODO IGNITE-3478
 
                         fut0.listen(createGetFutureListener());
                     }

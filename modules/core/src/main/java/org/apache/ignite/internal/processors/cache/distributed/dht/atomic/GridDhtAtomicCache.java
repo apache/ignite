@@ -62,6 +62,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheUpdateAtomicResult;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
+import org.apache.ignite.internal.processors.cache.mvcc.TxMvccVersion;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
@@ -1494,7 +1495,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 // Optimistically expect that all keys are available locally (avoid creation of get future).
                 for (KeyCacheObject key : keys) {
                     if (readNoEntry) {
-                        CacheDataRow row = ctx.offheap().read(ctx, key);
+                        CacheDataRow row = ctx.offheap().read(ctx, key, TxMvccVersion.COUNTER_NA);
 
                         if (row != null) {
                             long expireTime = row.expireTime();
@@ -1554,6 +1555,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                             taskName,
                                             expiry,
                                             true,
+                                            TxMvccVersion.COUNTER_NA,
                                             null);
 
                                         if (getRes != null) {
@@ -1572,7 +1574,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                             null,
                                             taskName,
                                             expiry,
-                                            !deserializeBinary);
+                                            !deserializeBinary,
+                                            TxMvccVersion.COUNTER_NA);
                                     }
 
                                     // Entry was not in memory or in swap, so we remove it from cache.
@@ -2097,7 +2100,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         entryProcessor,
                         taskName,
                         null,
-                        req.keepBinary());
+                        req.keepBinary(),
+                        TxMvccVersion.COUNTER_NA);
 
                     Object oldVal = null;
                     Object updatedVal = null;
@@ -2251,7 +2255,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             null,
                             taskName,
                             null,
-                            req.keepBinary());
+                            req.keepBinary(),
+                            TxMvccVersion.COUNTER_NA);
 
                         Object val = ctx.config().getInterceptor().onBeforePut(
                             new CacheLazyEntry(
@@ -2294,7 +2299,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             null,
                             taskName,
                             null,
-                            req.keepBinary());
+                            req.keepBinary(),
+                            TxMvccVersion.COUNTER_NA);
 
                         IgniteBiTuple<Boolean, ?> interceptorRes = ctx.config().getInterceptor()
                             .onBeforeRemove(new CacheLazyEntry(ctx, entry.key(), old, req.keepBinary()));

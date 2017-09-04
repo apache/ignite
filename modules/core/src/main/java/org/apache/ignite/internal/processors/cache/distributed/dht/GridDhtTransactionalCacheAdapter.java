@@ -56,6 +56,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSing
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTransactionalCache;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxRemote;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearUnlockRequest;
+import org.apache.ignite.internal.processors.cache.mvcc.TxMvccVersion;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
@@ -1283,7 +1284,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
                                 CacheObject val = null;
 
-                                if (ret)
+                                if (ret) {
                                     val = e.innerGet(
                                         null,
                                         tx,
@@ -1294,7 +1295,9 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                         null,
                                         tx != null ? tx.resolveTaskName() : null,
                                         null,
-                                        req.keepBinary());
+                                        req.keepBinary(),
+                                        TxMvccVersion.COUNTER_NA); // TODO IGNITE-3478
+                                }
 
                                 assert e.lockedBy(mappedVer) ||
                                     (ctx.mvcc().isRemoved(e.context(), mappedVer) && req.timeout() > 0) :

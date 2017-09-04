@@ -68,7 +68,7 @@ import static org.apache.ignite.transactions.TransactionState.UNKNOWN;
  *
  */
 public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentityFuture<IgniteInternalTx>
-    implements GridCacheFuture<IgniteInternalTx> {
+    implements GridCacheFuture<IgniteInternalTx>, NearTxFinishFuture {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -134,6 +134,13 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
             msgLog = cctx.txFinishMessageLogger();
             log = U.logger(cctx.kernalContext(), logRef, GridNearTxFinishFuture.class);
         }
+    }
+
+    /**
+     * @return Cache context.
+     */
+    GridCacheSharedContext<K, V> context() {
+        return cctx;
     }
 
     /** {@inheritDoc} */
@@ -383,13 +390,17 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
             fut.getClass() == CheckRemoteTxMiniFuture.class;
     }
 
-    /**
-     * Initializes future.
-     *
-     * @param commit Commit flag.
-     */
     @SuppressWarnings("ForLoopReplaceableByForEach")
-    void finish(boolean commit) {
+    /** {@inheritDoc} */
+    public void finish(boolean commit) {
+        if (!commit && tx.mvccCoordinatorCounter() != TxMvccVersion.COUNTER_NA) {
+            ClusterNode crd = cctx.coordinators().coordinator(tx.topologyVersion());
+
+            assert crd != null;
+
+            cctx.coordinators().ackTxRollback(crd, tx.nearXidVersion());
+        }
+
         if (tx.onNeedCheckBackup()) {
             assert tx.onePhaseCommit();
 
