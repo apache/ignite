@@ -34,16 +34,18 @@ import org.jetbrains.annotations.NotNull;
 public class IgniteWalIteratorFactory {
     /** Logger. */
     private final IgniteLogger log;
-    /** Page size, in standalone iterator mode this value can't be taken from memory configuration */
+    /** Page size, in standalone iterator mode this value can't be taken from memory configuration. */
     private final int pageSize;
     /** Factory to provide I/O interfaces for read/write operations with files */
     private final FileIOFactory ioFactory;
 
     /**
-     * Creates WAL files iterator factory
+     * Creates WAL files iterator factory.
+     *
      * @param log Logger.
-     * @param ioFactory Custom factory for non-standard file API to be used in WAL reading
-     * @param pageSize Page size, size is validated
+     * @param ioFactory Custom factory for non-standard file API to be used in WAL reading.
+     * @param pageSize Page size which was used in Ignite Persistent Data store to read WAL from, size is validated
+     * according its boundaries.
      */
     public IgniteWalIteratorFactory(@NotNull IgniteLogger log, @NotNull FileIOFactory ioFactory, int pageSize) {
         this.log = log;
@@ -56,7 +58,8 @@ public class IgniteWalIteratorFactory {
      * Creates WAL files iterator factory
      *
      * @param log Logger.
-     * @param pageSize Page size, size is validated
+     * @param pageSize Page size which was used in Ignite Persistent Data store to read WAL from, size is validated
+     * according its boundaries.
      */
     public IgniteWalIteratorFactory(@NotNull final IgniteLogger log, final int pageSize) {
         this(log, new PersistentStoreConfiguration().getFileIOFactory(), pageSize);
