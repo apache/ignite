@@ -788,7 +788,7 @@ public class IgniteTxHandler {
 
         IgniteInternalFuture<IgniteInternalTx> fut = finish(nodeId, null, req);
 
-        assert req.txState() != null || (fut != null && fut.error() != null) ||
+        assert req.txState() != null || fut == null || fut.error() != null ||
             (ctx.tm().tx(req.version()) == null && ctx.tm().nearTx(req.version()) == null) :
             "[req=" + req + ", fut=" + fut + "]";
 
@@ -1174,8 +1174,8 @@ public class IgniteTxHandler {
         else
             sendReply(nodeId, req, res, dhtTx, nearTx);
 
-        assert req.txState() != null || res.error() != null ||
-            (ctx.tm().tx(req.version()) == null && ctx.tm().nearTx(req.version()) == null);
+        assert req.txState() != null || res.error() != null || (dhtTx == null && nearTx == null) :
+            req + " tx=" + dhtTx + " nearTx=" + nearTx;
     }
 
     /**
@@ -1277,11 +1277,7 @@ public class IgniteTxHandler {
         else
             sendReply(nodeId, req, true, null);
 
-        IgniteInternalTx tx0 = ctx.tm().tx(req.version());
-
-        IgniteInternalTx nearTx0 = ctx.tm().nearTx(req.version());
-
-        assert req.txState() != null || (tx0 == null && nearTx0 == null) : req + " tx=" + tx0 + " nearTx=" + nearTx0;
+        assert req.txState() != null || (dhtTx == null && nearTx == null) : req + " tx=" + dhtTx + " nearTx=" + nearTx;
     }
 
     /**
