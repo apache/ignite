@@ -61,6 +61,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactor
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -380,14 +381,15 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
      * @throws Exception if failed.
      */
     public void testTxFillWalAndExtractDataRecords() throws Exception {
-        final int cacheObjectsToWrite = 20;
+        final int cacheObjectsToWrite = 100;
+        final int txCnt = 100;
 
         if (fillWalBeforeTest) {
             final Ignite ignite0 = startGrid("node0");
 
             ignite0.active(true);
 
-            txPutDummyRecords(ignite0, cacheObjectsToWrite, 100);
+            txPutDummyRecords(ignite0, cacheObjectsToWrite, txCnt);
 
             stopGrid("node0");
         }
@@ -417,45 +419,52 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
     }
 
-    private int iterateAndCountLogical(WALIterator tuples) throws IgniteCheckedException {
+    private int iterateAndCountLogical(WALIterator walIterator) throws IgniteCheckedException {
         int cntLogical = 0;
-        try (WALIterator stIt = tuples) {
+
+        try (WALIterator stIt = walIterator) {
             while (stIt.hasNextX()) {
                 final IgniteBiTuple<WALPointer, WALRecord> next = stIt.nextX();
-                final WALRecord record = next.get2();
-                if (record instanceof DataRecord) {
-                    DataRecord dataRecord = (DataRecord)record;
-                    List<DataEntry> entries = dataRecord.writeEntries();
+                final WALRecord walRecord = next.get2();
+
+                if (walRecord.type() == WALRecord.RecordType.DATA_RECORD && walRecord instanceof DataRecord) {
+                    final DataRecord dataRecord = (DataRecord)walRecord;
+                    final List<DataEntry> entries = dataRecord.writeEntries();
+
                     for (DataEntry entry : entries) {
-                        log.info("Entry " + entry.op() + ": cache Id" + entry.cacheId());
+                        final GridCacheVersion globalTxId = entry.nearXidVersion();
+                        log.info("//Entry operation " + entry.op() + "; cache Id" + entry.cacheId() + "; " +
+                            "under transaction: " + globalTxId + "; entry " + entry);
 
                         final GridKernalContext ctx = new StandaloneGridKernalContext(log);
 
-                        if(entry instanceof LazyDataEntry) {
-                            LazyDataEntry lazyDataEntry = (LazyDataEntry)entry;
-                            CacheObjectBinaryProcessorImpl processor = new CacheObjectBinaryProcessorImpl(ctx);
+                        if (entry instanceof LazyDataEntry) {
+                            final LazyDataEntry lazyDataEntry = (LazyDataEntry)entry;
+                            final CacheObjectBinaryProcessorImpl processor = new CacheObjectBinaryProcessorImpl(ctx);
+                            final byte[] bytes = lazyDataEntry.getValBytes();
+                            final byte type = lazyDataEntry.getValType();
 
-                            byte[] bytes = lazyDataEntry.getValBytes();
-                            byte type = lazyDataEntry.getValType();
                             log.info("Entry value binary:" + DatatypeConverter.printHexBinary(bytes));
-
                             log.info("Entry type:" + type);
-                            BinaryContext bctx = new BinaryContext(BinaryCachingMetadataHandler.create(), ctx.config(), new NullLogger()) {
+
+                            final BinaryContext bctx = new BinaryContext(BinaryCachingMetadataHandler.create(), ctx.config(), new NullLogger()) {
                                 @Override public int typeId(String typeName) {
                                     return typeName.hashCode();
                                 }
                             };
-                            CacheObject val = toCacheObject(ctx, processor, bctx, bytes, type);
+                            final CacheObject val = toCacheObject(ctx, processor, bctx, bytes, type);
 
                             log.info("Entry value:" + val);
                         }
                     }
                     cntLogical++;
                 }
-                else if (record instanceof TxRecord) {
-                    TxRecord txRecord = (TxRecord)record;
+                else if (walRecord.type() == WALRecord.RecordType.TX_RECORD && walRecord instanceof TxRecord) {
+                    final TxRecord txRecord = (TxRecord)walRecord;
+                    final GridCacheVersion globalTxId = txRecord.nearXidVersion();
 
-                    log.info("Tx Record: " + txRecord);
+                    log.info("//Tx Record, action: " + txRecord.action() +
+                        "; nearTxVersion" + globalTxId);
                 }
             }
         }
@@ -472,7 +481,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
             }
         };
         byte[] bytes = DatatypeConverter.parseHexBinary(
-            "67010B00055724EC162AF496540000005F121E934A00000003000000000C280000004142434445464748494A4142434445464748494A4142434445464748494A4142434445464748494A1882310018AAEF2E001D"  );
+            "67010B00055724EC162AF496540000005F121E934A00000003000000000C280000004142434445464748494A4142434445464748494A4142434445464748494A4142434445464748494A1882310018AAEF2E001D");
         byte type = 100;
         log.info("Entry value binary:" + DatatypeConverter.printHexBinary(bytes));
 
@@ -485,15 +494,16 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         BinaryObject binaryObject = (BinaryObject)obj;
         int id = binaryObject.type().typeId();
 
-        log.info("Cache Object type id: " + id  );
+        log.info("Cache Object type id: " + id);
         log.info("IndexedObjec hash code: " + IndexedObject.class.getName().hashCode());
         //assert IndexedObject.class.getName().hashCode() == id;
         String s = binaryObject.type().typeName();
 
-        log.info("Cache Object type name: " + s  );
+        log.info("Cache Object type name: " + s);
     }
 
-    private CacheObject toCacheObject(GridKernalContext ctx, CacheObjectBinaryProcessorImpl processor, BinaryContext bctx,
+    private CacheObject toCacheObject(GridKernalContext ctx, CacheObjectBinaryProcessorImpl processor,
+        BinaryContext bctx,
         byte[] bytes, byte type) {
         if (type == BinaryObjectImpl.TYPE_BINARY)
             return new BinaryObjectImpl(bctx, bytes, 0);

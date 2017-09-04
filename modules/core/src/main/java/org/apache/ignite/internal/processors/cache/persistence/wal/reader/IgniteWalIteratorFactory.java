@@ -21,6 +21,7 @@ import java.io.File;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.MemoryConfiguration;
+import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -41,6 +42,7 @@ public class IgniteWalIteratorFactory {
     /**
      * Creates WAL files iterator factory
      * @param log Logger.
+     * @param ioFactory Custom factory for non-standard file API to be used in WAL reading
      * @param pageSize Page size, size is validated
      */
     public IgniteWalIteratorFactory(@NotNull IgniteLogger log, @NotNull FileIOFactory ioFactory, int pageSize) {
@@ -48,6 +50,16 @@ public class IgniteWalIteratorFactory {
         this.pageSize = pageSize;
         this.ioFactory = ioFactory;
         new MemoryConfiguration().setPageSize(pageSize); // just for validate
+    }
+
+    /**
+     * Creates WAL files iterator factory
+     *
+     * @param log Logger.
+     * @param pageSize Page size, size is validated
+     */
+    public IgniteWalIteratorFactory(@NotNull final IgniteLogger log, final int pageSize) {
+        this(log, new PersistentStoreConfiguration().getFileIOFactory(), pageSize);
     }
 
     /**
