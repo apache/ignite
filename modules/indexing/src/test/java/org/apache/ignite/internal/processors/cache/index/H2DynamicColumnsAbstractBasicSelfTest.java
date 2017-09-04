@@ -84,7 +84,7 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
         QueryField c = c("AGE", Integer.class.getName());
 
         for (Ignite node : Ignition.allGrids())
-            checkNodeState((IgniteEx)node, "PERSON", c);
+            checkNodeState((IgniteEx)node, QueryUtils.DFLT_SCHEMA, "PERSON", c);
     }
 
     /**
@@ -96,7 +96,7 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
         doSleep(500);
 
         for (Ignite node : Ignition.allGrids())
-            checkNodeState((IgniteEx)node, "PERSON",
+            checkNodeState((IgniteEx)node, QueryUtils.DFLT_SCHEMA, "PERSON",
                 c("AGE", Integer.class.getName()),
                 c("city", String.class.getName()));
     }
@@ -197,6 +197,20 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
         assertEquals(0, cache.size());
 
         ignite(nodeIndex()).cache("City").destroy();
+    }
+
+    /**
+     * Test that we can add columns dynamically to tables associated with non dynamic caches as well.
+     */
+    public void testAddColumnToNonDynamicCache() {
+        run("ALTER TABLE \"idx\".PERSON ADD COLUMN CITY varchar");
+
+        doSleep(500);
+
+        QueryField c = c("CITY", String.class.getName());
+
+        for (Ignite node : Ignition.allGrids())
+            checkNodeState((IgniteEx)node, "idx", "PERSON", c);
     }
 
     /**

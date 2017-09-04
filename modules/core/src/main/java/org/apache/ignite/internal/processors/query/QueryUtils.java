@@ -21,7 +21,6 @@ import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.sql.Time;
 import java.sql.Timestamp;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -584,32 +583,6 @@ public class QueryUtils {
 
         if (idx != null)
             processIndex(idx, d);
-    }
-
-    /**
-     * Update type descriptor with new fields metadata.
-     *
-     * @param ctx Kernal context.
-     * @param d Type descriptor to update.
-     * @param cols Columns to add.
-     * @throws IgniteCheckedException If failed to update type descriptor.
-     */
-    static void processDynamicAddColumn(GridKernalContext ctx, QueryTypeDescriptorImpl d, List<QueryField> cols)
-        throws IgniteCheckedException {
-        List<GridQueryProperty> props = new ArrayList<>(cols.size());
-
-        for (QueryField col : cols) {
-            try {
-                props.add(new QueryBinaryProperty(ctx, col.name(), null, Class.forName(col.typeName()),
-                    false, null));
-            }
-            catch (ClassNotFoundException e) {
-                throw new SchemaOperationException("Class not found for new property: " + col.typeName());
-            }
-        }
-
-        for (GridQueryProperty p : props)
-            d.addProperty(p, true);
     }
 
     /**

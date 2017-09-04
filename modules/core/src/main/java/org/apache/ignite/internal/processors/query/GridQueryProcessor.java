@@ -69,6 +69,7 @@ import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.query.property.QueryBinaryProperty;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorImpl;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexOperationCancellationToken;
@@ -763,7 +764,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                                         assert typeDesc != null;
 
-                                        QueryUtils.processDynamicAddColumn(ctx, typeDesc, opAddCol.columns());
+                                        processDynamicAddColumn(typeDesc, opAddCol.columns());
                                     }
                                     else
                                         assert false;
@@ -995,8 +996,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                         if (op0.ifNotExists() && op0.columns().size() == 1)
                             nop = true;
                         else
-                            err = new SchemaOperationException("Column already exists [tblName=" + op0.tableName() +
-                                ", colName=" + col.name() + ']');
+                            err = new SchemaOperationException(SchemaOperationException.CODE_COLUMN_EXISTS, col.name());
                     }
                 }
             }
@@ -1123,8 +1123,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                         if (op0.ifNotExists() && op0.columns().size() == 1)
                             nop = true;
                         else
-                            err = new SchemaOperationException("Column already exists [tblName=" + op0.tableName() +
-                                ", colName=" + fld.name() + ']');
+                            err = new SchemaOperationException(SchemaOperationException.CODE_COLUMN_EXISTS, fld.name());
                     }
                 }
             }
@@ -1332,7 +1331,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             else if (op instanceof SchemaAlterTableAddColumnOperation) {
                 SchemaAlterTableAddColumnOperation op0 = (SchemaAlterTableAddColumnOperation)op;
 
-                QueryUtils.processDynamicAddColumn(ctx, type, op0.columns());
+                processDynamicAddColumn(type, op0.columns());
 
                 idx.dynamicAddColumn(op0.schemaName(), op0.tableName(), op0.columns(), op0.ifTableExists(),
                     op0.ifNotExists());
@@ -2216,6 +2215,30 @@ private IgniteInternalFuture<Object> rebuildIndexesFromHash(@Nullable final Stri
                 null,
                 null));
         }
+    }
+
+    /**
+     * Update type descriptor with new fields metadata.
+     *
+     * @param d Type descriptor to update.
+     * @param cols Columns to add.
+     * @throws IgniteCheckedException If failed to update type descriptor.
+     */
+    private void processDynamicAddColumn(QueryTypeDescriptorImpl d, List<QueryField> cols) throws IgniteCheckedException {
+        List<GridQueryProperty> props = new ArrayList<>(cols.size());
+
+        for (QueryField col : cols) {
+            try {
+                props.add(new QueryBinaryProperty(ctx, col.name(), null, Class.forName(col.typeName()),
+                    false, null));
+            }
+            catch (ClassNotFoundException e) {
+                throw new SchemaOperationException("Class not found for new property: " + col.typeName());
+            }
+        }
+
+        for (GridQueryProperty p : props)
+            d.addProperty(p, true);
     }
 
     /**

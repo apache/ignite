@@ -1027,7 +1027,7 @@ public class GridSqlQueryParser {
 
         if (!col.isNullable())
             throw new IgniteSQLException("Non nullable columns are forbidden [colName=" + col.getName() + ']',
-                IgniteQueryErrorCode.PARSING);
+                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
         if (COLUMN_IS_COMPUTED.get(col))
             throw new IgniteSQLException("Computed columns are not supported [colName=" + col.getName() + ']',

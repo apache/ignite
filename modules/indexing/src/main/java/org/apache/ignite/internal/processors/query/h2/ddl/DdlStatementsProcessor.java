@@ -210,10 +210,6 @@ public class DdlStatementsProcessor {
             else if (stmt0 instanceof GridSqlAlterTableAddColumn) {
                 GridSqlAlterTableAddColumn cmd = (GridSqlAlterTableAddColumn)stmt0;
 
-                if (!F.eq(QueryUtils.DFLT_SCHEMA, cmd.schemaName()))
-                    throw new SchemaOperationException("ALTER TABLE may only be executed on " +
-                        QueryUtils.DFLT_SCHEMA + " schema.");
-
                 GridH2Table tbl = idx.dataTable(cmd.schemaName(), cmd.tableName());
 
                 if (tbl == null && cmd.ifTableExists()) {
@@ -228,13 +224,17 @@ public class DdlStatementsProcessor {
                             cmd.tableName());
                 }
                 else {
+                    if (tbl.rowDescriptor().type().valueClass() != Object.class)
+                        throw new SchemaOperationException("ALTER TABLE may only be executed on " +
+                            "tables that do not have actual class for cache value.");
+
                     List<QueryField> cols = new ArrayList<>(cmd.columns().length);
 
                     for (GridSqlColumn col : cmd.columns()) {
                         if (tbl.doesColumnExist(col.columnName())) {
                             if ((!cmd.ifNotExists() || cmd.columns().length != 1)) {
-                                throw new SchemaOperationException("Column already exists [tblName=" + tbl.getName() +
-                                    ", colName=" + col.columnName() + ']');
+                                throw new SchemaOperationException(SchemaOperationException.CODE_COLUMN_EXISTS,
+                                    col.columnName());
                             }
                             else {
                                 cols = null;

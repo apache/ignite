@@ -19,7 +19,9 @@ package org.apache.ignite.internal.processors.cache.index;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -63,17 +65,19 @@ public abstract class DynamicColumnsAbstractTest extends GridCommonAbstractTest 
     final static String DROP_SQL = "DROP TABLE Person";
 
     /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
+    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(false);
 
     /**
      * Check that given columns have been added to all related structures on target node exactly where needed
      *    (namely, schema in cache descriptor, type descriptor on started cache, and H2 state on started cache).
      * @param node Target node.
+     * @param schemaName Schema name to look for the table in.
      * @param tblName Table name to check.
      * @param cols Columns whose presence must be checked.
      */
-    static void checkNodeState(IgniteEx node, String tblName, QueryField... cols) {
-        String cacheName = QueryUtils.createTableCacheName(QueryUtils.DFLT_SCHEMA, tblName);
+    static void checkNodeState(IgniteEx node, String schemaName, String tblName, QueryField... cols) {
+        String cacheName = F.eq(schemaName, QueryUtils.DFLT_SCHEMA) ?
+            QueryUtils.createTableCacheName(schemaName, tblName) : schemaName;
 
         // Schema state check - should pass regardless of cache state.
         {
@@ -81,7 +85,7 @@ public abstract class DynamicColumnsAbstractTest extends GridCommonAbstractTest 
 
             assertNotNull("Cache descriptor not found", desc);
 
-            assertTrue(desc.sql());
+            assertTrue(desc.sql() == F.eq(schemaName, QueryUtils.DFLT_SCHEMA));
 
             QuerySchema schema = desc.schema();
 
@@ -152,7 +156,7 @@ public abstract class DynamicColumnsAbstractTest extends GridCommonAbstractTest 
 
         // H2 table state check.
         {
-            GridH2Table tbl = ((IgniteH2Indexing)node.context().query().getIndexing()).dataTable(QueryUtils.DFLT_SCHEMA,
+            GridH2Table tbl = ((IgniteH2Indexing)node.context().query().getIndexing()).dataTable(schemaName,
                 tblName);
 
             assertNotNull("Table not found", tbl);
@@ -200,7 +204,7 @@ public abstract class DynamicColumnsAbstractTest extends GridCommonAbstractTest 
      */
     static void checkNodesState(String tblName, QueryField... cols) {
         for (Ignite node : Ignition.allGrids())
-            checkNodeState((IgniteEx)node, tblName, cols);
+            checkNodeState((IgniteEx)node, QueryUtils.DFLT_SCHEMA, tblName, cols);
     }
 
     /**
@@ -218,8 +222,17 @@ public abstract class DynamicColumnsAbstractTest extends GridCommonAbstractTest 
      * @throws Exception if failed.
      */
     protected IgniteConfiguration clientConfiguration(int idx) throws Exception {
+        QueryEntity e = new QueryEntity(Integer.class.getName(), "Person");
+
+        LinkedHashMap<String, String> flds = new LinkedHashMap<>();
+
+        flds.put("name", String.class.getName());
+        flds.put("age", Integer.class.getName());
+
+        e.setFields(flds);
+
         return commonConfiguration(idx).setClientMode(true).setCacheConfiguration(
-            new CacheConfiguration<>("idx").setIndexedTypes(Integer.class, Integer.class)
+            new CacheConfiguration<>("idx").setQueryEntities(Collections.singletonList(e))
         );
     }
 

@@ -108,6 +108,6 @@ public class GridSqlAlterTableAddColumn extends GridSqlStatement {
 
     /** {@inheritDoc} */
     @Override public String getSQL() {
-        return null;
+        throw new UnsupportedOperationException();
     }
 }
