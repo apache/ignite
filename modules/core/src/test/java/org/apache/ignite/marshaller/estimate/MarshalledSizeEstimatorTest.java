@@ -35,49 +35,83 @@ public class MarshalledSizeEstimatorTest extends GridCommonAbstractTest {
 
             final Marshaller marshaller = ignite.configuration().getMarshaller();
 
-            final MarshalledSizeEstimator estimator = new SamplingMarshalledSizeEstimator(new X100Sampler());
+            final MarshalledSizeEstimator estimator = new SamplingMarshalledSizeEstimator(
+                new X100Sampler(new SampleFactoryImpl(ignite.binary())));
 
-            final long estimatedSize = estimator.estimate(
+            final long estimatedSize1 = estimator.estimate(
                 marshaller,
-                new DataModel()
+                new EstimationDataModel()
                     .className("org.apache.ignite.marshaller.estimate.MarshalledSizeEstimatorTest$ModelClassAlpha")
                     .count(10_000L)
-                    .setFieldStats("dates", new DataModel.FieldStats()
+                    .setFieldStats("dates", new EstimationDataModel.FieldStats()
                         .averageSize(100))
-                    .setFieldStats("name", new DataModel.FieldStats()
+                    .setFieldStats("name", new EstimationDataModel.FieldStats()
                         .nullsPercent(20))
                 ,
-                new DataModel()
+                new EstimationDataModel()
                     .className("org.apache.ignite.marshaller.estimate.MarshalledSizeEstimatorTest$ModelClassBeta")
                     .count(20_000L)
-                    .setFieldStats("relatedIds", new DataModel.FieldStats()
+                    .setFieldStats("relatedIds", new EstimationDataModel.FieldStats()
                         .nullsPercent(25)
                         .averageSize(200))
                 ,
-                new DataModel()
+                new EstimationDataModel()
                     .className("org.apache.ignite.marshaller.estimate.MarshalledSizeEstimatorTest$ModelClassGamma")
                     .count(30_000L)
-                    .setFieldStats("data", new DataModel.FieldStats()
+                    .setFieldStats("data", new EstimationDataModel.FieldStats()
                         .nullsPercent(40))
-                    .setFieldStats("data.intArray", new DataModel.FieldStats()
+                    .setFieldStats("data.intArray", new EstimationDataModel.FieldStats()
                         .nullsPercent(10)
                         .averageSize(200))
-                    .setFieldStats("data.numbers", new DataModel.FieldStats()
+                    .setFieldStats("data.numbers", new EstimationDataModel.FieldStats()
                         .nullsPercent(35)
                         .averageSize(200))
-                    .setFieldStats("dataArray", new DataModel.FieldStats()
+                    .setFieldStats("dataArray", new EstimationDataModel.FieldStats()
                         .nullsPercent(5)
                         .averageSize(50))
-                    .setFieldStats("dataArray.intArray", new DataModel.FieldStats()
+                    .setFieldStats("dataArray.intArray", new EstimationDataModel.FieldStats()
                         .nullsPercent(10)
                         .averageSize(200))
-                    .setFieldStats("dataArray.numbers", new DataModel.FieldStats()
+                    .setFieldStats("dataArray.numbers", new EstimationDataModel.FieldStats()
                         .averageSize(20))
-                    .setFieldStats("dataArray.amount", new DataModel.FieldStats()
+                    .setFieldStats("dataArray.amount", new EstimationDataModel.FieldStats()
                         .nullsPercent(5))
             );
 
-            log.info("Estimated size: " + estimatedSize);
+            log.info("Estimated size #1: " + estimatedSize1);
+
+            final long estimatedSize2 = estimator.estimate(
+                marshaller,
+                new EstimationDataModel()
+                    .className("org.apache.ignite.marshaller.estimate.MarshalledSizeEstimatorTest$ModelClassAlpha")
+                    .count(10_000L)
+                    .setFieldStats("dates", new EstimationDataModel.FieldStats()
+                        .averageSize(100))
+                    .setFieldStats("name", new EstimationDataModel.FieldStats()
+                        .nullsPercent(20)
+                        .averageSize(27))
+            );
+
+            log.info("Estimated size #2: " + estimatedSize2);
+
+            final long estimatedSize3 = estimator.estimate(
+                marshaller,
+                new EstimationDataModel()
+                    .className("org.apache.ignite.marshaller.estimate.MarshalledSizeEstimatorTest$ModelClassAlpha")
+                    .count(10_000L)
+                    .setFieldStats("dates", new EstimationDataModel.FieldStats()
+                        .averageSize(100))
+                    .setFieldStats("name", new EstimationDataModel.FieldStats()
+                        .nullsPercent(20)
+                        .averageSize(27))
+                    .setFieldType("count", "int")
+                    .setFieldType("date", Date.class.getName())
+                    .setFieldType("dates", Date[].class.getName())
+                    .setFieldType("name", String.class.getName())
+                    .setFieldType("character", "char")
+            );
+
+            log.info("Estimated size #3: " + estimatedSize3);
         }
         finally {
             stopAllGrids();
@@ -90,7 +124,7 @@ public class MarshalledSizeEstimatorTest extends GridCommonAbstractTest {
         private Date date;
         private Date[] dates;
         private String name = "ЙЦУКЕН ФЫВАПРОЛДЖ ЯЧСМИТЬБЮ";
-        private Character character = new Character('\u1234');
+        private char character = '\u1234';
     }
 
     /** */

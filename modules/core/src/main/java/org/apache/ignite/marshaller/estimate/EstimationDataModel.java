@@ -24,60 +24,125 @@ import java.util.Map;
 /**
  *
  */
-public class DataModel {
+public class EstimationDataModel {
     /** Estimated class name */
-    private String className;
+    private String clsName;
 
     /** Count of instances to estimate */
-    private long count;
+    private long cnt;
 
     /** Field names mapped to their stats */
     private Map<String, FieldStats> fieldStatsMap = new HashMap<>();
 
+    /**
+     * Field names mapped to their types. If not {@code null}, BinarySample will be created, and ReflectionSample
+     * otherwise.
+     */
+    private Map<String, String> fieldTypes;
+
+    /**
+     * @return Estimated class name.
+     */
     public String className() {
-        return className;
+        return clsName;
     }
 
-    public DataModel className(String className) {
-        this.className = className;
+    /**
+     * @param clsName Estimated class name.
+     * @return {@code this} EstimationDataModel instance.
+     */
+    public EstimationDataModel className(String clsName) {
+        this.clsName = clsName;
 
         return this;
     }
 
+    /**
+     * @return Count of instances to estimate.
+     */
     public long count() {
-        return count;
+        return cnt;
     }
 
-    public DataModel count(long count) {
-        this.count = count;
+    /**
+     * @param cnt Count of instances to estimate.
+     * @return {@code this} EstimationDataModel instance.
+     */
+    public EstimationDataModel count(long cnt) {
+        this.cnt = cnt;
 
         return this;
     }
 
+    /**
+     * @return FieldStats mapped to field names.
+     */
     public Map<String, FieldStats> fieldStatsMap() {
         return Collections.unmodifiableMap(fieldStatsMap);
     }
 
-    public DataModel fieldStatsMap(Map<String, FieldStats> fieldStatsMap) {
+    /**
+     * Updates map of FieldStats by externally created map. New map will be created, so further modifications of passed
+     * map will not take effect.
+     *
+     * @param fieldStatsMap new map of FieldStats mapped to field names.
+     * @return {@code this} EstimationDataModel instance.
+     */
+    public EstimationDataModel fieldStatsMap(Map<String, FieldStats> fieldStatsMap) {
         this.fieldStatsMap = new HashMap<>(fieldStatsMap);
 
         return this;
     }
 
-    public DataModel setFieldStats(String name, FieldStats stats) {
+    /**
+     * Maps new FieldStats instance to field name.
+     *
+     * @param name Name of field.
+     * @param stats FieldStats instance.
+     * @return {@code this} EstimationDataModel instance.
+     */
+    public EstimationDataModel setFieldStats(String name, FieldStats stats) {
         fieldStatsMap.put(name, stats);
 
         return this;
     }
 
-    public DataModel removeFieldStats(String name) {
+    /**
+     * @param name Name of field.
+     * @return {@code this} EstimationDataModel instance.
+     */
+    public EstimationDataModel removeFieldStats(String name) {
         fieldStatsMap.remove(name);
 
         return this;
     }
 
-    public DataModel clearFieldStats() {
+    /**
+     * @return {@code this} EstimationDataModel instance.
+     */
+    public EstimationDataModel clearFieldStats() {
         fieldStatsMap.clear();
+
+        return this;
+    }
+
+    /**
+     * @return Unmodifiable view of field types mapped to field names.
+     */
+    public Map<String, String> fieldTypes() {
+        return fieldTypes == null ? null : Collections.unmodifiableMap(fieldTypes);
+    }
+
+    /**
+     * @param name
+     * @param typeName
+     * @return {@code this} EstimationDataModel instance.
+     */
+    public EstimationDataModel setFieldType(String name, String typeName) {
+        if (fieldTypes == null)
+            fieldTypes = new HashMap<>();
+
+        fieldTypes.put(name, typeName);
 
         return this;
     }
@@ -86,18 +151,29 @@ public class DataModel {
      *
      */
     public static class FieldStats {
-
+        /** Percent of {@code null} values of related field in sampled objects. */
         private Integer nullsPercent;
 
+        /** Average size of string or array field values in sampled objects. */
         private Integer averageSize;
 
+        /**
+         * @return Percent of nulls.
+         */
         public Integer nullsPercent() {
             return nullsPercent;
         }
 
+        /**
+         * Default constructor.
+         */
         public FieldStats() {
         }
 
+        /**
+         * @param nullsPercent Nulls percent.
+         * @param averageSize Average size.
+         */
         public FieldStats(Integer nullsPercent, Integer averageSize) {
             validateNullsPercent(nullsPercent);
             validateAverageSize(averageSize);
@@ -106,6 +182,9 @@ public class DataModel {
             this.averageSize = averageSize;
         }
 
+        /**
+         * @param nullsPercent Nulls percent.
+         */
         public FieldStats nullsPercent(Integer nullsPercent) {
             validateNullsPercent(nullsPercent);
 
@@ -114,10 +193,16 @@ public class DataModel {
             return this;
         }
 
+        /**
+         * @return Average size of string or array values.
+         */
         public Integer averageSize() {
             return averageSize;
         }
 
+        /**
+         * @param averageSize Average size.
+         */
         public FieldStats averageSize(Integer averageSize) {
             validateAverageSize(averageSize);
 
@@ -126,6 +211,9 @@ public class DataModel {
             return this;
         }
 
+        /**
+         * @param nullsPercent Nulls percent.
+         */
         private void validateNullsPercent(Integer nullsPercent) {
             if (nullsPercent != null) {
                 if (nullsPercent < 0 || nullsPercent > 100)
@@ -133,6 +221,9 @@ public class DataModel {
             }
         }
 
+        /**
+         * @param averageSize Average size.
+         */
         private void validateAverageSize(Integer averageSize) {
             if (averageSize != null) {
                 if (averageSize < 0)

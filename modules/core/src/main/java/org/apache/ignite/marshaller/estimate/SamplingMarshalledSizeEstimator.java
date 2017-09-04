@@ -38,7 +38,7 @@ public class SamplingMarshalledSizeEstimator implements MarshalledSizeEstimator 
     }
 
     /** {@inheritDoc} */
-    @Override public long estimate(Marshaller marshaller, DataModel... dataModels) throws EstimationException {
+    @Override public long estimate(Marshaller marshaller, EstimationDataModel... dataModels) throws EstimationException {
         final Object[] samples = sampler.sample(dataModels);
 
         long estimatedSize = 0L;

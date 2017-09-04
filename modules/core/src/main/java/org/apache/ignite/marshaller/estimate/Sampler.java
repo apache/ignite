@@ -28,5 +28,5 @@ public interface Sampler {
      * @return Sampled objects.
      * @throws SamplingException when error occurs during sampling process.
      */
-    Object[] sample(DataModel... dataModels) throws SamplingException;
+    public Object[] sample(EstimationDataModel... dataModels) throws SamplingException;
 }

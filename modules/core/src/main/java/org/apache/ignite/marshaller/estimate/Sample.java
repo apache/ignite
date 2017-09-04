@@ -17,19 +17,47 @@
 
 package org.apache.ignite.marshaller.estimate;
 
-import org.apache.ignite.marshaller.Marshaller;
-
 /**
- * {@code MarshalledSizeEstimator} allows to estimate size of memory needed for object(s) described in data model(s).
+ * Interface for sampling objects.
  */
-public interface MarshalledSizeEstimator {
+public interface Sample {
     /**
-     * Estimates size of data models by specified marshaller.
-     *
-     * @param marshaller Marshaller implementation.
-     * @param dataModels Data models to estimate.
-     * @return estimated size of data models.
-     * @throws EstimationException when estimation error occurs.
+     * @return Sampled object.
      */
-    public long estimate(Marshaller marshaller, EstimationDataModel... dataModels) throws EstimationException;
+    public Object sample();
+
+    /**
+     * @return Sampled object's class name.
+     */
+    public String className();
+
+    /**
+     * @return Field interfaces for this sample.
+     */
+    public Iterable<Field> fields();
+
+    /**
+     *
+     */
+    interface Field {
+        /**
+         * @return Field name.
+         */
+        String name();
+
+        /**
+         * @return Field type.
+         */
+        Class<?> type();
+
+        /**
+         * @return Field value.
+         */
+        Object value() throws SamplingException;
+
+        /**
+         * @param val New field value.
+         */
+        void value(Object val) throws SamplingException;
+    }
 }
