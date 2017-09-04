@@ -1500,6 +1500,7 @@ public class JdbcThinResultSet implements ResultSet {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public <T> T unwrap(Class<T> iface) throws SQLException {
         if (!isWrapperFor(iface))
             throw new SQLException("Result set is not a wrapper for " + iface.getName());
@@ -1551,6 +1552,19 @@ public class JdbcThinResultSet implements ResultSet {
      */
     @SuppressWarnings("unchecked")
     private <T> T getTypedValue(int colIdx, Class<T> targetCls) throws SQLException {
+        return (T)getTypedValue0(colIdx, targetCls);
+    }
+
+    /**
+     * Gets converted field value by index.
+     *
+     * @param colIdx Column index.
+     * @param targetCls Value class.
+     * @return Converted field value.
+     * @throws SQLException In case of error.
+     */
+    @SuppressWarnings("unchecked")
+    private Object getTypedValue0(int colIdx, Class targetCls) throws SQLException {
         Object val = getValue(colIdx);
 
         if (val == null)
@@ -1559,14 +1573,15 @@ public class JdbcThinResultSet implements ResultSet {
         Class<?> cls = val.getClass();
 
         if (targetCls == cls)
-            return (T)val;
+            return val;
 
         if (targetCls == Boolean.class) {
             if (val instanceof Number)
-                return (T)new Boolean(((Number)val).intValue() != 0);
+                return ((Number)val).intValue() != 0;
+
             if (cls == String.class || cls == Character.class) {
                 try {
-                    return (T)new Boolean(Integer.parseInt(val.toString()) != 0);
+                    return Integer.parseInt(val.toString()) != 0;
                 }
                 catch (NumberFormatException e) {
                     throw new SQLException("Cannot convert [val=" + val.toString() + "] to boolean");
@@ -1577,12 +1592,12 @@ public class JdbcThinResultSet implements ResultSet {
         }
         else if (targetCls == Byte.class) {
             if (val instanceof Number)
-                return (T)new Byte(((Number)val).byteValue());
+                return ((Number)val).byteValue();
             else if (cls == Boolean.class)
-                return (T)new Byte((Boolean)val ? (byte)1 : (byte)0);
-            if (cls == String.class || cls == Character.class) {
+                return (Boolean) val ? (byte) 1 : (byte) 0;
+            else if (cls == String.class || cls == Character.class) {
                 try {
-                    return (T) new Byte(Byte.parseByte(val.toString()));
+                    return Byte.parseByte(val.toString());
                 }
                 catch (NumberFormatException e) {
                     throw new SQLException("Cannot convert [val=" + val.toString() + "] to byte");
@@ -1593,12 +1608,12 @@ public class JdbcThinResultSet implements ResultSet {
         }
         else if (targetCls == Short.class) {
             if (val instanceof Number)
-                return (T)new Short(((Number)val).shortValue());
+                return ((Number) val).shortValue();
             else if (cls == Boolean.class)
-                return (T)new Short((Boolean)val ? (short)1 : (short)0);
+                return (Boolean) val ? (short) 1 : (short) 0;
             if (cls == String.class || cls == Character.class) {
                 try {
-                    return (T) new Short(Short.parseShort(val.toString()));
+                    return Short.parseShort(val.toString());
                 }
                 catch (NumberFormatException e) {
                     throw new SQLException("Cannot convert [val=" + val.toString() + "] to short");
@@ -1609,12 +1624,12 @@ public class JdbcThinResultSet implements ResultSet {
         }
         else if (targetCls == Integer.class) {
             if (val instanceof Number)
-                return (T)new Integer(((Number)val).intValue());
+                return ((Number) val).intValue();
             else if (cls == Boolean.class)
-                return (T)new Integer((Boolean)val ? 1 : 0);
+                return (Boolean) val ? 1 : 0;
             if (cls == String.class || cls == Character.class) {
                 try {
-                    return (T) new Integer(Integer.parseInt(val.toString()));
+                    return Integer.parseInt(val.toString());
                 }
                 catch (NumberFormatException e) {
                     throw new SQLException("Cannot convert [val=" + val.toString() + "] to int");
@@ -1625,12 +1640,12 @@ public class JdbcThinResultSet implements ResultSet {
         }
         else if (targetCls == Long.class) {
             if (val instanceof Number)
-                return (T)new Long(((Number)val).longValue());
+                return ((Number)val).longValue();
             else if (cls == Boolean.class)
-                return (T)new Long((Boolean)val ? 1 : 0);
+                return (long) ((Boolean) val ? 1 : 0);
             if (cls == String.class || cls == Character.class) {
                 try {
-                    return (T) new Long(Long.parseLong(val.toString()));
+                    return Long.parseLong(val.toString());
                 }
                 catch (NumberFormatException e) {
                     throw new SQLException("Cannot convert [val=" + val.toString() + "] to long");
@@ -1641,12 +1656,12 @@ public class JdbcThinResultSet implements ResultSet {
         }
         else if (targetCls == Float.class) {
             if (val instanceof Number)
-                return (T)new Float(((Number)val).floatValue());
+                return ((Number) val).floatValue();
             else if (cls == Boolean.class)
-                return (T)new Float((Boolean)val ? 1 : 0);
+                return (float) ((Boolean) val ? 1 : 0);
             if (cls == String.class || cls == Character.class) {
                 try {
-                    return (T) new Float(Float.parseFloat(val.toString()));
+                    return Float.parseFloat(val.toString());
                 }
                 catch (NumberFormatException e) {
                     throw new SQLException("Cannot convert [val=" + val.toString() + "] to float");
@@ -1657,12 +1672,12 @@ public class JdbcThinResultSet implements ResultSet {
         }
         else if (targetCls == Double.class) {
             if (val instanceof Number)
-                return (T)new Double(((Number)val).doubleValue());
+                return ((Number) val).doubleValue();
             else if (cls == Boolean.class)
-                return (T)new Double((Boolean)val ? 1 : 0);
+                return (double)((Boolean) val ? 1 : 0);
             if (cls == String.class || cls == Character.class) {
                 try {
-                    return (T) new Double(Double.parseDouble(val.toString()));
+                    return Double.parseDouble(val.toString());
                 }
                 catch (NumberFormatException e) {
                     throw new SQLException("Cannot convert [val=" + val.toString() + "] to double");
@@ -1673,9 +1688,10 @@ public class JdbcThinResultSet implements ResultSet {
         }
         else if (targetCls == BigDecimal.class) {
             if (val instanceof Number)
-                return (T)new BigDecimal(((Number)val).doubleValue());
+                return new BigDecimal(((Number)val).doubleValue());
             else if (cls == Boolean.class)
-                return (T)new BigDecimal((Boolean)val ? 1 : 0);
+                return new BigDecimal((Boolean)val ? 1 : 0);
+
             if (cls == String.class || cls == Character.class) {
                 try {
                     DecimalFormatSymbols symbols = new DecimalFormatSymbols();
@@ -1686,9 +1702,10 @@ public class JdbcThinResultSet implements ResultSet {
                     String pattern = "#,##0.0#";
 
                     DecimalFormat decimalFormat = new DecimalFormat(pattern, symbols);
+
                     decimalFormat.setParseBigDecimal(true);
 
-                    return (T) decimalFormat.parse(val.toString());
+                    return decimalFormat.parse(val.toString());
                 }
                 catch (ParseException e) {
                     throw new SQLException("Cannot convert [val=" + val.toString() + "] to BigDecimal");
@@ -1699,31 +1716,31 @@ public class JdbcThinResultSet implements ResultSet {
         }
         else if (targetCls == Date.class) {
             if (cls == java.util.Date.class)
-                return (T)new Date(((java.util.Date)val).getTime());
+                return new Date(((java.util.Date)val).getTime());
             if (cls == Time.class)
-                return (T)new Date(((Time)val).getTime());
+                return new Date(((Time)val).getTime());
             else if (cls == Timestamp.class)
-                return (T)new Date(((Timestamp)val).getTime());
+                return new Date(((Timestamp)val).getTime());
             else
                 throw new SQLException("Cannot convert " + cls + " to date");
         }
         else if (targetCls == Time.class) {
             if (cls == java.util.Date.class)
-                return (T)new Time(((java.util.Date)val).getTime());
+                return new Time(((java.util.Date)val).getTime());
             if (cls == Date.class)
-                return (T)new Time(((Date)val).getTime());
+                return new Time(((Date)val).getTime());
             else if (cls == Timestamp.class)
-                return (T)new Time(((Timestamp)val).getTime());
+                return new Time(((Timestamp)val).getTime());
             else
                 throw new SQLException("Cannot convert " + cls + " to time");
         }
         else if (targetCls == Timestamp.class) {
             if (cls == java.util.Date.class)
-                return (T)new Timestamp(((java.util.Date)val).getTime());
+                return new Timestamp(((java.util.Date)val).getTime());
             if (cls == Date.class)
-                return (T)new Timestamp(((Date)val).getTime());
+                return new Timestamp(((Date)val).getTime());
             else if (cls == Time.class)
-                return (T)new Timestamp(((Time)val).getTime());
+                return new Timestamp(((Time)val).getTime());
             else
                 throw new SQLException("Cannot convert " + cls + " to timestamp");
         }
