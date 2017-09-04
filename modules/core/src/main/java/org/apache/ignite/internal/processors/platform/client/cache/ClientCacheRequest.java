@@ -15,43 +15,41 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.platform.client;
+package org.apache.ignite.internal.processors.platform.client.cache;
 
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.odbc.SqlListenerRequest;
+import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 
 /**
- * Thin client request.
+ * Cache get request.
  */
-public class ClientRequest extends SqlListenerRequest {
-    /** Request id. */
-    private final int requestId;
+class ClientCacheRequest extends ClientRequest {
+    /** */
+    private final int cacheId;
 
     /**
      * Ctor.
      *
      * @param reader Reader.
      */
-    public ClientRequest(BinaryRawReader reader) {
-        requestId = reader.readInt();
+    ClientCacheRequest(BinaryRawReader reader) {
+        super(reader);
+
+        cacheId = reader.readInt();
+        reader.readByte();  // Flags (skipStore, etc);
     }
 
     /**
-     * Gets the request id.
+     * Gets the cache for current cache id.
      *
-     * @return Data.
+     * @param ctx Kernal context.
+     * @return Cache.
      */
-    public int getRequestId() {
-        return requestId;
-    }
+    protected IgniteCache getCache(GridKernalContext ctx) {
+        String cacheName = ctx.cache().context().cacheContext(cacheId).cache().name();
 
-    /**
-     * Processes the request.
-     *
-     * @return Response.
-     */
-    public ClientResponse process(GridKernalContext ctx) {
-        return new ClientResponse(requestId);
+        return ctx.grid().cache(cacheName).withKeepBinary();
     }
 }

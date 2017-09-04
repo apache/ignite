@@ -18,31 +18,40 @@
 package org.apache.ignite.internal.processors.platform.client;
 
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.binary.BinaryContext;
+import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
+import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
+
+import java.util.Collection;
 
 /**
- * Cache get request.
+ * Binary types update request.
  */
-class ClientGetRequest extends ClientCacheRequest {
-    /** */
-    private final Object key;
+class ClientPutBinaryTypesRequest extends ClientRequest {
+    /** Metas. */
+    private final Collection<BinaryMetadata> metas;
 
     /**
      * Ctor.
      *
      * @param reader Reader.
      */
-    ClientGetRequest(BinaryRawReaderEx reader) {
+    ClientPutBinaryTypesRequest(BinaryRawReaderEx reader) {
         super(reader);
 
-        key = reader.readObjectDetached();
+        metas = PlatformUtils.readBinaryMetadata(reader);
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public ClientResponse process(GridKernalContext ctx) {
-        Object val = getCache(ctx).get(key);
+        BinaryContext binCtx = ((CacheObjectBinaryProcessorImpl) ctx.cacheObjects()).binaryContext();
 
-        return new ClientGetResponse(getRequestId(), val);
+        for (BinaryMetadata meta : metas)
+            binCtx.updateMetadata(meta.typeId(), meta);
+
+        return super.process(ctx);
     }
 }

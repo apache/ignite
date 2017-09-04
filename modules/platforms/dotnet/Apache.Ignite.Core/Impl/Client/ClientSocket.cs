@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Impl.Client
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
     using System.Net;
     using System.Net.Sockets;
     using System.Threading;
@@ -73,7 +74,6 @@ namespace Apache.Ignite.Core.Impl.Client
             var resBytes = SendReceive(_socket, stream =>
             {
                 stream.WriteShort((short) opId);
-                stream.WriteByte(0); // Flags (compression, etc)
                 stream.WriteInt(requestId);
 
                 if (writeAction != null)
@@ -86,8 +86,6 @@ namespace Apache.Ignite.Core.Impl.Client
             {
                 var resRequestId = stream.ReadInt();
                 Debug.Assert(requestId == resRequestId);
-
-                stream.ReadByte(); // Flags
 
                 if (readFunc != null)
                 {
@@ -246,6 +244,8 @@ namespace Apache.Ignite.Core.Impl.Client
         /// <summary>
         /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
         /// </summary>
+        [SuppressMessage("Microsoft.Usage", "CA1816:CallGCSuppressFinalizeCorrectly",
+            Justification = "There is no finalizer.")]
         public void Dispose()
         {
             _socket.Dispose();

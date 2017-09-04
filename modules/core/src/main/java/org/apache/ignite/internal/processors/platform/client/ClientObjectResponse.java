@@ -17,38 +17,30 @@
 
 package org.apache.ignite.internal.processors.platform.client;
 
-import org.apache.ignite.IgniteCache;
-import org.apache.ignite.binary.BinaryRawReader;
-import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.binary.BinaryRawWriter;
 
 /**
- * Cache get request.
+ * Single object response.
  */
-class ClientCacheRequest extends ClientRequest {
+public class ClientObjectResponse extends ClientResponse {
     /** */
-    private final int cacheId;
+    private final Object val;
 
     /**
      * Ctor.
      *
-     * @param reader Reader.
+     * @param requestId Request id.
      */
-    ClientCacheRequest(BinaryRawReader reader) {
-        super(reader);
+    public ClientObjectResponse(int requestId, Object val) {
+        super(requestId);
 
-        cacheId = reader.readInt();
-        reader.readByte();  // Flags (skipStore, etc);
+        this.val = val;
     }
 
-    /**
-     * Gets the cache for current cache id.
-     *
-     * @param ctx Kernal context.
-     * @return Cache.
-     */
-    protected IgniteCache getCache(GridKernalContext ctx) {
-        String cacheName = ctx.cache().context().cacheContext(cacheId).cache().name();
+    /** {@inheritDoc} */
+    @Override public void encode(BinaryRawWriter writer) {
+        super.encode(writer);
 
-        return ctx.grid().cache(cacheName).withKeepBinary();
+        writer.writeObject(val);
     }
 }

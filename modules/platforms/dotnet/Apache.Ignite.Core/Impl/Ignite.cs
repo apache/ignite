@@ -804,7 +804,7 @@ namespace Apache.Ignite.Core.Impl
         /// <summary>
         /// Gets the binary processor.
         /// </summary>
-        public BinaryProcessor BinaryProcessor
+        public IBinaryProcessor BinaryProcessor
         {
             get { return _binaryProc; }
         }

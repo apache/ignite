@@ -15,34 +15,33 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.platform.client;
+package org.apache.ignite.internal.processors.platform.client.binary;
 
 import org.apache.ignite.binary.BinaryRawWriter;
-import org.apache.ignite.internal.processors.odbc.SqlListenerResponse;
-import org.jetbrains.annotations.Nullable;
+import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 
 /**
- * Thin client response.
+ * Type name response.
  */
-public class ClientResponse extends SqlListenerResponse {
-    /** Request id. */
-    private final int requestId;
+public class ClientGetBinaryTypeNameResponse extends ClientResponse {
+    /** Type name. */
+    private final String typeName;
 
     /**
      * Ctor.
      *
      * @param requestId Request id.
      */
-    public ClientResponse(int requestId) {
-        super(STATUS_SUCCESS, null);
+    ClientGetBinaryTypeNameResponse(int requestId, String typeName) {
+        super(requestId);
 
-        this.requestId = requestId;
+        this.typeName = typeName;
     }
 
-    /**
-     * Encodes the response data.
-     */
-    public void encode(BinaryRawWriter writer) {
-        writer.writeInt(requestId);
+    /** {@inheritDoc} */
+    @Override public void encode(BinaryRawWriter writer) {
+        super.encode(writer);
+
+        writer.writeString(typeName);
     }
 }

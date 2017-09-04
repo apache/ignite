@@ -39,8 +39,6 @@ import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
-import org.apache.ignite.internal.binary.BinarySchema;
-import org.apache.ignite.internal.binary.BinarySchemaRegistry;
 import org.apache.ignite.internal.binary.BinaryTypeImpl;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
@@ -69,21 +67,15 @@ import org.apache.ignite.internal.processors.platform.memory.PlatformMemoryManag
 import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
 import org.apache.ignite.internal.processors.platform.message.PlatformMessageFilter;
 import org.apache.ignite.internal.processors.platform.messaging.PlatformMessageFilterImpl;
-import org.apache.ignite.internal.processors.platform.utils.PlatformReaderBiClosure;
-import org.apache.ignite.internal.processors.platform.utils.PlatformReaderClosure;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
 
 import java.sql.Timestamp;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -353,62 +345,7 @@ public class PlatformContextImpl implements PlatformContext {
     /** {@inheritDoc} */
     @SuppressWarnings("ConstantConditions")
     @Override public void processMetadata(BinaryRawReaderEx reader) {
-        Collection<BinaryMetadata> metas = PlatformUtils.readCollection(reader,
-            new PlatformReaderClosure<BinaryMetadata>() {
-                @Override public BinaryMetadata read(BinaryRawReaderEx reader) {
-                    int typeId = reader.readInt();
-                    String typeName = reader.readString();
-                    String affKey = reader.readString();
-
-                    Map<String, BinaryFieldMetadata> fields = PlatformUtils.readLinkedMap(reader,
-                        new PlatformReaderBiClosure<String, BinaryFieldMetadata>() {
-                            @Override public IgniteBiTuple<String, BinaryFieldMetadata> read(BinaryRawReaderEx reader) {
-                                String name = reader.readString();
-                                int typeId = reader.readInt();
-                                int fieldId = reader.readInt();
-
-                                return new IgniteBiTuple<String, BinaryFieldMetadata>(name,
-                                        new BinaryFieldMetadata(typeId, fieldId));
-                            }
-                        });
-
-                    Map<String, Integer> enumMap = null;
-
-                    boolean isEnum = reader.readBoolean();
-
-                    if (isEnum) {
-                        int size = reader.readInt();
-
-                        enumMap = new LinkedHashMap<>(size);
-
-                        for (int idx = 0; idx < size; idx++)
-                            enumMap.put(reader.readString(), reader.readInt());
-                    }
-
-                    // Read schemas
-                    int schemaCnt = reader.readInt();
-
-                    List<BinarySchema> schemas = null;
-
-                    if (schemaCnt > 0) {
-                        schemas = new ArrayList<>(schemaCnt);
-
-                        for (int i = 0; i < schemaCnt; i++) {
-                            int id = reader.readInt();
-                            int fieldCnt = reader.readInt();
-                            List<Integer> fieldIds = new ArrayList<>(fieldCnt);
-
-                            for (int j = 0; j < fieldCnt; j++)
-                                fieldIds.add(reader.readInt());
-
-                            schemas.add(new BinarySchema(id, fieldIds));
-                        }
-                    }
-
-                    return new BinaryMetadata(typeId, typeName, fields, affKey, schemas, isEnum, enumMap);
-                }
-            }
-        );
+        Collection<BinaryMetadata> metas = PlatformUtils.readBinaryMetadata(reader);
 
         BinaryContext binCtx = cacheObjProc.binaryContext();
 
@@ -433,28 +370,7 @@ public class PlatformContextImpl implements PlatformContext {
 
     /** {@inheritDoc} */
     @Override public void writeSchema(BinaryRawWriterEx writer, int typeId, int schemaId) {
-        BinarySchemaRegistry schemaReg = cacheObjProc.binaryContext().schemaRegistry(typeId);
-        BinarySchema schema = schemaReg.schema(schemaId);
-
-        if (schema == null) {
-            BinaryTypeImpl meta = (BinaryTypeImpl)cacheObjProc.metadata(typeId);
-
-            if (meta != null) {
-                for (BinarySchema typeSchema : meta.metadata().schemas()) {
-                    if (schemaId == typeSchema.schemaId()) {
-                        schema = typeSchema;
-                        break;
-                    }
-                }
-            }
-
-            if (schema != null)
-                schemaReg.addSchema(schemaId, schema);
-        }
-
-        int[] fieldIds = schema == null ? null : schema.fieldIds();
-
-        writer.writeIntArray(fieldIds);
+        writer.writeIntArray(PlatformUtils.getSchema(cacheObjProc, typeId, schemaId));
     }
 
     /**
