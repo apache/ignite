@@ -220,7 +220,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
             int size = futuresCountNoLock();
 
             for (int i = 0; i < size; i++) {
-                IgniteInternalFuture<GridNearTxPrepareResponse> fut = future(i);
+                IgniteInternalFuture fut = future(i);
 
                 if (isMini(fut) && !fut.isDone()) {
                     MiniFuture miniFut = (MiniFuture)fut;
@@ -254,7 +254,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
 
             // Avoid iterator creation.
             for (int i = size - 1; i >= 0; i--) {
-                IgniteInternalFuture<GridNearTxPrepareResponse> fut = future(i);
+                IgniteInternalFuture fut = future(i);
 
                 if (!isMini(fut))
                     continue;
@@ -564,7 +564,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
 
                 req.miniId(fut.futureId());
 
-                add(fut); // Append new future.
+                add((IgniteInternalFuture)fut); // Append new future.
 
                 if (n.isLocal()) {
                     assert !(m.hasColocatedCacheEntries() && m.hasNearCacheEntries()) : m;
@@ -681,7 +681,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                 if (keyLockFut == null) {
                     keyLockFut = new KeyLockFuture();
 
-                    add(keyLockFut);
+                    add((IgniteInternalFuture)keyLockFut);
                 }
 
                 keyLockFut.addLockKey(entry.txKey());
@@ -740,7 +740,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                     int size = futuresCountNoLock();
 
                     for (int i = 0; i < size; i++) {
-                        IgniteInternalFuture<GridNearTxPrepareResponse> fut = future(i);
+                        IgniteInternalFuture fut = future(i);
 
                         if (isMini(fut) && !fut.isDone()) {
                             MiniFuture miniFut = (MiniFuture)fut;
@@ -758,7 +758,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                 }
             }
 
-            add(new GridEmbeddedFuture<>(new IgniteBiClosure<TxDeadlock, Exception, GridNearTxPrepareResponse>() {
+            add(new GridEmbeddedFuture<>(new IgniteBiClosure<TxDeadlock, Exception, Object>() {
                 @Override public GridNearTxPrepareResponse apply(TxDeadlock deadlock, Exception e) {
                     if (e != null)
                         U.warn(log, "Failed to detect deadlock.", e);
@@ -790,8 +790,8 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                     ", loc=" + ((MiniFuture)f).node().isLocal() +
                     ", done=" + f.isDone() + "]";
             }
-        }, new P1<IgniteInternalFuture<GridNearTxPrepareResponse>>() {
-            @Override public boolean apply(IgniteInternalFuture<GridNearTxPrepareResponse> fut) {
+        }, new P1<IgniteInternalFuture<Object>>() {
+            @Override public boolean apply(IgniteInternalFuture<Object> fut) {
                 return isMini(fut);
             }
         });

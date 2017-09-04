@@ -171,7 +171,7 @@ public abstract class GridNearOptimisticTxPrepareFutureAdapter extends GridNearT
     /**
      * Keys lock future.
      */
-    protected static class KeyLockFuture extends GridFutureAdapter<GridNearTxPrepareResponse> {
+    protected static class KeyLockFuture extends GridFutureAdapter<Void> {
         /** */
         @GridToStringInclude
         protected Collection<IgniteTxKey> lockKeys = new GridConcurrentHashSet<>();
@@ -216,7 +216,7 @@ public abstract class GridNearOptimisticTxPrepareFutureAdapter extends GridNearT
                 if (log.isDebugEnabled())
                     log.debug("All locks are acquired for near prepare future: " + this);
 
-                onDone((GridNearTxPrepareResponse)null);
+                onDone((Void)null);
             }
             else {
                 if (log.isDebugEnabled())

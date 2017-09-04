@@ -49,7 +49,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.NOO
  * Common code for tx prepare in optimistic and pessimistic modes.
  */
 public abstract class GridNearTxPrepareFutureAdapter extends
-    GridCacheCompoundFuture<GridNearTxPrepareResponse, IgniteInternalTx> implements GridCacheMvccFuture<IgniteInternalTx> {
+    GridCacheCompoundFuture<Object, IgniteInternalTx> implements GridCacheMvccFuture<IgniteInternalTx> {
     /** Logger reference. */
     protected static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
@@ -58,9 +58,9 @@ public abstract class GridNearTxPrepareFutureAdapter extends
         AtomicReferenceFieldUpdater.newUpdater(GridNearTxPrepareFutureAdapter.class, Throwable.class, "err");
 
     /** */
-    private static final IgniteReducer<GridNearTxPrepareResponse, IgniteInternalTx> REDUCER =
-        new IgniteReducer<GridNearTxPrepareResponse, IgniteInternalTx>() {
-            @Override public boolean collect(GridNearTxPrepareResponse e) {
+    private static final IgniteReducer<Object, IgniteInternalTx> REDUCER =
+        new IgniteReducer<Object, IgniteInternalTx>() {
+            @Override public boolean collect(Object e) {
                 return true;
             }
 

@@ -124,7 +124,7 @@ public class GridCacheSharedContext<K, V> {
     private GridCacheSharedTtlCleanupManager ttlMgr;
 
     /** Cache mvcc coordinator. */
-    private CacheCoordinatorsSharedManager coord;
+    private CacheCoordinatorsSharedManager crd;
 
     /** Cache contexts map. */
     private ConcurrentHashMap8<Integer, GridCacheContext<K, V>> ctxMap;
@@ -167,7 +167,7 @@ public class GridCacheSharedContext<K, V> {
 
     /**
      * @param kernalCtx  Context.
-     * @param coord Cache mvcc coordinator manager.
+     * @param crd Cache mvcc coordinator manager.
      * @param txMgr Transaction manager.
      * @param verMgr Version manager.
      * @param mvccMgr MVCC manager.
@@ -181,7 +181,7 @@ public class GridCacheSharedContext<K, V> {
      */
     public GridCacheSharedContext(
         GridKernalContext kernalCtx,
-        CacheCoordinatorsSharedManager coord,
+        CacheCoordinatorsSharedManager crd,
         IgniteTxManager txMgr,
         GridCacheVersionManager verMgr,
         GridCacheMvccManager mvccMgr,
@@ -200,7 +200,7 @@ public class GridCacheSharedContext<K, V> {
         this.kernalCtx = kernalCtx;
 
         setManagers(mgrs,
-            coord,
+            crd,
             txMgr,
             jtaMgr,
             verMgr,
@@ -356,7 +356,7 @@ public class GridCacheSharedContext<K, V> {
         List<GridCacheSharedManager<K, V>> mgrs = new LinkedList<>();
 
         setManagers(mgrs,
-            coord,
+            crd,
             txMgr,
             jtaMgr,
             verMgr,
@@ -422,7 +422,7 @@ public class GridCacheSharedContext<K, V> {
         CacheAffinitySharedManager affMgr,
         GridCacheIoManager ioMgr,
         GridCacheSharedTtlCleanupManager ttlMgr) {
-        this.coord = add(mgrs, coord);
+        this.crd = add(mgrs, coord);
         this.mvccMgr = add(mgrs, mvccMgr);
         this.verMgr = add(mgrs, verMgr);
         this.txMgr = add(mgrs, txMgr);
@@ -766,7 +766,7 @@ public class GridCacheSharedContext<K, V> {
      * @return Cache mvcc coordinator manager.
      */
     public CacheCoordinatorsSharedManager coordinators() {
-        return coord;
+        return crd;
     }
 
     /**

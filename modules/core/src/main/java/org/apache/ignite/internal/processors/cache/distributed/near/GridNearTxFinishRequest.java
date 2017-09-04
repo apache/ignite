@@ -24,6 +24,7 @@ import java.util.UUID;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxFinishRequest;
+import org.apache.ignite.internal.processors.cache.mvcc.TxMvccVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.lang.IgniteUuid;
@@ -41,6 +42,9 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
 
     /** Mini future ID. */
     private int miniId;
+
+    /** */
+    private long mvccCrdCntr = TxMvccVersion.COUNTER_NA;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -87,6 +91,7 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
         int txSize,
         @Nullable UUID subjId,
         int taskNameHash,
+        long mvccCrdCntr,
         boolean addDepInfo) {
         super(
             xidVer,
@@ -110,6 +115,15 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
 
         explicitLock(explicitLock);
         storeEnabled(storeEnabled);
+
+        this.mvccCrdCntr = mvccCrdCntr;
+    }
+
+    /**
+     * @return Counter.
+     */
+    public long mvccCoordinatorCounter() {
+        return mvccCrdCntr;
     }
 
     /**
@@ -177,6 +191,12 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
 
                 writer.incrementState();
 
+            case 22:
+                if (!writer.writeLong("mvccCrdCntr", mvccCrdCntr))
+                    return false;
+
+                writer.incrementState();
+
         }
 
         return true;
@@ -201,6 +221,14 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
 
                 reader.incrementState();
 
+            case 22:
+                mvccCrdCntr = reader.readLong("mvccCrdCntr");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
         }
 
         return reader.afterMessageRead(GridNearTxFinishRequest.class);
@@ -213,7 +241,7 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 22;
+        return 23;
     }
 
     /** {@inheritDoc} */

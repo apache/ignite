@@ -375,14 +375,18 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
 
                 log.info("Assigned mvcc coordinator [topVer=" + discoCache.version() +
                     ", crd=" + newCrd + ']');
+
+                return;
             }
         }
+
+        assignHist.addAssignment(discoCache.version(), curCrd);
     }
 
     /**
      *
      */
-    private class MvccCounterFuture extends GridFutureAdapter<Long> {
+    public class MvccCounterFuture extends GridFutureAdapter<Long> {
         /** */
         private final Long id;
 
@@ -390,7 +394,7 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
         private IgniteInternalTx tx;
 
         /** */
-        private final ClusterNode crd;
+        public final ClusterNode crd;
 
         /**
          * @param id Future ID.

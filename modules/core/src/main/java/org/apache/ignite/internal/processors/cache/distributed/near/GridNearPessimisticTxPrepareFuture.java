@@ -36,6 +36,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxMapping;
+import org.apache.ignite.internal.processors.cache.mvcc.CacheCoordinatorsSharedManager;
+import org.apache.ignite.internal.processors.cache.mvcc.TxMvccVersion;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
@@ -46,7 +48,6 @@ import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
@@ -139,13 +140,17 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
 
             // Avoid iterator creation.
             for (int i = 0; i < size; i++) {
-                MiniFuture mini = (MiniFuture)future(i);
+                IgniteInternalFuture fut = future(i);
 
-                if (mini.futureId() == miniId) {
-                    if (!mini.isDone())
-                        return mini;
-                    else
-                        return null;
+                if (fut instanceof MiniFuture) {
+                    MiniFuture mini = (MiniFuture)fut;
+
+                    if (mini.futureId() == miniId) {
+                        if (!mini.isDone())
+                            return mini;
+                        else
+                            return null;
+                    }
                 }
             }
         }
@@ -237,7 +242,7 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
 
         req.miniId(fut.futureId());
 
-        add(fut);
+        add((IgniteInternalFuture)fut);
 
         IgniteInternalFuture<GridNearTxPrepareResponse> prepFut = nearEntries ?
             cctx.tm().txHandler().prepareNearTxLocal(req) :
@@ -390,7 +395,7 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
 
                 req.miniId(fut.futureId());
 
-                add(fut);
+                add((IgniteInternalFuture)fut);
 
                 try {
                     cctx.io().send(primary, req, tx.ioPolicy());
@@ -421,9 +426,13 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
         if (mvccCrd != null) {
             assert !tx.onePhaseCommit();
 
-            IgniteInternalFuture<Long> cntrFut = cctx.coordinators().requestTxCounter(mvccCrd, tx);
+            if (mvccCrd.isLocal())
+                tx.mvccCoordinatorCounter(cctx.coordinators().requestTxCounterOnCoordinator(tx.nearXidVersion()));
+            else {
+                IgniteInternalFuture<Long> cntrFut = cctx.coordinators().requestTxCounter(mvccCrd, tx);
 
-            add((IgniteInternalFuture)cntrFut);
+                add((IgniteInternalFuture)cntrFut);
+            }
         }
 
         markInitialized();
@@ -457,9 +466,21 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
     @Override public String toString() {
         Collection<String> futs = F.viewReadOnly(futures(), new C1<IgniteInternalFuture<?>, String>() {
             @Override public String apply(IgniteInternalFuture<?> f) {
-                return "[node=" + ((MiniFuture)f).primary().id() +
-                    ", loc=" + ((MiniFuture)f).primary().isLocal() +
-                    ", done=" + f.isDone() + "]";
+                if (f instanceof MiniFuture) {
+                    return "[node=" + ((MiniFuture)f).primary().id() +
+                        ", loc=" + ((MiniFuture)f).primary().isLocal() +
+                        ", done=" + f.isDone() + "]";
+                }
+                else if (f instanceof CacheCoordinatorsSharedManager.MvccCounterFuture) {
+                    CacheCoordinatorsSharedManager.MvccCounterFuture crdFut =
+                        (CacheCoordinatorsSharedManager.MvccCounterFuture)f;
+
+                    return "[crdNode=" + crdFut.crd.id() +
+                        ", loc=" + crdFut.crd.isLocal() +
+                        ", done=" + f.isDone() + "]";
+                }
+                else
+                    return f.toString();
             }
         });
 
@@ -509,6 +530,9 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
             if (res.error() != null)
                 onError(res.error());
             else {
+                if (res.mvccCoordinatorCounter() != TxMvccVersion.COUNTER_NA)
+                    tx.mvccCoordinatorCounter(res.mvccCoordinatorCounter());
+
                 onPrepareResponse(m, res, updateMapping);
 
                 onDone(res);

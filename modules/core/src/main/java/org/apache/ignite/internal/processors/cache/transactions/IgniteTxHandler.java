@@ -859,8 +859,11 @@ public class IgniteTxHandler {
         else
             tx = ctx.tm().tx(dhtVer);
 
-        if (tx != null)
+        if (tx != null) {
+            tx.mvccCoordinatorCounter(req.mvccCoordinatorCounter());
+
             req.txState(tx.txState());
+        }
 
         if (tx == null && locTx != null && !req.commit()) {
             U.warn(log, "DHT local tx not found for near local tx rollback " +

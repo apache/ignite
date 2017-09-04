@@ -234,7 +234,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
 
             // Avoid iterator creation.
             for (int i = 0; i < size; i++) {
-                IgniteInternalFuture<GridNearTxPrepareResponse> fut = future(i);
+                IgniteInternalFuture fut = future(i);
 
                 if (!isMini(fut))
                     continue;
@@ -382,14 +382,14 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
 
             MiniFuture fut = new MiniFuture(this, m, ++miniId);
 
-            add(fut);
+            add((IgniteInternalFuture)fut);
 
             if (m.primary().isLocal() && m.hasNearCacheEntries() && m.hasColocatedCacheEntries()) {
                 assert locNearEntriesFut == null;
 
                 locNearEntriesFut = fut;
 
-                add(new MiniFuture(this, m, ++miniId));
+                add((IgniteInternalFuture)new MiniFuture(this, m, ++miniId));
             }
         }
 
@@ -646,7 +646,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
                 if (keyLockFut == null) {
                     keyLockFut = new KeyLockFuture();
 
-                    add(keyLockFut);
+                    add((IgniteInternalFuture)keyLockFut);
                 }
 
                 keyLockFut.addLockKey(entry.txKey());

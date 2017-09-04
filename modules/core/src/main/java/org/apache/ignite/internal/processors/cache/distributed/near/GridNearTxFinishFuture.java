@@ -714,6 +714,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
             tx.size(),
             tx.subjectId(),
             tx.taskNameHash(),
+            tx.mvccCoordinatorCounter(),
             tx.activeCachesDeploymentEnabled()
         );
 

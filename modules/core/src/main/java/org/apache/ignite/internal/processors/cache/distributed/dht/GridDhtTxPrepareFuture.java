@@ -1223,7 +1223,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 }
             }
 
-            IgniteInternalFuture<Long> waitCoordCntrFut = null;
+            IgniteInternalFuture<Long> waitCrdCntrFut = null;
 
             if (req.requestMvccCounter()) {
                 assert tx.txState().mvccEnabled(cctx);
@@ -1235,10 +1235,10 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 if (crd.isLocal())
                     tx.mvccCoordinatorCounter(cctx.coordinators().requestTxCounterOnCoordinator(tx.nearXidVersion()));
                 else {
-                    IgniteInternalFuture<Long> coordCntrFut = cctx.coordinators().requestTxCounter(crd, tx);
+                    IgniteInternalFuture<Long> crdCntrFut = cctx.coordinators().requestTxCounter(crd, tx);
 
                     if (tx.onePhaseCommit())
-                        waitCoordCntrFut = coordCntrFut;
+                        waitCrdCntrFut = crdCntrFut;
                 }
             }
 
@@ -1263,10 +1263,10 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 return;
 
             if (last) {
-                if (waitCoordCntrFut != null) {
+                if (waitCrdCntrFut != null) {
                     skipInit = true;
 
-                    waitCoordCntrFut.listen(new IgniteInClosure<IgniteInternalFuture<Long>>() {
+                    waitCrdCntrFut.listen(new IgniteInClosure<IgniteInternalFuture<Long>>() {
                         @Override public void apply(IgniteInternalFuture<Long> fut) {
                             try {
                                 fut.get();
