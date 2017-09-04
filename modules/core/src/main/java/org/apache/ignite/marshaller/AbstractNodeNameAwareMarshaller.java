@@ -117,7 +117,7 @@ public abstract class AbstractNodeNameAwareMarshaller extends AbstractMarshaller
      */
     protected abstract byte[] marshal0(@Nullable Object obj) throws IgniteCheckedException;
 
-   /**
+    /**
      * Unmarshals object from the input stream using given class loader.
      * This method should not close given input stream.
      *
