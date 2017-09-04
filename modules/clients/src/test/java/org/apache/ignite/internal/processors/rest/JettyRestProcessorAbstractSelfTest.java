@@ -710,6 +710,18 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
     /**
      * @throws Exception If failed.
      */
+    public void testDeactivateActivate() throws Exception {
+
+        assertClusterState(true);
+
+        changeClusterState(false);
+
+        changeClusterState(true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testPut() throws Exception {
         String ret = content(F.asMap("cacheName", DEFAULT_CACHE_NAME, "cmd", GridRestCommand.CACHE_PUT.key(),
             "key", "putKey", "val", "putVal"));
@@ -2350,5 +2362,38 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         cfg.setFileSystemConfiguration(igfs);
 
         return cfg;
+    }
+
+    /**
+     * Test if current cluster state equals expected.
+     *
+     * @param expected expected state.
+     * @throws Exception if failed.
+     */
+    private void assertClusterState(boolean expected) throws Exception {
+        String ret = content(F.asMap("cmd", GridRestCommand.CLUSTER_CURRENT_STATE.key()));
+
+        info("Cluster state: " + ret);
+        JsonNode res = jsonResponse(ret);
+
+        assertEquals(expected, res.asBoolean());
+        assertEquals(expected, grid(0).active());
+    }
+
+    /**
+     * Change cluster state and test new state.
+     *
+     * @param state desired state.
+     * @throws Exception if failed.
+     */
+    private void changeClusterState(boolean state) throws Exception {
+        String command = (state?GridRestCommand.CLUSTER_ACTIVE:GridRestCommand.CLUSTER_INACTIVE).key();
+        String ret = content(F.asMap("cmd", command));
+
+        JsonNode res = jsonResponse(ret);
+
+        assertTrue(res.isNull());
+
+        assertClusterState(state);
     }
 }
