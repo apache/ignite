@@ -1,13 +1,11 @@
 package org.apache.ignite.internal.processors.odbc.odbc;
 
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.processors.odbc.SqlListenerConnectionContext;
 import org.apache.ignite.internal.processors.odbc.SqlListenerMessageParser;
 import org.apache.ignite.internal.processors.odbc.SqlListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.SqlListenerRequestHandler;
-import org.apache.ignite.internal.processors.odbc.SqlListenerUnsupportedVersionException;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 
 import java.util.HashSet;

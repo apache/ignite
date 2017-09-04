@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
-import java.util.HashSet;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -29,16 +27,11 @@ import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMessageParser;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequestHandler;
 import org.apache.ignite.internal.processors.odbc.odbc.OdbcConnectionContext;
-import org.apache.ignite.internal.processors.odbc.odbc.OdbcMessageParser;
-import org.apache.ignite.internal.processors.odbc.odbc.OdbcRequestHandler;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.nio.GridNioServerListenerAdapter;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.nio.GridNioSessionMetaKey;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -189,11 +182,11 @@ public class SqlListenerNioListener extends GridNioServerListenerAdapter<byte[]>
 
         SqlListenerProtocolVersion ver = SqlListenerProtocolVersion.create(verMajor, verMinor, verMaintenance);
 
+        byte clientType = reader.readByte();
+
+        SqlListenerConnectionContext connCtx = prepareContext(clientType);
+
         String errMsg = null;
-
-        SqlListenerConnectionContext connCtx = null;
-
-        connCtx = prepareContext(ver, reader);
 
         if (connCtx.isVersionSupported(ver)) {
             connCtx.initFromHandshake(ver, reader);
@@ -228,13 +221,10 @@ public class SqlListenerNioListener extends GridNioServerListenerAdapter<byte[]>
     /**
      * Prepare context.
      *
-     * @param ver Version.
-     * @param reader Reader.
+     * @param clientType Client type.
      * @return Context.
      */
-    private SqlListenerConnectionContext prepareContext(SqlListenerProtocolVersion ver, BinaryReaderExImpl reader) {
-        byte clientType = reader.readByte();
-
+    private SqlListenerConnectionContext prepareContext(byte clientType) {
         switch (clientType) {
             case ODBC_CLIENT:
                 return new OdbcConnectionContext(ctx, busyLock, maxCursors);
