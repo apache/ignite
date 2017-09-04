@@ -87,6 +87,18 @@ namespace Apache.Ignite.Core.Impl.Client
         }
 
         /** <inheritdoc /> */
+        public static bool operator ==(ClientProtocolVersion left, ClientProtocolVersion right)
+        {
+            return left.Equals(right);
+        }
+
+        /** <inheritdoc /> */
+        public static bool operator !=(ClientProtocolVersion left, ClientProtocolVersion right)
+        {
+            return !left.Equals(right);
+        }
+
+        /** <inheritdoc /> */
         public override int GetHashCode()
         {
             unchecked
