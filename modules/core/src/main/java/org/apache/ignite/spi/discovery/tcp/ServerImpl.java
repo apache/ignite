@@ -3546,7 +3546,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                                 try {
                                     trySendMessageDirectly(node,
-                                        new TcpDiscoveryCheckFailedMessage(locNodeId, err.sendMessage()));
+                                        new TcpDiscoveryCheckFailedMessage(err.nodeId(), err.sendMessage()));
                                 }
                                 catch (IgniteSpiException e) {
                                     if (log.isDebugEnabled())
@@ -6084,6 +6084,20 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 }
                                 else {
                                     ignored = true;
+
+                                    ClientMessageWorker worker = clientMsgWorkers.get(msg.creatorNodeId());
+
+                                    if (worker != null) {
+                                        msg.verify(getLocalNodeId());
+
+                                        worker.addMessage(msg);
+                                    }
+                                    else {
+                                        if (log.isDebugEnabled()) {
+                                            log.debug("Failed to find client message worker " +
+                                                "[clientNode=" + msg.creatorNodeId() + ']');
+                                        }
+                                    }
 
                                     state = spiState;
                                 }
