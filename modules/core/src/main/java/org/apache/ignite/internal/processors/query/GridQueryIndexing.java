@@ -295,4 +295,13 @@ public interface GridQueryIndexing {
      * @return {@code True} if insert.
      */
     public boolean isInsertStatement(PreparedStatement nativeStmt);
+
+    /**
+     * Split multi-statements SQL query to the first statement and remaining SQL query string.
+     *
+     * @param schema Schema.
+     * @param qry Query with multiple statements.
+     * @return List of queries.
+     */
+    MultipleStatementsQuery splitSqlQuery(String schema, SqlFieldsQuery qry);
 }

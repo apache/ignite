@@ -81,6 +81,24 @@ public class SqlFieldsQuery extends Query<List<?>> {
     private String schema;
 
     /**
+     * Copy constructs SQL fields query.
+     *
+     * @param qry SQL query.
+     */
+    public SqlFieldsQuery(SqlFieldsQuery qry) {
+        sql = qry.sql;
+        args = qry.args;
+        collocated = qry.collocated;
+        timeout = qry.timeout;
+        enforceJoinOrder = qry.enforceJoinOrder;
+        distributedJoins = qry.distributedJoins;
+        replicatedOnly = qry.replicatedOnly;
+        lazy = qry.lazy;
+        parts = qry.parts;
+        schema = qry.schema;
+    }
+
+    /**
      * Constructs SQL fields query.
      *
      * @param sql SQL query.

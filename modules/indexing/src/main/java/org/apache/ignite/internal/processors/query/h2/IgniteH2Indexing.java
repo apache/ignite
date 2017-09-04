@@ -90,6 +90,7 @@ import org.apache.ignite.internal.processors.query.GridQueryIndexing;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.MultipleStatementsQuery;
 import org.apache.ignite.internal.processors.query.QueryIndexDescriptorImpl;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.database.H2RowFactory;
@@ -1254,6 +1255,63 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 res.close();
             }
         };
+    }
+
+    /** {@inheritDoc} */
+    @Override public MultipleStatementsQuery splitSqlQuery(String schemaName, SqlFieldsQuery qry) {
+        String sqlQry = qry.getSql();
+
+        Connection c = connectionForSchema(schemaName);
+
+        boolean cachesCreated = false;
+
+        PreparedStatement stmt = null;
+
+        // Loop for cache create
+        while (true) {
+            try {
+                // Do not cache this statement because the whole query object will be cached later on.
+                stmt = prepareStatement(c, sqlQry, false);
+
+                break;
+            }
+            catch (SQLException e) {
+                if (!cachesCreated && (
+                    e.getErrorCode() == ErrorCode.SCHEMA_NOT_FOUND_1 ||
+                        e.getErrorCode() == ErrorCode.TABLE_OR_VIEW_NOT_FOUND_1 ||
+                        e.getErrorCode() == ErrorCode.INDEX_NOT_FOUND_1)
+                    ) {
+                    try {
+                        ctx.cache().createMissingQueryCaches();
+                    }
+                    catch (IgniteCheckedException ignored) {
+                        throw new CacheException("Failed to create missing caches.", e);
+                    }
+
+                    cachesCreated = true;
+                }
+                else
+                    throw new IgniteSQLException("Failed to parse query: " + sqlQry,
+                        IgniteQueryErrorCode.PARSING, e);
+            }
+        }
+
+        GridSqlQueryParser.PreparedWithRemaining prep = GridSqlQueryParser.preparedWithRemaining(stmt);
+
+        SqlFieldsQuery first = new SqlFieldsQuery(qry);
+        first.setSql(prep.prepared().getSQL());
+        // TODO: split parameters!
+
+        SqlFieldsQuery remaining = null;
+
+        if (prep.remainingSql() != null) {
+            remaining = new SqlFieldsQuery(qry);
+
+            remaining.setSql(prep.remainingSql());
+            // TODO: split parameters!
+        }
+
+        return new MultipleStatementsQuery(first, remaining);
     }
 
     /** {@inheritDoc} */

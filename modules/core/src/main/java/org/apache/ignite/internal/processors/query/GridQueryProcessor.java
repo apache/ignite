@@ -1858,6 +1858,37 @@ private IgniteInternalFuture<Object> rebuildIndexesFromHash(@Nullable final Stri
     }
 
     /**
+     * @param qry Query.
+     * @param keepBinary Keep binary flag.
+     * @return List of queries.
+     */
+    public QueryResult querySqlFieldsMultipleNoCache(final SqlFieldsQuery qry, final boolean keepBinary) {
+        checkxEnabled();
+
+        validateSqlFieldsQuery(qry);
+
+        if (qry.isLocal())
+            throw new IgniteException("Local query is not supported without specific cache.");
+
+        if (qry.getSchema() == null)
+            qry.setSchema(QueryUtils.DFLT_SCHEMA);
+
+        if (!busyLock.enterBusy())
+            throw new IllegalStateException("Failed to execute query (grid is stopping).");
+
+        try {
+            MultipleStatementsQuery multQry = idx.splitSqlQuery(qry.getSchema(), qry);
+
+            FieldsQueryCursor<List<?>> cur = querySqlFieldsNoCache(multQry.first(), keepBinary);
+
+            return new QueryResult(cur, multQry.remaining());
+        }
+        finally {
+            busyLock.leaveBusy();
+        }
+    }
+
+    /**
      * Validate SQL fields query.
      *
      * @param qry Query.
@@ -2636,6 +2667,40 @@ private IgniteInternalFuture<Object> rebuildIndexesFromHash(@Nullable final Stri
             assert this.mgr == null;
 
             this.mgr = mgr;
+        }
+    }
+
+    /**
+     *
+     */
+    public static class QueryResult {
+        /** Cursor. */
+        private FieldsQueryCursor<List<?>> cur;
+
+        /** Remaining query. */
+        private SqlFieldsQuery remaining;
+
+        /**
+         * @param cur Cursor.
+         * @param remaining Remaining query.
+         */
+        public QueryResult(FieldsQueryCursor<List<?>> cur, SqlFieldsQuery remaining) {
+            this.cur = cur;
+            this.remaining = remaining;
+        }
+
+        /**
+         * @return Query cursor.
+         */
+        public FieldsQueryCursor<List<?>> cursor() {
+            return cur;
+        }
+
+        /**
+         * @return Remaining query.
+         */
+        public SqlFieldsQuery remaining() {
+            return remaining;
         }
     }
 }

@@ -1,0 +1,91 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.ignite.internal.processors.query;
+
+import java.util.List;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+
+/**
+ * Tests for schemas.
+ */
+public class MultipleStatementsSqlQuerySelfTest extends GridCommonAbstractTest {
+    /** Node. */
+    private IgniteEx node;
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        node = (IgniteEx)startGrid();
+
+        startGrid(2);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        stopAllGrids();
+    }
+
+    /**
+     * Test query without caches.
+     *
+     * @throws Exception If failed.
+     */
+    public void testQuery() throws Exception {
+        GridQueryProcessor qryProc = node.context().query();
+
+        SqlFieldsQuery qry = new SqlFieldsQuery(
+            "create table test(ID int primary key, NAME varchar(20)); " +
+                "insert into test (ID, NAME) values (1, 'name_1');" +
+                "insert into test (ID, NAME) values (2, 'name_2'), (3, 'name_3');" +
+                "select * from test;")
+            .setSchema("PUBLIC");
+
+        GridQueryProcessor.QueryResult res = qryProc.querySqlFieldsMultipleNoCache(qry, true);
+
+        assert !((QueryCursorImpl)res.cursor()).isQuery() : "Results of DDL statement is expected ";
+
+        res = qryProc.querySqlFieldsMultipleNoCache(res.remaining(), true);
+
+        List<List<?>> rows = res.cursor().getAll();
+
+        assert !((QueryCursorImpl)res.cursor()).isQuery() : "Results of DML statement is expected";
+        assert Long.valueOf(1).equals(rows.get(0).get(0)) : "1 row must be updated. [actual=" + rows.get(0).get(0) + ']';
+
+        res = qryProc.querySqlFieldsMultipleNoCache(res.remaining(), true);
+
+        assert !((QueryCursorImpl)res.cursor()).isQuery() : "Results of DML statement is expected";
+        assert Long.valueOf(2).equals(res.cursor().getAll().get(0).get(0)) : "2 row must be updated";
+
+        res = qryProc.querySqlFieldsMultipleNoCache(res.remaining(), true);
+
+        rows = res.cursor().getAll();
+
+        assert rows.size() == 3 : "Invalid rows count: " + rows.size();
+
+        for (int i = 0; i < rows.size(); ++i) {
+            assert Integer.valueOf(1).equals(rows.get(i).get(0))
+                || Integer.valueOf(2).equals(rows.get(i).get(0))
+                || Integer.valueOf(3).equals(rows.get(i).get(0))
+                : "Invalid ID: " + rows.get(i).get(0);
+        }
+
+        assert res.remaining() == null : "No more results expected";
+    }
+}
