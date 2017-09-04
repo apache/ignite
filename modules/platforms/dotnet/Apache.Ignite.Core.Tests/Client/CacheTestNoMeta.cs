@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Tests.Client
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.Metadata;
+    using global::NLog.LayoutRenderers.Wrappers;
     using NUnit.Framework;
 
     /// <summary>
@@ -56,14 +57,21 @@ namespace Apache.Ignite.Core.Tests.Client
         [Test]
         public void TestPutGetUserObjects()
         {
-            var cfg = new IgniteClientConfiguration {BinaryProcessor = new NoopBinaryProcessor()};
+            var cfg = new IgniteClientConfiguration
+            {
+                BinaryProcessor = new NoopBinaryProcessor(),
+                BinaryConfiguration = new BinaryConfiguration
+                {
+                    CompactFooter = false
+                }
+            };
 
             using (var client = Ignition.GetClient(cfg))
             {
                 var person = new Person { Id = 100, Name = "foo" };
                 var person2 = new Person2 { Id = 200, Name = "bar" };
 
-                var serverCache = Ignition.GetIgnite().GetCache<int?, Person>(CacheName);
+                var serverCache = Ignition.GetIgnite().GetOrCreateCache<int?, Person>(CacheName);
                 var clientCache = client.GetCache<int?, Person>(CacheName);
 
                 // Put through client cache.
@@ -79,13 +87,15 @@ namespace Apache.Ignite.Core.Tests.Client
                 Assert.AreEqual("foo", serverCache.Get(1).Name);
                 Assert.AreEqual(100, serverCache[1].Id);
                 Assert.AreEqual(200, serverCache[2].Id);
-                Assert.AreEqual(200, serverCache[3].Id);
 
                 // SQL from server cache.
                 // TODO
             }
         }
 
+        /// <summary>
+        /// No-op binary processor (does not send meta to cluster).
+        /// </summary>
         private class NoopBinaryProcessor : IBinaryProcessor
         {
             /** <inheritdoc /> */
