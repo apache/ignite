@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Client
 {
     using System.ComponentModel;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Impl.Binary;
 
     /// <summary>
     /// Ignite thin client configuration.
@@ -94,5 +95,10 @@ namespace Apache.Ignite.Core.Client
         /// Gets or sets the binary configuration.
         /// </summary>
         public BinaryConfiguration BinaryConfiguration { get; set; }
+
+        /// <summary>
+        /// Gets or sets custom binary processor. Internal property for tests.
+        /// </summary>
+        internal IBinaryProcessor BinaryProcessor { get; set; }
     }
 }

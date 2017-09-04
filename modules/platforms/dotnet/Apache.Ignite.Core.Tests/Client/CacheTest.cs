@@ -59,7 +59,7 @@ namespace Apache.Ignite.Core.Tests.Client
         [Test]
         public void TestPutGetPrimitives()
         {
-            using (var client = Ignition.GetClient())
+            using (var client = GetClient())
             {
                 GetCache<string>().Put(1, "foo");
 
@@ -88,13 +88,14 @@ namespace Apache.Ignite.Core.Tests.Client
         [Test]
         public void TestPutGetUserObjects([Values(true, false)] bool compactFooter)
         {
-            using (var client = Ignition.GetClient(new IgniteClientConfiguration
+            var cfg = GetClientConfiguration();
+
+            cfg.BinaryConfiguration = new BinaryConfiguration
             {
-                BinaryConfiguration = new BinaryConfiguration
-                {
-                    CompactFooter = compactFooter
-                }
-            }))
+                CompactFooter = compactFooter
+            };
+
+            using (var client = Ignition.GetClient(cfg))
             {
                 var person = new Person {Id = 100, Name = "foo"};
                 var person2 = new Person2 {Id = 200, Name = "bar"};
@@ -136,7 +137,7 @@ namespace Apache.Ignite.Core.Tests.Client
         {
             GetCache<string>().Put(1, "foo");
 
-            using (var client = Ignition.GetClient())
+            using (var client = GetClient())
             {
                 var clientCache = client.GetCache<int, string>(CacheName);
 
@@ -159,7 +160,7 @@ namespace Apache.Ignite.Core.Tests.Client
 
             TestUtils.RunMultiThreaded(() =>
                 {
-                    var client = clients.GetOrAdd(Thread.CurrentThread.ManagedThreadId, _ => Ignition.GetClient());
+                    var client = clients.GetOrAdd(Thread.CurrentThread.ManagedThreadId, _ => GetClient());
 
                     var clientCache = client.GetCache<int, string>(CacheName);
 
@@ -176,6 +177,22 @@ namespace Apache.Ignite.Core.Tests.Client
         private static ICache<int, T> GetCache<T>()
         {
             return Ignition.GetIgnite().GetOrCreateCache<int, T>(CacheName);
+        }
+
+        /// <summary>
+        /// Gets the client.
+        /// </summary>
+        private IIgnite GetClient()
+        {
+            return Ignition.GetClient(GetClientConfiguration());
+        }
+
+        /// <summary>
+        /// Gets the client configuration.
+        /// </summary>
+        protected virtual IgniteClientConfiguration GetClientConfiguration()
+        {
+            return new IgniteClientConfiguration();
         }
     }
 }
