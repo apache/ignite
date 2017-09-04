@@ -587,72 +587,7 @@
         </profile>
 
         <profile>
-            <id>deploy-ignite-site</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-antrun-plugin</artifactId>
-                        <inherited>false</inherited>
-                        <executions>
-                            <execution>
-                                <id>site-generation</id>
-                                <goals>
-                                    <goal>run</goal>
-                                </goals>
-                                <phase>validate</phase>
-                                <configuration>
-                                    <failOnError>false</failOnError>
-                                    <target>
-                                        <mkdir dir="${basedir}/target/site" />
-
-                                        <copy file="${basedir}/target/${project.artifactId}-${project.version}-src.zip" tofile="${basedir}/target/site/${project.artifactId}-${project.version}-src.zip" failonerror="false" />
-                                        <copy file="${basedir}/target/${project.artifactId}-${project.version}-src.zip.md5" tofile="${basedir}/target/site/${project.artifactId}-${project.version}-src.zip.md5" failonerror="false" />
-                                        <copy file="${basedir}/target/${project.artifactId}-${project.version}-src.zip.sha512" tofile="${basedir}/target/site/${project.artifactId}-${project.version}-src.zip.sha512" failonerror="false" />
-
-                                        <copy todir="${basedir}/target/site">
-                                            <fileset dir="${basedir}/target/bin">
-                                                <include name="**/*" />
-                                            </fileset>
-                                        </copy>
-                                    </target>
-                                </configuration>
-                            </execution>
-                            <execution>
-                                <id>update-checksum-files</id>
-                                <goals>
-                                    <goal>run</goal>
-                                </goals>
-                                <phase>initialize</phase>
-                                <configuration>
-                                    <failOnError>false</failOnError>
-                                    <target>
-                                        <!-- appending filename to md5 and sha512 files. to be improved!! -->
-                                        <!-- update versions task will replace "  " to " ", so additional echo added. -->
-                                        <echo file="${basedir}/target/site/${project.artifactId}-fabric-${project.version}-bin.zip.md5" append="true" message=" " />
-                                        <echo file="${basedir}/target/site/${project.artifactId}-fabric-${project.version}-bin.zip.sha512" append="true" message=" " />
-                                        <echo file="${basedir}/target/site/${project.artifactId}-hadoop-${project.version}-bin.zip.md5" append="true" message=" " />
-                                        <echo file="${basedir}/target/site/${project.artifactId}-hadoop-${project.version}-bin.zip.sha512" append="true" message=" " />
-                                        <echo file="${basedir}/target/site/${project.artifactId}-${project.version}-src.zip.md5" append="true" message=" " />
-                                        <echo file="${basedir}/target/site/${project.artifactId}-${project.version}-src.zip.sha512" append="true" message=" " />
-
-                                        <echo file="${basedir}/target/site/${project.artifactId}-fabric-${project.version}-bin.zip.md5" append="true" message=" ${project.artifactId}-fabric-${project.version}-bin.zip" />
-                                        <echo file="${basedir}/target/site/${project.artifactId}-fabric-${project.version}-bin.zip.sha512" append="true" message=" ${project.artifactId}-fabric-${project.version}-bin.zip" />
-                                        <echo file="${basedir}/target/site/${project.artifactId}-hadoop-${project.version}-bin.zip.md5" append="true" message=" ${project.artifactId}-hadoop-${project.version}-bin.zip" />
-                                        <echo file="${basedir}/target/site/${project.artifactId}-hadoop-${project.version}-bin.zip.sha512" append="true" message=" ${project.artifactId}-hadoop-${project.version}-bin.zip" />
-                                        <echo file="${basedir}/target/site/${project.artifactId}-${project.version}-src.zip.md5" append="true" message=" ${project.artifactId}-${project.version}-src.zip" />
-                                        <echo file="${basedir}/target/site/${project.artifactId}-${project.version}-src.zip.sha512" append="true" message=" ${project.artifactId}-${project.version}-src.zip" />
-                                    </target>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-
-        <profile>
-            <id>sources-and-checksum</id>
+            <id>sources</id>
             <build>
                 <plugins>
                     <plugin>
@@ -685,57 +620,6 @@
                                 </configuration>
                             </execution>
                         </executions>
-                    </plugin>
-
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-antrun-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>attach-artifact</id><!-- allows to sign *bin.zip files -->
-                                <phase>validate</phase>
-                                <goals>
-                                    <goal>run</goal>
-                                </goals>
-                                <configuration>
-                                    <failOnError>false</failOnError>
-                                    <target>
-                                        <attachartifact file="${basedir}/target/bin/${project.artifactId}-fabric-${project.version}-bin.zip" classifier="fabric" type="zip" />
-                                        <attachartifact file="${basedir}/target/bin/${project.artifactId}-hadoop-${project.version}-bin.zip" classifier="hadoop" type="zip" />
-                                    </target>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-
-                    <plugin>
-                        <groupId>net.ju-n.maven.plugins</groupId>
-                        <artifactId>checksum-maven-plugin</artifactId>
-                        <version>1.2</version>
-                        <executions>
-                            <execution>
-                                <goals>
-                                    <goal>files</goal>
-                                </goals>
-                                <phase>initialize</phase>
-                            </execution>
-                        </executions>
-                        <configuration>
-                            <failOnError>false</failOnError>
-                            <fileSets>
-                                <fileSet>
-                                    <directory>${basedir}/target</directory>
-                                    <includes>
-                                        <include>${project.artifactId}-${project.version}-src.zip</include>
-                                        <include>bin/*.zip</include>
-                                    </includes>
-                                </fileSet>
-                            </fileSets>
-                            <algorithms>
-                                <algorithm>MD5</algorithm>
-                                <algorithm>SHA-512</algorithm>
-                            </algorithms>
-                        </configuration>
                     </plugin>
                 </plugins>
             </build>
