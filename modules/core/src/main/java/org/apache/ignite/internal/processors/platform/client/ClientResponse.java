@@ -24,7 +24,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Thin client response.
  */
-class ClientResponse extends SqlListenerResponse {
+public class ClientResponse extends SqlListenerResponse {
     /** Request id. */
     private final int requestId;
 
@@ -33,7 +33,7 @@ class ClientResponse extends SqlListenerResponse {
      *
      * @param requestId Request id.
      */
-    ClientResponse(int requestId) {
+    public ClientResponse(int requestId) {
         super(STATUS_SUCCESS, null);
 
         this.requestId = requestId;

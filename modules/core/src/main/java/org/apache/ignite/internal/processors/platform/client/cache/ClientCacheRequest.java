@@ -15,43 +15,41 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.platform.client;
+package org.apache.ignite.internal.processors.platform.client.cache;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 
 /**
- * Gets binary type name by id.
+ * Cache get request.
  */
-public class ClientGetBinaryTypeNameRequest extends ClientRequest {
-    /** Platform ID, see org.apache.ignite.internal.MarshallerPlatformIds. */
-    private final byte platformId;
-
-    /** Type id. */
-    private final int typeId;
+class ClientCacheRequest extends ClientRequest {
+    /** */
+    private final int cacheId;
 
     /**
      * Ctor.
      *
      * @param reader Reader.
      */
-    ClientGetBinaryTypeNameRequest(BinaryRawReader reader) {
+    ClientCacheRequest(BinaryRawReader reader) {
         super(reader);
 
-        platformId = reader.readByte();
-        typeId = reader.readInt();
+        cacheId = reader.readInt();
+        reader.readByte();  // Flags (skipStore, etc);
     }
 
-    /** {@inheritDoc} */
-    @Override public ClientResponse process(GridKernalContext ctx) {
-        try {
-            String typeName = ctx.marshallerContext().getClassName(platformId, typeId);
+    /**
+     * Gets the cache for current cache id.
+     *
+     * @param ctx Kernal context.
+     * @return Cache.
+     */
+    protected IgniteCache getCache(GridKernalContext ctx) {
+        String cacheName = ctx.cache().context().cacheContext(cacheId).cache().name();
 
-            return new ClientGetBinaryTypeNameResponse(getRequestId(), typeName);
-        } catch (ClassNotFoundException | IgniteCheckedException e) {
-            throw new BinaryObjectException(e);
-        }
+        return ctx.grid().cache(cacheName).withKeepBinary();
     }
 }

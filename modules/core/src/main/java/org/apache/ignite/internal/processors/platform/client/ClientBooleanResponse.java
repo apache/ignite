@@ -22,7 +22,7 @@ import org.apache.ignite.binary.BinaryRawWriter;
 /**
  * Boolean response.
  */
-class ClientBooleanResponse extends ClientResponse {
+public class ClientBooleanResponse extends ClientResponse {
     /** */
     private final boolean val;
 
@@ -31,7 +31,7 @@ class ClientBooleanResponse extends ClientResponse {
      *
      * @param requestId Request id.
      */
-    ClientBooleanResponse(int requestId, boolean val) {
+    public ClientBooleanResponse(int requestId, boolean val) {
         super(requestId);
 
         this.val = val;

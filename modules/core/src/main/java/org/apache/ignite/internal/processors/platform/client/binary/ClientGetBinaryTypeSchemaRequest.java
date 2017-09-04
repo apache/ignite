@@ -15,40 +15,41 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.platform.client;
+package org.apache.ignite.internal.processors.platform.client.binary;
 
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
+import org.apache.ignite.internal.processors.platform.client.ClientRequest;
+import org.apache.ignite.internal.processors.platform.client.ClientResponse;
+import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 
 /**
- * Cache get request.
+ * Binary type schema request.
  */
-class ClientCacheRequest extends ClientRequest {
-    /** */
-    private final int cacheId;
+public class ClientGetBinaryTypeSchemaRequest extends ClientRequest {
+    /** Type id. */
+    private final int typeId;
+
+    /** Schema id. */
+    private final int schemaId;
 
     /**
      * Ctor.
      *
      * @param reader Reader.
      */
-    ClientCacheRequest(BinaryRawReader reader) {
+    ClientGetBinaryTypeSchemaRequest(BinaryRawReader reader) {
         super(reader);
 
-        cacheId = reader.readInt();
-        reader.readByte();  // Flags (skipStore, etc);
+        typeId = reader.readInt();
+        schemaId = reader.readInt();
     }
 
-    /**
-     * Gets the cache for current cache id.
-     *
-     * @param ctx Kernal context.
-     * @return Cache.
-     */
-    protected IgniteCache getCache(GridKernalContext ctx) {
-        String cacheName = ctx.cache().context().cacheContext(cacheId).cache().name();
+    /** {@inheritDoc} */
+    @Override public ClientResponse process(GridKernalContext ctx) {
+        int[] schema = PlatformUtils.getSchema((CacheObjectBinaryProcessorImpl)ctx.cacheObjects(), typeId, schemaId);
 
-        return ctx.grid().cache(cacheName).withKeepBinary();
+        return new ClientGetBinaryTypeSchemaResponse(getRequestId(), schema);
     }
 }

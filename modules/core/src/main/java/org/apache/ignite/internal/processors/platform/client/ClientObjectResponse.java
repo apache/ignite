@@ -22,7 +22,7 @@ import org.apache.ignite.binary.BinaryRawWriter;
 /**
  * Single object response.
  */
-class ClientObjectResponse extends ClientResponse {
+public class ClientObjectResponse extends ClientResponse {
     /** */
     private final Object val;
 
@@ -31,7 +31,7 @@ class ClientObjectResponse extends ClientResponse {
      *
      * @param requestId Request id.
      */
-    ClientObjectResponse(int requestId, Object val) {
+    public ClientObjectResponse(int requestId, Object val) {
         super(requestId);
 
         this.val = val;

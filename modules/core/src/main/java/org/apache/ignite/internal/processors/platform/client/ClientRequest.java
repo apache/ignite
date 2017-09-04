@@ -24,7 +24,7 @@ import org.apache.ignite.internal.processors.odbc.SqlListenerRequest;
 /**
  * Thin client request.
  */
-class ClientRequest extends SqlListenerRequest {
+public class ClientRequest extends SqlListenerRequest {
     /** Request id. */
     private final int requestId;
 
@@ -33,7 +33,7 @@ class ClientRequest extends SqlListenerRequest {
      *
      * @param reader Reader.
      */
-    ClientRequest(BinaryRawReader reader) {
+    public ClientRequest(BinaryRawReader reader) {
         reader.readByte();  //  Flags: Compression, etc.
         requestId = reader.readInt();
     }

@@ -29,6 +29,11 @@ import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProce
 import org.apache.ignite.internal.processors.odbc.SqlListenerMessageParser;
 import org.apache.ignite.internal.processors.odbc.SqlListenerRequest;
 import org.apache.ignite.internal.processors.odbc.SqlListenerResponse;
+import org.apache.ignite.internal.processors.platform.client.binary.ClientGetBinaryTypeNameRequest;
+import org.apache.ignite.internal.processors.platform.client.binary.ClientGetBinaryTypeSchemaRequest;
+import org.apache.ignite.internal.processors.platform.client.binary.ClientRegisterBinaryTypeNameRequest;
+import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheGetRequest;
+import org.apache.ignite.internal.processors.platform.client.cache.ClientCachePutRequest;
 
 /**
  * Thin client message parser.

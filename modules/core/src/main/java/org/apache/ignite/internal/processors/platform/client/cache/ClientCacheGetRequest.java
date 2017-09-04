@@ -15,38 +15,36 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.platform.client;
+package org.apache.ignite.internal.processors.platform.client.cache;
 
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.processors.platform.client.ClientObjectResponse;
+import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 
 /**
- * Cache put request.
+ * Cache get request.
  */
-class ClientCachePutRequest extends ClientCacheRequest {
+class ClientCacheGetRequest extends ClientCacheRequest {
     /** */
     private final Object key;
-
-    /** */
-    private final Object val;
 
     /**
      * Ctor.
      *
      * @param reader Reader.
      */
-    ClientCachePutRequest(BinaryRawReaderEx reader) {
+    ClientCacheGetRequest(BinaryRawReaderEx reader) {
         super(reader);
 
         key = reader.readObjectDetached();
-        val = reader.readObjectDetached();
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public ClientResponse process(GridKernalContext ctx) {
-        getCache(ctx).put(key, val);
+        Object val = getCache(ctx).get(key);
 
-        return super.process(ctx);
+        return new ClientObjectResponse(getRequestId(), val);
     }
 }

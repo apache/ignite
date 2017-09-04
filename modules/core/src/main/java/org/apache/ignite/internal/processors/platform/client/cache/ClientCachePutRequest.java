@@ -15,39 +15,39 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.platform.client;
+package org.apache.ignite.internal.processors.platform.client.cache;
 
-import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
-import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
+import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 
 /**
- * Binary type schema request.
+ * Cache put request.
  */
-public class ClientGetBinaryTypeSchemaRequest extends ClientRequest {
-    /** Type id. */
-    private final int typeId;
+class ClientCachePutRequest extends ClientCacheRequest {
+    /** */
+    private final Object key;
 
-    /** Schema id. */
-    private final int schemaId;
+    /** */
+    private final Object val;
 
     /**
      * Ctor.
      *
      * @param reader Reader.
      */
-    ClientGetBinaryTypeSchemaRequest(BinaryRawReader reader) {
+    ClientCachePutRequest(BinaryRawReaderEx reader) {
         super(reader);
 
-        typeId = reader.readInt();
-        schemaId = reader.readInt();
+        key = reader.readObjectDetached();
+        val = reader.readObjectDetached();
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public ClientResponse process(GridKernalContext ctx) {
-        int[] schema = PlatformUtils.getSchema((CacheObjectBinaryProcessorImpl)ctx.cacheObjects(), typeId, schemaId);
+        getCache(ctx).put(key, val);
 
-        return new ClientGetBinaryTypeSchemaResponse(getRequestId(), schema);
+        return super.process(ctx);
     }
 }

@@ -15,32 +15,33 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.platform.client;
+package org.apache.ignite.internal.processors.platform.client.binary;
 
 import org.apache.ignite.binary.BinaryRawWriter;
+import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 
 /**
- * Type name response.
+ * Schema response.
  */
-public class ClientGetBinaryTypeNameResponse extends ClientResponse {
-    /** Type name. */
-    private final String typeName;
+public class ClientGetBinaryTypeSchemaResponse extends ClientResponse {
+    /** Schema. */
+    private final int[] schema;
 
     /**
      * Ctor.
      *
      * @param requestId Request id.
      */
-    ClientGetBinaryTypeNameResponse(int requestId, String typeName) {
+    ClientGetBinaryTypeSchemaResponse(int requestId, int[] schema) {
         super(requestId);
 
-        this.typeName = typeName;
+        this.schema = schema;
     }
 
     /** {@inheritDoc} */
     @Override public void encode(BinaryRawWriter writer) {
         super.encode(writer);
 
-        writer.writeString(typeName);
+        writer.writeIntArray(schema);
     }
 }
