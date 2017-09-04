@@ -24,6 +24,7 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -245,7 +246,7 @@ public class ReleaseReportGenerator {
         JSONObject firstRes = executeSearchRequest(jiraApiUrl, jiraUsername, jiraApiPwd, jql, fields,
             startAt, maxResults);
 
-        final int total = (int) firstRes.get("total");
+        final long total = (long) firstRes.get("total");
 
         if (firstRes.get("issues") != null) {
             for (Object issue : (JSONArray) firstRes.get("issues")) {
@@ -263,7 +264,7 @@ public class ReleaseReportGenerator {
                 public Void call() throws Exception {
                     JSONObject jiraRes = executeSearchRequest(jiraApiUrl, jiraUsername, jiraApiPwd, jql, fields, maxResults * ost, maxResults);
 
-                    if ((int) jiraRes.get("total") != total)
+                    if ((long) jiraRes.get("total") != total)
                         throw new HttpException("Total count of issues changed, please restart report");
 
                     if (jiraRes.get("issues") != null) {
@@ -304,7 +305,7 @@ public class ReleaseReportGenerator {
     private static JSONObject executeSearchRequest(String jiraApiUrl, String jiraUsername, String jiraPwd, String jql, String[] fields, int startAt, int maxResults) throws HttpException, ParseException {
         JSONObject data = new JSONObject();
         data.put("jql", jql);
-        data.put("fields", fields);
+        data.put("fields", Arrays.asList(fields));
         data.put("startAt", startAt);
         data.put("maxResults", maxResults);
 
