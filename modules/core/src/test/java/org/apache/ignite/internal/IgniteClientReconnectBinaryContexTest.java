@@ -65,7 +65,10 @@ public class IgniteClientReconnectBinaryContexTest extends IgniteClientReconnect
 
         IgniteCache<Integer, UserClass> cache = client.createCache(cacheCfg);
 
-        cache.put(1, new UserClass(1)); // For registering user types binary metadata
+        Integer key = 1;
+        UserClass val = new UserClass(1);
+
+        cache.put(key, val); // For registering user types binary metadata
 
         reconnectServersRestart(log, client, Collections.singleton(srv), new Callable<Collection<Ignite>>() {
             @Override public Collection<Ignite> call() throws Exception {
@@ -75,13 +78,9 @@ public class IgniteClientReconnectBinaryContexTest extends IgniteClientReconnect
 
         cache = client.createCache(cacheCfg);
 
-        for (int key = 0; key < 3; key++) {
-            UserClass val = new UserClass(key);
+        cache.put(key, val);
 
-            cache.put(key, val);
-
-            assertEquals(val, cache.get(key));
-        }
+        assertEquals(val, cache.get(key));
     }
 
     /** */
