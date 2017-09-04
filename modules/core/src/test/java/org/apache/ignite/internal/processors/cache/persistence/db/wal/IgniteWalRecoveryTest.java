@@ -36,6 +36,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
@@ -1111,6 +1112,8 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
      * @throws Exception If any fail.
      */
     public void testTxRecordsConsistency() throws Exception {
+        System.setProperty(IgniteSystemProperties.IGNITE_WAL_LOG_TX_RECORDS, "true");
+
         IgniteEx ignite = (IgniteEx) startGrids(3);
         ignite.active(true);
 
@@ -1215,11 +1218,9 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
                     }
                 }
             }
-
-            assert activeTransactions.size() == 0
-                    : "All transactions in WAL must be finished in COMMITTED or ROLLED_BACK state" + activeTransactions.size();
         }
         finally {
+            System.clearProperty(IgniteSystemProperties.IGNITE_WAL_LOG_TX_RECORDS);
             stopAllGrids();
         }
     }
