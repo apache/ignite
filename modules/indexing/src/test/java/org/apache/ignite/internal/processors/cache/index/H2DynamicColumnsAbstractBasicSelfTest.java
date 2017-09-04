@@ -119,8 +119,7 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
      * Test {@code IF NOT EXISTS} handling.
      */
     public void testDuplicateColumnName() {
-        assertThrows("ALTER TABLE Person ADD COLUMN name varchar",
-            "Column already exists [tblName=PERSON, colName=NAME]");
+        assertThrows("ALTER TABLE Person ADD COLUMN name varchar", "Column already exists: NAME");
     }
 
     /**

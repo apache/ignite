@@ -65,7 +65,7 @@ public abstract class DynamicColumnsAbstractTest extends GridCommonAbstractTest 
     final static String DROP_SQL = "DROP TABLE Person";
 
     /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(false);
+    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /**
      * Check that given columns have been added to all related structures on target node exactly where needed
@@ -227,7 +227,6 @@ public abstract class DynamicColumnsAbstractTest extends GridCommonAbstractTest 
         LinkedHashMap<String, String> flds = new LinkedHashMap<>();
 
         flds.put("name", String.class.getName());
-        flds.put("age", Integer.class.getName());
 
         e.setFields(flds);
 

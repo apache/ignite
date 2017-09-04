@@ -54,6 +54,7 @@ import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaFinishDiscoveryMessage;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -591,7 +592,7 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
      * @throws Exception If failed.
      */
     public void testClientReconnect() throws Exception {
-        checkClientReconnect(false, QueryUtils.DFLT_SCHEMA);
+        checkClientReconnect(false, true);
     }
 
     /**
@@ -600,7 +601,7 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
      * @throws Exception If failed.
      */
     public void testClientReconnectWithCacheRestart() throws Exception {
-        checkClientReconnect(true, QueryUtils.DFLT_SCHEMA);
+        checkClientReconnect(true, true);
     }
 
     /**
@@ -609,7 +610,7 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
      * @throws Exception If failed.
      */
     public void testClientReconnectWithNonDynamicCache() throws Exception {
-        checkClientReconnect(false, "idx");
+        checkClientReconnect(false, false);
     }
 
     /**
@@ -618,7 +619,7 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
      * @throws Exception If failed.
      */
     public void testClientReconnectWithNonDynamicCacheRestart() throws Exception {
-        checkClientReconnect(true, "idx");
+        checkClientReconnect(true, false);
     }
 
     /**
@@ -626,10 +627,10 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
      * in the interim.
      *
      * @param restartCache Whether cache needs to be recreated during client's absence.
-     * @param schemaName Schema name.
+     * @param dynamicCache Whether recreate, if needed, should be done on dynamic or static cache.
      * @throws Exception If failed.
      */
-    private void checkClientReconnect(final boolean restartCache, final String schemaName) throws Exception {
+    private void checkClientReconnect(final boolean restartCache, boolean dynamicCache) throws Exception {
         // Start complex topology.
         final Ignite srv = ignitionStart(serverConfiguration(1));
         ignitionStart(serverConfiguration(2));
@@ -637,15 +638,19 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
 
         final Ignite cli = ignitionStart(clientConfiguration(4));
 
-        createSqlCache(cli);
+        if (dynamicCache) {
+            createSqlCache(cli);
 
-        run(cli, CREATE_SQL_WITH_TEMPLATE);
+            run(cli, CREATE_SQL_WITH_TEMPLATE);
+        }
+
+        final String schemaName = dynamicCache ? QueryUtils.DFLT_SCHEMA : "idx";
 
         final QueryField[] cols =
             new QueryField[] { c("age", Integer.class.getName()), c("city", String.class.getName()) };
 
         // Check index create.
-        reconnectClientNode(srv, cli, restartCache, new RunnableX() {
+        reconnectClientNode(srv, cli, restartCache, dynamicCache, new RunnableX() {
             @Override public void run() throws Exception {
                 addCols(srv, schemaName, cols).get();
             }
@@ -662,17 +667,34 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
      * @param srvNode Server node.
      * @param cliNode Client node.
      * @param restart Whether cache has to be recreated prior to executing required actions.
+     * @param dynamicCache Whether recreate, if needed, should be done on dynamic or static cache.
      * @param clo Closure to run
      * @throws Exception If failed.
      */
     private void reconnectClientNode(final Ignite srvNode, final Ignite cliNode, final boolean restart,
-        final RunnableX clo) throws Exception {
+        final boolean dynamicCache, final RunnableX clo) throws Exception {
         IgniteClientReconnectAbstractTest.reconnectClientNode(log, cliNode, srvNode, new Runnable() {
             @Override public void run() {
                 if (restart) {
-                    DynamicColumnsAbstractConcurrentSelfTest.this.run(srvNode, DROP_SQL);
+                    if (dynamicCache) {
+                        DynamicColumnsAbstractConcurrentSelfTest.this.run(srvNode, DROP_SQL);
 
-                    DynamicColumnsAbstractConcurrentSelfTest.this.run(srvNode, CREATE_SQL_WITH_TEMPLATE);
+                        DynamicColumnsAbstractConcurrentSelfTest.this.run(srvNode, CREATE_SQL_WITH_TEMPLATE);
+                    }
+                    else {
+                        srvNode.destroyCache("idx");
+
+                        CacheConfiguration ccfg;
+
+                        try {
+                            ccfg = clientConfiguration(0).getCacheConfiguration()[0];
+                        }
+                        catch (Exception e) {
+                            throw new AssertionError(e);
+                        }
+
+                        srvNode.createCache(ccfg);
+                    }
                 }
 
                 try {
@@ -937,7 +959,9 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
      * @return DDL operation future.
      */
     private static IgniteInternalFuture<?> addCols(Ignite node, String schemaName, QueryField... flds) {
-        return ((IgniteEx)node).context().query().dynamicColumnAdd(CACHE_NAME, schemaName, TBL_NAME,
+        final String cacheName = F.eq(schemaName, QueryUtils.DFLT_SCHEMA) ? CACHE_NAME : "idx";
+
+        return ((IgniteEx)node).context().query().dynamicColumnAdd(cacheName, schemaName, TBL_NAME,
             Arrays.asList(flds), false, false);
     }
 
