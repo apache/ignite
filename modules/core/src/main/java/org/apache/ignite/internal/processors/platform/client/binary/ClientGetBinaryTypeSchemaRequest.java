@@ -39,7 +39,7 @@ public class ClientGetBinaryTypeSchemaRequest extends ClientRequest {
      *
      * @param reader Reader.
      */
-    ClientGetBinaryTypeSchemaRequest(BinaryRawReader reader) {
+    public ClientGetBinaryTypeSchemaRequest(BinaryRawReader reader) {
         super(reader);
 
         typeId = reader.readInt();

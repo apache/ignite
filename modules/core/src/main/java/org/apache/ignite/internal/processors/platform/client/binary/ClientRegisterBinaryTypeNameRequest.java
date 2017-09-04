@@ -43,7 +43,7 @@ public class ClientRegisterBinaryTypeNameRequest extends ClientRequest {
      *
      * @param reader Reader.
      */
-    ClientRegisterBinaryTypeNameRequest(BinaryRawReader reader) {
+    public ClientRegisterBinaryTypeNameRequest(BinaryRawReader reader) {
         super(reader);
 
         platformId = reader.readByte();

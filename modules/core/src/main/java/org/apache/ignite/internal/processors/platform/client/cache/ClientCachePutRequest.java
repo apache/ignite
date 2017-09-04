@@ -24,7 +24,7 @@ import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 /**
  * Cache put request.
  */
-class ClientCachePutRequest extends ClientCacheRequest {
+public class ClientCachePutRequest extends ClientCacheRequest {
     /** */
     private final Object key;
 
@@ -36,7 +36,7 @@ class ClientCachePutRequest extends ClientCacheRequest {
      *
      * @param reader Reader.
      */
-    ClientCachePutRequest(BinaryRawReaderEx reader) {
+    public ClientCachePutRequest(BinaryRawReaderEx reader) {
         super(reader);
 
         key = reader.readObjectDetached();
