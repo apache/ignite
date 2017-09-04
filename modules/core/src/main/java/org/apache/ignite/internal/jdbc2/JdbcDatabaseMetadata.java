@@ -32,6 +32,7 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlIndexMetadata;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlMetadata;
@@ -117,7 +118,17 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
 
     /** {@inheritDoc} */
     @Override public String getDatabaseProductVersion() {
-        return "4.1.0";
+        return IgniteVersionUtils.VER.toString();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getDatabaseMajorVersion() {
+        return IgniteVersionUtils.VER.major();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getDatabaseMinorVersion() {
+        return IgniteVersionUtils.VER.minor();
     }
 
     /** {@inheritDoc} */
@@ -127,17 +138,17 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
 
     /** {@inheritDoc} */
     @Override public String getDriverVersion() {
-        return "1.0";
+        return IgniteVersionUtils.VER.toString();
     }
 
     /** {@inheritDoc} */
     @Override public int getDriverMajorVersion() {
-        return 1;
+        return IgniteVersionUtils.VER.major();
     }
 
     /** {@inheritDoc} */
     @Override public int getDriverMinorVersion() {
-        return 0;
+        return IgniteVersionUtils.VER.minor();
     }
 
     /** {@inheritDoc} */
@@ -1174,23 +1185,13 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
     }
 
     /** {@inheritDoc} */
-    @Override public int getDatabaseMajorVersion() {
-        return 1;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int getDatabaseMinorVersion() {
-        return 0;
-    }
-
-    /** {@inheritDoc} */
     @Override public int getJDBCMajorVersion() {
-        return 1;
+        return 4;
     }
 
     /** {@inheritDoc} */
     @Override public int getJDBCMinorVersion() {
-        return 0;
+        return 1;
     }
 
     /** {@inheritDoc} */
