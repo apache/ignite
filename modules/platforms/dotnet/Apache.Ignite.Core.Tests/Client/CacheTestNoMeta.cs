@@ -18,11 +18,13 @@
 namespace Apache.Ignite.Core.Tests.Client
 {
     using System.Collections.Generic;
+    using System.Linq;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Cache.Configuration;
+    using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.Metadata;
-    using global::NLog.LayoutRenderers.Wrappers;
     using NUnit.Framework;
 
     /// <summary>
@@ -68,15 +70,23 @@ namespace Apache.Ignite.Core.Tests.Client
 
             using (var client = Ignition.GetClient(cfg))
             {
-                var person = new Person { Id = 100, Name = "foo" };
-                var person2 = new Person2 { Id = 200, Name = "bar" };
+                var serverCache = Ignition.GetIgnite().GetOrCreateCache<int?, Person>(
+                    new CacheConfiguration(CacheName, new QueryEntity
+                    {
+                        KeyType = typeof(int),
+                        ValueType = typeof(Person),
+                        Fields = new[]
+                        {
+                            new QueryField("id", typeof(int)),
+                            new QueryField("name", typeof(string))
+                        }
+                    }));
 
-                var serverCache = Ignition.GetIgnite().GetOrCreateCache<int?, Person>(CacheName);
                 var clientCache = client.GetCache<int?, Person>(CacheName);
 
                 // Put through client cache.
-                clientCache.Put(1, person);
-                clientCache[2] = person2;
+                clientCache.Put(1, new Person { Id = 100, Name = "foo" });
+                clientCache[2] = new Person { Id = 200, Name = "bar" };
 
                 // Read from client cache.
                 Assert.AreEqual("foo", clientCache.Get(1).Name);
@@ -89,7 +99,10 @@ namespace Apache.Ignite.Core.Tests.Client
                 Assert.AreEqual(200, serverCache[2].Id);
 
                 // SQL from server cache.
-                // TODO
+                var sqlRes = serverCache.Query(new SqlQuery(typeof(Person), "where id = 100")).GetAll().Single();
+                Assert.AreEqual(1, sqlRes.Key);
+                Assert.AreEqual(100, sqlRes.Value.Id);
+                Assert.AreEqual("foo", sqlRes.Value.Name);
             }
         }
 
