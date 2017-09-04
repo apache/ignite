@@ -125,7 +125,12 @@ namespace ignite
                 Row* row = cursor->GetRow();
 
                 if (!row)
-                    return SqlResult::AI_NO_DATA;
+                {
+                    diag.AddStatusRecord(SqlState::S24000_INVALID_CURSOR_STATE,
+                        "Cursor has reached end of the result set.");
+
+                    return SqlResult::AI_ERROR;
+                }
 
                 SqlResult::Type result = row->ReadColumnToBuffer(columnIdx, buffer);
 
@@ -151,7 +156,7 @@ namespace ignite
 
                 SqlResult::Type result = SqlResult::AI_SUCCESS;
 
-                if (cursor->HasData())
+                if (!cursor->IsClosedRemotely())
                     result = MakeRequestClose();
 
                 if (result == SqlResult::AI_SUCCESS)

@@ -67,9 +67,9 @@ public class MemoryConfiguration implements Serializable {
     public static final long DFLT_MEMORY_POLICY_INITIAL_SIZE = 256L * 1024 * 1024;
 
     /** Fraction of available memory to allocate for default MemoryPolicy. */
-    private static final double DFLT_MEMORY_POLICY_FRACTION = 0.8;
+    private static final double DFLT_MEMORY_POLICY_FRACTION = 0.2;
 
-    /** Default memory policy's size is 80% of physical memory available on current machine. */
+    /** Default memory policy's size is 20% of physical memory available on current machine. */
     public static final long DFLT_MEMORY_POLICY_MAX_SIZE = Math.max(
         (long)(DFLT_MEMORY_POLICY_FRACTION * U.getTotalMemoryAvailable()),
         DFLT_MEMORY_POLICY_INITIAL_SIZE);

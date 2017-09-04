@@ -1261,7 +1261,6 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     public <T> IgniteFuture<Map<K, EntryProcessorResult<T>>> invokeAllAsync(Set<? extends K> keys,
         EntryProcessor<K, V, T> entryProcessor, Object... args) throws TransactionException;
 
-
     /**
      * Invokes an {@link CacheEntryProcessor} against the set of {@link javax.cache.Cache.Entry}s
      * specified by the set of keys.

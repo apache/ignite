@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.math.impls.storage.matrix;
+package org.apache.ignite.ml.math.distributed.keys.impl;
 
 import java.io.Externalizable;
 import java.io.IOException;
@@ -32,54 +32,47 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.ml.math.impls.matrix.BlockEntry;
-import org.apache.ignite.ml.math.impls.matrix.SparseBlockDistributedMatrix;
-import org.jetbrains.annotations.Nullable;
+import org.apache.ignite.ml.math.distributed.keys.RowColMatrixKey;
+import org.apache.ignite.ml.math.impls.matrix.SparseDistributedMatrix;
 
 /**
- * Key implementation for {@link BlockEntry} using for {@link SparseBlockDistributedMatrix}.
+ * Key implementation for {@link SparseDistributedMatrix}.
  */
-public class BlockMatrixKey implements BaseBlockMatrixKey, Externalizable, Binarylizable {
+public class SparseMatrixKey implements RowColMatrixKey, Externalizable, Binarylizable {
     /** */
-    private static final long serialVersionUID = 0L;
-    /** Block ID */
-    private long blockId;
-    /** Matrix ID */
-    private IgniteUuid matrixUuid;
-    /** Block affinity key. */
+    private int idx;
+    /** */
+    private IgniteUuid matrixId;
+    /** */
     private IgniteUuid affinityKey;
 
     /**
-     * Empty constructor required for {@link Externalizable}.
+     * Default constructor (required by Externalizable).
      */
-    public BlockMatrixKey() {
-        // No-op.
+    public SparseMatrixKey(){
+
     }
 
     /**
-     * Construct matrix block key.
-     *
-     * @param blockId Block id.
-     * @param matrixUuid Matrix uuid.
-     * @param affinityKey Affinity key.
+     * Build Key.
      */
-    public BlockMatrixKey(long blockId, IgniteUuid matrixUuid, @Nullable IgniteUuid affinityKey) {
-        assert blockId >= 0;
-        assert matrixUuid != null;
+    public SparseMatrixKey(int idx, IgniteUuid matrixId, IgniteUuid affinityKey) {
+        assert idx >= 0 : "Index must be positive.";
+        assert matrixId != null : "Matrix id can`t be null.";
 
-        this.blockId = blockId;
-        this.matrixUuid = matrixUuid;
+        this.idx = idx;
+        this.matrixId = matrixId;
         this.affinityKey = affinityKey;
     }
 
     /** {@inheritDoc} */
-    @Override public long blockId() {
-        return blockId;
+    @Override public int index() {
+        return idx;
     }
 
     /** {@inheritDoc} */
     @Override public IgniteUuid matrixId() {
-        return matrixUuid;
+        return matrixId;
     }
 
     /** {@inheritDoc} */
@@ -89,39 +82,44 @@ public class BlockMatrixKey implements BaseBlockMatrixKey, Externalizable, Binar
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        U.writeGridUuid(out, matrixUuid);
+        U.writeGridUuid(out, matrixId);
         U.writeGridUuid(out, affinityKey);
-        out.writeLong(blockId);
+        out.writeInt(idx);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        matrixUuid = U.readGridUuid(in);
+        matrixId = U.readGridUuid(in);
         affinityKey = U.readGridUuid(in);
-        blockId = in.readLong();
+        idx = in.readInt();
     }
 
     /** {@inheritDoc} */
     @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
         BinaryRawWriter out = writer.rawWriter();
 
-        BinaryUtils.writeIgniteUuid(out, matrixUuid);
+        BinaryUtils.writeIgniteUuid(out, matrixId);
         BinaryUtils.writeIgniteUuid(out, affinityKey);
-        out.writeLong(blockId);
+        out.writeInt(idx);
     }
 
     /** {@inheritDoc} */
     @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
         BinaryRawReader in = reader.rawReader();
 
-        matrixUuid = BinaryUtils.readIgniteUuid(in);
+        matrixId = BinaryUtils.readIgniteUuid(in);
         affinityKey = BinaryUtils.readIgniteUuid(in);
-        blockId = in.readLong();
+        idx = in.readInt();
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        return matrixUuid.hashCode() + (int)(blockId ^ (blockId >>> 32));
+        int res = 1;
+
+        res += res * 37 + matrixId.hashCode();
+        res += res * 37 + idx;
+
+        return res;
     }
 
     /** {@inheritDoc} */
@@ -132,13 +130,13 @@ public class BlockMatrixKey implements BaseBlockMatrixKey, Externalizable, Binar
         if (obj == null || obj.getClass() != getClass())
             return false;
 
-        BlockMatrixKey that = (BlockMatrixKey)obj;
+        SparseMatrixKey that = (SparseMatrixKey)obj;
 
-        return blockId == that.blockId && matrixUuid.equals(that.matrixUuid) && F.eq(affinityKey, that.affinityKey);
+        return idx == that.idx && matrixId.equals(that.matrixId) && F.eq(affinityKey, that.affinityKey);
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(BlockMatrixKey.class, this);
+        return S.toString(SparseMatrixKey.class, this);
     }
 }

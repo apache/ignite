@@ -75,10 +75,8 @@ public class SparseLocalOnHeapMatrixStorage implements MatrixStorage, StorageCon
         return stoMode;
     }
 
-    /**
-     * @return Matrix elements access mode.
-     */
-    public int getAccessMode() {
+    /** {@inheritDoc} */
+    @Override public int accessMode() {
         return acsMode;
     }
 

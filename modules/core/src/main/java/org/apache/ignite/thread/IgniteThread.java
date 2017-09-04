@@ -126,6 +126,15 @@ public class IgniteThread extends Thread {
     }
 
     /**
+     * @return {@code True} if thread belongs to pool processing cache operations.
+     */
+    public boolean cachePoolThread() {
+        return stripe >= 0 ||
+            plc == GridIoPolicy.SYSTEM_POOL ||
+            plc == GridIoPolicy.UTILITY_CACHE_POOL;
+    }
+
+    /**
      * Gets name of the Ignite instance this thread belongs to.
      *
      * @return Name of the Ignite instance this thread belongs to.
@@ -146,6 +155,16 @@ public class IgniteThread extends Thread {
      */
     public void compositeRwLockIndex(int compositeRwLockIdx) {
         this.compositeRwLockIdx = compositeRwLockIdx;
+    }
+
+    /**
+     * @return IgniteThread or {@code null} if current thread is not an instance of IgniteThread.
+     */
+    public static IgniteThread current(){
+        Thread thread = Thread.currentThread();
+
+        return thread.getClass() == IgniteThread.class || thread instanceof IgniteThread ?
+            ((IgniteThread)thread) : null;
     }
 
     /**

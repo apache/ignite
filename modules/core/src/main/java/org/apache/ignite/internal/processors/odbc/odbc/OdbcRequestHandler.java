@@ -33,6 +33,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.odbc.SqlListenerRequest;
@@ -55,9 +56,6 @@ import static org.apache.ignite.internal.processors.odbc.odbc.OdbcRequest.*;
 public class OdbcRequestHandler implements SqlListenerRequestHandler {
     /** Query ID sequence. */
     private static final AtomicLong QRY_ID_GEN = new AtomicLong();
-
-    /** Batch query ID sequence. */
-    private static final AtomicLong BATCH_QRY_ID_GEN = new AtomicLong();
 
     /** Kernel context. */
     private final GridKernalContext ctx;
@@ -156,6 +154,11 @@ public class OdbcRequestHandler implements SqlListenerRequestHandler {
         return new OdbcResponse(SqlListenerResponse.STATUS_FAILED, e.toString());
     }
 
+    /** {@inheritDoc} */
+    @Override public void writeHandshake(BinaryWriterExImpl writer) {
+        writer.writeBoolean(true);
+    }
+
     /**
      * {@link OdbcQueryExecuteRequest} command handler.
      *
@@ -204,7 +207,7 @@ public class OdbcRequestHandler implements SqlListenerRequestHandler {
 
             U.error(log, "Failed to execute SQL query [reqId=" + req.requestId() + ", req=" + req + ']', e);
 
-            return new OdbcResponse(SqlListenerResponse.STATUS_FAILED, e.toString());
+            return new OdbcResponse(SqlListenerResponse.STATUS_FAILED, OdbcUtils.retrieveH2ErrorMessage(e));
         }
     }
 
@@ -259,7 +262,7 @@ public class OdbcRequestHandler implements SqlListenerRequestHandler {
             U.error(log, "Failed to execute SQL query [reqId=" + req.requestId() + ", req=" + req + ']', e);
 
             OdbcQueryExecuteBatchResult res = new OdbcQueryExecuteBatchResult(rowsAffected, currentSet,
-                    e.getMessage());
+                    OdbcUtils.retrieveH2ErrorMessage(e));
 
             return new OdbcResponse(res);
         }
@@ -328,7 +331,7 @@ public class OdbcRequestHandler implements SqlListenerRequestHandler {
 
             U.error(log, "Failed to close SQL query [reqId=" + req.requestId() + ", req=" + queryId + ']', e);
 
-            return new OdbcResponse(SqlListenerResponse.STATUS_FAILED, e.toString());
+            return new OdbcResponse(SqlListenerResponse.STATUS_FAILED, OdbcUtils.retrieveH2ErrorMessage(e));
         }
     }
 
@@ -377,7 +380,7 @@ public class OdbcRequestHandler implements SqlListenerRequestHandler {
         catch (Exception e) {
             U.error(log, "Failed to fetch SQL query result [reqId=" + req.requestId() + ", req=" + req + ']', e);
 
-            return new OdbcResponse(SqlListenerResponse.STATUS_FAILED, e.toString());
+            return new OdbcResponse(SqlListenerResponse.STATUS_FAILED, OdbcUtils.retrieveH2ErrorMessage(e));
         }
     }
 
@@ -442,7 +445,7 @@ public class OdbcRequestHandler implements SqlListenerRequestHandler {
         catch (Exception e) {
             U.error(log, "Failed to get columns metadata [reqId=" + req.requestId() + ", req=" + req + ']', e);
 
-            return new OdbcResponse(SqlListenerResponse.STATUS_FAILED, e.toString());
+            return new OdbcResponse(SqlListenerResponse.STATUS_FAILED, OdbcUtils.retrieveH2ErrorMessage(e));
         }
     }
 
@@ -490,7 +493,7 @@ public class OdbcRequestHandler implements SqlListenerRequestHandler {
         catch (Exception e) {
             U.error(log, "Failed to get tables metadata [reqId=" + req.requestId() + ", req=" + req + ']', e);
 
-            return new OdbcResponse(SqlListenerResponse.STATUS_FAILED, e.toString());
+            return new OdbcResponse(SqlListenerResponse.STATUS_FAILED, OdbcUtils.retrieveH2ErrorMessage(e));
         }
     }
 
@@ -521,7 +524,7 @@ public class OdbcRequestHandler implements SqlListenerRequestHandler {
         catch (Exception e) {
             U.error(log, "Failed to get params metadata [reqId=" + req.requestId() + ", req=" + req + ']', e);
 
-            return new OdbcResponse(SqlListenerResponse.STATUS_FAILED, e.toString());
+            return new OdbcResponse(SqlListenerResponse.STATUS_FAILED, OdbcUtils.retrieveH2ErrorMessage(e));
         }
     }
 
