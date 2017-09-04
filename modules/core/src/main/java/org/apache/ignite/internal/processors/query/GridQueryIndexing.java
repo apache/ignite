@@ -90,6 +90,20 @@ public interface GridQueryIndexing {
         boolean keepBinary, GridQueryCancel cancel, @Nullable Integer mainCacheId) throws IgniteCheckedException;
 
     /**
+     * Parses SQL query into two step query and executes it.
+     *
+     * @param schemaName Schema name.
+     * @param qry Query.
+     * @param keepBinary Keep binary flag.
+     * @param cancel Query cancel.
+     * @param mainCacheId Main cache ID.
+     * @return Cursor.
+     * @throws IgniteCheckedException If failed.
+     */
+    public List<FieldsQueryCursor<List<?>>> queryDistributedSqlFieldsMultiple(String schemaName, SqlFieldsQuery qry,
+        boolean keepBinary, GridQueryCancel cancel, @Nullable Integer mainCacheId) throws IgniteCheckedException;
+
+    /**
      * Perform a MERGE statement using data streamer as receiver.
      *
      * @param schemaName Schema name.
@@ -295,13 +309,4 @@ public interface GridQueryIndexing {
      * @return {@code True} if insert.
      */
     public boolean isInsertStatement(PreparedStatement nativeStmt);
-
-    /**
-     * Split multi-statements SQL query to the first statement and remaining SQL query string.
-     *
-     * @param schema Schema.
-     * @param qry Query with multiple statements.
-     * @return List of queries.
-     */
-    MultipleStatementsQuery splitSqlQuery(String schema, SqlFieldsQuery qry);
 }

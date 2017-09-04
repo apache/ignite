@@ -1858,11 +1858,13 @@ private IgniteInternalFuture<Object> rebuildIndexesFromHash(@Nullable final Stri
     }
 
     /**
+     * Query SQL fields without strict dependency on concrete cache.
+     *
      * @param qry Query.
      * @param keepBinary Keep binary flag.
-     * @return List of queries.
+     * @return Cursor.
      */
-    public QueryResult querySqlFieldsMultipleNoCache(final SqlFieldsQuery qry, final boolean keepBinary) {
+    public List<FieldsQueryCursor<List<?>>> querySqlFieldsNoCache0(final SqlFieldsQuery qry, final boolean keepBinary) {
         checkxEnabled();
 
         validateSqlFieldsQuery(qry);
@@ -1877,11 +1879,18 @@ private IgniteInternalFuture<Object> rebuildIndexesFromHash(@Nullable final Stri
             throw new IllegalStateException("Failed to execute query (grid is stopping).");
 
         try {
-            MultipleStatementsQuery multQry = idx.splitSqlQuery(qry.getSchema(), qry);
+            IgniteOutClosureX<List<FieldsQueryCursor<List<?>>>> clo = new IgniteOutClosureX<List<FieldsQueryCursor<List<?>>>>() {
+                @Override public List<FieldsQueryCursor<List<?>>> applyx() throws IgniteCheckedException {
+                    GridQueryCancel cancel = new GridQueryCancel();
 
-            FieldsQueryCursor<List<?>> cur = querySqlFieldsNoCache(multQry.first(), keepBinary);
+                    return idx.queryDistributedSqlFieldsMultiple(qry.getSchema(), qry, keepBinary, cancel, null);
+                }
+            };
 
-            return new QueryResult(cur, multQry.remaining());
+            return executeQuery(GridCacheQueryType.SQL_FIELDS, qry.getSql(), null, clo, true);
+        }
+        catch (IgniteCheckedException e) {
+            throw new CacheException(e);
         }
         finally {
             busyLock.leaveBusy();
@@ -2667,40 +2676,6 @@ private IgniteInternalFuture<Object> rebuildIndexesFromHash(@Nullable final Stri
             assert this.mgr == null;
 
             this.mgr = mgr;
-        }
-    }
-
-    /**
-     *
-     */
-    public static class QueryResult {
-        /** Cursor. */
-        private FieldsQueryCursor<List<?>> cur;
-
-        /** Remaining query. */
-        private SqlFieldsQuery remaining;
-
-        /**
-         * @param cur Cursor.
-         * @param remaining Remaining query.
-         */
-        public QueryResult(FieldsQueryCursor<List<?>> cur, SqlFieldsQuery remaining) {
-            this.cur = cur;
-            this.remaining = remaining;
-        }
-
-        /**
-         * @return Query cursor.
-         */
-        public FieldsQueryCursor<List<?>> cursor() {
-            return cur;
-        }
-
-        /**
-         * @return Remaining query.
-         */
-        public SqlFieldsQuery remaining() {
-            return remaining;
         }
     }
 }
