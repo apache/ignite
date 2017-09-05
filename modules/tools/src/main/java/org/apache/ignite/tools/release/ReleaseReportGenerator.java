@@ -33,6 +33,9 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpException;
@@ -197,6 +200,18 @@ public class ReleaseReportGenerator {
     private static String buildReportForSearch(JSONObject search, JSONObject srv) throws HttpException, ParseException {
         StringBuilder sr = new StringBuilder();
 
+        String baseUrl = (String) srv.get("baseurl");
+
+        String kField = (String) search.get("key");
+        if (kField == null)
+            kField = "key";
+        String kPtrn = (String) search.get("kptrn");
+
+        String sField = (String) search.get("summary");
+        if (sField == null)
+            sField = "fields.summary";
+        String sPtrn = (String) search.get("sptrn");
+
         List<JSONObject> issues = searchIssues((String) srv.get("apiurl"),
                 (String) srv.get("username"),
                 (String) srv.get("password"),
@@ -204,24 +219,29 @@ public class ReleaseReportGenerator {
             jiraFields);
 
         for (JSONObject issue : issues) {
-            String summary = (String) ((JSONObject) issue.get("fields")).get("summary");
+            String key = getFieldFromJsonByPattern(issue, kField, kPtrn);
+            String summary = getFieldFromJsonByPattern(issue, sField, sPtrn);
+
+            if (key == null || summary == null)
+                continue;
 
             if (summary.lastIndexOf(".") == summary.length() - 1)
                 summary = summary.substring(0, summary.length() - 1);
 
-            sr.append("<li>").append(summary);
+            sr.append("<li>");
+            sr.append(summary);
 
                 if ((boolean) search.get("showlink")) {
                     sr.append("<a href=\"");
-                    sr.append((String) srv.get("baseUrl"));
-                    sr.append((String) issue.get("key"));
+                    sr.append(baseUrl);
+                    sr.append(key);
                     sr.append("\"> [#");
-                    sr.append((String) issue.get("key"));
+                    sr.append(key);
                     sr.append("]</a>\n");
                 }
                 else {
                     sr.append(" <span>[#");
-                    sr.append((String) issue.get("key"));
+                    sr.append(key);
                     sr.append("]</span>");
                 }
 
@@ -438,5 +458,37 @@ public class ReleaseReportGenerator {
         StringEntity input = new StringEntity(data, contentType);
 
         httpReq.setEntity(input);
+    }
+
+    /**
+     * Get field value from jsonObject as string by field name and regex pattern
+     *
+     * @param jsonObject json object for read field value
+     * @param fieldName field name for read value. Name support . as sub-object separator.
+     * @param regex regex for search substring in value
+     * @return Value or substring of value if regex is not null
+     */
+    private static String getFieldFromJsonByPattern(JSONObject jsonObject, String fieldName, String regex) {
+        String[] fArray = fieldName.split("\\.");
+        String retval = null;
+        for (int i = 0; i < fArray.length; i++) {
+            if (i != fArray.length -1)
+                jsonObject = (JSONObject) jsonObject.get(fArray[i]);
+            else
+                retval = (String) jsonObject.get(fArray[i]);
+        }
+
+        if (regex == null)
+            return retval;
+
+        if (retval == null)
+            return retval;
+
+        Pattern ptrn = Pattern.compile(regex);
+        Matcher matcher = ptrn.matcher(retval);
+        if (matcher.find())
+            return matcher.group(1);
+
+        return null;
     }
 }
