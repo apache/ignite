@@ -36,7 +36,7 @@ namespace Apache.Ignite.Core.Impl.Messaging
         private readonly Func<Guid, object, bool> _invoker;
 
         /** Current Ignite instance. */
-        private readonly Ignite _ignite;
+        private readonly IIgniteInternal _ignite;
         
         /** Underlying filter. */
         private readonly object _filter;

@@ -118,7 +118,7 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="reader">Error data reader.</param>
         /// <param name="innerException">Inner exception.</param>
         /// <returns>Exception.</returns>
-        public static Exception GetException(Ignite ignite, string clsName, string msg, string stackTrace,
+        public static Exception GetException(IIgniteInternal ignite, string clsName, string msg, string stackTrace,
             BinaryReader reader = null, Exception innerException = null)
         {
             // Set JavaException as immediate inner.
@@ -153,7 +153,7 @@ namespace Apache.Ignite.Core.Impl
                 return ProcessCachePartialUpdateException(ignite, msg, stackTrace, reader);
 
             // Predefined mapping not found - check plugins.
-            if (ignite != null)
+            if (ignite != null && ignite.PluginProcessor != null)
             {
                 ctor = ignite.PluginProcessor.GetExceptionMapping(clsName);
 
@@ -177,8 +177,8 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="reader">Reader.</param>
         /// <returns>CachePartialUpdateException.</returns>
         [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
-        private static Exception ProcessCachePartialUpdateException(Ignite ignite, string msg, string stackTrace,
-            BinaryReader reader)
+        private static Exception ProcessCachePartialUpdateException(IIgniteInternal ignite, string msg, 
+            string stackTrace, BinaryReader reader)
         {
             if (reader == null)
                 return new CachePartialUpdateException(msg, new IgniteException("Failed keys are not available."));
