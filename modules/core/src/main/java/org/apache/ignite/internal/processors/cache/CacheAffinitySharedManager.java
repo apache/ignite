@@ -323,6 +323,60 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     }
 
     /**
+     * @param cacheId Cache ID.
+     * @return {@code True} if cache is in wait list.
+     */
+    private boolean waitCache(int cacheId) {
+        synchronized (mux) {
+            return waitInfo != null && waitInfo.waitCaches.containsKey(cacheId);
+        }
+    }
+
+    /**
+     * Called during exchange rollback in order to stop the given cache(s)
+     * even if it's not fully initialized (e.g. fail on cache init stage).
+     *
+     * @param fut Exchange future.
+     * @param crd Coordinator flag.
+     * @param reqs Cache change requests.
+     */
+    public void forceCloseCache(final GridDhtPartitionsExchangeFuture fut, boolean crd,
+        Collection<DynamicCacheChangeRequest> reqs) {
+        assert !F.isEmpty(reqs) : fut;
+
+        for (DynamicCacheChangeRequest req : reqs) {
+            assert req.stop() : req;
+
+            Integer cacheId = CU.cacheId(req.cacheName());
+
+            registeredCaches.remove(cacheId);
+
+            assert !waitCache(cacheId);
+        }
+
+        Set<Integer> stoppedCaches = null;
+
+        for (DynamicCacheChangeRequest req : reqs) {
+            Integer cacheId = CU.cacheId(req.cacheName());
+
+            cctx.cache().blockGateway(req);
+
+            if (crd) {
+                CacheHolder cache = caches.remove(cacheId);
+
+                if (cache != null) {
+                    if (stoppedCaches == null)
+                        stoppedCaches = new HashSet<>();
+
+                    stoppedCaches.add(cache.cacheId());
+
+                    cctx.io().removeHandler(cacheId, GridDhtAffinityAssignmentResponse.class);
+                }
+            }
+        }
+    }
+
+    /**
      * Called on exchange initiated for cache start/stop request.
      *
      * @param fut Exchange future.
@@ -379,48 +433,38 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             Integer cacheId = CU.cacheId(req.cacheName());
 
             if (req.start()) {
-                try {
-                    cctx.cache().prepareCacheStart(req, fut.topologyVersion());
+                cctx.cache().prepareCacheStart(req, fut.topologyVersion());
 
-                    if (fut.isCacheAdded(cacheId, fut.topologyVersion())) {
-                        if (fut.discoCache().cacheAffinityNodes(req.cacheName()).isEmpty())
-                            U.quietAndWarn(log, "No server nodes found for cache client: " + req.cacheName());
-                    }
+                if (fut.isCacheAdded(cacheId, fut.topologyVersion())) {
+                    if (fut.discoCache().cacheAffinityNodes(req.cacheName()).isEmpty())
+                        U.quietAndWarn(log, "No server nodes found for cache client: " + req.cacheName());
+                }
 
-                    if (!crd || !lateAffAssign) {
-                        GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
+                if (!crd || !lateAffAssign) {
+                    GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
 
-                        if (cacheCtx != null && !cacheCtx.isLocal()) {
-                            boolean clientCacheStarted =
-                                req.clientStartOnly() && req.initiatingNodeId().equals(cctx.localNodeId());
+                    if (cacheCtx != null && !cacheCtx.isLocal()) {
+                        boolean clientCacheStarted =
+                            req.clientStartOnly() && req.initiatingNodeId().equals(cctx.localNodeId());
 
-                            if (clientCacheStarted)
-                                initAffinity(cacheCtx.affinity().affinityCache(), fut, lateAffAssign);
-                            else if (!req.clientStartOnly()) {
-                                assert fut.topologyVersion().equals(cacheCtx.startTopologyVersion());
+                        if (clientCacheStarted)
+                            initAffinity(cacheCtx.affinity().affinityCache(), fut, lateAffAssign);
+                        else if (!req.clientStartOnly()) {
+                            assert fut.topologyVersion().equals(cacheCtx.startTopologyVersion());
 
-                                GridAffinityAssignmentCache aff = cacheCtx.affinity().affinityCache();
+                            GridAffinityAssignmentCache aff = cacheCtx.affinity().affinityCache();
 
-                                assert aff.lastVersion().equals(AffinityTopologyVersion.NONE) : aff.lastVersion();
+                            assert aff.lastVersion().equals(AffinityTopologyVersion.NONE) : aff.lastVersion();
 
-                                List<List<ClusterNode>> assignment = aff.calculate(fut.topologyVersion(),
-                                    fut.discoveryEvent(), fut.discoCache());
+                            List<List<ClusterNode>> assignment = aff.calculate(fut.topologyVersion(),
+                                fut.discoveryEvent(), fut.discoCache());
 
-                                aff.initialize(fut.topologyVersion(), assignment);
-                            }
+                            aff.initialize(fut.topologyVersion(), assignment);
                         }
                     }
-                    else
-                        initStartedCacheOnCoordinator(fut, cacheId);
                 }
-                catch (IgniteCheckedException | RuntimeException e) {
-                    U.error(log, "Failed to initialize cache. Will try to rollback cache start routine. " +
-                        "[cacheName=" + req.cacheName() + ']', e);
-
-                    cctx.cache().forceCloseCache(fut.topologyVersion(), req, e);
-
-                    throw e;
-                }
+                else
+                    initStartedCacheOnCoordinator(fut, cacheId);
             }
             else if (req.stop() || req.close()) {
                 cctx.cache().blockGateway(req);
