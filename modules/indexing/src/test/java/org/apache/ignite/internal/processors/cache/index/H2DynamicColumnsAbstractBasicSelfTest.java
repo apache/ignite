@@ -195,7 +195,7 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
 
         assertEquals(0, cache.size());
 
-        ignite(nodeIndex()).cache("City").destroy();
+        ignite(nodeIndex()).destroyCache("City");
     }
 
     /**
@@ -210,6 +210,39 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
 
         for (Ignite node : Ignition.allGrids())
             checkNodeState((IgniteEx)node, "idx", "PERSON", c);
+    }
+
+    /**
+     * Test that we can add columns dynamically to tables associated with non dynamic caches as well.
+     */
+    @SuppressWarnings("unchecked")
+    public void testAddColumnToNonDynamicCacheWith() {
+        CacheConfiguration<Integer, City> ccfg = defaultCacheConfiguration().setName("City2")
+            .setIndexedTypes(Integer.class, City.class);
+
+        ccfg.getQueryEntities().iterator().next().setKeyFieldName("id");
+
+        IgniteCache<Integer, City> cache = ignite(nodeIndex()).getOrCreateCache(ccfg);
+
+        run(cache, "ALTER TABLE \"City2\".City ADD COLUMN population int");
+
+        doSleep(500);
+
+        QueryField c = c("POPULATION", Integer.class.getName());
+
+        for (Ignite node : Ignition.allGrids())
+            checkNodeState((IgniteEx)node, "City2", "CITY", c);
+
+        run(cache, "INSERT INTO \"City2\".City (id, name, state, population) values (1, 'Washington', 'DC', 2500000)");
+
+        City city = cache.get(1);
+
+        // Is this expected to workw at all?
+        assertEquals(1, city.id());
+        assertEquals("Washington", city.name());
+        assertEquals("DC", city.state());
+
+        cache.destroy();
     }
 
     /**
