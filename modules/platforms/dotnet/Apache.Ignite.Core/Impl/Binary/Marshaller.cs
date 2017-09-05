@@ -722,22 +722,22 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         private void AddSystemTypes()
         {
-            AddSystemType(BinaryUtils.TypeNativeJobHolder, r => new ComputeJobHolder(r));
-            AddSystemType(BinaryUtils.TypeComputeJobWrapper, r => new ComputeJobWrapper(r));
-            AddSystemType(BinaryUtils.TypeComputeOutFuncJob, r => new ComputeOutFuncJob(r));
-            AddSystemType(BinaryUtils.TypeComputeOutFuncWrapper, r => new ComputeOutFuncWrapper(r));
-            AddSystemType(BinaryUtils.TypeComputeFuncWrapper, r => new ComputeFuncWrapper(r));
-            AddSystemType(BinaryUtils.TypeComputeFuncJob, r => new ComputeFuncJob(r));
-            AddSystemType(BinaryUtils.TypeComputeActionJob, r => new ComputeActionJob(r));
-            AddSystemType(BinaryUtils.TypeContinuousQueryRemoteFilterHolder, r => new ContinuousQueryFilterHolder(r));
-            AddSystemType(BinaryUtils.TypeCacheEntryProcessorHolder, r => new CacheEntryProcessorHolder(r));
-            AddSystemType(BinaryUtils.TypeCacheEntryPredicateHolder, r => new CacheEntryFilterHolder(r));
-            AddSystemType(BinaryUtils.TypeMessageListenerHolder, r => new MessageListenerHolder(r));
-            AddSystemType(BinaryUtils.TypeStreamReceiverHolder, r => new StreamReceiverHolder(r));
+            AddSystemType(BinaryTypeId.NativeJobHolder, r => new ComputeJobHolder(r));
+            AddSystemType(BinaryTypeId.ComputeJobWrapper, r => new ComputeJobWrapper(r));
+            AddSystemType(BinaryTypeId.ComputeOutFuncJob, r => new ComputeOutFuncJob(r));
+            AddSystemType(BinaryTypeId.ComputeOutFuncWrapper, r => new ComputeOutFuncWrapper(r));
+            AddSystemType(BinaryTypeId.ComputeFuncWrapper, r => new ComputeFuncWrapper(r));
+            AddSystemType(BinaryTypeId.ComputeFuncJob, r => new ComputeFuncJob(r));
+            AddSystemType(BinaryTypeId.ComputeActionJob, r => new ComputeActionJob(r));
+            AddSystemType(BinaryTypeId.ContinuousQueryRemoteFilterHolder, r => new ContinuousQueryFilterHolder(r));
+            AddSystemType(BinaryTypeId.CacheEntryProcessorHolder, r => new CacheEntryProcessorHolder(r));
+            AddSystemType(BinaryTypeId.CacheEntryPredicateHolder, r => new CacheEntryFilterHolder(r));
+            AddSystemType(BinaryTypeId.MessageListenerHolder, r => new MessageListenerHolder(r));
+            AddSystemType(BinaryTypeId.StreamReceiverHolder, r => new StreamReceiverHolder(r));
             AddSystemType(0, r => new AffinityKey(r), "affKey");
-            AddSystemType(BinaryUtils.TypePlatformJavaObjectFactoryProxy, r => new PlatformJavaObjectFactoryProxy());
+            AddSystemType(BinaryTypeId.PlatformJavaObjectFactoryProxy, r => new PlatformJavaObjectFactoryProxy());
             AddSystemType(0, r => new ObjectInfoHolder(r));
-            AddSystemType(BinaryUtils.TypeIgniteUuid, r => new IgniteGuid(r));
+            AddSystemType(BinaryTypeId.IgniteUuid, r => new IgniteGuid(r));
             AddSystemType(0, r => new GetAssemblyFunc());
             AddSystemType(0, r => new AssemblyRequest(r));
             AddSystemType(0, r => new AssemblyRequestResult(r));

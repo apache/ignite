@@ -264,9 +264,12 @@ public class QueryIndex implements Serializable {
      * Sets inline size.
      *
      * @param inlineSize Inline size.
+     * @return {@code this} for chaining.
      */
-    public void setInlineSize(int inlineSize) {
+    public QueryIndex setInlineSize(int inlineSize) {
         this.inlineSize = inlineSize;
+
+        return this;
     }
 
     /** {@inheritDoc} */
