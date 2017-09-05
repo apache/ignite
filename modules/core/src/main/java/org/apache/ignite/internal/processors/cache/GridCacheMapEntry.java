@@ -909,7 +909,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         String taskName,
         @Nullable GridCacheVersion dhtVer,
         @Nullable Long updateCntr,
-        @Nullable TxMvccVersion mvccVer
+        long mvccCntr
     ) throws IgniteCheckedException, GridCacheEntryRemovedException {
         CacheObject old;
 
@@ -1104,7 +1104,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         String taskName,
         @Nullable GridCacheVersion dhtVer,
         @Nullable Long updateCntr,
-        @Nullable TxMvccVersion mvccVer
+        long mvccCntr
     ) throws IgniteCheckedException, GridCacheEntryRemovedException {
         assert cctx.transactional();
 

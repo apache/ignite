@@ -508,7 +508,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
             try {
                 cctx.tm().txContext(this);
 
-                TxMvccVersion mvccVer = createMvccVersion();
+                long mvccCntr = mvccCounterForCommit();
 
                 AffinityTopologyVersion topVer = topologyVersion();
 
@@ -688,7 +688,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                             resolveTaskName(),
                                             dhtVer,
                                             null,
-                                            mvccVer);
+                                            mvccCntr);
 
                                         if (updRes.success())
                                             txEntry.updateCounter(updRes.updatePartitionCounter());
@@ -716,7 +716,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                                 resolveTaskName(),
                                                 dhtVer,
                                                 null,
-                                                mvccVer);
+                                                mvccCntr);
                                         }
                                     }
                                     else if (op == DELETE) {
@@ -738,7 +738,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                             resolveTaskName(),
                                             dhtVer,
                                             null,
-                                            mvccVer);
+                                            mvccCntr);
 
                                         if (updRes.success())
                                             txEntry.updateCounter(updRes.updatePartitionCounter());
@@ -762,7 +762,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                                 resolveTaskName(),
                                                 dhtVer,
                                                 null,
-                                                mvccVer);
+                                                mvccCntr);
                                         }
                                     }
                                     else if (op == RELOAD) {

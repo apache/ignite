@@ -1545,16 +1545,10 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     /**
      * @return Mvcc version.
      */
-    protected final TxMvccVersion createMvccVersion() {
+    protected final long mvccCounterForCommit() {
         assert !txState().mvccEnabled(cctx) || mvccCrdCntr != TxMvccVersion.COUNTER_NA : mvccCrdCntr;
 
-        if (mvccCrdCntr != TxMvccVersion.COUNTER_NA) {
-            return new TxMvccVersion(topologyVersion().topologyVersion(),
-                mvccCrdCntr,
-                nearXidVersion());
-        }
-
-        return null;
+        return mvccCrdCntr;
     }
 
     /**
