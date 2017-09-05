@@ -46,7 +46,8 @@ ignite_odbc_tests_LDADD = \
     @top_srcdir@/core/libignite.la \
     -ldl \
     -lodbc \
-    -lpthread
+    -lpthread \
+    -lboost_regex
 
 ignite_odbc_tests_LDFLAGS = \
     -static-libtool-libs
