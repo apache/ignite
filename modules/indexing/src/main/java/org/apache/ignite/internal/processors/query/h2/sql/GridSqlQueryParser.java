@@ -1026,7 +1026,7 @@ public class GridSqlQueryParser {
                 IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
         if (!col.isNullable())
-            throw new IgniteSQLException("Non nullable columns are forbidden [colName=" + col.getName() + ']',
+            throw new IgniteSQLException("Non nullable columns are not supported [colName=" + col.getName() + ']',
                 IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
         if (COLUMN_IS_COMPUTED.get(col))
@@ -1042,7 +1042,7 @@ public class GridSqlQueryParser {
                 IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
         if (col.getSelectivity() != Constants.SELECTIVITY_DEFAULT)
-            throw new IgniteSQLException("SELECTIVITY column attr is not supported [colName=" + col.getName() + ']',
+            throw new IgniteSQLException("SELECTIVITY column attribute is not supported [colName=" + col.getName() + ']',
                 IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
         if (COLUMN_CHECK_CONSTRAINT.get(col) != null)

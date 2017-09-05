@@ -62,7 +62,7 @@ public class SchemaAlterTableAddColumnOperation extends SchemaAbstractAlterTable
     }
 
     /**
-     * @return Ignore operation if index doesn't exist.
+     * @return Ignore operation if table doesn't exist.
      */
     public boolean ifTableExists() {
         return ifTblExists;
