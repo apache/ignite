@@ -15,13 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.platform.client;
+package org.apache.ignite.internal.processors.platform.client.binary;
 
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
+import org.apache.ignite.internal.processors.platform.client.ClientRequest;
+import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 
 import java.util.Collection;
@@ -29,7 +31,7 @@ import java.util.Collection;
 /**
  * Binary types update request.
  */
-class ClientPutBinaryTypesRequest extends ClientRequest {
+public class ClientPutBinaryTypesRequest extends ClientRequest {
     /** Metas. */
     private final Collection<BinaryMetadata> metas;
 
@@ -38,7 +40,7 @@ class ClientPutBinaryTypesRequest extends ClientRequest {
      *
      * @param reader Reader.
      */
-    ClientPutBinaryTypesRequest(BinaryRawReaderEx reader) {
+    public ClientPutBinaryTypesRequest(BinaryRawReaderEx reader) {
         super(reader);
 
         metas = PlatformUtils.readBinaryMetadata(reader);
