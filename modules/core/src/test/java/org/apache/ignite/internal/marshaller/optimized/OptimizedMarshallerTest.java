@@ -33,6 +33,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.compute.ComputeTask;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.GridMarshallerTestInheritedBean;
 import org.apache.ignite.marshaller.Marshaller;
@@ -271,6 +272,13 @@ public class OptimizedMarshallerTest extends GridCommonAbstractTest {
         SomeItf outItf = marsh.unmarshal(marsh.marshal(inItf), null);
 
         assertEquals(outItf.checkAfterUnmarshalled(), 17);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration configuration = super.getConfiguration(igniteInstanceName);
+        configuration.setMarshaller(marshaller());
+        return configuration;
     }
 
     /**

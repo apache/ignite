@@ -22,6 +22,11 @@
 
 namespace ignite_test
 {
+    enum
+    {
+        TEST_ERROR = 424242
+    };
+
     /**
      * Initialize configuration for a node.
      *
@@ -65,9 +70,24 @@ namespace ignite_test
      * @param err Error.
      * @return True if the error is generic.
      */
-    inline bool IsGenericError(const ignite::IgniteError& err)
+    bool IsGenericError(const ignite::IgniteError& err);
+
+    /**
+     * Check if the error is generic.
+     *
+     * @param err Error.
+     * @return True if the error is generic.
+     */
+    bool IsTestError(const ignite::IgniteError& err);
+
+    /**
+     * Make test error.
+     *
+     * @return Test error.
+     */
+    inline ignite::IgniteError MakeTestError()
     {
-        return err.GetCode() == ignite::IgniteError::IGNITE_ERR_GENERIC;
+        return ignite::IgniteError(TEST_ERROR, "Test error");
     }
 }
 

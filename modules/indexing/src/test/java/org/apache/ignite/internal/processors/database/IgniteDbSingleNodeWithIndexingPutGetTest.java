@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.TreeMap;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -31,7 +32,6 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -85,9 +85,7 @@ public class IgniteDbSingleNodeWithIndexingPutGetTest extends IgniteDbSingleNode
         Map<Integer,AtomicLong> bs = new TreeMap<>();
         Map<Integer,AtomicLong> cs = new TreeMap<>();
 
-        Random rnd = BPlusTree.rnd;
-
-        assertNotNull(rnd);
+        Random rnd = ThreadLocalRandom.current();
 
         for (int i = 0; i < cnt; i++) {
             Abc abc = new Abc(rnd.nextInt(2000), rnd.nextInt(100), rnd.nextInt(5));

@@ -20,7 +20,6 @@ namespace Apache.Ignite.Core.Impl.Binary
     using System;
     using System.Collections;
     using System.Collections.Generic;
-    using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
     using Apache.Ignite.Core.Binary;
@@ -99,7 +98,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** <inheritdoc /> */
         public bool ReadBoolean(string fieldName)
         {
-            return ReadField(fieldName, r => r.ReadBoolean(), BinaryUtils.TypeBool);
+            return ReadField(fieldName, r => r.ReadBoolean(), BinaryTypeId.Bool);
         }
 
         /** <inheritdoc /> */
@@ -111,19 +110,19 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** <inheritdoc /> */
         public bool[] ReadBooleanArray(string fieldName)
         {
-            return ReadField(fieldName, BinaryUtils.ReadBooleanArray, BinaryUtils.TypeArrayBool);
+            return ReadField(fieldName, BinaryUtils.ReadBooleanArray, BinaryTypeId.ArrayBool);
         }
 
         /** <inheritdoc /> */
         public bool[] ReadBooleanArray()
         {
-            return Read(BinaryUtils.ReadBooleanArray, BinaryUtils.TypeArrayBool);
+            return Read(BinaryUtils.ReadBooleanArray, BinaryTypeId.ArrayBool);
         }
 
         /** <inheritdoc /> */
         public byte ReadByte(string fieldName)
         {
-            return ReadField(fieldName, ReadByte, BinaryUtils.TypeByte);
+            return ReadField(fieldName, ReadByte, BinaryTypeId.Byte);
         }
 
         /** <inheritdoc /> */
@@ -135,19 +134,19 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** <inheritdoc /> */
         public byte[] ReadByteArray(string fieldName)
         {
-            return ReadField(fieldName, BinaryUtils.ReadByteArray, BinaryUtils.TypeArrayByte);
+            return ReadField(fieldName, BinaryUtils.ReadByteArray, BinaryTypeId.ArrayByte);
         }
 
         /** <inheritdoc /> */
         public byte[] ReadByteArray()
         {
-            return Read(BinaryUtils.ReadByteArray, BinaryUtils.TypeArrayByte);
+            return Read(BinaryUtils.ReadByteArray, BinaryTypeId.ArrayByte);
         }
 
         /** <inheritdoc /> */
         public short ReadShort(string fieldName)
         {
-            return ReadField(fieldName, ReadShort, BinaryUtils.TypeShort);
+            return ReadField(fieldName, ReadShort, BinaryTypeId.Short);
         }
 
         /** <inheritdoc /> */
@@ -159,19 +158,19 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** <inheritdoc /> */
         public short[] ReadShortArray(string fieldName)
         {
-            return ReadField(fieldName, BinaryUtils.ReadShortArray, BinaryUtils.TypeArrayShort);
+            return ReadField(fieldName, BinaryUtils.ReadShortArray, BinaryTypeId.ArrayShort);
         }
 
         /** <inheritdoc /> */
         public short[] ReadShortArray()
         {
-            return Read(BinaryUtils.ReadShortArray, BinaryUtils.TypeArrayShort);
+            return Read(BinaryUtils.ReadShortArray, BinaryTypeId.ArrayShort);
         }
 
         /** <inheritdoc /> */
         public char ReadChar(string fieldName)
         {
-            return ReadField(fieldName, ReadChar, BinaryUtils.TypeChar);
+            return ReadField(fieldName, ReadChar, BinaryTypeId.Char);
         }
 
         /** <inheritdoc /> */
@@ -183,19 +182,19 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** <inheritdoc /> */
         public char[] ReadCharArray(string fieldName)
         {
-            return ReadField(fieldName, BinaryUtils.ReadCharArray, BinaryUtils.TypeArrayChar);
+            return ReadField(fieldName, BinaryUtils.ReadCharArray, BinaryTypeId.ArrayChar);
         }
 
         /** <inheritdoc /> */
         public char[] ReadCharArray()
         {
-            return Read(BinaryUtils.ReadCharArray, BinaryUtils.TypeArrayChar);
+            return Read(BinaryUtils.ReadCharArray, BinaryTypeId.ArrayChar);
         }
 
         /** <inheritdoc /> */
         public int ReadInt(string fieldName)
         {
-            return ReadField(fieldName, ReadInt, BinaryUtils.TypeInt);
+            return ReadField(fieldName, ReadInt, BinaryTypeId.Int);
         }
 
         /** <inheritdoc /> */
@@ -207,19 +206,19 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** <inheritdoc /> */
         public int[] ReadIntArray(string fieldName)
         {
-            return ReadField(fieldName, BinaryUtils.ReadIntArray, BinaryUtils.TypeArrayInt);
+            return ReadField(fieldName, BinaryUtils.ReadIntArray, BinaryTypeId.ArrayInt);
         }
 
         /** <inheritdoc /> */
         public int[] ReadIntArray()
         {
-            return Read(BinaryUtils.ReadIntArray, BinaryUtils.TypeArrayInt);
+            return Read(BinaryUtils.ReadIntArray, BinaryTypeId.ArrayInt);
         }
 
         /** <inheritdoc /> */
         public long ReadLong(string fieldName)
         {
-            return ReadField(fieldName, ReadLong, BinaryUtils.TypeLong);
+            return ReadField(fieldName, ReadLong, BinaryTypeId.Long);
         }
 
         /** <inheritdoc /> */
@@ -231,19 +230,19 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** <inheritdoc /> */
         public long[] ReadLongArray(string fieldName)
         {
-            return ReadField(fieldName, BinaryUtils.ReadLongArray, BinaryUtils.TypeArrayLong);
+            return ReadField(fieldName, BinaryUtils.ReadLongArray, BinaryTypeId.ArrayLong);
         }
 
         /** <inheritdoc /> */
         public long[] ReadLongArray()
         {
-            return Read(BinaryUtils.ReadLongArray, BinaryUtils.TypeArrayLong);
+            return Read(BinaryUtils.ReadLongArray, BinaryTypeId.ArrayLong);
         }
 
         /** <inheritdoc /> */
         public float ReadFloat(string fieldName)
         {
-            return ReadField(fieldName, ReadFloat, BinaryUtils.TypeFloat);
+            return ReadField(fieldName, ReadFloat, BinaryTypeId.Float);
         }
 
         /** <inheritdoc /> */
@@ -255,19 +254,19 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** <inheritdoc /> */
         public float[] ReadFloatArray(string fieldName)
         {
-            return ReadField(fieldName, BinaryUtils.ReadFloatArray, BinaryUtils.TypeArrayFloat);
+            return ReadField(fieldName, BinaryUtils.ReadFloatArray, BinaryTypeId.ArrayFloat);
         }
 
         /** <inheritdoc /> */
         public float[] ReadFloatArray()
         {
-            return Read(BinaryUtils.ReadFloatArray, BinaryUtils.TypeArrayFloat);
+            return Read(BinaryUtils.ReadFloatArray, BinaryTypeId.ArrayFloat);
         }
 
         /** <inheritdoc /> */
         public double ReadDouble(string fieldName)
         {
-            return ReadField(fieldName, ReadDouble, BinaryUtils.TypeDouble);
+            return ReadField(fieldName, ReadDouble, BinaryTypeId.Double);
         }
 
         /** <inheritdoc /> */
@@ -279,109 +278,109 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** <inheritdoc /> */
         public double[] ReadDoubleArray(string fieldName)
         {
-            return ReadField(fieldName, BinaryUtils.ReadDoubleArray, BinaryUtils.TypeArrayDouble);
+            return ReadField(fieldName, BinaryUtils.ReadDoubleArray, BinaryTypeId.ArrayDouble);
         }
 
         /** <inheritdoc /> */
         public double[] ReadDoubleArray()
         {
-            return Read(BinaryUtils.ReadDoubleArray, BinaryUtils.TypeArrayDouble);
+            return Read(BinaryUtils.ReadDoubleArray, BinaryTypeId.ArrayDouble);
         }
 
         /** <inheritdoc /> */
         public decimal? ReadDecimal(string fieldName)
         {
-            return ReadField(fieldName, BinaryUtils.ReadDecimal, BinaryUtils.TypeDecimal);
+            return ReadField(fieldName, BinaryUtils.ReadDecimal, BinaryTypeId.Decimal);
         }
 
         /** <inheritdoc /> */
         public decimal? ReadDecimal()
         {
-            return Read(BinaryUtils.ReadDecimal, BinaryUtils.TypeDecimal);
+            return Read(BinaryUtils.ReadDecimal, BinaryTypeId.Decimal);
         }
 
         /** <inheritdoc /> */
         public decimal?[] ReadDecimalArray(string fieldName)
         {
-            return ReadField(fieldName, BinaryUtils.ReadDecimalArray, BinaryUtils.TypeArrayDecimal);
+            return ReadField(fieldName, BinaryUtils.ReadDecimalArray, BinaryTypeId.ArrayDecimal);
         }
 
         /** <inheritdoc /> */
         public decimal?[] ReadDecimalArray()
         {
-            return Read(BinaryUtils.ReadDecimalArray, BinaryUtils.TypeArrayDecimal);
+            return Read(BinaryUtils.ReadDecimalArray, BinaryTypeId.ArrayDecimal);
         }
 
         /** <inheritdoc /> */
         public DateTime? ReadTimestamp(string fieldName)
         {
-            return ReadField(fieldName, BinaryUtils.ReadTimestamp, BinaryUtils.TypeTimestamp);
+            return ReadField(fieldName, BinaryUtils.ReadTimestamp, BinaryTypeId.Timestamp);
         }
 
         /** <inheritdoc /> */
         public DateTime? ReadTimestamp()
         {
-            return Read(BinaryUtils.ReadTimestamp, BinaryUtils.TypeTimestamp);
+            return Read(BinaryUtils.ReadTimestamp, BinaryTypeId.Timestamp);
         }
         
         /** <inheritdoc /> */
         public DateTime?[] ReadTimestampArray(string fieldName)
         {
-            return ReadField(fieldName, BinaryUtils.ReadTimestampArray, BinaryUtils.TypeArrayTimestamp);
+            return ReadField(fieldName, BinaryUtils.ReadTimestampArray, BinaryTypeId.ArrayTimestamp);
         }
         
         /** <inheritdoc /> */
         public DateTime?[] ReadTimestampArray()
         {
-            return Read(BinaryUtils.ReadTimestampArray, BinaryUtils.TypeArrayTimestamp);
+            return Read(BinaryUtils.ReadTimestampArray, BinaryTypeId.ArrayTimestamp);
         }
         
         /** <inheritdoc /> */
         public string ReadString(string fieldName)
         {
-            return ReadField(fieldName, BinaryUtils.ReadString, BinaryUtils.TypeString);
+            return ReadField(fieldName, BinaryUtils.ReadString, BinaryTypeId.String);
         }
 
         /** <inheritdoc /> */
         public string ReadString()
         {
-            return Read(BinaryUtils.ReadString, BinaryUtils.TypeString);
+            return Read(BinaryUtils.ReadString, BinaryTypeId.String);
         }
 
         /** <inheritdoc /> */
         public string[] ReadStringArray(string fieldName)
         {
-            return ReadField(fieldName, r => BinaryUtils.ReadArray<string>(r, false), BinaryUtils.TypeArrayString);
+            return ReadField(fieldName, r => BinaryUtils.ReadArray<string>(r, false), BinaryTypeId.ArrayString);
         }
 
         /** <inheritdoc /> */
         public string[] ReadStringArray()
         {
-            return Read(r => BinaryUtils.ReadArray<string>(r, false), BinaryUtils.TypeArrayString);
+            return Read(r => BinaryUtils.ReadArray<string>(r, false), BinaryTypeId.ArrayString);
         }
 
         /** <inheritdoc /> */
         public Guid? ReadGuid(string fieldName)
         {
-            return ReadField<Guid?>(fieldName, r => BinaryUtils.ReadGuid(r), BinaryUtils.TypeGuid);
+            return ReadField<Guid?>(fieldName, r => BinaryUtils.ReadGuid(r), BinaryTypeId.Guid);
         }
 
         /** <inheritdoc /> */
         public Guid? ReadGuid()
         {
-            return Read<Guid?>(r => BinaryUtils.ReadGuid(r), BinaryUtils.TypeGuid);
+            return Read<Guid?>(r => BinaryUtils.ReadGuid(r), BinaryTypeId.Guid);
         }
 
         /** <inheritdoc /> */
         public Guid?[] ReadGuidArray(string fieldName)
         {
-            return ReadField(fieldName, r => BinaryUtils.ReadArray<Guid?>(r, false), BinaryUtils.TypeArrayGuid);
+            return ReadField(fieldName, r => BinaryUtils.ReadArray<Guid?>(r, false), BinaryTypeId.ArrayGuid);
         }
 
         /** <inheritdoc /> */
         public Guid?[] ReadGuidArray()
         {
-            return Read(r => BinaryUtils.ReadArray<Guid?>(r, false), BinaryUtils.TypeArrayGuid);
+            return Read(r => BinaryUtils.ReadArray<Guid?>(r, false), BinaryTypeId.ArrayGuid);
         }
 
         /** <inheritdoc /> */
@@ -400,9 +399,11 @@ namespace Apache.Ignite.Core.Impl.Binary
                 case BinaryUtils.HdrNull:
                     return default(T);
 
-                case BinaryUtils.TypeEnum:
-                    // Never read enums in binary mode when reading a field (we do not support half-binary objects)
-                    return ReadEnum0<T>(this, false);  
+                case BinaryTypeId.Enum:
+                    return ReadEnum0<T>(this, _mode == BinaryMode.ForceBinary);
+
+                case BinaryTypeId.BinaryEnum:
+                    return ReadEnum0<T>(this, _mode != BinaryMode.Deserialize);
 
                 case BinaryUtils.HdrFull:
                     // Unregistered enum written as serializable
@@ -411,22 +412,22 @@ namespace Apache.Ignite.Core.Impl.Binary
                     return ReadObject<T>(); 
 
                 default:
-                    throw new BinaryObjectException(
-                        string.Format("Invalid header on enum deserialization. Expected: {0} or {1} but was: {2}",
-                            BinaryUtils.TypeEnum, BinaryUtils.HdrFull, hdr));
+                    throw new BinaryObjectException(string.Format(
+                        "Invalid header on enum deserialization. Expected: {0} or {1} or {2} but was: {3}",
+                            BinaryTypeId.Enum, BinaryTypeId.BinaryEnum, BinaryUtils.HdrFull, hdr));
             }
         }
 
         /** <inheritdoc /> */
         public T[] ReadEnumArray<T>(string fieldName)
         {
-            return ReadField(fieldName, r => BinaryUtils.ReadArray<T>(r, true), BinaryUtils.TypeArrayEnum);
+            return ReadField(fieldName, r => BinaryUtils.ReadArray<T>(r, true), BinaryTypeId.ArrayEnum);
         }
 
         /** <inheritdoc /> */
         public T[] ReadEnumArray<T>()
         {
-            return Read(r => BinaryUtils.ReadArray<T>(r, true), BinaryUtils.TypeArrayEnum);
+            return Read(r => BinaryUtils.ReadArray<T>(r, true), BinaryTypeId.ArrayEnum);
         }
 
         /** <inheritdoc /> */
@@ -450,13 +451,13 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** <inheritdoc /> */
         public T[] ReadArray<T>(string fieldName)
         {
-            return ReadField(fieldName, r => BinaryUtils.ReadArray<T>(r, true), BinaryUtils.TypeArray);
+            return ReadField(fieldName, r => BinaryUtils.ReadArray<T>(r, true), BinaryTypeId.Array);
         }
 
         /** <inheritdoc /> */
         public T[] ReadArray<T>()
         {
-            return Read(r => BinaryUtils.ReadArray<T>(r, true), BinaryUtils.TypeArray);
+            return Read(r => BinaryUtils.ReadArray<T>(r, true), BinaryTypeId.Array);
         }
 
         /** <inheritdoc /> */
@@ -475,13 +476,13 @@ namespace Apache.Ignite.Core.Impl.Binary
         public ICollection ReadCollection(string fieldName, Func<int, ICollection> factory, 
             Action<ICollection, object> adder)
         {
-            return ReadField(fieldName, r => BinaryUtils.ReadCollection(r, factory, adder), BinaryUtils.TypeCollection);
+            return ReadField(fieldName, r => BinaryUtils.ReadCollection(r, factory, adder), BinaryTypeId.Collection);
         }
 
         /** <inheritdoc /> */
         public ICollection ReadCollection(Func<int, ICollection> factory, Action<ICollection, object> adder)
         {
-            return Read(r => BinaryUtils.ReadCollection(r, factory, adder), BinaryUtils.TypeCollection);
+            return Read(r => BinaryUtils.ReadCollection(r, factory, adder), BinaryTypeId.Collection);
         }
 
         /** <inheritdoc /> */
@@ -499,13 +500,13 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** <inheritdoc /> */
         public IDictionary ReadDictionary(string fieldName, Func<int, IDictionary> factory)
         {
-            return ReadField(fieldName, r => BinaryUtils.ReadDictionary(r, factory), BinaryUtils.TypeDictionary);
+            return ReadField(fieldName, r => BinaryUtils.ReadDictionary(r, factory), BinaryTypeId.Dictionary);
         }
 
         /** <inheritdoc /> */
         public IDictionary ReadDictionary(Func<int, IDictionary> factory)
         {
-            return Read(r => BinaryUtils.ReadDictionary(r, factory), BinaryUtils.TypeDictionary);
+            return Read(r => BinaryUtils.ReadDictionary(r, factory), BinaryTypeId.Dictionary);
         }
 
         /// <summary>
@@ -521,13 +522,17 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Deserialize object.
         /// </summary>
+        /// <param name="typeOverride">The type override.
+        /// There can be multiple versions of the same type when peer assembly loading is enabled.
+        /// Only first one is registered in Marshaller.
+        /// This parameter specifies exact type to be instantiated.</param>
         /// <returns>Deserialized object.</returns>
-        public T Deserialize<T>()
+        public T Deserialize<T>(Type typeOverride = null)
         {
             T res;
 
             // ReSharper disable once CompareNonConstrainedGenericWithNull
-            if (!TryDeserialize(out res) && default(T) != null)
+            if (!TryDeserialize(out res, typeOverride) && default(T) != null)
                 throw new BinaryObjectException(string.Format("Invalid data on deserialization. " +
                     "Expected: '{0}' But was: null", typeof (T)));
 
@@ -537,8 +542,15 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Deserialize object.
         /// </summary>
-        /// <returns>Deserialized object.</returns>
-        public bool TryDeserialize<T>(out T res)
+        /// <param name="res">Deserialized object.</param>
+        /// <param name="typeOverride">The type override.
+        /// There can be multiple versions of the same type when peer assembly loading is enabled.
+        /// Only first one is registered in Marshaller.
+        /// This parameter specifies exact type to be instantiated.</param>
+        /// <returns>
+        /// Deserialized object.
+        /// </returns>
+        public bool TryDeserialize<T>(out T res, Type typeOverride = null)
         {
             int pos = Stream.Position;
 
@@ -556,21 +568,26 @@ namespace Apache.Ignite.Core.Impl.Binary
                     return false;
 
                 case BinaryUtils.HdrHnd:
-                    res = ReadHandleObject<T>(pos);
+                    res = ReadHandleObject<T>(pos, typeOverride);
 
                     return true;
 
                 case BinaryUtils.HdrFull:
-                    res = ReadFullObject<T>(pos);
+                    res = ReadFullObject<T>(pos, typeOverride);
 
                     return true;
 
-                case BinaryUtils.TypeBinary:
+                case BinaryTypeId.Binary:
                     res = ReadBinaryObject<T>(doDetach);
 
                     return true;
 
-                case BinaryUtils.TypeEnum:
+                case BinaryTypeId.Enum:
+                    res = ReadEnum0<T>(this, _mode == BinaryMode.ForceBinary);
+
+                    return true;
+
+                case BinaryTypeId.BinaryEnum:
                     res = ReadEnum0<T>(this, _mode != BinaryMode.Deserialize);
 
                     return true;
@@ -581,7 +598,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             throw new BinaryObjectException("Invalid header on deserialization [pos=" + pos + ", hdr=" + hdr + ']');
         }
-                
+
         /// <summary>
         /// Gets the flag indicating that there is custom type information in raw region.
         /// </summary>
@@ -655,8 +672,14 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Reads the full object.
         /// </summary>
+        /// <param name="pos">The position.</param>
+        /// <param name="typeOverride">The type override.
+        /// There can be multiple versions of the same type when peer assembly loading is enabled.
+        /// Only first one is registered in Marshaller.
+        /// This parameter specifies exact type to be instantiated.</param>
+        /// <returns>Resulting object</returns>
         [SuppressMessage("Microsoft.Performance", "CA1804:RemoveUnusedLocals", MessageId = "hashCode")]
-        private T ReadFullObject<T>(int pos)
+        private T ReadFullObject<T>(int pos, Type typeOverride)
         {
             var hdr = BinaryObjectHeader.Read(Stream, pos);
 
@@ -693,25 +716,18 @@ namespace Apache.Ignite.Core.Impl.Binary
                 else
                 {
                     // Find descriptor.
-                    var desc = hdr.TypeId == BinaryUtils.TypeUnregistered
-                        ? _marsh.GetDescriptor(Type.GetType(ReadString(), true))
-                        : _marsh.GetDescriptor(hdr.IsUserType, hdr.TypeId, true);
+                    var desc = hdr.TypeId == BinaryTypeId.Unregistered
+                        ? _marsh.GetDescriptor(ReadUnregisteredType(typeOverride))
+                        : _marsh.GetDescriptor(hdr.IsUserType, hdr.TypeId, true, null, typeOverride);
 
                     // Instantiate object. 
                     if (desc.Type == null)
                     {
-                        if (desc is BinarySurrogateTypeDescriptor)
-                        {
-                            throw new BinaryObjectException(string.Format(
-                                "Unknown type ID: {0}. " +
-                                "This usually indicates missing BinaryConfiguration. " +
-                                "Make sure that all nodes have the same BinaryConfiguration.", hdr.TypeId));
-                        }
-
                         throw new BinaryObjectException(string.Format(
                             "No matching type found for object [typeId={0}, typeName={1}]. " +
                             "This usually indicates that assembly with specified type is not loaded on a node. " +
-                            "When using Apache.Ignite.exe, make sure to load assemblies with -assembly parameter.",
+                            "When using Apache.Ignite.exe, make sure to load assemblies with -assembly parameter. " +
+                            "Alternatively, set IgniteConfiguration.PeerAssemblyLoadingEnabled to true.",
                             desc.TypeId, desc.TypeName));
                     }
 
@@ -726,7 +742,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                     _frame.Raw = false;
 
                     // Read object.
-                    var obj = desc.Serializer.ReadBinary<T>(this, desc, pos);
+                    var obj = desc.Serializer.ReadBinary<T>(this, desc, pos, typeOverride);
 
                     _frame.Struct.UpdateReaderStructure();
 
@@ -744,6 +760,16 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
+        /// Reads the unregistered type.
+        /// </summary>
+        private Type ReadUnregisteredType(Type knownType)
+        {
+            var typeName = ReadString();  // Must read always.
+
+            return knownType ?? Marshaller.ResolveType(typeName);
+        }
+
+        /// <summary>
         /// Sets the current schema.
         /// </summary>
         private void SetCurSchema(IBinaryTypeDescriptor desc)
@@ -756,7 +782,8 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                 if (_frame.Schema == null)
                 {
-                    _frame.Schema = ReadSchema(desc.TypeId);
+                    _frame.Schema = 
+                        BinaryObjectSchemaSerializer.GetFieldIds(_frame.Hdr, Marshaller.Ignite, Stream, _frame.Pos);
 
                     desc.Schema.Add(_frame.Hdr.SchemaId, _frame.Schema);
                 }
@@ -768,52 +795,9 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
-        /// Reads the schema.
-        /// </summary>
-        private int[] ReadSchema(int typeId)
-        {
-            if (_frame.Hdr.IsCompactFooter)
-            {
-                // Get schema from Java
-                var ignite = Marshaller.Ignite;
-
-                Debug.Assert(typeId != BinaryUtils.TypeUnregistered);
-
-                var schema = ignite == null
-                    ? null
-                    : ignite.BinaryProcessor.GetSchema(_frame.Hdr.TypeId, _frame.Hdr.SchemaId);
-
-                if (schema == null)
-                    throw new BinaryObjectException("Cannot find schema for object with compact footer [" +
-                        "typeId=" + typeId + ", schemaId=" + _frame.Hdr.SchemaId + ']');
-
-                return schema;
-            }
-
-            var pos = Stream.Position;
-
-            Stream.Seek(_frame.Pos + _frame.Hdr.SchemaOffset, SeekOrigin.Begin);
-
-            var count = _frame.Hdr.SchemaFieldCount;
-
-            var offsetSize = _frame.Hdr.SchemaFieldOffsetSize;
-
-            var res = new int[count];
-
-            for (int i = 0; i < count; i++)
-            {
-                res[i] = Stream.ReadInt();
-                Stream.Seek(offsetSize, SeekOrigin.Current);
-            }
-
-            Stream.Seek(pos, SeekOrigin.Begin);
-
-            return res;
-        }
-        /// <summary>
         /// Reads the handle object.
         /// </summary>
-        private T ReadHandleObject<T>(int pos)
+        private T ReadHandleObject<T>(int pos, Type typeOverride)
         {
             // Get handle position.
             int hndPos = pos - Stream.ReadInt();
@@ -831,7 +815,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                         // No such handler, i.e. we trying to deserialize inner object before deserializing outer.
                         Stream.Seek(hndPos, SeekOrigin.Begin);
 
-                        hndObj = Deserialize<T>();
+                        hndObj = Deserialize<T>(typeOverride);
                     }
 
                     // Notify builder that we deserialized object on other location.
@@ -915,7 +899,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                 int pos;
 
-                if (!_frame.SchemaMap.TryGetValue(fieldId, out pos))
+                if (_frame.SchemaMap == null || !_frame.SchemaMap.TryGetValue(fieldId, out pos))
                     return false;
 
                 Stream.Seek(pos + _frame.Pos, SeekOrigin.Begin);
@@ -975,7 +959,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 return default(T);
 
             if (hdr == BinaryUtils.HdrHnd)
-                return ReadHandleObject<T>(Stream.Position - 1);
+                return ReadHandleObject<T>(Stream.Position - 1, null);
 
             if (expHdr != hdr)
                 throw new BinaryObjectException(string.Format("Invalid header on deserialization. " +
@@ -994,7 +978,9 @@ namespace Apache.Ignite.Core.Impl.Binary
             var enumValue = reader.ReadInt();
 
             if (!keepBinary)
+            {
                 return BinaryUtils.GetEnumValue<T>(enumValue, enumType, reader.Marshaller);
+            }
 
             return TypeCaster<T>.Cast(new BinaryEnum(enumType, enumValue, reader.Marshaller));
         }

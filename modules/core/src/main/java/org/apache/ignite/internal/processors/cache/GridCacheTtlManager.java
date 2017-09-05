@@ -23,6 +23,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
 import org.apache.ignite.internal.util.GridConcurrentSkipListSet;
 import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
 import org.apache.ignite.internal.util.typedef.X;
@@ -38,7 +39,13 @@ import org.jsr166.LongAdder8;
  */
 public class GridCacheTtlManager extends GridCacheManagerAdapter {
     /** Entries pending removal. */
-    private  GridConcurrentSkipListSetEx pendingEntries;
+    private GridConcurrentSkipListSetEx pendingEntries;
+
+    /** */
+    private boolean eagerTtlEnabled;
+
+    /** */
+    private GridCacheContext dhtCtx;
 
     /** */
     private final IgniteInClosure2X<GridCacheEntryEx, GridCacheVersion> expireC =
@@ -70,18 +77,29 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
 
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
+        dhtCtx = cctx.isNear() ? cctx.near().dht().context() : cctx;
+
         boolean cleanupDisabled = cctx.kernalContext().isDaemon() ||
             !cctx.config().isEagerTtl() ||
-            CU.isAtomicsCache(cctx.name()) ||
             CU.isUtilityCache(cctx.name()) ||
+            cctx.dataStructuresCache() ||
             (cctx.kernalContext().clientNode() && cctx.config().getNearConfiguration() == null);
 
         if (cleanupDisabled)
             return;
 
+        eagerTtlEnabled = true;
+
         cctx.shared().ttl().register(this);
 
         pendingEntries = (!cctx.isLocal() && cctx.config().getNearConfiguration() != null) ? new GridConcurrentSkipListSetEx() : null;
+    }
+
+    /**
+     * @return {@code True} if eager ttl is enabled for cache.
+     */
+    public boolean eagerTtlEnabled() {
+        return eagerTtlEnabled;
     }
 
     /** {@inheritDoc} */
@@ -153,7 +171,6 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
 
         try {
             if (pendingEntries != null) {
-                //todo may be not only for near? may be for local too.
                 GridNearCacheAdapter nearCache = cctx.near();
 
                 GridCacheVersion obsoleteVer = null;
@@ -178,7 +195,7 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
                 }
             }
 
-            boolean more = cctx.offheap().expire(expireC, amount);
+            boolean more = cctx.offheap().expire(dhtCtx, expireC, amount);
 
             if (more)
                 return true;

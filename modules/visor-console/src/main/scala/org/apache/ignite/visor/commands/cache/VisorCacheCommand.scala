@@ -408,9 +408,9 @@ class VisorCacheCommand {
                             formatDouble(nm.getCurrentCpuLoad * 100d) + " %",
                             X.timeSpan2HMSM(nm.getUpTime),
                             (
-                                "Total: " + (cm.getKeySize + cm.offHeapEntriesCount()),
-                                "  Heap: " + cm.getKeySize,
-                                "  Off-Heap: " + cm.offHeapEntriesCount(),
+                                "Total: " + (cm.getHeapEntriesCount + cm.getOffHeapEntriesCount()),
+                                "  Heap: " + cm.getHeapEntriesCount,
+                                "  Off-Heap: " + cm.getOffHeapEntriesCount(),
                                 "  Off-Heap Memory: " + formatMemory(cm.getOffHeapAllocatedSize)
                             ),
                             (
@@ -837,6 +837,8 @@ object VisorCacheCommand {
 
         cacheT #= ("Name", "Value")
 
+        cacheT += ("Group", cfg.getGroupName)
+        cacheT += ("Dynamic Deployment ID", cfg.getDynamicDeploymentId)
         cacheT += ("Mode", cfg.getMode)
         cacheT += ("Atomicity Mode", safe(cfg.getAtomicityMode))
         cacheT += ("Statistic Enabled", bool2Str(cfg.isStatisticsEnabled))

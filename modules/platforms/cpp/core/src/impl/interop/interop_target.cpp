@@ -32,14 +32,24 @@ namespace ignite
         namespace interop
         {
             InteropTarget::InteropTarget(SharedPointer<IgniteEnvironment> env, jobject javaRef) :
-                env(env), javaRef(javaRef)
+                env(env), javaRef(javaRef), skipJavaRefRelease(false)
+            {
+                // No-op.
+            }
+
+            InteropTarget::InteropTarget(SharedPointer<IgniteEnvironment> env, jobject javaRef, 
+                bool skipJavaRefRelease) :
+                env(env), javaRef(javaRef), skipJavaRefRelease(skipJavaRefRelease)
             {
                 // No-op.
             }
 
             InteropTarget::~InteropTarget()
             {
-                JniContext::Release(javaRef);
+                if (!skipJavaRefRelease) 
+                {
+                    JniContext::Release(javaRef);
+                }
             }
 
             int64_t InteropTarget::WriteTo(InteropMemory* mem, InputOperation& inOp, IgniteError& err)
@@ -214,6 +224,24 @@ namespace ignite
                 }
 
                 return OperationResult::AI_ERROR;
+            }
+
+            jobject InteropTarget::InStreamOutObject(int32_t opType, InteropMemory& outInMem, IgniteError& err)
+            {
+                JniErrorInfo jniErr;
+
+                int64_t outInPtr = outInMem.PointerLong();
+
+                if (outInPtr)
+                {
+                    jobject res = env.Get()->Context()->TargetInStreamOutObject(javaRef, opType, outInPtr, &jniErr);
+
+                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
+
+                    return res;
+                }
+
+                return 0;
             }
 
             int64_t InteropTarget::OutInOpLong(int32_t opType, int64_t val, IgniteError& err)

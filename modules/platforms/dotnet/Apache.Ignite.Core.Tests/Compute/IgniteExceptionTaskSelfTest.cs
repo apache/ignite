@@ -168,7 +168,8 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             _mode = ErrorMode.RmtJobErrNotMarshalable;
 
-            Assert.Throws<SerializationException>(() => Execute());
+            var ex = Assert.Throws<AggregateException>(() => Execute());
+            Assert.IsInstanceOf<SerializationException>(ex.InnerException);
         }
 
         /// <summary>
@@ -322,7 +323,10 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             JobErrs.Clear();
 
-            return Assert.Catch(() => Grid1.GetCompute().Execute(new Task()));
+            var ex = Assert.Throws<AggregateException>(() => Grid1.GetCompute().Execute(new Task()));
+
+            Assert.IsNotNull(ex.InnerException);
+            return ex.InnerException;
         }
 
         /// <summary>

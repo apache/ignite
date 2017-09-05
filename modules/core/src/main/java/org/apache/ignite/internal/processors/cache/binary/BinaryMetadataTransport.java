@@ -30,8 +30,10 @@ import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryUtils;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.discovery.CustomEventListener;
@@ -40,6 +42,7 @@ import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
@@ -75,6 +78,9 @@ final class BinaryMetadataTransport {
     private final ConcurrentMap<Integer, BinaryMetadataHolder> metaLocCache;
 
     /** */
+    private final BinaryMetadataFileStore metadataFileStore;
+
+    /** */
     private final Queue<MetadataUpdateResultFuture> unlabeledFutures = new ConcurrentLinkedQueue<>();
 
     /** */
@@ -91,11 +97,19 @@ final class BinaryMetadataTransport {
 
     /**
      * @param metaLocCache Metadata locale cache.
+     * @param metadataFileStore File store for binary metadata.
      * @param ctx Context.
      * @param log Logger.
      */
-    BinaryMetadataTransport(ConcurrentMap<Integer, BinaryMetadataHolder> metaLocCache, final GridKernalContext ctx, IgniteLogger log) {
+    BinaryMetadataTransport(
+        ConcurrentMap<Integer, BinaryMetadataHolder> metaLocCache,
+        BinaryMetadataFileStore metadataFileStore,
+        final GridKernalContext ctx,
+        IgniteLogger log
+    ) {
         this.metaLocCache = metaLocCache;
+
+        this.metadataFileStore = metadataFileStore;
 
         this.ctx = ctx;
 
@@ -380,7 +394,7 @@ final class BinaryMetadataTransport {
      * @param pendingVer Pending version.
      * @param fut Future.
      */
-    private void initSyncFor(int typeId, int pendingVer, MetadataUpdateResultFuture fut) {
+    private void initSyncFor(int typeId, int pendingVer, final MetadataUpdateResultFuture fut) {
         if (stopping) {
             fut.onDone(MetadataUpdateResult.createUpdateDisabledResult());
 
@@ -389,7 +403,15 @@ final class BinaryMetadataTransport {
 
         SyncKey key = new SyncKey(typeId, pendingVer);
 
-        syncMap.put(key, fut);
+        MetadataUpdateResultFuture oldFut = syncMap.putIfAbsent(key, fut);
+
+        if (oldFut != null) {
+            oldFut.listen(new IgniteInClosure<IgniteInternalFuture<MetadataUpdateResult>>() {
+                @Override public void apply(IgniteInternalFuture<MetadataUpdateResult> doneFut) {
+                    fut.onDone(doneFut.result(), doneFut.error());
+                }
+            });
+        }
 
         fut.key(key);
     }
@@ -441,6 +463,8 @@ final class BinaryMetadataTransport {
                 }
 
                 metaLocCache.put(typeId, new BinaryMetadataHolder(holder.metadata(), holder.pendingVersion(), newAcceptedVer));
+
+                metadataFileStore.saveMetadata(holder.metadata());
             }
 
             for (BinaryMetadataUpdatedListener lsnr : binaryUpdatedLsnrs)
@@ -560,7 +584,7 @@ final class BinaryMetadataTransport {
         }
 
         /** {@inheritDoc} */
-        @Override public void onMessage(UUID nodeId, Object msg) {
+        @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
             assert msg instanceof MetadataRequestMessage : msg;
 
             MetadataRequestMessage msg0 = (MetadataRequestMessage) msg;
@@ -589,6 +613,10 @@ final class BinaryMetadataTransport {
             try {
                 ioMgr.sendToGridTopic(nodeId, GridTopic.TOPIC_METADATA_REQ, resp, SYSTEM_POOL);
             }
+            catch (ClusterTopologyCheckedException e) {
+                if (log.isDebugEnabled())
+                    log.debug("Failed to send metadata response, node failed: " + nodeId);
+            }
             catch (IgniteCheckedException e) {
                 U.error(log, "Failed to send up-to-date metadata response.", e);
             }
@@ -601,7 +629,7 @@ final class BinaryMetadataTransport {
     private final class MetadataResponseListener implements GridMessageListener {
 
         /** {@inheritDoc} */
-        @Override public void onMessage(UUID nodeId, Object msg) {
+        @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
             assert msg instanceof MetadataResponseMessage : msg;
 
             MetadataResponseMessage msg0 = (MetadataResponseMessage) msg;

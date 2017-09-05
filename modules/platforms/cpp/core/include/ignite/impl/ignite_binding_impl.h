@@ -52,6 +52,8 @@ namespace ignite
                     CACHE_ENTRY_FILTER_CREATE = 2,
 
                     CACHE_ENTRY_FILTER_APPLY = 3,
+
+                    COMPUTE_JOB_CREATE = 4,
                 };
             };
 

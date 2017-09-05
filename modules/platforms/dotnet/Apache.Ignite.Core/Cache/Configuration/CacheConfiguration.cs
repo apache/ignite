@@ -25,8 +25,8 @@ namespace Apache.Ignite.Core.Cache.Configuration
     using System.ComponentModel;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
+    using System.IO;
     using System.Linq;
-    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Affinity;
     using Apache.Ignite.Core.Cache.Affinity.Rendezvous;
@@ -34,11 +34,14 @@ namespace Apache.Ignite.Core.Cache.Configuration
     using Apache.Ignite.Core.Cache.Expiry;
     using Apache.Ignite.Core.Cache.Store;
     using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Cache.Affinity;
     using Apache.Ignite.Core.Impl.Cache.Expiry;
     using Apache.Ignite.Core.Log;
     using Apache.Ignite.Core.Plugin.Cache;
+    using BinaryReader = Apache.Ignite.Core.Impl.Binary.BinaryReader;
+    using BinaryWriter = Apache.Ignite.Core.Impl.Binary.BinaryWriter;
 
     /// <summary>
     /// Defines grid cache configuration.
@@ -156,7 +159,9 @@ namespace Apache.Ignite.Core.Cache.Configuration
             KeepBinaryInStore = DefaultKeepVinaryInStore;
             LoadPreviousValue = DefaultLoadPreviousValue;
             LockTimeout = DefaultLockTimeout;
+#pragma warning disable 618
             LongQueryWarningTimeout = DefaultLongQueryWarningTimeout;
+#pragma warning restore 618
             MaxConcurrentAsyncOperations = DefaultMaxConcurrentAsyncOperations;
             ReadFromBackup = DefaultReadFromBackup;
             RebalanceBatchSize = DefaultRebalanceBatchSize;
@@ -197,13 +202,46 @@ namespace Apache.Ignite.Core.Cache.Configuration
         }
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="CacheConfiguration"/> class,
+        /// performing a deep copy of specified cache configuration.
+        /// </summary>
+        /// <param name="other">The other configuration to perfrom deep copy from.</param>
+        public CacheConfiguration(CacheConfiguration other)
+        {
+            if (other != null)
+            {
+                using (var stream = IgniteManager.Memory.Allocate().GetStream())
+                {
+                    other.Write(BinaryUtils.Marshaller.StartMarshal(stream));
+
+                    stream.SynchronizeOutput();
+                    stream.Seek(0, SeekOrigin.Begin);
+
+                    Read(BinaryUtils.Marshaller.StartUnmarshal(stream));
+                }
+
+                // Plugins should be copied directly.
+                PluginConfigurations = other.PluginConfigurations;
+            }
+        }
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="CacheConfiguration"/> class.
         /// </summary>
         /// <param name="reader">The reader.</param>
-        internal CacheConfiguration(IBinaryRawReader reader)
+        internal CacheConfiguration(BinaryReader reader)
+        {
+            Read(reader);
+        }
+
+        /// <summary>
+        /// Reads data into this instance from the specified reader.
+        /// </summary>
+        /// <param name="reader">The reader.</param>
+        private void Read(BinaryReader reader)
         {
             // Make sure system marshaller is used.
-            Debug.Assert(((BinaryReader) reader).Marshaller == BinaryUtils.Marshaller);
+            Debug.Assert(reader.Marshaller == BinaryUtils.Marshaller);
 
             AtomicityMode = (CacheAtomicityMode) reader.ReadInt();
             Backups = reader.ReadInt();
@@ -214,7 +252,9 @@ namespace Apache.Ignite.Core.Cache.Configuration
             KeepBinaryInStore = reader.ReadBoolean();
             LoadPreviousValue = reader.ReadBoolean();
             LockTimeout = reader.ReadLongAsTimespan();
+#pragma warning disable 618
             LongQueryWarningTimeout = reader.ReadLongAsTimespan();
+#pragma warning restore 618
             MaxConcurrentAsyncOperations = reader.ReadInt();
             Name = reader.ReadString();
             ReadFromBackup = reader.ReadBoolean();
@@ -236,10 +276,13 @@ namespace Apache.Ignite.Core.Cache.Configuration
             EnableStatistics = reader.ReadBoolean();
             MemoryPolicyName = reader.ReadString();
             PartitionLossPolicy = (PartitionLossPolicy) reader.ReadInt();
+            GroupName = reader.ReadString();
             CacheStoreFactory = reader.ReadObject<IFactory<ICacheStore>>();
 
             var count = reader.ReadInt();
-            QueryEntities = count == 0 ? null : Enumerable.Range(0, count).Select(x => new QueryEntity(reader)).ToList();
+            QueryEntities = count == 0
+                ? null
+                : Enumerable.Range(0, count).Select(x => new QueryEntity(reader)).ToList();
 
             NearConfiguration = reader.ReadBoolean() ? new NearCacheConfiguration(reader) : null;
 
@@ -248,19 +291,35 @@ namespace Apache.Ignite.Core.Cache.Configuration
             ExpiryPolicyFactory = ExpiryPolicySerializer.ReadPolicyFactory(reader);
 
             count = reader.ReadInt();
-            PluginConfigurations = count == 0
-                ? null
-                : Enumerable.Range(0, count).Select(x => reader.ReadObject<ICachePluginConfiguration>()).ToList();
+
+            if (count > 0)
+            {
+                PluginConfigurations = new List<ICachePluginConfiguration>(count);
+                for (int i = 0; i < count; i++)
+                {
+                    if (reader.ReadBoolean())
+                    {
+                        // FactoryId-based plugin: skip.
+                        var size = reader.ReadInt();
+                        reader.Stream.Seek(size, SeekOrigin.Current);
+                    }
+                    else
+                    {
+                        // Pure .NET plugin.
+                        PluginConfigurations.Add(reader.ReadObject<ICachePluginConfiguration>());
+                    }
+                }
+            }
         }
 
         /// <summary>
         /// Writes this instance to the specified writer.
         /// </summary>
         /// <param name="writer">The writer.</param>
-        internal void Write(IBinaryRawWriter writer)
+        internal void Write(BinaryWriter writer)
         {
             // Make sure system marshaller is used.
-            Debug.Assert(((BinaryWriter) writer).Marshaller == BinaryUtils.Marshaller);
+            Debug.Assert(writer.Marshaller == BinaryUtils.Marshaller);
 
             writer.WriteInt((int) AtomicityMode);
             writer.WriteInt(Backups);
@@ -271,7 +330,9 @@ namespace Apache.Ignite.Core.Cache.Configuration
             writer.WriteBoolean(KeepBinaryInStore);
             writer.WriteBoolean(LoadPreviousValue);
             writer.WriteLong((long) LockTimeout.TotalMilliseconds);
+#pragma warning disable 618
             writer.WriteLong((long) LongQueryWarningTimeout.TotalMilliseconds);
+#pragma warning restore 618
             writer.WriteInt(MaxConcurrentAsyncOperations);
             writer.WriteString(Name);
             writer.WriteBoolean(ReadFromBackup);
@@ -293,6 +354,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
             writer.WriteBoolean(EnableStatistics);
             writer.WriteString(MemoryPolicyName);
             writer.WriteInt((int) PartitionLossPolicy);
+            writer.WriteString(GroupName);
             writer.WriteObject(CacheStoreFactory);
 
             if (QueryEntities != null)
@@ -336,7 +398,13 @@ namespace Apache.Ignite.Core.Cache.Configuration
                     {
                         writer.WriteBoolean(true);
                         writer.WriteInt(cachePlugin.CachePluginConfigurationClosureFactoryId.Value);
+
+                        int pos = writer.Stream.Position;
+                        writer.WriteInt(0);  // Reserve size.
+
                         cachePlugin.WriteBinary(writer);
+
+                        writer.Stream.WriteInt(pos, writer.Stream.Position - pos);  // Write size.
                     }
                     else
                     {
@@ -536,8 +604,11 @@ namespace Apache.Ignite.Core.Cache.Configuration
 
         /// <summary>
         /// Gets or sets the timeout after which long query warning will be printed.
+        /// <para />
+        /// This property is obsolete, use <see cref="IgniteConfiguration.LongQueryWarningTimeout"/> instead.
         /// </summary>
         [DefaultValue(typeof(TimeSpan), "00:00:03")]
+        [Obsolete("Use IgniteConfiguration.LongQueryWarningTimeout instead.")]
         public TimeSpan LongQueryWarningTimeout { get; set; }
 
         /// <summary>
@@ -643,5 +714,17 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// </summary>
         [DefaultValue(DefaultPartitionLossPolicy)]
         public PartitionLossPolicy PartitionLossPolicy { get; set; }
+
+        /// <summary>
+        /// Gets or sets the cache group name. Caches with the same group name share single underlying 'physical'
+        /// cache (partition set), but are logically isolated. 
+        /// <para />
+        /// Since underlying cache is shared, the following configuration properties should be the same within group:
+        /// <see cref="AffinityFunction"/>, <see cref="CacheMode"/>, <see cref="PartitionLossPolicy"/>,
+        /// <see cref="MemoryPolicyName"/>
+        /// <para />
+        /// Grouping caches reduces overall overhead, since internal data structures are shared.
+        /// </summary>
+        public string GroupName { get;set; }
     }
 }

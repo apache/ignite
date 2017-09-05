@@ -16,10 +16,6 @@
 
 .wch-demo-toggle(ng-controller='demoController')
     button.btn-ignite.btn-ignite--success(
-        ng-if='IgniteDemoMode'
-        ng-click='closeDemo()'
-    ) Close Demo
-    button.btn-ignite.btn-ignite--success(
         ng-if='!IgniteDemoMode'
         ng-click='startDemo()'
     ) Start Demo
@@ -34,7 +30,6 @@ ignite-cluster-select.wch-nav-item(ng-if='!IgniteDemoMode')
         data-placement='bottom-right'
         data-trigger='hover focus'
         data-container='self'
-        data-animation=''
     )
         span {{$root.user.firstName}} {{$root.user.lastName}}
             span.caret

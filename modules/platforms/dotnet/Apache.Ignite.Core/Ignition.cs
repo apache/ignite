@@ -84,7 +84,6 @@ namespace Apache.Ignite.Core
         [SuppressMessage("Microsoft.Performance", "CA1810:InitializeReferenceTypeStaticFieldsInline")]
         static Ignition()
         {
-            AppDomain.CurrentDomain.AssemblyResolve += CurrentDomain_AssemblyResolve;
             AppDomain.CurrentDomain.DomainUnload += CurrentDomain_DomainUnload;
         }
 
@@ -124,7 +123,7 @@ namespace Apache.Ignite.Core
         }
 
         /// <summary>
-        /// Reads <see cref="IgniteConfiguration"/> from application configuration 
+        /// Reads <see cref="IgniteConfiguration"/> from application configuration
         /// <see cref="IgniteConfigurationSection"/> with <see cref="ConfigurationSectionName"/>
         /// name and starts Ignite.
         /// </summary>
@@ -240,7 +239,7 @@ namespace Apache.Ignite.Core
                 // 3. Create startup object which will guide us through the rest of the process.
                 _startup = new Startup(cfg, cbs);
 
-                IUnmanagedTarget interopProc = null;
+                PlatformJniTarget interopProc = null;
 
                 try
                 {
@@ -250,11 +249,13 @@ namespace Apache.Ignite.Core
 
                     // 5. At this point start routine is finished. We expect STARTUP object to have all necessary data.
                     var node = _startup.Ignite;
-                    interopProc = node.InteropProcessor;
+                    interopProc = (PlatformJniTarget)node.InteropProcessor;
 
                     var javaLogger = log as JavaLogger;
                     if (javaLogger != null)
-                        javaLogger.SetProcessor(interopProc);
+                    {
+                        javaLogger.SetIgnite(node);
+                    }
 
                     // 6. On-start callback (notify lifecycle components).
                     node.OnStart();
@@ -278,13 +279,13 @@ namespace Apache.Ignite.Core
 
                     // 2. Stop Ignite node if it was started.
                     if (interopProc != null)
-                        UU.IgnitionStop(interopProc.Context, gridName, true);
+                        UU.IgnitionStop(interopProc.Target.Context, gridName, true);
 
                     // 3. Throw error further (use startup error if exists because it is more precise).
                     if (_startup.Error != null)
                     {
                         // Wrap in a new exception to preserve original stack trace.
-                        throw new IgniteException("Failed to start Ignite.NET, check inner exception for details", 
+                        throw new IgniteException("Failed to start Ignite.NET, check inner exception for details",
                             _startup.Error);
                     }
 
@@ -292,10 +293,14 @@ namespace Apache.Ignite.Core
                 }
                 finally
                 {
+                    var ignite = _startup.Ignite;
+
                     _startup = null;
 
-                    if (interopProc != null)
-                        UU.ProcessorReleaseStart(interopProc);
+                    if (ignite != null)
+                    {
+                        ignite.ProcessorReleaseStart();
+                    }
                 }
             }
         }
@@ -461,7 +466,8 @@ namespace Apache.Ignite.Core
                 if (Nodes.ContainsKey(new NodeKey(name)))
                     throw new IgniteException("Ignite with the same name already started: " + name);
 
-                _startup.Ignite = new Ignite(_startup.Configuration, _startup.Name, interopProc, _startup.Marshaller, 
+                _startup.Ignite = new Ignite(_startup.Configuration, _startup.Name,
+                    new PlatformJniTarget(interopProc, _startup.Marshaller), _startup.Marshaller,
                     _startup.LifecycleHandlers, _startup.Callbacks);
             }
             catch (Exception e)
@@ -722,18 +728,7 @@ namespace Apache.Ignite.Core
 
             GC.Collect();
         }
-        
-        /// <summary>
-        /// Handles the AssemblyResolve event of the CurrentDomain control.
-        /// </summary>
-        /// <param name="sender">The source of the event.</param>
-        /// <param name="args">The <see cref="ResolveEventArgs"/> instance containing the event data.</param>
-        /// <returns>Manually resolved assembly, or null.</returns>
-        private static Assembly CurrentDomain_AssemblyResolve(object sender, ResolveEventArgs args)
-        {
-            return LoadedAssembliesResolver.Instance.GetAssembly(args.Name);
-        }
-                
+
         /// <summary>
         /// Handles the DomainUnload event of the CurrentDomain control.
         /// </summary>

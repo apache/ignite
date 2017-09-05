@@ -58,11 +58,6 @@ public interface GridH2RowDescriptor extends GridOffHeapSmartPointerFactory<Grid
     public GridCacheContext<?, ?> context();
 
     /**
-     * @return Cache configuration.
-     */
-    public CacheConfiguration configuration();
-
-    /**
      * Creates new row.
      *
      * @param key Key.
@@ -157,11 +152,6 @@ public interface GridH2RowDescriptor extends GridOffHeapSmartPointerFactory<Grid
      * @throws IgniteCheckedException If failed.
      */
     public Value wrap(Object o, int type) throws IgniteCheckedException;
-
-    /**
-     * @return {@code True} if index should support snapshots.
-     */
-    public boolean snapshotableIndex();
 
     /**
      * Checks if provided column id matches key column or key alias.

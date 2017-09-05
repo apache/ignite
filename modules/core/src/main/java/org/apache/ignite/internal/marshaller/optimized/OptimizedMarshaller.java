@@ -70,7 +70,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_OPTIMIZED_MARSHALL
  * &lt;bean id="grid.custom.cfg" class="org.apache.ignite.configuration.IgniteConfiguration" singleton="true"&gt;
  *     ...
  *     &lt;property name="marshaller"&gt;
- *         &lt;bean class="org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller"&gt;
+ *         &lt;bean class="OptimizedMarshaller"&gt;
  *             &lt;property name="requireSerializable"&gt;true&lt;/property&gt;
  *         &lt;/bean&gt;
  *     &lt;/property&gt;

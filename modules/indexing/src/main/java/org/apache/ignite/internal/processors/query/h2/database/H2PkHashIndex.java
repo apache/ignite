@@ -26,11 +26,10 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
-import org.apache.ignite.internal.util.IgniteTree;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
@@ -44,7 +43,6 @@ import org.h2.result.SortOrder;
 import org.h2.table.Column;
 import org.h2.table.IndexColumn;
 import org.h2.table.TableFilter;
-import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -90,9 +88,9 @@ public class H2PkHashIndex extends GridH2IndexBase {
         IgniteBiPredicate<Object, Object> p = null;
 
         if (f != null) {
-            String spaceName = getTable().spaceName();
+            String cacheName = getTable().cacheName();
 
-            p = f.forSpace(spaceName);
+            p = f.forCache(cacheName);
         }
 
         KeyCacheObject lowerObj = null;
@@ -108,7 +106,7 @@ public class H2PkHashIndex extends GridH2IndexBase {
             List<GridCursor<? extends CacheDataRow>> cursors = new ArrayList<>();
 
             for (IgniteCacheOffheapManager.CacheDataStore store : cctx.offheap().cacheDataStores())
-                cursors.add(store.cursor(lowerObj, upperObj));
+                cursors.add(store.cursor(cctx.cacheId(), lowerObj, upperObj));
 
             return new H2Cursor(new CompositeGridCursor<>(cursors.iterator()), p);
         }
@@ -126,7 +124,7 @@ public class H2PkHashIndex extends GridH2IndexBase {
     @Override public GridH2Row findOne(GridH2Row row) {
         try {
             for (IgniteCacheOffheapManager.CacheDataStore store : cctx.offheap().cacheDataStores()) {
-                CacheDataRow found = store.find(row.key);
+                CacheDataRow found = store.find(cctx, row.key);
 
                 if (found != null)
                     tbl.rowDescriptor().createRow(row.key(), row.partition(), row.value(), row.version(), 0);
@@ -197,11 +195,6 @@ public class H2PkHashIndex extends GridH2IndexBase {
     /** {@inheritDoc} */
     @Override public Cursor findFirstOrLast(Session ses, boolean b) {
         throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override protected IgniteTree doTakeSnapshot() {
-        throw new AssertionError("This method must not be called for PK index");
     }
 
     /**

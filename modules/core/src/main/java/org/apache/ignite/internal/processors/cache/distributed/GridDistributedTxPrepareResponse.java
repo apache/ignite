@@ -55,7 +55,7 @@ public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage
     private int part;
 
     /** */
-    private byte flags;
+    protected byte flags;
 
     /**
      * Empty constructor (required by {@link Externalizable}).

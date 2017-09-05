@@ -43,6 +43,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual("x", res.GetName());
             Assert.AreEqual(0, res.NameStart);
             Assert.AreEqual(0, res.NameEnd);
+            Assert.AreEqual(0, res.FullNameEnd);
             Assert.AreEqual(-1, res.AssemblyStart);
             Assert.AreEqual(-1, res.AssemblyEnd);
             Assert.IsNull(res.Generics);
@@ -52,6 +53,7 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             Assert.AreEqual(7, res.NameStart);
             Assert.AreEqual(9, res.NameEnd);
+            Assert.AreEqual(9, res.FullNameEnd);
             Assert.IsNull(res.Generics);
             Assert.AreEqual(-1, res.AssemblyStart);
 
@@ -60,6 +62,7 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             Assert.AreEqual(7, res.NameStart);
             Assert.AreEqual(9, res.NameEnd);
+            Assert.AreEqual(9, res.FullNameEnd);
             Assert.IsNull(res.Generics);
             Assert.AreEqual(12, res.AssemblyStart);
 
@@ -85,7 +88,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual("List`1", res.GetNameWithNamespace());
             Assert.AreEqual("Int", res.Generics.Single().GetName());
             Assert.AreEqual("Int", res.Generics.Single().GetNameWithNamespace());
-            
+
             // Simple name array.
             res = TypeNameParser.Parse("List`1[[Byte[]]]");
             Assert.AreEqual("List`1", res.GetName());
@@ -224,7 +227,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             CheckType(typeof(int[,,]));
             CheckType(typeof(int[][]));
             CheckType(typeof(int[,,,][,,]));
-            
+
             CheckType(typeof(List<int>[]));
             CheckType(typeof(List<int>[,]));
             CheckType(typeof(List<int>[][]));
@@ -266,6 +269,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             }
 
             Assert.AreEqual(type.FullName.Length + 2, res.AssemblyStart);
+            Assert.AreEqual(type.FullName, res.GetFullName());
         }
 
         private class Nested

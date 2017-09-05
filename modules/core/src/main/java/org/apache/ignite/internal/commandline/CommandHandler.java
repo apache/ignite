@@ -36,7 +36,7 @@ public class CommandHandler {
         String port = "11212";
         Boolean activate = null;
 
-        if (args.length == 1 && "help".equals(args[0])){
+        if (args.length == 1 && "--help".equals(args[0])){
             System.out.println("Example: --host {ip} --port {port} --{activate/deactivate} " +
                 "or without command --host {ip} --port {port} then will print status.");
 

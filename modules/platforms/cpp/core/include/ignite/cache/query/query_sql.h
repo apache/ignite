@@ -249,6 +249,10 @@ namespace ignite
                  */
                 void ClearArguments()
                 {
+                    std::vector<impl::cache::query::QueryArgumentBase*>::iterator iter;
+                    for (iter = args.begin(); iter != args.end(); ++iter)
+                        delete *iter;
+
                     args.clear();
                 }
 
@@ -272,6 +276,8 @@ namespace ignite
                         (*it)->Write(writer);
 
                     writer.WriteBool(distributedJoins);
+                    writer.WriteInt32(0);  // Timeout, ms
+                    writer.WriteBool(false);  // ReplicatedOnly
                 }
 
             private:

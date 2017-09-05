@@ -83,12 +83,12 @@ namespace ignite
                 return GetBinaryStringHashCode(name);
             }
 
-            static int32_t GetHashCode(ignite::examples::Organization obj)
+            static int32_t GetHashCode(const ignite::examples::Organization& obj)
             {
                 return 0;
             }
 
-            static bool IsNull(ignite::examples::Organization obj)
+            static bool IsNull(const ignite::examples::Organization& obj)
             {
                 return false;
             }

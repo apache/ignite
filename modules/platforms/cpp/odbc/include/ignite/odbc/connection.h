@@ -107,11 +107,11 @@ namespace ignite
             void Receive(std::vector<int8_t>& msg);
 
             /**
-             * Get name of the assotiated cache.
+             * Get name of the assotiated schema.
              *
-             * @return Cache name.
+             * @return Schema name.
              */
-            const std::string& GetCache() const;
+            const std::string& GetSchema() const;
 
             /**
              * Get configuration.
@@ -207,7 +207,7 @@ namespace ignite
              * Create statement associated with the connection.
              * Internal call.
              *
-             * @param Pointer to valid instance on success and NULL on failure.
+             * @param statement Pointer to valid instance on success and NULL on failure.
              * @return Operation result.
              */
             SqlResult::Type InternalCreateStatement(Statement*& statement);

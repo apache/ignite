@@ -96,8 +96,6 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGridsMultiThreaded(GRID_CNT);
-
-        Class.forName("org.apache.ignite.IgniteJdbcDriver");
     }
 
     /** {@inheritDoc} */
@@ -304,6 +302,42 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
             conn.setAutoCommit(false);
 
             conn.rollback();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testSqlHints() throws Exception {
+        try (final Connection conn = DriverManager.getConnection(CFG_URL_PREFIX + "enforceJoinOrder=true@"
+            + configURL())) {
+            assertTrue(((JdbcConnection)conn).isEnforceJoinOrder());
+            assertFalse(((JdbcConnection)conn).isDistributedJoins());
+            assertFalse(((JdbcConnection)conn).isCollocatedQuery());
+            assertFalse(((JdbcConnection)conn).isLazy());
+        }
+
+        try (final Connection conn = DriverManager.getConnection(CFG_URL_PREFIX + "distributedJoins=true@"
+            + configURL())) {
+            assertFalse(((JdbcConnection)conn).isEnforceJoinOrder());
+            assertTrue(((JdbcConnection)conn).isDistributedJoins());
+            assertFalse(((JdbcConnection)conn).isCollocatedQuery());
+            assertFalse(((JdbcConnection)conn).isLazy());
+        }
+
+        try (final Connection conn = DriverManager.getConnection(CFG_URL_PREFIX + "collocated=true@"
+            + configURL())) {
+            assertFalse(((JdbcConnection)conn).isEnforceJoinOrder());
+            assertFalse(((JdbcConnection)conn).isDistributedJoins());
+            assertTrue(((JdbcConnection)conn).isCollocatedQuery());
+            assertFalse(((JdbcConnection)conn).isLazy());
+        }
+
+        try (final Connection conn = DriverManager.getConnection(CFG_URL_PREFIX + "lazy=true@" + configURL())) {
+            assertFalse(((JdbcConnection)conn).isEnforceJoinOrder());
+            assertFalse(((JdbcConnection)conn).isDistributedJoins());
+            assertFalse(((JdbcConnection)conn).isCollocatedQuery());
+            assertTrue(((JdbcConnection)conn).isLazy());
         }
     }
 }

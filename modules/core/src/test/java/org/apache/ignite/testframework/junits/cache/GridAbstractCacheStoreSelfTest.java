@@ -466,9 +466,10 @@ public abstract class GridAbstractCacheStoreSelfTest<T extends CacheStore<Object
     }
 
     /**
-     * @return Store.
+     * @return Store
+     * @throws Exception In case of error
      */
-    protected abstract T store();
+    protected abstract T store() throws Exception;
 
     /**
      * Dummy transaction for test purposes.
@@ -574,6 +575,16 @@ public abstract class GridAbstractCacheStoreSelfTest<T extends CacheStore<Object
 
         /** {@inheritDoc} */
         @Override public void rollback() {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void suspend() {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void resume() {
             // No-op.
         }
 

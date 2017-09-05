@@ -20,6 +20,7 @@ ACLOCAL_AMFLAGS =-I m4
 nobase_include_HEADERS = \
 	ignite/common/big_integer.h \
 	ignite/common/bits.h \
+	ignite/common/cancelable.h \
 	ignite/common/concurrent.h \
 	ignite/common/decimal.h \
 	ignite/common/default_allocator.h \

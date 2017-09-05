@@ -75,6 +75,9 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
     /** */
     private static final int SYSTEM_TX_FLAG_MASK = 0x10;
 
+    /** */
+    public static final int STORE_WRITE_THROUGH_FLAG_MASK = 0x20;
+
     /** Collection to message converter. */
     private static final C1<Collection<UUID>, UUIDCollectionMessage> COL_TO_MSG = new C1<Collection<UUID>, UUIDCollectionMessage>() {
         @Override public UUIDCollectionMessage apply(Collection<UUID> uuids) {
@@ -230,6 +233,23 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
      */
     public final boolean system() {
         return isFlag(SYSTEM_TX_FLAG_MASK);
+    }
+
+    /**
+     * @return Flag indicating whether transaction use cache store.
+     */
+    public boolean storeWriteThrough() {
+        return (flags & STORE_WRITE_THROUGH_FLAG_MASK) != 0;
+    }
+
+    /**
+     * @param storeWriteThrough Store write through value.
+     */
+    public void storeWriteThrough(boolean storeWriteThrough) {
+        if (storeWriteThrough)
+            flags = (byte)(flags | STORE_WRITE_THROUGH_FLAG_MASK);
+        else
+            flags &= ~STORE_WRITE_THROUGH_FLAG_MASK;
     }
 
     /**
@@ -689,15 +709,19 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
         StringBuilder flags = new StringBuilder();
 
         if (needReturnValue())
-            flags.append("retVal");
+            appendFlag(flags, "retVal");
+
         if (isInvalidate())
-            flags.append("invalidate");
+            appendFlag(flags, "invalidate");
+
         if (onePhaseCommit())
-            flags.append("onePhase");
+            appendFlag(flags, "onePhase");
+
         if (last())
-            flags.append("last");
+            appendFlag(flags, "last");
+
         if (system())
-            flags.append("sys");
+            appendFlag(flags, "sys");
 
         return GridToStringBuilder.toString(GridDistributedTxPrepareRequest.class, this,
             "flags", flags.toString(),

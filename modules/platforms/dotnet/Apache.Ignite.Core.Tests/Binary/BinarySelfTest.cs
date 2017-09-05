@@ -593,7 +593,7 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             Assert.AreEqual(marsh.Unmarshal<TestEnum>(data), val);
 
-            var binEnum = marsh.Unmarshal<IBinaryObject>(data, true);
+            var binEnum = marsh.Unmarshal<IBinaryObject>(data, BinaryMode.ForceBinary);
 
             Assert.AreEqual(val, (TestEnum) binEnum.EnumValue);
         }
@@ -1302,8 +1302,6 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             HandleOuter newOuter = outerObj.Deserialize<HandleOuter>();
 
-            Assert.IsFalse(newOuter == newOuter.Inner.Outer);
-            Assert.IsFalse(newOuter == newOuter.Inner.RawOuter);
             Assert.IsFalse(newOuter == newOuter.RawInner.RawOuter);
             Assert.IsFalse(newOuter == newOuter.RawInner.RawOuter);
 
@@ -1313,7 +1311,6 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.IsTrue(newOuter.RawInner.Outer == newOuter.RawInner.RawOuter);
 
             Assert.IsTrue(newOuter.Inner == newOuter.Inner.Outer.Inner);
-            Assert.IsTrue(newOuter.Inner == newOuter.Inner.Outer.RawInner);
             Assert.IsTrue(newOuter.RawInner == newOuter.RawInner.Outer.Inner);
             Assert.IsTrue(newOuter.RawInner == newOuter.RawInner.Outer.RawInner);
         }
@@ -1532,50 +1529,6 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual(nGuidArr, obj2.NGuidArr);
             Assert.AreEqual(dateArr, obj2.DateArr);
             Assert.AreEqual(nDateArr, obj2.NDateArr);
-        }
-
-        /// <summary>
-        /// Writes objects of various sizes to test schema compaction 
-        /// (where field offsets can be stored as 1, 2 or 4 bytes).
-        /// </summary>
-        [Test]
-        public void TestCompactSchema()
-        {
-            var marsh = new Marshaller(new BinaryConfiguration
-            {
-                TypeConfigurations = new List<BinaryTypeConfiguration>
-                {
-                    new BinaryTypeConfiguration(typeof (SpecialArray)),
-                    new BinaryTypeConfiguration(typeof (SpecialArrayMarshalAware))
-                }
-            });
-
-            var dt = new SpecialArrayMarshalAware();
-
-            foreach (var i in new[] {1, 5, 10, 13, 14, 15, 100, 200, 1000, 5000, 15000, 30000})
-            {
-                dt.NGuidArr = Enumerable.Range(1, i).Select(x => (Guid?) Guid.NewGuid()).ToArray();
-                dt.NDateArr = Enumerable.Range(1, i).Select(x => (DateTime?) DateTime.Now.AddDays(x)).ToArray();
-
-                var bytes = marsh.Marshal(dt);
-
-                var res = marsh.Unmarshal<SpecialArrayMarshalAware>(bytes);
-
-                CollectionAssert.AreEquivalent(dt.NGuidArr, res.NGuidArr);
-                CollectionAssert.AreEquivalent(dt.NDateArr, res.NDateArr);
-            }
-        }
-
-        [Test]
-        public void TestBinaryConfigurationValidation()
-        {
-            var cfg = new BinaryConfiguration(typeof (PropertyType))
-            {
-                Types = new[] {typeof(PropertyType).AssemblyQualifiedName}
-            };
-
-            // ReSharper disable once ObjectCreationAsStatement
-            Assert.Throws<BinaryObjectException>(() => new Marshaller(cfg));
         }
 
         /// <summary>
@@ -2385,7 +2338,7 @@ namespace Apache.Ignite.Core.Tests.Binary
 
                 writer.WriteString("before", Before);
 
-                writer0.WithDetach(w => w.WriteObject("inner", Inner));
+                writer0.WriteObject("inner", Inner);
                 
                 writer.WriteString("after", After);
 
@@ -2393,7 +2346,7 @@ namespace Apache.Ignite.Core.Tests.Binary
 
                 rawWriter.WriteString(RawBefore);
 
-                writer0.WithDetach(w => w.WriteObject(RawInner));
+                writer0.WriteObjectDetached(RawInner);
 
                 rawWriter.WriteString(RawAfter);
             }

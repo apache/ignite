@@ -272,7 +272,7 @@ abstract class GridCacheAbstractLoadTest {
         // Configure output that should go to System.out
         RollingFileAppender fileApp;
 
-        String fmt = "[%d{ABSOLUTE}][%-5p][%t][%c{1}] %m%n";
+        String fmt = "[%d{ISO8601}][%-5p][%t][%c{1}] %m%n";
 
         try {
             fileApp = new RollingFileAppender(new PatternLayout(fmt), fileName);

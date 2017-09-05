@@ -93,7 +93,7 @@ public class QuerySchema implements Serializable {
                 SchemaIndexCreateOperation op0 = (SchemaIndexCreateOperation)op;
 
                 for (QueryEntity entity : entities) {
-                    String tblName = QueryUtils.tableName(entity);
+                    String tblName = entity.getTableName();
 
                     if (F.eq(tblName, op0.tableName())) {
                         boolean exists = false;

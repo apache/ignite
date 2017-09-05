@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.odbc.odbc.escape;
 
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.processors.odbc.OdbcUtils;
+import org.apache.ignite.internal.processors.odbc.odbc.OdbcUtils;
 
 import java.util.LinkedList;
 import java.util.regex.Matcher;

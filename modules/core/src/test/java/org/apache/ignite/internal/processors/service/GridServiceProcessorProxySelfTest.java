@@ -18,9 +18,11 @@
 package org.apache.ignite.internal.processors.service;
 
 import java.util.Map;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.X;
@@ -64,6 +66,31 @@ public class GridServiceProcessorProxySelfTest extends GridServiceProcessorAbstr
 
             assertEquals(0, rmtSvc.localIncrements());
         }
+    }
+
+    /**
+     * Unwraps error message from InvocationTargetException.
+     *
+     * @throws Exception If failed.
+     */
+    @SuppressWarnings("ThrowableNotThrown")
+    public void testException() throws Exception {
+        String name = "errorService";
+
+        Ignite ignite = grid(0);
+
+        ignite.services(ignite.cluster().forRemotes()).deployNodeSingleton(name, new ErrorServiceImpl());
+
+        final ErrorService svc = ignite.services().serviceProxy(name, ErrorService.class, false);
+
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                svc.go();
+
+                return null;
+            }
+        }, IgniteException.class, "Test exception");
+
     }
 
     /**
@@ -371,6 +398,7 @@ public class GridServiceProcessorProxySelfTest extends GridServiceProcessorAbstr
             map.clear();
         }
 
+        /** {@inheritDoc} */
         @Override public int size() {
             return map.size();
         }
@@ -390,4 +418,41 @@ public class GridServiceProcessorProxySelfTest extends GridServiceProcessorAbstr
             X.println("Executing cache service: " + ctx.name());
         }
     }
+
+    /**
+     *
+     */
+    protected interface ErrorService extends Service {
+        /**
+         *
+         */
+        void go() throws Exception;
+    }
+
+    /**
+     *
+     */
+    protected class ErrorServiceImpl implements ErrorService {
+        /** {@inheritDoc} */
+        @Override public void cancel(ServiceContext ctx) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void init(ServiceContext ctx) throws Exception {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void execute(ServiceContext ctx) throws Exception {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void go() throws Exception {
+            throw new Exception("Test exception");
+        }
+    }
+
+
 }

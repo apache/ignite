@@ -43,14 +43,14 @@ public interface CacheObject extends Message {
      * @param cpy If {@code true} need to copy value.
      * @return Value.
      */
-    @Nullable public <T> T value(CacheObjectContext ctx, boolean cpy);
+    @Nullable public <T> T value(CacheObjectValueContext ctx, boolean cpy);
 
     /**
      * @param ctx Context.
      * @return Value bytes.
      * @throws IgniteCheckedException If failed.
      */
-    public byte[] valueBytes(CacheObjectContext ctx) throws IgniteCheckedException;
+    public byte[] valueBytes(CacheObjectValueContext ctx) throws IgniteCheckedException;
 
     /**
      * @param ctx Cache object context.
@@ -111,11 +111,11 @@ public interface CacheObject extends Message {
      * @param ldr Class loader.
      * @throws IgniteCheckedException If failed.
      */
-    public void finishUnmarshal(CacheObjectContext ctx, ClassLoader ldr) throws IgniteCheckedException;
+    public void finishUnmarshal(CacheObjectValueContext ctx, ClassLoader ldr) throws IgniteCheckedException;
 
     /**
      * @param ctx Context.
      * @throws IgniteCheckedException If failed.
      */
-    public void prepareMarshal(CacheObjectContext ctx) throws IgniteCheckedException;
+    public void prepareMarshal(CacheObjectValueContext ctx) throws IgniteCheckedException;
 }

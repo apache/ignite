@@ -17,12 +17,14 @@
 package org.apache.ignite.internal.processors.cache.eviction.paged;
 
 import java.util.concurrent.ThreadLocalRandom;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 
 /**
  *
@@ -39,9 +41,25 @@ public abstract class PageEvictionMultinodeTest extends PageEvictionAbstractTest
     private static final CacheWriteSynchronizationMode[] WRITE_MODES = {CacheWriteSynchronizationMode.PRIMARY_SYNC,
         CacheWriteSynchronizationMode.FULL_SYNC, CacheWriteSynchronizationMode.FULL_ASYNC};
 
+    /** Client grid. */
+    private Ignite clientGrid;
+
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGridsMultiThreaded(4, false);
+
+        clientGrid = startGrid("client");
+    }
+
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration configuration = super.getConfiguration(gridName);
+
+        if (gridName.startsWith("client"))
+            configuration.setClientMode(true);
+
+        return configuration;
     }
 
     /** {@inheritDoc} */
@@ -77,7 +95,7 @@ public abstract class PageEvictionMultinodeTest extends PageEvictionAbstractTest
      * @throws Exception If failed.
      */
     private void createCacheAndTestEvcition(CacheConfiguration<Object, Object> cfg) throws Exception {
-        IgniteCache<Object, Object> cache = ignite(0).getOrCreateCache(cfg);
+        IgniteCache<Object, Object> cache = clientGrid.getOrCreateCache(cfg);
 
         for (int i = 1; i <= ENTRIES; i++) {
             ThreadLocalRandom r = ThreadLocalRandom.current();
@@ -105,6 +123,6 @@ public abstract class PageEvictionMultinodeTest extends PageEvictionAbstractTest
         // Eviction started, no OutOfMemory occurred, success.
         assertTrue(resultingSize < ENTRIES);
 
-        ignite(0).destroyCache(cfg.getName());
+        clientGrid.destroyCache(cfg.getName());
     }
 }

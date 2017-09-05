@@ -31,6 +31,7 @@ import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisM
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisProtocolParser;
 import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
+import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.typedef.CX1;
 import org.jetbrains.annotations.Nullable;
 
@@ -38,9 +39,6 @@ import org.jetbrains.annotations.Nullable;
  * Redis command handler done via REST.
  */
 public abstract class GridRedisRestCommandHandler implements GridRedisCommandHandler {
-    /** Used cache name. */
-    protected final static String CACHE_NAME = "default";
-
     /** Logger. */
     protected final IgniteLogger log;
 
@@ -59,7 +57,8 @@ public abstract class GridRedisRestCommandHandler implements GridRedisCommandHan
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<GridRedisMessage> handleAsync(final GridRedisMessage msg) {
+    @Override public IgniteInternalFuture<GridRedisMessage> handleAsync(final GridNioSession ses,
+        final GridRedisMessage msg) {
         assert msg != null;
 
         try {

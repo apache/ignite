@@ -46,7 +46,11 @@ namespace Apache.Ignite.Core.Datastream
             _action = action;
         }
 
-        /** <inheritdoc /> */
+        /// <summary>
+        /// Updates cache with batch of entries.
+        /// </summary>
+        /// <param name="cache">Cache.</param>
+        /// <param name="entries">Entries.</param>
         [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
         public void Receive(ICache<TK, TV> cache, ICollection<ICacheEntry<TK, TV>> entries)
         {

@@ -54,8 +54,7 @@
         <property name="gridName" value="IGFS-cli-0"/>
 
         <property name="marshaller">
-            <bean class="org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller">
-            </bean>
+            <bean class="org.apache.ignite.internal.binary.BinaryMarshaller" />
         </property>
 
         <!--

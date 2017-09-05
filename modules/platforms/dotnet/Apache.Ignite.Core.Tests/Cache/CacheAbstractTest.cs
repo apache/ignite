@@ -597,27 +597,52 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         [Test]
-        public void TestPutAll()
+        public void TestPutAll([Values(true, false)] bool async)
         {
             var cache = Cache();
 
+            if (async)
+            {
+                cache = cache.WrapAsync();
+            }
+
+            // Primitives.
             cache.PutAll(new Dictionary<int, int> { { 1, 1 }, { 2, 2 }, { 3, 3 } });
 
             Assert.AreEqual(1, cache.Get(1));
             Assert.AreEqual(2, cache.Get(2));
             Assert.AreEqual(3, cache.Get(3));
-        }
 
-        [Test]
-        public void TestPutAllAsync()
-        {
-            var cache = Cache().WrapAsync();
+            // Objects.
+            var cache2 = Cache<int, Container>();
 
-            cache.PutAll(new Dictionary<int, int> { { 1, 1 }, { 2, 2 }, { 3, 3 } });
+            if (async)
+            {
+                cache2 = cache2.WrapAsync();
+            }
 
-            Assert.AreEqual(1, cache.Get(1));
-            Assert.AreEqual(2, cache.Get(2));
-            Assert.AreEqual(3, cache.Get(3));
+            var obj1 = new Container();
+            var obj2 = new Container();
+            var obj3 = new Container();
+
+            obj1.Inner = obj2;
+            obj2.Inner = obj1;
+            obj3.Inner = obj2;
+
+            cache2.PutAll(new Dictionary<int, Container>
+            {
+                {1, obj1},
+                {2, obj2},
+                {3, obj3}
+            });
+
+            var res1 = cache2[1];
+            var res2 = cache2[2];
+            var res3 = cache2[3];
+
+            Assert.AreEqual(res1, res1.Inner.Inner);
+            Assert.AreEqual(res2, res2.Inner.Inner);
+            Assert.IsNotNull(res3.Inner.Inner.Inner);
         }
 
         /// <summary>
@@ -2091,26 +2116,22 @@ namespace Apache.Ignite.Core.Tests.Cache
                 () => cache.Invoke(key, new T { ThrowErrNonSerializable = true }, arg), "ExpectedException");
         }
 
+        /// <summary>
+        /// Asserts that specified action throws a CacheEntryProcessorException.
+        /// </summary>
         private static void AssertThrowsCacheEntryProcessorException(Action action, string containsText = null)
         {
-            try
-            {
-                action();
+            var ex = Assert.Throws<CacheEntryProcessorException>(() => action());
 
-                Assert.Fail();
+            Assert.IsInstanceOf<JavaException>(ex.InnerException);
+
+            if (string.IsNullOrEmpty(containsText))
+            {
+                Assert.AreEqual(AddArgCacheEntryProcessor.ExceptionText, ex.GetBaseException().Message);
             }
-            catch (Exception ex)
+            else
             {
-                Assert.IsInstanceOf<CacheEntryProcessorException>(ex);
-
-                if (string.IsNullOrEmpty(containsText))
-                {
-                    Assert.IsNotNull(ex.InnerException);
-                    Assert.AreEqual(AddArgCacheEntryProcessor.ExceptionText, ex.InnerException.Message);
-                }
-                else
-                    Assert.IsTrue(ex.ToString().Contains(containsText), 
-                        "Expected: " + containsText + ", actual: " + ex);
+                Assert.IsTrue(ex.ToString().Contains(containsText), "Expected: " + containsText + ", actual: " + ex);
             }
         }
 
@@ -2540,6 +2561,11 @@ namespace Apache.Ignite.Core.Tests.Cache
                     return ((Name != null ? Name.GetHashCode() : 0) * 397) ^ Id;
                 }
             }
+        }
+
+        private class Container
+        {
+            public Container Inner;
         }
     }
 }

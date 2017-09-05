@@ -59,7 +59,7 @@ namespace ignite
                  * @param metaMgr Type manager.
                  * @param metaHnd Type handler.
                  */
-                BinaryWriterImpl(ignite::impl::interop::InteropOutputStream* stream, BinaryIdResolver* idRslvr, 
+                BinaryWriterImpl(interop::InteropOutputStream* stream, BinaryIdResolver* idRslvr, 
                     BinaryTypeManager* metaMgr, BinaryTypeHandler* metaHnd, int32_t start);
                 
                 /**
@@ -69,7 +69,7 @@ namespace ignite
                  * @param stream Interop stream.
                  * @param metaMgr Type manager.
                  */
-                BinaryWriterImpl(ignite::impl::interop::InteropOutputStream* stream, BinaryTypeManager* metaMgr);
+                BinaryWriterImpl(interop::InteropOutputStream* stream, BinaryTypeManager* metaMgr);
 
                 /**
                  * Write 8-byte signed integer. Maps to "byte" type in Java.
@@ -510,6 +510,11 @@ namespace ignite
                 void WriteNull(const char* fieldName);
 
                 /**
+                 * Write NULL value.
+                 */
+                void WriteNull0();
+
+                /**
                  * Start array write.
                  *
                  * @param typ Collection type.
@@ -680,6 +685,18 @@ namespace ignite
                  */
                 template<typename T>
                 void WriteTopObject(const T& obj)
+                {
+                    ignite::binary::WriteHelper<T>::Write(*this, obj);
+                }
+
+                /**
+                 * Write object.
+                 * Does not work for primitive pointer types.
+                 *
+                 * @param obj Object to write.
+                 */
+                template<typename T>
+                void WriteTopObject0(const T& obj)
                 {
                     typedef ignite::binary::BinaryType<T> BType;
 
@@ -982,43 +999,43 @@ namespace ignite
             };
 
             template<>
-            void IGNITE_IMPORT_EXPORT BinaryWriterImpl::WriteTopObject(const int8_t& obj);
+            void IGNITE_IMPORT_EXPORT BinaryWriterImpl::WriteTopObject0(const int8_t& obj);
 
             template<>
-            void IGNITE_IMPORT_EXPORT BinaryWriterImpl::WriteTopObject(const bool& obj);
+            void IGNITE_IMPORT_EXPORT BinaryWriterImpl::WriteTopObject0(const bool& obj);
 
             template<>
-            void IGNITE_IMPORT_EXPORT BinaryWriterImpl::WriteTopObject(const int16_t& obj);
+            void IGNITE_IMPORT_EXPORT BinaryWriterImpl::WriteTopObject0(const int16_t& obj);
 
             template<>
-            void IGNITE_IMPORT_EXPORT BinaryWriterImpl::WriteTopObject(const uint16_t& obj);
+            void IGNITE_IMPORT_EXPORT BinaryWriterImpl::WriteTopObject0(const uint16_t& obj);
 
             template<>
-            void IGNITE_IMPORT_EXPORT BinaryWriterImpl::WriteTopObject(const int32_t& obj);
+            void IGNITE_IMPORT_EXPORT BinaryWriterImpl::WriteTopObject0(const int32_t& obj);
 
             template<>
-            void IGNITE_IMPORT_EXPORT BinaryWriterImpl::WriteTopObject(const int64_t& obj);
+            void IGNITE_IMPORT_EXPORT BinaryWriterImpl::WriteTopObject0(const int64_t& obj);
 
             template<>
-            void IGNITE_IMPORT_EXPORT BinaryWriterImpl::WriteTopObject(const float& obj);
+            void IGNITE_IMPORT_EXPORT BinaryWriterImpl::WriteTopObject0(const float& obj);
 
             template<>
-            void IGNITE_IMPORT_EXPORT BinaryWriterImpl::WriteTopObject(const double& obj);
+            void IGNITE_IMPORT_EXPORT BinaryWriterImpl::WriteTopObject0(const double& obj);
 
             template<>
-            void IGNITE_IMPORT_EXPORT BinaryWriterImpl::WriteTopObject(const Guid& obj);
+            void IGNITE_IMPORT_EXPORT BinaryWriterImpl::WriteTopObject0(const Guid& obj);
 
             template<>
-            void IGNITE_IMPORT_EXPORT BinaryWriterImpl::WriteTopObject(const Date& obj);
+            void IGNITE_IMPORT_EXPORT BinaryWriterImpl::WriteTopObject0(const Date& obj);
 
             template<>
-            void IGNITE_IMPORT_EXPORT BinaryWriterImpl::WriteTopObject(const Timestamp& obj);
+            void IGNITE_IMPORT_EXPORT BinaryWriterImpl::WriteTopObject0(const Timestamp& obj);
 
             template<>
-            void IGNITE_IMPORT_EXPORT BinaryWriterImpl::WriteTopObject(const Time& obj);
+            void IGNITE_IMPORT_EXPORT BinaryWriterImpl::WriteTopObject0(const Time& obj);
 
             template<>
-            void IGNITE_IMPORT_EXPORT BinaryWriterImpl::WriteTopObject(const std::string& obj);
+            void IGNITE_IMPORT_EXPORT BinaryWriterImpl::WriteTopObject0(const std::string& obj);
         }
     }
 }

@@ -18,11 +18,10 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.BinarySerializationQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.BinarySerializationQueryWithReflectiveSerializerSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheBinaryObjectsScanSelfTest;
-import org.apache.ignite.testframework.config.GridTestProperties;
+import org.apache.ignite.internal.processors.cache.IgniteCacheBinaryObjectsScanWithEventsSelfTest;
 
 /**
  * Cache query suite with binary marshaller.
@@ -33,14 +32,13 @@ public class IgniteBinaryCacheQueryTestSuite extends TestSuite {
      * @throws Exception In case of error.
      */
     public static TestSuite suite() throws Exception {
-        GridTestProperties.setProperty(GridTestProperties.MARSH_CLASS_NAME, BinaryMarshaller.class.getName());
-
         TestSuite suite = IgniteCacheQuerySelfTestSuite.suite();
 
         // Serialization.
         suite.addTestSuite(BinarySerializationQuerySelfTest.class);
         suite.addTestSuite(BinarySerializationQueryWithReflectiveSerializerSelfTest.class);
         suite.addTestSuite(IgniteCacheBinaryObjectsScanSelfTest.class);
+        suite.addTestSuite(IgniteCacheBinaryObjectsScanWithEventsSelfTest.class);
 
         //Should be adjusted. Not ready to be used with BinaryMarshaller.
         //suite.addTestSuite(GridCacheBinarySwapScanQuerySelfTest.class);

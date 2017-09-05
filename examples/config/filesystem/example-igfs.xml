@@ -50,6 +50,10 @@
         Configuration below demonstrates how to setup a IgniteFs node with file data.
     -->
     <bean id="ignite.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
+        <property name="marshaller">
+            <bean class="org.apache.ignite.internal.binary.BinaryMarshaller" />
+        </property>
+
         <property name="fileSystemConfiguration">
             <list>
                 <bean class="org.apache.ignite.configuration.FileSystemConfiguration">

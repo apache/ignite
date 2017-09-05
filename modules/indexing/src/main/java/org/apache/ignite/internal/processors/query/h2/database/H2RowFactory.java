@@ -21,7 +21,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.database.CacheDataRowAdapter;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 
@@ -59,7 +59,7 @@ public class H2RowFactory {
 
         final CacheDataRowAdapter rowBuilder = new CacheDataRowAdapter(link);
 
-        rowBuilder.initFromLink(cctx, CacheDataRowAdapter.RowData.FULL);
+        rowBuilder.initFromLink(cctx.group(), CacheDataRowAdapter.RowData.FULL);
 
         GridH2Row row;
 

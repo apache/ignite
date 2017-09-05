@@ -46,7 +46,17 @@ namespace Apache.Ignite.Core.Impl
         private const string EnvJavaHome = "JAVA_HOME";
 
         /** Lookup paths. */
-        private static readonly string[] JvmDllLookupPaths = {@"jre\bin\server", @"jre\bin\default"};
+        private static readonly string[] JvmDllLookupPaths =
+        {
+            // JRE paths
+            @"bin\server",
+            @"bin\client",
+
+            // JDK paths
+            @"jre\bin\server",
+            @"jre\bin\client",
+            @"jre\bin\default"
+        };
 
         /** Registry lookup paths. */
         private static readonly string[] JreRegistryKeys =

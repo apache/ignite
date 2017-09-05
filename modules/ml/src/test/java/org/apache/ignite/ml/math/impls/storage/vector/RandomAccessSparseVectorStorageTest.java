@@ -22,7 +22,7 @@ import org.apache.ignite.ml.math.impls.MathTestConstants;
 import org.junit.Test;
 
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertNotNull;
 
 /**
  * Unit tests for {@link SparseLocalOnHeapVectorStorage}.
@@ -36,7 +36,7 @@ public class RandomAccessSparseVectorStorageTest extends VectorBaseStorageTest<S
     /** */
     @Test
     public void data() throws Exception {
-        assertNull(MathTestConstants.NULL_VAL, storage.data());
+        assertNotNull(MathTestConstants.NULL_VAL, storage.data());
     }
 
     /** */

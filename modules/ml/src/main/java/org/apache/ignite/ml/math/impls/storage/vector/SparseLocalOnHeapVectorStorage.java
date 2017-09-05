@@ -19,9 +19,11 @@ package org.apache.ignite.ml.math.impls.storage.vector;
 
 import it.unimi.dsi.fastutil.ints.Int2DoubleOpenHashMap;
 import it.unimi.dsi.fastutil.ints.Int2DoubleRBTreeMap;
+import it.unimi.dsi.fastutil.ints.IntSet;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.ml.math.StorageConstants;
 import org.apache.ignite.ml.math.VectorStorage;
@@ -43,6 +45,33 @@ public class SparseLocalOnHeapVectorStorage implements VectorStorage, StorageCon
      */
     public SparseLocalOnHeapVectorStorage() {
         // No-op.
+    }
+
+    /** */
+    public SparseLocalOnHeapVectorStorage(Map<Integer, Double> map, boolean cp) {
+        assert map.size() > 0;
+
+        this.size = map.size();
+
+        if (map instanceof Int2DoubleRBTreeMap)
+            acsMode = SEQUENTIAL_ACCESS_MODE;
+        else if (map instanceof Int2DoubleOpenHashMap)
+            acsMode = RANDOM_ACCESS_MODE;
+        else
+            acsMode = UNKNOWN_STORAGE_MODE;
+
+        if (cp)
+            switch (acsMode) {
+                case SEQUENTIAL_ACCESS_MODE:
+                    sto = new Int2DoubleRBTreeMap(map);
+                case RANDOM_ACCESS_MODE:
+                    sto = new Int2DoubleOpenHashMap(map);
+                    break;
+                default:
+                    sto = new HashMap<>(map);
+            }
+        else
+            sto = map;
     }
 
     /**
@@ -129,6 +158,15 @@ public class SparseLocalOnHeapVectorStorage implements VectorStorage, StorageCon
     }
 
     /** {@inheritDoc} */
+    @Override public double[] data() {
+        double[] data = new double[size];
+
+        sto.forEach((idx, val) -> data[idx]=val);
+
+        return data;
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         if (this == o)
             return true;
@@ -149,5 +187,10 @@ public class SparseLocalOnHeapVectorStorage implements VectorStorage, StorageCon
         res = 31 * res + (sto != null ? sto.hashCode() : 0);
 
         return res;
+    }
+
+    /** */
+    public IntSet indexes() {
+        return (IntSet)sto.keySet();
     }
 }

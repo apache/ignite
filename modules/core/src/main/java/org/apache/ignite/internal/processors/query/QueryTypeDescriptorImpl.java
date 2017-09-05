@@ -36,11 +36,14 @@ import java.util.Map;
  * Descriptor of type.
  */
 public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
-    /** Space. */
-    private final String space;
+    /** Cache name. */
+    private final String cacheName;
 
     /** */
     private String name;
+
+    /** Schema name. */
+    private String schemaName;
 
     /** */
     private String tblName;
@@ -102,22 +105,27 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     /**
      * Constructor.
      *
-     * @param space Cache name.
+     * @param cacheName Cache name.
      */
-    public QueryTypeDescriptorImpl(String space) {
-        this.space = space;
+    public QueryTypeDescriptorImpl(String cacheName) {
+        this.cacheName = cacheName;
     }
 
     /**
-     * @return Space.
+     * @return Cache name.
      */
-    public String space() {
-        return space;
+    public String cacheName() {
+        return cacheName;
     }
 
     /** {@inheritDoc} */
     @Override public String name() {
         return name;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String schemaName() {
+        return schemaName;
     }
 
     /**
@@ -363,6 +371,13 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
         fields.put(name, prop.type());
     }
 
+    /**
+     * @param schemaName Schema name.
+     */
+    public void schemaName(String schemaName) {
+        this.schemaName = schemaName;
+    }
+
     /** {@inheritDoc} */
     @Override public boolean valueTextIndex() {
         return valTextIdx;
@@ -446,5 +461,14 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     /** {@inheritDoc} */
     @Override public String valueFieldName() {
         return valFieldName;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public String keyFieldAlias() {
+        return keyFieldName != null ? aliases.get(keyFieldName) : null;
+    }
+
+    @Nullable @Override public String valueFieldAlias() {
+        return valFieldName != null ? aliases.get(valFieldName) : null;
     }
 }

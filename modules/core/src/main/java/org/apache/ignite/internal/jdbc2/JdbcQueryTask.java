@@ -74,6 +74,9 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
     /** Cache name. */
     private final String cacheName;
 
+    /** Schema name. */
+    private final String schemaName;
+
     /** Sql. */
     private final String sql;
 
@@ -101,6 +104,7 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
     /**
      * @param ignite Ignite.
      * @param cacheName Cache name.
+     * @param schemaName Schema name.
      * @param sql Sql query.
      * @param isQry Operation type flag - query or not - to enforce query type check.
      * @param loc Local execution flag.
@@ -111,13 +115,13 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
      * @param collocatedQry Collocated query flag.
      * @param distributedJoins Distributed joins flag.
      */
-    public JdbcQueryTask(Ignite ignite, String cacheName, String sql,
-                           Boolean isQry, boolean loc, Object[] args, int fetchSize, UUID uuid,
-                           boolean locQry, boolean collocatedQry, boolean distributedJoins) {
+    public JdbcQueryTask(Ignite ignite, String cacheName, String schemaName, String sql, Boolean isQry, boolean loc,
+        Object[] args, int fetchSize, UUID uuid, boolean locQry, boolean collocatedQry, boolean distributedJoins) {
         this.ignite = ignite;
         this.args = args;
         this.uuid = uuid;
         this.cacheName = cacheName;
+        this.schemaName = schemaName;
         this.sql = sql;
         this.isQry = isQry;
         this.fetchSize = fetchSize;
@@ -160,6 +164,9 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
             qry.setLocal(locQry);
             qry.setCollocated(collocatedQry);
             qry.setDistributedJoins(distributedJoins);
+            qry.setEnforceJoinOrder(enforceJoinOrder());
+            qry.setLazy(lazy());
+            qry.setSchema(schemaName);
 
             QueryCursorImpl<List<?>> qryCursor = (QueryCursorImpl<List<?>>)cache.withKeepBinary().query(qry);
 
@@ -209,6 +216,20 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
         assert isQry != null : "Query flag must be set prior to returning result";
 
         return new QueryResult(uuid, finished, isQry, rows, cols, tbls, types);
+    }
+
+    /**
+     * @return Enforce join order flag (SQL hit).
+     */
+    protected boolean enforceJoinOrder() {
+        return false;
+    }
+
+    /**
+     * @return Lazy query execution flag (SQL hit).
+     */
+    protected boolean lazy() {
+        return false;
     }
 
     /**

@@ -35,7 +35,12 @@ import org.jetbrains.annotations.Nullable;
  */
 public class IgfsPathSelfTest extends GridCommonAbstractTest {
     /** Marshaller to test {@link Externalizable} interface. */
-    private final Marshaller marshaller = new OptimizedMarshaller();
+    private final Marshaller marshaller;
+
+    /** Ctor. */
+    public IgfsPathSelfTest() throws IgniteCheckedException {
+        marshaller = createStandaloneBinaryMarshaller();
+    }
 
     /**
      * Test public methods of igfs path.

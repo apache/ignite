@@ -371,7 +371,7 @@ void CheckEvents(Cache<int, TestEntry>& cache, Listener<int, TestEntry>& lsnr)
 
 IGNITE_EXPORTED_CALL void IgniteModuleInit0(ignite::IgniteBindingContext& context)
 {
-    IgniteBinding binding = context.GetBingding();
+    IgniteBinding binding = context.GetBinding();
 
     binding.RegisterCacheEntryEventFilter< RangeFilter<int, TestEntry> >();
 }

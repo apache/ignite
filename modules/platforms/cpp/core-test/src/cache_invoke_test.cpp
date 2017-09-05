@@ -379,7 +379,7 @@ namespace ignite
 
 IGNITE_EXPORTED_CALL void IgniteModuleInit(ignite::IgniteBindingContext& context)
 {
-    IgniteBinding binding = context.GetBingding();
+    IgniteBinding binding = context.GetBinding();
 
     binding.RegisterCacheEntryProcessor<CacheEntryModifier>();
     binding.RegisterCacheEntryProcessor<Divisor>();

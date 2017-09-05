@@ -115,14 +115,19 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
             });
 
             if (!nodes.isEmpty()) {
-                cctx.io().safeSend(nodes, req, cctx.ioPolicy(),
-                    new P1<ClusterNode>() {
-                        @Override public boolean apply(ClusterNode node) {
-                            onNodeLeft(node.id());
-
-                            return !isDone();
+                for (ClusterNode node : nodes) {
+                    try {
+                        cctx.io().send(node, req, cctx.ioPolicy());
+                    }
+                    catch (IgniteCheckedException e) {
+                        if (cctx.io().checkNodeLeft(node.id(), e, false)) {
+                            if (log.isDebugEnabled())
+                                log.debug("Failed to send cancel request, node failed: " + node);
                         }
-                    });
+                        else
+                            U.error(log, "Failed to send cancel request [node=" + node + ']', e);
+                    }
+                }
             }
         }
         catch (IgniteCheckedException e) {

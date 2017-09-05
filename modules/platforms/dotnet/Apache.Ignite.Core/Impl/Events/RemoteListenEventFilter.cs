@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Impl.Events
     using Apache.Ignite.Core.Events;
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Common;
+    using Apache.Ignite.Core.Impl.Resource;
 
     /// <summary>
     /// Event filter/listener holder for RemoteListen.
@@ -74,6 +75,8 @@ namespace Apache.Ignite.Core.Impl.Events
                 var reader = marsh.StartUnmarshal(stream);
 
                 var pred = reader.ReadObject<object>();
+
+                ResourceProcessor.Inject(pred, grid);
 
                 var func = DelegateTypeDescriptor.GetEventFilter(pred.GetType());
 

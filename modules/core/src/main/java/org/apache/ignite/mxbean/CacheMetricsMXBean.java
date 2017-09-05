@@ -132,6 +132,10 @@ public interface CacheMetricsMXBean extends CacheStatisticsMXBean, CacheMXBean, 
     public long getOffHeapEntriesCount();
 
     /** {@inheritDoc} */
+    @MXBeanDescription("Number of entries in heap memory.")
+    public long getHeapEntriesCount();
+
+    /** {@inheritDoc} */
     @MXBeanDescription("Number of primary entries stored in off-heap memory.")
     public long getOffHeapPrimaryEntriesCount();
 

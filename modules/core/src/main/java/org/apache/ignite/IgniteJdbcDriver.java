@@ -30,6 +30,7 @@ import java.util.logging.Logger;
 import org.apache.ignite.cache.affinity.AffinityKey;
 import org.apache.ignite.internal.jdbc.JdbcConnection;
 import org.apache.ignite.internal.jdbc.JdbcDriverPropertyInfo;
+import org.apache.ignite.internal.jdbc.thin.JdbcThinUtils;
 import org.apache.ignite.logger.java.JavaLogger;
 
 /**
@@ -109,6 +110,22 @@ import org.apache.ignite.logger.java.JavaLogger;
  *         {@code distributedJoins} - enables support of distributed joins feature. This flag does not make sense in
  *         combination with {@code local} and/or {@code collocated} flags with {@code true} value or in case of querying
  *         of local cache. Default value is {@code false}.
+ *     </li>
+ *     <li>
+ *         {@code enforceJoinOrder} - Sets flag to enforce join order of tables in the query. If set to {@code true}
+ *          query optimizer will not reorder tables in join. By default is {@code false}.
+ *     </li>
+ *     <li>
+ *         {@code lazy} - Sets flag to enable lazy query execution.
+ *         By default Ignite attempts to fetch the whole query result set to memory and send it to the client.
+ *         For small and medium result sets this provides optimal performance and minimize duration of internal
+ *         database locks, thus increasing concurrency.
+ *
+ *         <p> If result set is too big to fit in available memory this could lead to excessive GC pauses and even
+ *         OutOfMemoryError. Use this flag as a hint for Ignite to fetch result set lazily, thus minimizing memory
+ *         consumption at the cost of moderate performance hit.
+ *
+ *         <p> Defaults to {@code false}, meaning that the whole result set is fetched to memory eagerly.
  *     </li>
  * </ul>
  *
@@ -243,10 +260,7 @@ import org.apache.ignite.logger.java.JavaLogger;
  * </table>
  * <h1 class="header">Example</h1>
  * <pre name="code" class="java">
- * // Register JDBC driver.
- * Class.forName("org.apache.ignite.IgniteJdbcDriver");
- *
- * // Open JDBC connection.
+  * // Open JDBC connection.
  * Connection conn = DriverManager.getConnection("jdbc:ignite:cfg//cache=persons@file:///etc/configs/ignite-jdbc.xml");
  *
  * // Query persons' names
@@ -290,6 +304,12 @@ public class IgniteJdbcDriver implements Driver {
     /** Collocated parameter name. */
     private static final String PARAM_COLLOCATED = "collocated";
 
+    /** Parameter: enforce join order flag. */
+    public static final String PARAM_ENFORCE_JOIN_ORDER = "enforceJoinOrder";
+
+    /** Parameter: lazy query execution flag. */
+    public static final String PARAM_LAZY = "lazy";
+
     /** Distributed joins parameter name. */
     private static final String PARAM_DISTRIBUTED_JOINS = "distributedJoins";
 
@@ -332,6 +352,12 @@ public class IgniteJdbcDriver implements Driver {
     /** Distributed joins property name. */
     public static final String PROP_DISTRIBUTED_JOINS = PROP_PREFIX + PARAM_DISTRIBUTED_JOINS;
 
+    /** Enforce join order property name. */
+    public static final String PROP_ENFORCE_JOIN_ORDER = PROP_PREFIX + PARAM_ENFORCE_JOIN_ORDER;
+
+    /** Lazy query execution property name. */
+    public static final String PROP_LAZY = PROP_PREFIX + PARAM_LAZY;
+
     /** Transactions allowed property name. */
     public static final String PROP_TX_ALLOWED = PROP_PREFIX + PARAM_TX_ALLOWED;
 
@@ -371,8 +397,8 @@ public class IgniteJdbcDriver implements Driver {
     /** Logger. */
     private static final IgniteLogger LOG = new JavaLogger();
 
-    /**
-     * Register driver.
+    /*
+     * Static initializer.
      */
     static {
         try {
@@ -385,6 +411,9 @@ public class IgniteJdbcDriver implements Driver {
 
     /** {@inheritDoc} */
     @Override public Connection connect(String url, Properties props) throws SQLException {
+        if (!acceptsURL(url))
+            return null;
+
         if (!parseUrl(url, props))
             throw new SQLException("URL is invalid: " + url);
 
@@ -416,6 +445,8 @@ public class IgniteJdbcDriver implements Driver {
             new JdbcDriverPropertyInfo("Local", info.getProperty(PROP_LOCAL), ""),
             new JdbcDriverPropertyInfo("Collocated", info.getProperty(PROP_COLLOCATED), ""),
             new JdbcDriverPropertyInfo("Distributed Joins", info.getProperty(PROP_DISTRIBUTED_JOINS), ""),
+            new JdbcDriverPropertyInfo("Enforce Join Order", info.getProperty(JdbcThinUtils.PROP_ENFORCE_JOIN_ORDER), ""),
+            new JdbcDriverPropertyInfo("Lazy query execution", info.getProperty(JdbcThinUtils.PROP_LAZY), ""),
             new JdbcDriverPropertyInfo("Transactions Allowed", info.getProperty(PROP_TX_ALLOWED), "")
         );
 

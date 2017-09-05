@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Impl.Compute.Closure
     using System;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Deployment;
     using Apache.Ignite.Core.Impl.Resource;
 
     /// <summary>
@@ -57,7 +58,7 @@ namespace Apache.Ignite.Core.Impl.Compute.Closure
         }
 
         /** <inheritDoc /> */
-        public void Inject(Ignite grid)
+        public void Inject(IIgniteInternal grid)
         {
             ResourceProcessor.Inject(_clo, grid);
         }
@@ -67,8 +68,8 @@ namespace Apache.Ignite.Core.Impl.Compute.Closure
         {
             BinaryWriter writer0 = (BinaryWriter) writer.GetRawWriter();
 
-            writer0.WithDetach(w => w.WriteObject(_clo));
-            writer0.WithDetach(w => w.WriteObject(_arg));
+            writer0.WriteWithPeerDeployment(_clo);
+            writer0.WriteWithPeerDeployment(_arg);
         }
 
         /// <summary>

@@ -111,9 +111,18 @@ namespace ignite
                 state.Get()->SetError(err);
             }
 
+            /**
+             * Set cancel target.
+             */
+            void SetCancelTarget(std::auto_ptr<Cancelable>& target)
+            {
+                state.Get()->SetCancelTarget(target);
+            }
+
         private:
             IGNITE_NO_COPY_ASSIGNMENT(Promise);
 
+            /** Shared state. */
             concurrent::SharedPointer< SharedState<ValueType> > state;
         };
 
@@ -190,9 +199,18 @@ namespace ignite
                 state.Get()->SetError(err);
             }
 
+            /**
+             * Set cancel target.
+             */
+            void SetCancelTarget(std::auto_ptr<Cancelable>& target)
+            {
+                state.Get()->SetCancelTarget(target);
+            }
+
         private:
             IGNITE_NO_COPY_ASSIGNMENT(Promise);
 
+            /** Shared state. */
             concurrent::SharedPointer< SharedState<ValueType> > state;
         };
     }

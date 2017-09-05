@@ -23,6 +23,7 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.io.Serializable;
 import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.ArrayList;
@@ -192,8 +193,8 @@ public class GridServiceProxy<T> implements Serializable {
                             new ServiceProxyCallable(mtd.getName(), name, mtd.getParameterTypes(), args),
                             Collections.singleton(node),
                             false,
-                            waitTimeout
-                        ).get();
+                            waitTimeout,
+                            true).get();
                     }
                 }
                 catch (GridServiceNotFoundException | ClusterTopologyCheckedException e) {
@@ -413,7 +414,13 @@ public class GridServiceProxy<T> implements Serializable {
             if (mtd == null)
                 throw new GridServiceMethodNotFoundException(svcName, mtdName, argTypes);
 
-            return mtd.invoke(svcCtx.service(), args);
+            try {
+                return mtd.invoke(svcCtx.service(), args);
+            }
+            catch (InvocationTargetException e) {
+                // Get error message.
+                throw new IgniteCheckedException(e.getCause().getMessage(), e);
+            }
         }
 
         /** {@inheritDoc} */

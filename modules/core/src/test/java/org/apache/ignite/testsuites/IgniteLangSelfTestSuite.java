@@ -21,6 +21,7 @@ import junit.framework.TestSuite;
 import org.apache.ignite.internal.util.future.GridCompoundFutureSelfTest;
 import org.apache.ignite.internal.util.future.GridEmbeddedFutureSelfTest;
 import org.apache.ignite.internal.util.future.GridFutureAdapterSelfTest;
+import org.apache.ignite.internal.util.future.IgniteCacheFutureImplTest;
 import org.apache.ignite.internal.util.future.IgniteFutureImplTest;
 import org.apache.ignite.internal.util.future.nio.GridNioEmbeddedFutureSelfTest;
 import org.apache.ignite.internal.util.future.nio.GridNioFutureSelfTest;
@@ -80,7 +81,9 @@ public class IgniteLangSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridEmbeddedFutureSelfTest.class));
         suite.addTest(new TestSuite(GridNioFutureSelfTest.class));
         suite.addTest(new TestSuite(GridNioEmbeddedFutureSelfTest.class));
+
         suite.addTest(new TestSuite(IgniteFutureImplTest.class));
+        suite.addTest(new TestSuite(IgniteCacheFutureImplTest.class));
 
         // Consistent hash tests.
         suite.addTest(new TestSuite(GridConsistentHashSelfTest.class));

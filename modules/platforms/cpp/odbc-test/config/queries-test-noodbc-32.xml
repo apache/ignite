@@ -28,6 +28,10 @@
     <import resource="queries-default.xml"/>
 
     <bean parent="ignite.cfg">
+        <property name="sqlConnectorConfiguration">
+            <null/>
+        </property>
+
         <property name="memoryConfiguration">
             <bean class="org.apache.ignite.configuration.MemoryConfiguration">
                 <property name="systemCacheInitialSize" value="#{40 * 1024 * 1024}"/>

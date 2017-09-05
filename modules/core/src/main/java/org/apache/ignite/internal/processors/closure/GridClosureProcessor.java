@@ -69,12 +69,14 @@ import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.resources.LoadBalancerResource;
+import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.compute.ComputeJobResultPolicy.FAILOVER;
 import static org.apache.ignite.compute.ComputeJobResultPolicy.REDUCE;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_NO_FAILOVER;
+import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SKIP_AUTH;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SUBGRID;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_TIMEOUT;
 
@@ -103,7 +105,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void start(boolean activeOnStart) throws IgniteCheckedException {
+    @Override public void start() throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("Started closure processor.");
     }
@@ -501,7 +503,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
             final String cacheName = F.first(cacheNames);
 
-            final AffinityTopologyVersion mapTopVer = ctx.discovery().topologyVersionEx();
+            final AffinityTopologyVersion mapTopVer = ctx.cache().context().exchange().readyAffinityVersion();
             final ClusterNode node = ctx.affinity().mapPartitionToNode(cacheName, partId, mapTopVer);
 
             if (node == null)
@@ -541,7 +543,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
             final String cacheName = F.first(cacheNames);
 
-            final AffinityTopologyVersion mapTopVer = ctx.discovery().topologyVersionEx();
+            final AffinityTopologyVersion mapTopVer = ctx.cache().context().exchange().readyAffinityVersion();
             final ClusterNode node = ctx.affinity().mapPartitionToNode(cacheName, partId, mapTopVer);
 
             if (node == null)
@@ -558,12 +560,13 @@ public class GridClosureProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * @param <R> Type.
      * @param mode Distribution mode.
      * @param job Closure to execute.
      * @param nodes Grid nodes.
      * @param sys If {@code true}, then system pool will be used.
      * @param timeout Timeout.
-     * @param <R> Type.
+     * @param skipAuth Skip authorization check.
      * @return Grid future for collection of closure results.
      */
     public <R> IgniteInternalFuture<R> callAsyncNoFailover(
@@ -571,8 +574,8 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         @Nullable Callable<R> job,
         @Nullable Collection<ClusterNode> nodes,
         boolean sys,
-        long timeout
-    ) {
+        long timeout,
+        boolean skipAuth) {
         assert mode != null;
         assert timeout >= 0 : timeout;
 
@@ -587,6 +590,9 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
             ctx.task().setThreadContext(TC_NO_FAILOVER, true);
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
+
+            if (skipAuth)
+                ctx.task().setThreadContext(TC_SKIP_AUTH, true);
 
             if (timeout > 0)
                 ctx.task().setThreadContext(TC_TIMEOUT, timeout);
@@ -774,13 +780,22 @@ public class GridClosureProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * @param c Closure to execute.
-     * @param sys If {@code true}, then system pool will be used, otherwise public pool will be used.
-     * @return Future.
-     * @throws IgniteCheckedException Thrown in case of any errors.
+     * @param thread Thread.
+     * @param c Closure.
      */
-    private IgniteInternalFuture<?> runLocal(@Nullable final Runnable c, boolean sys) throws IgniteCheckedException {
-        return runLocal(c, sys ? GridIoPolicy.SYSTEM_POOL : GridIoPolicy.PUBLIC_POOL);
+    public void runLocalWithThreadPolicy(IgniteThread thread, Runnable c) {
+        assert thread.stripe() >= 0 || thread.policy() != GridIoPolicy.UNDEFINED : thread;
+
+        if (thread.stripe() >= 0)
+            ctx.getStripedExecutorService().execute(thread.stripe(), c);
+        else {
+            try {
+                ctx.pools().poolForPolicy(thread.policy()).execute(c);
+            }
+            catch (IgniteCheckedException e) {
+                U.error(log, "Failed to get pool for policy: " + thread.policy(), e);
+            }
+        }
     }
 
     /**
@@ -847,8 +862,8 @@ public class GridClosureProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Executes closure on system pool. Companion to {@link #runLocal(Runnable, boolean)} but
-     * in case of rejected execution re-runs the closure in the current thread (blocking).
+     * Executes closure on system pool. In case of rejected execution re-runs the closure in the current
+     * thread (blocking).
      *
      * @param c Closure to execute.
      * @return Future.
@@ -858,8 +873,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Companion to {@link #runLocal(Runnable, boolean)} but in case of rejected execution re-runs
-     * the closure in the current thread (blocking).
+     * In case of rejected execution re-runs the closure in the current thread (blocking).
      *
      * @param c Closure to execute.
      * @param sys If {@code true}, then system pool will be used, otherwise public pool will be used.
@@ -870,8 +884,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Companion to {@link #runLocal(Runnable, boolean)} but in case of rejected execution re-runs
-     * the closure in the current thread (blocking).
+     * In case of rejected execution re-runs the closure in the current thread (blocking).
      *
      * @param c Closure to execute.
      * @param plc Policy to choose executor pool.

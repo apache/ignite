@@ -178,7 +178,7 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCommonAbst
                 cache.put(key, val);
 
                 CacheObject obj =
-                    ((GridCacheAdapter)((IgniteCacheProxy)cache).delegate()).peekEx(key).peekVisibleValue();
+                    ((GridCacheAdapter)((IgniteCacheProxy)cache).internalProxy().delegate()).peekEx(key).peekVisibleValue();
 
                 // Check thar internal entry wasn't changed.
                 assertEquals(i, getValue(obj, cache));
@@ -211,7 +211,7 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCommonAbst
 
                 cache.put(key, newTestVal);
 
-                obj = ((GridCacheAdapter)((IgniteCacheProxy)cache).delegate()).peekEx(key).peekVisibleValue();
+                obj = ((GridCacheAdapter)((IgniteCacheProxy)cache).internalProxy().delegate()).peekEx(key).peekVisibleValue();
 
                 // Check thar internal entry wasn't changed.
                 assertEquals(-i, getValue(obj, cache));
@@ -290,7 +290,7 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCommonAbst
                 });
 
                 CacheObject obj =
-                    ((GridCacheAdapter)((IgniteCacheProxy)cache).delegate()).peekEx(key).peekVisibleValue();
+                    ((GridCacheAdapter)((IgniteCacheProxy)cache).internalProxy().delegate()).peekEx(key).peekVisibleValue();
 
                 assertNotEquals(WRONG_VALUE, getValue(obj, cache));
             }

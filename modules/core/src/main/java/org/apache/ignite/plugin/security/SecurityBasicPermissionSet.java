@@ -17,14 +17,23 @@
 
 package org.apache.ignite.plugin.security;
 
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.processors.security.SecurityUtils.compatibleServicePermissions;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.isSecurityCompatibilityMode;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.serializeVersion;
 
 /**
  * Simple implementation of {@link SecurityPermissionSet} interface. Provides
@@ -44,7 +53,9 @@ public class SecurityBasicPermissionSet implements SecurityPermissionSet {
 
     /** Service permissions. */
     @GridToStringInclude
-    private Map<String, Collection<SecurityPermission>> servicePermissions = new HashMap<>();
+    private transient Map<String, Collection<SecurityPermission>> servicePermissions = isSecurityCompatibilityMode()
+            ? compatibleServicePermissions()
+            : new HashMap<String, Collection<SecurityPermission>>();
 
     /** System permissions. */
     @GridToStringInclude
@@ -156,6 +167,34 @@ public class SecurityBasicPermissionSet implements SecurityPermissionSet {
         res = 31 * res + (systemPermissions != null ? systemPermissions.hashCode() : 0);
 
         return res;
+    }
+
+    /**
+     * @param out Out.
+     */
+    private void writeObject(ObjectOutputStream out) throws IOException {
+        out.defaultWriteObject();
+
+        if (serializeVersion() >= 2)
+            U.writeMap(out, servicePermissions);
+    }
+
+    /**
+     * @param in In.
+     */
+    private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
+        in.defaultReadObject();
+
+        if (serializeVersion() >= 2)
+            servicePermissions = U.readMap(in);
+
+        if (servicePermissions == null) {
+            // Allow all for compatibility mode
+            if (serializeVersion() < 2)
+                servicePermissions = compatibleServicePermissions();
+            else
+                servicePermissions = Collections.emptyMap();
+        }
     }
 
     /** {@inheritDoc} */

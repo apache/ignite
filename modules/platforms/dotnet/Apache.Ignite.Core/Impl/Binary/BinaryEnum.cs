@@ -88,6 +88,12 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /** <inheritdoc /> */
+        public string EnumName
+        {
+            get { return _marsh.GetBinaryType(_typeId).GetEnumName(_enumValue); }
+        }
+
+        /** <inheritdoc /> */
         public IBinaryObjectBuilder ToBuilder()
         {
             throw new NotSupportedException("Builder cannot be created for enum.");
@@ -136,11 +142,8 @@ namespace Apache.Ignite.Core.Impl.Binary
                 return string.Format("BinaryEnum [typeId={0}, enumValue={1}]", _typeId, _enumValue);
             }
 
-            var desc = _marsh.GetDescriptor(true, _typeId);
-            var enumValueName = desc != null && desc.Type != null ? Enum.GetName(desc.Type, _enumValue) : null;
-
             return string.Format("{0} [typeId={1}, enumValue={2}, enumValueName={3}]",
-                meta.TypeName, _typeId, _enumValue, enumValueName);
+                meta.TypeName, _typeId, _enumValue, EnumName);
         }
     }
 }

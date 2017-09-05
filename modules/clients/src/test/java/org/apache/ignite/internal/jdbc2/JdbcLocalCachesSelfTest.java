@@ -93,8 +93,6 @@ public class JdbcLocalCachesSelfTest extends GridCommonAbstractTest {
 
         cache2.put("key1", 3);
         cache2.put("key2", 4);
-
-        Class.forName("org.apache.ignite.IgniteJdbcDriver");
     }
 
     /** {@inheritDoc} */

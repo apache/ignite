@@ -59,6 +59,7 @@ import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import junit.framework.Test;
+import junit.framework.TestCase;
 import junit.framework.TestSuite;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -99,6 +100,8 @@ import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import static org.springframework.util.FileSystemUtils.deleteRecursively;
 
 /**
  * Utility class for tests.
@@ -344,7 +347,7 @@ public final class GridTestUtils {
             Throwable t = e;
 
             while (t != null) {
-                if (cls == t.getClass() && (msg == null || (t.getMessage() != null || t.getMessage().contains(msg)))) {
+                if (cls == t.getClass() && (msg == null || (t.getMessage() != null && t.getMessage().contains(msg)))) {
                     log.info("Caught expected exception: " + t.getMessage());
 
                     return t;
@@ -411,6 +414,32 @@ public final class GridTestUtils {
 
         try {
             call.call();
+        }
+        catch (Throwable e) {
+            if (!X.hasCause(e, cls))
+                fail("Exception is neither of a specified class, nor has a cause of the specified class: " + cls, e);
+
+            return e;
+        }
+
+        throw new AssertionError("Exception has not been thrown.");
+    }
+
+    /**
+     * Checks whether closure throws exception, which is itself of a specified
+     * class, or has a cause of the specified class.
+     *
+     * @param call Closure.
+     * @param p Parameter passed to closure.
+     * @param cls Expected class.
+     * @return Thrown throwable.
+     */
+    public static <P> Throwable assertThrowsWithCause(IgniteInClosure<P> call, P p, Class<? extends Throwable> cls) {
+        assert call != null;
+        assert cls != null;
+
+        try {
+            call.apply(p);
         }
         catch (Throwable e) {
             if (!X.hasCause(e, cls))
@@ -1671,6 +1700,26 @@ public final class GridTestUtils {
     }
 
     /**
+     * Creates test-purposed SSL context factory from specified key store and trust store.
+     *
+     * @param keyStore Key store name.
+     * @param trustStore Trust store name.
+     * @return SSL context factory used in test.
+     */
+    public static Factory<SSLContext> sslTrustedFactory(String keyStore, String trustStore) {
+        SslContextFactory factory = new SslContextFactory();
+
+        factory.setKeyStoreFilePath(U.resolveIgnitePath(GridTestProperties.getProperty(
+            "ssl.keystore." + keyStore + ".path")).getAbsolutePath());
+        factory.setKeyStorePassword(GridTestProperties.getProperty("ssl.keystore.password").toCharArray());
+        factory.setTrustStoreFilePath(U.resolveIgnitePath(GridTestProperties.getProperty(
+            "ssl.keystore." + trustStore + ".path")).getAbsolutePath());
+        factory.setTrustStorePassword(GridTestProperties.getProperty("ssl.keystore.password").toCharArray());
+
+        return factory;
+    }
+
+    /**
      * @param o1 Object 1.
      * @param o2 Object 2.
      * @return Equals or not.
@@ -1848,9 +1897,10 @@ public final class GridTestUtils {
      *
      * @param suite TestSuite where to place the test.
      * @param test Test.
-     * @param ignoredTests Tests to ignore.
+     * @param ignoredTests Tests to ignore. If test contained in the collection it is not included in suite
      */
-    public static void addTestIfNeeded(TestSuite suite, Class test, Set<Class> ignoredTests) {
+    public static void addTestIfNeeded(@NotNull final TestSuite suite, @NotNull final Class<? extends TestCase> test,
+        @Nullable final Collection<Class> ignoredTests) {
         if (ignoredTests != null && ignoredTests.contains(test))
             return;
 
@@ -1873,5 +1923,12 @@ public final class GridTestUtils {
             b.append(ALPHABETH.charAt(rnd.nextInt(ALPHABETH.length())));
 
         return b.toString();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public static void deleteDbFiles() throws Exception {
+        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
     }
 }

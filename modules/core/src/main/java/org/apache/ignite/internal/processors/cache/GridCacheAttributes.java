@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.io.Externalizable;
 import java.io.Serializable;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -49,16 +48,17 @@ public class GridCacheAttributes implements Serializable {
 
     /**
      * @param cfg Cache configuration.
+     *
      */
     public GridCacheAttributes(CacheConfiguration cfg) {
         ccfg = cfg;
     }
 
     /**
-     * Public no-arg constructor for {@link Externalizable}.
+     * @return Cache group name.
      */
-    public GridCacheAttributes() {
-        // No-op.
+    public String groupName() {
+        return ccfg.getGroupName();
     }
 
     /**
@@ -203,6 +203,41 @@ public class GridCacheAttributes implements Serializable {
     }
 
     /**
+     * @return Rebalance delay.
+     */
+    public long rebalanceDelay() {
+        return ccfg.getRebalanceDelay();
+    }
+
+    /**
+     * @return Rebalance prefetch count.
+     */
+    public long rebalanceBatchesPrefetchCount() {
+        return ccfg.getRebalanceBatchesPrefetchCount();
+    }
+
+    /**
+     * @return Rebalance order.
+     */
+    public int rebalanceOrder() {
+        return ccfg.getRebalanceOrder();
+    }
+
+    /**
+     * @return Rebalance throttle.
+     */
+    public long rebalanceThrottle() {
+        return ccfg.getRebalanceThrottle();
+    }
+
+    /**
+     * @return Rebalance timeout.
+     */
+    public long rebalanceTimeout() {
+        return ccfg.getRebalanceTimeout();
+    }
+
+    /**
      * @return Synchronization mode.
      */
     public CacheWriteSynchronizationMode writeSynchronization() {
@@ -266,10 +301,31 @@ public class GridCacheAttributes implements Serializable {
     }
 
     /**
+     * @return Write coalescing flag.
+     */
+    public boolean writeBehindCoalescing() {
+        return ccfg.getWriteBehindCoalescing();
+    }
+
+    /**
      * @return Interceptor class name.
      */
     public String interceptorClassName() {
         return className(ccfg.getInterceptor());
+    }
+
+    /**
+     * @return Node filter class name.
+     */
+    String nodeFilterClassName() {
+        return className(ccfg.getNodeFilter());
+    }
+
+    /**
+     * @return Topology validator class name.
+     */
+    String topologyValidatorClassName() {
+        return className(ccfg.getTopologyValidator());
     }
 
     /**

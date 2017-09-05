@@ -28,6 +28,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockCancelledException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicAbstractUpdateFuture;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -192,23 +193,11 @@ public interface GridCacheEntryEx {
     /**
      * Invalidates this entry.
      *
-     * @param curVer Current version to match ({@code null} means always match).
      * @param newVer New version to set.
      * @return {@code true} if entry is obsolete.
      * @throws IgniteCheckedException If swap could not be released.
      */
-    public boolean invalidate(@Nullable GridCacheVersion curVer, GridCacheVersion newVer) throws IgniteCheckedException;
-
-    /**
-     * Invalidates this entry if it passes given filter.
-     *
-     * @param filter Optional filter that entry should pass before invalidation.
-     * @return {@code true} if entry was actually invalidated.
-     * @throws IgniteCheckedException If swap could not be released.
-     * @throws GridCacheEntryRemovedException If entry was removed.
-     */
-    public boolean invalidate(@Nullable CacheEntryPredicate[] filter)
-        throws GridCacheEntryRemovedException, IgniteCheckedException;
+    public boolean invalidate(GridCacheVersion newVer) throws IgniteCheckedException;
 
     /**
      * @param obsoleteVer Version for eviction.
@@ -332,9 +321,8 @@ public interface GridCacheEntryEx {
 
     /**
      * @param ver Expected entry version.
-     * @throws IgniteCheckedException If failed.
      */
-    public void clearReserveForLoad(GridCacheVersion ver) throws IgniteCheckedException;
+    public void clearReserveForLoad(GridCacheVersion ver);
 
     /**
      * Reloads entry from underlying storage.
@@ -932,11 +920,27 @@ public interface GridCacheEntryEx {
     public void updateTtl(@Nullable GridCacheVersion ver, long ttl) throws GridCacheEntryRemovedException;
 
     /**
+     * Ensures that the value stored in the entry is also inserted in the indexing.
+     *
+     * @throws GridCacheEntryRemovedException If entry was removed.
+     */
+    public void ensureIndexed() throws GridCacheEntryRemovedException, IgniteCheckedException;
+
+    /**
      * @return Value.
      * @throws IgniteCheckedException If failed to read from swap storage.
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
     @Nullable public CacheObject unswap()
+        throws IgniteCheckedException, GridCacheEntryRemovedException;
+
+    /**
+     * @param row Already extracted value.
+     * @return Value.
+     * @throws IgniteCheckedException If failed to read from swap storage.
+     * @throws GridCacheEntryRemovedException If entry was removed.
+     */
+    @Nullable public CacheObject unswap(CacheDataRow row)
         throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**

@@ -25,6 +25,8 @@ namespace Apache.Ignite.Core.Tests.Binary
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
+    using System.Threading;
+    using System.Threading.Tasks;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Store;
@@ -316,18 +318,19 @@ namespace Apache.Ignite.Core.Tests.Binary
                 var cache = ignite.CreateCache<int, object>(cacheCfg);
 
                 // Force dynamic registration for .NET
-                cache.Put(1, new PlatformComputeBinarizable {Field = 7});
+                cache.Put(-1, new PlatformComputeBinarizable {Field = 7});
+                cache.Put(ComputeApiTest.EchoTypeBinarizable, 255);
 
                 // Run Java code that will also perform dynamic registration
                 var fromJava = ignite.GetCompute().ExecuteJavaTask<PlatformComputeBinarizable>(ComputeApiTest.EchoTask,
                     ComputeApiTest.EchoTypeBinarizable);
 
                 // Check that objects are compatible
-                Assert.AreEqual(1, fromJava.Field);
+                Assert.AreEqual(255, fromJava.Field);
 
                 // Check that Java can read what .NET has put
                 var qryRes = ignite.GetCompute().ExecuteJavaTask<IList>(
-                    BinaryCompactFooterInteropTest.PlatformSqlQueryTask, "Field < 10");
+                    BinaryCompactFooterInteropTest.PlatformSqlQueryTask, "Field = 7");
 
                 Assert.AreEqual(7, qryRes.OfType<PlatformComputeBinarizable>().Single().Field);
             }
@@ -351,6 +354,53 @@ namespace Apache.Ignite.Core.Tests.Binary
 
                     Assert.AreEqual(1, cache2[1].Id);  // Read ExamplesAccount as Account.
                     Assert.AreEqual(2, cache1[2].Id);  // Read Account as ExamplesAccount.
+                }
+            }
+        }
+
+        /// <summary>
+        /// Tests registration in multiple threads.
+        /// </summary>
+        [Test]
+        public void TestRegistrationMultithreaded([Values(true, false)] bool useTypeName)
+        {
+            const int iterations = 50;
+            const int threads = 4;
+
+            using (var ignite = Ignition.Start(TestUtils.GetTestConfiguration()))
+            {
+                var cache = ignite.CreateCache<int, int>("c").WithKeepBinary<int, IBinaryObject>();
+                var bin = ignite.GetBinary();
+                Func<Type, IBinaryObjectBuilder> getBuilder = x =>
+                    useTypeName ? bin.GetBuilder(x.FullName) : bin.GetBuilder(x);
+                    
+                var types = new[] { typeof(Foo), typeof(Bar), typeof(Bin) };
+
+                foreach (var type in types)
+                {
+                    var type0 = type;  // Modified closure.
+
+                    for (var i = 0; i < iterations; i++)
+                    {
+                        var countdown = new CountdownEvent(threads);
+
+                        Action registerType = () =>
+                        {
+                            countdown.Signal();
+                            Assert.IsTrue(countdown.Wait(5000));
+
+                            var binObj = getBuilder(type0).SetIntField("x", 1).Build();
+                            cache[1] = binObj;
+
+                            Assert.AreEqual(binObj, cache[1]);
+                        };
+
+                        var tasks = Enumerable.Range(0, threads)
+                            .Select(x => Task.Factory.StartNew(registerType))
+                            .ToArray();
+
+                        Task.WaitAll(tasks);
+                    }
                 }
             }
         }

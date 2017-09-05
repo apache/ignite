@@ -14,14 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.ignite.ml.math.exceptions;
 
 /**
  * This class is based on the corresponding class from Apache Common Math lib.
  * Base class for arithmetic exceptions.
- * It is used for all the exceptions that have the semantics of the standard
- * {@link ArithmeticException}, but must also provide a localized
- * message.
  */
 public class MathArithmeticException extends MathRuntimeException {
     /** Serializable version Id. */
@@ -31,7 +29,7 @@ public class MathArithmeticException extends MathRuntimeException {
      * Default constructor.
      */
     public MathArithmeticException() {
-        this("arithmetic exception");
+        this("Arithmetic exception.");
     }
 
     /**

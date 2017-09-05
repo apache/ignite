@@ -28,7 +28,7 @@
 
 #include <ignite/common/common.h>
 
-#include <ignite/ignite_error.h>
+#include <ignite/impl/binary/binary_type_impl.h>
 
 /**
  * @def IGNITE_BINARY_TYPE_START(T)

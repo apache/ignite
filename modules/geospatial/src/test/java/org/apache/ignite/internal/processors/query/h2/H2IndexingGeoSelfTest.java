@@ -25,6 +25,6 @@ public class H2IndexingGeoSelfTest extends H2IndexingAbstractGeoSelfTest {
      * Constructor.
      */
     public H2IndexingGeoSelfTest() {
-        super(false, false);
+        super(false);
     }
 }

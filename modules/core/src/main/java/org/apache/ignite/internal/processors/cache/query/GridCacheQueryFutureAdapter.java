@@ -369,18 +369,24 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
             return;
 
         if (log.isDebugEnabled())
-            log.debug("Received query result page [nodeId=" + nodeId + ", data=" + data +
-                ", err=" + err + ", finished=" + finished + "]");
+            log.debug(S.toString("Received query result page",
+                "nodeId", nodeId, false,
+                "data", data, true,
+                "err", err, false,
+                "finished", finished, false));
 
         try {
             if (err != null)
                 synchronized (this) {
                     enqueue(Collections.emptyList());
 
-                    onDone(nodeId != null ?
-                        new IgniteCheckedException("Failed to execute query on node [query=" + qry +
-                            ", nodeId=" + nodeId + "]", err) :
-                        new IgniteCheckedException("Failed to execute query locally: " + qry, err));
+                    onDone(new IgniteCheckedException(nodeId != null ?
+                        S.toString("Failed to execute query on node",
+                            "query", qry, true,
+                            "nodeId", nodeId, false) :
+                        S.toString("Failed to execute query locally",
+                            "query", qry, true),
+                        err));
 
                     onPage(nodeId, true);
 

@@ -31,7 +31,7 @@ mixin hard-link(ref, txt)
             li Download ready-to-use Maven project
     hr
     .padding-dflt(ng-if='ui.ready && (!clusters || clusters.length == 0)')
-        | You have no clusters configured. Please configure them #[a(ui-sref='base.configuration.clusters') here].
+        | You have no clusters configured. Please configure them #[a(ui-sref='base.configuration.tabs.advanced.clusters') here].
 
     div(ng-show='clusters && clusters.length > 0' ignite-loading='summaryPage' ignite-loading-text='Loading summary screen...' ignite-loading-position='top')
         +main-table('clusters', 'clustersView', 'clusterName', 'selectItem(row)', '{{$index + 1}}) {{row.name}}', 'name')

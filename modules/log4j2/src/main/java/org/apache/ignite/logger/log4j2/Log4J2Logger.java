@@ -356,7 +356,7 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAware {
         PatternLayout.Builder builder = PatternLayout.newBuilder();
 
         builder
-            .withPattern("%d{ABSOLUTE}][%-5p][%t][%c{1}] %m%n")
+            .withPattern("%d{ISO8601}][%-5p][%t][%c{1}] %m%n")
             .withCharset(Charset.defaultCharset())
             .withAlwaysWriteExceptions(false)
             .withNoConsoleNoAnsi(false);

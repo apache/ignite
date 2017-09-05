@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query;
 
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Value descriptor which allows to extract fields from value object of given type.
@@ -30,6 +31,13 @@ public interface GridQueryTypeDescriptor {
      * @return Type name which uniquely identifies this type.
      */
     public String name();
+
+    /**
+     * Gets schema name for type (database schema means here).
+     *
+     * @return Schema name.
+     */
+    public String schemaName();
 
     /**
      * Gets table name for type.
@@ -145,4 +153,18 @@ public interface GridQueryTypeDescriptor {
      * @return value field name.
      */
     public String valueFieldName();
+
+    /**
+     * Gets key field alias.
+     *
+     * @return Key field alias.
+     */
+    @Nullable public String keyFieldAlias();
+
+    /**
+     * Gets value field alias.
+     *
+     * @return value field alias.
+     */
+    @Nullable public String valueFieldAlias();
 }

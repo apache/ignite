@@ -43,6 +43,15 @@ public interface BinaryMetadataHandler {
     public BinaryType metadata(int typeId) throws BinaryObjectException;
 
     /**
+     * Gets unwrapped meta data for provided type ID.
+     *
+     * @param typeId Type ID.
+     * @return Metadata.
+     * @throws BinaryObjectException In case of error.
+     */
+    public BinaryMetadata metadata0(int typeId) throws BinaryObjectException;
+
+    /**
      * Gets metadata for provided type ID and schema ID.
      *
      * @param typeId Type ID.

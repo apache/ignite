@@ -131,7 +131,18 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             get
             {
-                throw new NotSupportedException("IBinaryObject.Value is only supported for enums. " +
+                throw new NotSupportedException("IBinaryObject.EnumValue is only supported for enums. " +
+                    "Check IBinaryObject.GetBinaryType().IsEnum property before accessing Value.");
+            }
+        }
+
+        /** <inheritdoc /> */
+        [ExcludeFromCodeCoverage]
+        public string EnumName
+        {
+            get
+            {
+                throw new NotSupportedException("IBinaryObject.EnumName is only supported for enums. " +
                     "Check IBinaryObject.GetBinaryType().IsEnum property before accessing Value.");
             }
         }
@@ -228,7 +239,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             {
                 var hdr = BinaryObjectHeader.Read(stream, _offset);
 
-                _fields = BinaryObjectSchemaSerializer.ReadSchema(stream, _offset, hdr, desc.Schema,_marsh)
+                _fields = BinaryObjectSchemaSerializer.ReadSchema(stream, _offset, hdr, desc.Schema, _marsh.Ignite)
                     .ToDictionary() ?? EmptyFields;
             }
         }

@@ -33,35 +33,38 @@ namespace ignite
     {
         namespace app
         {
-            using ignite::impl::binary::BinaryUtils;
+            using impl::binary::BinaryUtils;
 
             ApplicationDataBuffer::ApplicationDataBuffer() :
                 type(type_traits::OdbcNativeType::AI_UNSUPPORTED),
                 buffer(0),
                 buflen(0),
                 reslen(0),
-                offset(0)
+                byteOffset(0),
+                elementOffset(0)
             {
                 // No-op.
             }
 
             ApplicationDataBuffer::ApplicationDataBuffer(type_traits::OdbcNativeType::Type type,
-                void* buffer, SqlLen buflen, SqlLen* reslen, int** offset) :
+                void* buffer, SqlLen buflen, SqlLen* reslen) :
                 type(type),
                 buffer(buffer),
                 buflen(buflen),
                 reslen(reslen),
-                offset(offset)
+                byteOffset(0),
+                elementOffset(0)
             {
                 // No-op.
             }
 
-            ApplicationDataBuffer::ApplicationDataBuffer(const ApplicationDataBuffer & other) :
+            ApplicationDataBuffer::ApplicationDataBuffer(const ApplicationDataBuffer& other) :
                 type(other.type),
                 buffer(other.buffer),
                 buflen(other.buflen),
                 reslen(other.reslen),
-                offset(other.offset)
+                byteOffset(other.byteOffset),
+                elementOffset(other.elementOffset)
             {
                 // No-op.
             }
@@ -77,7 +80,8 @@ namespace ignite
                 buffer = other.buffer;
                 buflen = other.buflen;
                 reslen = other.reslen;
-                offset = other.offset;
+                byteOffset = other.byteOffset;
+                elementOffset = other.elementOffset;
 
                 return *this;
             }
@@ -1228,22 +1232,22 @@ namespace ignite
 
             const void* ApplicationDataBuffer::GetData() const
             {
-                return ApplyOffset(buffer);
+                return ApplyOffset(buffer, GetElementSize());
             }
 
             const SqlLen* ApplicationDataBuffer::GetResLen() const
             {
-                return ApplyOffset(reslen);
+                return ApplyOffset(reslen, sizeof(*reslen));
             }
 
             void* ApplicationDataBuffer::GetData()
             {
-                return ApplyOffset(buffer);
+                return ApplyOffset(buffer, GetElementSize());
             }
 
             SqlLen* ApplicationDataBuffer::GetResLen()
             {
-                return ApplyOffset(reslen);
+                return ApplyOffset(reslen, sizeof(*reslen));
             }
 
             template<typename T>
@@ -1645,12 +1649,12 @@ namespace ignite
             }
 
             template<typename T>
-            T* ApplicationDataBuffer::ApplyOffset(T* ptr) const
+            T* ApplicationDataBuffer::ApplyOffset(T* ptr, size_t elemSize) const
             {
-                if (!ptr || !offset || !*offset)
+                if (!ptr)
                     return ptr;
 
-                return utility::GetPointerWithOffset(ptr, **offset);
+                return utility::GetPointerWithOffset(ptr, byteOffset + elemSize * elementOffset);
             }
 
             bool ApplicationDataBuffer::IsDataAtExec() const
@@ -1692,6 +1696,64 @@ namespace ignite
 
                         return ilen;
                     }
+
+                    case OdbcNativeType::AI_SIGNED_SHORT:
+                    case OdbcNativeType::AI_UNSIGNED_SHORT:
+                        return static_cast<SqlLen>(sizeof(short));
+
+                    case OdbcNativeType::AI_SIGNED_LONG:
+                    case OdbcNativeType::AI_UNSIGNED_LONG:
+                        return static_cast<SqlLen>(sizeof(long));
+
+                    case OdbcNativeType::AI_FLOAT:
+                        return static_cast<SqlLen>(sizeof(float));
+
+                    case OdbcNativeType::AI_DOUBLE:
+                        return static_cast<SqlLen>(sizeof(double));
+
+                    case OdbcNativeType::AI_BIT:
+                    case OdbcNativeType::AI_SIGNED_TINYINT:
+                    case OdbcNativeType::AI_UNSIGNED_TINYINT:
+                        return static_cast<SqlLen>(sizeof(char));
+
+                    case OdbcNativeType::AI_SIGNED_BIGINT:
+                    case OdbcNativeType::AI_UNSIGNED_BIGINT:
+                        return static_cast<SqlLen>(sizeof(SQLBIGINT));
+
+                    case OdbcNativeType::AI_TDATE:
+                        return static_cast<SqlLen>(sizeof(SQL_DATE_STRUCT));
+
+                    case OdbcNativeType::AI_TTIME:
+                        return static_cast<SqlLen>(sizeof(SQL_TIME_STRUCT));
+
+                    case OdbcNativeType::AI_TTIMESTAMP:
+                        return static_cast<SqlLen>(sizeof(SQL_TIMESTAMP_STRUCT));
+
+                    case OdbcNativeType::AI_NUMERIC:
+                        return static_cast<SqlLen>(sizeof(SQL_NUMERIC_STRUCT));
+
+                    case OdbcNativeType::AI_GUID:
+                        return static_cast<SqlLen>(sizeof(SQLGUID));
+
+                    case OdbcNativeType::AI_DEFAULT:
+                    case OdbcNativeType::AI_UNSUPPORTED:
+                    default:
+                        break;
+                }
+
+                return 0;
+            }
+
+            SqlLen ApplicationDataBuffer::GetElementSize() const
+            {
+                using namespace type_traits;
+
+                switch (type)
+                {
+                    case OdbcNativeType::AI_WCHAR:
+                    case OdbcNativeType::AI_CHAR:
+                    case OdbcNativeType::AI_BINARY:
+                        return buflen;
 
                     case OdbcNativeType::AI_SIGNED_SHORT:
                     case OdbcNativeType::AI_UNSIGNED_SHORT:

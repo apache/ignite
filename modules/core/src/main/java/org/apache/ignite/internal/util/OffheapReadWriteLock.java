@@ -197,6 +197,8 @@ public class OffheapReadWriteLock {
      * @param lock Lock address.
      */
     public boolean writeLock(long lock, int tag) {
+        assert tag != 0;
+
         for (int i = 0; i < SPIN_CNT; i++) {
             long state = GridUnsafe.getLongVolatile(null, lock);
 
@@ -251,6 +253,8 @@ public class OffheapReadWriteLock {
      */
     public void writeUnlock(long lock, int tag) {
         long updated;
+
+        assert tag != 0;
 
         while (true) {
             long state = GridUnsafe.getLongVolatile(null, lock);

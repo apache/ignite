@@ -54,8 +54,18 @@ mixin table-igfs-path-mode-edit(prefix, focusId, index)
             .col-sm-6
                 .settings-row
                     +number('Block size:', `${model}.blockSize`, '"blockSize"', 'true', '65536', '0', 'File data block size in bytes')
-                .settings-row
-                    +number('Buffer size:', `${model}.bufferSize`, '"bufferSize"', 'true', '65536', '0', 'Read/write buffer size for IGFS stream operations in bytes')
+
+                //- Since ignite 2.0
+                .settings-row(ng-if='$ctrl.available("2.0.0")')
+                    +number('Buffer size:', `${model}.streamBufferSize`, '"streamBufferSize"', 'true', '65536', '0', 'Read/write buffer size for IGFS stream operations in bytes')
+
+                //- Removed in ignite 2.0
+                div(ng-if='$ctrl.available(["1.0.0", "2.0.0"])')
+                    .settings-row
+                        +number('Stream buffer size:', `${model}.streamBufferSize`, '"streamBufferSize"', 'true', '65536', '0', 'Read/write buffer size for IGFS stream operations in bytes')
+                    .settings-row
+                        +number('Maximum space size:', `${model}.maxSpaceSize`, '"maxSpaceSize"', 'true', '0', '0', 'Maximum space available for data cache to store file system entries')
+
                 .settings-row
                     +number('Maximum task range length:', `${model}.maximumTaskRangeLength`, '"maximumTaskRangeLength"', 'true', '0', '0', 'Maximum default range size of a file being split during IGFS task execution')
                 .settings-row
@@ -68,6 +78,11 @@ mixin table-igfs-path-mode-edit(prefix, focusId, index)
                     +number('Prefetch blocks:', `${model}.prefetchBlocks`, '"prefetchBlocks"', 'true', '0', '0', 'Number of pre-fetched blocks if specific file chunk is requested')
                 .settings-row
                     +number('Sequential reads before prefetch:', `${model}.sequentialReadsBeforePrefetch`, '"sequentialReadsBeforePrefetch"', 'true', '0', '0', 'Amount of sequential block reads before prefetch is triggered')
+
+                //- Removed in ignite 2.0
+                .settings-row(ng-if='$ctrl.available(["1.0.0", "2.0.0"])')
+                    +number('Trash purge timeout:', `${model}.trashPurgeTimeout`, '"trashPurgeTimeout"', 'true', '1000', '0', 'Maximum timeout awaiting for trash purging in case data cache oversize is detected')
+
                 .settings-row
                     +checkbox('Colocate metadata', `${model}.colocateMetadata`, '"colocateMetadata"', 'Whether to co-locate metadata on a single node')
                 .settings-row
@@ -75,6 +90,11 @@ mixin table-igfs-path-mode-edit(prefix, focusId, index)
                         'If value of this flag is <b>true</b>, IGFS will skip expensive consistency checks<br/>\
                         It is recommended to set this flag to <b>false</b> if your application has conflicting\
                         operations, or you do not know how exactly users will use your system')
+
+                //- Since ignite 2.0
+                .settings-row(ng-if='$ctrl.available("2.0.0")')
+                    +checkbox('Update file length on flush', model + '.updateFileLengthOnFlush', '"updateFileLengthOnFlush"', 'Update file length on flush flag')
+
                 .settings-row
                     +ignite-form-group(ng-model=pathModes ng-form=pathModesForm)
                         ignite-form-field-label
@@ -99,6 +119,5 @@ mixin table-igfs-path-mode-edit(prefix, focusId, index)
                                     tr
                                         td.col-sm-12
                                             +table-igfs-path-mode-edit('new', 'PathMode', '-1')
-
             .col-sm-6
                 +preview-xml-java(model, 'igfsMisc')

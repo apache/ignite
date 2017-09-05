@@ -34,6 +34,6 @@ export default ['igniteFormFieldUp', ['$tooltip', ($tooltip) => {
             models: '=models'
         },
         controller,
-        controllerAs: '$ctrl'
+        controllerAs: 'vm'
     };
 }]];

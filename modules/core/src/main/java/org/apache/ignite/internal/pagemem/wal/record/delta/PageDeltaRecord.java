@@ -29,18 +29,18 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  */
 public abstract class PageDeltaRecord extends WALRecord {
     /** */
-    private int cacheId;
+    private int grpId;
 
     /** */
     @GridToStringExclude
     private long pageId;
 
     /**
-     * @param cacheId Cache ID.
+     * @param grpId Cache group ID.
      * @param pageId Page ID.
      */
-    protected PageDeltaRecord(int cacheId, long pageId) {
-        this.cacheId = cacheId;
+    protected PageDeltaRecord(int grpId, long pageId) {
+        this.grpId = grpId;
         this.pageId = pageId;
     }
 
@@ -52,10 +52,10 @@ public abstract class PageDeltaRecord extends WALRecord {
     }
 
     /**
-     * @return Cache ID.
+     * @return Cache group ID.
      */
-    public int cacheId() {
-        return cacheId;
+    public int groupId() {
+        return grpId;
     }
 
     /**

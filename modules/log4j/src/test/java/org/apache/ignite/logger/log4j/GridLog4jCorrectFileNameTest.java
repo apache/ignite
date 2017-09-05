@@ -120,7 +120,7 @@ public class GridLog4jCorrectFileNameTest extends TestCase {
     private static Log4jRollingFileAppender createAppender() throws Exception {
         Log4jRollingFileAppender appender = new Log4jRollingFileAppender();
 
-        appender.setLayout(new PatternLayout("[%d{ABSOLUTE}][%-5p][%t][%c{1}] %m%n"));
+        appender.setLayout(new PatternLayout("[%d{ISO8601}][%-5p][%t][%c{1}] %m%n"));
         appender.setFile("work/log/ignite.log");
         appender.setName(Log4jRollingFileAppender.class.getSimpleName());
 

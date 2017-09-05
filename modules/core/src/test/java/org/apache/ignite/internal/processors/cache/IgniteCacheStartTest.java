@@ -18,9 +18,9 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -176,8 +176,9 @@ public class IgniteCacheStartTest extends GridCommonAbstractTest {
      * @param idx Node index.
      * @param cacheName Cache name.
      * @param expCache {@code True} if cache should be created.
+     * @throws IgniteCheckedException If failed.
      */
-    private void checkCache(int idx, final String cacheName, final boolean expCache) throws IgniteInterruptedCheckedException {
+    private void checkCache(int idx, final String cacheName, final boolean expCache) throws IgniteCheckedException {
         final IgniteKernal node = (IgniteKernal)ignite(idx);
 
         assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {

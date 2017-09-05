@@ -19,7 +19,7 @@ package org.apache.ignite.internal.pagemem.wal.record.delta;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.internal.processors.cache.database.tree.io.DataPageIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
 
 /**
  * Update existing record in data page.
@@ -32,18 +32,18 @@ public class DataPageUpdateRecord extends PageDeltaRecord {
     private byte[] payload;
 
     /**
-     * @param cacheId Cache ID.
+     * @param grpId Cache group ID.
      * @param pageId Page ID.
      * @param itemId Item ID.
      * @param payload Record data.
      */
     public DataPageUpdateRecord(
-        int cacheId,
+        int grpId,
         long pageId,
         int itemId,
         byte[] payload
     ) {
-        super(cacheId, pageId);
+        super(grpId, pageId);
 
         this.payload = payload;
         this.itemId = itemId;

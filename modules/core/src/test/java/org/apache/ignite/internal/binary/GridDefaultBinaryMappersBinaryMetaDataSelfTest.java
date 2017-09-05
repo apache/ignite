@@ -150,22 +150,6 @@ public class GridDefaultBinaryMappersBinaryMetaDataSelfTest extends GridCommonAb
             else
                 assert false : meta.typeName();
         }
-
-        grid().cache(DEFAULT_CACHE_NAME).put(new AffinityKey<>(1, 1), 1);
-
-        metas = binaries().types();
-
-        assertEquals(3, metas.size());
-
-        for (BinaryType meta : metas) {
-            if (AffinityKey.class.getSimpleName().equals(meta.typeName())) {
-                assertEquals("affKey", meta.affinityKeyFieldName());
-
-                return;
-            }
-        }
-
-        fail("Failed to find metadata for AffinityKey");
     }
 
     /**

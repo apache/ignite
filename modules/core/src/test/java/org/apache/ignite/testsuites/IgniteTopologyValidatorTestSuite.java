@@ -19,11 +19,17 @@ package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.IgniteTopologyValidatorGridSplitCacheTest;
+import org.apache.ignite.internal.processors.cache.IgniteTopologyValidatorNearPartitionedAtomicCacheGroupsTest;
 import org.apache.ignite.internal.processors.cache.IgniteTopologyValidatorNearPartitionedAtomicCacheTest;
+import org.apache.ignite.internal.processors.cache.IgniteTopologyValidatorNearPartitionedTxCacheGroupsTest;
 import org.apache.ignite.internal.processors.cache.IgniteTopologyValidatorNearPartitionedTxCacheTest;
+import org.apache.ignite.internal.processors.cache.IgniteTopologyValidatorPartitionedAtomicCacheGroupsTest;
 import org.apache.ignite.internal.processors.cache.IgniteTopologyValidatorPartitionedAtomicCacheTest;
+import org.apache.ignite.internal.processors.cache.IgniteTopologyValidatorPartitionedTxCacheGroupsTest;
 import org.apache.ignite.internal.processors.cache.IgniteTopologyValidatorPartitionedTxCacheTest;
+import org.apache.ignite.internal.processors.cache.IgniteTopologyValidatorReplicatedAtomicCacheGroupsTest;
 import org.apache.ignite.internal.processors.cache.IgniteTopologyValidatorReplicatedAtomicCacheTest;
+import org.apache.ignite.internal.processors.cache.IgniteTopologyValidatorReplicatedTxCacheGroupsTest;
 import org.apache.ignite.internal.processors.cache.IgniteTopologyValidatorReplicatedTxCacheTest;
 
 /**
@@ -43,6 +49,14 @@ public class IgniteTopologyValidatorTestSuite extends TestSuite {
         suite.addTest(new TestSuite(IgniteTopologyValidatorPartitionedTxCacheTest.class));
         suite.addTest(new TestSuite(IgniteTopologyValidatorReplicatedAtomicCacheTest.class));
         suite.addTest(new TestSuite(IgniteTopologyValidatorReplicatedTxCacheTest.class));
+
+        suite.addTest(new TestSuite(IgniteTopologyValidatorNearPartitionedAtomicCacheGroupsTest.class));
+        suite.addTest(new TestSuite(IgniteTopologyValidatorNearPartitionedTxCacheGroupsTest.class));
+        suite.addTest(new TestSuite(IgniteTopologyValidatorPartitionedAtomicCacheGroupsTest.class));
+        suite.addTest(new TestSuite(IgniteTopologyValidatorPartitionedTxCacheGroupsTest.class));
+        suite.addTest(new TestSuite(IgniteTopologyValidatorReplicatedAtomicCacheGroupsTest.class));
+        suite.addTest(new TestSuite(IgniteTopologyValidatorReplicatedTxCacheGroupsTest.class));
+
         suite.addTest(new TestSuite(IgniteTopologyValidatorGridSplitCacheTest.class));
 
         return suite;

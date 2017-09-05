@@ -25,6 +25,7 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -34,11 +35,12 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -73,7 +75,7 @@ public abstract class AbstractH2CompareQueryTest extends GridCommonAbstractTest 
 
         c.setDiscoverySpi(disco);
 
-        c.setMarshaller(new OptimizedMarshaller(true));
+        c.setMarshaller(new BinaryMarshaller());
 
         return c;
     }
@@ -94,7 +96,7 @@ public abstract class AbstractH2CompareQueryTest extends GridCommonAbstractTest 
         cc.setCacheMode(mode);
         cc.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cc.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
-        cc.setIndexedTypes(clsK, clsV);
+        cc.setQueryEntities(Collections.singleton(new QueryEntity(clsK, clsV)));
 
         return cc;
     }

@@ -34,25 +34,21 @@ include /app/helpers/jade/mixins
     .panel-collapse(role='tabpanel' bs-collapse-target id=`${form}`)
         .panel-body(ng-if=`ui.isPanelLoaded('${form}')`)
             .col-sm-6
-                .settings-row
-                    +dropdown-multiple('Include type:', `${model}.includeEventTypes`, '"includeEventTypes"', true, 'Choose recorded event types', '', 'eventGroups',
-                    'Array of event types, which will be recorded by GridEventStorageManager#record(Event)<br/>\
-                    Note, that either the include event types or the exclude event types can be established')
-
-                .settings-row
-                    +dropdown('Event storage:', modelEventStorageKind, '"eventStorageKind"', 'true', 'Disabled',
-                    '[\
-                        {value: "Memory", label: "Memory"},\
-                        {value: "Custom", label: "Custom"},\
-                        {value: undefined, label: "Disabled"}\
-                    ]',
+                .settings-row(ng-if='$ctrl.available(["1.0.0", "2.0.0"])')
+                    +dropdown('Event storage:', modelEventStorageKind, '"eventStorageKind"', 'true', 'Disabled', 'eventStorage',
+                    'Regulate how grid store events locally on node\
+                    <ul>\
+                        <li>Memory - All events are kept in the FIFO queue in-memory</li>\
+                        <li>Custom - Custom implementation of event storage SPI</li>\
+                    </ul>')
+                .settings-row(ng-if='$ctrl.available("2.0.0")')
+                    +dropdown('Event storage:', modelEventStorageKind, '"eventStorageKind"', 'true', 'Disabled', 'eventStorage',
                     'Regulate how grid store events locally on node\
                     <ul>\
                         <li>Memory - All events are kept in the FIFO queue in-memory</li>\
                         <li>Custom - Custom implementation of event storage SPI</li>\
                         <li>Disabled - Events are not collected</li>\
                     </ul>')
-
                 div(ng-show=eventStorageMemory)
                     .settings-row
                         +number('Events expiration time:', `${modelEventStorage}.Memory.expireAgeMs`, '"EventStorageExpireAgeMs"', 'true', 'Long.MAX_VALUE', '1', 'All events that exceed this value will be removed from the queue when next event comes')
@@ -66,5 +62,9 @@ include /app/helpers/jade/mixins
                 .settings-row(ng-show=eventStorageCustom)
                     +java-class('Class:', `${modelEventStorage}.Custom.className`, '"EventStorageCustom"', 'true', eventStorageCustom, 'Event storage implementation class name', eventStorageCustom)
 
+                .settings-row(ng-show=modelEventStorageKind)
+                    +dropdown-multiple('Include type:', `${model}.includeEventTypes`, '"includeEventTypes"', true, 'Choose recorded event types', '', 'eventGroups',
+                    'Array of event types, which will be recorded by GridEventStorageManager#record(Event)<br/>\
+                    Note, that either the include event types or the exclude event types can be established')
             .col-sm-6
                 +preview-xml-java(model, 'clusterEvents')

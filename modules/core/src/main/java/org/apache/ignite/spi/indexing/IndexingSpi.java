@@ -25,8 +25,7 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Indexing SPI allows user to index cache content. Using indexing SPI user can index data in cache and run
- * Usually cache name will be used as space name, so multiple caches can write to single indexing SPI instance.
+ * Indexing SPI allows user to index cache content. Using indexing SPI user can index data in cache and run queries.
  * <p>
  * <b>NOTE:</b> this SPI (i.e. methods in this interface) should never be used directly. SPIs provide
  * internal view on the subsystem and is used internally by Ignite kernal. In rare use cases when
@@ -66,33 +65,33 @@ public interface IndexingSpi extends IgniteSpi {
     /**
      * Executes query.
      *
-     * @param spaceName Space name.
+     * @param cacheName Cache name.
      * @param params Query parameters.
      * @param filters System filters.
      * @return Query result. If the iterator implements {@link AutoCloseable} it will be correctly closed.
      * @throws IgniteSpiException If failed.
      */
-    public Iterator<Cache.Entry<?,?>> query(@Nullable String spaceName, Collection<Object> params,
+    public Iterator<Cache.Entry<?,?>> query(@Nullable String cacheName, Collection<Object> params,
         @Nullable IndexingQueryFilter filters) throws IgniteSpiException;
 
     /**
-     * Updates index. Note that key is unique for space, so if space contains multiple indexes
+     * Updates index. Note that key is unique for cache, so if cache contains multiple indexes
      * the key should be removed from indexes other than one being updated.
      *
-     * @param spaceName Space name.
+     * @param cacheName Cache name.
      * @param key Key.
      * @param val Value.
      * @param expirationTime Expiration time or 0 if never expires.
      * @throws IgniteSpiException If failed.
      */
-    public void store(@Nullable String spaceName, Object key, Object val, long expirationTime) throws IgniteSpiException;
+    public void store(@Nullable String cacheName, Object key, Object val, long expirationTime) throws IgniteSpiException;
 
     /**
      * Removes index entry by key.
      *
-     * @param spaceName Space name.
+     * @param cacheName Cache name.
      * @param key Key.
      * @throws IgniteSpiException If failed.
      */
-    public void remove(@Nullable String spaceName, Object key) throws IgniteSpiException;
+    public void remove(@Nullable String cacheName, Object key) throws IgniteSpiException;
 }

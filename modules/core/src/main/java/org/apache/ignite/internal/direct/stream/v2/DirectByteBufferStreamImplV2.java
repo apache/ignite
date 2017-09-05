@@ -214,6 +214,7 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
     private final MessageFactory msgFactory;
 
     /** */
+    @GridToStringExclude
     private ByteBuffer buf;
 
     /** */

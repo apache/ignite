@@ -33,6 +33,7 @@ import org.apache.ignite.internal.managers.failover.GridFailoverManager;
 import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
 import org.apache.ignite.internal.managers.loadbalancer.GridLoadBalancerManager;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
+import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
@@ -48,7 +49,7 @@ import org.apache.ignite.internal.processors.igfs.IgfsProcessorAdapter;
 import org.apache.ignite.internal.processors.job.GridJobProcessor;
 import org.apache.ignite.internal.processors.jobmetrics.GridJobMetricsProcessor;
 import org.apache.ignite.internal.processors.marshaller.GridMarshallerMappingProcessor;
-import org.apache.ignite.internal.processors.odbc.OdbcProcessor;
+import org.apache.ignite.internal.processors.odbc.SqlListenerProcessor;
 import org.apache.ignite.internal.processors.platform.PlatformProcessor;
 import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
 import org.apache.ignite.internal.processors.pool.PoolProcessor;
@@ -330,11 +331,11 @@ public interface GridKernalContext extends Iterable<GridComponent> {
     public GridQueryProcessor query();
 
     /**
-     * Gets ODBC processor.
+     * Gets SQL listener processor.
      *
-     * @return ODBC processor.
+     * @return SQL listener processor.
      */
-    public OdbcProcessor odbc();
+    public SqlListenerProcessor sqlListener();
 
     /**
      * @return Plugin processor.
@@ -531,7 +532,7 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      *
      * @return Thread pool implementation to be used for data stream messages.
      */
-    public ExecutorService getDataStreamerExecutorService();
+    public StripedExecutor getDataStreamerExecutorService();
 
     /**
      * Should return an instance of fully configured thread pool to be used for

@@ -19,6 +19,7 @@
 {
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Plugin;
+    using Apache.Ignite.Examples.Datagrid;
 
     /// <summary>
     /// Plugin configuration.
@@ -30,6 +31,11 @@
         /// Custom plugin property.
         /// </summary>
         public string PluginProperty { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether plugin should check cache operations.
+        /// </summary>
+        public bool SkipCacheCheck { get; set; }
 
         /** <inheritdoc /> */
         public int? PluginConfigurationClosureFactoryId

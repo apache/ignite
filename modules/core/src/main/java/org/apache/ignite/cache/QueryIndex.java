@@ -16,13 +16,14 @@
  */
 package org.apache.ignite.cache;
 
-import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.internal.S;
-
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedHashMap;
+import java.util.Objects;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Contains list of fields to be indexed. It is possible to provide field name
@@ -37,6 +38,9 @@ public class QueryIndex implements Serializable {
     /** */
     private static final QueryIndexType DFLT_IDX_TYP = QueryIndexType.SORTED;
 
+    /** Default index inline size. */
+    public static final int DFLT_INLINE_SIZE = -1;
+
     /** Index name. */
     private String name;
 
@@ -48,7 +52,7 @@ public class QueryIndex implements Serializable {
     private QueryIndexType type = DFLT_IDX_TYP;
 
     /** */
-    private int inlineSize = -1;
+    private int inlineSize = DFLT_INLINE_SIZE;
 
     /**
      * Creates an empty index. Should be populated via setters.
@@ -260,9 +264,33 @@ public class QueryIndex implements Serializable {
      * Sets inline size.
      *
      * @param inlineSize Inline size.
+     * @return {@code this} for chaining.
      */
-    public void setInlineSize(int inlineSize) {
+    public QueryIndex setInlineSize(int inlineSize) {
         this.inlineSize = inlineSize;
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        QueryIndex index = (QueryIndex)o;
+
+        return inlineSize == index.inlineSize &&
+            F.eq(name, index.name) &&
+            F.eq(fields, index.fields) &&
+            type == index.type;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        return Objects.hash(name, fields, type, inlineSize);
     }
 
     /** {@inheritDoc} */

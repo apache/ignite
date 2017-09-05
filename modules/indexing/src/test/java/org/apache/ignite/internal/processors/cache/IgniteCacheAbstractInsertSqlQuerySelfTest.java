@@ -105,6 +105,11 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGridsMultiThreaded(3, false);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
 
         if (!isBinaryMarshaller())
             createCaches();
@@ -118,19 +123,20 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
      *
      */
     void createCaches() {
-        ignite(0).createCache(cacheConfig("S2P", true, false, String.class, Person.class, String.class, String.class));
-        ignite(0).createCache(cacheConfig("I2P", true, false, Integer.class, Person.class));
-        ignite(0).createCache(cacheConfig("K2P", true, false, Key.class, Person.class));
-        ignite(0).createCache(cacheConfig("K22P", true, true, Key2.class, Person2.class));
-        ignite(0).createCache(cacheConfig("I2I", true, false, Integer.class, Integer.class));
-        ignite(0).createCache(cacheConfig("U2I", true, false, UUID.class, Integer.class));
+        ignite(0).getOrCreateCache(cacheConfig("S2P", true, false, String.class, Person.class, String.class,
+            String.class));
+        ignite(0).getOrCreateCache(cacheConfig("I2P", true, false, Integer.class, Person.class));
+        ignite(0).getOrCreateCache(cacheConfig("K2P", true, false, Key.class, Person.class));
+        ignite(0).getOrCreateCache(cacheConfig("K22P", true, true, Key2.class, Person2.class));
+        ignite(0).getOrCreateCache(cacheConfig("I2I", true, false, Integer.class, Integer.class));
+        ignite(0).getOrCreateCache(cacheConfig("U2I", true, false, UUID.class, Integer.class));
     }
 
     /**
      *
      */
     final void createBinaryCaches() {
-        ignite(0).createCache(cacheConfig("U2I", true, false, UUID.class, Integer.class));
+        ignite(0).getOrCreateCache(cacheConfig("U2I", true, false, UUID.class, Integer.class));
 
         {
             CacheConfiguration s2pCcfg = cacheConfig("S2P", true, false);
@@ -150,7 +156,7 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
 
             s2pCcfg.setQueryEntities(Arrays.asList(s2p, s2s));
 
-            ignite(0).createCache(s2pCcfg);
+            ignite(0).getOrCreateCache(s2pCcfg);
         }
 
         {
@@ -169,7 +175,7 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
 
             i2pCcfg.setQueryEntities(Collections.singletonList(i2p));
 
-            ignite(0).createCache(i2pCcfg);
+            ignite(0).getOrCreateCache(i2pCcfg);
         }
 
         {
@@ -191,7 +197,7 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
 
             k2pCcfg.setQueryEntities(Collections.singletonList(k2p));
 
-            ignite(0).createCache(k2pCcfg);
+            ignite(0).getOrCreateCache(k2pCcfg);
         }
 
         {
@@ -214,7 +220,7 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
 
             k22pCcfg.setQueryEntities(Collections.singletonList(k22p));
 
-            ignite(0).createCache(k22pCcfg);
+            ignite(0).getOrCreateCache(k22pCcfg);
         }
 
         {
@@ -228,7 +234,7 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
 
             i2iCcfg.setQueryEntities(Collections.singletonList(i2i));
 
-            ignite(0).createCache(i2iCcfg);
+            ignite(0).getOrCreateCache(i2iCcfg);
         }
     }
 
@@ -239,12 +245,12 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        ignite(0).cache("S2P").clear();
-        ignite(0).cache("I2P").clear();
-        ignite(0).cache("K2P").clear();
-        ignite(0).cache("K22P").clear();
-        ignite(0).cache("I2I").clear();
-        ignite(0).cache("I2AT").clear();
+        ignite(0).destroyCache("S2P");
+        ignite(0).destroyCache("I2P");
+        ignite(0).destroyCache("K2P");
+        ignite(0).destroyCache("K22P");
+        ignite(0).destroyCache("I2I");
+        ignite(0).destroyCache("I2AT");
 
         super.afterTest();
     }

@@ -124,6 +124,9 @@ public final class IgniteNodeAttributes {
     public static final String ATTR_PHY_RAM = ATTR_PREFIX + ".phy.ram";
 
     /** Internal attribute name constant. */
+    public static final String ATTR_OFFHEAP_SIZE = ATTR_PREFIX + ".offheap.size";
+
+    /** Internal attribute name constant. */
     public static final String ATTR_JVM_PID = ATTR_PREFIX + ".jvm.pid";
 
     /** Internal attribute name constant. */
@@ -143,6 +146,9 @@ public final class IgniteNodeAttributes {
 
     /** Security subject for authenticated node. */
     public static final String ATTR_SECURITY_SUBJECT = ATTR_PREFIX + ".security.subject";
+
+    /** V2 security subject for authenticated node. */
+    public static final String ATTR_SECURITY_SUBJECT_V2 = ATTR_PREFIX + ".security.subject.v2";
 
     /** Client mode flag. */
     public static final String ATTR_CLIENT_MODE = ATTR_PREFIX + ".cache.client";
@@ -170,6 +176,15 @@ public final class IgniteNodeAttributes {
 
     /** Late affinity assignment mode. */
     public static final String ATTR_ACTIVE_ON_START = ATTR_PREFIX + ".active.on.start";
+
+    /** Ignite security compatibility mode. */
+    public static final String ATTR_SECURITY_COMPATIBILITY_MODE = ATTR_PREFIX + ".security.compatibility.enabled";
+
+    /** */
+    public static final String ATTR_DATA_STREAMER_POOL_SIZE = ATTR_PREFIX + ".data.streamer.pool.size";
+
+    /** Memory configuration. */
+    public static final String ATTR_MEMORY_CONFIG = ATTR_PREFIX + ".memory";
 
     /**
      * Enforces singleton.

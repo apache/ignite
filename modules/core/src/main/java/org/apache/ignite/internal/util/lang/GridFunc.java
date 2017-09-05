@@ -17,6 +17,10 @@
 
 package org.apache.ignite.internal.util.lang;
 
+import java.io.IOException;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -37,6 +41,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -1213,6 +1218,40 @@ public class GridFunc {
     }
 
     /**
+     * Tests if the given path is not {@code null} and is an empty directory.
+     *
+     * @param dir Path to test.
+     * @return Whether or not the given path is not {@code null} and is an empty directory.
+     */
+    public static boolean isEmptyDirectory(Path dir) {
+        if (dir == null || !Files.isDirectory(dir))
+            return false;
+        try (DirectoryStream<Path> files = Files.newDirectoryStream(dir)) {
+            return !files.iterator().hasNext();
+        }
+        catch (IOException e) {
+            throw new IgniteException(e);
+        }
+    }
+
+    /**
+     * Tests if the given path is not {@code null} and is a not empty directory.
+     *
+     * @param dir Path to test.
+     * @return Whether or not the given path is not {@code null} and is a not empty directory.
+     */
+    public static boolean isNotEmptyDirectory(Path dir) {
+        if (dir == null || !Files.isDirectory(dir))
+            return false;
+        try (DirectoryStream<Path> files = Files.newDirectoryStream(dir)) {
+            return files.iterator().hasNext();
+        }
+        catch (IOException e) {
+            throw new IgniteException(e);
+        }
+    }
+
+    /**
      * Returns a factory closure that creates new {@link ConcurrentLinkedDeque8} instance.
      * Note that this method does not create a new closure but returns a static one.
      *
@@ -1347,6 +1386,7 @@ public class GridFunc {
      * @param p Optional filtering predicates.
      * @return Iterator from given iterator and optional filtering predicate.
      */
+    @SafeVarargs
     public static <T1, T2> Iterator<T2> iterator(final Iterator<? extends T1> c,
         final IgniteClosure<? super T1, T2> trans,
         final boolean readOnly,
@@ -1510,7 +1550,7 @@ public class GridFunc {
      * @return List' first element or {@code null} in case if list is empty.
      */
     public static <T> T first(List<? extends T> list) {
-        if (list.isEmpty())
+        if (list == null || list.isEmpty())
             return null;
 
         return list.get(0);

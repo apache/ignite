@@ -41,19 +41,20 @@ import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
-import org.apache.ignite.internal.processors.cache.database.DataStructure;
-import org.apache.ignite.internal.processors.cache.database.MemoryMetricsImpl;
-import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
-import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIO;
-import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusInnerIO;
-import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusLeafIO;
-import org.apache.ignite.internal.processors.cache.database.tree.io.IOVersions;
-import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
-import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
+import org.apache.ignite.internal.processors.cache.persistence.DataStructure;
+import org.apache.ignite.internal.processors.cache.persistence.MemoryMetricsImpl;
+import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusInnerIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusLeafIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersions;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridRandom;
 import org.apache.ignite.internal.util.GridStripedLock;
 import org.apache.ignite.internal.util.IgniteTree;
+import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.SB;
@@ -65,7 +66,7 @@ import org.jsr166.ConcurrentHashMap8;
 import org.jsr166.ConcurrentLinkedHashMap;
 
 import static org.apache.ignite.internal.pagemem.PageIdUtils.effectivePageId;
-import static org.apache.ignite.internal.processors.cache.database.tree.BPlusTree.rnd;
+import static org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree.rnd;
 import static org.apache.ignite.internal.util.IgniteTree.OperationType.NOOP;
 import static org.apache.ignite.internal.util.IgniteTree.OperationType.PUT;
 import static org.apache.ignite.internal.util.IgniteTree.OperationType.REMOVE;
@@ -112,11 +113,11 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /** */
     private static final Collection<Long> rmvdIds = new GridConcurrentHashSet<>();
 
+    /** Stop. */
+    private final AtomicBoolean stop = new AtomicBoolean();
 
-//    /** {@inheritDoc} */
-//    @Override protected long getTestTimeout() {
-//        return 25 * 60 * 1000;
-//    }
+    /** Future. */
+    private volatile GridCompoundFuture<?, ?> asyncRunFut;
 
     /**
      * Check that we do not keep any locks at the moment.
@@ -127,6 +128,8 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        stop.set(false);
+
         long seed = System.nanoTime();
 
         X.println("Test seed: " + seed + "L; // ");
@@ -156,6 +159,18 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         rnd = null;
 
         try {
+            if (asyncRunFut != null && !asyncRunFut.isDone()) {
+                stop.set(true);
+
+                try {
+                    asyncRunFut.cancel();
+                    asyncRunFut.get(60000);
+                }
+                catch (Throwable ex) {
+                    //Ignore
+                }
+            }
+
             if (reuseList != null) {
                 long size = reuseList.recycledPagesCount();
 
@@ -1316,7 +1331,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
         IgniteInternalFuture<?> fut = multithreadedAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
-                for (int i = 0; i < loops; i++) {
+                for (int i = 0; i < loops && !stop.get(); i++) {
                     final Long x = (long)DataStructure.randomInt(CNT);
                     final int op = DataStructure.randomInt(4);
 
@@ -1402,8 +1417,6 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
             }
         }, Runtime.getRuntime().availableProcessors(), "put-remove");
 
-        final AtomicBoolean stop = new AtomicBoolean();
-
         IgniteInternalFuture<?> fut2 = multithreadedAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
                 while (!stop.get()) {
@@ -1442,14 +1455,22 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
             }
         }, 4, "find");
 
+
+        asyncRunFut = new GridCompoundFuture<>();
+
+        asyncRunFut.add((IgniteInternalFuture)fut);
+        asyncRunFut.add((IgniteInternalFuture)fut2);
+        asyncRunFut.add((IgniteInternalFuture)fut3);
+
+        asyncRunFut.markInitialized();
+
         try {
             fut.get(getTestTimeout(), TimeUnit.MILLISECONDS);
         }
         finally {
             stop.set(true);
 
-            fut2.get();
-            fut3.get();
+            asyncRunFut.get();
         }
 
         GridCursor<Long> cursor = tree.find(null, null);
@@ -1774,7 +1795,9 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
      * @return Page memory.
      */
     protected PageMemory createPageMemory() throws Exception {
-        MemoryPolicyConfiguration plcCfg = new MemoryPolicyConfiguration().setMaxSize(1024 * MB);
+        MemoryPolicyConfiguration plcCfg = new MemoryPolicyConfiguration()
+            .setInitialSize(1024 * MB)
+            .setMaxSize(1024 * MB);
 
         PageMemory pageMem = new PageMemoryNoStoreImpl(log,
             new UnsafeMemoryProvider(log),

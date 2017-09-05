@@ -1,0 +1,143 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+page-configure-basic {
+    display: block;
+    padding: 30px;
+    $max-row-width: 500px;
+    $row-height: 28px;
+
+    .details-row, .settings-row {
+        max-width: $max-row-width;
+
+        &>label:only-child {
+            padding-top: 5px;
+        }
+
+        .checkbox {
+            margin-top: 4px;
+            margin-bottom: 0;
+        }
+    }
+
+    .pcb-cache-name-row {
+        $margin: 10px;
+
+        display: flex;
+        flex-direction: row;
+        max-width: 100%;
+
+        .ignite-form-field {
+            margin-right: $margin;
+            max-width: $max-row-width;
+            flex-grow: 10;
+        }
+
+        .pcb-cache-remove {
+            line-height: $row-height;
+            margin-right: $margin;
+            flex: 1 0;
+            text-align: right;
+            white-space: nowrap;
+        }
+    }
+
+    .pcb-buttons-group {
+        display: flex;
+        flex-direction: row;
+
+        .btn-ignite + .btn-ignite {
+            margin-left: 10px;
+        }
+
+        .link-primary + .link-primary {
+            margin-left: 40px;
+        }
+    }
+
+    .pcb-form-flex-grid {
+        $column: 450px;
+
+        &,
+        &>div:not(.details-row):not(.settings-row):not(.pcb-flex-grid-break) {
+            display: flex;
+            flex-direction: row;
+            flex-wrap: wrap;
+        }
+
+        .details-row, .settings-row, .pcb-flex-grid-break {
+            margin: 0 10px 10px 0 !important;
+            flex: 1 1 $column;
+        }
+
+        .pcb-flex-grid-break {
+            height: 0;
+        }
+    }
+
+    .pcb-select-existing-cache {
+        position: relative;
+
+        button {
+            background: none;
+            border: none;
+            padding: 0;
+            margin: 0;
+            outline: none !important;
+        }
+    }
+
+    .pcb-no-caches {
+        font-style: italic;
+    }
+
+    .docs-header h1 {
+        margin-bottom: 20px;
+    }
+
+    .pcb-memory-size {
+        .input-tip {
+            display: flex;
+            flex-direction: row;
+
+            .form-control {
+                border-top-right-radius: 0;
+                border-bottom-right-radius: 0;
+            }
+
+            .btn-ignite {
+                border-top-left-radius: 0;
+                border-bottom-left-radius: 0;
+                padding-top: 0;
+                padding-bottom: 0;
+                flex: 0 0 auto;
+            }
+        }
+    }
+
+    .pcb-form-field-size {
+        .form-field-feedback {
+            left: -63px;
+        }
+    }
+
+    .pcb-caches {
+        .panel-details {
+            padding-left: 10px;
+        }
+    }
+}

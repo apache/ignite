@@ -25,7 +25,6 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.UUID;
-import org.apache.ignite.internal.processors.cache.GridCacheInternal;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -33,7 +32,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 /**
  *  Grid cache reentrant lock state.
  */
-public final class GridCacheLockState implements GridCacheInternal, Externalizable, Cloneable {
+public final class GridCacheLockState extends VolatileAtomicDataStructureValue implements Cloneable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -45,6 +44,9 @@ public final class GridCacheLockState implements GridCacheInternal, Externalizab
 
     /** Owner node ID. */
     private UUID id;
+
+    /** */
+    private long gridStartTime;
 
     /** FailoverSafe flag. */
     private boolean failoverSafe;
@@ -78,8 +80,9 @@ public final class GridCacheLockState implements GridCacheInternal, Externalizab
      * @param threadID ID of the current thread.
      * @param failoverSafe true if created in failoverSafe mode.
      * @param fair true if created in fair mode.
+     * @param gridStartTime Cluster start time.
      */
-    public GridCacheLockState(int cnt, UUID id, long threadID, boolean failoverSafe, boolean fair) {
+    public GridCacheLockState(int cnt, UUID id, long threadID, boolean failoverSafe, boolean fair, long gridStartTime) {
         assert cnt >= 0;
 
         this.id = id;
@@ -95,6 +98,8 @@ public final class GridCacheLockState implements GridCacheInternal, Externalizab
         this.fair = fair;
 
         this.failoverSafe = failoverSafe;
+
+        this.gridStartTime = gridStartTime;
     }
 
     /**
@@ -102,6 +107,16 @@ public final class GridCacheLockState implements GridCacheInternal, Externalizab
      */
     public GridCacheLockState() {
         // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public DataStructureType type() {
+        return DataStructureType.REENTRANT_LOCK;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long gridStartTime() {
+        return gridStartTime;
     }
 
     /**
@@ -233,6 +248,7 @@ public final class GridCacheLockState implements GridCacheInternal, Externalizab
         out.writeInt(cnt);
         out.writeLong(threadId);
         U.writeUuid(out, id);
+        out.writeLong(gridStartTime);
 
         out.writeBoolean(failoverSafe);
 
@@ -285,6 +301,7 @@ public final class GridCacheLockState implements GridCacheInternal, Externalizab
         cnt = in.readInt();
         threadId = in.readLong();
         id = U.readUuid(in);
+        gridStartTime = in.readLong();
 
         failoverSafe = in.readBoolean();
 
