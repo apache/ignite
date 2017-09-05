@@ -435,7 +435,14 @@ namespace Apache.Ignite.Core.Tests.Services
         {
             var svc = new TestIgniteServiceSerializable { ThrowInit = true };
 
-            var ex = Assert.Throws<ServiceDeploymentException>(() => Services.DeployMultiple(SvcName, svc, Grids.Length, 1));
+            var sdex = Assert.Throws<ServiceDeploymentException>(() =>
+                Services.DeployMultiple(SvcName, svc, Grids.Length, 1));
+
+            Assert.AreEqual(sdex.Message, 
+                "Service deployment failed with an exception. Examine InnerException for details.");
+
+            var ex = sdex.InnerException;
+            Assert.IsNotNull(ex.InnerException);
             Assert.AreEqual("Expected exception", ex.Message);
             Assert.IsNotNull(ex.InnerException);
             Assert.IsTrue(ex.InnerException.Message.Contains("PlatformCallbackGateway.serviceInit"), 

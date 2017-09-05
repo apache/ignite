@@ -186,9 +186,9 @@ namespace Apache.Ignite.Core.Impl.Services
             var binErr = err as IBinaryObject;
 
             throw binErr != null
-                ? new ServiceDeploymentException("Proxy deployment failed with a binary error. " +
+                ? new ServiceDeploymentException("Service deployment failed with a binary error. " +
                                                  "Examine BinaryCause for details.", binErr)
-                : new ServiceDeploymentException("Proxy deployment failed with an exception. " +
+                : new ServiceDeploymentException("Service deployment failed with an exception. " +
                                                  "Examine InnerException for details.", (Exception) err);
         }
 
