@@ -19,10 +19,8 @@ package org.apache.ignite.internal.util;
 
 import java.util.Iterator;
 import java.util.Map;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
+
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -52,14 +50,25 @@ public class GridLogThrottle {
     /** Scheduller. */
     private static final ScheduledExecutorService scheduller = Executors.newScheduledThreadPool(1);
 
-    static {
-        final ScheduledExecutorService scheduller = Executors.newScheduledThreadPool(1);
+    private static ScheduledFuture scheduledFuture;
 
-        scheduller.scheduleAtFixedRate(new Runnable() {
+    static {
+        shedullerSetup();
+    }
+
+    /**
+     * Sets system-wide log throttle timeout.
+     */
+    public static void shedullerSetup(){
+        if (scheduledFuture != null && !scheduledFuture.isCancelled()) {
+            scheduledFuture.cancel(false);
+        }
+
+        scheduledFuture = scheduller.scheduleAtFixedRate(new Runnable() {
             @Override public void run() {
                 cleanUpOldEntries();
             }
-        }, 1000, 1000, TimeUnit.MILLISECONDS);
+        }, throttleTimeout, throttleTimeout, TimeUnit.MILLISECONDS);
     }
 
     /**
@@ -68,7 +77,10 @@ public class GridLogThrottle {
      * @param timeout System-wide log throttle timeout.
      */
     public static void throttleTimeout(int timeout) {
+
         throttleTimeout = timeout;
+
+        shedullerSetup();
     }
 
     /**
@@ -254,9 +266,18 @@ public class GridLogThrottle {
      * timestamp minus timeout). It protects the map from causing memory leak.
      */
     private static void cleanUpOldEntries() {
+        long curTs = U.currentTimeMillis();
+
         Iterator<Map.Entry<IgniteBiTuple<Class<? extends Throwable>, String>, Long>> itr = errors.entrySet().iterator();
+
         while (itr.hasNext()) {
-            errors.remove(itr.next().getKey());
+            IgniteBiTuple<Class<? extends Throwable>, String> key = itr.next().getKey();
+
+            Long loggedTs = errors.get(key);
+
+            if (loggedTs != null && loggedTs >= curTs - throttleTimeout) {
+                errors.remove(key);
+            }
         }
     }
 
