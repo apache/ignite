@@ -55,6 +55,25 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryMetadataResult;
  * JDBC result set implementation.
  */
 public class JdbcThinResultSet implements ResultSet {
+    /** Decimal format to convert streing to decimal. */
+    private static final ThreadLocal<DecimalFormat> decimalFormat = new ThreadLocal<DecimalFormat>() {
+        /** {@inheritDoc} */
+        @Override protected DecimalFormat initialValue() {
+            DecimalFormatSymbols symbols = new DecimalFormatSymbols();
+
+            symbols.setGroupingSeparator(',');
+            symbols.setDecimalSeparator('.');
+
+            String pattern = "#,##0.0#";
+
+            DecimalFormat decimalFormat = new DecimalFormat(pattern, symbols);
+
+            decimalFormat.setParseBigDecimal(true);
+
+            return decimalFormat;
+        }
+    };
+
     /** Statement. */
     private final JdbcThinStatement stmt;
 
@@ -105,24 +124,6 @@ public class JdbcThinResultSet implements ResultSet {
 
     /** Jdbc metadata. Cache the JDBC object on the first access */
     private JdbcThinResultSetMetadata jdbcMeta;
-
-    private static final ThreadLocal<DecimalFormat> decimalFormat = new ThreadLocal<DecimalFormat>() {
-        /** {@inheritDoc} */
-        @Override protected DecimalFormat initialValue() {
-            DecimalFormatSymbols symbols = new DecimalFormatSymbols();
-
-            symbols.setGroupingSeparator(',');
-            symbols.setDecimalSeparator('.');
-
-            String pattern = "#,##0.0#";
-
-            DecimalFormat decimalFormat = new DecimalFormat(pattern, symbols);
-
-            decimalFormat.setParseBigDecimal(true);
-
-            return decimalFormat;
-        }
-    };
 
     /**
      * Constructs static result set.
@@ -1806,6 +1807,8 @@ public class JdbcThinResultSet implements ResultSet {
             return getFloat(colIdx);
         else if (targetCls == Double.class)
             return getDouble(colIdx);
+        else if (targetCls == String.class)
+            return getString(colIdx);
         else if (targetCls == BigDecimal.class)
             return getBigDecimal(colIdx);
         else if (targetCls == Date.class)
