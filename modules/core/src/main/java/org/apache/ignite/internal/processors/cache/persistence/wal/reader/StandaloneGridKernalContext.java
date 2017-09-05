@@ -26,6 +26,7 @@ import java.util.concurrent.ExecutorService;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridKernalGateway;
@@ -107,7 +108,24 @@ public class StandaloneGridKernalContext implements GridKernalContext {
             throw new IllegalStateException("Must not fail on empty providers list.", e);
         }
 
-        this.cfg = new IgniteConfiguration();
+        this.cfg = prepareIgniteConfiguration();
+
+    }
+
+    private IgniteConfiguration prepareIgniteConfiguration() {
+        IgniteConfiguration cfg = new IgniteConfiguration();
+        BinaryMarshaller marshaller = new BinaryMarshaller();
+        cfg.setMarshaller(marshaller);
+
+        PersistentStoreConfiguration pstCfg = new PersistentStoreConfiguration();
+        cfg.setPersistentStoreConfiguration(pstCfg);
+
+        //todo set work directory from outside
+        cfg.setWorkDirectory("C:\\projects\\incubator-ignite\\work\\");
+
+        marshaller.setContext(new MarshallerContextImpl(null));
+
+        return cfg;
     }
 
     /** {@inheritDoc} */
@@ -151,7 +169,6 @@ public class StandaloneGridKernalContext implements GridKernalContext {
         try {
             Field fieldCfg = kernal.getClass().getDeclaredField("cfg");
             fieldCfg.setAccessible(true);
-            cfg.setMarshaller(new BinaryMarshaller());
             fieldCfg.set(kernal, cfg);
         }
         catch (NoSuchFieldException | IllegalAccessException e) {
