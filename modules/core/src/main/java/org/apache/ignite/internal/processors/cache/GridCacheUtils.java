@@ -126,6 +126,9 @@ public class GridCacheUtils {
     private static final int TTL_BATCH_SIZE = IgniteSystemProperties.getInteger(
         IgniteSystemProperties.IGNITE_TTL_EXPIRE_BATCH_SIZE, 5);
 
+    /** */
+    public static final int UNDEFINED_CACHE_ID = 0;
+
     /*
      *
      */

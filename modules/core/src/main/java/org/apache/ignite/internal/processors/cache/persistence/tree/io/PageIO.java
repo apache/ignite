@@ -25,13 +25,20 @@ import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
-import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManagerImpl;
+import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.processors.cache.persistence.MetadataStorage;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.io.PagesListMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.io.PagesListNodeIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
-import org.apache.ignite.internal.util.GridStringBuilder;
+import org.apache.ignite.internal.processors.cache.tree.CacheIdAwareDataInnerIO;
+import org.apache.ignite.internal.processors.cache.tree.CacheIdAwareDataLeafIO;
+import org.apache.ignite.internal.processors.cache.tree.CacheIdAwarePendingEntryInnerIO;
+import org.apache.ignite.internal.processors.cache.tree.CacheIdAwarePendingEntryLeafIO;
+import org.apache.ignite.internal.processors.cache.tree.DataInnerIO;
+import org.apache.ignite.internal.processors.cache.tree.DataLeafIO;
+import org.apache.ignite.internal.processors.cache.tree.PendingEntryInnerIO;
+import org.apache.ignite.internal.processors.cache.tree.PendingEntryLeafIO;
 
 /**
  * Base format for all the page types.
@@ -499,16 +506,16 @@ public abstract class PageIO {
                 return (Q)h2LeafIOs.forVersion(ver);
 
             case T_DATA_REF_INNER:
-                return (Q)IgniteCacheOffheapManagerImpl.DataInnerIO.VERSIONS.forVersion(ver);
+                return (Q)DataInnerIO.VERSIONS.forVersion(ver);
 
             case T_DATA_REF_LEAF:
-                return (Q)IgniteCacheOffheapManagerImpl.DataLeafIO.VERSIONS.forVersion(ver);
+                return (Q)DataLeafIO.VERSIONS.forVersion(ver);
 
             case T_CACHE_ID_AWARE_DATA_REF_INNER:
-                return (Q)IgniteCacheOffheapManagerImpl.CacheIdAwareDataInnerIO.VERSIONS.forVersion(ver);
+                return (Q)CacheIdAwareDataInnerIO.VERSIONS.forVersion(ver);
 
             case T_CACHE_ID_AWARE_DATA_REF_LEAF:
-                return (Q)IgniteCacheOffheapManagerImpl.CacheIdAwareDataLeafIO.VERSIONS.forVersion(ver);
+                return (Q)CacheIdAwareDataLeafIO.VERSIONS.forVersion(ver);
 
             case T_METASTORE_INNER:
                 return (Q)MetadataStorage.MetaStoreInnerIO.VERSIONS.forVersion(ver);
@@ -517,16 +524,16 @@ public abstract class PageIO {
                 return (Q)MetadataStorage.MetaStoreLeafIO.VERSIONS.forVersion(ver);
 
             case T_PENDING_REF_INNER:
-                return (Q) IgniteCacheOffheapManagerImpl.PendingEntryInnerIO.VERSIONS.forVersion(ver);
+                return (Q)PendingEntryInnerIO.VERSIONS.forVersion(ver);
 
             case T_PENDING_REF_LEAF:
-                return (Q)IgniteCacheOffheapManagerImpl.PendingEntryLeafIO.VERSIONS.forVersion(ver);
+                return (Q)PendingEntryLeafIO.VERSIONS.forVersion(ver);
 
             case T_CACHE_ID_AWARE_PENDING_REF_INNER:
-                return (Q) IgniteCacheOffheapManagerImpl.CacheIdAwarePendingEntryInnerIO.VERSIONS.forVersion(ver);
+                return (Q)CacheIdAwarePendingEntryInnerIO.VERSIONS.forVersion(ver);
 
             case T_CACHE_ID_AWARE_PENDING_REF_LEAF:
-                return (Q)IgniteCacheOffheapManagerImpl.CacheIdAwarePendingEntryLeafIO.VERSIONS.forVersion(ver);
+                return (Q)CacheIdAwarePendingEntryLeafIO.VERSIONS.forVersion(ver);
 
             default:
                 // For tests.
