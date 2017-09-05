@@ -15,10 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spark.impl
+package org.apache.spark.sql.ignite
 
-import org.apache.spark.Partition
+import org.apache.ignite.spark.IgniteContext
+import org.apache.spark.SparkContext
+import org.apache.spark.sql.catalyst.catalog.ExternalCatalog
+import org.apache.spark.sql.internal.SharedState
 
-case class IgnitePartition(idx: Int) extends Partition {
-    override def index: Int = idx
+/**
+  * Shared state to override link to IgniteExternalCatalog
+  */
+class IgniteSharedState(igniteContext: IgniteContext, sparkContext: SparkContext) extends SharedState(sparkContext) {
+    override lazy val externalCatalog: ExternalCatalog =
+        new IgniteExternalCatalog(Some(igniteContext))
 }

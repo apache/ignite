@@ -15,10 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spark.impl
+package org.apache.ignite
 
-import org.apache.spark.Partition
+/**
+  */
+package object utils {
+    def enclose[E, R](enclosed: E)(func: E => R): R = func(enclosed)
 
-case class IgnitePartition(idx: Int) extends Partition {
-    override def index: Int = idx
+    object closeAfter {
+        def apply[R <: AutoCloseable, T](r: R)(c: (R) ⇒ T) = {
+            try {
+                c(r)
+            }
+            finally {
+                r.close
+            }
+        }
+    }
 }

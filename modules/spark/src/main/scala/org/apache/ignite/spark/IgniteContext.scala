@@ -38,8 +38,6 @@ class IgniteContext(
     ) extends Serializable {
     private val cfgClo = new Once(cfgF)
 
-    private val igniteHome = IgniteUtils.getIgniteHome
-
     if (!standalone) {
         // Get required number of executors with default equals to number of available executors.
         val workers = sparkContext.getConf.getInt("spark.executor.instances",
@@ -56,6 +54,8 @@ class IgniteContext(
 
     // Make sure to start Ignite on context creation.
     ignite()
+
+    def ignite(): Ignite = IgniteContext.ignite(cfgF(), sparkContext)
 
     /**
      * Creates an instance of IgniteContext with the given spring configuration.
@@ -120,37 +120,6 @@ class IgniteContext(
     }
 
     /**
-     * Get or start Ignite instance it it's not started yet.
-     * @return
-     */
-    def ignite(): Ignite = {
-        val home = IgniteUtils.getIgniteHome
-
-        if (home == null && igniteHome != null) {
-            Logging.log.info("Setting IGNITE_HOME from driver not as it is not available on this worker: " + igniteHome)
-
-            IgniteUtils.nullifyHomeDirectory()
-
-            System.setProperty(IgniteSystemProperties.IGNITE_HOME, igniteHome)
-        }
-
-        val igniteCfg = cfgClo()
-
-        // check if called from driver
-        if (sparkContext != null) igniteCfg.setClientMode(true)
-
-        try {
-            Ignition.getOrStart(igniteCfg)
-        }
-        catch {
-            case e: IgniteException ⇒
-                Logging.log.error("Failed to start Ignite.", e)
-
-                throw e
-        }
-    }
-
-    /**
      * Stops supporting ignite instance. If ignite instance has been already stopped, this operation will be
      * a no-op.
      */
@@ -175,7 +144,48 @@ class IgniteContext(
     private def doClose() = {
         val igniteCfg = cfgClo()
 
-        Ignition.stop(igniteCfg.getIgniteInstanceName, false)
+        if (Ignition.state(igniteCfg.getIgniteInstanceName) == IgniteState.STARTED)
+            Ignition.stop(igniteCfg.getIgniteInstanceName, false)
+    }
+}
+
+object IgniteContext {
+    def apply(sparkContext: SparkContext, cfgF: () ⇒ IgniteConfiguration, standalone: Boolean = true): IgniteContext =
+        new IgniteContext(sparkContext, cfgF, standalone)
+
+    def setIgniteHome(igniteHome: String): Unit = {
+        val home = IgniteUtils.getIgniteHome
+        Logging.log.info("IgniteHome: " + igniteHome + " home: " + home)
+
+        if (home == null && igniteHome != null) {
+            Logging.log.info("Setting IGNITE_HOME from driver not as it is not available on this worker: " + igniteHome)
+
+            IgniteUtils.nullifyHomeDirectory()
+
+            System.setProperty(IgniteSystemProperties.IGNITE_HOME, igniteHome)
+        }
+    }
+
+    /**
+      * Get or start Ignite instance it it's not started yet.
+      * @return
+      */
+    def ignite(igniteCfg: IgniteConfiguration, sparkContext: SparkContext): Ignite = {
+        setIgniteHome(IgniteUtils.getIgniteHome)
+
+        // check if called from driver
+        if (sparkContext != null)
+            igniteCfg.setClientMode(true)
+
+        try {
+            Ignition.getOrStart(igniteCfg)
+        }
+        catch {
+            case e: IgniteException ⇒
+                Logging.log.error("Failed to start Ignite.", e)
+
+                throw e
+        }
     }
 }
 
@@ -184,7 +194,7 @@ class IgniteContext(
  *
  * @param clo Closure to wrap.
  */
-private class Once(clo: () ⇒ IgniteConfiguration) extends Serializable {
+class Once(clo: () ⇒ IgniteConfiguration) extends Serializable {
     @transient @volatile var res: IgniteConfiguration = null
 
     def apply(): IgniteConfiguration = {
