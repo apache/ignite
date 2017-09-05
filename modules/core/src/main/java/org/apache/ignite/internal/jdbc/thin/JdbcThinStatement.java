@@ -36,6 +36,7 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBatchExecuteResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQuery;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteMultipleStatementsResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteResult;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryFetchResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcStatementResults;
 
@@ -76,7 +77,7 @@ public class JdbcThinStatement implements Statement {
     protected List<JdbcQuery> batch;
 
     /** Multiple statement result info. */
-    protected Iterator<JdbcStatementResults> resInfoIter;
+    protected List<JdbcStatementResults> resInfo;
 
     /**
      * Creates new statement.
@@ -110,14 +111,7 @@ public class JdbcThinStatement implements Statement {
     protected void execute0(String sql, List<Object> args) throws SQLException {
         ensureNotClosed();
 
-        if (resultSets != null) {
-            for (ResultSet rs : resultSets)
-                rs.close();
-
-            resultSets = null;
-
-            curRes = 0;
-        }
+        closeResults();
 
         if (sql == null || sql.isEmpty())
             throw new SQLException("SQL query is empty.");
@@ -133,14 +127,21 @@ public class JdbcThinStatement implements Statement {
 
                 resultSets = Collections.singletonList(new JdbcThinResultSet(this, res.getQueryId(), pageSize,
                     res.last(), res.items(), res.isQuery(), conn.io().autoCloseServerCursor(), res.updateCount()));
+
+                resInfo = Collections.singletonList(new JdbcStatementResults(res.isQuery(),
+                    res.isQuery() ? res.getQueryId() : res.updateCount()));
             }
             else if (res0 instanceof JdbcQueryExecuteMultipleStatementsResult) {
                 JdbcQueryExecuteMultipleStatementsResult res = (JdbcQueryExecuteMultipleStatementsResult)res0;
 
-                resInfoIter = res.results().iterator();
+                resultSets = Collections.emptyList();
+
+                resInfo = res.results();
             }
             else
                 throw new SQLException("Unexpected result [res=" + res0 + ']');
+
+            assert resInfo.size() > 0 : "At least one results set is expected";
         }
         catch (IOException e) {
             conn.close();
@@ -169,10 +170,24 @@ public class JdbcThinStatement implements Statement {
         if (isClosed())
             return;
 
-        if (rs != null)
-            rs.close();
+        closeResults();
 
         closed = true;
+    }
+
+    /**
+     * Close results.
+     * @throws SQLException On error.
+     */
+    private void closeResults() throws SQLException {
+        if (resultSets != null) {
+            for (ResultSet rs : resultSets)
+                rs.close();
+
+            resultSets = null;
+            resInfo = null;
+            curRes = 0;
+        }
     }
 
     /** {@inheritDoc} */
@@ -252,31 +267,39 @@ public class JdbcThinStatement implements Statement {
 
         execute0(sql, null);
 
-        return rs.isQuery();
+        return resInfo.get(0).isQuery();
     }
 
     /** {@inheritDoc} */
     @Override public ResultSet getResultSet() throws SQLException {
-        JdbcThinResultSet rs = lastResultSet();
+        JdbcThinResultSet rs = nextResultSet();
 
-        ResultSet res = rs == null || !rs.isQuery() ? null : rs;
+        if (rs == null)
+            return null;
 
-        if (res != null)
-            alreadyRead = true;
+        if (!rs.isQuery()) {
+            curRes--;
 
-        return res;
+            return null;
+        }
+
+        return rs;
     }
 
     /** {@inheritDoc} */
     @Override public int getUpdateCount() throws SQLException {
-        JdbcThinResultSet rs = lastResultSet();
+        JdbcThinResultSet rs = nextResultSet();
 
-        int res = rs == null || rs.isQuery() ? -1 : (int)rs.updatedCount();
+        if (rs == null)
+            return -1;
 
-        if (res != -1)
-            alreadyRead = true;
+        if (rs.isQuery()) {
+            curRes--;
 
-        return res;
+            return -1;
+        }
+
+        return (int)rs.updatedCount();
     }
 
     /**
@@ -285,23 +308,50 @@ public class JdbcThinStatement implements Statement {
      * @return Result set or null.
      * @throws SQLException If failed.
      */
-    private JdbcThinResultSet lastResultSet() throws SQLException {
+    private JdbcThinResultSet nextResultSet() throws SQLException {
         ensureNotClosed();
 
-        if (rs != null && !alreadyRead)
-            return rs;
-
-        if ((rs == null || alreadyRead) && (resIter == null || !resIter.hasNext()))
+        if (resultSets == null || resInfo == null || curRes >= resInfo.size())
             return null;
 
-        return rs;
+        if (curRes >= resultSets.size()) {
+            try {
+                JdbcThinResultSet rs;
+
+                if (resInfo.get(curRes).isQuery()) {
+                    long qryId = resInfo.get(curRes).queryId();
+
+                    JdbcQueryFetchResult res = conn.io().queryFetch(qryId, pageSize);
+
+                    rs = new JdbcThinResultSet(this, qryId, pageSize,
+                        res.last(), res.items(), true, conn.io().autoCloseServerCursor(),-1);
+                }
+                else {
+                    rs = new JdbcThinResultSet(this, -1, pageSize,
+                        true, Collections.<List<Object>>emptyList(), false,
+                        conn.io().autoCloseServerCursor(),resInfo.get(curRes).updateCount());
+                }
+
+                resultSets.add(rs);
+            }
+            catch (IOException e) {
+                conn.close();
+
+                throw new SQLException("Failed get next results.", e);
+            }
+            catch (IgniteCheckedException e) {
+                throw new SQLException("Failed get next results.", e);
+            }
+        }
+
+        return resultSets.get(curRes++);
     }
 
     /** {@inheritDoc} */
     @Override public boolean getMoreResults() throws SQLException {
         ensureNotClosed();
 
-        return false;
+        return (resInfo != null && curRes < resInfo.size());
     }
 
     /** {@inheritDoc} */
@@ -371,13 +421,7 @@ public class JdbcThinStatement implements Statement {
     @Override public int[] executeBatch() throws SQLException {
         ensureNotClosed();
 
-        if (rs != null) {
-            rs.close();
-
-            rs = null;
-        }
-
-        alreadyRead = false;
+        closeResults();
 
         if (batch == null || batch.isEmpty())
             throw new SQLException("Batch is empty.");

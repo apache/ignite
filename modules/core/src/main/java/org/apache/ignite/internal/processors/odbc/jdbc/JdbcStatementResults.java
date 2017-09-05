@@ -43,7 +43,7 @@ public class JdbcStatementResults implements JdbcRawBinarylizable {
      * @param isQuery Query flag.
      * @param updCntOrQryId Update count.
      */
-    JdbcStatementResults(boolean isQuery, long updCntOrQryId) {
+    public JdbcStatementResults(boolean isQuery, long updCntOrQryId) {
         this.isQuery = isQuery;
         this.updCntOrQryId= updCntOrQryId;
     }
