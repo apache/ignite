@@ -150,12 +150,6 @@ public class PlatformServices extends PlatformAbstractTarget {
                 return TRUE;
             }
 
-            case OP_DOTNET_DEPLOY_MULTIPLE: {
-                dotnetDeployMultiple(reader);
-
-                return TRUE;
-            }
-
             case OP_DOTNET_DEPLOY_MULTIPLE_ASYNC: {
                 readAndListenFuture(reader, dotnetDeployMultipleAsync(reader));
 
@@ -211,6 +205,19 @@ public class PlatformServices extends PlatformAbstractTarget {
             case OP_DOTNET_DEPLOY: {
                 try {
                     dotnetDeploy(reader, services);
+
+                    PlatformUtils.writeInvocationResult(writer, null, null);
+                }
+                catch (Exception e) {
+                    PlatformUtils.writeInvocationResult(writer, null, e);
+                }
+
+                return;
+            }
+
+            case OP_DOTNET_DEPLOY_MULTIPLE: {
+                try {
+                    dotnetDeployMultiple(reader);
 
                     PlatformUtils.writeInvocationResult(writer, null, null);
                 }

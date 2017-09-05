@@ -201,13 +201,13 @@ namespace Apache.Ignite.Core.Impl.Services
             IgniteArgumentCheck.NotNullOrEmpty(name, "name");
             IgniteArgumentCheck.NotNull(service, "service");
 
-            DoOutOp(OpDeployMultiple, w =>
+            DoOutInOp(OpDeployMultiple, w =>
             {
                 w.WriteString(name);
                 w.WriteObject(service);
                 w.WriteInt(totalCount);
                 w.WriteInt(maxPerNodeCount);
-            });
+            }, ReadDeploymentResult);
         }
 
         /** <inheritDoc /> */
