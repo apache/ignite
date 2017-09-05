@@ -32,11 +32,11 @@ public final class CacheIdAwareDataInnerIO extends AbstractDataInnerIO {
     /**
      * @param ver Page format version.
      */
-    CacheIdAwareDataInnerIO(int ver) {
+    private CacheIdAwareDataInnerIO(int ver) {
         super(T_CACHE_ID_AWARE_DATA_REF_INNER, ver, true, 16);
     }
 
-
+    /** {@inheritDoc} */
     @Override public int getCacheId(long pageAddr, int idx) {
         return PageUtils.getInt(pageAddr, offset(idx) + 12);
     }
