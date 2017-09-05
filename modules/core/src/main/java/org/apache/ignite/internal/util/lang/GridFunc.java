@@ -1386,6 +1386,7 @@ public class GridFunc {
      * @param p Optional filtering predicates.
      * @return Iterator from given iterator and optional filtering predicate.
      */
+    @SafeVarargs
     public static <T1, T2> Iterator<T2> iterator(final Iterator<? extends T1> c,
         final IgniteClosure<? super T1, T2> trans,
         final boolean readOnly,

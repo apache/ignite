@@ -36,6 +36,7 @@ public class DataRow extends CacheDataRowAdapter {
     protected int hash;
 
     /**
+     * @param grp Cache group (used to initialize row).
      * @param hash Hash code.
      * @param link Link.
      * @param part Partition.

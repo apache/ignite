@@ -18,12 +18,12 @@
 package org.apache.ignite.internal.processors.cache.tree;
 
 import org.apache.ignite.internal.pagemem.PageUtils;
-import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.CacheSearchRow;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusLeafIO;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.lang.IgniteInClosure;
 
 /**
@@ -35,7 +35,7 @@ public abstract class AbstractDataLeafIO extends BPlusLeafIO<CacheSearchRow> imp
      * @param ver Page format version.
      * @param itemSize Single item size on page.
      */
-    protected AbstractDataLeafIO(int type, int ver, int itemSize) {
+    AbstractDataLeafIO(int type, int ver, int itemSize) {
         super(type, ver, itemSize);
     }
 
@@ -47,7 +47,7 @@ public abstract class AbstractDataLeafIO extends BPlusLeafIO<CacheSearchRow> imp
         PageUtils.putInt(pageAddr, off + 8, row.hash());
 
         if (storeCacheId()) {
-            assert row.cacheId() != GridCacheUtils.UNDEFINED_CACHE_ID;
+            assert row.cacheId() != CU.UNDEFINED_CACHE_ID;
 
             PageUtils.putInt(pageAddr, off + 12, row.cacheId());
         }
@@ -66,7 +66,7 @@ public abstract class AbstractDataLeafIO extends BPlusLeafIO<CacheSearchRow> imp
         if (storeCacheId()) {
             int cacheId = ((RowLinkIO)srcIo).getCacheId(srcPageAddr, srcIdx);
 
-            assert cacheId != GridCacheUtils.UNDEFINED_CACHE_ID;
+            assert cacheId != CU.UNDEFINED_CACHE_ID;
 
             PageUtils.putInt(dstPageAddr, off + 12, cacheId);
         }

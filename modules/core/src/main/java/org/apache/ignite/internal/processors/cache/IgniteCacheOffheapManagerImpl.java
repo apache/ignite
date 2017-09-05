@@ -188,7 +188,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     }
 
     /**
-     *
+     * @param cacheId Cache ID.
      */
     private void removeCacheData(int cacheId) {
         assert grp.affinityNode();
