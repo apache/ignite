@@ -31,7 +31,6 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.cluster.ClusterNode;
@@ -70,7 +69,6 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearOpti
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.transactions.TxDeadlockDetection.TxDeadlockFuture;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
@@ -1425,11 +1423,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     private void clearThreadMap(IgniteInternalTx tx) {
         if (tx.local() && !tx.dht()) {
             if (!tx.system()) {
-                /**
-                 * Timed out local transactions are cleared in {@link #onLocalClose}
-                 * TODO reduce heap size of timed out transaction.
-                 */
-                if (!(tx.timedOut() && tx.pessimistic() && tx.local() && !tx.dht()))
+                /** Timed out local transactions are cleared in {@link #onLocalClose}. */
+                if (!tx.timedOut() || !tx.pessimistic())
                     threadMap.remove(tx.threadId(), tx);
             }
             else {
@@ -2323,7 +2318,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
-     * Remove thread completely.
+     * Callback for closing local transaction.
      * @param threadId Thread ID.
      * @param tx Local transaction.
      */

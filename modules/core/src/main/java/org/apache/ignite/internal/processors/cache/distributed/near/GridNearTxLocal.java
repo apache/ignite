@@ -34,7 +34,6 @@ import javax.cache.CacheException;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
@@ -116,17 +115,11 @@ import static org.apache.ignite.transactions.TransactionState.ROLLED_BACK;
 import static org.apache.ignite.transactions.TransactionState.ROLLING_BACK;
 import static org.apache.ignite.transactions.TransactionState.UNKNOWN;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_TRACK_TRANSACTION_INITIATOR;
-
 /**
  * Replicated user transaction.
  */
 @SuppressWarnings("unchecked")
 public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeoutObject, AutoCloseable {
-    /** {@link IgniteSystemProperties#IGNITE_TRACK_TRANSACTION_INITIATOR} */
-    private static final boolean TRACK_TRANSACTION_INITIATOR =
-        IgniteSystemProperties.getBoolean(IGNITE_TRACK_TRANSACTION_INITIATOR, false);
-
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -181,9 +174,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     /** */
     @GridToStringExclude
     private TransactionProxyImpl proxy;
-
-    /** */
-    private transient Exception trackE;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -240,12 +230,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
         mappings = implicitSingle ? new IgniteTxMappingsSingleImpl() : new IgniteTxMappingsImpl();
 
-        if (this.timeout > 0) {
-            if (TRACK_TRANSACTION_INITIATOR)
-                trackE = new Exception();
-
+        if (this.timeout > 0)
             cctx.time().addTimeoutObject(this);
-        }
 
         initResult();
     }
@@ -4084,9 +4070,11 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     /** {@inheritDoc} */
     @Override public void onTimeout() {
         if (state(MARKED_ROLLBACK, true)) {
-            log.error("Transaction is timed out and will be rolled back: [" + this + ']', trackE);
-
-            rollbackNearTxLocalAsync();
+            cctx.kernalContext().closure().runLocalSafe(new Runnable() {
+                @Override public void run() {
+                    rollbackNearTxLocalAsync();
+                }
+            });
         }
     }
 

@@ -673,8 +673,8 @@ public class IgniteTxHandler {
      * @param res Response.
      */
     private void processNearTxFinishResponse(UUID nodeId, GridNearTxFinishResponse res) {
-        //if (txFinishMsgLog.isDebugEnabled())
-            txFinishMsgLog.info("Received near finish response [txId=" + res.xid() + ", node=" + nodeId + ']');
+        if (txFinishMsgLog.isDebugEnabled())
+            txFinishMsgLog.debug("Received near finish response [txId=" + res.xid() + ", node=" + nodeId + ']');
 
         ctx.tm().onFinishedRemote(nodeId, res.threadId());
 
@@ -783,8 +783,8 @@ public class IgniteTxHandler {
         UUID nodeId,
         GridNearTxFinishRequest req
     ) {
-        //if (txFinishMsgLog.isDebugEnabled())
-            txFinishMsgLog.info("Received near finish request [txId=" + req.version() + ", node=" + nodeId + ']');
+        if (txFinishMsgLog.isDebugEnabled())
+            txFinishMsgLog.debug("Received near finish request [txId=" + req.version() + ", node=" + nodeId + ']');
 
         IgniteInternalFuture<IgniteInternalTx> fut = finish(nodeId, null, req);
 
