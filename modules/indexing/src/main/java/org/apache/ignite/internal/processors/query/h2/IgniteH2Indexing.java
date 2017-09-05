@@ -2156,7 +2156,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public void unregisterCache(String cacheName) {
+    @Override public void unregisterCache(String cacheName, boolean destroy) {
         String schemaName = schema(cacheName);
 
         boolean dflt = isDefaultSchema(schemaName);
@@ -2176,6 +2176,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             for (H2TableDescriptor tbl : schema.tables()) {
                 if (F.eq(tbl.cache().name(), cacheName)) {
                     try {
+                        boolean removeIdx = !ctx.cache().context().database().persistenceEnabled() || destroy;
+
+                        tbl.table().setRemoveIndexOnDestroy(removeIdx);
+
                         dropTable(tbl);
                     }
                     catch (IgniteCheckedException e) {

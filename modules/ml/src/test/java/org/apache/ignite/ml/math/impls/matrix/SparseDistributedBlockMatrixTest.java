@@ -30,9 +30,10 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.ml.math.Matrix;
+import org.apache.ignite.ml.math.distributed.DistributedStorage;
+import org.apache.ignite.ml.math.distributed.keys.impl.BlockMatrixKey;
 import org.apache.ignite.ml.math.exceptions.UnsupportedOperationException;
 import org.apache.ignite.ml.math.impls.MathTestConstants;
-import org.apache.ignite.ml.math.impls.storage.matrix.BlockMatrixKey;
 import org.apache.ignite.ml.math.impls.storage.matrix.BlockMatrixStorage;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
@@ -229,9 +230,9 @@ public class SparseDistributedBlockMatrixTest extends GridCommonAbstractTest {
 
         Collection<String> cacheNames = ignite.cacheNames();
 
-        assert cacheNames.contains(BlockMatrixStorage.ML_BLOCK_CACHE_NAME);
+        assert cacheNames.contains(((DistributedStorage)cacheMatrix1.getStorage()).cacheName());
 
-        IgniteCache<BlockMatrixKey, Object> cache = ignite.getOrCreateCache(BlockMatrixStorage.ML_BLOCK_CACHE_NAME);
+        IgniteCache<BlockMatrixKey, Object> cache = ignite.getOrCreateCache(((DistributedStorage)cacheMatrix1.getStorage()).cacheName());
 
         Set<BlockMatrixKey> keySet1 = buildKeySet(cacheMatrix1);
         Set<BlockMatrixKey> keySet2 = buildKeySet(cacheMatrix2);
