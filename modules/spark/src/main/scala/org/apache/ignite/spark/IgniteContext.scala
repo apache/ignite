@@ -179,6 +179,11 @@ class IgniteContext(
     }
 }
 
+object IgniteContext {
+    def apply(sparkContext: SparkContext, cfgF: () ⇒ IgniteConfiguration, standalone: Boolean = true): IgniteContext =
+        new IgniteContext(sparkContext, cfgF, standalone)
+}
+
 /**
  * Auxiliary closure that ensures that passed in closure is executed only once.
  *

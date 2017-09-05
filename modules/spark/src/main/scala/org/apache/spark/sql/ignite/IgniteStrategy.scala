@@ -15,10 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spark.impl
+package org.apache.spark.sql.ignite
 
-import org.apache.spark.Partition
+import org.apache.spark.internal.Logging
+import org.apache.spark.sql.Strategy
+import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
+import org.apache.spark.sql.execution.SparkPlan
 
-case class IgnitePartition(idx: Int) extends Partition {
-    override def index: Int = idx
+/**
+  */
+object IgniteStrategy extends Strategy with Logging {
+    override def apply(plan: LogicalPlan): Seq[SparkPlan] = {
+        System.out.println("IgniteStrategy.apply - " + plan)
+        Nil
+    }
 }
