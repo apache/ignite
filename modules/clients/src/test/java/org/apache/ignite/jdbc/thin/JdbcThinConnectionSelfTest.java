@@ -649,7 +649,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
                             GridTestUtils.assertThrows(log,
                                 new Callable<Object>() {
                                     @Override public Object call() throws Exception {
-                                        return conn.prepareStatement(null, type, concur);
+                                        return conn.prepareStatement(null, type, concur, holdabililty);
                                     }
                                 },
                                 SQLException.class,
@@ -662,7 +662,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
                         GridTestUtils.assertThrows(log,
                             new Callable<Object>() {
                                 @Override public Object call() throws Exception {
-                                    return conn.prepareStatement(sqlText, type, concur);
+                                    return conn.prepareStatement(sqlText, type, concur, holdabililty);
                                 }
                             },
                             SQLFeatureNotSupportedException.class,
@@ -1080,7 +1080,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
             GridTestUtils.assertThrows(log,
                 new Callable<Object>() {
                     @Override public Object call() throws Exception {
-                        conn.setTypeMap(new HashMap<>());
+                        conn.setTypeMap(new HashMap<String, Class<?>>());
 
                         return null;
                     }
@@ -1106,7 +1106,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
             GridTestUtils.assertThrows(log,
                 new Callable<Object>() {
                     @Override public Object call() throws Exception {
-                        conn.setTypeMap(new HashMap<>());
+                        conn.setTypeMap(new HashMap<String, Class<?>>());
 
                         return null;
                     }

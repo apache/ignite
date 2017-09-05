@@ -186,7 +186,7 @@ public class JdbcThinConnection implements Connection {
         checkCursorOptions(resSetType, resSetConcurrency, resSetHoldability);
 
         if (sql == null)
-            throw new SQLException("Invalid arguments.");
+            throw new SQLException("SQL string cannot be null.");
 
         JdbcThinPreparedStatement stmt = new JdbcThinPreparedStatement(this, sql, resSetHoldability);
 
@@ -234,7 +234,7 @@ public class JdbcThinConnection implements Connection {
         ensureNotClosed();
 
         if (sql == null)
-            throw new SQLException("Invalid arguments.");
+            throw new SQLException("SQL string cannot be null.");
 
         return sql;
     }
@@ -264,7 +264,7 @@ public class JdbcThinConnection implements Connection {
         ensureNotClosed();
 
         if (autoCommit)
-            throw new SQLException("Auto-commit mode.");
+            throw new SQLException("Manual transaction commit is prohibited in auto-commit mode.");
 
         LOG.warning("Transactions are not supported.");
     }
@@ -274,7 +274,7 @@ public class JdbcThinConnection implements Connection {
         ensureNotClosed();
 
         if (autoCommit)
-            throw new SQLException("Auto-commit mode.");
+            throw new SQLException("Manual transaction rollback is prohibited in auto-commit mode.");
 
         LOG.warning("Transactions are not supported.");
     }
@@ -413,7 +413,7 @@ public class JdbcThinConnection implements Connection {
         ensureNotClosed();
 
         if (autoCommit)
-            throw new SQLException("Auto-commit mode.");
+            throw new SQLException("Savepoints are prohibited in auto-commit mode.");
 
         throw new SQLFeatureNotSupportedException("Savepoints are not supported.");
     }
@@ -423,10 +423,10 @@ public class JdbcThinConnection implements Connection {
         ensureNotClosed();
 
         if (name == null)
-            throw new SQLException("Invalid savepoint name.");
+            throw new SQLException("Savepoint name cannot be null.");
 
         if (autoCommit)
-            throw new SQLException("Auto-commit mode.");
+            throw new SQLException("Savepoints are prohibited in auto-commit mode.");
 
         throw new SQLFeatureNotSupportedException("Savepoints are not supported.");
     }
@@ -449,7 +449,7 @@ public class JdbcThinConnection implements Connection {
         ensureNotClosed();
 
         if (savepoint == null)
-            throw new SQLException("Invalid savepoint");
+            throw new SQLException("Savepoint cannot be null.");
 
         throw new SQLFeatureNotSupportedException("Savepoints are not supported.");
     }
@@ -550,7 +550,7 @@ public class JdbcThinConnection implements Connection {
         ensureNotClosed();
 
         if (typeName == null)
-            throw new SQLException("Invalid type name.");
+            throw new SQLException("Type name cannot be null.");
 
         throw new SQLFeatureNotSupportedException("SQL-specific types are not supported.");
     }
@@ -560,7 +560,7 @@ public class JdbcThinConnection implements Connection {
         ensureNotClosed();
 
         if (typeName == null)
-            throw new SQLException("Invalid type name.");
+            throw new SQLException("Type name cannot be null.");
 
         throw new SQLFeatureNotSupportedException("SQL-specific types are not supported.");
     }
@@ -583,9 +583,6 @@ public class JdbcThinConnection implements Connection {
     @Override public void setSchema(String schema) throws SQLException {
         ensureNotClosed();
 
-        if (schema == null)
-            throw new SQLException("Invalid schema value.");
-
         this.schema = schema;
     }
 
@@ -599,7 +596,7 @@ public class JdbcThinConnection implements Connection {
     /** {@inheritDoc} */
     @Override public void abort(Executor executor) throws SQLException {
         if (executor == null)
-            throw new SQLException("Invalid executor value.");
+            throw new SQLException("Executor cannot be null.");
 
         close();
     }
@@ -609,10 +606,10 @@ public class JdbcThinConnection implements Connection {
         ensureNotClosed();
 
         if (executor == null)
-            throw new SQLException("Invalid executor value.");
+            throw new SQLException("Executor cannot be null.");
 
         if (ms < 0)
-            throw new SQLException("Invalid timeout value.");
+            throw new SQLException("Network timeout cannot be negative.");
 
         timeout = ms;
     }
