@@ -60,6 +60,7 @@ import static java.sql.Statement.RETURN_GENERATED_KEYS;
 /**
  * Connection test.
  */
+@SuppressWarnings("ThrowableNotThrown")
 public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -68,6 +69,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     private static final String URL = "jdbc:ignite:thin://127.0.0.1";
 
     /** {@inheritDoc} */
+    @SuppressWarnings("deprecation")
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
@@ -1078,7 +1080,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
             GridTestUtils.assertThrows(log,
                 new Callable<Object>() {
                     @Override public Object call() throws Exception {
-                        conn.setTypeMap(new HashMap<String, Class<?>>());
+                        conn.setTypeMap(new HashMap<>());
 
                         return null;
                     }
@@ -1104,7 +1106,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
             GridTestUtils.assertThrows(log,
                 new Callable<Object>() {
                     @Override public Object call() throws Exception {
-                        conn.setTypeMap(new HashMap<String, Class<?>>());
+                        conn.setTypeMap(new HashMap<>());
 
                         return null;
                     }

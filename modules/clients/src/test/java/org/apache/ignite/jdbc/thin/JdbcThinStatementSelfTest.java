@@ -44,6 +44,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Statement test.
  */
+@SuppressWarnings("ThrowableNotThrown")
 public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -971,6 +972,7 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
     }
 
     /** */
+    @SuppressWarnings("unused")
     public static class Test {
         @QuerySqlField
         private int val;
@@ -1010,11 +1012,11 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
         private final int id;
 
         /** First name. */
-        @QuerySqlField(index = false)
+        @QuerySqlField
         private final String firstName;
 
         /** Last name. */
-        @QuerySqlField(index = false)
+        @QuerySqlField
         private final String lastName;
 
         /** Age. */

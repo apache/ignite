@@ -42,7 +42,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -55,7 +54,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Result set test.
  */
-@SuppressWarnings("FloatingPointEquality")
+@SuppressWarnings({"FloatingPointEquality", "ThrowableNotThrown", "AssertWithSideEffects"})
 public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -92,8 +91,6 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
         disco.setIpFinder(IP_FINDER);
 
         cfg.setDiscoverySpi(disco);
-
-        cfg.setMarshaller(new BinaryMarshaller());
 
         return cfg;
     }
@@ -918,7 +915,7 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
 
         checkNotSupported(new RunnableX() {
             @Override public void run() throws Exception {
-                rs.updateBlob(1, (InputStream)null, 0L);
+                rs.updateBlob(1, null, 0L);
             }
         });
 
@@ -936,7 +933,7 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
 
         checkNotSupported(new RunnableX() {
             @Override public void run() throws Exception {
-                rs.updateBlob("id", (InputStream)null, 0L);
+                rs.updateBlob("id", null, 0L);
             }
         });
 
@@ -954,7 +951,7 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
 
         checkNotSupported(new RunnableX() {
             @Override public void run() throws Exception {
-                rs.updateClob(1, (Reader)null, 0L);
+                rs.updateClob(1, null, 0L);
             }
         });
 
@@ -972,7 +969,7 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
 
         checkNotSupported(new RunnableX() {
             @Override public void run() throws Exception {
-                rs.updateClob("id", (Reader)null, 0L);
+                rs.updateClob("id", null, 0L);
             }
         });
 
@@ -990,7 +987,7 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
 
         checkNotSupported(new RunnableX() {
             @Override public void run() throws Exception {
-                rs.updateNClob(1, (Reader)null, 0L);
+                rs.updateNClob(1, null, 0L);
             }
         });
 
@@ -1008,115 +1005,115 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
 
         checkNotSupported(new RunnableX() {
             @Override public void run() throws Exception {
-                rs.updateNClob("id", (Reader)null, 0L);
+                rs.updateNClob("id", null, 0L);
             }
         });
 
         checkNotSupported(new RunnableX() {
             @Override public void run() throws Exception {
-                rs.updateAsciiStream(1, (InputStream)null);
+                rs.updateAsciiStream(1, null);
             }
         });
 
         checkNotSupported(new RunnableX() {
             @Override public void run() throws Exception {
-                rs.updateAsciiStream(1, (InputStream)null, 0);
+                rs.updateAsciiStream(1, null, 0);
             }
         });
 
         checkNotSupported(new RunnableX() {
             @Override public void run() throws Exception {
-                rs.updateAsciiStream(1, (InputStream)null, 0L);
+                rs.updateAsciiStream(1, null, 0L);
             }
         });
 
         checkNotSupported(new RunnableX() {
             @Override public void run() throws Exception {
-                rs.updateAsciiStream("id", (InputStream)null);
+                rs.updateAsciiStream("id", null);
             }
         });
 
         checkNotSupported(new RunnableX() {
             @Override public void run() throws Exception {
-                rs.updateAsciiStream("id", (InputStream)null, 0);
+                rs.updateAsciiStream("id", null, 0);
             }
         });
 
         checkNotSupported(new RunnableX() {
             @Override public void run() throws Exception {
-                rs.updateAsciiStream("id", (InputStream)null, 0L);
+                rs.updateAsciiStream("id", null, 0L);
             }
         });
 
         checkNotSupported(new RunnableX() {
             @Override public void run() throws Exception {
-                rs.updateCharacterStream(1, (Reader)null);
+                rs.updateCharacterStream(1, null);
             }
         });
 
         checkNotSupported(new RunnableX() {
             @Override public void run() throws Exception {
-                rs.updateCharacterStream(1, (Reader)null, 0);
+                rs.updateCharacterStream(1, null, 0);
             }
         });
 
         checkNotSupported(new RunnableX() {
             @Override public void run() throws Exception {
-                rs.updateCharacterStream(1, (Reader)null, 0L);
+                rs.updateCharacterStream(1, null, 0L);
             }
         });
 
         checkNotSupported(new RunnableX() {
             @Override public void run() throws Exception {
-                rs.updateCharacterStream("id", (Reader)null);
+                rs.updateCharacterStream("id", null);
             }
         });
 
         checkNotSupported(new RunnableX() {
             @Override public void run() throws Exception {
-                rs.updateCharacterStream("id", (Reader)null, 0);
+                rs.updateCharacterStream("id", null, 0);
             }
         });
 
         checkNotSupported(new RunnableX() {
             @Override public void run() throws Exception {
-                rs.updateCharacterStream("id", (Reader)null, 0L);
+                rs.updateCharacterStream("id", null, 0L);
             }
         });
 
         checkNotSupported(new RunnableX() {
             @Override public void run() throws Exception {
-                rs.updateNCharacterStream(1, (Reader)null);
+                rs.updateNCharacterStream(1, null);
             }
         });
 
         checkNotSupported(new RunnableX() {
             @Override public void run() throws Exception {
-                rs.updateNCharacterStream(1, (Reader)null, 0);
+                rs.updateNCharacterStream(1, null, 0);
             }
         });
 
         checkNotSupported(new RunnableX() {
             @Override public void run() throws Exception {
-                rs.updateNCharacterStream(1, (Reader)null, 0L);
+                rs.updateNCharacterStream(1, null, 0L);
             }
         });
 
         checkNotSupported(new RunnableX() {
             @Override public void run() throws Exception {
-                rs.updateNCharacterStream("id", (Reader)null);
+                rs.updateNCharacterStream("id", null);
             }
         });
 
         checkNotSupported(new RunnableX() {
             @Override public void run() throws Exception {
-                rs.updateNCharacterStream("id", (Reader)null, 0);
+                rs.updateNCharacterStream("id", null, 0);
             }
         });
 
         checkNotSupported(new RunnableX() {
             @Override public void run() throws Exception {
-                rs.updateNCharacterStream("id", (Reader)null, 0L);
+                rs.updateNCharacterStream("id", null, 0L);
             }
         });
 
@@ -1503,71 +1500,71 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
         private final int id;
 
         /** */
-        @QuerySqlField(index = false)
+        @QuerySqlField
         private Boolean boolVal;
 
         /** */
-        @QuerySqlField(index = false)
+        @QuerySqlField
         private Byte byteVal;
 
         /** */
-        @QuerySqlField(index = false)
+        @QuerySqlField
         private Short shortVal;
 
         /** */
-        @QuerySqlField(index = false)
+        @QuerySqlField
         private Integer intVal;
 
         /** */
-        @QuerySqlField(index = false)
+        @QuerySqlField
         private Long longVal;
 
         /** */
-        @QuerySqlField(index = false)
+        @QuerySqlField
         private Float floatVal;
 
         /** */
-        @QuerySqlField(index = false)
+        @QuerySqlField
         private Double doubleVal;
 
         /** */
-        @QuerySqlField(index = false)
+        @QuerySqlField
         private BigDecimal bigVal;
 
         /** */
-        @QuerySqlField(index = false)
+        @QuerySqlField
         private String strVal;
 
         /** */
-        @QuerySqlField(index = false)
+        @QuerySqlField
         private byte[] arrVal;
 
         /** */
-        @QuerySqlField(index = false)
+        @QuerySqlField
         private Date dateVal;
 
         /** */
-        @QuerySqlField(index = false)
+        @QuerySqlField
         private Time timeVal;
 
         /** */
-        @QuerySqlField(index = false)
+        @QuerySqlField
         private Timestamp tsVal;
 
         /** */
-        @QuerySqlField(index = false)
+        @QuerySqlField
         private URL urlVal;
 
         /** */
-        @QuerySqlField(index = false)
+        @QuerySqlField
         private TestObjectField f1 = new TestObjectField(100, "AAAA");
 
         /** */
-        @QuerySqlField(index = false)
+        @QuerySqlField
         private TestObjectField f2 = new TestObjectField(500, "BBBB");
 
         /** */
-        @QuerySqlField(index = false)
+        @QuerySqlField
         private TestObjectField f3;
 
         /**

@@ -64,6 +64,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Prepared statement test.
  */
+@SuppressWarnings("ThrowableNotThrown")
 public class JdbcThinPreparedStatementSelfTest extends JdbcThinAbstractSelfTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -783,7 +784,9 @@ public class JdbcThinPreparedStatementSelfTest extends JdbcThinAbstractSelfTest 
 
         ResultSet rs = stmt.executeQuery();
 
-        assert rs.next();
+        boolean hasNext = rs.next();
+
+        assert hasNext;
 
         assert rs.getInt("id") == 1;
     }
@@ -850,7 +853,7 @@ public class JdbcThinPreparedStatementSelfTest extends JdbcThinAbstractSelfTest 
 
         checkNotSupported(new RunnableX() {
             @Override public void run() throws Exception {
-                stmt.setBlob(1, (InputStream)null, 0L);
+                stmt.setBlob(1, null, 0L);
             }
         });
 
@@ -916,7 +919,7 @@ public class JdbcThinPreparedStatementSelfTest extends JdbcThinAbstractSelfTest 
 
         checkNotSupported(new RunnableX() {
             @Override public void run() throws Exception {
-                stmt.setNClob(1, (Reader)null, 0L);
+                stmt.setNClob(1, null, 0L);
             }
         });
 
@@ -992,7 +995,7 @@ public class JdbcThinPreparedStatementSelfTest extends JdbcThinAbstractSelfTest 
     @SuppressWarnings("UnusedDeclaration")
     private static class TestObject implements Serializable {
         /** */
-        @QuerySqlField(index = false)
+        @QuerySqlField
         private final int id;
 
         /** */
