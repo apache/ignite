@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.tree;
 
-import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersions;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 
 /**
  *
@@ -32,13 +32,13 @@ public final class DataInnerIO extends AbstractDataInnerIO {
     /**
      * @param ver Page format version.
      */
-    DataInnerIO(int ver) {
+    private DataInnerIO(int ver) {
         super(T_DATA_REF_INNER, ver, true, 12);
     }
 
-
+    /** {@inheritDoc} */
     @Override public int getCacheId(long pageAddr, int idx) {
-        return GridCacheUtils.UNDEFINED_CACHE_ID;
+        return CU.UNDEFINED_CACHE_ID;
     }
 
     /** {@inheritDoc} */
