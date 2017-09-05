@@ -386,7 +386,7 @@ public interface GridCacheEntryEx {
         String taskName,
         @Nullable GridCacheVersion dhtVer,
         @Nullable Long updateCntr,
-        @Nullable TxMvccVersion mvccVer
+        long mvccCntr
     ) throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**
@@ -429,7 +429,7 @@ public interface GridCacheEntryEx {
         String taskName,
         @Nullable GridCacheVersion dhtVer,
         @Nullable Long updateCntr,
-        @Nullable TxMvccVersion mvccVer
+        long mvccCntr
     ) throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**
