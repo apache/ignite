@@ -20,10 +20,10 @@ package org.apache.ignite.internal.processors.cache.tree;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
-import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 
 /**
  *
@@ -75,8 +75,8 @@ public class PendingEntriesTree extends BPlusTree<PendingRow, PendingRow> {
         int cmp;
 
         if (grp.sharedGroup()) {
-            assert row.cacheId != GridCacheUtils.UNDEFINED_CACHE_ID : "Cache ID is not provided!";
-            assert io.getCacheId(pageAddr, idx) != GridCacheUtils.UNDEFINED_CACHE_ID : "Cache ID is not stored!";
+            assert row.cacheId != CU.UNDEFINED_CACHE_ID : "Cache ID is not provided!";
+            assert io.getCacheId(pageAddr, idx) != CU.UNDEFINED_CACHE_ID : "Cache ID is not stored!";
 
             cmp = Integer.compare(io.getCacheId(pageAddr, idx), row.cacheId);
 

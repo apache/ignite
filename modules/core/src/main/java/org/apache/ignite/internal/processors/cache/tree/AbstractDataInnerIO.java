@@ -18,12 +18,12 @@
 package org.apache.ignite.internal.processors.cache.tree;
 
 import org.apache.ignite.internal.pagemem.PageUtils;
-import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.CacheSearchRow;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusInnerIO;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.lang.IgniteInClosure;
 
 /**
@@ -36,7 +36,7 @@ public abstract class AbstractDataInnerIO extends BPlusInnerIO<CacheSearchRow> i
      * @param canGetRow If we can get full row from this page.
      * @param itemSize Single item size on page.
      */
-    protected AbstractDataInnerIO(int type, int ver, boolean canGetRow, int itemSize) {
+    AbstractDataInnerIO(int type, int ver, boolean canGetRow, int itemSize) {
         super(type, ver, canGetRow, itemSize);
     }
 
@@ -48,7 +48,7 @@ public abstract class AbstractDataInnerIO extends BPlusInnerIO<CacheSearchRow> i
         PageUtils.putInt(pageAddr, off + 8, row.hash());
 
         if (storeCacheId()) {
-            assert row.cacheId() != GridCacheUtils.UNDEFINED_CACHE_ID : row;
+            assert row.cacheId() != CU.UNDEFINED_CACHE_ID : row;
 
             PageUtils.putInt(pageAddr, off + 12, row.cacheId());
         }
@@ -76,7 +76,7 @@ public abstract class AbstractDataInnerIO extends BPlusInnerIO<CacheSearchRow> i
         if (storeCacheId()) {
             int cacheId = ((RowLinkIO)srcIo).getCacheId(srcPageAddr, srcIdx);
 
-            assert cacheId != GridCacheUtils.UNDEFINED_CACHE_ID;
+            assert cacheId != CU.UNDEFINED_CACHE_ID;
 
             PageUtils.putInt(dstPageAddr, off + 12, cacheId);
         }

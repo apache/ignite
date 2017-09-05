@@ -18,12 +18,12 @@
 package org.apache.ignite.internal.processors.cache.tree;
 
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
-import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.CacheSearchRow;
 import org.apache.ignite.internal.processors.cache.persistence.RowStore;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 
 /**
  *
@@ -56,7 +56,7 @@ public class CacheDataRowStore extends RowStore {
     CacheSearchRow keySearchRow(int cacheId, int hash, long link) {
         DataRow dataRow = new DataRow(grp, hash, link, partId, CacheDataRowAdapter.RowData.KEY_ONLY);
 
-        if (dataRow.cacheId() == GridCacheUtils.UNDEFINED_CACHE_ID && grp.sharedGroup())
+        if (dataRow.cacheId() == CU.UNDEFINED_CACHE_ID && grp.sharedGroup())
             dataRow.cacheId(cacheId);
 
         return dataRow;
@@ -72,7 +72,7 @@ public class CacheDataRowStore extends RowStore {
     CacheDataRow dataRow(int cacheId, int hash, long link, CacheDataRowAdapter.RowData rowData) {
         DataRow dataRow = new DataRow(grp, hash, link, partId, rowData);
 
-        if (dataRow.cacheId() == GridCacheUtils.UNDEFINED_CACHE_ID && grp.sharedGroup())
+        if (dataRow.cacheId() == CU.UNDEFINED_CACHE_ID && grp.sharedGroup())
             dataRow.cacheId(cacheId);
 
         return dataRow;
