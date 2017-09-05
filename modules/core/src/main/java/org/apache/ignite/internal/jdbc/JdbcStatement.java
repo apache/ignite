@@ -96,7 +96,6 @@ public class JdbcStatement implements Statement {
         return rs;
     }
 
-
     /** {@inheritDoc} */
     @Override public int executeUpdate(String sql) throws SQLException {
         T2<Boolean, JdbcResultSet> res = execute0(sql);
