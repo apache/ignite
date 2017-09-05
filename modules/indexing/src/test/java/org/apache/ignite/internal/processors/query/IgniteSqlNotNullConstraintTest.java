@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
-import javax.cache.Cache;
 import javax.cache.CacheException;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
@@ -259,14 +258,6 @@ public class IgniteSqlNotNullConstraintTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private void printKeys(IgniteCache<Integer, Person> cache) {
-        Ignite ignite = cache.unwrap(Ignite.class);
-
-        for (Cache.Entry<Integer, Person> e : cache)
-            log.debug("Node " + ignite.name() + " Cache " + cache.getName() + ". Key " + e.getKey());
-    }
-
-    /** */
     public void testAtomicOrImplicitTxGetAndPutIfAbsent() throws Exception {
         executeWithAllCaches(new TestClosure() {
             @Override public void run() throws Exception {
@@ -331,7 +322,7 @@ public class IgniteSqlNotNullConstraintTest extends GridCommonAbstractTest {
                     }
                 }, IgniteCheckedException.class, ERR_MSG);
 
-                assertEquals(0, cache.size());
+                assertEquals(isLocalAtomic() ? 1 : 0, cache.size());
             }
         });
     }
@@ -367,7 +358,6 @@ public class IgniteSqlNotNullConstraintTest extends GridCommonAbstractTest {
                     }
                 }, IgniteCheckedException.class, ERR_MSG);
 
-                // TODO: check this is OK
                 assertEquals(1, cache.size());
             }
         });
@@ -892,12 +882,20 @@ public class IgniteSqlNotNullConstraintTest extends GridCommonAbstractTest {
         /** */
         public int key2;
 
+        /** */
         public void configure(Ignite ignite, IgniteCache<Integer, Person> cache, TransactionConcurrency concurrency,
             TransactionIsolation isolation) {
             this.ignite = ignite;
             this.cache = cache;
             this.concurrency = concurrency;
             this.isolation = isolation;
+        }
+
+        /** */
+        protected boolean isLocalAtomic() {
+            CacheConfiguration cfg = cache.getConfiguration(CacheConfiguration.class);
+
+            return cfg.getCacheMode() == CacheMode.LOCAL && cfg.getAtomicityMode() == CacheAtomicityMode.ATOMIC;
         }
 
         /** */
