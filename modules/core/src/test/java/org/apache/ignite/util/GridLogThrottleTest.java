@@ -17,7 +17,10 @@
 
 package org.apache.ignite.util;
 
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.typedef.internal.LT;
+import org.apache.ignite.resources.LoggerResource;
+import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 
@@ -25,9 +28,15 @@ import org.apache.ignite.testframework.junits.common.GridCommonTest;
  * Grid log throttle test. To verify correctness, you need to run this test
  * and check that all messages that should be logged are indeed logged and
  * all messages that should be omitted are indeed omitted.
+ * Also test checks that outdated entries are removed (compares entry timestamp with current
+ * timestamp minus timeout). It protects the map from causing memory leak.
  */
 @GridCommonTest(group = "Utils")
 public class GridLogThrottleTest extends GridCommonAbstractTest {
+
+    @LoggerResource
+    private IgniteLogger log;
+
     /** Constructor. */
     public GridLogThrottleTest() {
         super(false);
@@ -111,5 +120,68 @@ public class GridLogThrottleTest extends GridCommonAbstractTest {
 
         //OMMITED.
         LT.info(log(), "Test info message.");
+    }
+
+    /**
+     * Tests clean up old entries from map.
+     *
+     * @throws Exception If any error occurs.
+     */
+    public void testCleanUpOldEntries() throws Exception {
+        final GridStringLogger log = new GridStringLogger(false, this.log);
+
+        LT.throttleTimeout(1000);
+
+        LT.error(log, new RuntimeException("Test exception 1."), "Test");
+        assertTrue(log.toString().contains("Test\r\njava.lang.RuntimeException: Test exception 1."));
+        assertEquals(1, LT.errorsSize());
+        log.reset();
+
+        LT.error(log, new RuntimeException("Test exception 1."), "Test");
+        assertEquals(log.toString(), "");
+        assertEquals(1, LT.errorsSize());
+        log.reset();
+
+        LT.error(log, new RuntimeException("Test exception 2."), "Test");
+        assertTrue(log.toString().contains("Test\r\njava.lang.RuntimeException: Test exception 2."));
+        assertEquals(2, LT.errorsSize());
+        log.reset();
+
+        LT.error(log, null, "Test - without throwable.");
+        assertTrue(log.toString().contains("Test - without throwable."));
+        assertEquals(3, LT.errorsSize());
+        log.reset();
+
+        LT.warn(log, "Test - without throwable1.");
+        assertTrue(log.toString().contains("Test - without throwable1."));
+        assertEquals(4, LT.errorsSize());
+        log.reset();
+
+        info("Slept for throttle timeout: " + LT.throttleTimeout());
+        Thread.sleep(LT.throttleTimeout() + 15);
+
+        LT.error(log, new RuntimeException("Test exception 3."), "Test");
+        assertTrue(log.toString().contains("Test\r\njava.lang.RuntimeException: Test exception 3."));
+        assertEquals(1, LT.errorsSize());
+        log.reset();
+
+        LT.warn(log, "Test - without throwable.");
+        assertEquals(2, LT.errorsSize());
+        assertTrue(log.toString().contains("Test - without throwable."));
+        log.reset();
+
+        LT.error(log, new RuntimeException("Test exception 1."), "Test");
+        assertEquals(3, LT.errorsSize());
+        assertTrue(log.toString().contains("Test\r\njava.lang.RuntimeException: Test exception 1."));
+        log.reset();
+
+        info("Slept for throttle timeout: " + LT.throttleTimeout());
+        Thread.sleep(LT.throttleTimeout() + 15);
+
+        LT.info(log(), "Test info message 1.");
+        assertEquals(1, LT.errorsSize());
+
+        LT.info(log(), "Test info message 2.");
+        assertEquals(2, LT.errorsSize());
     }
 }
