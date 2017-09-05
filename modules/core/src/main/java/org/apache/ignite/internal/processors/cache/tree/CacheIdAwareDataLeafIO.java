@@ -32,11 +32,11 @@ public final class CacheIdAwareDataLeafIO extends AbstractDataLeafIO {
     /**
      * @param ver Page format version.
      */
-    CacheIdAwareDataLeafIO(int ver) {
+    private CacheIdAwareDataLeafIO(int ver) {
         super(T_CACHE_ID_AWARE_DATA_REF_LEAF, ver, 16);
     }
 
-
+    /** {@inheritDoc} */
     @Override public int getCacheId(long pageAddr, int idx) {
         return PageUtils.getInt(pageAddr, offset(idx) + 12);
     }
