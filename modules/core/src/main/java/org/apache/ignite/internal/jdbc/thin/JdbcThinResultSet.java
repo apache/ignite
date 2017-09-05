@@ -1740,7 +1740,7 @@ public class JdbcThinResultSet implements ResultSet {
     /**
      * @param closeStmt Close statement on this result set close.
      */
-    public void closeStmt(boolean closeStmt) {
+    void closeStmt(boolean closeStmt) {
         this.closeStmt = closeStmt;
     }
 
