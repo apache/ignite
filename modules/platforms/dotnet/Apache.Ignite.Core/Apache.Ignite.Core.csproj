@@ -99,6 +99,8 @@
     <Compile Include="Cache\IMemoryMetrics.cs" />
     <Compile Include="Common\ExceptionFactory.cs" />
     <Compile Include="Configuration\Package-Info.cs" />
+    <Compile Include="Impl\Binary\BinaryTypeId.cs" />
+    <Compile Include="Impl\IIgniteInternal.cs" />
     <Compile Include="Impl\IPlatformTargetInternal.cs" />
     <Compile Include="Impl\PersistentStore\PersistentStoreMetrics.cs" />
     <Compile Include="Impl\PlatformDisposableTargetAdapter.cs" />
