@@ -123,7 +123,7 @@ public class GridLogThrottleTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Tests clean up old entries from map.
+     * Test cleans up old entries from map.
      *
      * @throws Exception If any error occurs.
      */
@@ -157,8 +157,8 @@ public class GridLogThrottleTest extends GridCommonAbstractTest {
         assertEquals(4, LT.errorsSize());
         log.reset();
 
-        info("Slept for throttle timeout: " + LT.throttleTimeout());
-        Thread.sleep(LT.throttleTimeout() + 15);
+        info("Slept for throttle timeout: " + LT.throttleTimeout() + 15);
+        Thread.sleep(LT.throttleTimeout() + 100);
 
         LT.error(log, new RuntimeException("Test exception 3."), "Test");
         assertTrue(log.toString().contains("Test\r\njava.lang.RuntimeException: Test exception 3."));
@@ -175,13 +175,45 @@ public class GridLogThrottleTest extends GridCommonAbstractTest {
         assertTrue(log.toString().contains("Test\r\njava.lang.RuntimeException: Test exception 1."));
         log.reset();
 
-        info("Slept for throttle timeout: " + LT.throttleTimeout());
-        Thread.sleep(LT.throttleTimeout() + 15);
+        info("Slept for throttle timeout: " + LT.throttleTimeout() + 15);
+        Thread.sleep(LT.throttleTimeout() + 100);
 
         LT.info(log(), "Test info message 1.");
         assertEquals(1, LT.errorsSize());
 
         LT.info(log(), "Test info message 2.");
         assertEquals(2, LT.errorsSize());
+    }
+
+    /**
+     * Test check changing throttleTimeout.
+     *
+     * @throws Exception If any error occurs.
+     */
+    public void testOnChangingTimeout() throws Exception {
+        final GridStringLogger log = new GridStringLogger(false, this.log);
+
+        LT.throttleTimeout(1000);
+
+        LT.error(log, new RuntimeException("Test exception 1."), "Test");
+        assertEquals(1, LT.errorsSize());
+
+        LT.error(log, new RuntimeException("Test exception 1."), "Test");
+        assertEquals(1, LT.errorsSize());
+
+        info("Slept for throttle timeout: " + LT.throttleTimeout() + 15);
+        Thread.sleep(LT.throttleTimeout() + 15);
+
+        assertEquals(0, LT.errorsSize());
+
+        LT.error(log, new RuntimeException("Test exception 1."), "Test");
+        assertEquals(1, LT.errorsSize());
+
+        info("Set new throttle timeout and slept : " + LT.throttleTimeout() + 15);
+        LT.throttleTimeout(500);
+
+        Thread.sleep(LT.throttleTimeout() + 50);
+
+        assertEquals(0, LT.errorsSize());
     }
 }
