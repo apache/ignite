@@ -19,7 +19,8 @@
           ]
         }
       ],
-      "dest": "api"
+      "dest": "api",
+	  "filter": "filterConfig.yml"
     }
   ],
   "build": {
@@ -86,6 +87,6 @@
 	  "_appLogoPath": "images/logo_ignite_32_32.png",
 	  "_appFooter": "© 2015 - 2017 The Apache Software Foundation",
       "_disableContribution": true
-    },
+    }
   }
 }
