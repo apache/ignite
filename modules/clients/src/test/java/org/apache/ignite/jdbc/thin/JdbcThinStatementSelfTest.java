@@ -302,7 +302,7 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void testCloseOnCompletion() throws Exception {
+    public void testCloseOnCompletionAfterQuery() throws Exception {
         assert !stmt.isCloseOnCompletion() : "Invalid default closeOnCompletion";
 
         ResultSet rs0 = stmt.executeQuery(SQL);
@@ -320,6 +320,35 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
         ResultSet rs2 = stmt.executeQuery(SQL);
 
         stmt.closeOnCompletion();
+
+        assert stmt.isCloseOnCompletion() : "Invalid closeOnCompletion";
+
+        rs2.close();
+
+        assert stmt.isClosed() : "Statement must be closed";
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCloseOnCompletionBeforeQuery() throws Exception {
+        assert !stmt.isCloseOnCompletion() : "Invalid default closeOnCompletion";
+
+        ResultSet rs0 = stmt.executeQuery(SQL);
+
+        ResultSet rs1 = stmt.executeQuery(SQL);
+
+        assert rs0.isClosed() : "Result set must be closed implicitly";
+
+        assert !stmt.isClosed() : "Statement must not be closed";
+
+        rs1.close();
+
+        assert !stmt.isClosed() : "Statement must not be closed";
+
+        stmt.closeOnCompletion();
+
+        ResultSet rs2 = stmt.executeQuery(SQL);
 
         assert stmt.isCloseOnCompletion() : "Invalid closeOnCompletion";
 
