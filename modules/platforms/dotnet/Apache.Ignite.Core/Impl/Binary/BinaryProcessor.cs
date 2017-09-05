@@ -183,7 +183,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         public bool RegisterType(int id, string typeName)
         {
             Debug.Assert(typeName != null);
-            Debug.Assert(id != BinaryUtils.TypeUnregistered);
+            Debug.Assert(id != BinaryTypeId.Unregistered);
 
             return DoOutOp((int) Op.RegisterType, w =>
             {

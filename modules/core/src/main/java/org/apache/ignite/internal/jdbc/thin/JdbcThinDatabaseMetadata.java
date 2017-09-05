@@ -111,7 +111,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
 
     /** {@inheritDoc} */
     @Override public String getDatabaseProductName() throws SQLException {
-        return "Ignite";
+        return "Apache Ignite";
     }
 
     /** {@inheritDoc} */
@@ -1490,7 +1490,6 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
 
     /** {@inheritDoc} */
     @Override public ResultSet getClientInfoProperties() throws SQLException {
-        // TODO: IGNITE-5425.
         return new JdbcThinResultSet(Collections.<List<Object>>emptyList(), Arrays.asList(
             new JdbcColumnMeta(null, null, "NAME", String.class),
             new JdbcColumnMeta(null, null, "MAX_LEN", Integer.class),
