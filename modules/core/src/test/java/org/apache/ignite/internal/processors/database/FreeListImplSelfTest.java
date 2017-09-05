@@ -425,6 +425,16 @@ public class FreeListImplSelfTest extends GridCommonAbstractTest {
         @Override public int cacheId() {
             return 0;
         }
+
+        /** {@inheritDoc} */
+        @Override public long mvccUpdateCounter() {
+            return 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long mvccUpdateTopologyVersion() {
+            return 0;
+        }
     }
 
     /**

@@ -18,47 +18,47 @@
 package org.apache.ignite.internal.processors.cache.tree;
 
 import org.apache.ignite.internal.pagemem.PageUtils;
-import org.apache.ignite.internal.processors.cache.mvcc.TxMvccVersion;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersions;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 
 /**
  *
  */
-public final class CacheIdAwareDataInnerIO extends AbstractDataInnerIO {
+public final class MvccDataInnerIO extends AbstractDataInnerIO {
     /** */
-    public static final IOVersions<CacheIdAwareDataInnerIO> VERSIONS = new IOVersions<>(
-        new CacheIdAwareDataInnerIO(1)
+    public static final IOVersions<MvccDataInnerIO> VERSIONS = new IOVersions<>(
+        new MvccDataInnerIO(1)
     );
 
     /**
      * @param ver Page format version.
      */
-    private CacheIdAwareDataInnerIO(int ver) {
-        super(T_CACHE_ID_AWARE_DATA_REF_INNER, ver, true, 16);
+    private MvccDataInnerIO(int ver) {
+        super(T_DATA_REF_MVCC_INNER, ver, true, 28);
     }
 
     /** {@inheritDoc} */
     @Override public int getCacheId(long pageAddr, int idx) {
-        return PageUtils.getInt(pageAddr, offset(idx) + 12);
+        return CU.UNDEFINED_CACHE_ID;
     }
 
     /** {@inheritDoc} */
     @Override protected boolean storeCacheId() {
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected boolean storeMvccVersion() {
         return false;
     }
 
     /** {@inheritDoc} */
+    @Override protected boolean storeMvccVersion() {
+        return true;
+    }
+
+    /** {@inheritDoc} */
     @Override public long getMvccUpdateTopologyVersion(long pageAddr, int idx) {
-        return 0;
+        return PageUtils.getLong(pageAddr, offset(idx) + 12);
     }
 
     /** {@inheritDoc} */
     @Override public long getMvccUpdateCounter(long pageAddr, int idx) {
-        return TxMvccVersion.COUNTER_NA;
+        return PageUtils.getLong(pageAddr, offset(idx) + 20);
     }
 }

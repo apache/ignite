@@ -35,6 +35,8 @@ import org.apache.ignite.internal.processors.cache.tree.CacheIdAwarePendingEntry
 import org.apache.ignite.internal.processors.cache.tree.CacheIdAwarePendingEntryLeafIO;
 import org.apache.ignite.internal.processors.cache.tree.DataInnerIO;
 import org.apache.ignite.internal.processors.cache.tree.DataLeafIO;
+import org.apache.ignite.internal.processors.cache.tree.MvccDataInnerIO;
+import org.apache.ignite.internal.processors.cache.tree.MvccDataLeafIO;
 import org.apache.ignite.internal.processors.cache.tree.PendingEntryInnerIO;
 import org.apache.ignite.internal.processors.cache.tree.PendingEntryLeafIO;
 
@@ -190,6 +192,12 @@ public abstract class PageIO {
 
     /** */
     public static final short T_H2_EX_REF_INNER_END = T_H2_EX_REF_INNER_START + MAX_PAYLOAD_SIZE - 1;
+
+    /** */
+    public static final short T_DATA_REF_MVCC_INNER = 21;
+
+    /** */
+    public static final short T_DATA_REF_MVCC_LEAF = 22;
 
     /** */
     private final int ver;
@@ -514,6 +522,12 @@ public abstract class PageIO {
 
             case T_CACHE_ID_AWARE_DATA_REF_LEAF:
                 return (Q)CacheIdAwareDataLeafIO.VERSIONS.forVersion(ver);
+
+            case T_DATA_REF_MVCC_INNER:
+                return (Q)MvccDataInnerIO.VERSIONS.forVersion(ver);
+
+            case T_DATA_REF_MVCC_LEAF:
+                return (Q)MvccDataLeafIO.VERSIONS.forVersion(ver);
 
             case T_METASTORE_INNER:
                 return (Q)MetadataStorage.MetaStoreInnerIO.VERSIONS.forVersion(ver);

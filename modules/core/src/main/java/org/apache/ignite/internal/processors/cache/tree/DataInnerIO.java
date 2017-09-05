@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.tree;
 
+import org.apache.ignite.internal.processors.cache.mvcc.TxMvccVersion;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersions;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 
@@ -44,5 +45,20 @@ public final class DataInnerIO extends AbstractDataInnerIO {
     /** {@inheritDoc} */
     @Override protected boolean storeCacheId() {
         return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected boolean storeMvccVersion() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getMvccUpdateTopologyVersion(long pageAddr, int idx) {
+        return 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getMvccUpdateCounter(long pageAddr, int idx) {
+        return TxMvccVersion.COUNTER_NA;
     }
 }

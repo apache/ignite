@@ -21,6 +21,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.mvcc.TxMvccVersion;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.CacheSearchRow;
@@ -28,6 +29,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPagePayload;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -46,7 +48,7 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
     private final CacheGroupContext grp;
 
     /**
-     * @param grp Ccahe group.
+     * @param grp Cache group.
      * @param name Tree name.
      * @param reuseList Reuse list.
      * @param rowStore Row store.
@@ -69,8 +71,8 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
             grp.offheap().globalRemoveId(),
             metaPageId,
             reuseList,
-            grp.sharedGroup() ? CacheIdAwareDataInnerIO.VERSIONS : DataInnerIO.VERSIONS,
-            grp.sharedGroup() ? CacheIdAwareDataLeafIO.VERSIONS : DataLeafIO.VERSIONS);
+            innerIO(grp),
+            leafIO(grp));
 
         assert rowStore != null;
 
@@ -78,6 +80,20 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
         this.grp = grp;
 
         initTree(initNew);
+    }
+
+    private static IOVersions<? extends AbstractDataInnerIO> innerIO(CacheGroupContext grp) {
+        if (grp.mvccEnabled())
+            return MvccDataInnerIO.VERSIONS;
+
+        return grp.sharedGroup() ? CacheIdAwareDataInnerIO.VERSIONS : DataInnerIO.VERSIONS;
+    }
+
+    private static IOVersions<? extends AbstractDataLeafIO> leafIO(CacheGroupContext grp) {
+        if (grp.mvccEnabled())
+            return MvccDataLeafIO.VERSIONS;
+
+        return grp.sharedGroup() ? CacheIdAwareDataLeafIO.VERSIONS : DataLeafIO.VERSIONS;
     }
 
     /**
@@ -127,7 +143,28 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
 
         assert row.key() != null : row;
 
-        return compareKeys(row.key(), link);
+        cmp = compareKeys(row.key(), link);
+
+        if (cmp != 0 || !grp.mvccEnabled())
+            return 0;
+
+        long mvccTopVer = io.getMvccUpdateTopologyVersion(pageAddr, idx);
+
+        if (mvccTopVer == 0)
+            return 0;
+
+        cmp = Long.compare(mvccTopVer, row.mvccUpdateTopologyVersion());
+
+        if (cmp != 0)
+            return 0;
+
+        long mvccCntr = io.getMvccUpdateCounter(pageAddr, idx);
+
+        assert row.mvccUpdateCounter() != TxMvccVersion.COUNTER_NA;
+
+        cmp = Long.compare(mvccCntr, row.mvccUpdateCounter());
+
+        return cmp;
     }
 
     /** {@inheritDoc} */

@@ -195,6 +195,10 @@ public class CacheGroupContext {
         caches = new ArrayList<>();
     }
 
+    public boolean mvccEnabled() {
+        return ccfg.isMvccEnabled();
+    }
+
     /**
      * @return {@code True} if this is cache group for one of system caches.
      */

@@ -822,6 +822,16 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         @Override public int cacheId() {
             return entry.cacheId();
         }
+
+        /** {@inheritDoc} */
+        @Override public long mvccUpdateCounter() {
+            return 0; // TODO IGNITE-3478.
+        }
+
+        /** {@inheritDoc} */
+        @Override public long mvccUpdateTopologyVersion() {
+            return 0; // TODO IGNITE-3478.
+        }
     }
 
     /**

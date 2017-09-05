@@ -572,6 +572,16 @@ public class CacheDataRowAdapter implements CacheDataRow {
         throw new UnsupportedOperationException();
     }
 
+    /** {@inheritDoc} */
+    @Override public long mvccUpdateCounter() {
+        return 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long mvccUpdateTopologyVersion() {
+        return 0;
+    }
+
     /**
      *
      */

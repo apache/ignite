@@ -73,4 +73,14 @@ public class SearchRow implements CacheSearchRow {
     @Override public int cacheId() {
         return cacheId;
     }
+
+    /** {@inheritDoc} */
+    @Override public long mvccUpdateCounter() {
+        return 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long mvccUpdateTopologyVersion() {
+        return 0;
+    }
 }

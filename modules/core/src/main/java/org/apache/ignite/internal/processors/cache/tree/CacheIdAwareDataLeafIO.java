@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.tree;
 
 import org.apache.ignite.internal.pagemem.PageUtils;
+import org.apache.ignite.internal.processors.cache.mvcc.TxMvccVersion;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersions;
 
 /**
@@ -44,5 +45,20 @@ public final class CacheIdAwareDataLeafIO extends AbstractDataLeafIO {
     /** {@inheritDoc} */
     @Override protected boolean storeCacheId() {
         return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override boolean storeMvccVersion() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getMvccUpdateTopologyVersion(long pageAddr, int idx) {
+        return 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getMvccUpdateCounter(long pageAddr, int idx) {
+        return TxMvccVersion.COUNTER_NA;
     }
 }
