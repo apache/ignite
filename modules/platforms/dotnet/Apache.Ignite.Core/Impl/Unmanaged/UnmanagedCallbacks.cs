@@ -913,9 +913,28 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
                 ResourceProcessor.Inject(svc, _ignite);
 
-                svc.Init(new ServiceContext(_ignite.Marshaller.StartUnmarshal(stream, srvKeepBinary)));
+                try
+                {
+                    svc.Init(new ServiceContext(_ignite.Marshaller.StartUnmarshal(stream, srvKeepBinary)));
 
-                return _handleRegistry.Allocate(svc);
+                    stream.Reset();
+
+                    stream.WriteBool(true);  // Success.
+
+                    stream.SynchronizeOutput();
+
+                    return _handleRegistry.Allocate(svc);
+                }
+                catch (Exception e)
+                {
+                    stream.Reset();
+
+                    BinaryUtils.WriteInvocationResult(_ignite.Marshaller.StartMarshal(stream), false, e);
+
+                    stream.SynchronizeOutput();
+
+                    return 0;
+                }
             }
         }
 
