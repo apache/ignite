@@ -906,15 +906,15 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         {
             using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
             {
-                var reader = _ignite.Marshaller.StartUnmarshal(stream);
-
-                bool srvKeepBinary = reader.ReadBoolean();
-                var svc = reader.ReadObject<IService>();
-
-                ResourceProcessor.Inject(svc, _ignite);
-
                 try
                 {
+                    var reader = _ignite.Marshaller.StartUnmarshal(stream);
+
+                    var srvKeepBinary = reader.ReadBoolean();
+                    var svc = reader.ReadObject<IService>();
+
+                    ResourceProcessor.Inject(svc, _ignite);
+
                     svc.Init(new ServiceContext(_ignite.Marshaller.StartUnmarshal(stream, srvKeepBinary)));
 
                     stream.Reset();

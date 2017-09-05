@@ -491,8 +491,10 @@ namespace Apache.Ignite.Core.Tests.Services
         {
             var svc = new TestIgniteServiceBinarizableErr();
 
-            var ex = Assert.Throws<IgniteException>(() => Services.DeployMultiple(SvcName, svc, Grids.Length, 1));
-            Assert.AreEqual("Expected exception", ex.Message);
+            var ex = Assert.Throws<ServiceDeploymentException>(() =>
+                Services.DeployMultiple(SvcName, svc, Grids.Length, 1));
+            
+            Assert.AreEqual("Expected exception", ex.InnerException.Message);
 
             var svc0 = Services.GetService<TestIgniteServiceSerializable>(SvcName);
 
