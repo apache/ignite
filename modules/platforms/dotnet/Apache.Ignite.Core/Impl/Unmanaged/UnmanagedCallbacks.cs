@@ -929,7 +929,11 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 {
                     stream.Reset();
 
-                    BinaryUtils.WriteInvocationResult(_ignite.Marshaller.StartMarshal(stream), false, e);
+                    var writer = _ignite.Marshaller.StartMarshal(stream);
+
+                    BinaryUtils.WriteInvocationResult(writer, false, e);
+
+                    _ignite.Marshaller.FinishMarshal(writer);
 
                     stream.SynchronizeOutput();
 
