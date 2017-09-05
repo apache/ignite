@@ -1121,7 +1121,7 @@ public class GridSqlQueryParser {
                     throw new IgniteSQLException("Invalid value of \"" + PARAM_WRITE_SYNC + "\" parameter " +
                         "(should be FULL_SYNC, FULL_ASYNC, or PRIMARY_SYNC): " + val, IgniteQueryErrorCode.PARSING);
 
-                res.writeSyncMode(writeSyncMode);
+                res.writeSynchronizationMode(writeSyncMode);
 
                 break;
 

@@ -110,14 +110,14 @@ public class GridSqlCreateTable extends GridSqlStatement {
     /**
      * @return Write sync mode for new cache.
      */
-    public CacheWriteSynchronizationMode writeSyncMode() {
+    public CacheWriteSynchronizationMode writeSynchronizationMode() {
         return writeSyncMode;
     }
 
     /**
      * @param writeSyncMode Write sync mode for new cache.
      */
-    public void writeSyncMode(CacheWriteSynchronizationMode writeSyncMode) {
+    public void writeSynchronizationMode(CacheWriteSynchronizationMode writeSyncMode) {
         this.writeSyncMode = writeSyncMode;
     }
 
