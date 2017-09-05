@@ -1244,7 +1244,6 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 }
             }
 
-            // We are holding transaction-level locks for entries here, so we can get next write version.
             onEntriesLocked();
 
             // We are holding transaction-level locks for entries here, so we can get next write version.

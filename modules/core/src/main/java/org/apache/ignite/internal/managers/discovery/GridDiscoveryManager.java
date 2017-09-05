@@ -894,8 +894,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         checkAttributes(discoCache().remoteNodes());
 
-        ctx.service().initCompatibilityMode(discoCache().remoteNodes());
-
         // Start discovery worker.
         new IgniteThread(discoWrk).start();
 
