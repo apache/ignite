@@ -73,26 +73,12 @@ class ConnectionState {
 }
 
 export default class IgniteAgentManager {
-    static $inject = ['$rootScope', '$q', 'igniteSocketFactory', 'AgentModal', 'UserNotifications'];
+    static $inject = ['$rootScope', '$q', '$transitions', 'igniteSocketFactory', 'AgentModal', 'UserNotifications', 'IgniteVersion' ];
 
-    constructor($root, $q, socketFactory, AgentModal, UserNotifications) {
-        this.$root = $root;
-        this.$q = $q;
-        this.socketFactory = socketFactory;
-
-        /**
-         * @type {AgentModal}
-         */
-        this.AgentModal = AgentModal;
-
-        /**
-         * @type {UserNotifications}
-         */
-        this.UserNotifications = UserNotifications;
+    constructor($root, $q, $transitions, socketFactory, AgentModal, UserNotifications, Version) {
+        Object.assign(this, {$root, $q, $transitions, socketFactory, AgentModal, UserNotifications, Version});
 
         this.promises = new Set();
-
-        $root.$on('$stateChangeSuccess', () => this.stopWatch());
 
         /**
          * Connection to backend.
@@ -113,8 +99,7 @@ export default class IgniteAgentManager {
 
         this.connectionSbj = new BehaviorSubject(new ConnectionState(cluster));
 
-        this.ignite2x = true;
-        this.ignite2_1 = true;
+        this.clusterVersion = '2.1.0';
 
         if (!$root.IgniteDemoMode) {
             this.connectionSbj.subscribe({
@@ -124,11 +109,14 @@ export default class IgniteAgentManager {
                     if (_.isEmpty(version))
                         return;
 
-                    this.ignite2x = version.startsWith('2.');
-                    this.ignite2_1 = version.startsWith('2.1');
+                    this.clusterVersion = version;
                 }
             });
         }
+    }
+
+    available(sinceVersion) {
+        return this.Version.since(this.clusterVersion, sinceVersion);
     }
 
     connect() {
@@ -282,13 +270,13 @@ export default class IgniteAgentManager {
             }
         });
 
+        self.$transitions.onExit({}, () => self.stopWatch());
+
         return self.awaitCluster();
     }
 
     stopWatch() {
         this.modalSubscription && this.modalSubscription.unsubscribe();
-
-        this.AgentModal.hide();
 
         this.promises.forEach((promise) => promise.reject('Agent watch stopped.'));
     }
@@ -502,17 +490,21 @@ export default class IgniteAgentManager {
      * @param {Boolean} replicatedOnly Flag whether query contains only replicated tables.
      * @param {Boolean} local Flag whether to execute query locally.
      * @param {int} pageSz
+     * @param {Boolean} lazy query flag.
      * @returns {Promise}
      */
-    querySql(nid, cacheName, query, nonCollocatedJoins, enforceJoinOrder, replicatedOnly, local, pageSz) {
-        if (this.ignite2x) {
-            return this.visorTask('querySqlX2', nid, cacheName, query, nonCollocatedJoins, enforceJoinOrder, replicatedOnly, local, pageSz)
-                .then(({error, result}) => {
-                    if (_.isEmpty(error))
-                        return result;
+    querySql(nid, cacheName, query, nonCollocatedJoins, enforceJoinOrder, replicatedOnly, local, pageSz, lazy) {
+        if (this.available('2.0.0')) {
+            const task = this.available('2.1.4') ?
+                this.visorTask('querySqlX2', nid, cacheName, query, nonCollocatedJoins, enforceJoinOrder, replicatedOnly, local, pageSz, lazy) :
+                this.visorTask('querySqlX2', nid, cacheName, query, nonCollocatedJoins, enforceJoinOrder, replicatedOnly, local, pageSz);
 
-                    return Promise.reject(error);
-                });
+            return task.then(({error, result}) => {
+                if (_.isEmpty(error))
+                    return result;
+
+                return Promise.reject(error);
+            });
         }
 
         cacheName = _.isEmpty(cacheName) ? null : cacheName;
@@ -542,7 +534,7 @@ export default class IgniteAgentManager {
      * @returns {Promise}
      */
     queryNextPage(nid, queryId, pageSize) {
-        if (this.ignite2x)
+        if (this.available('2.0.0'))
             return this.visorTask('queryFetchX2', nid, queryId, pageSize);
 
         return this.visorTask('queryFetch', nid, queryId, pageSize);
@@ -586,7 +578,7 @@ export default class IgniteAgentManager {
      * @returns {Promise}
      */
     queryClose(nid, queryId) {
-        if (this.ignite2x) {
+        if (this.available('2.0.0')) {
             return this.visorTask('queryCloseX2', nid, 'java.util.Map', 'java.util.UUID', 'java.util.Collection',
                 nid + '=' + queryId);
         }
@@ -606,7 +598,7 @@ export default class IgniteAgentManager {
      * @returns {Promise}
      */
     queryScan(nid, cacheName, filter, regEx, caseSensitive, near, local, pageSize) {
-        if (this.ignite2x) {
+        if (this.available('2.0.0')) {
             return this.visorTask('queryScanX2', nid, cacheName, filter, regEx, caseSensitive, near, local, pageSize)
                 .then(({error, result}) => {
                     if (_.isEmpty(error))

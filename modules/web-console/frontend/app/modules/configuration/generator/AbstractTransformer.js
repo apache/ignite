@@ -294,7 +294,7 @@ export default class AbstractTransformer {
     }
 
     // Generate caches configs.
-    static clusterCheckpoint(cluster, available, caches) {
+    static clusterCheckpoint(cluster, caches) {
         return this.toSection(this.generator.clusterCheckpoint(cluster, caches));
     }
 

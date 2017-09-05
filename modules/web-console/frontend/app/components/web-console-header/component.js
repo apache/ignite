@@ -33,11 +33,15 @@ export default {
             Object.assign(this, {$rootScope, $scope, $state, branding, UserNotifications});
         }
 
+        setWebAgentDownloadVisible() {
+            this.isWebAgentDownloadVisible =
+                this.constructor.webAgentDownloadVisibleStates.some((state) => this.$state.includes(state));
+        }
+
         $onInit() {
-            this.$scope.$on('$stateChangeSuccess', () => {
-                this.isWebAgentDownloadVisible =
-                    this.constructor.webAgentDownloadVisibleStates.some((state) => this.$state.includes(state));
-            });
+            this.setWebAgentDownloadVisible();
+
+            this.$scope.$on('$stateChangeSuccess', () => this.setWebAgentDownloadVisible());
         }
     },
     transclude: {

@@ -70,7 +70,7 @@ public class VisorQueryTask extends VisorOneNodeTask<VisorQueryTaskArg, VisorEit
         /** {@inheritDoc} */
         @Override protected VisorEither<VisorQueryResult> run(final VisorQueryTaskArg arg) {
             try {
-                IgniteCache<Object, Object> c = ignite.context().cache().jcache(arg.getCacheName());
+                IgniteCache<Object, Object> c = ignite.cache(arg.getCacheName());
                 UUID nid = ignite.localNode().id();
 
                 SqlFieldsQuery qry = new SqlFieldsQuery(arg.getQueryText());
@@ -79,6 +79,7 @@ public class VisorQueryTask extends VisorOneNodeTask<VisorQueryTaskArg, VisorEit
                 qry.setDistributedJoins(arg.isDistributedJoins());
                 qry.setEnforceJoinOrder(arg.isEnforceJoinOrder());
                 qry.setReplicatedOnly(arg.isReplicatedOnly());
+                qry.setLazy(arg.getLazy());
 
                 long start = U.currentTimeMillis();
 

@@ -519,6 +519,9 @@ public class MarshallerContextImpl implements MarshallerContext {
         this.transport = transport;
         closProc = ctx.closure();
         clientNode = ctx.clientNode();
+
+        if (ctx.config().isPersistentStoreEnabled())
+            fileStore.restoreMappings(this);
     }
 
     /**

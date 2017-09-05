@@ -168,7 +168,7 @@ export default ['JavaTypes', 'igniteClusterPlatformDefaults', 'igniteCachePlatfo
                 .intProperty('unacknowledgedMessagesBufferSize')
                 // .intProperty('socketWriteTimeout')
                 .intProperty('selectorsCount');
-                // .emptyBeanProperty('addressResolver');
+            // .emptyBeanProperty('addressResolver');
 
             if (commSpi.nonEmpty())
                 cfg.beanProperty('CommunicationSpi', commSpi);
@@ -176,7 +176,7 @@ export default ['JavaTypes', 'igniteClusterPlatformDefaults', 'igniteCachePlatfo
             cfg.intProperty('networkTimeout', 'NetworkTimeout')
                 .intProperty('networkSendRetryDelay')
                 .intProperty('networkSendRetryCount');
-                // .intProperty('discoveryStartupDelay');
+            // .intProperty('discoveryStartupDelay');
 
             return cfg;
         }
