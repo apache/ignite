@@ -112,11 +112,11 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> implements Ig
         }
         catch (IgniteTxOptimisticCheckedException | IgniteFutureCancelledCheckedException |
             ClusterTopologyCheckedException e) {
-            if (!ignoreFailure(e))
+            if (!processFailure(e, fut))
                 onDone(e);
         }
         catch (IgniteCheckedException e) {
-            if (!ignoreFailure(e)) {
+            if (!processFailure(e, fut)) {
                 if (e instanceof NodeStoppingException)
                     logDebug(logger(), "Failed to execute compound future reducer, node stopped.");
                 else
@@ -180,6 +180,17 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> implements Ig
      */
     protected boolean ignoreFailure(Throwable err) {
         return false;
+    }
+
+    /**
+     * Processes error thrown by some of the inner futures.
+     *
+     * @param err Thrown exception.
+     * @param fut Failed future.
+     * @return {@code True} if this error should be ignored.
+     */
+    protected boolean processFailure(Throwable err, IgniteInternalFuture<T> fut) {
+        return ignoreFailure(err);
     }
 
     /**
