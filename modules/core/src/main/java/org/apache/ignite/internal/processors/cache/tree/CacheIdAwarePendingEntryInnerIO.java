@@ -32,11 +32,11 @@ public final class CacheIdAwarePendingEntryInnerIO extends AbstractPendingEntryI
     /**
      * @param ver Page format version.
      */
-    CacheIdAwarePendingEntryInnerIO(int ver) {
+    private CacheIdAwarePendingEntryInnerIO(int ver) {
         super(T_CACHE_ID_AWARE_PENDING_REF_INNER, ver, true, 20);
     }
 
-
+    /** {@inheritDoc} */
     @Override public int getCacheId(long pageAddr, int idx) {
         return PageUtils.getInt(pageAddr, offset(idx) + 16);
     }
