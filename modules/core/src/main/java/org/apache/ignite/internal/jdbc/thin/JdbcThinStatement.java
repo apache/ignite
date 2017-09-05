@@ -26,6 +26,8 @@ import java.sql.SQLFeatureNotSupportedException;
 import java.sql.SQLWarning;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.query.SqlQuery;
@@ -35,6 +37,7 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQuery;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteMultipleStatementsResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResult;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcStatementResults;
 
 import static java.sql.ResultSet.CONCUR_READ_ONLY;
 import static java.sql.ResultSet.FETCH_FORWARD;
@@ -60,17 +63,20 @@ public class JdbcThinStatement implements Statement {
     /** Query timeout. */
     private int timeout;
 
-    /** Current result set. */
-    protected JdbcThinResultSet rs;
+    /** Result sets. */
+    protected List<JdbcThinResultSet> resultSets;
+
+    /** Current result. */
+    protected int curRes;
 
     /** Fetch size. */
     private int pageSize = DFLT_PAGE_SIZE;
 
-    /** */
-    private boolean alreadyRead;
-
     /** Batch. */
     protected List<JdbcQuery> batch;
+
+    /** Multiple statement result info. */
+    protected Iterator<JdbcStatementResults> resInfoIter;
 
     /**
      * Creates new statement.
@@ -104,13 +110,14 @@ public class JdbcThinStatement implements Statement {
     protected void execute0(String sql, List<Object> args) throws SQLException {
         ensureNotClosed();
 
-        if (rs != null) {
-            rs.close();
+        if (resultSets != null) {
+            for (ResultSet rs : resultSets)
+                rs.close();
 
-            rs = null;
+            resultSets = null;
+
+            curRes = 0;
         }
-
-        alreadyRead = false;
 
         if (sql == null || sql.isEmpty())
             throw new SQLException("SQL query is empty.");
@@ -124,16 +131,16 @@ public class JdbcThinStatement implements Statement {
             if (res0 instanceof JdbcQueryExecuteResult) {
                 JdbcQueryExecuteResult res = (JdbcQueryExecuteResult)res0;
 
-                rs = new JdbcThinResultSet(this, res.getQueryId(), pageSize, res.last(), res.items(),
-                    res.isQuery(), conn.io().autoCloseServerCursor(), res.updateCount());
+                resultSets = Collections.singletonList(new JdbcThinResultSet(this, res.getQueryId(), pageSize,
+                    res.last(), res.items(), res.isQuery(), conn.io().autoCloseServerCursor(), res.updateCount()));
             }
             else if (res0 instanceof JdbcQueryExecuteMultipleStatementsResult) {
                 JdbcQueryExecuteMultipleStatementsResult res = (JdbcQueryExecuteMultipleStatementsResult)res0;
 
+                resInfoIter = res.results().iterator();
             }
-            else {
+            else
                 throw new SQLException("Unexpected result [res=" + res0 + ']');
-            }
         }
         catch (IOException e) {
             conn.close();
@@ -281,7 +288,10 @@ public class JdbcThinStatement implements Statement {
     private JdbcThinResultSet lastResultSet() throws SQLException {
         ensureNotClosed();
 
-        if (rs == null || alreadyRead)
+        if (rs != null && !alreadyRead)
+            return rs;
+
+        if ((rs == null || alreadyRead) && (resIter == null || !resIter.hasNext()))
             return null;
 
         return rs;
