@@ -444,6 +444,8 @@ namespace Apache.Ignite.Core.Tests.Services
             var ex = sdex.InnerException;
             Assert.IsNotNull(ex);
             Assert.AreEqual("Expected exception", ex.Message);
+            Assert.IsTrue(ex.StackTrace.Trim().StartsWith(
+                "at Apache.Ignite.Core.Tests.Services.ServicesTest.TestIgniteServiceSerializable.Init"));
 
             var svc0 = Services.GetService<TestIgniteServiceSerializable>(SvcName);
             Assert.IsNull(svc0);
