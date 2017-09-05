@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.tree;
 
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.processors.cache.GridCacheUtils;
+import org.apache.ignite.internal.processors.cache.mvcc.TxMvccVersion;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.CacheSearchRow;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
@@ -45,12 +46,26 @@ public abstract class AbstractDataInnerIO extends BPlusInnerIO<CacheSearchRow> i
         assert row.link() != 0;
 
         PageUtils.putLong(pageAddr, off, row.link());
-        PageUtils.putInt(pageAddr, off + 8, row.hash());
+        off += 8;
+
+        PageUtils.putInt(pageAddr, off, row.hash());
+        off += 4;
 
         if (storeCacheId()) {
             assert row.cacheId() != GridCacheUtils.UNDEFINED_CACHE_ID : row;
 
-            PageUtils.putInt(pageAddr, off + 12, row.cacheId());
+            PageUtils.putInt(pageAddr, off, row.cacheId());
+            off += 4;
+        }
+
+        if (storeMvccVersion()) {
+            assert row.mvccUpdateTopologyVersion() > 0 : row;
+            assert row.mvccUpdateCounter() != TxMvccVersion.COUNTER_NA : row;
+
+            PageUtils.putLong(pageAddr, off, row.mvccUpdateTopologyVersion());
+            off += 8;
+
+            PageUtils.putLong(pageAddr, off, row.mvccUpdateCounter());
         }
     }
 
@@ -106,4 +121,9 @@ public abstract class AbstractDataInnerIO extends BPlusInnerIO<CacheSearchRow> i
      * @return {@code True} if cache ID has to be stored.
      */
     protected abstract boolean storeCacheId();
+
+    /**
+     * @return {@code True} if mvcc version has to be stored.
+     */
+    protected abstract boolean storeMvccVersion();
 }
