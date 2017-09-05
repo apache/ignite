@@ -65,6 +65,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
+import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.GridConcurrentFactory;
 import org.apache.ignite.internal.util.GridSpinReadWriteLock;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -129,6 +130,8 @@ import org.apache.ignite.spi.IgniteSpiThread;
 import org.apache.ignite.spi.IgniteSpiTimeoutObject;
 import org.apache.ignite.spi.communication.CommunicationListener;
 import org.apache.ignite.spi.communication.CommunicationSpi;
+import org.apache.ignite.spi.discovery.DiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentLinkedDeque8;
@@ -137,6 +140,7 @@ import org.jsr166.LongAdder8;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.SSL_META;
+import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.RecoveryLastReceivedMessage.NEED_WAIT;
 
 /**
  * <tt>TcpCommunicationSpi</tt> is default communication SPI which uses
@@ -301,6 +305,13 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     /** Connection index meta for session. */
     private static final int CONN_IDX_META = GridNioSessionMetaKey.nextUniqueKey();
 
+    /**
+     * Version when client is ready to wait to connect to server (could be needed when client tries to open connection
+     * before it starts being visible for server)
+     */
+    private static final IgniteProductVersion VERSION_SINCE_CLIENT_COULD_WAIT_TO_CONNECT =
+        IgniteProductVersion.fromString("1.8.10");
+
     /** Message tracker meta for session. */
     private static final int TRACKER_META = GridNioSessionMetaKey.nextUniqueKey();
 
@@ -435,7 +446,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
              * @param ses Session.
              * @param msg Message.
              */
-            private void onFirstMessage(GridNioSession ses, Message msg) {
+            private void onFirstMessage(final GridNioSession ses, Message msg) {
                 UUID sndId;
 
                 ConnectionKey connKey;
@@ -459,10 +470,35 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                 final ClusterNode rmtNode = getSpiContext().node(sndId);
 
                 if (rmtNode == null) {
-                    U.warn(log, "Close incoming connection, unknown node [nodeId=" + sndId +
-                        ", ses=" + ses + ']');
+                    DiscoverySpi discoverySpi = ignite.configuration().getDiscoverySpi();
 
-                    ses.close();
+                    assert discoverySpi instanceof TcpDiscoverySpi;
+
+                    TcpDiscoverySpi tcpDiscoverySpi = (TcpDiscoverySpi) discoverySpi;
+
+                    ClusterNode node0 = tcpDiscoverySpi.getNode0(sndId);
+
+                    boolean unknownNode = true;
+
+                    if (node0 != null) {
+                        assert node0.isClient() : node0;
+
+                        if (node0.version().compareTo(VERSION_SINCE_CLIENT_COULD_WAIT_TO_CONNECT) >= 0)
+                            unknownNode = false;
+                    }
+
+                    if (unknownNode) {
+                        U.warn(log, "Close incoming connection, unknown node [nodeId=" + sndId + ", ses=" + ses + ']');
+
+                        ses.close();
+                    }
+                    else {
+                        ses.send(new RecoveryLastReceivedMessage(NEED_WAIT)).listen(new CI1<IgniteInternalFuture<?>>() {
+                            @Override public void apply(IgniteInternalFuture<?> fut) {
+                                ses.close();
+                            }
+                        });
+                    }
 
                     return;
                 }
@@ -2858,6 +2894,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
             IgniteSpiOperationTimeoutHelper timeoutHelper = new IgniteSpiOperationTimeoutHelper(this);
 
+            int lastWaitingTimeout = 1;
+
             while (!conn) { // Reconnection on handshake timeout.
                 try {
                     SocketChannel ch = SocketChannel.open();
@@ -2920,6 +2958,18 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                         if (rcvCnt == -1)
                             return null;
+                        else if (rcvCnt == NEED_WAIT) {
+                            recoveryDesc.release();
+
+                            U.closeQuiet(ch);
+
+                            if (lastWaitingTimeout < 60000)
+                                lastWaitingTimeout *= 2;
+
+                            U.sleep(lastWaitingTimeout);
+
+                            continue;
+                        }
                     }
                     finally {
                         if (recoveryDesc != null && rcvCnt == -1)
@@ -4293,6 +4343,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     public static class RecoveryLastReceivedMessage implements Message {
         /** */
         private static final long serialVersionUID = 0L;
+
+        /** Need wait. */
+        static final long NEED_WAIT = -3;
 
         /** */
         private long rcvCnt;
