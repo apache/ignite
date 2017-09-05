@@ -24,6 +24,7 @@ namespace Apache.Ignite.Core.Impl.Services
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cluster;
+    using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Services;
 
@@ -229,11 +230,7 @@ namespace Apache.Ignite.Core.Impl.Services
         {
             IgniteArgumentCheck.NotNull(configuration, "configuration");
 
-            DoOutInOp<object>(OpDeploy, w => WriteServiceConfiguration(configuration, w), s =>
-            {
-                ServiceProxySerializer.ReadDeploymentResult(s, Marshaller, _keepBinary);
-                return null;
-            });
+            DoOutInOp(OpDeploy, w => WriteServiceConfiguration(configuration, w), ReadDeploymentResult);
         }
 
         /** <inheritDoc /> */
@@ -400,6 +397,15 @@ namespace Apache.Ignite.Core.Impl.Services
                 w.WriteObject(configuration.NodeFilter);
             else
                 w.WriteObject<object>(null);
+        }
+
+        /// <summary>
+        /// Reads the deployment result.
+        /// </summary>
+        private object ReadDeploymentResult(IBinaryStream s)
+        {
+            ServiceProxySerializer.ReadDeploymentResult(s, Marshaller, _keepBinary);
+            return null;
         }
     }
 }
