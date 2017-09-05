@@ -499,6 +499,7 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public <T> T unwrap(Class<T> iface) throws SQLException {
         if (!isWrapperFor(iface))
             throw new SQLException("Prepared statement is not a wrapper for " + iface.getName());

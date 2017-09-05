@@ -1032,7 +1032,7 @@ public class JdbcThinResultSet implements ResultSet {
     @Override public void cancelRowUpdates() throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Updates are not supported.");
+        throw new SQLFeatureNotSupportedException("Row updates are not supported.");
     }
 
     /** {@inheritDoc} */
