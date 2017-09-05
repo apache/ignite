@@ -156,7 +156,7 @@ namespace ignite
 
                 SqlResult::Type result = SqlResult::AI_SUCCESS;
 
-                if (cursor->HasData())
+                if (!cursor->IsClosedRemotely())
                     result = MakeRequestClose();
 
                 if (result == SqlResult::AI_SUCCESS)

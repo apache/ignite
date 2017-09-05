@@ -57,9 +57,6 @@ public class OdbcRequestHandler implements SqlListenerRequestHandler {
     /** Query ID sequence. */
     private static final AtomicLong QRY_ID_GEN = new AtomicLong();
 
-    /** Batch query ID sequence. */
-    private static final AtomicLong BATCH_QRY_ID_GEN = new AtomicLong();
-
     /** Kernel context. */
     private final GridKernalContext ctx;
 
@@ -210,7 +207,7 @@ public class OdbcRequestHandler implements SqlListenerRequestHandler {
 
             U.error(log, "Failed to execute SQL query [reqId=" + req.requestId() + ", req=" + req + ']', e);
 
-            return new OdbcResponse(SqlListenerResponse.STATUS_FAILED, e.toString());
+            return new OdbcResponse(SqlListenerResponse.STATUS_FAILED, OdbcUtils.retrieveH2ErrorMessage(e));
         }
     }
 
@@ -265,7 +262,7 @@ public class OdbcRequestHandler implements SqlListenerRequestHandler {
             U.error(log, "Failed to execute SQL query [reqId=" + req.requestId() + ", req=" + req + ']', e);
 
             OdbcQueryExecuteBatchResult res = new OdbcQueryExecuteBatchResult(rowsAffected, currentSet,
-                    e.getMessage());
+                    OdbcUtils.retrieveH2ErrorMessage(e));
 
             return new OdbcResponse(res);
         }
@@ -334,7 +331,7 @@ public class OdbcRequestHandler implements SqlListenerRequestHandler {
 
             U.error(log, "Failed to close SQL query [reqId=" + req.requestId() + ", req=" + queryId + ']', e);
 
-            return new OdbcResponse(SqlListenerResponse.STATUS_FAILED, e.toString());
+            return new OdbcResponse(SqlListenerResponse.STATUS_FAILED, OdbcUtils.retrieveH2ErrorMessage(e));
         }
     }
 
@@ -383,7 +380,7 @@ public class OdbcRequestHandler implements SqlListenerRequestHandler {
         catch (Exception e) {
             U.error(log, "Failed to fetch SQL query result [reqId=" + req.requestId() + ", req=" + req + ']', e);
 
-            return new OdbcResponse(SqlListenerResponse.STATUS_FAILED, e.toString());
+            return new OdbcResponse(SqlListenerResponse.STATUS_FAILED, OdbcUtils.retrieveH2ErrorMessage(e));
         }
     }
 
@@ -448,7 +445,7 @@ public class OdbcRequestHandler implements SqlListenerRequestHandler {
         catch (Exception e) {
             U.error(log, "Failed to get columns metadata [reqId=" + req.requestId() + ", req=" + req + ']', e);
 
-            return new OdbcResponse(SqlListenerResponse.STATUS_FAILED, e.toString());
+            return new OdbcResponse(SqlListenerResponse.STATUS_FAILED, OdbcUtils.retrieveH2ErrorMessage(e));
         }
     }
 
@@ -496,7 +493,7 @@ public class OdbcRequestHandler implements SqlListenerRequestHandler {
         catch (Exception e) {
             U.error(log, "Failed to get tables metadata [reqId=" + req.requestId() + ", req=" + req + ']', e);
 
-            return new OdbcResponse(SqlListenerResponse.STATUS_FAILED, e.toString());
+            return new OdbcResponse(SqlListenerResponse.STATUS_FAILED, OdbcUtils.retrieveH2ErrorMessage(e));
         }
     }
 
@@ -527,7 +524,7 @@ public class OdbcRequestHandler implements SqlListenerRequestHandler {
         catch (Exception e) {
             U.error(log, "Failed to get params metadata [reqId=" + req.requestId() + ", req=" + req + ']', e);
 
-            return new OdbcResponse(SqlListenerResponse.STATUS_FAILED, e.toString());
+            return new OdbcResponse(SqlListenerResponse.STATUS_FAILED, OdbcUtils.retrieveH2ErrorMessage(e));
         }
     }
 
