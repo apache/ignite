@@ -443,7 +443,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             expiryPlc = expiryPolicy(null);
 
         // Optimisation: try to resolve value locally and escape 'get future' creation.
-        if (!forcePrimary && ctx.affinityNode()) {
+        if (!forcePrimary && ctx.affinityNode() && !ctx.mvccEnabled()) {
             try {
                 Map<K, V> locVals = null;
 
@@ -453,7 +453,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
                 for (KeyCacheObject key : keys) {
                     if (readNoEntry) {
-                        CacheDataRow row = ctx.offheap().read(ctx, key, TxMvccVersion.COUNTER_NA); // TODO IGNITE-3478
+                        CacheDataRow row = ctx.offheap().read(ctx, key);
 
                         if (row != null) {
                             long expireTime = row.expireTime();
@@ -517,7 +517,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                                             expiryPlc,
                                             !deserializeBinary,
                                             TxMvccVersion.COUNTER_NA,
-                                            null); // TODO IGNITE-3478
+                                            null);
 
                                         if (getRes != null) {
                                             v = getRes.value();
@@ -536,7 +536,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                                             taskName,
                                             expiryPlc,
                                             !deserializeBinary,
-                                            TxMvccVersion.COUNTER_NA); // TODO IGNITE-3478
+                                            TxMvccVersion.COUNTER_NA);
                                     }
 
                                     // Entry was not in memory or in swap, so we remove it from cache.

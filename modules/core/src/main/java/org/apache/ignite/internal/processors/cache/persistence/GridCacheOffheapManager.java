@@ -1246,6 +1246,18 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
 
         /** {@inheritDoc} */
+        @Override public void mvccUpdate(GridCacheContext cctx,
+            KeyCacheObject key,
+            CacheObject val,
+            GridCacheVersion ver,
+            long topVer,
+            long mvccCntr) throws IgniteCheckedException {
+            CacheDataStore delegate = init0(false);
+
+            delegate.mvccUpdate(cctx, key, val, ver, topVer, mvccCntr);
+        }
+
+        /** {@inheritDoc} */
         @Override public void updateIndexes(GridCacheContext cctx, KeyCacheObject key) throws IgniteCheckedException {
             CacheDataStore delegate = init0(false);
 
@@ -1287,6 +1299,17 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
             if (delegate != null)
                 return delegate.find(cctx, key);
+
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public CacheDataRow findMvcc(GridCacheContext cctx, KeyCacheObject key, long topVer, long mvccCntr)
+            throws IgniteCheckedException {
+            CacheDataStore delegate = init0(true);
+
+            if (delegate != null)
+                return delegate.findMvcc(cctx, key, topVer, mvccCntr);
 
             return null;
         }

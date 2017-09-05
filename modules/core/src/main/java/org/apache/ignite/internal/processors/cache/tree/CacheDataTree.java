@@ -145,15 +145,12 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
 
         cmp = compareKeys(row.key(), link);
 
-        if (cmp != 0 || !grp.mvccEnabled())
+        if (cmp != 0 || !grp.mvccEnabled() || row.mvccUpdateTopologyVersion() == 0)
             return 0;
 
         long mvccTopVer = io.getMvccUpdateTopologyVersion(pageAddr, idx);
 
-        if (mvccTopVer == 0)
-            return 0;
-
-        cmp = Long.compare(mvccTopVer, row.mvccUpdateTopologyVersion());
+        cmp = Long.compare(row.mvccUpdateTopologyVersion(), mvccTopVer);
 
         if (cmp != 0)
             return 0;
@@ -162,7 +159,7 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
 
         assert row.mvccUpdateCounter() != TxMvccVersion.COUNTER_NA;
 
-        cmp = Long.compare(mvccCntr, row.mvccUpdateCounter());
+        cmp = Long.compare(row.mvccUpdateCounter(), mvccCntr);
 
         return cmp;
     }

@@ -507,7 +507,9 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                 GridCacheVersion ver = null;
 
                 if (readNoEntry) {
-                    CacheDataRow row = cctx.offheap().read(cctx, key, mvccCntr);
+                    CacheDataRow row = cctx.mvccEnabled() ?
+                        cctx.offheap().readMvcc(cctx, key, topVer.topologyVersion(), mvccCntr) :
+                        cctx.offheap().read(cctx, key);
 
                     if (row != null) {
                         long expireTime = row.expireTime();

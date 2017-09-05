@@ -43,7 +43,7 @@ public interface CacheSearchRow {
      */
     public int cacheId();
 
-    public long mvccUpdateCounter();
-
     public long mvccUpdateTopologyVersion();
+
+    public long mvccUpdateCounter();
 }

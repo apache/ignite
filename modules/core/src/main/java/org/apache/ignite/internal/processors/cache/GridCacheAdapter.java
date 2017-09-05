@@ -1902,7 +1902,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                             boolean skipEntry = readNoEntry;
 
                             if (readNoEntry) {
-                                CacheDataRow row = ctx.offheap().read(ctx, key, mvccCrdCntr);
+                                CacheDataRow row = ctx.offheap().read(ctx, key);
 
                                 if (row != null) {
                                     long expireTime = row.expireTime();

@@ -573,12 +573,12 @@ public class CacheDataRowAdapter implements CacheDataRow {
     }
 
     /** {@inheritDoc} */
-    @Override public long mvccUpdateCounter() {
+    @Override public long mvccUpdateTopologyVersion() {
         return 0;
     }
 
     /** {@inheritDoc} */
-    @Override public long mvccUpdateTopologyVersion() {
+    @Override public long mvccUpdateCounter() {
         return 0;
     }
 

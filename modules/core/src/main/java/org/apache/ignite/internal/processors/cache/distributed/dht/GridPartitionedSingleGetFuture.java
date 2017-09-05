@@ -357,7 +357,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                 boolean skipEntry = readNoEntry;
 
                 if (readNoEntry) {
-                    CacheDataRow row = cctx.offheap().read(cctx, key, TxMvccVersion.COUNTER_NA); // TODO IGNITE-3478
+                    CacheDataRow row = cctx.offheap().read(cctx, key); // TODO IGNITE-3478
 
                     if (row != null) {
                         long expireTime = row.expireTime();

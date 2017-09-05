@@ -404,7 +404,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
             boolean skipEntry = readNoEntry;
 
             if (readNoEntry) {
-                CacheDataRow row = ctx.offheap().read(ctx, cacheKey, TxMvccVersion.COUNTER_NA);
+                CacheDataRow row = ctx.offheap().read(ctx, cacheKey);
 
                 if (row != null) {
                     long expireTime = row.expireTime();

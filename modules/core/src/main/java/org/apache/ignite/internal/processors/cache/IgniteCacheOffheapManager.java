@@ -106,7 +106,16 @@ public interface IgniteCacheOffheapManager {
      * @return Cached row, if available, null otherwise.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public CacheDataRow read(GridCacheContext cctx, KeyCacheObject key, long mvccCntr) throws IgniteCheckedException;
+    @Nullable public CacheDataRow read(GridCacheContext cctx, KeyCacheObject key) throws IgniteCheckedException;
+
+    /**
+     * @param cctx Cache context.
+     * @param key Key.
+     * @return Cached row, if available, null otherwise.
+     * @throws IgniteCheckedException If failed.
+     */
+    @Nullable public CacheDataRow readMvcc(GridCacheContext cctx, KeyCacheObject key, long topVer, long mvccCntr)
+        throws IgniteCheckedException;
 
     /**
      * @param p Partition.
@@ -162,6 +171,12 @@ public interface IgniteCacheOffheapManager {
      */
     public void invoke(GridCacheContext cctx, KeyCacheObject key, GridDhtLocalPartition part, OffheapInvokeClosure c)
         throws IgniteCheckedException;
+
+    public void mvccUpdate(GridCacheMapEntry entry,
+        CacheObject val,
+        GridCacheVersion ver,
+        long topVer,
+        long mvccCntr) throws IgniteCheckedException;
 
     /**
      * @param cctx Cache context.
@@ -451,6 +466,14 @@ public interface IgniteCacheOffheapManager {
             long expireTime,
             @Nullable CacheDataRow oldRow) throws IgniteCheckedException;
 
+        void mvccUpdate(
+            GridCacheContext cctx,
+            KeyCacheObject key,
+            CacheObject val,
+            GridCacheVersion ver,
+            long topVer,
+            long mvccCntr) throws IgniteCheckedException;
+
         /**
          * @param cctx Cache context.
          * @param key Key.
@@ -481,6 +504,14 @@ public interface IgniteCacheOffheapManager {
          * @throws IgniteCheckedException If failed.
          */
         public CacheDataRow find(GridCacheContext cctx, KeyCacheObject key) throws IgniteCheckedException;
+
+        /**
+         * @param cctx Cache context.
+         * @param key Key.
+         * @return Data row.
+         * @throws IgniteCheckedException If failed.
+         */
+        public CacheDataRow findMvcc(GridCacheContext cctx, KeyCacheObject key, long topVer, long mvccCntr) throws IgniteCheckedException;
 
         /**
          * @return Data cursor.

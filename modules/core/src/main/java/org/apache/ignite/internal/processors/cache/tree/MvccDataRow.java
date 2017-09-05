@@ -15,47 +15,49 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.persistence;
+package org.apache.ignite.internal.processors.cache.tree;
 
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 
 /**
- * Cache data row.
+ *
  */
-public interface CacheDataRow extends CacheSearchRow {
-    /**
-     * @return Cache value.
-     */
-    public CacheObject value();
+public class MvccDataRow extends DataRow {
+    /** */
+    private long mvccCntr;
+
+    /** */
+    private long mvccTopVer;
 
     /**
-     * @return Cache entry version.
+     * @param key
+     * @param val
+     * @param ver
+     * @param part
+     * @param cacheId
      */
-    public GridCacheVersion version();
+    public MvccDataRow(KeyCacheObject key,
+        CacheObject val,
+        GridCacheVersion ver,
+        int part,
+        int cacheId,
+        long mvccTopVer,
+        long mvccCntr) {
+        super(key, val, ver, part, 0L, cacheId);
 
-    /**
-     * @return Expire time.
-     */
-    public long expireTime();
+        this.mvccCntr = mvccCntr;
+        this.mvccTopVer = mvccTopVer;
+    }
 
-    /**
-     * @return Partition for this key.
-     */
-    public int partition();
+    /** {@inheritDoc} */
+    @Override public long mvccUpdateTopologyVersion() {
+        return mvccTopVer;
+    }
 
-    /**
-     * @param link Link for this row.
-     */
-    public void link(long link);
-
-    /**
-     * @param key Key.
-     */
-    public void key(KeyCacheObject key);
-
-    public long mvccUpdateTopologyVersion();
-
-    public long mvccUpdateCounter();
+    /** {@inheritDoc} */
+    @Override public long mvccUpdateCounter() {
+        return mvccCntr;
+    }
 }

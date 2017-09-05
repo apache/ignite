@@ -583,7 +583,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             CacheObject val;
 
             if (mvccCntr != TxMvccVersion.COUNTER_NA) {
-                CacheDataRow row = cctx.offheap().read(cctx, key, mvccCntr);
+                CacheDataRow row = cctx.offheap().readMvcc(cctx, key, 0, mvccCntr); // TODO IGNITE-3484.
 
                 if (row != null) {
                     val = row.value();
@@ -1006,7 +1006,13 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             assert val != null;
 
-            storeValue(val, expireTime, newVer, null);
+            if (cctx.mvccEnabled()) {
+                assert mvccCntr != TxMvccVersion.COUNTER_NA;
+
+                cctx.offheap().mvccUpdate(this, val, newVer, topVer.topologyVersion(), mvccCntr);
+            }
+            else
+                storeValue(val, expireTime, newVer, null);
 
             if (cctx.deferredDelete() && deletedUnlocked() && !isInternal() && !detached())
                 deletedUnlocked(false);
