@@ -866,8 +866,11 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
 
             KeyCacheObject cacheKey = ctx.toCacheKeyObject(key);
 
-            if (op == UPDATE)
+            if (op == UPDATE) {
                 val = ctx.toCacheObject(val);
+
+                ctx.validateKeyAndValue(cacheKey, (CacheObject)val);
+            }
             else if (op == TRANSFORM)
                 ctx.kernalContext().resource().inject(val, GridResourceIoc.AnnotationSet.ENTRY_PROCESSOR, ctx.name());
 

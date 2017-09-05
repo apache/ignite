@@ -1419,6 +1419,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                         updated0 = cctx.unwrapTemporary(entry.getValue());
 
                         updated = cctx.toCacheObject(updated0);
+
+                        if (updated != null) // no validation for remove case
+                            cctx.validateKeyAndValue(key, updated);
                     }
                     else
                         updated = old;
