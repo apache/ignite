@@ -30,6 +30,7 @@
 #   define BOOST_TEST_DYN_LINK
 #endif
 
+#include <boost/regex.hpp>
 #include <boost/test/unit_test.hpp>
 
 #include "ignite/ignite.h"
@@ -1650,7 +1651,7 @@ BOOST_AUTO_TEST_CASE(TestInsertBatchSelect1000)
 
 BOOST_AUTO_TEST_CASE(TestInsertBatchSelect1023)
 {
-    InsertBatchSelect(1024);
+    InsertBatchSelect(1023);
 }
 
 BOOST_AUTO_TEST_CASE(TestInsertBatchSelect1024)
@@ -1670,7 +1671,7 @@ BOOST_AUTO_TEST_CASE(TestInsertBatchSelect2000)
 
 BOOST_AUTO_TEST_CASE(TestInsertBatchSelect2047)
 {
-    InsertBatchSelect(2048);
+    InsertBatchSelect(2047);
 }
 
 BOOST_AUTO_TEST_CASE(TestInsertBatchSelect2048)
@@ -1996,6 +1997,57 @@ BOOST_AUTO_TEST_CASE(TestExecuteAfterCursorClose)
     BOOST_CHECK_EQUAL(ret, SQL_NO_DATA);
 }
 
+BOOST_AUTO_TEST_CASE(TestCloseNonFullFetch)
+{
+    TestType in1;
+    TestType in2;
+
+    in1.strField = "str1";
+    in2.strField = "str2";
+
+    cache1.Put(1, in1);
+    cache1.Put(2, in2);
+
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
+
+    int64_t key = 0;
+    char strField[1024] = { 0 };
+    SQLLEN strFieldLen = 0;
+
+    // Binding columns.
+    SQLRETURN ret = SQLBindCol(stmt, 1, SQL_C_SLONG, &key, 0, 0);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    // Binding columns.
+    ret = SQLBindCol(stmt, 2, SQL_C_CHAR, &strField, sizeof(strField), &strFieldLen);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    // Just selecting everything to make sure everything is OK
+    SQLCHAR selectReq[] = "SELECT _key, strField FROM TestType ORDER BY _key";
+
+    ret = SQLExecDirect(stmt, selectReq, sizeof(selectReq));
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    ret = SQLFetch(stmt);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    BOOST_CHECK_EQUAL(key, 1);
+    BOOST_CHECK_EQUAL(std::string(strField, strFieldLen), "str1");
+
+    ret = SQLFreeStmt(stmt, SQL_CLOSE);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+}
+
 BOOST_AUTO_TEST_CASE(TestBindNullParameter)
 {
     Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
@@ -2045,6 +2097,25 @@ BOOST_AUTO_TEST_CASE(TestBindNullParameter)
         BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
     BOOST_CHECK_EQUAL(strFieldLen, SQL_NULL_DATA);
+}
+
+BOOST_AUTO_TEST_CASE(TestErrorMessage)
+{
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
+
+    // Just selecting everything to make sure everything is OK
+    SQLCHAR selectReq[] = "SELECT a FROM B";
+
+    SQLRETURN ret = SQLExecDirect(stmt, selectReq, sizeof(selectReq));
+
+    BOOST_REQUIRE_EQUAL(ret, SQL_ERROR);
+
+    std::string error = GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt);
+    std::string pattern = "HY000: Table \"B\" not found; SQL statement:\\vSELECT a FROM B.*";
+
+    boost::cmatch what;
+    if (!boost::regex_match(error.c_str(), what, boost::regex(pattern)))
+        BOOST_FAIL("'" + error + "' does not match '" + pattern + "'");
 }
 
 BOOST_AUTO_TEST_SUITE_END()

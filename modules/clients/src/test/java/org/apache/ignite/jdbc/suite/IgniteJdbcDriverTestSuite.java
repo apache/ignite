@@ -48,6 +48,7 @@ import org.apache.ignite.jdbc.thin.JdbcThinEmptyCacheSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinInsertStatementSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinMergeStatementSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinMetadataSelfTest;
+import org.apache.ignite.jdbc.thin.JdbcThinMissingLongArrayResultsTest;
 import org.apache.ignite.jdbc.thin.JdbcThinNoDefaultSchemaTest;
 import org.apache.ignite.jdbc.thin.JdbcThinPreparedStatementSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinResultSetSelfTest;
@@ -129,6 +130,7 @@ public class IgniteJdbcDriverTestSuite extends TestSuite {
         suite.addTest(new TestSuite(JdbcThinDeleteStatementSelfTest.class));
         suite.addTest(new TestSuite(JdbcThinAutoCloseServerCursorTest.class));
         suite.addTest(new TestSuite(JdbcThinBatchSelfTest.class));
+        suite.addTest(new TestSuite(JdbcThinMissingLongArrayResultsTest.class));
 
         // New thin JDBC driver, DDL tests
         suite.addTest(new TestSuite(JdbcThinDynamicIndexAtomicPartitionedNearSelfTest.class));
