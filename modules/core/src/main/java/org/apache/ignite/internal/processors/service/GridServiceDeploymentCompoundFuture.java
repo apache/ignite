@@ -29,6 +29,7 @@ import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.services.ServiceConfiguration;
+import org.apache.ignite.services.ServiceDeploymentException;
 import org.jetbrains.annotations.Nullable;
 
 /**
