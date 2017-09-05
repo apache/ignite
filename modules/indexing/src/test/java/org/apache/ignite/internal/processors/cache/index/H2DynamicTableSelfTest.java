@@ -187,7 +187,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * @throws Exception if failed.
      */
     public void testFullSyncWriteMode() throws Exception {
-        doTestCreateTable(null, null, null, CacheWriteSynchronizationMode.FULL_SYNC, "writesync=full_sync");
+        doTestCreateTable(null, null, null, CacheWriteSynchronizationMode.FULL_SYNC,
+            "write_synchronization_mode=full_sync");
     }
 
     /**
@@ -195,7 +196,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * @throws Exception if failed.
      */
     public void testPrimarySyncWriteMode() throws Exception {
-        doTestCreateTable(null, null, null, CacheWriteSynchronizationMode.PRIMARY_SYNC, "writesync=primary_sync");
+        doTestCreateTable(null, null, null, CacheWriteSynchronizationMode.PRIMARY_SYNC,
+            "write_synchronization_mode=primary_sync");
     }
 
     /**
@@ -203,7 +205,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * @throws Exception if failed.
      */
     public void testFullAsyncWriteMode() throws Exception {
-        doTestCreateTable(null, null, null, CacheWriteSynchronizationMode.FULL_ASYNC, "writesync=full_async");
+        doTestCreateTable(null, null, null, CacheWriteSynchronizationMode.FULL_ASYNC,
+            "write_synchronization_mode=full_async");
     }
 
     /**
@@ -419,18 +422,20 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     }
 
     /**
-     * Test that attempting to omit mandatory value of WRITESYNC parameter yields an error.
+     * Test that attempting to omit mandatory value of WRITE_SYNCHRONIZATION_MODE parameter yields an error.
      */
     public void testEmptyWriteSyncMode() {
-        assertCreateTableWithParamsThrows("writesync=", "Parameter value cannot be empty: WRITESYNC");
+        assertCreateTableWithParamsThrows("write_synchronization_mode=",
+            "Parameter value cannot be empty: WRITE_SYNCHRONIZATION_MODE");
     }
 
     /**
-     * Test that attempting to provide invalid value of WRITESYNC parameter yields an error.
+     * Test that attempting to provide invalid value of WRITE_SYNCHRONIZATION_MODE parameter yields an error.
      */
     public void testInvalidWriteSyncMode() {
-        assertCreateTableWithParamsThrows("writesync=invalid",
-            "Invalid value of \"WRITESYNC\" parameter (should be FULL_SYNC, FULL_ASYNC, or PRIMARY_SYNC): invalid");
+        assertCreateTableWithParamsThrows("write_synchronization_mode=invalid",
+            "Invalid value of \"WRITE_SYNCHRONIZATION_MODE\" parameter " +
+                "(should be FULL_SYNC, FULL_ASYNC, or PRIMARY_SYNC): invalid");
     }
 
     /**

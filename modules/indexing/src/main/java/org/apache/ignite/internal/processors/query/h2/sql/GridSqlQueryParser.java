@@ -412,7 +412,7 @@ public class GridSqlQueryParser {
     private static final String PARAM_AFFINITY_KEY = "AFFINITYKEY";
 
     /** */
-    private static final String PARAM_WRITE_SYNC = "WRITESYNC";
+    private static final String PARAM_WRITE_SYNC = "WRITE_SYNCHRONIZATION_MODE";
 
     /** */
     private final IdentityHashMap<Object, Object> h2ObjToGridObj = new IdentityHashMap<>();
