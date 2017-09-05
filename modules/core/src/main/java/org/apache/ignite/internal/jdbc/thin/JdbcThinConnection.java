@@ -44,6 +44,9 @@ import static java.sql.ResultSet.CONCUR_READ_ONLY;
 import static java.sql.ResultSet.HOLD_CURSORS_OVER_COMMIT;
 import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
 import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_AUTO_CLOSE_SERVER_CURSORS;
+import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_HOST;
+import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_LAZY;
+import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_PORT;
 import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_COLLOCATED;
 import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_DISTRIBUTED_JOINS;
 import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_ENFORCE_JOIN_ORDER;
@@ -67,7 +70,7 @@ public class JdbcThinConnection implements Connection {
     private String url;
 
     /** Schema name. */
-    private String schemaName;
+    private String schema;
 
     /** Closed flag. */
     private boolean closed;
@@ -98,9 +101,10 @@ public class JdbcThinConnection implements Connection {
      *
      * @param url Connection URL.
      * @param props Additional properties.
+     * @param schema Schema name.
      * @throws SQLException In case Ignite client failed to start.
      */
-    public JdbcThinConnection(String url, Properties props) throws SQLException {
+    public JdbcThinConnection(String url, Properties props, String schema) throws SQLException {
         assert url != null;
         assert props != null;
 
@@ -110,6 +114,8 @@ public class JdbcThinConnection implements Connection {
         autoCommit = true;
         txIsolation = Connection.TRANSACTION_NONE;
 
+        this.schema = schema == null ? "PUBLIC" : schema;
+
         String host = extractHost(props);
         int port = extractPort(props);
 
@@ -118,6 +124,7 @@ public class JdbcThinConnection implements Connection {
         boolean collocated = extractBoolean(props, PROP_COLLOCATED, false);
         boolean replicatedOnly = extractBoolean(props, PROP_REPLICATED_ONLY, false);
         boolean autoCloseServerCursor = extractBoolean(props, PROP_AUTO_CLOSE_SERVER_CURSORS, false);
+        boolean lazyExec = extractBoolean(props, PROP_LAZY, false);
 
         int sockSndBuf = extractIntNonNegative(props, PROP_SOCK_SND_BUF, 0);
         int sockRcvBuf = extractIntNonNegative(props, PROP_SOCK_RCV_BUF, 0);
@@ -126,7 +133,7 @@ public class JdbcThinConnection implements Connection {
 
         try {
             cliIo = new JdbcThinTcpIo(host, port, distributedJoins, enforceJoinOrder, collocated, replicatedOnly,
-                autoCloseServerCursor, sockSndBuf, sockRcvBuf, tcpNoDelay);
+                autoCloseServerCursor, lazyExec, sockSndBuf, sockRcvBuf, tcpNoDelay);
 
             cliIo.start();
         }
@@ -516,12 +523,14 @@ public class JdbcThinConnection implements Connection {
 
     /** {@inheritDoc} */
     @Override public void setClientInfo(String name, String val) throws SQLClientInfoException {
-        throw new UnsupportedOperationException("Client info is not supported.");
+        if (closed)
+            throw new SQLClientInfoException("Connection is closed.", null);
     }
 
     /** {@inheritDoc} */
     @Override public void setClientInfo(Properties props) throws SQLClientInfoException {
-        throw new UnsupportedOperationException("Client info is not supported.");
+        if (closed)
+            throw new SQLClientInfoException("Connection is closed.", null);
     }
 
     /** {@inheritDoc} */
@@ -579,14 +588,14 @@ public class JdbcThinConnection implements Connection {
         if (schema == null)
             throw new SQLException("Invalid schema value.");
 
-        this.schemaName = schema;
+        this.schema = schema;
     }
 
     /** {@inheritDoc} */
     @Override public String getSchema() throws SQLException {
         ensureNotClosed();
 
-        return schemaName;
+        return schema;
     }
 
     /** {@inheritDoc} */

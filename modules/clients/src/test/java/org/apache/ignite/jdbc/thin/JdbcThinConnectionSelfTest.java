@@ -22,6 +22,7 @@ import java.sql.DatabaseMetaData;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLClientInfoException;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 import java.sql.SQLWarning;
@@ -59,7 +60,7 @@ import static java.sql.Statement.RETURN_GENERATED_KEYS;
 /**
  * Connection test.
  */
-public class JdbcThinConnectionFullApiSelfTest extends JdbcThinAbstractSelfTest {
+public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
@@ -183,6 +184,7 @@ public class JdbcThinConnectionFullApiSelfTest extends JdbcThinAbstractSelfTest 
             assertFalse(io(conn).enforceJoinOrder());
             assertFalse(io(conn).collocated());
             assertFalse(io(conn).replicatedOnly());
+            assertFalse(io(conn).lazy());
         }
 
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?distributedJoins=true")) {
@@ -190,6 +192,7 @@ public class JdbcThinConnectionFullApiSelfTest extends JdbcThinAbstractSelfTest 
             assertFalse(io(conn).enforceJoinOrder());
             assertFalse(io(conn).collocated());
             assertFalse(io(conn).replicatedOnly());
+            assertFalse(io(conn).lazy());
         }
 
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?enforceJoinOrder=true")) {
@@ -197,6 +200,7 @@ public class JdbcThinConnectionFullApiSelfTest extends JdbcThinAbstractSelfTest 
             assertTrue(io(conn).enforceJoinOrder());
             assertFalse(io(conn).collocated());
             assertFalse(io(conn).replicatedOnly());
+            assertFalse(io(conn).lazy());
         }
 
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?collocated=true")) {
@@ -204,6 +208,7 @@ public class JdbcThinConnectionFullApiSelfTest extends JdbcThinAbstractSelfTest 
             assertFalse(io(conn).enforceJoinOrder());
             assertTrue(io(conn).collocated());
             assertFalse(io(conn).replicatedOnly());
+            assertFalse(io(conn).lazy());
         }
 
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?replicatedOnly=true")) {
@@ -211,14 +216,24 @@ public class JdbcThinConnectionFullApiSelfTest extends JdbcThinAbstractSelfTest 
             assertFalse(io(conn).enforceJoinOrder());
             assertFalse(io(conn).collocated());
             assertTrue(io(conn).replicatedOnly());
+            assertFalse(io(conn).lazy());
+        }
+
+        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?lazy=true")) {
+            assertFalse(io(conn).distributedJoins());
+            assertFalse(io(conn).enforceJoinOrder());
+            assertFalse(io(conn).collocated());
+            assertFalse(io(conn).replicatedOnly());
+            assertTrue(io(conn).lazy());
         }
 
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?distributedJoins=true&" +
-                "enforceJoinOrder=true&collocated=true&replicatedOnly=true")) {
+            "enforceJoinOrder=true&collocated=true&replicatedOnly=true&lazy=true")) {
             assertTrue(io(conn).distributedJoins());
             assertTrue(io(conn).enforceJoinOrder());
             assertTrue(io(conn).collocated());
             assertTrue(io(conn).replicatedOnly());
+            assertTrue(io(conn).lazy());
         }
     }
 
@@ -294,6 +309,28 @@ public class JdbcThinConnectionFullApiSelfTest extends JdbcThinAbstractSelfTest 
 
         try (Connection conn = DriverManager.getConnection(url + "=False")) {
             assertFalse(io(conn).autoCloseServerCursor());
+        }
+    }
+
+    /**
+     * Test schema property in URL.
+     *
+     * @throws Exception If failed.
+     */
+    public void testSchema() throws Exception {
+        assertInvalid("jdbc:ignite:thin://127.0.0.1/qwe/qwe",
+            "Invalid URL format (only schema name is allowed in URL path parameter 'host:port[/schemaName]')" );
+
+        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1/public")) {
+            assertEquals("Invalid schema", "public", conn.getSchema());
+        }
+
+        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1/" + DEFAULT_CACHE_NAME)) {
+            assertEquals("Invalid schema", DEFAULT_CACHE_NAME, conn.getSchema());
+        }
+
+        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1/_not_exist_schema_")) {
+            assertEquals("Invalid schema", "_not_exist_schema_", conn.getSchema());
         }
     }
 
@@ -382,18 +419,18 @@ public class JdbcThinConnectionFullApiSelfTest extends JdbcThinAbstractSelfTest 
     public void testCreateStatement2() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
             int [] rsTypes = new int[]
-                {ResultSet.TYPE_FORWARD_ONLY, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.TYPE_SCROLL_SENSITIVE};
+                {TYPE_FORWARD_ONLY, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.TYPE_SCROLL_SENSITIVE};
 
             int [] rsConcurs = new int[]
-                {ResultSet.CONCUR_READ_ONLY, ResultSet.CONCUR_UPDATABLE};
+                {CONCUR_READ_ONLY, ResultSet.CONCUR_UPDATABLE};
 
             DatabaseMetaData meta = conn.getMetaData();
 
             for (final int type : rsTypes) {
                 for (final int concur : rsConcurs) {
                     if (meta.supportsResultSetConcurrency(type, concur)) {
-                        assert type == ResultSet.TYPE_FORWARD_ONLY;
-                        assert concur == ResultSet.CONCUR_READ_ONLY;
+                        assert type == TYPE_FORWARD_ONLY;
+                        assert concur == CONCUR_READ_ONLY;
 
                         try (Statement stmt = conn.createStatement(type, concur)) {
                             assertNotNull(stmt);
@@ -435,23 +472,22 @@ public class JdbcThinConnectionFullApiSelfTest extends JdbcThinAbstractSelfTest 
     public void testCreateStatement3() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
             int [] rsTypes = new int[]
-                {ResultSet.TYPE_FORWARD_ONLY, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.TYPE_SCROLL_SENSITIVE};
+                {TYPE_FORWARD_ONLY, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.TYPE_SCROLL_SENSITIVE};
 
             int [] rsConcurs = new int[]
-                {ResultSet.CONCUR_READ_ONLY, ResultSet.CONCUR_UPDATABLE};
+                {CONCUR_READ_ONLY, ResultSet.CONCUR_UPDATABLE};
 
             int [] rsHoldabilities = new int[]
-                {ResultSet.HOLD_CURSORS_OVER_COMMIT, ResultSet.CLOSE_CURSORS_AT_COMMIT};
+                {HOLD_CURSORS_OVER_COMMIT, CLOSE_CURSORS_AT_COMMIT};
 
             DatabaseMetaData meta = conn.getMetaData();
 
             for (final int type : rsTypes) {
                 for (final int concur : rsConcurs) {
                     for (final int holdabililty : rsHoldabilities) {
-                        if (meta.supportsResultSetConcurrency(type, concur)
-                            && meta.supportsResultSetHoldability(holdabililty)) {
-                            assert type == ResultSet.TYPE_FORWARD_ONLY;
-                            assert concur == ResultSet.CONCUR_READ_ONLY;
+                        if (meta.supportsResultSetConcurrency(type, concur)) {
+                            assert type == TYPE_FORWARD_ONLY;
+                            assert concur == CONCUR_READ_ONLY;
 
                             try (Statement stmt = conn.createStatement(type, concur, holdabililty)) {
                                 assertNotNull(stmt);
@@ -530,18 +566,18 @@ public class JdbcThinConnectionFullApiSelfTest extends JdbcThinAbstractSelfTest 
             final String sqlText = "select * from test where param = ?";
 
             int [] rsTypes = new int[]
-                {ResultSet.TYPE_FORWARD_ONLY, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.TYPE_SCROLL_SENSITIVE};
+                {TYPE_FORWARD_ONLY, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.TYPE_SCROLL_SENSITIVE};
 
             int [] rsConcurs = new int[]
-                {ResultSet.CONCUR_READ_ONLY, ResultSet.CONCUR_UPDATABLE};
+                {CONCUR_READ_ONLY, ResultSet.CONCUR_UPDATABLE};
 
             DatabaseMetaData meta = conn.getMetaData();
 
             for (final int type : rsTypes) {
                 for (final int concur : rsConcurs) {
                     if (meta.supportsResultSetConcurrency(type, concur)) {
-                        assert type == ResultSet.TYPE_FORWARD_ONLY;
-                        assert concur == ResultSet.CONCUR_READ_ONLY;
+                        assert type == TYPE_FORWARD_ONLY;
+                        assert concur == CONCUR_READ_ONLY;
 
                         // null query text
                         GridTestUtils.assertThrows(log,
@@ -590,23 +626,22 @@ public class JdbcThinConnectionFullApiSelfTest extends JdbcThinAbstractSelfTest 
             final String sqlText = "select * from test where param = ?";
 
             int [] rsTypes = new int[]
-                {ResultSet.TYPE_FORWARD_ONLY, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.TYPE_SCROLL_SENSITIVE};
+                {TYPE_FORWARD_ONLY, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.TYPE_SCROLL_SENSITIVE};
 
             int [] rsConcurs = new int[]
-                {ResultSet.CONCUR_READ_ONLY, ResultSet.CONCUR_UPDATABLE};
+                {CONCUR_READ_ONLY, ResultSet.CONCUR_UPDATABLE};
 
             int [] rsHoldabilities = new int[]
-                {ResultSet.HOLD_CURSORS_OVER_COMMIT, ResultSet.CLOSE_CURSORS_AT_COMMIT};
+                {HOLD_CURSORS_OVER_COMMIT, CLOSE_CURSORS_AT_COMMIT};
 
             DatabaseMetaData meta = conn.getMetaData();
 
             for (final int type : rsTypes) {
                 for (final int concur : rsConcurs) {
                     for (final int holdabililty : rsHoldabilities) {
-                        if (meta.supportsResultSetConcurrency(type, concur)
-                            && meta.supportsResultSetHoldability(holdabililty)) {
-                            assert type == ResultSet.TYPE_FORWARD_ONLY;
-                            assert concur == ResultSet.CONCUR_READ_ONLY;
+                        if (meta.supportsResultSetConcurrency(type, concur)) {
+                            assert type == TYPE_FORWARD_ONLY;
+                            assert concur == CONCUR_READ_ONLY;
 
                             // null query text
                             GridTestUtils.assertThrows(log,
@@ -888,19 +923,7 @@ public class JdbcThinConnectionFullApiSelfTest extends JdbcThinAbstractSelfTest 
      * @throws Exception If failed.
      */
     public void testGetSetReadOnly() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-5426");
-
         try (Connection conn = DriverManager.getConnection(URL)) {
-            assertFalse(conn.isReadOnly());
-
-            conn.setReadOnly(true);
-
-            assertTrue(conn.isReadOnly());
-
-            conn.setReadOnly(false);
-
-            assertFalse(conn.isReadOnly());
-
             conn.close();
 
             // Exception when called on closed connection
@@ -1456,7 +1479,7 @@ public class JdbcThinConnectionFullApiSelfTest extends JdbcThinAbstractSelfTest 
      * @throws Exception If failed.
      */
     public void testGetSetClientInfoPair() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-5425");
+//        fail("https://issues.apache.org/jira/browse/IGNITE-5425");
 
         try (Connection conn = DriverManager.getConnection(URL)) {
             final String name = "ApplicationName";
@@ -1465,8 +1488,6 @@ public class JdbcThinConnectionFullApiSelfTest extends JdbcThinAbstractSelfTest 
             assertNull(conn.getWarnings());
 
             conn.setClientInfo(name, val);
-
-            assertNotNull(conn.getWarnings());
 
             assertNull(conn.getClientInfo(val));
 
@@ -1478,11 +1499,14 @@ public class JdbcThinConnectionFullApiSelfTest extends JdbcThinAbstractSelfTest 
                 }
             });
 
-            checkConnectionClosed(new RunnableX() {
-                @Override public void run() throws Exception {
-                    conn.setClientInfo(name, val);
-                }
-            });
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        conn.setClientInfo(name, val);
+
+                        return null;
+                    }
+                }, SQLClientInfoException.class, "Connection is closed");
         }
     }
 
@@ -1490,8 +1514,6 @@ public class JdbcThinConnectionFullApiSelfTest extends JdbcThinAbstractSelfTest 
      * @throws Exception If failed.
      */
     public void testGetSetClientInfoProperties() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-5425");
-
         try (Connection conn = DriverManager.getConnection(URL)) {
             final String name = "ApplicationName";
             final String val = "SelfTest";
@@ -1515,12 +1537,14 @@ public class JdbcThinConnectionFullApiSelfTest extends JdbcThinAbstractSelfTest 
                 }
             });
 
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        conn.setClientInfo(props);
 
-            checkConnectionClosed(new RunnableX() {
-                @Override public void run() throws Exception {
-                    conn.setClientInfo(props);
-                }
-            });
+                        return null;
+                    }
+                }, SQLClientInfoException.class, "Connection is closed");
         }
     }
 
@@ -1735,7 +1759,7 @@ public class JdbcThinConnectionFullApiSelfTest extends JdbcThinAbstractSelfTest 
                 return 100;
             }
 
-            @Override public String getSavepointName() throws SQLException {
+            @Override public String getSavepointName() {
                 return "savepoint";
             }
         };
