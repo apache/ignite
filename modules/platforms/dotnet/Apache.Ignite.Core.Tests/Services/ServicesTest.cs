@@ -442,14 +442,10 @@ namespace Apache.Ignite.Core.Tests.Services
                 "Service deployment failed with an exception. Examine InnerException for details.");
 
             var ex = sdex.InnerException;
-            Assert.IsNotNull(ex.InnerException);
+            Assert.IsNotNull(ex);
             Assert.AreEqual("Expected exception", ex.Message);
-            Assert.IsNotNull(ex.InnerException);
-            Assert.IsTrue(ex.InnerException.Message.Contains("PlatformCallbackGateway.serviceInit"), 
-                ex.InnerException.Message);
 
             var svc0 = Services.GetService<TestIgniteServiceSerializable>(SvcName);
-
             Assert.IsNull(svc0);
         }
 
