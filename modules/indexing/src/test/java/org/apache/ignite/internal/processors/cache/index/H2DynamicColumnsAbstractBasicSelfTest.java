@@ -213,10 +213,10 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
     }
 
     /**
-     * Test that we can add columns dynamically to tables associated with non dynamic caches as well.
+     * Test that we can add columns dynamically to tables associated with non dynamic caches storing user types as well.
      */
     @SuppressWarnings("unchecked")
-    public void testAddColumnToNonDynamicCacheWith() {
+    public void testAddColumnToNonDynamicCacheWithRealValueType() {
         CacheConfiguration<Integer, City> ccfg = defaultCacheConfiguration().setName("City2")
             .setIndexedTypes(Integer.class, City.class);
 
@@ -237,7 +237,7 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
 
         City city = cache.get(1);
 
-        // Is this expected to workw at all?
+        // Is this expected to work at all?
         assertEquals(1, city.id());
         assertEquals("Washington", city.name());
         assertEquals("DC", city.state());
