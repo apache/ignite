@@ -505,7 +505,7 @@ public class JdbcThinStatement implements Statement {
         closeOnCompletion = true;
 
         if (rs != null)
-            rs.closeStmt(true);
+            rs.closeStatement(true);
     }
 
     /** {@inheritDoc} */

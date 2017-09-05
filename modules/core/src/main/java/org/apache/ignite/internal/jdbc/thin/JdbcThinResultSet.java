@@ -1572,6 +1572,7 @@ public class JdbcThinResultSet implements ResultSet {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public <T> T unwrap(Class<T> iface) throws SQLException {
         if (!isWrapperFor(iface))
             throw new SQLException("Result set is not a wrapper for " + iface.getName());
@@ -1740,7 +1741,7 @@ public class JdbcThinResultSet implements ResultSet {
     /**
      * @param closeStmt Close statement on this result set close.
      */
-    void closeStmt(boolean closeStmt) {
+    void closeStatement(boolean closeStmt) {
         this.closeStmt = closeStmt;
     }
 
