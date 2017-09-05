@@ -229,7 +229,11 @@ namespace Apache.Ignite.Core.Impl.Services
         {
             IgniteArgumentCheck.NotNull(configuration, "configuration");
 
-            DoOutOp(OpDeploy, w => WriteServiceConfiguration(configuration, w));
+            DoOutInOp<object>(OpDeploy, w => WriteServiceConfiguration(configuration, w), s =>
+            {
+                ServiceProxySerializer.ReadDeploymentResult(s, Marshaller, _keepBinary);
+                return null;
+            });
         }
 
         /** <inheritDoc /> */

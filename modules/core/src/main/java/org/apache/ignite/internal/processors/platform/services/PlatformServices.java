@@ -144,12 +144,6 @@ public class PlatformServices extends PlatformAbstractTarget {
     @Override public long processInStreamOutLong(int type, BinaryRawReaderEx reader)
         throws IgniteCheckedException {
         switch (type) {
-            case OP_DOTNET_DEPLOY: {
-                dotnetDeploy(reader, services);
-
-                return TRUE;
-            }
-
             case OP_DOTNET_DEPLOY_ASYNC: {
                 readAndListenFuture(reader, dotnetDeployAsync(reader, services));
 
@@ -210,6 +204,19 @@ public class PlatformServices extends PlatformAbstractTarget {
                         }
                     }
                 );
+
+                return;
+            }
+
+            case OP_DOTNET_DEPLOY: {
+                try {
+                    dotnetDeploy(reader, services);
+
+                    PlatformUtils.writeInvocationResult(writer, null, null);
+                }
+                catch (Exception e) {
+                    PlatformUtils.writeInvocationResult(writer, null, e);
+                }
 
                 return;
             }
