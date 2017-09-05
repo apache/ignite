@@ -325,6 +325,7 @@ namespace ignite
             bool enforceJoinOrder = false;
             bool replicatedOnly = false;
             bool collocated = false;
+            bool lazy = false;
             ProtocolVersion protocolVersion;
 
             try
@@ -334,6 +335,7 @@ namespace ignite
                 enforceJoinOrder = config.IsEnforceJoinOrder();
                 replicatedOnly = config.IsReplicatedOnly();
                 collocated = config.IsCollocated();
+                lazy = config.IsLazy();
             }
             catch (const IgniteError& err)
             {
@@ -350,7 +352,7 @@ namespace ignite
                 return SqlResult::AI_ERROR;
             }
 
-            HandshakeRequest req(protocolVersion, distributedJoins, enforceJoinOrder, replicatedOnly, collocated);
+            HandshakeRequest req(protocolVersion, distributedJoins, enforceJoinOrder, replicatedOnly, collocated, lazy);
             HandshakeResponse rsp;
 
             try
@@ -373,7 +375,7 @@ namespace ignite
                 constructor << "Node rejected handshake message. ";
 
                 if (!rsp.GetError().empty())
-                    constructor << "Additional info: " << rsp.GetError();
+                    constructor << "Additional info: " << rsp.GetError() << " ";
 
                 constructor << "Current node Apache Ignite version: " << rsp.GetCurrentVer().ToString() << ", "
                             << "driver protocol version introduced in version: "
