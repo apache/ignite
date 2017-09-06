@@ -59,6 +59,7 @@ namespace Apache.Ignite.Core.Services
         /// <param name="cause">The cause.</param>
         public ServiceDeploymentException(string message, Exception cause) : base(message, cause)
         {
+            // No-op.
         }
 
         /// <summary>
