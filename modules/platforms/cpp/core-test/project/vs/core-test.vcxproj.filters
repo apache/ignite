@@ -178,5 +178,15 @@
     <None Include="..\..\config\cache-store-32.xml">
       <Filter>Configs</Filter>
     </None>
+    <None Include="..\..\config\cache-query-continuous.xml" />
+    <None Include="..\..\config\persistance-store.xml">
+      <Filter>Configs</Filter>
+    </None>
+    <None Include="..\..\config\persistance-store-32.xml">
+      <Filter>Configs</Filter>
+    </None>
+    <None Include="..\..\config\persistance-store-default.xml">
+      <Filter>Configs</Filter>
+    </None>
   </ItemGroup>
 </Project>

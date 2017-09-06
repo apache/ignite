@@ -56,6 +56,9 @@
     <None Include="..\..\config\cache-query-continuous.xml" />
     <None Include="..\..\config\cache-query-continuous-default.xml" />
     <None Include="..\..\config\invalid.xml" />
+    <None Include="..\..\config\persistance-store-32.xml" />
+    <None Include="..\..\config\persistance-store-default.xml" />
+    <None Include="..\..\config\persistance-store.xml" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\binary_object_test.cpp" />

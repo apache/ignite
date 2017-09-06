@@ -81,4 +81,26 @@ BOOST_AUTO_TEST_CASE(TestIgnition)
     BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_GENERIC);    
 }
 
+BOOST_AUTO_TEST_CASE(TestStartWithPersistance)
+{
+    IgniteConfiguration cfg;
+
+#ifdef IGNITE_TESTS_32
+    ignite_test::InitConfig(cfg, "persistance-store-32.xml");
+#else
+    ignite_test::InitConfig(cfg, "persistance-store.xml");
+#endif
+    try
+    {
+        Ignite grid = Ignition::Start(cfg, "ignitionTest-1");
+    }
+    catch (...)
+    {
+        // Stop all
+        Ignition::StopAll(true);
+
+        throw;
+    }
+}
+
 BOOST_AUTO_TEST_SUITE_END()
