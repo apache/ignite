@@ -244,6 +244,9 @@ public class JdbcThinResultSet implements ResultSet {
 
     /** {@inheritDoc} */
     @Override public boolean wasNull() throws SQLException {
+        ensureNotClosed();
+        ensureHasCurrentRow();
+
         return wasNull;
     }
 
@@ -269,6 +272,9 @@ public class JdbcThinResultSet implements ResultSet {
 
     /** {@inheritDoc} */
     @Override public boolean getBoolean(int colIdx) throws SQLException {
+        ensureNotClosed();
+        ensureHasCurrentRow();
+
         try {
             Object val = curRow.get(colIdx - 1);
 
@@ -1041,8 +1047,7 @@ public class JdbcThinResultSet implements ResultSet {
     @Override public void cancelRowUpdates() throws SQLException {
         ensureNotClosed();
 
-        if (getConcurrency() == CONCUR_READ_ONLY)
-            throw new SQLException("The result set concurrency is CONCUR_READ_ONLY");
+        throw new SQLFeatureNotSupportedException("Row updates are not supported.");
     }
 
     /** {@inheritDoc} */
@@ -1189,12 +1194,18 @@ public class JdbcThinResultSet implements ResultSet {
 
     /** {@inheritDoc} */
     @Override public URL getURL(int colIdx) throws SQLException {
-        return getTypedValue(colIdx, URL.class);
+        ensureNotClosed();
+        ensureHasCurrentRow();
+
+        throw new SQLFeatureNotSupportedException("URL type is not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public URL getURL(String colLb) throws SQLException {
-        return getTypedValue(colLb, URL.class);
+        ensureNotClosed();
+        ensureHasCurrentRow();
+
+        throw new SQLFeatureNotSupportedException("URL type is not supported.");
     }
 
     /** {@inheritDoc} */
