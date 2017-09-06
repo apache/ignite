@@ -581,9 +581,6 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
 
     /** {@inheritDoc} */
     @Override public BinaryObjectBuilder setField(String name, @Nullable BinaryObjectBuilder builder) {
-        if (builder == null)
-            return setField(name, (Object)null);
-        else
             return setField(name, (Object)builder);
     }
 
