@@ -1,5 +1,6 @@
 package org.apache.ignite.internal.processors.cache.index;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import org.apache.ignite.Ignite;
@@ -217,27 +218,29 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
      */
     @SuppressWarnings("unchecked")
     public void testAddColumnToNonDynamicCacheWithRealValueType() {
-        CacheConfiguration<Integer, City> ccfg = defaultCacheConfiguration().setName("City2")
+        CacheConfiguration<Integer, City> ccfg = defaultCacheConfiguration().setName("City")
             .setIndexedTypes(Integer.class, City.class);
-
-        ccfg.getQueryEntities().iterator().next().setKeyFieldName("id");
 
         IgniteCache<Integer, City> cache = ignite(nodeIndex()).getOrCreateCache(ccfg);
 
-        run(cache, "ALTER TABLE \"City2\".City ADD COLUMN population int");
+        run(cache, "ALTER TABLE \"City\".City ADD COLUMN population int");
 
         doSleep(500);
 
         QueryField c = c("POPULATION", Integer.class.getName());
 
         for (Ignite node : Ignition.allGrids())
-            checkNodeState((IgniteEx)node, "City2", "CITY", c);
+            checkNodeState((IgniteEx)node, "City", "CITY", c);
 
-        run(cache, "INSERT INTO \"City2\".City (id, name, state, population) values (1, 'Washington', 'DC', 2500000)");
+        run(cache, "INSERT INTO \"City\".City (_key, id, name, state, population) values " +
+            "(1, 1, 'Washington', 'DC', 2500000)");
+
+        List<List<?>> res = run(cache, "select _key, id, name, state, population from \"City\".City");
+
+        assertEquals(Collections.singletonList(Arrays.asList(1, 1, "Washington", "DC", 2500000)), res);
 
         City city = cache.get(1);
 
-        // Is this expected to work at all?
         assertEquals(1, city.id());
         assertEquals("Washington", city.name());
         assertEquals("DC", city.state());
