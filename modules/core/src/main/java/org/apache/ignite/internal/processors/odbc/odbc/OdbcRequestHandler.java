@@ -104,8 +104,8 @@ public class OdbcRequestHandler implements SqlListenerRequestHandler {
      * @param lazy Lazy flag.
      */
     public OdbcRequestHandler(GridKernalContext ctx, GridSpinBusyLock busyLock, int maxCursors,
-                              boolean distributedJoins, boolean enforceJoinOrder, boolean replicatedOnly,
-                              boolean collocated, boolean lazy) {
+        boolean distributedJoins, boolean enforceJoinOrder, boolean replicatedOnly,
+        boolean collocated, boolean lazy) {
         this.ctx = ctx;
         this.busyLock = busyLock;
         this.maxCursors = maxCursors;

@@ -35,11 +35,12 @@ public interface SqlListenerConnectionContext {
     SqlListenerProtocolVersion currentVersion();
 
     /**
-     * Init from handshake message.
+     * Initialize from handshake message.
+     *
      * @param ver Protocol version.
      * @param reader Reader set to the configuration part of the handshake message.
      */
-    void initFromHandshake(SqlListenerProtocolVersion ver, BinaryReaderExImpl reader);
+    void initializeFromHandshake(SqlListenerProtocolVersion ver, BinaryReaderExImpl reader);
 
     /**
      * Handler getter.
