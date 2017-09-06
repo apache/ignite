@@ -418,6 +418,16 @@ public class IgniteProcessProxy implements IgniteEx {
         throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
+    @Override
+    public boolean isRebalanceEnabled() {
+        return true;
+    }
+
+    @Override
+    public void rebalanceEnabled(boolean rebalanceEnabled) {
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
+    }
+
     /** {@inheritDoc} */
     @Override public IgniteCompute compute() {
         throw new UnsupportedOperationException("Operation isn't supported yet.");
