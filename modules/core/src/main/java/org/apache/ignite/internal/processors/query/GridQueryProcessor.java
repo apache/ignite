@@ -993,8 +993,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             else {
                 for (QueryField col : op0.columns()) {
                     if (type.hasField(col.name())) {
-                        if (op0.ifNotExists() && op0.columns().size() == 1)
+                        if (op0.ifNotExists()) {
+                            assert op0.columns().size() == 1;
+
                             nop = true;
+                        }
                         else
                             err = new SchemaOperationException(SchemaOperationException.CODE_COLUMN_EXISTS, col.name());
                     }
@@ -1120,8 +1123,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             else {
                 for (QueryField fld : op0.columns()) {
                     if (e.getFields().containsKey(fld.name())) {
-                        if (op0.ifNotExists() && op0.columns().size() == 1)
+                        if (op0.ifNotExists()) {
+                            assert op0.columns().size() == 1;
+
                             nop = true;
+                        }
                         else
                             err = new SchemaOperationException(SchemaOperationException.CODE_COLUMN_EXISTS, fld.name());
                     }
