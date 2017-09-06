@@ -431,17 +431,45 @@ namespace Apache.Ignite.Core.Tests.Services
         /// Tests exception in Initialize.
         /// </summary>
         [Test]
-        public void TestInitException()
+        public void TestDeployMultipleException()
         {
             var svc = new TestIgniteServiceSerializable { ThrowInit = true };
 
-            var sdex = Assert.Throws<ServiceDeploymentException>(() =>
+            var ex = Assert.Throws<ServiceDeploymentException>(() =>
                 Services.DeployMultiple(SvcName, svc, Grids.Length, 1));
 
-            Assert.AreEqual(sdex.Message, 
+            VerifyDeploymentException(ex);
+        }
+
+        /// <summary>
+        /// Tests exception in Initialize.
+        /// </summary>
+        [Test]
+        public void TestDeployException()
+        {
+            var svc = new TestIgniteServiceSerializable { ThrowInit = true };
+
+            var ex = Assert.Throws<ServiceDeploymentException>(() =>
+                Services.Deploy(new ServiceConfiguration
+                {
+                    Name = SvcName,
+                    Service = svc,
+                    TotalCount = Grids.Length,
+                    MaxPerNodeCount = 1
+                }));
+
+            VerifyDeploymentException(ex);
+        }
+
+        /// <summary>
+        /// Verifies the deployment exception.
+        /// </summary>
+        private void VerifyDeploymentException(ServiceDeploymentException deploymentException)
+        {
+            Assert.AreEqual(deploymentException.Message,
                 "Service deployment failed with an exception. Examine InnerException for details.");
 
-            var ex = sdex.InnerException;
+            var ex = deploymentException.InnerException;
             Assert.IsNotNull(ex);
             Assert.AreEqual("Expected exception", ex.Message);
             Assert.IsTrue(ex.StackTrace.Trim().StartsWith(
@@ -486,6 +514,9 @@ namespace Apache.Ignite.Core.Tests.Services
             AssertNoService();
         }
 
+        /// <summary>
+        /// Tests exception in binarizable implementation.
+        /// </summary>
         [Test]
         public void TestMarshalExceptionOnRead()
         {
@@ -501,6 +532,9 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.IsNull(svc0);
         }
 
+        /// <summary>
+        /// Tests exception in binarizable implementation.
+        /// </summary>
         [Test]
         public void TestMarshalExceptionOnWrite()
         {
@@ -514,6 +548,9 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.IsNull(svc0);
         }
 
+        /// <summary>
+        /// Tests Java service invocation.
+        /// </summary>
         [Test]
         public void TestCallJavaService()
         {
