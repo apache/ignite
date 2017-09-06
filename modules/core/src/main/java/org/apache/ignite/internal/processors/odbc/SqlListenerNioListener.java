@@ -189,7 +189,7 @@ public class SqlListenerNioListener extends GridNioServerListenerAdapter<byte[]>
         String errMsg = null;
 
         if (connCtx.isVersionSupported(ver)) {
-            connCtx.initFromHandshake(ver, reader);
+            connCtx.initializeFromHandshake(ver, reader);
 
             ses.addMeta(CONN_CTX_META_KEY, connCtx);
         }
