@@ -294,11 +294,11 @@ public class JdbcThinResultSet implements ResultSet {
                 return Integer.parseInt(val.toString()) != 0;
             }
             catch (NumberFormatException e) {
-                throw new SQLException("Cannot convert [val=" + val.toString() + "] to boolean");
+                throw new SQLException("Cannot convert to boolean: " + val, e);
             }
         }
         else
-            throw new SQLException("Cannot convert " + cls + " to boolean");
+            throw new SQLException("Cannot convert to boolean: " + val);
     }
 
     /** {@inheritDoc} */
