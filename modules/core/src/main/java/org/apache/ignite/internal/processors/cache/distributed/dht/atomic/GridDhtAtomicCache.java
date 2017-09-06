@@ -1967,7 +1967,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         if (dhtFut != null) {
             if (req.writeSynchronizationMode() == PRIMARY_SYNC
                 // To avoid deadlock disable back-pressure for sender data node.
-                && !ctx.discovery().cacheAffinityNode(node, ctx.name())
+                && !ctx.discovery().cacheGroupAffinityNode(node, ctx.groupId())
                 && !dhtFut.isDone()) {
                 final IgniteRunnable tracker = GridNioBackPressureControl.threadTracker();
 
