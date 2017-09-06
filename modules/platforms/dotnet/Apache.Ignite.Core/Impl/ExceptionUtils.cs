@@ -109,7 +109,6 @@ namespace Apache.Ignite.Core.Impl
             Exs["org.apache.ignite.internal.IgniteFutureCancelledCheckedException"] = (c, m, e, i) => new IgniteFutureCancelledException(m, e);
 
             // Service exceptions.
-            Exs["org.apache.ignite.internal.processors.service.ServiceDeploymentException"] = (c, m, e, i) => new ServiceDeploymentException(m, e);
             Exs["org.apache.ignite.services.ServiceDeploymentException"] = (c, m, e, i) => new ServiceDeploymentException(m, e);
         }
 
