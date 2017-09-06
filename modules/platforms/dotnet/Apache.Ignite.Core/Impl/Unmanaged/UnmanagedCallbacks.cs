@@ -902,6 +902,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         #region IMPLEMENTATION: SERVICES
 
+        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes",
+            Justification = "User processor can throw any exception")]
         private long ServiceInit(long memPtr)
         {
             using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
