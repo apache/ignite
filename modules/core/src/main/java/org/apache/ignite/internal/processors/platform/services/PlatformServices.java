@@ -150,7 +150,7 @@ public class PlatformServices extends PlatformAbstractTarget {
         throws IgniteCheckedException {
         switch (type) {
             case OP_DOTNET_DEPLOY_ASYNC: {
-                readAndListenFuture(reader, dotnetDeployAsync(reader, services));
+                readAndListenFuture(reader, dotnetDeployAsync(reader, services), resultWriter);
 
                 return TRUE;
             }
