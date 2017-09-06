@@ -47,18 +47,18 @@ public class GridLogThrottle {
     private static final ConcurrentMap<IgniteBiTuple<Class<? extends Throwable>, String>, Long> errors =
         new ConcurrentHashMap8<>();
 
-    /** Scheduller. */
-    private static final ScheduledExecutorService scheduller = Executors.newScheduledThreadPool(1);
+    /** Scheduler. */
+    private static final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
-    /** Future instance to stop Scheduller. */
+    /** Future instance to stop Scheduler. */
     private static ScheduledFuture scheduledFuture;
 
     /**
      * Sets system-wide log throttle timeout.
      */
-    public static void schedullerSetup() {
+    public static void schedulerSetup() {
 
-        scheduledFuture = scheduller.scheduleAtFixedRate(new Runnable() {
+        scheduledFuture = scheduler.scheduleAtFixedRate(new Runnable() {
             @Override public void run() {
                 cleanUpOldEntries();
             }
@@ -75,7 +75,7 @@ public class GridLogThrottle {
         throttleTimeout = timeout;
 
         if (scheduledFuture != null && !scheduledFuture.isCancelled())
-            schedullerSetup();
+            schedulerSetup();
     }
 
     /**
@@ -216,7 +216,7 @@ public class GridLogThrottle {
         assert !F.isEmpty(longMsg);
 
         if (scheduledFuture == null || scheduledFuture.isCancelled())
-            schedullerSetup();
+            schedulerSetup();
 
         IgniteBiTuple<Class<? extends Throwable>, String> tup =
             e != null && !byMsg ? F.<Class<? extends Throwable>, String>t(e.getClass(), e.getMessage()) :
@@ -268,14 +268,15 @@ public class GridLogThrottle {
         Iterator<Map.Entry<IgniteBiTuple<Class<? extends Throwable>, String>, Long>> itr = errors.entrySet().iterator();
 
         while (itr.hasNext()) {
-            IgniteBiTuple<Class<? extends Throwable>, String> key = itr.next().getKey();
 
-            Long loggedTs = errors.get(key);
+            Map.Entry<IgniteBiTuple<Class<? extends Throwable>, String>, Long> entry = itr.next();
+
+            Long loggedTs = entry.getValue();
 
             long curTs = U.currentTimeMillis();
 
             if (loggedTs == null || loggedTs <= (curTs - throttleTimeout)) {
-                errors.remove(key);
+                itr.remove();
             }
         }
     }
