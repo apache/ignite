@@ -551,7 +551,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
 
         if (val instanceof BinaryValueWithType)
             ((BinaryValueWithType)val).value(val0);
-        else if(val == null)
+        else if (val == null)
             val = val0 == null ? new BinaryValueWithType(BinaryUtils.typeByClass(Object.class), null) : val0;
         else
             val = val0 == null ? new BinaryValueWithType(BinaryUtils.typeByClass(val.getClass()), null) : val0;

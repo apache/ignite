@@ -1598,7 +1598,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
      * @throws Exception If fails
      */
     public void testBuilderReusage() throws Exception {
-        BinaryObjectBuilder builder =  newWrapper("SimpleCls");
+        BinaryObjectBuilder builder = newWrapper("SimpleCls");
 
         builder.setField("str", "abc");
 
