@@ -301,10 +301,6 @@ public class JdbcThinStatement implements Statement {
     @Override public void setFetchDirection(int direction) throws SQLException {
         ensureNotClosed();
 
-        if (direction != ResultSet.FETCH_FORWARD && direction != ResultSet.FETCH_REVERSE
-            && direction != ResultSet.FETCH_UNKNOWN)
-            throw new SQLException("Invalid fetch direction.");
-
         if (direction != FETCH_FORWARD)
             throw new SQLFeatureNotSupportedException("Only forward direction is supported.");
     }

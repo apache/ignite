@@ -853,13 +853,13 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
         GridTestUtils.assertThrows(log,
             new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    stmt.setFetchDirection(-1);
+                    stmt.setFetchDirection(ResultSet.FETCH_REVERSE);
 
                     return null;
                 }
             },
-            SQLException.class,
-            "Invalid fetch direction"
+            SQLFeatureNotSupportedException.class,
+            "Only forward direction is supported."
         );
 
         stmt.close();
