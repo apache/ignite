@@ -62,8 +62,7 @@ public class IgniteSQLException extends IgniteException {
 
     /** */
     public IgniteSQLException(String msg, int statusCode, @Nullable Throwable cause) {
-        this(msg, statusCode, (cause instanceof SQLException ? ((SQLException)cause).getSQLState() :
-            codeToSqlState(statusCode)));
+        this(msg, statusCode, codeToSqlState(statusCode), cause);
     }
 
     /** */
@@ -73,7 +72,12 @@ public class IgniteSQLException extends IgniteException {
 
     /** */
     public IgniteSQLException(String msg, int statusCode, String sqlState) {
-        super(msg);
+        this(msg, statusCode, sqlState, null);
+    }
+
+    /** */
+    private IgniteSQLException(String msg, int statusCode, String sqlState, @Nullable Throwable cause) {
+        super(msg, cause);
         this.sqlState = sqlState;
         this.statusCode = statusCode;
     }

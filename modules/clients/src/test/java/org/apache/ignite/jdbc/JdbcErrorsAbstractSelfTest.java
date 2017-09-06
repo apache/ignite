@@ -51,8 +51,8 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
      * Test that H2 specific error codes get propagated to Ignite SQL exceptions.
      * @throws SQLException if failed.
      */
-    public void testH2Errors() throws SQLException {
-        checkErrorState("gibberish", "42001");
+    public void testParsingErrors() throws SQLException {
+        checkErrorState("gibberish", "42000");
     }
 
     /**
@@ -60,7 +60,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
      * @throws SQLException if failed.
      */
     public void testTableErrors() throws SQLException {
-        checkErrorState("DROP TABLE \"PUBLIC\".missing", "42201");
+        checkErrorState("DROP TABLE \"PUBLIC\".missing", "42000");
     }
 
     /**
@@ -68,7 +68,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
      * @throws SQLException if failed.
      */
     public void testIndexErrors() throws SQLException {
-        checkErrorState("DROP INDEX \"PUBLIC\".missing", "42204");
+        checkErrorState("DROP INDEX \"PUBLIC\".missing", "42000");
     }
 
     /**
