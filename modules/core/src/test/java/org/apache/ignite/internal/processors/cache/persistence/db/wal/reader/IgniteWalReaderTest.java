@@ -28,6 +28,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteEvents;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
@@ -383,6 +384,19 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
      * @throws Exception if failed.
      */
     public void testTxFillWalAndExtractDataRecords() throws Exception {
+        System.setProperty(IgniteSystemProperties.IGNITE_WAL_LOG_TX_RECORDS, "true");
+
+        try {
+            doTxFillWalAndExtractDataRecords();
+        }
+        finally {
+            System.clearProperty(IgniteSystemProperties.IGNITE_WAL_LOG_TX_RECORDS);
+        }
+
+        System.clearProperty(IgniteSystemProperties.IGNITE_WAL_LOG_TX_RECORDS);
+    }
+
+    private void doTxFillWalAndExtractDataRecords() throws Exception {
         final int cacheObjectsToWrite = 100;
         final int txCnt = 100;
 
@@ -418,7 +432,6 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         WALIterator tuples = factory.iteratorWorkFiles(workFiles);
         int cntWork = iterateAndCountLogical(tuples);
         log.info("Total records loaded from work: " + cntWork);
-
     }
 
     private int iterateAndCountLogical(WALIterator walIterator) throws IgniteCheckedException {
@@ -465,7 +478,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
                     final TxRecord txRecord = (TxRecord)walRecord;
                     final GridCacheVersion globalTxId = txRecord.nearXidVersion();
 
-                    log.info("//Tx Record, action: " + txRecord.action() +
+                    log.info("//Tx Record, state: " + txRecord.state() +
                         "; nearTxVersion" + globalTxId);
                 }
             }
