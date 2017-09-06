@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
 import java.math.BigDecimal;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.sql.Array;
 import java.sql.Blob;
@@ -319,11 +320,11 @@ public class JdbcThinResultSet implements ResultSet {
                 return Byte.parseByte(val.toString());
             }
             catch (NumberFormatException e) {
-                throw new SQLException("Cannot convert [val=" + val.toString() + "] to byte");
+                throw new SQLException("Cannot convert to byte: " + val, e);
             }
         }
         else
-            throw new SQLException("Cannot convert " + cls + " to byte");
+            throw new SQLException("Cannot convert to byte: " + val);
     }
 
     /** {@inheritDoc} */
@@ -344,11 +345,11 @@ public class JdbcThinResultSet implements ResultSet {
                 return Short.parseShort(val.toString());
             }
             catch (NumberFormatException e) {
-                throw new SQLException("Cannot convert [val=" + val.toString() + "] to short");
+                throw new SQLException("Cannot convert to short: " + val, e);
             }
         }
         else
-            throw new SQLException("Cannot convert " + cls + " to short");
+            throw new SQLException("Cannot convert to short: " + val);
     }
 
     /** {@inheritDoc} */
@@ -369,11 +370,11 @@ public class JdbcThinResultSet implements ResultSet {
                 return Integer.parseInt(val.toString());
             }
             catch (NumberFormatException e) {
-                throw new SQLException("Cannot convert [val=" + val.toString() + "] to int");
+                throw new SQLException("Cannot convert to int: " + val, e);
             }
         }
         else
-            throw new SQLException("Cannot convert " + cls + " to int");
+            throw new SQLException("Cannot convert to int: " + val);
     }
 
     /** {@inheritDoc} */
@@ -394,11 +395,11 @@ public class JdbcThinResultSet implements ResultSet {
                 return Long.parseLong(val.toString());
             }
             catch (NumberFormatException e) {
-                throw new SQLException("Cannot convert [val=" + val.toString() + "] to long");
+                throw new SQLException("Cannot convert to long: " + val, e);
             }
         }
         else
-            throw new SQLException("Cannot convert " + cls + " to long");
+            throw new SQLException("Cannot convert to long: " + val);
     }
 
     /** {@inheritDoc} */
@@ -419,11 +420,11 @@ public class JdbcThinResultSet implements ResultSet {
                 return Float.parseFloat(val.toString());
             }
             catch (NumberFormatException e) {
-                throw new SQLException("Cannot convert [val=" + val.toString() + "] to float");
+                throw new SQLException("Cannot convert to float: " + val, e);
             }
         }
         else
-            throw new SQLException("Cannot convert " + cls + " to float");
+            throw new SQLException("Cannot convert to float: " + val);
     }
 
     /** {@inheritDoc} */
@@ -444,29 +445,53 @@ public class JdbcThinResultSet implements ResultSet {
                 return Double.parseDouble(val.toString());
             }
             catch (NumberFormatException e) {
-                throw new SQLException("Cannot convert [val=" + val.toString() + "] to double");
+                throw new SQLException("Cannot convert to double: " + val, e);
             }
         }
         else
-            throw new SQLException("Cannot convert " + cls + " to double");
+            throw new SQLException("Cannot convert to double: " + val);
     }
 
     /** {@inheritDoc} */
     @Override public BigDecimal getBigDecimal(int colIdx, int scale) throws SQLException {
         BigDecimal val = getBigDecimal(colIdx);
 
-        if (val == null)
-            return null;
-        else {
-            val.setScale(scale);
-
-            return val;
-        }
+        return val == null ? null : val.setScale(scale, BigDecimal.ROUND_HALF_UP);
     }
 
     /** {@inheritDoc} */
     @Override public byte[] getBytes(int colIdx) throws SQLException {
-        return getTypedValue(colIdx, byte[].class);
+        Object val = getValue(colIdx);
+
+        if (val == null)
+            return null;
+
+        Class<?> cls = val.getClass();
+
+        if (cls == byte[].class)
+            return (byte[])val;
+        else if (cls == Byte.class)
+            return new byte[] {(byte)val};
+        else if (cls == Short.class) {
+            short x = (short)val;
+
+            return new byte[] {(byte)(x >> 8), (byte)x};
+        }
+        else if (cls == Integer.class) {
+            int x = (int)val;
+
+            return new byte[] { (byte) (x >> 24), (byte) (x >> 16), (byte) (x >> 8), (byte) x};
+        }
+        else if (cls == Long.class) {
+            long x = (long)val;
+
+            return new byte[] {(byte) (x >> 56), (byte) (x >> 48), (byte) (x >> 40), (byte) (x >> 32),
+                (byte) (x >> 24), (byte) (x >> 16), (byte) (x >> 8), (byte) x};
+        }
+        else if (cls == String.class)
+            return ((String)val).getBytes();
+        else
+            throw new SQLException("Cannot convert to byte[]: " + val);
     }
 
     /** {@inheritDoc} */
@@ -487,7 +512,7 @@ public class JdbcThinResultSet implements ResultSet {
         else if (cls == Timestamp.class)
             return new Date(((Timestamp)val).getTime());
         else
-            throw new SQLException("Cannot convert " + cls + " to date");
+            throw new SQLException("Cannot convert to date: " + val);
     }
 
     /** {@inheritDoc} */
@@ -508,7 +533,7 @@ public class JdbcThinResultSet implements ResultSet {
         else if (cls == Timestamp.class)
             return new Time(((Timestamp)val).getTime());
         else
-            throw new SQLException("Cannot convert " + cls + " to time");
+            throw new SQLException("Cannot convert to time: " + val);
     }
 
     /** {@inheritDoc} */
@@ -529,8 +554,32 @@ public class JdbcThinResultSet implements ResultSet {
         else if (cls == Time.class)
             return new Timestamp(((Time)val).getTime());
         else
-            throw new SQLException("Cannot convert " + cls + " to timestamp");
+            throw new SQLException("Cannot convert to timestamp: " + val);
     }
+
+    /** {@inheritDoc} */
+    @Override public URL getURL(int colIdx) throws SQLException {
+        Object val = getValue(colIdx);
+
+        if (val == null)
+            return null;
+
+        Class<?> cls = val.getClass();
+
+        if (cls == URL.class)
+            return (URL)val;
+        else if (cls == String.class) {
+            try {
+                return new URL(val.toString());
+            }
+            catch (MalformedURLException e) {
+                throw new SQLException("Cannot convert to URL: " + val, e);
+            }
+        }
+        else
+            throw new SQLException("Cannot convert to URL: " + val);
+    }
+
 
     /** {@inheritDoc} */
     @Override public InputStream getAsciiStream(int colIdx) throws SQLException {
@@ -557,16 +606,12 @@ public class JdbcThinResultSet implements ResultSet {
     @Override public String getString(String colLb) throws SQLException {
         int colIdx = findColumn(colLb);
 
-        assert colIdx > 0;
-
         return getString(colIdx);
     }
 
     /** {@inheritDoc} */
     @Override public boolean getBoolean(String colLb) throws SQLException {
         int colIdx = findColumn(colLb);
-
-        assert colIdx > 0;
 
         return getBoolean(colIdx);
     }
@@ -575,16 +620,12 @@ public class JdbcThinResultSet implements ResultSet {
     @Override public byte getByte(String colLb) throws SQLException {
         int colIdx = findColumn(colLb);
 
-        assert colIdx > 0;
-
         return getByte(colIdx);
     }
 
     /** {@inheritDoc} */
     @Override public short getShort(String colLb) throws SQLException {
         int colIdx = findColumn(colLb);
-
-        assert colIdx > 0;
 
         return getShort(colIdx);
     }
@@ -593,16 +634,12 @@ public class JdbcThinResultSet implements ResultSet {
     @Override public int getInt(String colLb) throws SQLException {
         int colIdx = findColumn(colLb);
 
-        assert colIdx > 0;
-
         return getInt(colIdx);
     }
 
     /** {@inheritDoc} */
     @Override public long getLong(String colLb) throws SQLException {
         int colIdx = findColumn(colLb);
-
-        assert colIdx > 0;
 
         return getLong(colIdx);
     }
@@ -611,16 +648,12 @@ public class JdbcThinResultSet implements ResultSet {
     @Override public float getFloat(String colLb) throws SQLException {
         int colIdx = findColumn(colLb);
 
-        assert colIdx > 0;
-
         return getFloat(colIdx);
     }
 
     /** {@inheritDoc} */
     @Override public double getDouble(String colLb) throws SQLException {
         int colIdx = findColumn(colLb);
-
-        assert colIdx > 0;
 
         return getDouble(colIdx);
     }
@@ -629,16 +662,12 @@ public class JdbcThinResultSet implements ResultSet {
     @Override public BigDecimal getBigDecimal(String colLb, int scale) throws SQLException {
         int colIdx = findColumn(colLb);
 
-        assert colIdx > 0;
-
         return getBigDecimal(colIdx, scale);
     }
 
     /** {@inheritDoc} */
     @Override public byte[] getBytes(String colLb) throws SQLException {
         int colIdx = findColumn(colLb);
-
-        assert colIdx > 0;
 
         return getBytes(colIdx);
     }
@@ -647,8 +676,6 @@ public class JdbcThinResultSet implements ResultSet {
     @Override public Date getDate(String colLb) throws SQLException {
         int colIdx = findColumn(colLb);
 
-        assert colIdx > 0;
-
         return getDate(colIdx);
     }
 
@@ -656,16 +683,12 @@ public class JdbcThinResultSet implements ResultSet {
     @Override public Time getTime(String colLb) throws SQLException {
         int colIdx = findColumn(colLb);
 
-        assert colIdx > 0;
-
         return getTime(colIdx);
     }
 
     /** {@inheritDoc} */
     @Override public Timestamp getTimestamp(String colLb) throws SQLException {
         int colIdx = findColumn(colLb);
-
-        assert colIdx > 0;
 
         return getTimestamp(colIdx);
     }
@@ -729,8 +752,6 @@ public class JdbcThinResultSet implements ResultSet {
     @Override public Object getObject(String colLb) throws SQLException {
         int colIdx = findColumn(colLb);
 
-        assert colIdx > 0;
-
         return getValue(colIdx);
     }
 
@@ -742,6 +763,8 @@ public class JdbcThinResultSet implements ResultSet {
 
         if (order == null)
             throw new SQLException("Column not found: " + colLb);
+
+        assert order >= 0;
 
         return order + 1;
     }
@@ -769,7 +792,9 @@ public class JdbcThinResultSet implements ResultSet {
 
         Class<?> cls = val.getClass();
 
-        if (val instanceof Number)
+        if (cls == BigDecimal.class)
+            return (BigDecimal)val;
+        else if (val instanceof Number)
             return new BigDecimal(((Number)val).doubleValue());
         else if (cls == Boolean.class)
             return new BigDecimal((Boolean)val ? 1 : 0);
@@ -778,18 +803,16 @@ public class JdbcThinResultSet implements ResultSet {
                 return (BigDecimal)decimalFormat.get().parse(val.toString());
             }
             catch (ParseException e) {
-                throw new SQLException("Cannot convert [val=" + val.toString() + "] to BigDecimal");
+                throw new SQLException("Cannot convert to BigDecimal: " + val, e);
             }
         }
         else
-            throw new SQLException("Cannot convert " + cls + " to BigDecimal");
+            throw new SQLException("Cannot convert to BigDecimal: " + val);
     }
 
     /** {@inheritDoc} */
     @Override public BigDecimal getBigDecimal(String colLb) throws SQLException {
         int colIdx = findColumn(colLb);
-
-        assert colIdx > 0;
 
         return getBigDecimal(colIdx);
     }
@@ -1337,78 +1360,45 @@ public class JdbcThinResultSet implements ResultSet {
 
     /** {@inheritDoc} */
     @Override public Date getDate(int colIdx, Calendar cal) throws SQLException {
-        ensureNotClosed();
-        ensureHasCurrentRow();
-
-        try {
-            Object val = curRow.get(colIdx - 1);
-
-            wasNull = val == null;
-
-            if (val == null)
-                return null;
-            else if (val.getClass() == java.util.Date.class)
-                return new Date(((java.util.Date)val).getTime());
-            else
-                return (Date)val;
-        }
-        catch (IndexOutOfBoundsException e) {
-            throw new SQLException("Invalid column index: " + colIdx, e);
-        }
-        catch (ClassCastException e) {
-            throw new SQLException("Value is an not instance of Date", e);
-        }
+        return getDate(colIdx);
     }
 
     /** {@inheritDoc} */
     @Override public Date getDate(String colLb, Calendar cal) throws SQLException {
         int colIdx = findColumn(colLb);
 
-        assert colIdx > 0;
-
         return getDate(colIdx, cal);
     }
 
     /** {@inheritDoc} */
     @Override public Time getTime(int colIdx, Calendar cal) throws SQLException {
-        return getTypedValue(colIdx, Time.class);
+        return getTime(colIdx);
     }
 
     /** {@inheritDoc} */
     @Override public Time getTime(String colLb, Calendar cal) throws SQLException {
         int colIdx = findColumn(colLb);
 
-        assert colIdx > 0;
-
         return getTime(colIdx);
     }
 
     /** {@inheritDoc} */
     @Override public Timestamp getTimestamp(int colIdx, Calendar cal) throws SQLException {
-        return getTypedValue(colIdx, Timestamp.class);
+        return getTimestamp(colIdx);
     }
 
     /** {@inheritDoc} */
     @Override public Timestamp getTimestamp(String colLb, Calendar cal) throws SQLException {
         int colIdx = findColumn(colLb);
 
-        assert colIdx > 0;
-
         return getTimestamp(colIdx);
-    }
-
-    /** {@inheritDoc} */
-    @Override public URL getURL(int colIdx) throws SQLException {
-        return getTypedValue(colIdx, URL.class);
     }
 
     /** {@inheritDoc} */
     @Override public URL getURL(String colLb) throws SQLException {
         int colIdx = findColumn(colLb);
 
-        assert colIdx > 0;
-
-        return getTypedValue(colIdx, URL.class);
+        return getURL(colIdx);
     }
 
     /** {@inheritDoc} */
@@ -1801,6 +1791,13 @@ public class JdbcThinResultSet implements ResultSet {
         return (T)getObject0(colIdx, targetCls);
     }
 
+    /** {@inheritDoc} */
+    @Override public <T> T getObject(String colLb, Class<T> type) throws SQLException {
+        int colIdx = findColumn(colLb);
+
+        return getObject(colIdx, type);
+    }
+
     /**
      * @param colIdx Column index.
      * @param targetCls Class representing the Java data type to convert the designated column to.
@@ -1832,40 +1829,23 @@ public class JdbcThinResultSet implements ResultSet {
             return getTime(colIdx);
         else if (targetCls == Timestamp.class)
             return getTimestamp(colIdx);
-        else
-            return getTypedValue(colIdx, targetCls);
-    }
+        else if (targetCls == byte[].class)
+            return getBytes(colIdx);
+        else if (targetCls == URL.class)
+            return getURL(colIdx);
+        else {
+            Object val = getValue(colIdx);
 
-    /** {@inheritDoc} */
-    @Override public <T> T getObject(String colLb, Class<T> type) throws SQLException {
-        int colIdx = findColumn(colLb);
+            if (val == null)
+                return null;
 
-        assert colIdx > 0;
+            Class<?> cls = val.getClass();
 
-        return getTypedValue(colIdx, type);
-    }
-
-    /**
-     * Gets converted field value by index.
-     *
-     * @param colIdx Column index.
-     * @param targetCls Value class.
-     * @return Converted field value.
-     * @throws SQLException In case of error.
-     */
-    @SuppressWarnings("unchecked")
-    private <T> T getTypedValue(int colIdx, Class<T> targetCls) throws SQLException {
-        Object val = getValue(colIdx);
-
-        if (val == null)
-            return null;
-
-        Class<?> cls = val.getClass();
-
-        if (targetCls == cls)
-            return (T)val;
-        else
-            throw new SQLException("Cannot convert " + cls.getName() + " to " + targetCls.getName());
+            if (targetCls == cls)
+                return val;
+            else
+                throw new SQLException("Cannot convert to " + targetCls.getName() + ": " + val);
+        }
     }
 
     /**

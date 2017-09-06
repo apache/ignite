@@ -516,6 +516,31 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    public void testBigDecimalScale() throws Exception {
+        BigDecimal d;
+        d = convertToBigDecimalViaJdbc("10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000036", 1);
+
+        System.out.println("+++ " + d);
+    }
+
+    /**
+     * @param strDec String representation of a decimal value.
+     * @param scale Scale.
+     * @return BigDecimal object.
+     * @throws SQLException On error.
+     */
+    private BigDecimal convertToBigDecimalViaJdbc(String strDec, int scale) throws SQLException {
+        try(ResultSet rs = stmt.executeQuery("select '" + strDec + "'")) {
+
+            assert rs.next();
+
+            return rs.getBigDecimal(1, scale);
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testString() throws Exception {
         ResultSet rs = stmt.executeQuery(SQL);
 
