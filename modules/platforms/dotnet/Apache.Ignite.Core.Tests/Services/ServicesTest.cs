@@ -469,6 +469,8 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.AreEqual(deploymentException.Message,
                 "Service deployment failed with an exception. Examine InnerException for details.");
 
+            Assert.IsNull(deploymentException.BinaryCause);
+
             var ex = deploymentException.InnerException;
             Assert.IsNotNull(ex);
             Assert.AreEqual("Expected exception", ex.Message);
