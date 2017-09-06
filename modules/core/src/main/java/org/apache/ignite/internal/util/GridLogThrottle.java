@@ -17,16 +17,16 @@
 
 package org.apache.ignite.internal.util;
 
-import java.util.Iterator;
-import java.util.Map;
-import java.util.concurrent.*;
-
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
+
+import java.util.Iterator;
+import java.util.Map;
+import java.util.concurrent.*;
 
 /**
  * Grid log throttle.
@@ -50,19 +50,13 @@ public class GridLogThrottle {
     /** Scheduller. */
     private static final ScheduledExecutorService scheduller = Executors.newScheduledThreadPool(1);
 
+    /** Future instance to stop Scheduller. */
     private static ScheduledFuture scheduledFuture;
-
-    static {
-        shedullerSetup();
-    }
 
     /**
      * Sets system-wide log throttle timeout.
      */
-    public static void shedullerSetup(){
-        if (scheduledFuture != null && !scheduledFuture.isCancelled()) {
-            scheduledFuture.cancel(false);
-        }
+    public static void schedullerSetup() {
 
         scheduledFuture = scheduller.scheduleAtFixedRate(new Runnable() {
             @Override public void run() {
@@ -80,7 +74,8 @@ public class GridLogThrottle {
 
         throttleTimeout = timeout;
 
-        shedullerSetup();
+        if (scheduledFuture != null && !scheduledFuture.isCancelled())
+            schedullerSetup();
     }
 
     /**
@@ -220,6 +215,9 @@ public class GridLogThrottle {
         @Nullable String shortMsg, LogLevel level, boolean quiet, boolean byMsg) {
         assert !F.isEmpty(longMsg);
 
+        if (scheduledFuture == null || scheduledFuture.isCancelled())
+            schedullerSetup();
+
         IgniteBiTuple<Class<? extends Throwable>, String> tup =
             e != null && !byMsg ? F.<Class<? extends Throwable>, String>t(e.getClass(), e.getMessage()) :
                 F.<Class<? extends Throwable>, String>t(null, longMsg);
@@ -262,11 +260,10 @@ public class GridLogThrottle {
     }
 
     /**
-     * Method iterates though man and removes outdated entries (compares entry timestamp with current
-     * timestamp minus timeout). It protects the map from causing memory leak.
+     * Method iterates though man and removes outdated entries (compares entry timestamp with current timestamp minus
+     * timeout). It protects the map from causing memory leak.
      */
     private static void cleanUpOldEntries() {
-        long curTs = U.currentTimeMillis();
 
         Iterator<Map.Entry<IgniteBiTuple<Class<? extends Throwable>, String>, Long>> itr = errors.entrySet().iterator();
 
@@ -275,7 +272,9 @@ public class GridLogThrottle {
 
             Long loggedTs = errors.get(key);
 
-            if (loggedTs == null || loggedTs <= curTs - throttleTimeout) {
+            long curTs = U.currentTimeMillis();
+
+            if (loggedTs == null || loggedTs <= (curTs)) {
                 errors.remove(key);
             }
         }
@@ -334,10 +333,9 @@ public class GridLogThrottle {
     }
 
     /**
-     *
      * @return Errors size.
      */
-    public static int errorsSize(){
+    public static int errorsSize() {
         return errors.size();
     }
 }

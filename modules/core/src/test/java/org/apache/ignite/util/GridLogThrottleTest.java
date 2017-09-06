@@ -158,7 +158,7 @@ public class GridLogThrottleTest extends GridCommonAbstractTest {
         log.reset();
 
         info("Slept for throttle timeout: " + LT.throttleTimeout() + 15);
-        Thread.sleep(LT.throttleTimeout() + 100);
+        Thread.sleep(LT.throttleTimeout() + 150);
 
         LT.error(log, new RuntimeException("Test exception 3."), "Test");
         assertTrue(log.toString().contains("Test\r\njava.lang.RuntimeException: Test exception 3."));
@@ -176,7 +176,7 @@ public class GridLogThrottleTest extends GridCommonAbstractTest {
         log.reset();
 
         info("Slept for throttle timeout: " + LT.throttleTimeout() + 15);
-        Thread.sleep(LT.throttleTimeout() + 100);
+        Thread.sleep(LT.throttleTimeout() + 150);
 
         LT.info(log(), "Test info message 1.");
         assertEquals(1, LT.errorsSize());
@@ -201,18 +201,18 @@ public class GridLogThrottleTest extends GridCommonAbstractTest {
         LT.error(log, new RuntimeException("Test exception 1."), "Test");
         assertEquals(1, LT.errorsSize());
 
-        info("Slept for throttle timeout: " + LT.throttleTimeout() + 15);
-        Thread.sleep(LT.throttleTimeout() + 15);
+        Thread.sleep(LT.throttleTimeout() + 200);
+        info("Slept for throttle timeout: " + (LT.throttleTimeout() + 50));
 
         assertEquals(0, LT.errorsSize());
+
+        LT.throttleTimeout(500);
 
         LT.error(log, new RuntimeException("Test exception 1."), "Test");
         assertEquals(1, LT.errorsSize());
 
+        Thread.sleep(LT.throttleTimeout() + 200);
         info("Set new throttle timeout and slept : " + LT.throttleTimeout() + 15);
-        LT.throttleTimeout(500);
-
-        Thread.sleep(LT.throttleTimeout() + 50);
 
         assertEquals(0, LT.errorsSize());
     }
