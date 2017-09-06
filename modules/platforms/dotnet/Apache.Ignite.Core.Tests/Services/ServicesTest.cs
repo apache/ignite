@@ -490,7 +490,6 @@ namespace Apache.Ignite.Core.Tests.Services
                 ex = deploymentException.InnerException;
             }
 
-            ex = deploymentException.InnerException;
             Assert.IsNotNull(ex);
             Assert.AreEqual("Expected exception", ex.Message);
             Assert.IsTrue(ex.StackTrace.Trim().StartsWith(
