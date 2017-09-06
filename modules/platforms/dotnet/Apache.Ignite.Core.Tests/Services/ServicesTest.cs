@@ -469,8 +469,11 @@ namespace Apache.Ignite.Core.Tests.Services
 
             var deploymentException = Assert.Throws<ServiceDeploymentException>(() => deploy(services, svc));
 
-            Assert.AreEqual(deploymentException.Message,
-                "Service deployment failed with an exception. Examine InnerException for details.");
+            var text = keepBinary 
+                ? "Service deployment failed with a binary error. Examine BinaryCause for details."
+                : "Service deployment failed with an exception. Examine InnerException for details.";
+
+            Assert.AreEqual(text, deploymentException.Message);
 
             Assert.IsNull(deploymentException.BinaryCause);
 
