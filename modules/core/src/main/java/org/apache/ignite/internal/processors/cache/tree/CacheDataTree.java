@@ -163,7 +163,7 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
         cmp = Long.compare(row.mvccUpdateTopologyVersion(), mvccTopVer);
 
         if (cmp != 0)
-            return 0;
+            return cmp;
 
         long mvccCntr = io.getMvccUpdateCounter(pageAddr, idx);
 

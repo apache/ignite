@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.mvcc;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -34,6 +36,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -52,13 +55,16 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
     private final CoordinatorAssignmentHistory assignHist = new CoordinatorAssignmentHistory();
 
     /** */
-    private final AtomicLong mvccCntr = new AtomicLong(0L);
+    private final AtomicLong mvccCntr = new AtomicLong(1L);
 
     /** */
-    private final AtomicLong committedCntr = new AtomicLong(0L);
+    private final GridAtomicLong committedCntr = new GridAtomicLong(1L);
 
     /** */
     private final ConcurrentHashMap<GridCacheVersion, Long> activeTxs = new ConcurrentHashMap<>();
+
+    /** */
+    private final Map<Long, Integer> activeQueries = new HashMap<>();
 
     /** */
     private final ConcurrentMap<Long, MvccCounterFuture> cntrFuts = new ConcurrentHashMap<>();
@@ -210,21 +216,6 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
         }
     }
 
-
-    /**
-     * @param txId Transaction ID.
-     * @return Counter.
-     */
-    private long assignTxCounter(GridCacheVersion txId) {
-        long nextCtr = mvccCntr.incrementAndGet();
-
-        Object old = activeTxs.put(txId, nextCtr);
-
-        assert old == null : txId;
-
-        return nextCtr;
-    }
-
     /**
      * @param nodeId Sender node ID.
      * @param msg Message.
@@ -322,7 +313,7 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
      * @param msg Message.
      */
     private void processCoordinatorTxAckRequest(UUID nodeId, CoordinatorTxAckRequest msg) {
-        activeTxs.remove(msg.txId());
+        onTxDone(msg.txId());
 
         if (!msg.skipResponse()) {
             try {
@@ -359,19 +350,93 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
     }
 
     /**
-     * @param qryNodeId Node initiated query.
-     * @return Counter for query.
+     * @param txId Transaction ID.
+     * @return Counter.
      */
-    private long assignQueryCounter(UUID qryNodeId) {
-        // TODO IGNITE-3478
-        return 3;
+    private synchronized long assignTxCounter(GridCacheVersion txId) {
+        long nextCtr = mvccCntr.getAndIncrement();
+
+        Object old = activeTxs.put(txId, nextCtr);
+
+        assert old == null : txId;
+
+        return nextCtr;
     }
 
     /**
-     * @param cntr Query counter.
+     * @param txId Transaction ID.
      */
-    private void onQueryDone(long cntr) {
-        // TODO IGNITE-3478
+    private synchronized void onTxDone(GridCacheVersion txId) {
+        Long cntr = activeTxs.remove(txId);
+
+        assert cntr != null;
+
+        committedCntr.setIfGreater(cntr);
+    }
+
+    /**
+     * @param qryNodeId Node initiated query.
+     * @return Counter for query.
+     */
+    private synchronized long assignQueryCounter(UUID qryNodeId) {
+        Long mvccCntr = committedCntr.get();
+
+        Long minActive = minActiveTx();
+
+        if (minActive != null && minActive < mvccCntr)
+            mvccCntr = minActive - 1;
+
+        Integer queries = activeQueries.get(mvccCntr);
+
+        if (queries != null)
+            activeQueries.put(mvccCntr, queries + 1);
+        else
+            activeQueries.put(mvccCntr, 1);
+
+        return mvccCntr;
+    }
+
+    /**
+     * @param mvccCntr Query counter.
+     */
+    private synchronized void onQueryDone(long mvccCntr) {
+        Integer queries = activeQueries.get(mvccCntr);
+
+        assert queries != null : mvccCntr;
+
+        int left = queries - 1;
+
+        assert left >= 0 : left;
+
+        if (left == 0)
+            activeQueries.remove(mvccCntr);
+    }
+
+    private synchronized long cleanupVersion() {
+        long cntr = committedCntr.get();
+
+        Long minActive = minActiveTx();
+
+        if (minActive != null && minActive < cntr)
+            cntr = minActive - 1;
+
+        for (Long qryCntr : activeQueries.keySet()) {
+            if (qryCntr <= cntr)
+                cntr = qryCntr - 1;
+        }
+
+        return cntr;
+    }
+
+    @Nullable private Long minActiveTx() {
+        Long min = null;
+
+        for (Map.Entry<GridCacheVersion, Long> e : activeTxs.entrySet()) {
+            if (min == null || e.getValue() < min)
+                min = e.getValue();
+        }
+
+        return min;
     }
 
     /**

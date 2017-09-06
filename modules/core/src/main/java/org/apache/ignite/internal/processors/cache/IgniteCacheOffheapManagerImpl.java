@@ -1552,18 +1552,20 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
             int cacheId = grp.sharedGroup() ? cctx.cacheId() : CU.UNDEFINED_CACHE_ID;
 
-            // TODO IGNITE-3484: need special findCeiling method.
+            // TODO IGNITE-3484: need special method.
 
             GridCursor<CacheDataRow> cur = dataTree.find(new MvccSearchRow(cacheId, key, topVer, mvccCntr),
-                null,
-                CacheDataRowAdapter.RowData.NO_KEY);
+                new MvccSearchRow(cacheId, key, topVer + 1, mvccCntr)/*,
+                CacheDataRowAdapter.RowData.NO_KEY*/);
 
             CacheDataRow row = null;
 
             if (cur.next())
                 row = cur.get();
 
-            afterRowFound(row, key);
+            assert row == null || key.equals(row.key());
+
+            //afterRowFound(row, key);
 
             return row;
         }
