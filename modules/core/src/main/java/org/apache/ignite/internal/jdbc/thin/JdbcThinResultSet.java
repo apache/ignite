@@ -267,6 +267,9 @@ public class JdbcThinResultSet implements ResultSet {
 
     /** {@inheritDoc} */
     @Override public boolean wasNull() throws SQLException {
+        ensureNotClosed();
+        ensureHasCurrentRow();
+
         return wasNull;
     }
 
@@ -1254,8 +1257,7 @@ public class JdbcThinResultSet implements ResultSet {
     @Override public void cancelRowUpdates() throws SQLException {
         ensureNotClosed();
 
-        if (getConcurrency() == CONCUR_READ_ONLY)
-            throw new SQLException("The result set concurrency is CONCUR_READ_ONLY");
+        throw new SQLFeatureNotSupportedException("Row updates are not supported.");
     }
 
     /** {@inheritDoc} */

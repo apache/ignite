@@ -17,19 +17,25 @@
 
 package org.apache.ignite.jdbc.thin;
 
+import java.io.InputStream;
+import java.io.Reader;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.sql.Blob;
+import java.sql.Clob;
 import java.sql.Connection;
 import java.sql.Date;
 import java.sql.DriverManager;
+import java.sql.NClob;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.Arrays;
+import java.util.GregorianCalendar;
 import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -48,7 +54,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Result set test.
  */
-@SuppressWarnings({"FloatingPointEquality", "AssertWithSideEffects", "ThrowableNotThrown"})
+@SuppressWarnings({"FloatingPointEquality", "ThrowableNotThrown", "AssertWithSideEffects"})
 public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -756,6 +762,924 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
             SQLException.class,
             "Column not found: wrong"
         );
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testNotSupportedTypes() throws Exception {
+        final ResultSet rs = stmt.executeQuery(SQL);
+
+        assert rs.next();
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.getArray(1);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.getArray("id");
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.getAsciiStream(1);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.getAsciiStream("id");
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.getBinaryStream(1);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.getBinaryStream("id");
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.getBlob(1);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.getBlob("id");
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.getClob(1);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.getClob("id");
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.getCharacterStream(1);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.getCharacterStream("id");
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.getNCharacterStream(1);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.getNCharacterStream("id");
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.getNClob(1);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.getNClob("id");
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.getNString(1);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.getNString("id");
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.getRef(1);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.getRef("id");
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.getRowId(1);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.getRowId("id");
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.getSQLXML(1);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.getSQLXML("id");
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.getURL(1);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.getURL("id");
+            }
+        });
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testUpdateNotSupported() throws Exception {
+        final ResultSet rs = stmt.executeQuery(SQL);
+
+        assert rs.next();
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.updateBoolean(1, true);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.updateBoolean("id", true);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.updateByte(1, (byte)0);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.updateByte("id", (byte)0);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.updateShort(1, (short)0);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.updateShort("id", (short)0);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.updateInt(1, 0);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.updateInt("id", 0);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.updateLong(1, 0);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.updateLong("id", 0);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.updateFloat(1, (float)0.0);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.updateFloat("id", (float)0.0);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.updateDouble(1, 0.0);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.updateDouble("id", 0.0);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.updateString(1, "");
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.updateString("id", "");
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.updateTime(1, new Time(0));
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.updateTime("id", new Time(0));
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.updateDate(1, new Date(0));
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.updateDate("id", new Date(0));
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.updateTimestamp(1, new Timestamp(0));
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.updateTimestamp("id", new Timestamp(0));
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.updateBytes(1, new byte[]{});
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.updateBytes("id", new byte[]{});
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.updateArray(1, null);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.updateArray("id", null);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.updateBlob(1, (Blob)null);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.updateBlob(1, (InputStream)null);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.updateBlob(1, null, 0L);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.updateBlob("id", (Blob)null);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.updateBlob("id", (InputStream)null);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.updateBlob("id", null, 0L);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.updateClob(1, (Clob)null);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.updateClob(1, (Reader)null);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.updateClob(1, null, 0L);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.updateClob("id", (Clob)null);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.updateClob("id", (Reader)null);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.updateClob("id", null, 0L);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.updateNClob(1, (NClob)null);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.updateNClob(1, (Reader)null);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.updateNClob(1, null, 0L);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.updateNClob("id", (NClob)null);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.updateNClob("id", (Reader)null);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.updateNClob("id", null, 0L);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.updateAsciiStream(1, null);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.updateAsciiStream(1, null, 0);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.updateAsciiStream(1, null, 0L);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.updateAsciiStream("id", null);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.updateAsciiStream("id", null, 0);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.updateAsciiStream("id", null, 0L);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.updateCharacterStream(1, null);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.updateCharacterStream(1, null, 0);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.updateCharacterStream(1, null, 0L);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.updateCharacterStream("id", null);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.updateCharacterStream("id", null, 0);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.updateCharacterStream("id", null, 0L);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.updateNCharacterStream(1, null);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.updateNCharacterStream(1, null, 0);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.updateNCharacterStream(1, null, 0L);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.updateNCharacterStream("id", null);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.updateNCharacterStream("id", null, 0);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.updateNCharacterStream("id", null, 0L);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.updateRef(1, null);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.updateRef("id", null);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.updateRowId(1, null);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.updateRowId("id", null);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.updateNString(1, null);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.updateNString("id", null);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.updateSQLXML(1, null);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.updateSQLXML("id", null);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.updateObject(1, null);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.updateObject(1, null, 0);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.updateObject("id", null);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.updateObject("id", null, 0);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.updateBigDecimal(1, null);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.updateBigDecimal("id", null);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.updateNull(1);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.updateNull("id");
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.cancelRowUpdates();
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.updateRow();
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.deleteRow();
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.insertRow();
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.moveToInsertRow();
+            }
+        });
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testExceptionOnClosedResultSet() throws Exception {
+        final ResultSet rs = stmt.executeQuery(SQL);
+
+        rs.close();
+
+        // Must do nothing on closed result set
+        rs.close();
+
+        checkResultSetClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.getBoolean(1);
+            }
+        });
+
+        checkResultSetClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.getBoolean("id");
+            }
+        });
+
+        checkResultSetClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.getByte(1);
+            }
+        });
+
+        checkResultSetClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.getByte("id");
+            }
+        });
+
+        checkResultSetClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.getShort(1);
+            }
+        });
+
+        checkResultSetClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.getShort("id");
+            }
+        });
+
+        checkResultSetClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.getInt(1);
+            }
+        });
+
+        checkResultSetClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.getInt("id");
+            }
+        });
+
+        checkResultSetClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.getLong(1);
+            }
+        });
+
+        checkResultSetClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.getLong("id");
+            }
+        });
+
+        checkResultSetClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.getFloat(1);
+            }
+        });
+
+        checkResultSetClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.getFloat("id");
+            }
+        });
+
+        checkResultSetClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.getDouble(1);
+            }
+        });
+
+        checkResultSetClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.getDouble("id");
+            }
+        });
+
+        checkResultSetClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.getString(1);
+            }
+        });
+
+        checkResultSetClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.getString("id");
+            }
+        });
+
+        checkResultSetClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.getBytes(1);
+            }
+        });
+
+        checkResultSetClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.getBytes("id");
+            }
+        });
+
+        checkResultSetClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.getDate(1);
+            }
+        });
+
+        checkResultSetClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.getDate(1, new GregorianCalendar());
+            }
+        });
+
+        checkResultSetClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.getDate("id");
+            }
+        });
+
+        checkResultSetClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.getDate("id", new GregorianCalendar());
+            }
+        });
+
+        checkResultSetClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.getTime(1);
+            }
+        });
+
+        checkResultSetClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.getTime(1, new GregorianCalendar());
+            }
+        });
+
+        checkResultSetClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.getTime("id");
+            }
+        });
+
+        checkResultSetClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.getTime("id", new GregorianCalendar());
+            }
+        });
+
+        checkResultSetClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.getTimestamp(1);
+            }
+        });
+
+        checkResultSetClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.getTimestamp(1, new GregorianCalendar());
+            }
+        });
+
+        checkResultSetClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.getTimestamp("id");
+            }
+        });
+
+        checkResultSetClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.getTimestamp("id", new GregorianCalendar());
+            }
+        });
+
+        checkResultSetClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.wasNull();
+            }
+        });
+
+        checkResultSetClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.getMetaData();
+            }
+        });
+
+        checkResultSetClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.next();
+            }
+        });
+
+        checkResultSetClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.last();
+            }
+        });
+
+        checkResultSetClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.afterLast();
+            }
+        });
+
+        checkResultSetClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.beforeFirst();
+            }
+        });
+
+        checkResultSetClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.first();
+            }
+        });
+
+        checkResultSetClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.findColumn("id");
+            }
+        });
+
+        checkResultSetClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.getRow();
+            }
+        });
     }
 
     /**
