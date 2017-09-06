@@ -24,6 +24,7 @@ namespace Apache.Ignite.Core.Impl.Services
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cluster;
+    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Services;
@@ -222,7 +223,7 @@ namespace Apache.Ignite.Core.Impl.Services
                 w.WriteObject(service);
                 w.WriteInt(totalCount);
                 w.WriteInt(maxPerNodeCount);
-            }, _keepBinary, r => ReadDeploymentResult(r.Stream));
+            }, _keepBinary, ReadDeploymentResult);
         }
 
         /** <inheritDoc /> */
@@ -239,7 +240,7 @@ namespace Apache.Ignite.Core.Impl.Services
             IgniteArgumentCheck.NotNull(configuration, "configuration");
 
             return DoOutOpAsync(OpDeployAsync, w => WriteServiceConfiguration(configuration, w), 
-                _keepBinary, r => ReadDeploymentResult(r.Stream));
+                _keepBinary, ReadDeploymentResult);
         }
 
         /** <inheritDoc /> */
@@ -398,6 +399,14 @@ namespace Apache.Ignite.Core.Impl.Services
                 w.WriteObject(configuration.NodeFilter);
             else
                 w.WriteObject<object>(null);
+        }
+
+        /// <summary>
+        /// Reads the deployment result.
+        /// </summary>
+        private object ReadDeploymentResult(BinaryReader r)
+        {
+            return r != null ? ReadDeploymentResult(r.Stream) : null;
         }
 
         /// <summary>
