@@ -22,7 +22,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
     /// <summary>
     /// Base for platform cursors.
     /// </summary>
-    internal abstract class PlatformQueryQursorBase<T> : AbstractQueryCursor<T>
+    internal abstract class PlatformQueryQursorBase<T> : QueryCursorBase<T>
     {
         /** */
         private readonly IPlatformTargetInternal _target;

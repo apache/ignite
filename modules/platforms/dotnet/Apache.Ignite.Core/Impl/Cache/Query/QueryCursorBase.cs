@@ -28,7 +28,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
     /// <summary>
     /// Abstract query cursor implementation.
     /// </summary>
-    internal abstract class AbstractQueryCursor<T> : IQueryCursor<T>, IEnumerator<T>
+    internal abstract class QueryCursorBase<T> : IQueryCursor<T>, IEnumerator<T>
     {
         /** Position before head. */
         private const int BatchPosBeforeHead = -1;
@@ -59,7 +59,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
         /// </summary>
         /// <param name="marsh">Marshaller.</param>
         /// <param name="keepBinary">Keep binary flag.</param>
-        protected AbstractQueryCursor(Marshaller marsh, bool keepBinary)
+        protected QueryCursorBase(Marshaller marsh, bool keepBinary)
         {
             Debug.Assert(marsh != null);
 
