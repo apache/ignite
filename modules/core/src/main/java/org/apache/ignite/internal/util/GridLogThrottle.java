@@ -264,7 +264,6 @@ public class GridLogThrottle {
      * timeout). It protects the map from causing memory leak.
      */
     private static void cleanUpOldEntries() {
-
         Iterator<Map.Entry<IgniteBiTuple<Class<? extends Throwable>, String>, Long>> itr = errors.entrySet().iterator();
 
         while (itr.hasNext()) {
