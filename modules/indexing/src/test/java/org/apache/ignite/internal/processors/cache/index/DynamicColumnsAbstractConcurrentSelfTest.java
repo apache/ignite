@@ -657,8 +657,6 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
         });
 
         checkNodeState((IgniteEx)cli, schemaName, TBL_NAME, cols);
-
-        // TODO add also column add-drop-add check combined with node restart.
     }
 
     /**
