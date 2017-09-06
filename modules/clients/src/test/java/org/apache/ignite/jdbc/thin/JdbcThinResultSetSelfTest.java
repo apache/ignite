@@ -903,18 +903,6 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
                 rs.getSQLXML("id");
             }
         });
-
-        checkNotSupported(new RunnableX() {
-            @Override public void run() throws Exception {
-                rs.getURL(1);
-            }
-        });
-
-        checkNotSupported(new RunnableX() {
-            @Override public void run() throws Exception {
-                rs.getURL("id");
-            }
-        });
     }
 
     /**
