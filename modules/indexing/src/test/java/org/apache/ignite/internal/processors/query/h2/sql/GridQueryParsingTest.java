@@ -599,7 +599,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
             IgniteSQLException.class, "No cache value related columns found");
 
         assertParseThrows("create table Person (id int primary key, age int not null) WITH \"cacheTemplate=cache\"",
-            IgniteSQLException.class, "Non nullable columns are forbidden");
+            IgniteSQLException.class, "Non nullable columns are not supported [colName=AGE]");
 
         assertParseThrows("create table Person (id int primary key, age int unique) WITH \"template=cache\"",
             IgniteSQLException.class, "Too many constraints - only PRIMARY KEY is supported for CREATE TABLE");
@@ -622,29 +622,28 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
 
     /** */
     public void testParseAlterTableAddColumn() throws Exception {
-        assertAlterTableAddColumnEquals(buildAlterTableAddColumn("SCH2", "Person", false, false, null, null,
+        assertAlterTableAddColumnEquals(buildAlterTableAddColumn("SCH2", "Person", false, false,
             c("COMPANY", Value.STRING)), "ALTER TABLE SCH2.Person ADD company varchar");
 
-        assertAlterTableAddColumnEquals(buildAlterTableAddColumn("SCH2", "Person", true, true, null, "DATE",
-            c("COMPANY", Value.STRING)), "ALTER TABLE IF EXISTS SCH2.Person ADD if not exists company varchar " +
-            "after date");
+        assertAlterTableAddColumnEquals(buildAlterTableAddColumn("SCH2", "Person", true, true,
+            c("COMPANY", Value.STRING)), "ALTER TABLE IF EXISTS SCH2.Person ADD if not exists company varchar");
 
-        assertAlterTableAddColumnEquals(buildAlterTableAddColumn("SCH2", "Person", false, true, "ADDRID", null,
+        assertAlterTableAddColumnEquals(buildAlterTableAddColumn("SCH2", "Person", false, true,
             c("COMPANY", Value.STRING), c("city", Value.STRING)),
-            "ALTER TABLE IF EXISTS SCH2.Person ADD (company varchar, \"city\" varchar) before addrid");
+            "ALTER TABLE IF EXISTS SCH2.Person ADD (company varchar, \"city\" varchar)");
 
-        assertAlterTableAddColumnEquals(buildAlterTableAddColumn("SCH2", "City", false, true, null, null,
+        assertAlterTableAddColumnEquals(buildAlterTableAddColumn("SCH2", "City", false, true,
             c("POPULATION", Value.INT)), "ALTER TABLE IF EXISTS SCH2.\"City\" ADD (population int)");
 
         // There's no table with such name, but H2 parsing does not fail just yet.
-        assertAlterTableAddColumnEquals(buildAlterTableAddColumn("SCH2", "City", false, false, null, null,
+        assertAlterTableAddColumnEquals(buildAlterTableAddColumn("SCH2", "City", false, false,
             c("POPULATION", Value.INT)), "ALTER TABLE SCH2.\"City\" ADD (population int)");
 
-        assertAlterTableAddColumnEquals(buildAlterTableAddColumn("SCH2", "Person", true, false, null, null,
+        assertAlterTableAddColumnEquals(buildAlterTableAddColumn("SCH2", "Person", true, false,
             c("NAME", Value.STRING)), "ALTER TABLE SCH2.Person ADD if not exists name varchar");
 
         // There's a column with such name, but H2 parsing does not fail just yet.
-        assertAlterTableAddColumnEquals(buildAlterTableAddColumn("SCH2", "Person", false, false, null, null,
+        assertAlterTableAddColumnEquals(buildAlterTableAddColumn("SCH2", "Person", false, false,
             c("NAME", Value.STRING)), "ALTER TABLE SCH2.Person ADD name varchar");
 
         // IF NOT EXISTS with multiple columns.
@@ -652,8 +651,8 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
             DbException.class, null);
 
         // Both BEFORE and AFTER keywords.
-        assertParseThrows("ALTER TABLE IF EXISTS SCH2.Person ADD if not exists company varchar before addrid after name",
-            DbException.class, null);
+        assertParseThrows("ALTER TABLE IF EXISTS SCH2.Person ADD if not exists company varchar before addrid",
+            IgniteSQLException.class, "ALTER TABLE ADD COLUMN BEFORE/AFTER is not supported");
 
         // No such schema.
         assertParseThrows("ALTER TABLE SCH3.\"Person\" ADD (city varchar)", DbException.class, null);
@@ -800,7 +799,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
 
     /** */
     private static GridSqlAlterTableAddColumn buildAlterTableAddColumn(String schema, String tbl,
-        boolean ifNotExists, boolean ifTblExists, String beforeColName, String afterColName, GridSqlColumn... cols) {
+        boolean ifNotExists, boolean ifTblExists, GridSqlColumn... cols) {
         GridSqlAlterTableAddColumn res = new GridSqlAlterTableAddColumn();
 
         res.schemaName(schema);
