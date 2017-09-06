@@ -31,6 +31,7 @@ namespace Apache.Ignite.Core.Impl
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Compute;
     using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Services;
     using Apache.Ignite.Core.Transactions;
 
     /// <summary>
@@ -103,9 +104,12 @@ namespace Apache.Ignite.Core.Impl
             Exs["org.apache.ignite.IgniteAuthenticationException"] = (c, m, e, i) => new SecurityException(m, e);
             Exs["org.apache.ignite.plugin.security.GridSecurityException"] = (c, m, e, i) => new SecurityException(m, e);
 
-            // Future exceptions
+            // Future exceptions.
             Exs["org.apache.ignite.lang.IgniteFutureCancelledException"] = (c, m, e, i) => new IgniteFutureCancelledException(m, e);
             Exs["org.apache.ignite.internal.IgniteFutureCancelledCheckedException"] = (c, m, e, i) => new IgniteFutureCancelledException(m, e);
+
+            // Service exceptions.
+            Exs["org.apache.ignite.services.ServiceDeploymentException"] = (c, m, e, i) => new ServiceDeploymentException(m, e);
         }
 
         /// <summary>
