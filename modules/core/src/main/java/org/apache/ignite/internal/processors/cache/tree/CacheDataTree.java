@@ -82,6 +82,10 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
         initTree(initNew);
     }
 
+    /**
+     * @param grp Cache group.
+     * @return Tree inner IO.
+     */
     private static IOVersions<? extends AbstractDataInnerIO> innerIO(CacheGroupContext grp) {
         if (grp.mvccEnabled())
             return MvccDataInnerIO.VERSIONS;
@@ -89,6 +93,10 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
         return grp.sharedGroup() ? CacheIdAwareDataInnerIO.VERSIONS : DataInnerIO.VERSIONS;
     }
 
+    /**
+     * @param grp Cache group.
+     * @return Tree leaf IO.
+     */
     private static IOVersions<? extends AbstractDataLeafIO> leafIO(CacheGroupContext grp) {
         if (grp.mvccEnabled())
             return MvccDataLeafIO.VERSIONS;
@@ -167,13 +175,20 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
     /** {@inheritDoc} */
     @Override protected CacheDataRow getRow(BPlusIO<CacheSearchRow> io, long pageAddr, int idx, Object flags)
         throws IgniteCheckedException {
-        long link = ((RowLinkIO)io).getLink(pageAddr, idx);
-        int hash = ((RowLinkIO)io).getHash(pageAddr, idx);
-        int cacheId = ((RowLinkIO)io).getCacheId(pageAddr, idx);
+        RowLinkIO rowIo = (RowLinkIO)io;
+
+        long link = rowIo.getLink(pageAddr, idx);
+        int hash = rowIo.getHash(pageAddr, idx);
+        int cacheId = rowIo.getCacheId(pageAddr, idx);
 
         CacheDataRowAdapter.RowData x = flags != null ?
             (CacheDataRowAdapter.RowData)flags :
             CacheDataRowAdapter.RowData.FULL;
+
+//        if (grp.mvccEnabled()) {
+//            long mvccTopVer = rowIo.getMvccUpdateTopologyVersion(pageAddr, idx);
+//            long mvcCntr = rowIo.getMvccUpdateCounter(pageAddr, idx);
+//        }
 
         return rowStore.dataRow(cacheId, hash, link, x);
     }
