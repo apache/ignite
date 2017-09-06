@@ -517,10 +517,10 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void testBigDecimalScale() throws Exception {
-        BigDecimal d;
-        d = convertToBigDecimalViaJdbc("10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000036", 1);
-
-        System.out.println("+++ " + d);
+        assert "0.12".equals(convertStringToBigDecimalViaJdbc("0.1234", 2).toString());
+        assert "1.001".equals(convertStringToBigDecimalViaJdbc("1.0005", 3).toString());
+        assert "1E+3".equals(convertStringToBigDecimalViaJdbc("1205.5", -3).toString());
+        assert "1.3E+4".equals(convertStringToBigDecimalViaJdbc("12505.5", -3).toString());
     }
 
     /**
@@ -529,9 +529,8 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
      * @return BigDecimal object.
      * @throws SQLException On error.
      */
-    private BigDecimal convertToBigDecimalViaJdbc(String strDec, int scale) throws SQLException {
+    private BigDecimal convertStringToBigDecimalViaJdbc(String strDec, int scale) throws SQLException {
         try(ResultSet rs = stmt.executeQuery("select '" + strDec + "'")) {
-
             assert rs.next();
 
             return rs.getBigDecimal(1, scale);
