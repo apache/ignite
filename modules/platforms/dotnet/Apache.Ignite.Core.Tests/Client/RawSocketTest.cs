@@ -99,8 +99,8 @@ namespace Apache.Ignite.Core.Tests.Client
                 stream.WriteByte(1);
 
                 // Protocol version.
-                stream.WriteShort(2);
                 stream.WriteShort(1);
+                stream.WriteShort(0);
                 stream.WriteShort(0);
 
                 // Client type: platform.

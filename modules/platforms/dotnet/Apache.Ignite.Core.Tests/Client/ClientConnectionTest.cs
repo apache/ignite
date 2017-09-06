@@ -113,7 +113,7 @@ namespace Apache.Ignite.Core.Tests.Client
                     new ClientProtocolVersion(-1, -1, -1)));
 
                 Assert.AreEqual("Client handhsake failed: 'Unsupported version.'. " +
-                                "Client version: -1.-1.-1. Server version: 2.1.5", ex.Message);
+                                "Client version: -1.-1.-1. Server version: 1.0.0", ex.Message);
             }
         }
     }
