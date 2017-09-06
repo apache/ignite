@@ -18,18 +18,15 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
+import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.GridConcurrentSkipListSet;
@@ -38,8 +35,10 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
-import org.apache.ignite.transactions.TransactionConcurrency;
-import org.apache.ignite.transactions.TransactionIsolation;
+
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
  * Tests an ability to eagerly rollback timed out transactions.
@@ -69,7 +68,7 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
 
         cfg.setClientMode("client".equals(igniteInstanceName));
 
-        cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER));
+        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
         TransactionConfiguration txCfg = new TransactionConfiguration();
         txCfg.setDefaultTxTimeout(TX_TIMEOUT);
@@ -77,7 +76,7 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
         cfg.setTransactionConfiguration(txCfg);
 
         CacheConfiguration ccfg = new CacheConfiguration(CACHE_NAME);
-        ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+        ccfg.setAtomicityMode(TRANSACTIONAL);
         ccfg.setBackups(2);
 
         cfg.setCacheConfiguration(ccfg);
@@ -101,6 +100,8 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
 
     /**
      * Tests if timeout on first tx unblocks second tx waiting for the locked key.
+     *
+     * @throws Exception If failed.
      */
     public void testWaitingTxUnblockedOnTimeout1() throws Exception {
         testWaitingTxUnblockedOnTimeout0(grid(0), grid(0));
@@ -108,6 +109,8 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
 
     /**
      * Tests if timeout on first tx unblocks second tx waiting for the locked key.
+     *
+     * @throws Exception If failed.
      */
     public void testWaitingTxUnblockedOnTimeout2() throws Exception {
         testWaitingTxUnblockedOnTimeout0(grid(0), grid(1));
@@ -115,6 +118,8 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
 
     /**
      * Tests if timeout on first tx unblocks second tx waiting for the locked key.
+     *
+     * @throws Exception If failed.
      */
     public void testWaitingTxUnblockedOnTimeout3() throws Exception {
         Ignite client = startGrid("client");
@@ -124,6 +129,8 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
 
     /**
      * Tests if timeout on first tx unblocks second tx waiting for the locked key.
+     *
+     * @throws Exception If failed.
      */
     public void testWaitingTxUnblockedOnTimeout4() throws Exception {
         Ignite client = startGrid("client");
@@ -133,6 +140,8 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
 
     /**
      * Tests if timeout on first tx unblocks second tx waiting for the locked key.
+     *
+     * @throws Exception If failed.
      */
     public void testWaitingTxUnblockedOnTimeout5() throws Exception {
         Ignite client = startGrid("client");
@@ -142,6 +151,8 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
 
     /**
      * Tests if timeout on first tx unblocks second tx waiting for the locked key.
+     *
+     * @throws Exception If failed.
      */
     public void testWaitingTxUnblockedOnTimeout6() throws Exception {
         testWaitingTxUnblockedOnThreadDeath0(grid(0), grid(0));
@@ -149,6 +160,8 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
 
     /**
      * Tests if timeout on first tx unblocks second tx waiting for the locked key.
+     *
+     * @throws Exception If failed.
      */
     public void testWaitingTxUnblockedOnTimeout7() throws Exception {
         testWaitingTxUnblockedOnThreadDeath0(grid(0), grid(1));
@@ -156,6 +169,8 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
 
     /**
      * Tests if timeout on first tx unblocks second tx waiting for the locked key.
+     *
+     * @throws Exception If failed.
      */
     public void testWaitingTxUnblockedOnTimeout8() throws Exception {
         Ignite client = startGrid("client");
@@ -165,6 +180,8 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
 
     /**
      * Tests if timeout on first tx unblocks second tx waiting for the locked key.
+     *
+     * @throws Exception If failed.
      */
     public void testWaitingTxUnblockedOnTimeout9() throws Exception {
         Ignite client = startGrid("client");
@@ -174,6 +191,8 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
 
     /**
      * Tests if timeout on first tx unblocks second tx waiting for the locked key.
+     *
+     * @throws Exception If failed.
      */
     public void testWaitingTxUnblockedOnTimeout10() throws Exception {
         Ignite client = startGrid("client");
@@ -183,36 +202,66 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
 
     /**
      * Tests timeout object cleanup on tx commit.
+     *
+     * @throws Exception If failed.
      */
-    public void testTimeoutRemovalOnCommit() throws Exception {
-        testTimeoutRemoval(grid(0), true);
+    public void testTimeoutRemoval() throws Exception {
+        IgniteEx client = (IgniteEx)startGrid("client");
+
+        for (int i = 0; i < 5; i++)
+            testTimeoutRemoval(grid(0), i);
+
+        for (int i = 0; i < 5; i++)
+            testTimeoutRemoval(client, i);
     }
 
     /**
-     * Tests timeout object cleanup on tx rollback.
+     * @param near Node.
+     * @param mode Test mode.
+     * @throws Exception If failed.
      */
-    public void testTimeoutRemovalOnRollback() throws Exception {
-        testTimeoutRemoval(grid(0), false);
-    }
-
-    /** */
-    private void testTimeoutRemoval(IgniteEx near, boolean commit) throws Exception {
+    private void testTimeoutRemoval(IgniteEx near, int mode) throws Exception {
         GridTimeoutProcessor timeProc = near.context().cache().context().time();
 
         try (Transaction tx = near.transactions().txStart()) {
             near.cache(CACHE_NAME).put(1, 1);
 
-            if (commit)
-                tx.commit();
+            switch (mode) {
+                case 0:
+                    tx.commit();
+                    break;
+
+                case 1:
+                    tx.commitAsync().get();
+                    break;
+
+                case 2:
+                    tx.rollback();
+                    break;
+
+                case 3:
+                    tx.rollbackAsync().get();
+                    break;
+
+                case 4:
+                    break;
+
+                default:
+                    fail();
+            }
         }
 
         GridConcurrentSkipListSet set = U.field(timeProc, "timeoutObjs");
 
         for (Object obj : set)
-            assertFalse(obj.getClass().isAssignableFrom(GridNearTxLocal.class));
+            assertFalse("Not remove for mode: " + mode, obj.getClass().isAssignableFrom(GridNearTxLocal.class));
     }
 
-    /** */
+    /**
+     * @param near Node starting tx which is timed out.
+     * @param other Node starting second tx.
+     * @throws Exception If failed.
+     */
     private void testWaitingTxUnblockedOnTimeout0(final Ignite near, final Ignite other) throws Exception {
         final int recordsCnt = 100;
 
@@ -228,6 +277,15 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
                     U.awaitQuiet(unblocked);
 
                     try {
+                        near.cache(CACHE_NAME).put(0, 0);
+
+                        fail();
+                    }
+                    catch (CacheException e) {
+                        log.info("Expecting error: " + e.getMessage());
+                    }
+
+                    try {
                         tx.commit();
 
                         fail();
@@ -236,6 +294,14 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
                         log.info("Expecting error: " + e.getMessage());
                     }
                 }
+
+                // Check thread is able to start new tx.
+                try (Transaction tx = near.transactions().txStart()) {
+                    for (int i = 0; i < recordsCnt; i++)
+                        near.cache(CACHE_NAME).put(i, i);
+
+                    tx.commit();
+                }
             }
         }, 1, "First");
 
@@ -243,8 +309,7 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
             @Override public void run() {
                 U.awaitQuiet(blocked);
 
-                try (Transaction tx = other.transactions().txStart(TransactionConcurrency.PESSIMISTIC,
-                    TransactionIsolation.REPEATABLE_READ, 0, 1)) {
+                try (Transaction tx = other.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 0, 1)) {
                     for (int i = 0; i < recordsCnt; i++)
                         other.cache(CACHE_NAME).put(i, i);
 
@@ -261,13 +326,18 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
         fut1.get();
     }
 
-    /** */
+    /**
+     * @param near Node starting tx which is timed out.
+     * @param other Node starting second tx.
+     * @throws Exception If failed.
+     */
     private void testWaitingTxUnblockedOnThreadDeath0(final Ignite near, final Ignite other) throws Exception {
         final int recordsCnt = 100;
 
         IgniteInternalFuture<?> fut1 = multithreadedAsync(new Runnable() {
             @Override public void run() {
                 near.transactions().txStart();
+
                 for (int i = 0; i < recordsCnt; i++)
                     near.cache(CACHE_NAME).put(i, i);
 
@@ -281,8 +351,7 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
             @Override public void run() {
                 U.awaitQuiet(blocked);
 
-                try (Transaction tx = other.transactions().txStart(TransactionConcurrency.PESSIMISTIC,
-                    TransactionIsolation.REPEATABLE_READ, 0, 1)) {
+                try (Transaction tx = other.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 0, 1)) {
                     for (int i = 0; i < recordsCnt; i++)
                         other.cache(CACHE_NAME).put(i, i);
 
