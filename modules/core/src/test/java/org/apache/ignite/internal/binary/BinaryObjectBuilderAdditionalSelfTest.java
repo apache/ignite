@@ -1605,9 +1605,11 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
         assertEquals("abc", builder.build().field("str"));
 
         builder.setField("str", null);
+
         assertNull(builder.build().field("str"));
 
         builder.setField("str", "def");
+
         assertEquals("def", builder.build().field("str"));
     }
 
