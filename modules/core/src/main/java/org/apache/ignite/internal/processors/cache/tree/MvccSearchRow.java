@@ -29,6 +29,12 @@ public class MvccSearchRow extends SearchRow {
     /** */
     private long mvccCntr;
 
+    /**
+     * @param cacheId
+     * @param key
+     * @param mvccTopVer
+     * @param mvccCntr
+     */
     public MvccSearchRow(int cacheId, KeyCacheObject key, long mvccTopVer, long mvccCntr) {
         super(cacheId, key);
 
@@ -37,12 +43,12 @@ public class MvccSearchRow extends SearchRow {
     }
 
     /** {@inheritDoc} */
-    @Override public long mvccUpdateCounter() {
-        return super.mvccUpdateCounter();
+    @Override public long mvccUpdateTopologyVersion() {
+        return mvccTopVer;
     }
 
     /** {@inheritDoc} */
-    @Override public long mvccUpdateTopologyVersion() {
-        return super.mvccUpdateTopologyVersion();
+    @Override public long mvccUpdateCounter() {
+        return mvccCntr;
     }
 }

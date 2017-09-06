@@ -79,6 +79,10 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
         cctx.gridIO().addMessageListener(TOPIC_CACHE_COORDINATOR, new CoordinatorMessageListener());
     }
 
+    /**
+     * @param txVer Tx version.
+     * @return Counter.
+     */
     public long requestTxCounterOnCoordinator(GridCacheVersion txVer) {
         assert cctx.localNode().equals(assignHist.currentCoordinator());
 
@@ -360,7 +364,7 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
      */
     private long assignQueryCounter(UUID qryNodeId) {
         // TODO IGNITE-3478
-        return committedCntr.get() + 1;
+        return 3;
     }
 
     /**

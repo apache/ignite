@@ -108,10 +108,21 @@ public abstract class AbstractDataLeafIO extends BPlusLeafIO<CacheSearchRow> imp
     }
 
     /** {@inheritDoc} */
-    @Override public CacheSearchRow getLookupRow(BPlusTree<CacheSearchRow, ?> tree, long buf, int idx) {
-        int cacheId = getCacheId(buf, idx);
-        int hash = getHash(buf, idx);
-        long link = getLink(buf, idx);
+    @Override public CacheSearchRow getLookupRow(BPlusTree<CacheSearchRow, ?> tree, long pageAddr, int idx) {
+        int cacheId = getCacheId(pageAddr, idx);
+        int hash = getHash(pageAddr, idx);
+        long link = getLink(pageAddr, idx);
+
+        if (storeMvccVersion()) {
+            long mvccTopVer = getMvccUpdateTopologyVersion(pageAddr, idx);
+            long mvccCntr = getMvccUpdateCounter(pageAddr, idx);
+
+            return ((CacheDataTree)tree).rowStore().mvccKeySearchRow(cacheId,
+                hash,
+                link,
+                mvccTopVer,
+                mvccCntr);
+        }
 
         return ((CacheDataTree)tree).rowStore().keySearchRow(cacheId, hash, link);
     }

@@ -17,8 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache.tree;
 
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.mvcc.TxMvccVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 
 /**
@@ -26,10 +28,29 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
  */
 public class MvccDataRow extends DataRow {
     /** */
-    private long mvccCntr;
+    private long mvccTopVer;
 
     /** */
-    private long mvccTopVer;
+    private long mvccCntr;
+
+    /**
+     * @param grp
+     * @param hash
+     * @param link
+     * @param part
+     * @param rowData
+     * @param mvccTopVer
+     * @param mvccCntr
+     */
+    public MvccDataRow(CacheGroupContext grp, int hash, long link, int part, RowData rowData, long mvccTopVer, long mvccCntr) {
+        super(grp, hash, link, part, rowData);
+
+        assert mvccTopVer > 0 : mvccTopVer;
+        assert mvccCntr != TxMvccVersion.COUNTER_NA;
+
+        this.mvccTopVer = mvccTopVer;
+        this.mvccCntr = mvccCntr;
+    }
 
     /**
      * @param key

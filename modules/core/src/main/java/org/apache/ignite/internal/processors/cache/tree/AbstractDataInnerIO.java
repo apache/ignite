@@ -75,25 +75,55 @@ public abstract class AbstractDataInnerIO extends BPlusInnerIO<CacheSearchRow> i
         int hash = getHash(pageAddr, idx);
         long link = getLink(pageAddr, idx);
 
+        if (storeMvccVersion()) {
+            long mvccTopVer = getMvccUpdateTopologyVersion(pageAddr, idx);
+            long mvccCntr = getMvccUpdateCounter(pageAddr, idx);
+
+            return ((CacheDataTree)tree).rowStore().mvccKeySearchRow(cacheId, hash, link, mvccTopVer, mvccCntr);
+        }
+
         return ((CacheDataTree)tree).rowStore().keySearchRow(cacheId, hash, link);
     }
 
     /** {@inheritDoc} */
-    @Override public void store(long dstPageAddr, int dstIdx, BPlusIO<CacheSearchRow> srcIo, long srcPageAddr,
-                                int srcIdx) {
-        int hash = ((RowLinkIO)srcIo).getHash(srcPageAddr, srcIdx);
-        long link = ((RowLinkIO)srcIo).getLink(srcPageAddr, srcIdx);
+    @Override public void store(long dstPageAddr,
+        int dstIdx,
+        BPlusIO<CacheSearchRow> srcIo,
+        long srcPageAddr,
+        int srcIdx)
+    {
+        RowLinkIO rowIo = ((RowLinkIO)srcIo);
+
+        int hash = rowIo.getHash(srcPageAddr, srcIdx);
+        long link =rowIo.getLink(srcPageAddr, srcIdx);
         int off = offset(dstIdx);
 
         PageUtils.putLong(dstPageAddr, off, link);
-        PageUtils.putInt(dstPageAddr, off + 8, hash);
+        off += 8;
+
+        PageUtils.putInt(dstPageAddr, off, hash);
+        off += 4;
 
         if (storeCacheId()) {
-            int cacheId = ((RowLinkIO)srcIo).getCacheId(srcPageAddr, srcIdx);
+            int cacheId = rowIo.getCacheId(srcPageAddr, srcIdx);
 
             assert cacheId != CU.UNDEFINED_CACHE_ID;
 
-            PageUtils.putInt(dstPageAddr, off + 12, cacheId);
+            PageUtils.putInt(dstPageAddr, off, cacheId);
+            off += 4;
+        }
+
+        if (storeMvccVersion()) {
+            long mvccTopVer = rowIo.getMvccUpdateTopologyVersion(srcPageAddr, srcIdx);
+            long mvcCntr = rowIo.getMvccUpdateCounter(srcPageAddr, srcIdx);
+
+            assert mvccTopVer > 0 : mvccTopVer;
+            assert mvcCntr != TxMvccVersion.COUNTER_NA;
+
+            PageUtils.putLong(dstPageAddr, off, mvccTopVer);
+            off += 8;
+
+            PageUtils.putLong(dstPageAddr, off, mvcCntr);
         }
     }
 
