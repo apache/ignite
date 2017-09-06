@@ -17,7 +17,6 @@
 
 namespace Apache.Ignite.Core.Tests.Binary
 {
-    using System;
     using System.Collections;
     using System.Linq;
     using Apache.Ignite.Core.Binary;
@@ -30,7 +29,7 @@ namespace Apache.Ignite.Core.Tests.Binary
     public class BinaryCompactFooterInteropTest
     {
         /** */
-        private const string PlatformSqlQueryTask = "org.apache.ignite.platform.PlatformSqlQueryTask";
+        public const string PlatformSqlQueryTask = "org.apache.ignite.platform.PlatformSqlQueryTask";
 
         /** */
         private IIgnite _grid;
@@ -64,30 +63,14 @@ namespace Apache.Ignite.Core.Tests.Binary
         [Test]
         public void TestFromJava([Values(true, false)] bool client)
         {
-            // Retry multiple times: IGNITE-4377
-            for (int i = 0; i < 10; i++)
-            {
-                var grid = client ? _clientGrid : _grid;
+            var grid = client ? _clientGrid : _grid;
 
-                try
-                {
-                    var fromJava = grid.GetCompute().ExecuteJavaTask<PlatformComputeBinarizable>(ComputeApiTest.EchoTask,
-                        ComputeApiTest.EchoTypeBinarizable);
+            grid.GetOrCreateCache<int, int>("default").Put(ComputeApiTest.EchoTypeBinarizable, 99);
 
-                    Assert.AreEqual(1, fromJava.Field);
+            var fromJava = grid.GetCompute().ExecuteJavaTask<PlatformComputeBinarizable>(
+                ComputeApiTest.EchoTask, ComputeApiTest.EchoTypeBinarizable);
 
-                    return;
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine("TestFromJava failed on try {0}: \n {1}", i, ex);
-
-                    if (i < 9)
-                        continue;
-                    
-                    throw;
-                }
-            }
+            Assert.AreEqual(99, fromJava.Field);
         }
 
         /// <summary>
@@ -115,7 +98,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         {
             var grid = client ? _clientGrid : _grid;
 
-            var cache = grid.GetCache<int, PlatformComputeBinarizable>(null);
+            var cache = grid.GetCache<int, PlatformComputeBinarizable>("default");
 
             // Populate cache in .NET
             for (var i = 0; i < 100; i++)
@@ -133,14 +116,15 @@ namespace Apache.Ignite.Core.Tests.Binary
         /// </summary>
         private static IgniteConfiguration Config(string springUrl)
         {
-            return new IgniteConfiguration
+            return new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 SpringConfigUrl = springUrl,
-                JvmOptions = TestUtils.TestJavaOptions(),
-                JvmClasspath = TestUtils.CreateTestClasspath(),
                 BinaryConfiguration = new BinaryConfiguration(
                     typeof (PlatformComputeBinarizable),
                     typeof (PlatformComputeNetBinarizable))
+                {
+                    NameMapper = BinaryBasicNameMapper.SimpleNameInstance
+                }
             };
         }
     }

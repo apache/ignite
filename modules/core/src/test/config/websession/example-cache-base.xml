@@ -30,10 +30,7 @@
         <property name="peerClassLoadingEnabled" value="true"/>
 
         <property name="marshaller">
-            <bean class="org.apache.ignite.marshaller.optimized.OptimizedMarshaller">
-                <!-- Set to false to allow non-serializable objects in examples, default is true. -->
-                <property name="requireSerializable" value="false"/>
-            </bean>
+            <bean class="org.apache.ignite.internal.binary.BinaryMarshaller" />
         </property>
 
         <!-- Enable cache events for examples. -->
@@ -65,7 +62,6 @@
                     <property name="name" value="partitioned_primary"/>
                     <property name="cacheMode" value="PARTITIONED"/>
                     <property name="atomicityMode" value="ATOMIC"/>
-                    <property name="atomicWriteOrderMode" value="PRIMARY"/>
                     <property name="backups" value="1"/>
                 </bean>
 
@@ -136,9 +132,6 @@
 
     <!-- Template for all example cache configurations. -->
     <bean id="cache-template" abstract="true" class="org.apache.ignite.configuration.CacheConfiguration">
-        <!-- Initial cache size. -->
-        <property name="startSize" value="3000000"/>
-
         <!-- Set synchronous rebalancing (default is asynchronous). -->
         <property name="rebalanceMode" value="SYNC"/>
 

@@ -27,7 +27,7 @@ import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
-import org.apache.ignite.internal.processors.cache.GridCacheMessage;
+import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -40,21 +40,24 @@ import org.jetbrains.annotations.Nullable;
 /**
  *
  */
-public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheMessage implements GridCacheDeployable {
+public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMessage implements GridCacheDeployable {
     /** Skip store flag bit mask. */
-    private static final int DHT_ATOMIC_SKIP_STORE_FLAG_MASK = 0x01;
+    protected static final int DHT_ATOMIC_SKIP_STORE_FLAG_MASK = 0x01;
 
     /** Keep binary flag. */
-    private static final int DHT_ATOMIC_KEEP_BINARY_FLAG_MASK = 0x02;
+    protected static final int DHT_ATOMIC_KEEP_BINARY_FLAG_MASK = 0x02;
 
     /** Near cache key flag. */
-    private static final int DHT_ATOMIC_NEAR_FLAG_MASK = 0x04;
+    protected static final int DHT_ATOMIC_NEAR_FLAG_MASK = 0x04;
 
     /** */
     static final int DHT_ATOMIC_HAS_RESULT_MASK = 0x08;
 
     /** */
     private static final int DHT_ATOMIC_REPLY_WITHOUT_DELAY = 0x10;
+
+    /** */
+    protected static final int DHT_ATOMIC_OBSOLETE_NEAR_KEY_FLAG_MASK = 0x20;
 
     /** Message index. */
     public static final int CACHE_MSG_IDX = nextIndexId();
@@ -119,6 +122,8 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheMessag
         boolean keepBinary,
         boolean skipStore
     ) {
+        assert topVer.topologyVersion() > 0 : topVer;
+
         this.cacheId = cacheId;
         this.nodeId = nodeId;
         this.futId = futId;
@@ -135,6 +140,15 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheMessag
             setFlag(true, DHT_ATOMIC_KEEP_BINARY_FLAG_MASK);
     }
 
+    /** {@inheritDoc} */
+    @Override public final AffinityTopologyVersion topologyVersion() {
+        return topVer;
+    }
+
+    /**
+     * @param nearNodeId Near node ID.
+     * @param nearFutId Future ID on near node.
+     */
     void nearReplyInfo(UUID nearNodeId, long nearFutId) {
         assert nearNodeId != null;
 
@@ -142,10 +156,16 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheMessag
         this.nearFutId = nearFutId;
     }
 
+    /**
+     * @return {@code True} if backups should reply immediately.
+     */
     boolean replyWithoutDelay() {
         return isFlag(DHT_ATOMIC_REPLY_WITHOUT_DELAY);
     }
 
+    /**
+     * @param replyWithoutDelay {@code True} if backups should reply immediately.
+     */
     void replyWithoutDelay(boolean replyWithoutDelay) {
         setFlag(replyWithoutDelay, DHT_ATOMIC_REPLY_WITHOUT_DELAY);
     }
@@ -343,6 +363,17 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheMessag
     public abstract KeyCacheObject key(int idx);
 
     /**
+     * @return Obsolete near cache keys size.
+     */
+    public abstract int obsoleteNearKeysSize();
+
+    /**
+     * @param idx Obsolete near cache key index.
+     * @return Obsolete near cache key.
+     */
+    public abstract KeyCacheObject obsoleteNearKey(int idx);
+
+    /**
      * @param updCntr Update counter.
      * @return Update counter.
      */
@@ -418,20 +449,6 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheMessag
      * @return Optional arguments for entry processor.
      */
     @Nullable public abstract Object[] invokeArguments();
-
-    /**
-     * @return {@code True} if near cache update request.
-     */
-    protected final boolean near() {
-        return isFlag(DHT_ATOMIC_NEAR_FLAG_MASK);
-    }
-
-    /**
-     * @param near Near cache update flag.
-     */
-    protected final void near(boolean near) {
-        setFlag(near, DHT_ATOMIC_NEAR_FLAG_MASK);
-    }
 
     /**
      * Sets flag mask.
@@ -632,7 +649,7 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheMessag
             appendFlag(flags, "skipStore");
         if (keepBinary())
             appendFlag(flags, "keepBinary");
-        if (near())
+        if (isFlag(DHT_ATOMIC_NEAR_FLAG_MASK))
             appendFlag(flags, "near");
         if (hasResult())
             appendFlag(flags, "hasRes");

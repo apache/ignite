@@ -31,10 +31,13 @@ namespace ignite
                 /**
                  * Application execution result.
                  */
-                enum Result
+                struct Result
                 {
-                    RESULT_OK,
-                    RESULT_CANCEL
+                    enum Type
+                    {
+                        OK,
+                        CANCEL
+                    };
                 };
 
                 /**
@@ -44,7 +47,7 @@ namespace ignite
                  * @param window Main window.
                  * @return Application execution result.
                  */
-                Result ProcessMessages(Window& window);
+                Result::Type ProcessMessages(Window& window);
 
                 /**
                  * Window class.
@@ -58,7 +61,6 @@ namespace ignite
                      * @param parent Parent window.
                      * @param className Window class name.
                      * @param title Window title.
-                     * @param callback Event processing function.
                      */
                     CustomWindow(Window* parent, const char* className, const char* title);
 

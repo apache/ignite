@@ -48,11 +48,11 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
             var grid1 = Ignition.Start(GetConfig());
             var grid2 = Ignition.Start(GetConfig("grid2"));
 
-            _cache1 = grid1.CreateCache<object, string>(new CacheConfiguration
+            _cache1 = grid1.CreateCache<object, string>(new CacheConfiguration("default")
             {
                 CacheMode = CacheMode.Partitioned
             });
-            _cache2 = grid2.GetCache<object, string>(null);
+            _cache2 = grid2.GetCache<object, string>("default");
         }
 
         /// <summary>
@@ -76,7 +76,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
             _cache1.Put(new CacheKeyAttrOverride(), string.Empty);
 
             // Verify
-            foreach (var type in new[] { typeof(CacheKey) , typeof(CacheKeyAttr), typeof(CacheKeyAttrOverride)})
+            foreach (var type in new[] { typeof(CacheKey), typeof(CacheKeyAttr), 
+                typeof(CacheKeyAttrDynamicRegistration), typeof(CacheKeyAttrOverride)})
             {
                 Assert.AreEqual("AffinityKey", _cache1.Ignite.GetBinary().GetBinaryType(type).AffinityKeyFieldName);
                 Assert.AreEqual("AffinityKey", _cache2.Ignite.GetBinary().GetBinaryType(type).AffinityKeyFieldName);
@@ -91,6 +92,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         {
             TestKeyLocation0((key, affKey) => new CacheKey {Key = key, AffinityKey = affKey});
             TestKeyLocation0((key, affKey) => new CacheKeyAttr {Key = key, AffinityKey = affKey});
+            TestKeyLocation0((key, affKey) => new CacheKeyAttrDynamicRegistration {Key = key, AffinityKey = affKey});
             TestKeyLocation0((key, affKey) => new CacheKeyAttrOverride {Key = key, AffinityKey = affKey});
         }
 
@@ -159,7 +161,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         {
             return new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                GridName = gridName,
+                IgniteInstanceName = gridName,
                 BinaryConfiguration = new BinaryConfiguration
                 {
                     TypeConfigurations = new[]
@@ -185,6 +187,12 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         }
 
         private class CacheKeyAttr
+        {
+            public int Key { get; set; }
+            [AffinityKeyMapped] public int AffinityKey { get; set; }
+        }
+
+        private class CacheKeyAttrDynamicRegistration
         {
             public int Key { get; set; }
             [AffinityKeyMapped] public int AffinityKey { get; set; }

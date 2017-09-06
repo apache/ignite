@@ -82,7 +82,10 @@ public enum IgfsIpcCommand {
     WRITE_BLOCK,
 
     /** Server response. */
-    CONTROL_RESPONSE;
+    CONTROL_RESPONSE,
+
+    /** Mode resolver request */
+    MODE_RESOLVER;
 
     /** All values */
     private static final List<IgfsIpcCommand> ALL = Arrays.asList(values());

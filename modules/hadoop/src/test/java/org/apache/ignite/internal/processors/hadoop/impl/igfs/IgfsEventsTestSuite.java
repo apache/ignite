@@ -175,7 +175,7 @@ public class IgfsEventsTestSuite extends TestSuite {
             super.afterTest();
 
             // Clean up secondary file system.
-            igfsSec.format();
+            igfsSec.clear();
         }
 
         /**

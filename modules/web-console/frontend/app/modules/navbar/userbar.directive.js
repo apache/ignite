@@ -22,7 +22,7 @@ export default ['igniteUserbar', [function() {
             const ctrl = this;
 
             ctrl.items = [
-                {text: 'Profile', sref: 'settings.profile'},
+                {text: 'Profile', sref: 'base.settings.profile'},
                 {text: 'Getting started', click: 'gettingStarted.tryShow(true)'}
             ];
 
@@ -30,7 +30,7 @@ export default ['igniteUserbar', [function() {
                 ctrl.items.splice(2);
 
                 if (AclService.can('admin_page'))
-                    ctrl.items.push({text: 'Admin panel', sref: 'settings.admin'});
+                    ctrl.items.push({text: 'Admin panel', sref: 'base.settings.admin'});
 
                 ctrl.items.push(...IgniteUserbar);
 

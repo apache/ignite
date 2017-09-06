@@ -99,7 +99,7 @@ public class CacheReadThroughRestartSelfTest extends GridCacheAbstractSelfTest {
      * @throws Exception If failed.
      */
     private void testReadThroughInTx(boolean needVer) throws Exception {
-        IgniteCache<String, Integer> cache = grid(1).cache(null);
+        IgniteCache<String, Integer> cache = grid(1).cache(DEFAULT_CACHE_NAME);
 
         for (int k = 0; k < 1000; k++)
             cache.put("key" + k, k);
@@ -112,7 +112,7 @@ public class CacheReadThroughRestartSelfTest extends GridCacheAbstractSelfTest {
 
         Ignite ignite = grid(1);
 
-        cache = ignite.cache(null);
+        cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         for (TransactionConcurrency txConcurrency : TransactionConcurrency.values()) {
             for (TransactionIsolation txIsolation : TransactionIsolation.values()) {
@@ -154,7 +154,7 @@ public class CacheReadThroughRestartSelfTest extends GridCacheAbstractSelfTest {
      * @throws Exception If failed.
      */
     private void testReadThrough(boolean needVer) throws Exception {
-        IgniteCache<String, Integer> cache = grid(1).cache(null);
+        IgniteCache<String, Integer> cache = grid(1).cache(DEFAULT_CACHE_NAME);
 
         for (int k = 0; k < 1000; k++)
             cache.put("key" + k, k);
@@ -165,7 +165,7 @@ public class CacheReadThroughRestartSelfTest extends GridCacheAbstractSelfTest {
 
         Ignite ignite = grid(1);
 
-        cache = ignite.cache(null);
+        cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         for (int k = 0; k < 1000; k++) {
             String key = "key" + k;

@@ -96,6 +96,15 @@ public interface GridClient extends AutoCloseable {
     public GridClientCompute compute();
 
     /**
+     * Get client cluster state projection, for perform activate/deactivate operation on cluster.
+     *
+     * @return Cluster state projection.
+     *
+     * @see GridClientClusterState
+     */
+    public GridClientClusterState state();
+
+    /**
      * Adds topology listener. Remote grid topology is refreshed every
      * {@link GridClientConfiguration#getTopologyRefreshFrequency()} milliseconds. If any node was added or removed,
      * a listener will be notified.

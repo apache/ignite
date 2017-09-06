@@ -76,7 +76,7 @@ public class CacheDeferredDeleteSanitySelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings("unchecked")
     private void testDeferredDelete(CacheMode mode, CacheAtomicityMode atomicityMode, boolean near, boolean expVal) {
-        CacheConfiguration ccfg = new CacheConfiguration()
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME)
             .setCacheMode(mode)
             .setAtomicityMode(atomicityMode);
 
@@ -88,7 +88,7 @@ public class CacheDeferredDeleteSanitySelfTest extends GridCommonAbstractTest {
         try {
             cache = grid(0).getOrCreateCache(ccfg);
 
-            assertEquals(expVal, ((IgniteCacheProxy)grid(0).cache(null)).context().deferredDelete());
+            assertEquals(expVal, ((IgniteCacheProxy)grid(0).cache(DEFAULT_CACHE_NAME)).context().deferredDelete());
         }
         finally {
             if (cache != null)

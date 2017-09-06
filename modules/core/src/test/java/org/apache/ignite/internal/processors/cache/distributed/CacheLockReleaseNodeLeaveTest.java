@@ -29,6 +29,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -60,7 +61,7 @@ public class CacheLockReleaseNodeLeaveTest extends GridCommonAbstractTest {
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setAtomicityMode(TRANSACTIONAL);
 
@@ -90,11 +91,11 @@ public class CacheLockReleaseNodeLeaveTest extends GridCommonAbstractTest {
         final Ignite ignite0 = ignite(0);
         final Ignite ignite1 = ignite(1);
 
-        final Integer key = primaryKey(ignite1.cache(null));
+        final Integer key = primaryKey(ignite1.cache(DEFAULT_CACHE_NAME));
 
         IgniteInternalFuture<?> fut1 = GridTestUtils.runAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
-                Lock lock = ignite0.cache(null).lock(key);
+                Lock lock = ignite0.cache(DEFAULT_CACHE_NAME).lock(key);
 
                 lock.lock();
 
@@ -106,7 +107,7 @@ public class CacheLockReleaseNodeLeaveTest extends GridCommonAbstractTest {
 
         IgniteInternalFuture<?> fut2 = GridTestUtils.runAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
-                Lock lock = ignite1.cache(null).lock(key);
+                Lock lock = ignite1.cache(DEFAULT_CACHE_NAME).lock(key);
 
                 log.info("Start lock.");
 
@@ -186,13 +187,13 @@ public class CacheLockReleaseNodeLeaveTest extends GridCommonAbstractTest {
         final Ignite ignite0 = ignite(0);
         final Ignite ignite1 = ignite(1);
 
-        final Integer key = primaryKey(ignite1.cache(null));
+        final Integer key = primaryKey(ignite1.cache(DEFAULT_CACHE_NAME));
 
         IgniteInternalFuture<?> fut1 = GridTestUtils.runAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
                 Transaction tx = ignite0.transactions().txStart(PESSIMISTIC, REPEATABLE_READ);
 
-                ignite0.cache(null).get(key);
+                ignite0.cache(DEFAULT_CACHE_NAME).get(key);
 
                 return null;
             }
@@ -205,7 +206,7 @@ public class CacheLockReleaseNodeLeaveTest extends GridCommonAbstractTest {
                 try (Transaction tx = ignite1.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                     log.info("Start tx lock.");
 
-                    ignite1.cache(null).get(key);
+                    ignite1.cache(DEFAULT_CACHE_NAME).get(key);
 
                     log.info("Tx locked key.");
 
@@ -233,7 +234,7 @@ public class CacheLockReleaseNodeLeaveTest extends GridCommonAbstractTest {
 
         Ignite ignite1 = startGrid(1);
 
-        Lock lock = ignite1.cache(null).lock("key");
+        Lock lock = ignite1.cache(DEFAULT_CACHE_NAME).lock("key");
         lock.lock();
 
         IgniteInternalFuture<?> fut = GridTestUtils.runAsync(new Callable<Void>() {
@@ -249,10 +250,10 @@ public class CacheLockReleaseNodeLeaveTest extends GridCommonAbstractTest {
         // Wait when affinity change exchange start.
         boolean wait = GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
-                AffinityTopologyVersion topVer0 =
-                    ((IgniteKernal)ignite0).context().cache().context().exchange().topologyVersion();
+                GridDhtTopologyFuture topFut =
+                    ((IgniteKernal)ignite0).context().cache().context().exchange().lastTopologyFuture();
 
-                return topVer.compareTo(topVer0) < 0;
+                return topFut != null && topVer.compareTo(topFut.initialVersion()) < 0;
             }
         }, 10_000);
 
@@ -266,7 +267,7 @@ public class CacheLockReleaseNodeLeaveTest extends GridCommonAbstractTest {
 
         Ignite ignite2 = ignite(2);
 
-        lock = ignite2.cache(null).lock("key");
+        lock = ignite2.cache(DEFAULT_CACHE_NAME).lock("key");
         lock.lock();
         lock.unlock();
     }
@@ -281,7 +282,7 @@ public class CacheLockReleaseNodeLeaveTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange();
 
-        Lock lock = ignite1.cache(null).lock("key");
+        Lock lock = ignite1.cache(DEFAULT_CACHE_NAME).lock("key");
         lock.lock();
 
         IgniteInternalFuture<?> fut = GridTestUtils.runAsync(new Callable<Void>() {
@@ -300,7 +301,7 @@ public class CacheLockReleaseNodeLeaveTest extends GridCommonAbstractTest {
 
         Ignite ignite2 = ignite(2);
 
-        lock = ignite2.cache(null).lock("key");
+        lock = ignite2.cache(DEFAULT_CACHE_NAME).lock("key");
         lock.lock();
         lock.unlock();
     }
@@ -313,7 +314,7 @@ public class CacheLockReleaseNodeLeaveTest extends GridCommonAbstractTest {
 
         Ignite ignite1 = startGrid(1);
 
-        IgniteCache cache = ignite1.cache(null);
+        IgniteCache cache = ignite1.cache(DEFAULT_CACHE_NAME);
         ignite1.transactions().txStart(PESSIMISTIC, REPEATABLE_READ);
         cache.get(1);
 
@@ -330,10 +331,10 @@ public class CacheLockReleaseNodeLeaveTest extends GridCommonAbstractTest {
         // Wait when affinity change exchange start.
         boolean wait = GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
-                AffinityTopologyVersion topVer0 =
-                    ((IgniteKernal)ignite0).context().cache().context().exchange().topologyVersion();
+                GridDhtTopologyFuture topFut =
+                    ((IgniteKernal)ignite0).context().cache().context().exchange().lastTopologyFuture();
 
-                return topVer.compareTo(topVer0) < 0;
+                return topFut != null && topVer.compareTo(topFut.initialVersion()) < 0;
             }
         }, 10_000);
 
@@ -347,7 +348,7 @@ public class CacheLockReleaseNodeLeaveTest extends GridCommonAbstractTest {
 
         Ignite ignite2 = ignite(2);
 
-        cache = ignite2.cache(null);
+        cache = ignite2.cache(DEFAULT_CACHE_NAME);
 
         try (Transaction tx = ignite2.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
             cache.get(1);

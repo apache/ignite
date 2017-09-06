@@ -27,7 +27,6 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -109,6 +108,12 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
     /** Skip values flag. */
     private boolean skipVals;
 
+    /** */
+    private final boolean recovery;
+
+    /** */
+    private final boolean addReaders;
+
     /**
      * @param cctx Context.
      * @param msgId Message ID.
@@ -131,7 +136,9 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
         @Nullable UUID subjId,
         int taskNameHash,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
-        boolean skipVals
+        boolean skipVals,
+        boolean recovery,
+        boolean addReaders
     ) {
         super(CU.<GridCacheEntryInfo>collectionsReducer(keys.size()));
 
@@ -148,6 +155,8 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
         this.taskNameHash = taskNameHash;
         this.expiryPlc = expiryPlc;
         this.skipVals = skipVals;
+        this.recovery = recovery;
+        this.addReaders = addReaders;
 
         futId = IgniteUuid.randomUuid();
 
@@ -161,7 +170,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
      * Initializes future.
      */
     void init() {
-        GridDhtFuture<Object> fut = cctx.dht().dhtPreloader().request(keys.keySet(), topVer);
+        GridDhtFuture<Object> fut = cctx.group().preloader().request(cctx, keys.keySet(), topVer);
 
         if (fut != null) {
             if (!F.isEmpty(fut.invalidPartitions())) {
@@ -171,14 +180,14 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
                 retries.addAll(fut.invalidPartitions());
             }
 
-        fut.listen(new CI1<IgniteInternalFuture<Object>>() {
-            @Override public void apply(IgniteInternalFuture<Object> fut) {
-                try {
-                    fut.get();
-                }
-                catch (IgniteCheckedException e) {
-                    if (log.isDebugEnabled())
-                        log.debug("Failed to request keys from preloader [keys=" + keys + ", err=" + e + ']');
+            fut.listen(new CI1<IgniteInternalFuture<Object>>() {
+                @Override public void apply(IgniteInternalFuture<Object> fut) {
+                    try {
+                        fut.get();
+                    }
+                    catch (IgniteCheckedException e) {
+                        if (log.isDebugEnabled())
+                            log.debug("Failed to request keys from preloader [keys=" + keys + ", err=" + e + ']');
 
                         onDone(e);
 
@@ -286,27 +295,38 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
      * @return {@code True} if mapped.
      */
     private boolean map(KeyCacheObject key) {
-        GridDhtLocalPartition part = topVer.topologyVersion() > 0 ?
-            cache().topology().localPartition(cctx.affinity().partition(key), topVer, true) :
-            cache().topology().localPartition(key, false);
+        try {
+            int keyPart = cctx.affinity().partition(key);
 
-        if (part == null)
-            return false;
+            GridDhtLocalPartition part = topVer.topologyVersion() > 0 ?
+                cache().topology().localPartition(keyPart, topVer, true) :
+                cache().topology().localPartition(keyPart);
 
-        if (parts == null || !F.contains(parts, part.id())) {
-            // By reserving, we make sure that partition won't be unloaded while processed.
-            if (part.reserve()) {
-                parts = parts == null ? new int[1] : Arrays.copyOf(parts, parts.length + 1);
+            if (part == null)
+                return false;
 
-                parts[parts.length - 1] = part.id();
+            if (parts == null || !F.contains(parts, part.id())) {
+                // By reserving, we make sure that partition won't be unloaded while processed.
+                if (part.reserve()) {
+                    parts = parts == null ? new int[1] : Arrays.copyOf(parts, parts.length + 1);
 
-                return true;
+                    parts[parts.length - 1] = part.id();
+
+                    return true;
+                }
+                else
+                    return false;
             }
             else
-                return false;
+                return true;
         }
-        else
-            return true;
+        catch (GridDhtInvalidPartitionException e) {
+            if (log.isDebugEnabled())
+                log.debug("Attempted to create a partition which does not belong to local node, will remap " +
+                    "[key=" + key + ", part=" + e.partition() + ']');
+
+            return false;
+        }
     }
 
     /**
@@ -330,12 +350,13 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
 
         GridCompoundFuture<Boolean, Boolean> txFut = null;
 
-        ClusterNode readerNode = cctx.discovery().node(reader);
-
         ReaderArguments readerArgs = null;
 
-        if (readerNode != null && !readerNode.isLocal() && cctx.discovery().cacheNearNode(readerNode, cctx.name())) {
+        if (addReaders && !skipVals && !cctx.localNodeId().equals(reader)) {
             for (Map.Entry<KeyCacheObject, Boolean> k : keys.entrySet()) {
+                if (!k.getValue())
+                    continue;
+
                 while (true) {
                     GridDhtCacheEntry e = cache().entryExx(k.getKey(), topVer);
 
@@ -343,7 +364,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
                         if (e.obsolete())
                             continue;
 
-                        boolean addReader = (!e.deleted() && k.getValue() && !skipVals);
+                        boolean addReader = !e.deleted();
 
                         if (addReader) {
                             e.unswap(false);
@@ -401,7 +422,8 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
                 taskName,
                 expiryPlc,
                 skipVals,
-                /*can remap*/true);
+                /*can remap*/true,
+                recovery);
         }
         else {
             final ReaderArguments args = readerArgs;
@@ -424,7 +446,8 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
                             taskName,
                             expiryPlc,
                             skipVals,
-                            /*can remap*/true);
+                            /*can remap*/true,
+                            recovery);
                     }
                 }
             );

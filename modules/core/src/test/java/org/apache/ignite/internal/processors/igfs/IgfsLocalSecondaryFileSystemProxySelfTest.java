@@ -255,7 +255,6 @@ public class IgfsLocalSecondaryFileSystemProxySelfTest extends IgfsProxySelfTest
 
             len -= 1024 * 2;
             start += 1024;
-            System.out.println("+++ ");
         }
 
         len = igfs.info(filePath).length();

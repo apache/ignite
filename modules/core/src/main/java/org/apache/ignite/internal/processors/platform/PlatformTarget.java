@@ -108,6 +108,16 @@ public interface PlatformTarget {
     PlatformTarget processOutObject(int type) throws IgniteCheckedException;
 
     /**
+     * Process asynchronous operation.
+     *
+     * @param type Type.
+     * @param reader Binary reader.
+     * @return Async result (should not be null).
+     * @throws IgniteCheckedException In case of exception.
+     */
+    PlatformAsyncResult processInStreamAsync(int type, BinaryRawReaderEx reader) throws IgniteCheckedException;
+
+    /**
      * Convert caught exception.
      *
      * @param e Exception to convert.

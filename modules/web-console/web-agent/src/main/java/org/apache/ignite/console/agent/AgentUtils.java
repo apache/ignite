@@ -17,8 +17,6 @@
 
 package org.apache.ignite.console.agent;
 
-import com.fasterxml.jackson.annotation.JsonAutoDetect;
-import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsonorg.JsonOrgModule;
 import io.socket.client.Ack;
@@ -39,7 +37,12 @@ public class AgentUtils {
     private static final Logger log = Logger.getLogger(AgentUtils.class.getName());
 
     /** JSON object mapper. */
-    private static final ObjectMapper mapper = new ObjectMapper();
+    private static final ObjectMapper MAPPER = new ObjectMapper();
+
+    static {
+        // Register special module with basic serializers.
+        MAPPER.registerModule(new JsonOrgModule());
+    }
 
     /** */
     private static final Ack NOOP_CB = new Ack() {
@@ -51,15 +54,6 @@ public class AgentUtils {
         }
     };
 
-    static {
-        JsonOrgModule module = new JsonOrgModule();
-
-        mapper.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.NONE);
-        mapper.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
-
-        mapper.registerModule(module);
-    }
-    
     /**
      * Default constructor.
      */
@@ -153,7 +147,7 @@ public class AgentUtils {
 
     /**
      * Remove callback from handler arguments.
-     * 
+     *
      * @param args Arguments.
      * @return Arguments without callback.
      */
@@ -165,16 +159,16 @@ public class AgentUtils {
 
     /**
      * Map java object to JSON object.
-     * 
+     *
      * @param obj Java object.
      * @return {@link JSONObject} or {@link JSONArray}.
      * @throws IllegalArgumentException If conversion fails due to incompatible type.
      */
     public static Object toJSON(Object obj) {
         if (obj instanceof Iterable)
-            return mapper.convertValue(obj, JSONArray.class);
+            return MAPPER.convertValue(obj, JSONArray.class);
 
-        return mapper.convertValue(obj, JSONObject.class);
+        return MAPPER.convertValue(obj, JSONObject.class);
     }
 
     /**
@@ -186,6 +180,6 @@ public class AgentUtils {
      * @throws IllegalArgumentException If conversion fails due to incompatible type.
      */
     public static <T> T fromJSON(Object obj, Class<T> toValType) throws IllegalArgumentException {
-        return mapper.convertValue(obj, toValType);
+        return MAPPER.convertValue(obj, toValType);
     }
 }

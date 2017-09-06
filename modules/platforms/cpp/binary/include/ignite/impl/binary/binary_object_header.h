@@ -230,6 +230,19 @@ namespace ignite
                 }
 
                 /**
+                 * Get footer length.
+                 *
+                 * @return Footer length.
+                 */
+                int32_t GetFooterLength() const
+                {
+                    if (!HasSchema())
+                        return 0;
+
+                    return GetLength() - GetSchemaOffset();
+                }
+
+                /**
                  * Get size of data without header and footer.
                  *
                  * @return Data length.

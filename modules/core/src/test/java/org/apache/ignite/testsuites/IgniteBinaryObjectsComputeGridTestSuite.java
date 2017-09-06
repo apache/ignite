@@ -19,8 +19,6 @@ package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.GridComputationBinarylizableClosuresSelfTest;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.testframework.config.GridTestProperties;
 
 /**
  *
@@ -31,8 +29,6 @@ public class IgniteBinaryObjectsComputeGridTestSuite {
      * @throws Exception If failed.
      */
     public static TestSuite suite() throws Exception {
-        GridTestProperties.setProperty(GridTestProperties.MARSH_CLASS_NAME, BinaryMarshaller.class.getName());
-
         TestSuite suite = IgniteComputeGridTestSuite.suite();
 
         suite.addTestSuite(GridComputationBinarylizableClosuresSelfTest.class);

@@ -23,6 +23,7 @@ namespace Apache.Ignite.Core.Impl.Compute
     using Apache.Ignite.Core.Compute;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Common;
+    using Apache.Ignite.Core.Impl.Deployment;
     using Apache.Ignite.Core.Impl.Resource;
     using Apache.Ignite.Core.Resource;
 
@@ -76,9 +77,9 @@ namespace Apache.Ignite.Core.Impl.Compute
         /** <inheritDoc /> */
         public void WriteBinary(IBinaryWriter writer)
         {
-            var writer0 = (BinaryWriter)writer.GetRawWriter();
+            var writer0 = (BinaryWriter) writer.GetRawWriter();
 
-            writer0.WithDetach(w => w.WriteObject(_func));
+            writer0.WriteWithPeerDeployment(_func);
         }
 
         /// <summary>
@@ -100,7 +101,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         public void InjectIgnite(IIgnite ignite)
         {
             // Propagate injection
-            ResourceProcessor.Inject(_func, (IgniteProxy) ignite);
+            ResourceProcessor.Inject(_func, (Ignite) ignite);
         }
     }    
     

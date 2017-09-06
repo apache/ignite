@@ -92,10 +92,10 @@ public class GridCachePartitionedExplicitLockNodeFailureSelfTest extends GridCom
 
         Integer key = 0;
 
-        while (grid(idx).affinity(null).mapKeyToNode(key).id().equals(grid(0).localNode().id()))
+        while (grid(idx).affinity(DEFAULT_CACHE_NAME).mapKeyToNode(key).id().equals(grid(0).localNode().id()))
             key++;
 
-        ClusterNode node = grid(idx).affinity(null).mapKeyToNode(key);
+        ClusterNode node = grid(idx).affinity(DEFAULT_CACHE_NAME).mapKeyToNode(key);
 
         info("Primary node for key [id=" + node.id() + ", order=" + node.order() + ", key=" + key + ']');
 

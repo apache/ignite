@@ -45,8 +45,7 @@ public class HadoopExecutorServiceTest extends GridCommonAbstractTest {
                 @Override public Object call() throws Exception {
                     for (int i = 0; i < loops; i++) {
                         exec.submit(new Callable<Void>() {
-                            @Override
-                            public Void call() throws Exception {
+                            @Override public Void call() throws Exception {
                                 sum.increment();
 
                                 return null;

@@ -112,7 +112,10 @@ public class GridMessageCollectionTest extends TestCase {
 
         buf.flip();
 
-        byte type = buf.get();
+        byte b0 = buf.get();
+        byte b1 = buf.get();
+
+        short type = (short)((b1 & 0xFF) << 8 | b0 & 0xFF);
 
         assertEquals(m.directType(), type);
 

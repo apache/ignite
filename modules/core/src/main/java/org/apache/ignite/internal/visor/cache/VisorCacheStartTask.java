@@ -19,7 +19,6 @@ package org.apache.ignite.internal.visor.cache;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.Serializable;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -41,13 +40,12 @@ import org.jetbrains.annotations.Nullable;
  * Task that start cache or near cache with specified configuration.
  */
 @GridInternal
-public class VisorCacheStartTask extends
-    VisorMultiNodeTask<VisorCacheStartTask.VisorCacheStartArg, Map<UUID, IgniteException>, Void> {
+public class VisorCacheStartTask extends VisorMultiNodeTask<VisorCacheStartTaskArg, Map<UUID, IgniteException>, Void> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorCacheStartJob job(VisorCacheStartArg arg) {
+    @Override protected VisorCacheStartJob job(VisorCacheStartTaskArg arg) {
         return new VisorCacheStartJob(arg, debug);
     }
 
@@ -63,59 +61,9 @@ public class VisorCacheStartTask extends
     }
 
     /**
-     * Cache start arguments.
-     */
-    @SuppressWarnings("PublicInnerClass")
-    public static class VisorCacheStartArg implements Serializable {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** */
-        private final boolean near;
-
-        /** */
-        private final String name;
-
-        /** */
-        private final String cfg;
-
-        /**
-         * @param near {@code true} if near cache should be started.
-         * @param name Name for near cache.
-         * @param cfg Cache XML configuration.
-         */
-        public VisorCacheStartArg(boolean near, String name, String cfg) {
-            this.near = near;
-            this.name = name;
-            this.cfg = cfg;
-        }
-
-        /**
-         * @return {@code true} if near cache should be started.
-         */
-        public boolean near() {
-            return near;
-        }
-
-        /**
-         * @return Name for near cache.
-         */
-        public String name() {
-            return name;
-        }
-
-        /**
-         * @return Cache XML configuration.
-         */
-        public String configuration() {
-            return cfg;
-        }
-    }
-
-    /**
      * Job that start cache or near cache with specified configuration.
      */
-    private static class VisorCacheStartJob extends VisorJob<VisorCacheStartArg, Void> {
+    private static class VisorCacheStartJob extends VisorJob<VisorCacheStartTaskArg, Void> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -125,21 +73,21 @@ public class VisorCacheStartTask extends
          * @param arg Contains cache name and XML configurations of cache.
          * @param debug Debug flag.
          */
-        private VisorCacheStartJob(VisorCacheStartArg arg, boolean debug) {
+        private VisorCacheStartJob(VisorCacheStartTaskArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected Void run(VisorCacheStartArg arg) throws IgniteException {
-            String cfg = arg.configuration();
+        @Override protected Void run(VisorCacheStartTaskArg arg) throws IgniteException {
+            String cfg = arg.getConfiguration();
 
             assert !F.isEmpty(cfg);
 
             try (ByteArrayInputStream bais = new ByteArrayInputStream(cfg.getBytes())) {
-                if (arg.near) {
+                if (arg.isNear()) {
                     NearCacheConfiguration nearCfg = Ignition.loadSpringBean(bais, "nearCacheConfiguration");
 
-                    ignite.getOrCreateNearCache(VisorTaskUtils.unescapeName(arg.name()), nearCfg);
+                    ignite.getOrCreateNearCache(VisorTaskUtils.unescapeName(arg.getName()), nearCfg);
                 }
                 else {
                     CacheConfiguration cacheCfg = Ignition.loadSpringBean(bais, "cacheConfiguration");

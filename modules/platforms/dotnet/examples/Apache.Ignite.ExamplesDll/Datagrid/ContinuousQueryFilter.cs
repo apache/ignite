@@ -17,13 +17,11 @@
 
 namespace Apache.Ignite.ExamplesDll.Datagrid
 {
-    using System;
     using Apache.Ignite.Core.Cache.Event;
 
     /// <summary>
     /// Filter for continuous query example.
     /// </summary>
-    [Serializable]
     public class ContinuousQueryFilter : ICacheEntryEventFilter<int, string>
     {
         /// <summary> Threshold. </summary>

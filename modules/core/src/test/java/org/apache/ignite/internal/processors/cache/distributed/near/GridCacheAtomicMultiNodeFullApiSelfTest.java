@@ -17,12 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.CLOCK;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 
@@ -30,13 +28,6 @@ import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
  * Multi-node tests for partitioned cache.
  */
 public class GridCacheAtomicMultiNodeFullApiSelfTest extends GridCachePartitionedMultiNodeFullApiSelfTest {
-    /**
-     * @return Write order mode for atomic cache.
-     */
-    protected CacheAtomicWriteOrderMode atomicWriteOrderMode() {
-        return CLOCK;
-    }
-
     /** {@inheritDoc} */
     @Override protected CacheAtomicityMode atomicityMode() {
         return ATOMIC;
@@ -53,7 +44,6 @@ public class GridCacheAtomicMultiNodeFullApiSelfTest extends GridCachePartitione
 
         cc.setRebalanceMode(SYNC);
         cc.setBackups(1);
-        cc.setAtomicWriteOrderMode(atomicWriteOrderMode());
 
         return cc;
     }

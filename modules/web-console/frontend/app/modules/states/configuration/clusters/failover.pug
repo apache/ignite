@@ -32,6 +32,15 @@ include /app/helpers/jade/mixins
     .panel-collapse(role='tabpanel' bs-collapse-target id=`${form}`)
         .panel-body(ng-if=`ui.isPanelLoaded('${form}')`)
             .col-sm-6
+                //- Since ignite 2.0
+                div(ng-if='$ctrl.available("2.0.0")')
+                    .settings-row
+                        +number('Failure detection timeout:', model + '.failureDetectionTimeout', '"failureDetectionTimeout"', 'true',
+                            '10000', '1', 'Failure detection timeout is used to determine how long the communication or discovery SPIs should wait before considering a remote connection failed')
+                    .settings-row
+                        +number('Client failure detection timeout:', model + '.clientFailureDetectionTimeout', '"clientFailureDetectionTimeout"', 'true',
+                            '30000', '1', 'Failure detection timeout is used to determine how long the communication or discovery SPIs should wait before considering a remote connection failed')
+
                 .settings-row(ng-init='failoverSpiTbl={type: "failoverSpi", model: "failoverSpi", focusId: "kind", ui: "failover-table"}')
                     +ignite-form-group()
                         ignite-form-field-label

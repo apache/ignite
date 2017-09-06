@@ -40,15 +40,14 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestQueryEntityConfiguration()
         {
-            var cfg = new IgniteConfiguration
+            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                JvmOptions = TestUtils.TestJavaOptions(),
-                JvmClasspath = TestUtils.CreateTestClasspath(),
                 BinaryConfiguration = new BinaryConfiguration(typeof (QueryPerson)),
                 CacheConfiguration = new[]
                 {
                     new CacheConfiguration(CacheName, new QueryEntity(typeof (int), typeof (QueryPerson))
                     {
+                        TableName = "CustomTableName",
                         Fields = new[]
                         {
                             new QueryField("Name", typeof (string)),
@@ -76,6 +75,12 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                     10, DateTime.UtcNow)))
                 {
                     Assert.AreEqual(2, cursor.GetAll().Single().Key);
+                }
+
+                using (var cursor = cache.QueryFields(new SqlFieldsQuery(
+                    "select _key from CustomTableName where age > ? and birthday < ?", 10, DateTime.UtcNow)))
+                {
+                    Assert.AreEqual(2, cursor.GetAll().Single()[0]);
                 }
 
                 using (var cursor = cache.Query(new TextQuery(typeof (QueryPerson), "Ar*")))
@@ -125,12 +130,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestAttributeConfigurationQuery()
         {
-            var cfg = new IgniteConfiguration
+            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                JvmOptions = TestUtils.TestJavaOptions(),
-                JvmClasspath = TestUtils.CreateTestClasspath(),
                 BinaryConfiguration = new BinaryConfiguration(
-                    typeof (AttributeQueryPerson), typeof (AttributeQueryAddress)),
+                    typeof (AttributeQueryPerson), typeof (AttributeQueryAddress))
             };
 
             using (var ignite = Ignition.Start(cfg))

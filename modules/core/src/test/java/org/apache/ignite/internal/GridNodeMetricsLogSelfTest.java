@@ -35,12 +35,6 @@ import org.apache.log4j.WriterAppender;
 @SuppressWarnings({"ProhibitedExceptionDeclared"})
 @GridCommonTest(group = "Kernal")
 public class GridNodeMetricsLogSelfTest extends GridCommonAbstractTest {
-    /** */
-
-    public GridNodeMetricsLogSelfTest() {
-        super(false);
-    }
-
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked"})
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -51,6 +45,7 @@ public class GridNodeMetricsLogSelfTest extends GridCommonAbstractTest {
         return cfg;
     }
 
+    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
     }
@@ -80,11 +75,11 @@ public class GridNodeMetricsLogSelfTest extends GridCommonAbstractTest {
 
         cache2.put(2, "two");
 
-        Thread.sleep(10000);
+        Thread.sleep(10_000);
 
         //Check that nodes are alie
-        assert cache1.get(1).equals("one");
-        assert cache2.get(2).equals("two");
+        assertEquals("one", cache1.get(1));
+        assertEquals("two", cache2.get(2));
 
         String fullLog = strWr.toString();
 

@@ -27,9 +27,6 @@ import org.apache.ignite.lang.IgniteInClosure;
  */
 public class GridNioFutureImpl<R> extends GridFutureAdapter<R> implements GridNioFuture<R> {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
     private boolean msgThread;
 
     /** */

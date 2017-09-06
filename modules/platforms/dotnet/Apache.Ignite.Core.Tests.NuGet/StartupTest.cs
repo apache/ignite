@@ -17,6 +17,10 @@
 
 namespace Apache.Ignite.Core.Tests.NuGet
 {
+    using System.Diagnostics;
+    using System.IO;
+    using System.Linq;
+    using System.Threading;
     using Apache.Ignite.Core.Cache.Configuration;
     using NUnit.Framework;
 
@@ -25,6 +29,24 @@ namespace Apache.Ignite.Core.Tests.NuGet
     /// </summary>
     public class StartupTest
     {
+        /// <summary>
+        /// Tears down the test.
+        /// </summary>
+        [TearDown]
+        public void TearDown()
+        {
+            Ignition.StopAll(true);
+
+            foreach (var proc in Process.GetProcesses())
+            {
+                if (proc.ProcessName.Equals("Apache.Ignite"))
+                {
+                    proc.Kill();
+                    proc.WaitForExit();
+                }
+            }
+        }
+
         /// <summary>
         /// Tests code configuration.
         /// </summary>
@@ -60,6 +82,61 @@ namespace Apache.Ignite.Core.Tests.NuGet
                 cache[1] = 5;
 
                 Assert.AreEqual(5, cache[1]);
+            }
+        }
+
+        /// <summary>
+        /// Tests the executable that is included in NuGet.
+        /// </summary>
+        [Test]
+        public void TestApacheIgniteExe()
+        {
+            var asm = GetType().Assembly;
+            var version = asm.GetName().Version.ToString(3);
+            var packageDirName = "Apache.Ignite." + version + "*";
+            
+            var asmDir = Path.GetDirectoryName(asm.Location);
+            Assert.IsNotNull(asmDir, asmDir);
+
+            var packagesDir = Path.GetFullPath(Path.Combine(asmDir, @"..\..\packages"));
+            Assert.IsTrue(Directory.Exists(packagesDir), packagesDir);
+
+            var packageDir = Directory.GetDirectories(packagesDir, packageDirName).Single();
+            Assert.IsTrue(Directory.Exists(packageDir), packageDir);
+
+            var exePath = Path.Combine(packageDir, @"lib\net40\Apache.Ignite.exe");
+            Assert.IsTrue(File.Exists(exePath), exePath);
+
+            var springPath = Path.GetFullPath(@"config\ignite-config.xml");
+            Assert.IsTrue(File.Exists(springPath), springPath);
+
+            var procInfo = new ProcessStartInfo(exePath, "-springConfigUrl=" + springPath)
+            {
+                CreateNoWindow = true,
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
+            };
+            
+            var proc = Process.Start(procInfo);
+            Assert.IsNotNull(proc);
+            Assert.IsFalse(proc.HasExited);
+
+            TestUtil.AttachProcessConsoleReader(proc);
+
+            using (var ignite = Ignition.Start(@"config\ignite-config.xml"))
+            {
+                for (var i = 0; i < 100; i++)
+                {
+                    if (ignite.GetCluster().GetNodes().Count == 2)
+                    {
+                        return;
+                    }
+
+                    Thread.Sleep(100);
+                }
+                
+                Assert.Fail("Failed to join to remote node.");
             }
         }
     }

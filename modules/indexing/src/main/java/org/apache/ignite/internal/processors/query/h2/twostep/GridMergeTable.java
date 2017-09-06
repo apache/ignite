@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.query.h2.twostep;
 
 import java.util.ArrayList;
+import java.util.HashSet;
+
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2ScanIndex;
 import org.apache.ignite.internal.util.typedef.F;
 import org.h2.command.ddl.CreateTableData;
@@ -27,9 +29,11 @@ import org.h2.index.IndexType;
 import org.h2.message.DbException;
 import org.h2.result.Row;
 import org.h2.result.SortOrder;
+import org.h2.table.Column;
 import org.h2.table.IndexColumn;
 import org.h2.table.TableBase;
 import org.h2.table.TableFilter;
+import org.h2.table.TableType;
 
 /**
  * Merge table for distributed queries.
@@ -111,8 +115,8 @@ public class GridMergeTable extends TableBase {
     }
 
     /** {@inheritDoc} */
-    @Override public String getTableType() {
-        return EXTERNAL_TABLE_ENGINE;
+    @Override public TableType getTableType() {
+        return TableType.EXTERNAL_TABLE_ENGINE;
     }
 
     /** {@inheritDoc} */
@@ -188,10 +192,10 @@ public class GridMergeTable extends TableBase {
 
         /** {@inheritDoc} */
         @Override public double getCost(Session session, int[] masks, TableFilter[] filters, int filter,
-            SortOrder sortOrder) {
+            SortOrder sortOrder, HashSet<Column> allColumnsSet) {
             long rows = getRowCountApproximation();
 
-            return getCostRangeIndex(masks, rows, filters, filter, sortOrder, true);
+            return getCostRangeIndex(masks, rows, filters, filter, sortOrder, true, allColumnsSet);
         }
     }
 }

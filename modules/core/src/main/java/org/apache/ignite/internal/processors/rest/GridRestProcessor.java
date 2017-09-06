@@ -46,6 +46,7 @@ import org.apache.ignite.internal.processors.rest.handlers.cache.GridCacheComman
 import org.apache.ignite.internal.processors.rest.handlers.datastructures.DataStructuresCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.log.GridLogCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.query.QueryCommandHandler;
+import org.apache.ignite.internal.processors.rest.handlers.cluster.GridChangeStateCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.task.GridTaskCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.top.GridTopologyCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.version.GridVersionCommandHandler;
@@ -62,9 +63,12 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.internal.util.worker.GridWorkerFuture;
+import org.apache.ignite.internal.visor.compute.VisorGatewayTask;
+import org.apache.ignite.internal.visor.misc.VisorChangeGridActiveStateTask;
 import org.apache.ignite.internal.visor.util.VisorClusterGroupEmptyException;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -285,7 +289,21 @@ public class GridRestProcessor extends GridProcessorAdapter {
                     if (log.isDebugEnabled())
                         log.debug("Failed to handle request [req=" + req + ", e=" + e + "]");
 
-                    res = new GridRestResponse(STATUS_FAILED, e.getMessage());
+                    // Prepare error message:
+                    SB sb = new SB(256);
+
+                    sb.a("Failed to handle request: [req=").a(req.command());
+
+                    if (req instanceof GridRestTaskRequest) {
+                        GridRestTaskRequest tskReq = (GridRestTaskRequest)req;
+
+                        sb.a(", taskName=").a(tskReq.taskName())
+                            .a(", params=").a(tskReq.params());
+                    }
+
+                    sb.a(", err=").a(e.getMessage() != null ? e.getMessage() : e.getClass().getName()).a(']');
+
+                    res = new GridRestResponse(STATUS_FAILED, sb.toString());
                 }
 
                 assert res != null;
@@ -452,7 +470,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
             addHandler(new DataStructuresCommandHandler(ctx));
             addHandler(new QueryCommandHandler(ctx));
             addHandler(new GridLogCommandHandler(ctx));
-
+            addHandler(new GridChangeStateCommandHandler(ctx));
 
             // Start protocols.
             startTcpProtocol();
@@ -487,7 +505,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void onKernalStart() throws IgniteCheckedException {
+    @Override public void onKernalStart(boolean active) throws IgniteCheckedException {
         if (isRestEnabled()) {
             for (GridRestProtocol proto : protos)
                 proto.onKernalStart();
@@ -969,7 +987,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
         }
 
         /**
-         * Checks whether session at expired state (EPIRATION_FLAG) or not, if not then tries to update last touch time.
+         * Checks whether session at expired state (EXPIRATION_FLAG) or not, if not then tries to update last touch time.
          *
          * @return {@code False} if session timed out (not successfully touched).
          * @see #isTimedOut(long)

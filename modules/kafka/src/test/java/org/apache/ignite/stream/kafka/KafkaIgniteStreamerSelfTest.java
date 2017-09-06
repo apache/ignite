@@ -81,7 +81,7 @@ public class KafkaIgniteStreamerSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        grid().cache(null).clear();
+        grid().cache(DEFAULT_CACHE_NAME).clear();
 
         embeddedBroker.shutdown();
     }
@@ -150,7 +150,7 @@ public class KafkaIgniteStreamerSelfTest extends GridCommonAbstractTest {
 
         Ignite ignite = grid();
 
-        try (IgniteDataStreamer<String, String> stmr = ignite.dataStreamer(null)) {
+        try (IgniteDataStreamer<String, String> stmr = ignite.dataStreamer(DEFAULT_CACHE_NAME)) {
             stmr.allowOverwrite(true);
             stmr.autoFlushFrequency(10);
 
@@ -158,7 +158,7 @@ public class KafkaIgniteStreamerSelfTest extends GridCommonAbstractTest {
             kafkaStmr = new KafkaStreamer<>();
 
             // Get the cache.
-            IgniteCache<String, String> cache = ignite.cache(null);
+            IgniteCache<String, String> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
             // Set Ignite instance.
             kafkaStmr.setIgnite(ignite);
@@ -210,7 +210,7 @@ public class KafkaIgniteStreamerSelfTest extends GridCommonAbstractTest {
                 }
             };
 
-            ignite.events(ignite.cluster().forCacheNodes(null)).remoteListen(locLsnr, null, EVT_CACHE_OBJECT_PUT);
+            ignite.events(ignite.cluster().forCacheNodes(DEFAULT_CACHE_NAME)).remoteListen(locLsnr, null, EVT_CACHE_OBJECT_PUT);
 
             // Checks all events successfully processed in 10 seconds.
             assertTrue(latch.await(10, TimeUnit.SECONDS));

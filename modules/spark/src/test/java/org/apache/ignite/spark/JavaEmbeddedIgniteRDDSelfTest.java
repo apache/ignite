@@ -305,7 +305,7 @@ public class JavaEmbeddedIgniteRDDSelfTest extends GridCommonAbstractTest {
      * @return Cache configuration.
      */
     private static CacheConfiguration<Object, Object> cacheConfiguration() {
-        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>();
+        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         ccfg.setBackups(1);
 

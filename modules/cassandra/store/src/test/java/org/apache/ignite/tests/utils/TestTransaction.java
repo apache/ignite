@@ -17,6 +17,7 @@
 
 package org.apache.ignite.tests.utils;
 
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.lang.IgniteAsyncSupport;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
@@ -106,6 +107,11 @@ public class TestTransaction implements Transaction {
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteFuture<Void> commitAsync() throws IgniteException {
+        return null;
+    }
+
+    /** {@inheritDoc} */
     @Override public void close() {
         // No-op.
     }
@@ -127,6 +133,21 @@ public class TestTransaction implements Transaction {
 
     /** {@inheritDoc} */
     @Override public void rollback() {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<Void> rollbackAsync() throws IgniteException {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void suspend() throws IgniteException{
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void resume() throws IgniteException {
         // No-op.
     }
 }

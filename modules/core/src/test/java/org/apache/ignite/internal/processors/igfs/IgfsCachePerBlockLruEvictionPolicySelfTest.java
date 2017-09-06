@@ -121,6 +121,7 @@ public class IgfsCachePerBlockLruEvictionPolicySelfTest extends IgfsCommonAbstra
         evictPlc = new IgfsPerBlockLruEvictionPolicy();
 
         dataCacheCfg.setEvictionPolicy(evictPlc);
+        dataCacheCfg.setOnheapCacheEnabled(true);
         dataCacheCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(128));
         dataCacheCfg.setBackups(0);
 
@@ -211,7 +212,7 @@ public class IgfsCachePerBlockLruEvictionPolicySelfTest extends IgfsCommonAbstra
     @Override protected void afterTest() throws Exception {
         try {
             // Cleanup.
-            igfsPrimary.format();
+            igfsPrimary.clear();
 
             while (!dataCache.isEmpty())
                 U.sleep(100);

@@ -71,8 +71,8 @@ public class GridP2PSameClassLoaderSelfTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setDeploymentMode(depMode);
+        cfg.setMetricsUpdateFrequency(500);
 
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setHeartbeatFrequency(500);
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(FINDER);
 
         cfg.setCacheConfiguration();

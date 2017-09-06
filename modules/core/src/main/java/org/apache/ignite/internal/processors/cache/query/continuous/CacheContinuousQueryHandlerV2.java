@@ -44,7 +44,7 @@ public class CacheContinuousQueryHandlerV2<K, V> extends CacheContinuousQueryHan
     private Factory<? extends CacheEntryEventFilter> rmtFilterFactory;
 
     /** Deployable object for filter factory. */
-    private DeployableObject rmtFilterFactoryDep;
+    private CacheContinuousQueryDeployableObject rmtFilterFactoryDep;
 
     /** Event types for JCache API. */
     private byte types;
@@ -122,7 +122,7 @@ public class CacheContinuousQueryHandlerV2<K, V> extends CacheContinuousQueryHan
         super.p2pMarshal(ctx);
 
         if (rmtFilterFactory != null && !U.isGrid(rmtFilterFactory.getClass()))
-            rmtFilterFactoryDep = new DeployableObject(rmtFilterFactory, ctx);
+            rmtFilterFactoryDep = new CacheContinuousQueryDeployableObject(rmtFilterFactory, ctx);
     }
 
     /** {@inheritDoc} */
@@ -167,7 +167,7 @@ public class CacheContinuousQueryHandlerV2<K, V> extends CacheContinuousQueryHan
         boolean b = in.readBoolean();
 
         if (b)
-            rmtFilterFactoryDep = (DeployableObject)in.readObject();
+            rmtFilterFactoryDep = (CacheContinuousQueryDeployableObject)in.readObject();
         else
             rmtFilterFactory = (Factory)in.readObject();
 

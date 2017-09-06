@@ -20,11 +20,11 @@ package org.apache.ignite.internal.processors.query;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * Identifying TypeDescriptor by space and value class.
+ * Identifying TypeDescriptor by cache name and value class.
  */
 public class QueryTypeIdKey {
     /** */
-    private final String space;
+    private final String cacheName;
 
     /** Value type. */
     private final Class<?> valType;
@@ -35,13 +35,13 @@ public class QueryTypeIdKey {
     /**
      * Constructor.
      *
-     * @param space Space name.
+     * @param cacheName Cache name.
      * @param valType Value type.
      */
-    public  QueryTypeIdKey(String space, Class<?> valType) {
+    public  QueryTypeIdKey(String cacheName, Class<?> valType) {
         assert valType != null;
 
-        this.space = space;
+        this.cacheName = cacheName;
         this.valType = valType;
 
         valTypeId = 0;
@@ -50,21 +50,21 @@ public class QueryTypeIdKey {
     /**
      * Constructor.
      *
-     * @param space Space name.
+     * @param cacheName Cache name.
      * @param valTypeId Value type ID.
      */
-    public QueryTypeIdKey(String space, int valTypeId) {
-        this.space = space;
+    public QueryTypeIdKey(String cacheName, int valTypeId) {
+        this.cacheName = cacheName;
         this.valTypeId = valTypeId;
 
         valType = null;
     }
 
     /**
-     * @return Space.
+     * @return Cache name.
      */
-    public String space() {
-        return space;
+    public String cacheName() {
+        return cacheName;
     }
 
     /** {@inheritDoc} */
@@ -79,12 +79,12 @@ public class QueryTypeIdKey {
 
         return (valTypeId == typeId.valTypeId) &&
             (valType != null ? valType == typeId.valType : typeId.valType == null) &&
-            (space != null ? space.equals(typeId.space) : typeId.space == null);
+            (cacheName != null ? cacheName.equals(typeId.cacheName) : typeId.cacheName == null);
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        return 31 * (space != null ? space.hashCode() : 0) + (valType != null ? valType.hashCode() : valTypeId);
+        return 31 * (cacheName != null ? cacheName.hashCode() : 0) + (valType != null ? valType.hashCode() : valTypeId);
     }
 
     /** {@inheritDoc} */

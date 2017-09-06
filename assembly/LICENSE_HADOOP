@@ -249,7 +249,7 @@ This product bundles Scala Library which is available under the following:
 BSD 3-Clause. For details, see http://www.scala-lang.org/license.html.
 
 ==============================================================================
-For ASM All (http://asm.objectweb.org/asm-all/) org.ow2.asm:asm-all:jar:4.2
+For ASM All (http://asm.objectweb.org/asm-all/) org.ow2.asm:asm-all:jar:5.0.3
 ==============================================================================
 This product bundles ASM All which is available under the following:
 BSD. For details, see http://asm.objectweb.org/license.html.

@@ -207,18 +207,24 @@ public class GridTcpRouterConfiguration {
      * Sets host for router.
      *
      * @param host Host.
+     * @return {@code this} for chaining.
      */
-    public void setHost(String host) {
+    public GridTcpRouterConfiguration setHost(String host) {
         this.host = host;
+
+        return this;
     }
 
     /**
      * Sets port for router.
      *
      * @param port Port.
+     * @return {@code this} for chaining.
      */
-    public void setPort(int port) {
+    public GridTcpRouterConfiguration setPort(int port) {
         this.port = port;
+
+        return this;
     }
 
     /**
@@ -228,11 +234,14 @@ public class GridTcpRouterConfiguration {
      *
      * @param portRange Port range.
      * @see #DFLT_PORT_RANGE
+     * @return {@code this} for chaining.
      */
-    public void setPortRange(int portRange) {
+    public GridTcpRouterConfiguration setPortRange(int portRange) {
         A.ensure(portRange >= 0, "portRange >= 0");
 
         this.portRange = portRange;
+
+        return this;
     }
 
     /**
@@ -240,18 +249,24 @@ public class GridTcpRouterConfiguration {
      * for accepted client connections.
      *
      * @param noDelay No delay.
+     * @return {@code this} for chaining.
      */
-    public void setNoDelay(boolean noDelay) {
+    public GridTcpRouterConfiguration setNoDelay(boolean noDelay) {
         this.noDelay = noDelay;
+
+        return this;
     }
 
     /**
      * Sets idle timeout.
      *
      * @param idleTimeout Idle timeout in milliseconds.
+     * @return {@code this} for chaining.
      */
-    public void setIdleTimeout(long idleTimeout) {
+    public GridTcpRouterConfiguration setIdleTimeout(long idleTimeout) {
         this.idleTimeout = idleTimeout;
+
+        return this;
     }
 
     /**
@@ -259,9 +274,12 @@ public class GridTcpRouterConfiguration {
      * a valid SSL certificate which validity will be verified with trust manager.
      *
      * @param sslClientAuth Ssl client auth.
+     * @return {@code this} for chaining.
      */
-    public void setSslClientAuth(boolean sslClientAuth) {
+    public GridTcpRouterConfiguration setSslClientAuth(boolean sslClientAuth) {
         this.sslClientAuth = sslClientAuth;
+
+        return this;
     }
 
     /**
@@ -269,36 +287,48 @@ public class GridTcpRouterConfiguration {
      * of both rest binary server and out coming connections.
      *
      * @param sslCtxFactory Ssl context factory.
+     * @return {@code this} for chaining.
      */
-    public void setSslContextFactory(GridSslContextFactory sslCtxFactory) {
+    public GridTcpRouterConfiguration setSslContextFactory(GridSslContextFactory sslCtxFactory) {
         this.sslCtxFactory = sslCtxFactory;
+
+        return this;
     }
 
     /**
      * Sets list of server addresses where router's embedded client should connect.
      *
      * @param srvrs List of servers.
+     * @return {@code this} for chaining.
      */
-    public void setServers(Collection<String> srvrs) {
+    public GridTcpRouterConfiguration setServers(Collection<String> srvrs) {
         this.srvrs = srvrs;
+
+        return this;
     }
 
     /**
      * Sets logger for the router instance.
      *
      * @param log Logger.
+     * @return {@code this} for chaining.
      */
-    public void setLogger(IgniteLogger log) {
+    public GridTcpRouterConfiguration setLogger(IgniteLogger log) {
         this.log = log;
+
+        return this;
     }
 
     /**
      * Sets credentials provider for grid access.
      *
      * @param credsProvider Credentials provider.
+     * @return {@code this} for chaining.
      */
-    public void setSecurityCredentialsProvider(SecurityCredentialsProvider credsProvider) {
+    public GridTcpRouterConfiguration setSecurityCredentialsProvider(SecurityCredentialsProvider credsProvider) {
         this.credsProvider = credsProvider;
+
+        return this;
     }
 
     /** {@inheritDoc} */

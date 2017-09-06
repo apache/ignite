@@ -46,7 +46,7 @@ public class GridCacheTtlManagerLoadTest extends GridCacheTtlManagerSelfTest {
 
             IgniteInternalFuture<?> fut = multithreadedAsync(new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    IgniteCache<Object,Object> cache = g.cache(null).
+                    IgniteCache<Object,Object> cache = g.cache(DEFAULT_CACHE_NAME).
                         withExpiryPolicy(new TouchedExpiryPolicy(new Duration(MILLISECONDS, 1000)));
 
                     long key = 0;
@@ -61,7 +61,7 @@ public class GridCacheTtlManagerLoadTest extends GridCacheTtlManagerSelfTest {
                 }
             }, 1);
 
-            GridCacheTtlManager ttlMgr = g.internalCache().context().ttl();
+            GridCacheTtlManager ttlMgr = g.internalCache(DEFAULT_CACHE_NAME).context().ttl();
 
             for (int i = 0; i < 300; i++) {
                 U.sleep(1000);

@@ -34,6 +34,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -78,15 +79,12 @@ public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingl
      * @param nodeId Node ID.
      * @param futId Future ID.
      * @param topVer Topology version.
-     * @param topLocked Topology locked flag.
      * @param syncMode Synchronization mode.
      * @param op Cache update operation.
-     * @param retval Return value required flag.
      * @param invokeArgs Optional arguments for entry processor.
      * @param subjId Subject ID.
      * @param taskNameHash Task name hash code.
-     * @param skipStore Skip write-through to a persistent storage.
-     * @param keepBinary Keep binary flag.
+     * @param flags Flags.
      * @param addDepInfo Deployment info flag.
      */
     GridNearAtomicSingleUpdateInvokeRequest(
@@ -94,16 +92,12 @@ public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingl
         UUID nodeId,
         long futId,
         @NotNull AffinityTopologyVersion topVer,
-        boolean topLocked,
         CacheWriteSynchronizationMode syncMode,
         GridCacheOperation op,
-        boolean retval,
         @Nullable Object[] invokeArgs,
         @Nullable UUID subjId,
         int taskNameHash,
-        boolean needPrimaryRes,
-        boolean skipStore,
-        boolean keepBinary,
+        byte flags,
         boolean addDepInfo
     ) {
         super(
@@ -111,15 +105,11 @@ public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingl
             nodeId,
             futId,
             topVer,
-            topLocked,
             syncMode,
             op,
-            retval,
             subjId,
             taskNameHash,
-            needPrimaryRes,
-            skipStore,
-            keepBinary,
+            flags,
             addDepInfo
         );
 
@@ -290,7 +280,12 @@ public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingl
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 126;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridNearAtomicSingleUpdateRequest.class, this, super.toString());
     }
 }

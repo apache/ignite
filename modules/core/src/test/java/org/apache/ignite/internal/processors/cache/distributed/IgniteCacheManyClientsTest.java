@@ -89,7 +89,7 @@ public class IgniteCacheManyClientsTest extends GridCommonAbstractTest {
 
         cfg.setClientMode(client);
 
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(PARTITIONED);
         ccfg.setAtomicityMode(ATOMIC);
@@ -166,7 +166,7 @@ public class IgniteCacheManyClientsTest extends GridCommonAbstractTest {
 
             clients.add(ignite);
 
-            IgniteCache<Object, Object> cache = ignite.cache(null);
+            IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
             Integer key = rnd.nextInt(0, 1000);
 
@@ -241,7 +241,7 @@ public class IgniteCacheManyClientsTest extends GridCommonAbstractTest {
 
                             assertTrue(ignite.configuration().isClientMode());
 
-                            IgniteCache<Object, Object> cache = ignite.cache(null);
+                            IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
                             ThreadLocalRandom rnd = ThreadLocalRandom.current();
 

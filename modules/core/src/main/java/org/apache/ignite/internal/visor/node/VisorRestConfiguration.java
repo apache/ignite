@@ -17,11 +17,14 @@
 
 package org.apache.ignite.internal.visor.node;
 
-import java.io.Serializable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.LessNamingBean;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.visor.VisorDataTransferObject;
 import org.jetbrains.annotations.Nullable;
 
 import static java.lang.System.getProperty;
@@ -33,7 +36,7 @@ import static org.apache.ignite.internal.visor.util.VisorTaskUtils.intValue;
 /**
  * Create data transfer object for node REST configuration properties.
  */
-public class VisorRestConfiguration implements Serializable, LessNamingBean {
+public class VisorRestConfiguration extends VisorDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -42,9 +45,6 @@ public class VisorRestConfiguration implements Serializable, LessNamingBean {
 
     /** Whether or not SSL is enabled for TCP binary protocol. */
     private boolean tcpSslEnabled;
-
-    /** Rest accessible folders (log command can get files from). */
-    private String[] accessibleFolders;
 
     /** Jetty config path. */
     private String jettyPath;
@@ -59,98 +59,304 @@ public class VisorRestConfiguration implements Serializable, LessNamingBean {
     private String tcpHost;
 
     /** REST TCP binary port. */
-    private Integer tcpPort;
+    private int tcpPort;
 
     /** Context factory for SSL. */
     private String tcpSslCtxFactory;
 
+    /** REST secret key. */
+    private String secretKey;
+
+    /** TCP no delay flag. */
+    private boolean noDelay;
+
+    /** REST TCP direct buffer flag. */
+    private boolean directBuf;
+
+    /** REST TCP send buffer size. */
+    private int sndBufSize;
+
+    /** REST TCP receive buffer size. */
+    private int rcvBufSize;
+
+    /** REST idle timeout for query cursor. */
+    private long idleQryCurTimeout;
+
+    /** REST idle check frequency for query cursor. */
+    private long idleQryCurCheckFreq;
+
+    /** REST TCP send queue limit. */
+    private int sndQueueLimit;
+
+    /** REST TCP selector count. */
+    private int selectorCnt;
+
+    /** Idle timeout. */
+    private long idleTimeout;
+
+    /** SSL need client auth flag. */
+    private boolean sslClientAuth;
+
+    /** SSL context factory for rest binary server. */
+    private String sslFactory;
+
+    /** Port range */
+    private int portRange;
+
+    /** Client message interceptor. */
+    private String msgInterceptor;
+
     /**
-     * @param c Grid configuration.
-     * @return Create data transfer object for node REST configuration properties.
+     * Default constructor.
      */
-    public static VisorRestConfiguration from(IgniteConfiguration c) {
-        VisorRestConfiguration cfg = new VisorRestConfiguration();
+    public VisorRestConfiguration() {
+        // No-op.
+    }
 
-        ConnectorConfiguration clnCfg = c.getConnectorConfiguration();
+    /**
+     * Create data transfer object for node REST configuration properties.
+     *
+     * @param c Grid configuration.
+     */
+    public VisorRestConfiguration(IgniteConfiguration c) {
+        assert c != null;
 
-        boolean restEnabled = clnCfg != null;
+        ConnectorConfiguration conCfg = c.getConnectorConfiguration();
 
-        cfg.restEnabled = restEnabled;
+        restEnabled = conCfg != null;
 
         if (restEnabled) {
-            cfg.tcpSslEnabled = clnCfg.isSslEnabled();
-            cfg.jettyPath = clnCfg.getJettyPath();
-            cfg.jettyHost = getProperty(IGNITE_JETTY_HOST);
-            cfg.jettyPort = intValue(IGNITE_JETTY_PORT, null);
-            cfg.tcpHost = clnCfg.getHost();
-            cfg.tcpPort = clnCfg.getPort();
-            cfg.tcpSslCtxFactory = compactClass(clnCfg.getSslContextFactory());
+            tcpSslEnabled = conCfg.isSslEnabled();
+            jettyPath = conCfg.getJettyPath();
+            jettyHost = getProperty(IGNITE_JETTY_HOST);
+            jettyPort = intValue(IGNITE_JETTY_PORT, null);
+            tcpHost = conCfg.getHost();
+            tcpPort = conCfg.getPort();
+            tcpSslCtxFactory = compactClass(conCfg.getSslContextFactory());
+            secretKey = conCfg.getSecretKey();
+            noDelay = conCfg.isNoDelay();
+            directBuf = conCfg.isDirectBuffer();
+            sndBufSize = conCfg.getSendBufferSize();
+            rcvBufSize = conCfg.getReceiveBufferSize();
+            idleQryCurTimeout = conCfg.getIdleQueryCursorTimeout();
+            idleQryCurCheckFreq = conCfg.getIdleQueryCursorCheckFrequency();
+            sndQueueLimit = conCfg.getSendQueueLimit();
+            selectorCnt = conCfg.getSelectorCount();
+            idleTimeout = conCfg.getIdleTimeout();
+            sslClientAuth = conCfg.isSslClientAuth();
+            sslFactory = compactClass(conCfg.getSslFactory());
+            portRange = conCfg.getPortRange();
+            msgInterceptor = compactClass(conCfg.getMessageInterceptor());
         }
-
-        return cfg;
     }
 
     /**
      * @return Whether REST enabled or not.
      */
-    public boolean restEnabled() {
+    public boolean isRestEnabled() {
         return restEnabled;
     }
 
     /**
      * @return Whether or not SSL is enabled for TCP binary protocol.
      */
-    public boolean tcpSslEnabled() {
+    public boolean isTcpSslEnabled() {
         return tcpSslEnabled;
-    }
-
-    /**
-     * @return Rest accessible folders (log command can get files from).
-     */
-    @Nullable public String[] accessibleFolders() {
-        return accessibleFolders;
     }
 
     /**
      * @return Jetty config path.
      */
-    @Nullable public String jettyPath() {
+    @Nullable public String getJettyPath() {
         return jettyPath;
     }
 
     /**
      * @return Jetty host.
      */
-    @Nullable public String jettyHost() {
+    @Nullable public String getJettyHost() {
         return jettyHost;
     }
 
     /**
      * @return Jetty port.
      */
-    @Nullable public Integer jettyPort() {
+    @Nullable public Integer getJettyPort() {
         return jettyPort;
     }
 
     /**
      * @return REST TCP binary host.
      */
-    @Nullable public String tcpHost() {
+    @Nullable public String getTcpHost() {
         return tcpHost;
     }
 
     /**
      * @return REST TCP binary port.
      */
-    @Nullable public Integer tcpPort() {
+    public int getTcpPort() {
         return tcpPort;
     }
 
     /**
      * @return Context factory for SSL.
      */
-    @Nullable public String tcpSslContextFactory() {
+    @Nullable public String getTcpSslContextFactory() {
         return tcpSslCtxFactory;
+    }
+
+    /**
+     * @return Secret key.
+     */
+    @Nullable public String getSecretKey() {
+        return secretKey;
+    }
+
+    /**
+     * @return Whether {@code TCP_NODELAY} option should be enabled.
+     */
+    public boolean isNoDelay() {
+        return noDelay;
+    }
+
+    /**
+     * @return Whether direct buffer should be used.
+     */
+    public boolean isDirectBuffer() {
+        return directBuf;
+    }
+
+    /**
+     * @return REST TCP server send buffer size (0 for default).
+     */
+    public int getSendBufferSize() {
+        return sndBufSize;
+    }
+
+    /**
+     * @return REST TCP server receive buffer size (0 for default).
+     */
+    public int getReceiveBufferSize() {
+        return rcvBufSize;
+    }
+
+    /**
+     * @return Idle query cursors timeout in milliseconds
+     */
+    public long getIdleQueryCursorTimeout() {
+        return idleQryCurTimeout;
+    }
+
+    /**
+     * @return Idle query cursor check frequency in milliseconds.
+     */
+    public long getIdleQueryCursorCheckFrequency() {
+        return idleQryCurCheckFreq;
+    }
+
+    /**
+     * @return REST TCP server send queue limit (0 for unlimited).
+     */
+    public int getSendQueueLimit() {
+        return sndQueueLimit;
+    }
+
+    /**
+     * @return Number of selector threads for REST TCP server.
+     */
+    public int getSelectorCount() {
+        return selectorCnt;
+    }
+
+    /**
+     * @return Idle timeout in milliseconds.
+     */
+    public long getIdleTimeout() {
+        return idleTimeout;
+    }
+
+    /**
+     * Gets a flag indicating whether or not remote clients will be required to have a valid SSL certificate which
+     * validity will be verified with trust manager.
+     *
+     * @return Whether or not client authentication is required.
+     */
+    public boolean isSslClientAuth() {
+        return sslClientAuth;
+    }
+
+    /**
+     *  @return SslContextFactory instance.
+     */
+    public String getSslFactory() {
+        return sslFactory;
+    }
+
+    /**
+     * @return Number of ports to try.
+     */
+    public int getPortRange() {
+        return portRange;
+    }
+
+    /**
+     * @return Interceptor.
+     */
+    @Nullable public String getMessageInterceptor() {
+        return msgInterceptor;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+        out.writeBoolean(restEnabled);
+        out.writeBoolean(tcpSslEnabled);
+        U.writeString(out, jettyPath);
+        U.writeString(out, jettyHost);
+        out.writeObject(jettyPort);
+        U.writeString(out, tcpHost);
+        out.writeInt(tcpPort);
+        U.writeString(out, tcpSslCtxFactory);
+        U.writeString(out, secretKey);
+        out.writeBoolean(noDelay);
+        out.writeBoolean(directBuf);
+        out.writeInt(sndBufSize);
+        out.writeInt(rcvBufSize);
+        out.writeLong(idleQryCurTimeout);
+        out.writeLong(idleQryCurCheckFreq);
+        out.writeInt(sndQueueLimit);
+        out.writeInt(selectorCnt);
+        out.writeLong(idleTimeout);
+        out.writeBoolean(sslClientAuth);
+        U.writeString(out, sslFactory);
+        out.writeInt(portRange);
+        U.writeString(out, msgInterceptor);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+        restEnabled = in.readBoolean();
+        tcpSslEnabled = in.readBoolean();
+        jettyPath = U.readString(in);
+        jettyHost = U.readString(in);
+        jettyPort = (Integer)in.readObject();
+        tcpHost = U.readString(in);
+        tcpPort = in.readInt();
+        tcpSslCtxFactory = U.readString(in);
+        secretKey = U.readString(in);
+        noDelay = in.readBoolean();
+        directBuf = in.readBoolean();
+        sndBufSize = in.readInt();
+        rcvBufSize = in.readInt();
+        idleQryCurTimeout = in.readLong();
+        idleQryCurCheckFreq = in.readLong();
+        sndQueueLimit = in.readInt();
+        selectorCnt = in.readInt();
+        idleTimeout = in.readLong();
+        sslClientAuth = in.readBoolean();
+        sslFactory = U.readString(in);
+        portRange = in.readInt();
+        msgInterceptor = U.readString(in);
     }
 
     /** {@inheritDoc} */

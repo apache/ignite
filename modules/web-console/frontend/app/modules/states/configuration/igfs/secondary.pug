@@ -22,7 +22,7 @@ include /app/helpers/jade/mixins
 .panel.panel-default(ng-form=form novalidate)
     .panel-heading(bs-collapse-toggle='' ng-click=`ui.loadPanel('${form}')`)
         ignite-form-panel-chevron
-        label(id="secondaryFileSystem-title") Secondary file system
+        label(id='secondaryFileSystem-title') Secondary file system
         ignite-form-field-tooltip.tipLabel
             | Secondary file system is provided for pass-through, write-through, and read-through purposes#[br]
             | #[a(href="https://apacheignite-fs.readme.io/docs/secondary-file-system" target="_blank") More info]

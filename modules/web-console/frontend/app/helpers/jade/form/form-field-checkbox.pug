@@ -15,7 +15,7 @@
     limitations under the License.
 
 mixin form-field-checkbox(label, model, name, disabled, required, tip)
-    div.checkbox.col-xs-12.col-sm-12.col-md-12
+    .checkbox(id=`{{ ${name} }}Field`)
         label(id=`{{ ${name} }}Label`)
             .input-tip
                 if block
@@ -35,4 +35,5 @@ mixin form-field-checkbox(label, model, name, disabled, required, tip)
                         data-ignite-form-panel-field=''
                     )
             span #{label}
-            i.tipLabel.icon-help(bs-tooltip='' data-title=tip)
+
+            +tooltip(tip, tipOpts, 'tipLabel')

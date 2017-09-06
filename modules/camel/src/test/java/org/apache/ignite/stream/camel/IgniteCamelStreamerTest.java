@@ -107,7 +107,7 @@ public class IgniteCamelStreamerTest extends GridCommonAbstractTest {
         }
 
         // create Camel streamer
-        dataStreamer = grid().dataStreamer(null);
+        dataStreamer = grid().dataStreamer(DEFAULT_CACHE_NAME);
         streamer = createCamelStreamer(dataStreamer);
     }
 
@@ -121,7 +121,7 @@ public class IgniteCamelStreamerTest extends GridCommonAbstractTest {
 
         dataStreamer.close();
 
-        grid().cache(null).clear();
+        grid().cache(DEFAULT_CACHE_NAME).clear();
     }
 
     /**
@@ -391,7 +391,7 @@ public class IgniteCamelStreamerTest extends GridCommonAbstractTest {
             }
         };
 
-        remoteLsnr = ignite.events(ignite.cluster().forCacheNodes(null))
+        remoteLsnr = ignite.events(ignite.cluster().forCacheNodes(DEFAULT_CACHE_NAME))
             .remoteListen(callback, null, EVT_CACHE_OBJECT_PUT);
 
         return latch;
@@ -402,7 +402,7 @@ public class IgniteCamelStreamerTest extends GridCommonAbstractTest {
      */
     private void assertCacheEntriesLoaded(int cnt) {
         // get the cache and check that the entries are present
-        IgniteCache<Integer, String> cache = grid().cache(null);
+        IgniteCache<Integer, String> cache = grid().cache(DEFAULT_CACHE_NAME);
 
         // for each key from 0 to count from the TEST_DATA (ordered by key), check that the entry is present in cache
         for (Integer key : new ArrayList<>(new TreeSet<>(TEST_DATA.keySet())).subList(0, cnt))
@@ -412,7 +412,7 @@ public class IgniteCamelStreamerTest extends GridCommonAbstractTest {
         assertEquals(cnt, cache.size(CachePeekMode.ALL));
 
         // remove the event listener
-        grid().events(grid().cluster().forCacheNodes(null)).stopRemoteListen(remoteLsnr);
+        grid().events(grid().cluster().forCacheNodes(DEFAULT_CACHE_NAME)).stopRemoteListen(remoteLsnr);
     }
 
 }

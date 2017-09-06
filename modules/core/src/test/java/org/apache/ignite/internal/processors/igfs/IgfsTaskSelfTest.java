@@ -100,7 +100,7 @@ public class IgfsTaskSelfTest extends IgfsCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        igfs.format();
+        igfs.clear();
     }
 
     /**
@@ -117,7 +117,7 @@ public class IgfsTaskSelfTest extends IgfsCommonAbstractTest {
         igfsCfg.setDefaultMode(PRIMARY);
         igfsCfg.setFragmentizerEnabled(false);
 
-        CacheConfiguration dataCacheCfg = new CacheConfiguration();
+        CacheConfiguration dataCacheCfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         dataCacheCfg.setCacheMode(PARTITIONED);
         dataCacheCfg.setAtomicityMode(TRANSACTIONAL);
@@ -125,7 +125,7 @@ public class IgfsTaskSelfTest extends IgfsCommonAbstractTest {
         dataCacheCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(1));
         dataCacheCfg.setBackups(0);
 
-        CacheConfiguration metaCacheCfg = new CacheConfiguration();
+        CacheConfiguration metaCacheCfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         metaCacheCfg.setCacheMode(REPLICATED);
         metaCacheCfg.setAtomicityMode(TRANSACTIONAL);
@@ -162,6 +162,25 @@ public class IgfsTaskSelfTest extends IgfsCommonAbstractTest {
 
         IgniteBiTuple<Long, Integer> taskRes = igfs.execute(new Task(),
             new IgfsStringDelimiterRecordResolver(" "), Collections.singleton(FILE), arg);
+
+        assert F.eq(genLen, taskRes.getKey());
+        assert F.eq(TOTAL_WORDS, taskRes.getValue());
+    }
+
+    /**
+     * Test task.
+     *
+     * @throws Exception If failed.
+     */
+    @SuppressWarnings("ConstantConditions")
+    public void testTaskAsync() throws Exception {
+        String arg = DICTIONARY[new Random(System.currentTimeMillis()).nextInt(DICTIONARY.length)];
+
+        generateFile(TOTAL_WORDS);
+        Long genLen = igfs.info(FILE).length();
+
+        IgniteBiTuple<Long, Integer> taskRes = igfs.executeAsync(new Task(),
+            new IgfsStringDelimiterRecordResolver(" "), Collections.singleton(FILE), arg).get();
 
         assert F.eq(genLen, taskRes.getKey());
         assert F.eq(TOTAL_WORDS, taskRes.getValue());

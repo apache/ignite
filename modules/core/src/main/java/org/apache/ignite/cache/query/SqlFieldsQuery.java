@@ -24,6 +24,7 @@ import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * SQL Fields query. This query can return specific fields of data based
@@ -66,6 +67,18 @@ public class SqlFieldsQuery extends Query<List<?>> {
 
     /** */
     private boolean distributedJoins;
+
+    /** */
+    private boolean replicatedOnly;
+
+    /** */
+    private boolean lazy;
+
+    /** Partitions for query */
+    private int[] parts;
+
+    /** Schema. */
+    private String schema;
 
     /**
      * Constructs SQL fields query.
@@ -220,7 +233,7 @@ public class SqlFieldsQuery extends Query<List<?>> {
     /**
      * Check if distributed joins are enabled for this query.
      *
-     * @return {@code true} If distributed joind enabled.
+     * @return {@code true} If distributed joins enabled.
      */
     public boolean isDistributedJoins() {
         return distributedJoins;
@@ -234,6 +247,108 @@ public class SqlFieldsQuery extends Query<List<?>> {
     /** {@inheritDoc} */
     @Override public SqlFieldsQuery setLocal(boolean loc) {
         return (SqlFieldsQuery)super.setLocal(loc);
+    }
+
+    /**
+     * Specify if the query contains only replicated tables.
+     * This is a hint for potentially more effective execution.
+     *
+     * @param replicatedOnly The query contains only replicated tables.
+     * @return {@code this} For chaining.
+     */
+    public SqlFieldsQuery setReplicatedOnly(boolean replicatedOnly) {
+        this.replicatedOnly = replicatedOnly;
+
+        return this;
+    }
+
+    /**
+     * Check is the query contains only replicated tables.
+     *
+     * @return {@code true} If the query contains only replicated tables.
+     */
+    public boolean isReplicatedOnly() {
+        return replicatedOnly;
+    }
+
+    /**
+     * Sets lazy query execution flag.
+     * <p>
+     * By default Ignite attempts to fetch the whole query result set to memory and send it to the client. For small
+     * and medium result sets this provides optimal performance and minimize duration of internal database locks, thus
+     * increasing concurrency.
+     * <p>
+     * If result set is too big to fit in available memory this could lead to excessive GC pauses and even
+     * OutOfMemoryError. Use this flag as a hint for Ignite to fetch result set lazily, thus minimizing memory
+     * consumption at the cost of moderate performance hit.
+     * <p>
+     * Defaults to {@code false}, meaning that the whole result set is fetched to memory eagerly.
+     *
+     * @param lazy Lazy query execution flag.
+     * @return {@code this} For chaining.
+     */
+    public SqlFieldsQuery setLazy(boolean lazy) {
+        this.lazy = lazy;
+
+        return this;
+    }
+
+    /**
+     * Gets lazy query execution flag.
+     * <p>
+     * See {@link #setLazy(boolean)} for more information.
+     *
+     * @return Lazy flag.
+     */
+    public boolean isLazy() {
+        return lazy;
+    }
+
+    /**
+     * Gets partitions for query, in ascending order.
+     */
+    @Nullable public int[] getPartitions() {
+        return parts;
+    }
+
+    /**
+     * Sets partitions for a query.
+     * The query will be executed only on nodes which are primary for specified partitions.
+     * <p>
+     * Note what passed array'll be sorted in place for performance reasons, if it wasn't sorted yet.
+     *
+     * @param parts Partitions.
+     * @return {@code this} for chaining.
+     */
+    public SqlFieldsQuery setPartitions(@Nullable int... parts) {
+        this.parts = prepare(parts);
+
+        return this;
+    }
+
+    /**
+     * Get schema for the query.
+     * If not set, current cache name is used, which means you can
+     * omit schema name for tables within the current cache.
+     *
+     * @return Schema. Null if schema is not set.
+     */
+    @Nullable public String getSchema() {
+        return schema;
+    }
+
+    /**
+     * Set schema for the query.
+     * If not set, current cache name is used, which means you can
+     * omit schema name for tables within the current cache.
+     *
+     * @param schema Schema. Null to unset schema.
+     * @return {@code this} for chaining.
+     */
+    public SqlFieldsQuery setSchema(@Nullable String schema) {
+        this.schema = schema;
+
+        return this;
     }
 
     /** {@inheritDoc} */

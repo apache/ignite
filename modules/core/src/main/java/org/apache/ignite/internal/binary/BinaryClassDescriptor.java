@@ -40,16 +40,15 @@ import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryReflectiveSerializer;
 import org.apache.ignite.binary.BinarySerializer;
 import org.apache.ignite.binary.Binarylizable;
+import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.GridUnsafe;
-import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.MarshallerExclusions;
-import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.query.QueryUtils.isGeometryClass;
@@ -102,7 +101,7 @@ public class BinaryClassDescriptor {
     private final Method readResolveMtd;
 
     /** */
-    private final Map<String, Integer> stableFieldsMeta;
+    private final Map<String, BinaryFieldMetadata> stableFieldsMeta;
 
     /** Object schemas. Initialized only for serializable classes and contains only 1 entry. */
     private final BinarySchema stableSchema;
@@ -118,9 +117,6 @@ public class BinaryClassDescriptor {
 
     /** */
     private final boolean excluded;
-
-    /** */
-    private final boolean overridesHashCode;
 
     /** */
     private final Class<?>[] intfs;
@@ -175,8 +171,6 @@ public class BinaryClassDescriptor {
         this.serializer = serializer;
         this.mapper = mapper;
         this.registered = registered;
-
-        overridesHashCode = IgniteUtils.overridesEqualsAndHashCode(cls);
 
         schemaReg = ctx.schemaRegistry(typeId);
 
@@ -285,12 +279,12 @@ public class BinaryClassDescriptor {
                 if (BinaryUtils.FIELDS_SORTED_ORDER) {
                     fields0 = new TreeMap<>();
 
-                    stableFieldsMeta = metaDataEnabled ? new TreeMap<String, Integer>() : null;
+                    stableFieldsMeta = metaDataEnabled ? new TreeMap<String, BinaryFieldMetadata>() : null;
                 }
                 else {
                     fields0 = new LinkedHashMap<>();
 
-                    stableFieldsMeta = metaDataEnabled ? new LinkedHashMap<String, Integer>() : null;
+                    stableFieldsMeta = metaDataEnabled ? new LinkedHashMap<String, BinaryFieldMetadata>() : null;
                 }
 
                 Set<String> duplicates = duplicateFields(cls);
@@ -322,7 +316,7 @@ public class BinaryClassDescriptor {
                             fields0.put(name, fieldInfo);
 
                             if (metaDataEnabled)
-                                stableFieldsMeta.put(name, fieldInfo.mode().typeId());
+                                stableFieldsMeta.put(name, new BinaryFieldMetadata(fieldInfo));
                         }
                     }
                 }
@@ -468,7 +462,7 @@ public class BinaryClassDescriptor {
     /**
      * @return Fields meta data.
      */
-    Map<String, Integer> fieldsMeta() {
+    Map<String, BinaryFieldMetadata> fieldsMeta() {
         return stableFieldsMeta;
     }
 
@@ -744,7 +738,7 @@ public class BinaryClassDescriptor {
                         else
                             ((Binarylizable)obj).writeBinary(writer);
 
-                        postWrite(writer, obj);
+                        postWrite(writer);
 
                         // Check whether we need to update metadata.
                         if (obj.getClass() != BinaryMetadata.class) {
@@ -763,7 +757,7 @@ public class BinaryClassDescriptor {
                                 BinarySchema newSchema = collector.schema();
 
                                 BinaryMetadata meta = new BinaryMetadata(typeId, typeName, collector.meta(),
-                                    affKeyFieldName, Collections.singleton(newSchema), false);
+                                    affKeyFieldName, Collections.singleton(newSchema), false, null);
 
                                 ctx.updateMetadata(typeId, meta);
 
@@ -784,7 +778,7 @@ public class BinaryClassDescriptor {
                 if (userType && !stableSchemaPublished) {
                     // Update meta before write object with new schema
                     BinaryMetadata meta = new BinaryMetadata(typeId, typeName, stableFieldsMeta,
-                        affKeyFieldName, Collections.singleton(stableSchema), false);
+                        affKeyFieldName, Collections.singleton(stableSchema), false, null);
 
                     ctx.updateMetadata(typeId, meta);
 
@@ -800,7 +794,7 @@ public class BinaryClassDescriptor {
 
                         writer.schemaId(stableSchema.schemaId());
 
-                        postWrite(writer, obj);
+                        postWrite(writer);
                         postWriteHashCode(writer, obj);
                     }
                     finally {
@@ -903,18 +897,9 @@ public class BinaryClassDescriptor {
      * Post-write phase.
      *
      * @param writer Writer.
-     * @param obj Object.
      */
-    private void postWrite(BinaryWriterExImpl writer, Object obj) {
-        if (obj instanceof CacheObjectImpl)
-            writer.postWrite(userType, registered, 0, false);
-        else if (obj instanceof BinaryObjectEx) {
-            boolean flagSet = ((BinaryObjectEx)obj).isFlagSet(BinaryUtils.FLAG_EMPTY_HASH_CODE);
-
-            writer.postWrite(userType, registered, obj.hashCode(), !flagSet);
-        }
-        else
-            writer.postWrite(userType, registered, obj.hashCode(), overridesHashCode);
+    private void postWrite(BinaryWriterExImpl writer) {
+        writer.postWrite(userType, registered);
     }
 
     /**

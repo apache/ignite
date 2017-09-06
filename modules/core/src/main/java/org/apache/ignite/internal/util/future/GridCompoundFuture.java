@@ -57,9 +57,6 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> implements Ig
     private static final AtomicIntegerFieldUpdater<GridCompoundFuture> LSNR_CALLS_UPD =
         AtomicIntegerFieldUpdater.newUpdater(GridCompoundFuture.class, "lsnrCalls");
 
-    /** Sync object */
-    protected final Object sync = new Object();
-
     /** Possible values: null (no future), IgniteInternalFuture instance (single future) or List of futures  */
     private volatile Object futs;
 
@@ -99,13 +96,13 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> implements Ig
                     onDone(rdc.reduce());
             }
             catch (RuntimeException e) {
-                U.error(null, "Failed to execute compound future reducer: " + this, e);
+                logError(null, "Failed to execute compound future reducer: " + this, e);
 
                 // Exception in reducer is a bug, so we bypass checkComplete here.
                 onDone(e);
             }
             catch (AssertionError e) {
-                U.error(null, "Failed to execute compound future reducer: " + this, e);
+                logError(null, "Failed to execute compound future reducer: " + this, e);
 
                 // Bypass checkComplete because need to rethrow.
                 onDone(e);
@@ -115,30 +112,26 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> implements Ig
         }
         catch (IgniteTxOptimisticCheckedException | IgniteFutureCancelledCheckedException |
             ClusterTopologyCheckedException e) {
-            if (!ignoreFailure(e))
+            if (!processFailure(e, fut))
                 onDone(e);
         }
         catch (IgniteCheckedException e) {
-            if (!ignoreFailure(e)) {
-                if (e instanceof NodeStoppingException) {
-                    IgniteLogger log = logger();
-
-                    if (log != null && log.isDebugEnabled())
-                        log.debug("Failed to execute compound future reducer, node stopped.");
-                }
+            if (!processFailure(e, fut)) {
+                if (e instanceof NodeStoppingException)
+                    logDebug(logger(), "Failed to execute compound future reducer, node stopped.");
                 else
-                    U.error(null, "Failed to execute compound future reducer: " + this, e);
+                    logError(null, "Failed to execute compound future reducer: " + this, e);
 
                 onDone(e);
             }
         }
         catch (RuntimeException e) {
-            U.error(null, "Failed to execute compound future reducer: " + this, e);
+            logError(null, "Failed to execute compound future reducer: " + this, e);
 
             onDone(e);
         }
         catch (AssertionError e) {
-            U.error(null, "Failed to execute compound future reducer: " + this, e);
+            logError(null, "Failed to execute compound future reducer: " + this, e);
 
             // Bypass checkComplete because need to rethrow.
             onDone(e);
@@ -146,7 +139,7 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> implements Ig
             throw e;
         }
 
-        LSNR_CALLS_UPD.incrementAndGet(GridCompoundFuture.this);
+        LSNR_CALLS_UPD.incrementAndGet(this);
 
         checkComplete();
     }
@@ -169,16 +162,14 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> implements Ig
      * @return Collection of futures.
      */
     @SuppressWarnings("unchecked")
-    public final Collection<IgniteInternalFuture<T>> futures() {
-        synchronized (sync) {
-            if (futs == null)
-                return Collections.emptyList();
+    public final synchronized Collection<IgniteInternalFuture<T>> futures() {
+        if (futs == null)
+            return Collections.emptyList();
 
-            if (futs instanceof IgniteInternalFuture)
-                return Collections.singletonList((IgniteInternalFuture<T>)futs);
+        if (futs instanceof IgniteInternalFuture)
+            return Collections.singletonList((IgniteInternalFuture<T>)futs);
 
-            return new ArrayList<>((Collection<IgniteInternalFuture<T>>)futs);
-        }
+        return new ArrayList<>((Collection<IgniteInternalFuture<T>>)futs);
     }
 
     /**
@@ -192,6 +183,17 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> implements Ig
     }
 
     /**
+     * Processes error thrown by some of the inner futures.
+     *
+     * @param err Thrown exception.
+     * @param fut Failed future.
+     * @return {@code True} if this error should be ignored.
+     */
+    protected boolean processFailure(Throwable err, IgniteInternalFuture<T> fut) {
+        return ignoreFailure(err);
+    }
+
+    /**
      * Checks if there are pending futures. This is not the same as
      * {@link #isDone()} because child classes may override {@link #onDone(Object, Throwable)}
      * call and delay completion.
@@ -200,7 +202,7 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> implements Ig
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
     protected final boolean hasPending() {
-        synchronized (sync) {
+        synchronized (this) {
             int size = futuresCountNoLock();
 
             // Avoid iterator creation and collection copy.
@@ -224,7 +226,7 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> implements Ig
     public final void add(IgniteInternalFuture<T> fut) {
         assert fut != null;
 
-        synchronized (sync) {
+        synchronized (this) {
             if (futs == null)
                 futs = fut;
             else if (futs instanceof IgniteInternalFuture) {
@@ -254,10 +256,8 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> implements Ig
     /**
      * Clear futures.
      */
-    protected final void clear() {
-        synchronized (sync) {
-            futs = null;
-        }
+    protected final synchronized void clear() {
+        futs = null;
     }
 
     /**
@@ -285,18 +285,36 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> implements Ig
                 onDone(rdc != null ? rdc.reduce() : null);
             }
             catch (RuntimeException e) {
-                U.error(null, "Failed to execute compound future reducer: " + this, e);
+                logError(null, "Failed to execute compound future reducer: " + this, e);
 
                 onDone(e);
             }
             catch (AssertionError e) {
-                U.error(null, "Failed to execute compound future reducer: " + this, e);
+                logError(null, "Failed to execute compound future reducer: " + this, e);
 
                 onDone(e);
 
                 throw e;
             }
         }
+    }
+
+    /**
+     * @param log IgniteLogger.
+     * @param msg ShortMessage.
+     * @param e Exception.
+     */
+    protected void logError(IgniteLogger log, String msg, Throwable e) {
+        U.error(log, msg, e);
+    }
+
+    /**
+     * @param log IgniteLogger.
+     * @param msg ShortMessage.
+     */
+    protected void logDebug(IgniteLogger log, String msg) {
+        if (log != null && log.isDebugEnabled())
+            log.debug(msg);
     }
 
     /**
@@ -307,7 +325,7 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> implements Ig
      */
     @SuppressWarnings("unchecked")
     protected final IgniteInternalFuture<T> future(int idx) {
-        assert Thread.holdsLock(sync);
+        assert Thread.holdsLock(this);
         assert futs != null && idx >= 0 && idx < futuresCountNoLock();
 
         if (futs instanceof IgniteInternalFuture) {
@@ -324,7 +342,7 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> implements Ig
      */
     @SuppressWarnings("unchecked")
     protected final int futuresCountNoLock() {
-        assert Thread.holdsLock(sync);
+        assert Thread.holdsLock(this);
 
         if (futs == null)
             return 0;
@@ -338,19 +356,15 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> implements Ig
     /**
      * @return Futures size.
      */
-    private int futuresCount() {
-        synchronized (sync) {
-            return futuresCountNoLock();
-        }
+    private synchronized int futuresCount() {
+        return futuresCountNoLock();
     }
 
     /**
      * @return {@code True} if has at least one future.
      */
-    protected final boolean hasFutures() {
-        synchronized (sync) {
-            return futs != null;
-        }
+    protected final synchronized boolean hasFutures() {
+        return futs != null;
     }
 
     /** {@inheritDoc} */

@@ -102,7 +102,7 @@ public final class GridCacheLoadTest extends GridCacheAbstractLoadTest {
     private void memoryTest() {
         Ignite ignite = G.ignite();
 
-        final IgniteCache<Integer, byte[]> cache = ignite.cache(null);
+        final IgniteCache<Integer, byte[]> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         assert cache != null;
 
@@ -152,7 +152,7 @@ public final class GridCacheLoadTest extends GridCacheAbstractLoadTest {
             if (LOAD)
                 test.loadTest(test.writeClos, test.readClos);
 
-            G.ignite().cache(null).clear();
+            G.ignite().cache(DEFAULT_CACHE_NAME).clear();
 
             System.gc();
 

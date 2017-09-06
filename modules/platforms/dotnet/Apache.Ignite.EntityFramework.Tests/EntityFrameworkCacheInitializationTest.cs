@@ -64,7 +64,7 @@ namespace Apache.Ignite.EntityFramework.Tests
             CheckCacheAndStop("myGrid3", "myCache",
                 new IgniteDbConfiguration(new IgniteConfiguration
                     {
-                        GridName = "myGrid3",
+                        IgniteInstanceName = "myGrid3",
                     }, new CacheConfiguration("myCache_metadata")
                     {
                         CacheMode = CacheMode.Replicated,

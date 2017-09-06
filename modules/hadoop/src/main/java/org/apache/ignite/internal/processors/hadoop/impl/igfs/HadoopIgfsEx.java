@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal.processors.hadoop.impl.igfs;
 
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.igfs.IgfsModeResolver;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
@@ -91,4 +93,10 @@ public interface HadoopIgfsEx extends HadoopIgfs {
      * @return the user name.
      */
     public String user();
+
+    /**
+     * @return Mode resolver.
+     * @throws IgniteCheckedException On error.
+     */
+    IgfsModeResolver modeResolver() throws IgniteCheckedException;
 }

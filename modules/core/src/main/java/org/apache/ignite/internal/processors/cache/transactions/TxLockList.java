@@ -118,7 +118,7 @@ public class TxLockList implements Message {
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return -26;
     }
 

@@ -105,7 +105,7 @@ public class GridCacheMixedPartitionExchangeSelfTest extends GridCommonAbstractT
 
                         int key = rnd.nextInt(keys);
 
-                        IgniteCache<Integer, Integer> prj = grid(g).cache(null);
+                        IgniteCache<Integer, Integer> prj = grid(g).cache(DEFAULT_CACHE_NAME);
 
                         try {
                             try (Transaction tx = grid(g).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
@@ -157,7 +157,7 @@ public class GridCacheMixedPartitionExchangeSelfTest extends GridCommonAbstractT
             for (int i = 0; i < 4; i++) {
                 IgniteKernal grid = (IgniteKernal)grid(i);
 
-                GridCacheContext<Object, Object> cctx = grid.internalCache(null).context();
+                GridCacheContext<Object, Object> cctx = grid.internalCache(DEFAULT_CACHE_NAME).context();
 
                 IgniteInternalFuture<AffinityTopologyVersion> verFut = cctx.affinity().affinityReadyFuture(topVer);
 

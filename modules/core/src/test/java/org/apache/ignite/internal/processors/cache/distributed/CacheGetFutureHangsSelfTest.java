@@ -30,9 +30,10 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
-import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
+import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -67,10 +68,7 @@ public class CacheGetFutureHangsSelfTest extends GridCommonAbstractTest {
 
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
-        OptimizedMarshaller marsh = new OptimizedMarshaller();
-        marsh.setRequireSerializable(false);
-
-        cfg.setMarshaller(marsh);
+        cfg.setMarshaller(new BinaryMarshaller());
 
         CacheConfiguration ccfg = defaultCacheConfiguration();
         ccfg.setCacheMode(CacheMode.PARTITIONED);
@@ -140,7 +138,7 @@ public class CacheGetFutureHangsSelfTest extends GridCommonAbstractTest {
                         Set<Integer> keys = F.asSet(1, 2, 3, 4, 5);
 
                         while ((ignite = randomNode()) != null) {
-                            IgniteCache<Object, Object> cache = ignite.get1().cache(null);
+                            IgniteCache<Object, Object> cache = ignite.get1().cache(DEFAULT_CACHE_NAME);
 
                             for (int i = 0; i < 100; i++)
                                 cache.containsKey(ThreadLocalRandom.current().nextInt(100_000));
@@ -164,7 +162,7 @@ public class CacheGetFutureHangsSelfTest extends GridCommonAbstractTest {
                         T2<Ignite, Integer> ignite;
 
                         while ((ignite = randomNode()) != null) {
-                            IgniteCache<Object, Object> cache = ignite.get1().cache(null);
+                            IgniteCache<Object, Object> cache = ignite.get1().cache(DEFAULT_CACHE_NAME);
 
                             for (int i = 0; i < 100; i++)
                                 cache.put(ThreadLocalRandom.current().nextInt(100_000), UUID.randomUUID());

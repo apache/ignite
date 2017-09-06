@@ -64,6 +64,21 @@
     <ClInclude Include="..\..\include\ignite\common\platform_utils.h">
       <Filter>Code\common</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\ignite\time.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\future.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\common\promise.h">
+      <Filter>Code\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\common\shared_state.h">
+      <Filter>Code\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\common\cancelable.h">
+      <Filter>Code\common</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\date.cpp">
@@ -101,6 +116,9 @@
     </ClCompile>
     <ClCompile Include="..\..\src\common\utils.cpp">
       <Filter>Code\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\time.cpp">
+      <Filter>Code</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

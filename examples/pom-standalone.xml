@@ -72,6 +72,12 @@
         </dependency>
 
         <dependency>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-spring-data</artifactId>
+            <version>to_be_replaced_by_ignite_version</version>
+        </dependency>
+
+        <dependency>
             <groupId>com.google.code.simple-spring-memcached</groupId>
             <artifactId>spymemcached</artifactId>
             <version>2.7.3</version>
@@ -168,7 +174,7 @@
             <dependencies>
                 <dependency>
                     <groupId>org.apache.ignite</groupId>
-                    <artifactId>ignite-hibernate</artifactId>
+                    <artifactId>ignite-hibernate_5.1</artifactId>
                     <version>to_be_replaced_by_ignite_version</version>
                 </dependency>
 
@@ -222,7 +228,6 @@
                         </goals>
                         <configuration>
                             <sources>
-                                <source>schema-import/src/main/java</source>
                                 <source>${lgpl.folder}</source>
                                 <source>${java8.folder}</source>
                                 <source>${spark.folder}</source>

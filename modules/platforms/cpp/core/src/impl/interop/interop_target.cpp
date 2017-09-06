@@ -32,14 +32,24 @@ namespace ignite
         namespace interop
         {
             InteropTarget::InteropTarget(SharedPointer<IgniteEnvironment> env, jobject javaRef) :
-                env(env), javaRef(javaRef)
+                env(env), javaRef(javaRef), skipJavaRefRelease(false)
+            {
+                // No-op.
+            }
+
+            InteropTarget::InteropTarget(SharedPointer<IgniteEnvironment> env, jobject javaRef, 
+                bool skipJavaRefRelease) :
+                env(env), javaRef(javaRef), skipJavaRefRelease(skipJavaRefRelease)
             {
                 // No-op.
             }
 
             InteropTarget::~InteropTarget()
             {
-                JniContext::Release(javaRef);
+                if (!skipJavaRefRelease) 
+                {
+                    JniContext::Release(javaRef);
+                }
             }
 
             int64_t InteropTarget::WriteTo(InteropMemory* mem, InputOperation& inOp, IgniteError& err)
@@ -57,7 +67,7 @@ namespace ignite
 
                 if (metaMgr->IsUpdatedSince(metaVer))
                 {
-                    if (!metaMgr->ProcessPendingUpdates(env.Get()->GetTypeUpdater(), &err))
+                    if (!metaMgr->ProcessPendingUpdates(err))
                         return 0;
                 }
 
@@ -186,18 +196,18 @@ namespace ignite
 
                     IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
 
-                    if (jniErr.code == IGNITE_JNI_ERR_SUCCESS && res == ResultSuccess)
+                    if (jniErr.code == IGNITE_JNI_ERR_SUCCESS && res == OperationResult::AI_SUCCESS)
                         ReadFrom(outInMem.Get(), outOp);
-                    else if (res == ResultNull)
+                    else if (res == OperationResult::AI_NULL)
                         outOp.SetNull();
-                    else if (res == ResultError)
+                    else if (res == OperationResult::AI_ERROR)
                         ReadError(outInMem.Get(), err);
                     else
                         assert(false);
                 }
             }
 
-            InteropTarget::OperationResult InteropTarget::InStreamOutLong(int32_t opType,
+            InteropTarget::OperationResult::Type InteropTarget::InStreamOutLong(int32_t opType,
                 InteropMemory& outInMem, IgniteError& err)
             {
                 JniErrorInfo jniErr;
@@ -210,10 +220,28 @@ namespace ignite
 
                     IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
 
-                    return static_cast<OperationResult>(res);
+                    return static_cast<OperationResult::Type>(res);
                 }
 
-                return ResultError;
+                return OperationResult::AI_ERROR;
+            }
+
+            jobject InteropTarget::InStreamOutObject(int32_t opType, InteropMemory& outInMem, IgniteError& err)
+            {
+                JniErrorInfo jniErr;
+
+                int64_t outInPtr = outInMem.PointerLong();
+
+                if (outInPtr)
+                {
+                    jobject res = env.Get()->Context()->TargetInStreamOutObject(javaRef, opType, outInPtr, &jniErr);
+
+                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
+
+                    return res;
+                }
+
+                return 0;
             }
 
             int64_t InteropTarget::OutInOpLong(int32_t opType, int64_t val, IgniteError& err)

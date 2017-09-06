@@ -18,8 +18,6 @@
 package org.apache.ignite.internal.processors.platform.plugin.cache;
 
 import org.apache.ignite.plugin.CachePluginConfiguration;
-import org.apache.ignite.plugin.CachePluginContext;
-import org.apache.ignite.plugin.CachePluginProvider;
 
 /**
  * Platform cache plugin configuration.
@@ -40,11 +38,6 @@ public class PlatformCachePluginConfiguration implements CachePluginConfiguratio
         assert nativeCfg != null;
 
         this.nativeCfg = nativeCfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override public CachePluginProvider createProvider(CachePluginContext ctx) {
-        return new PlatformCachePluginProvider(ctx, nativeCfg);
     }
 
     /**

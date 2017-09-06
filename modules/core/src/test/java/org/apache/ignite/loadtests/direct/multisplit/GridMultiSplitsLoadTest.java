@@ -18,7 +18,6 @@
 package org.apache.ignite.loadtests.direct.multisplit;
 
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeTaskFuture;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -106,8 +105,6 @@ public class GridMultiSplitsLoadTest extends GridCommonAbstractTest {
         GridTestUtils.runMultiThreaded(new Runnable() {
             /** {@inheritDoc} */
             @Override public void run() {
-                IgniteCompute comp = ignite.compute().withAsync();
-
                 while (end - System.currentTimeMillis() > 0) {
                     int levels = 3;
 
@@ -116,9 +113,7 @@ public class GridMultiSplitsLoadTest extends GridCommonAbstractTest {
                     long start = System.currentTimeMillis();
 
                     try {
-                        comp.execute(GridLoadTestTask.class, levels);
-
-                        ComputeTaskFuture<Integer> fut = comp.future();
+                        ComputeTaskFuture<Integer> fut = ignite.compute().executeAsync(GridLoadTestTask.class, levels);
 
                         int res = fut.get();
 

@@ -31,7 +31,7 @@ import java.util.UUID
 
 import org.apache.ignite.internal.visor.event.{VisorGridEvent, VisorGridJobEvent, VisorGridTaskEvent}
 import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTask
-import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTask.VisorNodeEventsCollectorTaskArg
+import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTaskArg
 
 import scala.collection.JavaConversions._
 import scala.language.implicitConversions
@@ -91,37 +91,37 @@ private case class VisorExecution(
      * Gets number of job rejections in this session.
      */
     lazy val rejections: Int =
-        evts.count(_.typeId() == EVT_JOB_REJECTED)
+        evts.count(_.getTypeId == EVT_JOB_REJECTED)
 
     /**
      * Gets number of job cancellations in this session.
      */
     lazy val cancels: Int =
-        evts.count(_.typeId() == EVT_JOB_CANCELLED)
+        evts.count(_.getTypeId == EVT_JOB_CANCELLED)
 
     /**
      * Gets number of job finished in this session.
      */
     lazy val finished: Int =
-        evts.count(_.typeId() == EVT_JOB_FINISHED)
+        evts.count(_.getTypeId == EVT_JOB_FINISHED)
 
     /**
      * Gets number of job started in this session.
      */
     lazy val started: Int =
-        evts.count(_.typeId() == EVT_JOB_STARTED)
+        evts.count(_.getTypeId == EVT_JOB_STARTED)
 
     /**
      * Gets number of job failures in this session.
      */
     lazy val failures: Int =
-        evts.count(_.typeId() == EVT_JOB_FAILED)
+        evts.count(_.getTypeId == EVT_JOB_FAILED)
 
     /**
      * Gets number of job failovers in this session.
      */
     lazy val failovers: Int =
-        evts.count(_.typeId() == EVT_JOB_FAILED_OVER)
+        evts.count(_.getTypeId == EVT_JOB_FAILED_OVER)
 
     /**
      * Gets duration of the session.
@@ -420,7 +420,7 @@ class VisorTasksCommand extends VisorConsoleCommand {
             else if (hasArgName("n", argLst)) {
                 val n = argValue("n", argLst)
 
-                if (!n.isDefined)
+                if (n.isEmpty)
                     scold("Invalid arguments: " + args)
                 else
                     task(n.get, hasArgFlag("r", argLst), hasArgFlag("a", argLst))
@@ -428,7 +428,7 @@ class VisorTasksCommand extends VisorConsoleCommand {
             else if (hasArgName("e", argLst)) {
                 val s = argValue("e", argLst)
 
-                if (!s.isDefined)
+                if (s.isEmpty)
                     scold("Invalid arguments: " + args)
                 else
                     exec(s.get, hasArgFlag("r", argLst))
@@ -541,28 +541,28 @@ class VisorTasksCommand extends VisorConsoleCommand {
 
         evts.foreach {
             case te: VisorGridTaskEvent =>
-                val displayedTaskName = taskSimpleName(te.taskName(), te.taskClassName())
+                val displayedTaskName = taskSimpleName(te.getTaskName(), te.getTaskClassName())
 
-                val s = getSession(te.taskSessionId(), displayedTaskName)
+                val s = getSession(te.getTaskSessionId(), displayedTaskName)
                 val t = getTask(displayedTaskName)
 
                 t.execs = t.execs + s
 
                 s.evts = s.evts :+ te
-                s.nodeIds = s.nodeIds + te.nid()
-                s.startTs = math.min(s.startTs, te.timestamp())
-                s.endTs = math.max(s.endTs, te.timestamp())
+                s.nodeIds = s.nodeIds + te.getNid
+                s.startTs = math.min(s.startTs, te.getTimestamp)
+                s.endTs = math.max(s.endTs, te.getTimestamp)
 
-                te.typeId() match {
+                te.getTypeId match {
                     case EVT_TASK_STARTED =>
                         if (s.state == UNDEFINED) s.state = STARTED
 
-                        s.origNodeId = te.nid()
+                        s.origNodeId = te.getNid
 
                     case EVT_TASK_FINISHED =>
                         if (s.state == UNDEFINED || s.state == STARTED) s.state = FINISHED
 
-                        s.origNodeId = te.nid()
+                        s.origNodeId = te.getNid
 
                     case EVT_TASK_FAILED => if (s.state == UNDEFINED || s.state == STARTED) s.state = FAILED
                     case EVT_TASK_TIMEDOUT => if (s.state == UNDEFINED || s.state == STARTED) s.state = TIMEDOUT
@@ -570,23 +570,23 @@ class VisorTasksCommand extends VisorConsoleCommand {
                 }
 
             case je: VisorGridJobEvent =>
-                val displayedTaskName = taskSimpleName(je.taskName(), je.taskClassName())
-                val s = getSession(je.taskSessionId(), displayedTaskName)
+                val displayedTaskName = taskSimpleName(je.getTaskName(), je.getTaskClassName())
+                val s = getSession(je.getTaskSessionId(), displayedTaskName)
                 val t = getTask(displayedTaskName)
 
                 t.execs = t.execs + s
 
                 // Collect node IDs where jobs didn't finish ok.
-                je.typeId() match {
+                je.getTypeId match {
                     case EVT_JOB_CANCELLED | EVT_JOB_FAILED | EVT_JOB_REJECTED | EVT_JOB_TIMEDOUT =>
-                        s.failedNodeIds = s.failedNodeIds + je.nid()
+                        s.failedNodeIds = s.failedNodeIds + je.getNid
                     case _ =>
                 }
 
                 s.evts = s.evts :+ je
-                s.nodeIds = s.nodeIds + je.nid()
-                s.startTs = math.min(s.startTs, je.timestamp())
-                s.endTs = math.max(s.endTs, je.timestamp())
+                s.nodeIds = s.nodeIds + je.getNid
+                s.startTs = math.min(s.startTs, je.getTimestamp)
+                s.endTs = math.max(s.endTs, je.getTimestamp)
 
             case _ =>
         }
@@ -1063,13 +1063,12 @@ class VisorTasksCommand extends VisorConsoleCommand {
 
                 evtsT #= ("Timestamp", "Node ID8(@)", "Event")
 
-                val se = if (!reverse) e.evts.sortBy(_.timestamp()) else e.evts.sortBy(_.timestamp()).reverse
+                val se = if (!reverse) e.evts.sortBy(_.getTimestamp) else e.evts.sortBy(_.getTimestamp).reverse
 
                 se.foreach(e => evtsT += (
-                    formatDateTime(e.timestamp()),
-                    nodeId8Addr(e.nid()),
-                    e.name()
-                    ))
+                    formatDateTime(e.getTimestamp),
+                    nodeId8Addr(e.getNid),
+                    e.getName))
 
                 println("\nTrace:")
 
@@ -1142,7 +1141,7 @@ class VisorTasksCommand extends VisorConsoleCommand {
                     }
 
                     sortedNames.foreach(taskName => {
-                        val t = VisorTask(taskName, execsMap.get(taskName).get)
+                        val t = VisorTask(taskName, execsMap(taskName))
 
                         val sE = t.execsFor(STARTED)
                         val fE = t.execsFor(FINISHED)
@@ -1256,7 +1255,7 @@ class VisorTasksCommand extends VisorConsoleCommand {
                     }
 
                     sortedNames.foreach(taskName => {
-                        val t = VisorTask(taskName, execsMap.get(taskName).get)
+                        val t = VisorTask(taskName, execsMap(taskName))
 
                         val sE = t.execsFor(STARTED)
                         val fE = t.execsFor(FINISHED)

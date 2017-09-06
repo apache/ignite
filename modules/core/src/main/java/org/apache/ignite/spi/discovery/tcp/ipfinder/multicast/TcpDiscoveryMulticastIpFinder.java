@@ -153,10 +153,13 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
      * If not provided, default value is {@link #DFLT_MCAST_GROUP}.
      *
      * @param mcastGrp Multicast IP address.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
-    public void setMulticastGroup(String mcastGrp) {
+    public TcpDiscoveryMulticastIpFinder setMulticastGroup(String mcastGrp) {
         this.mcastGrp = mcastGrp;
+
+        return this;
     }
 
     /**
@@ -174,10 +177,13 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
      * If not provided, default value is {@link #DFLT_MCAST_PORT}.
      *
      * @param mcastPort Multicast port number.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
-    public void setMulticastPort(int mcastPort) {
+    public TcpDiscoveryMulticastIpFinder setMulticastPort(int mcastPort) {
         this.mcastPort = mcastPort;
+
+        return this;
     }
 
     /**
@@ -196,10 +202,13 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
      * If not provided, default value is {@link #DFLT_RES_WAIT_TIME}.
      *
      * @param resWaitTime Time IP finder waits for reply to multicast address request.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
-    public void setResponseWaitTime(int resWaitTime) {
+    public TcpDiscoveryMulticastIpFinder setResponseWaitTime(int resWaitTime) {
         this.resWaitTime = resWaitTime;
+
+        return this;
     }
 
     /**
@@ -219,10 +228,13 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
      * If not provided, default value is {@link #DFLT_ADDR_REQ_ATTEMPTS}.
      *
      * @param addrReqAttempts Number of attempts to send multicast address request.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
-    public void setAddressRequestAttempts(int addrReqAttempts) {
+    public TcpDiscoveryMulticastIpFinder setAddressRequestAttempts(int addrReqAttempts) {
         this.addrReqAttempts = addrReqAttempts;
+
+        return this;
     }
 
     /**
@@ -245,10 +257,13 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
      *
      * @param locAddr Local host address.
      * @see org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi#setLocalAddress(String)
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
-    public void setLocalAddress(String locAddr) {
+    public TcpDiscoveryMulticastIpFinder setLocalAddress(String locAddr) {
         this.locAddr = locAddr;
+
+        return this;
     }
 
     /**
@@ -272,10 +287,13 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
      * Default value is {@code -1} which corresponds to system default value.
      *
      * @param ttl Time to live.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
-    public void setTimeToLive(int ttl) {
+    public TcpDiscoveryMulticastIpFinder setTimeToLive(int ttl) {
         this.ttl = ttl;
+
+        return this;
     }
 
     /**
@@ -650,11 +668,6 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(TcpDiscoveryMulticastIpFinder.class, this, "super", super.toString());
-    }
-
     /**
      * @param e Network error to handle.
      * @return {@code True} if this error is recoverable and the operation can be retried.
@@ -668,6 +681,18 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
         }
 
         return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public TcpDiscoveryMulticastIpFinder setShared(boolean shared) {
+        super.setShared(shared);
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(TcpDiscoveryMulticastIpFinder.class, this, "super", super.toString());
     }
 
     /**

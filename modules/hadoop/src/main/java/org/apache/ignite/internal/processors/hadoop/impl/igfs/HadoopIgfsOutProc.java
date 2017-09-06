@@ -28,11 +28,13 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.igfs.common.IgfsControlResponse;
 import org.apache.ignite.internal.igfs.common.IgfsHandshakeRequest;
 import org.apache.ignite.internal.igfs.common.IgfsMessage;
+import org.apache.ignite.internal.igfs.common.IgfsModeResolverRequest;
 import org.apache.ignite.internal.igfs.common.IgfsPathControlRequest;
 import org.apache.ignite.internal.igfs.common.IgfsStatusRequest;
 import org.apache.ignite.internal.igfs.common.IgfsStreamControlRequest;
 import org.apache.ignite.internal.processors.igfs.IgfsHandshakeResponse;
 import org.apache.ignite.internal.processors.igfs.IgfsInputStreamDescriptor;
+import org.apache.ignite.internal.processors.igfs.IgfsModeResolver;
 import org.apache.ignite.internal.processors.igfs.IgfsStatus;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -52,6 +54,7 @@ import static org.apache.ignite.internal.igfs.common.IgfsIpcCommand.INFO;
 import static org.apache.ignite.internal.igfs.common.IgfsIpcCommand.LIST_FILES;
 import static org.apache.ignite.internal.igfs.common.IgfsIpcCommand.LIST_PATHS;
 import static org.apache.ignite.internal.igfs.common.IgfsIpcCommand.MAKE_DIRECTORIES;
+import static org.apache.ignite.internal.igfs.common.IgfsIpcCommand.MODE_RESOLVER;
 import static org.apache.ignite.internal.igfs.common.IgfsIpcCommand.OPEN_APPEND;
 import static org.apache.ignite.internal.igfs.common.IgfsIpcCommand.OPEN_CREATE;
 import static org.apache.ignite.internal.igfs.common.IgfsIpcCommand.OPEN_READ;
@@ -102,6 +105,10 @@ public class HadoopIgfsOutProc implements HadoopIgfsEx, HadoopIgfsIpcIoListener 
     /** Expected result is {@code IgfsFile}. */
     private static final IgniteClosure<IgniteInternalFuture<IgfsMessage>,
         Collection<IgfsBlockLocation>> BLOCK_LOCATION_COL_RES = createClosure();
+
+    /** Expected result is {@code IgfsFile}. */
+    private static final IgniteClosure<IgniteInternalFuture<IgfsMessage>,
+        IgfsModeResolver> MODE_RESOLVER_RES = createClosure();
 
     /** IGFS name. */
     private final String igfs;
@@ -517,5 +524,10 @@ public class HadoopIgfsOutProc implements HadoopIgfsEx, HadoopIgfsIpcIoListener 
     /** {@inheritDoc} */
     @Override public String user() {
         return userName;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgfsModeResolver modeResolver() throws IgniteCheckedException {
+        return io.send(new IgfsModeResolverRequest()).chain(MODE_RESOLVER_RES).get();
     }
 }

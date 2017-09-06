@@ -395,6 +395,7 @@ public class ClusterProperties {
 
         envs.put(IGNITE_RUN_CPU_PER_NODE, toEnvVal(cpuPerNode));
         envs.put(IGNITE_MEMORY_PER_NODE, toEnvVal(memPerNode));
+        envs.put(IGNITE_MEMORY_OVERHEAD_PER_NODE, toEnvVal(memOverHeadPerNode));
         envs.put(IGNITE_NODE_COUNT, toEnvVal(nodeCnt));
 
         envs.put(IGNITE_URL, toEnvVal(igniteUrl));

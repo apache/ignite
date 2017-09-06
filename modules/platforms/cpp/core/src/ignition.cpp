@@ -182,7 +182,7 @@ namespace ignite
         return Start(cfg, static_cast<const char*>(0));
     }
 
-    Ignite Ignition::Start(const IgniteConfiguration& cfg, IgniteError* err)
+    Ignite Ignition::Start(const IgniteConfiguration& cfg, IgniteError& err)
     {
         return Start(cfg, 0, err);
     }
@@ -191,14 +191,14 @@ namespace ignite
     {
         IgniteError err;
 
-        Ignite res = Start(cfg, name, &err);
+        Ignite res = Start(cfg, name, err);
 
         IgniteError::ThrowIfNeeded(err);
 
         return res;
     }
 
-    Ignite Ignition::Start(const IgniteConfiguration& cfg, const char* name, IgniteError* err)
+    Ignite Ignition::Start(const IgniteConfiguration& cfg, const char* name, IgniteError& err)
     {
         CsLockGuard guard(factoryLock);
 
@@ -209,7 +209,7 @@ namespace ignite
         {
             if (jvmLib.empty())
             {
-                *err = IgniteError(IgniteError::IGNITE_ERR_JVM_LIB_NOT_FOUND,
+                err = IgniteError(IgniteError::IGNITE_ERR_JVM_LIB_NOT_FOUND,
                     "JVM library is not found (did you set JAVA_HOME environment variable?)");
 
                 return Ignite();
@@ -217,7 +217,7 @@ namespace ignite
 
             if (!LoadJvmLibrary(jvmLib))
             {
-                *err = IgniteError(IgniteError::IGNITE_ERR_JVM_LIB_LOAD_FAILED, "Failed to load JVM library.");
+                err = IgniteError(IgniteError::IGNITE_ERR_JVM_LIB_LOAD_FAILED, "Failed to load JVM library.");
 
                 return Ignite();
             }
@@ -239,7 +239,7 @@ namespace ignite
 
         if (cp.empty())
         {
-            *err = IgniteError(IgniteError::IGNITE_ERR_JVM_NO_CLASSPATH,
+            err = IgniteError(IgniteError::IGNITE_ERR_JVM_NO_CLASSPATH,
                 "Java classpath is empty (did you set IGNITE_HOME environment variable?)");
 
             return Ignite();
@@ -275,7 +275,7 @@ namespace ignite
 
         if (!ctx.Get())
         {
-            IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, *err);
+            IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
 
             return Ignite();
         }
@@ -301,15 +301,15 @@ namespace ignite
         stream.WriteBool(false);
         stream.Synchronize();
 
-        jobject javaRef = ctx.Get()->IgnitionStart(&springCfgPath0[0], namep, 2, mem.PointerLong(), &jniErr);
+        ctx.Get()->IgnitionStart(&springCfgPath0[0], namep, 2, mem.PointerLong(), &jniErr);
 
         // Releasing control over environment as it is controlled by Java at this point.
         // Even if the call has failed environment are going to be released by the Java.
         envTarget.release();
 
-        if (!javaRef)
+        if (!env.Get()->GetProcessor())
         {
-            IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, *err);
+            IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
 
             return Ignite();
         }
@@ -323,7 +323,7 @@ namespace ignite
 
         env.Get()->ProcessorReleaseStart();
 
-        IgniteImpl* impl = new IgniteImpl(env, javaRef);
+        IgniteImpl* impl = new IgniteImpl(env);
 
         return Ignite(impl);
     }
@@ -333,7 +333,7 @@ namespace ignite
         return Get(static_cast<const char*>(0));
     }
 
-    Ignite Ignition::Get(IgniteError* err)
+    Ignite Ignition::Get(IgniteError& err)
     {
         return Get(0, err);
     }
@@ -342,14 +342,14 @@ namespace ignite
     {
         IgniteError err;
 
-        Ignite res = Get(name, &err);
+        Ignite res = Get(name, err);
 
         IgniteError::ThrowIfNeeded(err);
 
         return res;
     }
 
-    Ignite Ignition::Get(const char* name, IgniteError* err)
+    Ignite Ignition::Get(const char* name, IgniteError& err)
     {
         Ignite res;
 
@@ -364,16 +364,16 @@ namespace ignite
 
             SharedPointer<JniContext> ctx(JniContext::Create(0, 0, JniHandlers(), &jniErr));
 
-            IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, *err);
+            IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
 
-            if (err->GetCode() == IgniteError::IGNITE_SUCCESS)
+            if (err.GetCode() == IgniteError::IGNITE_SUCCESS)
             {
                 // 2. Get environment pointer.
                 long long ptr = ctx.Get()->IgnitionEnvironmentPointer(name0, &jniErr);
 
-                IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, *err);
+                IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
 
-                if (err->GetCode() == IgniteError::IGNITE_SUCCESS)
+                if (err.GetCode() == IgniteError::IGNITE_SUCCESS)
                 {
                     if (ptr != 0)
                     {
@@ -383,26 +383,13 @@ namespace ignite
                         SharedPointer<IgniteEnvironment>* env =
                             static_cast<SharedPointer<IgniteEnvironment>*>(hnds->target);
 
-                        // 4. Get fresh node reference.
-                        jobject ref = ctx.Get()->IgnitionInstance(name0, &jniErr);
+                        IgniteImpl* impl = new IgniteImpl(*env);
 
-                        if (err->GetCode() == IgniteError::IGNITE_SUCCESS) {
-                            if (ref)
-                            {
-                                IgniteImpl* impl = new IgniteImpl(*env, ref);
-
-                                res = Ignite(impl);
-                            }
-                            else
-                                // Error: concurrent node stop.
-                                *err = IgniteError(IgniteError::IGNITE_ERR_GENERIC,
-                                    "Failed to get Ignite instance because it was stopped concurrently.");
-
-                        }
+                        res = Ignite(impl);
                     }
                     else
                         // Error: no node with the given name.
-                        *err = IgniteError(IgniteError::IGNITE_ERR_GENERIC,
+                        err = IgniteError(IgniteError::IGNITE_ERR_GENERIC,
                             "Failed to get Ignite instance because it is either not started yet or already stopped.");
                 }
             }
@@ -411,7 +398,7 @@ namespace ignite
         }
         else
             // Error: no node with the given name.
-            *err = IgniteError(IgniteError::IGNITE_ERR_GENERIC,
+            err = IgniteError(IgniteError::IGNITE_ERR_GENERIC,
                 "Failed to get Ignite instance because it is either not started yet or already stopped.");
 
         factoryLock.Leave();
@@ -424,7 +411,7 @@ namespace ignite
         return Stop(0, cancel);
     }
 
-    bool Ignition::Stop(bool cancel, IgniteError* err)
+    bool Ignition::Stop(bool cancel, IgniteError& err)
     {
         return Stop(0, cancel, err);
     }
@@ -433,14 +420,14 @@ namespace ignite
     {
         IgniteError err;
 
-        bool res = Stop(name, cancel, &err);
+        bool res = Stop(name, cancel, err);
 
         IgniteError::ThrowIfNeeded(err);
 
         return res;
     }
 
-    bool Ignition::Stop(const char* name, bool cancel, IgniteError* err)
+    bool Ignition::Stop(const char* name, bool cancel, IgniteError& err)
     {
         bool res = false;
 
@@ -452,9 +439,9 @@ namespace ignite
 
             SharedPointer<JniContext> ctx(JniContext::Create(0, 0, JniHandlers(), &jniErr));
 
-            IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, *err);
+            IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
 
-            if (err->GetCode() == IgniteError::IGNITE_SUCCESS)
+            if (err.GetCode() == IgniteError::IGNITE_SUCCESS)
             {
                 char* name0 = CopyChars(name);
 
@@ -462,9 +449,9 @@ namespace ignite
 
                 ReleaseChars(name0);
 
-                IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, *err);
+                IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
 
-                if (err->GetCode() == IgniteError::IGNITE_SUCCESS)
+                if (err.GetCode() == IgniteError::IGNITE_SUCCESS)
                     res = res0;
             }
         }
@@ -478,12 +465,12 @@ namespace ignite
     {
         IgniteError err;
 
-        StopAll(cancel, &err);
+        StopAll(cancel, err);
 
         IgniteError::ThrowIfNeeded(err);
     }
 
-    void Ignition::StopAll(bool cancel, IgniteError* err)
+    void Ignition::StopAll(bool cancel, IgniteError& err)
     {
         factoryLock.Enter();
 
@@ -493,13 +480,13 @@ namespace ignite
 
             SharedPointer<JniContext> ctx(JniContext::Create(0, 0, JniHandlers(), &jniErr));
 
-            IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, *err);
+            IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
 
-            if (err->GetCode() == IgniteError::IGNITE_SUCCESS)
+            if (err.GetCode() == IgniteError::IGNITE_SUCCESS)
             {
                 ctx.Get()->IgnitionStopAll(cancel, &jniErr);
 
-                IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, *err);
+                IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
             }
         }
 

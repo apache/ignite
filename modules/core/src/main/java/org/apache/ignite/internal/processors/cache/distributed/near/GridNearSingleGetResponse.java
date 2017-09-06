@@ -25,7 +25,7 @@ import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
-import org.apache.ignite.internal.processors.cache.GridCacheMessage;
+import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -37,7 +37,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  *
  */
-public class GridNearSingleGetResponse extends GridCacheMessage implements GridCacheDeployable {
+public class GridNearSingleGetResponse extends GridCacheIdMessage implements GridCacheDeployable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -115,7 +115,7 @@ public class GridNearSingleGetResponse extends GridCacheMessage implements GridC
      * @return Topology version.
      */
     @Override public AffinityTopologyVersion topologyVersion() {
-        return topVer;
+        return topVer != null ? topVer : super.topologyVersion();
     }
 
     /**
@@ -303,7 +303,7 @@ public class GridNearSingleGetResponse extends GridCacheMessage implements GridC
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 117;
     }
 

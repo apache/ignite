@@ -18,7 +18,7 @@
 namespace Apache.Ignite.Core.Cache.Store
 {
     using System;
-    using System.Collections;
+    using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
 
@@ -34,7 +34,9 @@ namespace Apache.Ignite.Core.Cache.Store
     /// Note that <c>LoadCache</c> method has empty implementation because it is 
     /// essentially up to the user to invoke it with specific arguments.
     /// </summary>
-    public abstract class CacheStoreAdapter : ICacheStore
+    /// <typeparam name="TK">Key type.</typeparam>
+    /// <typeparam name="TV">Value type.</typeparam>
+    public abstract class CacheStoreAdapter<TK, TV> : ICacheStore<TK, TV>
     {
         /// <summary>
         /// Loads all values from underlying persistent storage. Note that keys are
@@ -50,11 +52,11 @@ namespace Apache.Ignite.Core.Cache.Store
         /// </summary>
         /// <param name="act">Action for loaded values.</param>
         /// <param name="args">Optional arguemnts passed to <see cref="ICache{K,V}.LocalLoadCache" /> method.</param>
-        public virtual void LoadCache(Action<object, object> act, params object[] args)
+        public virtual void LoadCache(Action<TK, TV> act, params object[] args)
         {
             // No-op.
         }
-        
+
         /// <summary>
         /// Loads multiple objects. Application developers should implement this method to customize
         /// the loading of cache entries. This method is called when the requested object is not in the cache.
@@ -64,19 +66,19 @@ namespace Apache.Ignite.Core.Cache.Store
         /// <returns>
         /// A map of key, values to be stored in the cache.
         /// </returns>
-        public virtual IDictionary LoadAll(ICollection keys)
+        public virtual IEnumerable<KeyValuePair<TK, TV>> LoadAll(IEnumerable<TK> keys)
         {
-            return keys.OfType<object>().ToDictionary(key => key, Load);
+            return keys.ToDictionary(key => key, Load);
         }
-        
+
         /// <summary>
         /// Writes all.
         /// </summary>
         /// <param name="entries">The map.</param>
         [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
-        public virtual void WriteAll(IDictionary entries)
+        public virtual void WriteAll(IEnumerable<KeyValuePair<TK, TV>> entries)
         {
-            foreach (DictionaryEntry entry in entries)
+            foreach (var entry in entries)
                 Write(entry.Key, entry.Value);
         }
         
@@ -98,9 +100,9 @@ namespace Apache.Ignite.Core.Cache.Store
         /// it contains the keys to delete for write-through. Upon return the collection must only contain
         /// the keys that were not successfully deleted.</param>
         [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
-        public virtual void DeleteAll(ICollection keys)
+        public virtual void DeleteAll(IEnumerable<TK> keys)
         {
-            foreach (object key in keys)
+            foreach (var key in keys)
                 Delete(key);
         }
         
@@ -125,7 +127,7 @@ namespace Apache.Ignite.Core.Cache.Store
         /// The value for the entry that is to be stored in the cache
         /// or <c>null</c> if the object can't be loaded
         /// </returns>
-        public abstract object Load(object key);
+        public abstract TV Load(TK key);
 
         /// <summary>
         /// Write the specified value under the specified key to the external resource.
@@ -134,7 +136,7 @@ namespace Apache.Ignite.Core.Cache.Store
         /// </summary>
         /// <param name="key">Key to write.</param>
         /// <param name="val">Value to write.</param>
-        public abstract void Write(object key, object val);
+        public abstract void Write(TK key, TV val);
         
         /// <summary>
         /// Delete the cache entry from the external resource.
@@ -144,6 +146,6 @@ namespace Apache.Ignite.Core.Cache.Store
         /// This method is invoked even if no mapping for the key exists.
         /// </summary>
         /// <param name="key">The key that is used for the delete operation.</param>
-        public abstract void Delete(object key);
+        public abstract void Delete(TK key);
     }
 }

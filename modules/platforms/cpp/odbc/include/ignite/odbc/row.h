@@ -61,7 +61,7 @@ namespace ignite
              * @param dataBuf Application data buffer.
              * @return True on success.
              */
-            SqlResult ReadColumnToBuffer(uint16_t columnIdx, app::ApplicationDataBuffer& dataBuf);
+            SqlResult::Type ReadColumnToBuffer(uint16_t columnIdx, app::ApplicationDataBuffer& dataBuf);
 
             /**
              * Move to next row.

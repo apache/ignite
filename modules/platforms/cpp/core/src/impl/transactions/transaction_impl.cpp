@@ -37,7 +37,7 @@ namespace ignite
                 isolation(isolation),
                 timeout(timeout),
                 txSize(txSize),
-                state(IGNITE_TX_STATE_UNKNOWN),
+                state(TransactionState::UNKNOWN),
                 closed(false)
             {
                 // No-op.
@@ -97,7 +97,7 @@ namespace ignite
                     return;
                 }
 
-                TransactionState newState = txs.Get()->TxCommit(id, err);
+                TransactionState::Type newState = txs.Get()->TxCommit(id, err);
 
                 if (err.GetCode() == IgniteError::IGNITE_SUCCESS)
                 {
@@ -118,7 +118,7 @@ namespace ignite
                     return;
                 }
 
-                TransactionState newState = txs.Get()->TxRollback(id, err);
+                TransactionState::Type newState = txs.Get()->TxRollback(id, err);
 
                 if (err.GetCode() == IgniteError::IGNITE_SUCCESS)
                 {
@@ -139,7 +139,7 @@ namespace ignite
                     return;
                 }
 
-                TransactionState newState = txs.Get()->TxClose(id, err);
+                TransactionState::Type newState = txs.Get()->TxClose(id, err);
 
                 if (err.GetCode() == IgniteError::IGNITE_SUCCESS)
                 {
@@ -165,14 +165,14 @@ namespace ignite
 
             bool TransactionImpl::IsRollbackOnly(IgniteError& err)
             {
-                TransactionState state0 = GetState(err);
+                TransactionState::Type state0 = GetState(err);
 
-                return state0 == IGNITE_TX_STATE_MARKED_ROLLBACK ||
-                       state0 == IGNITE_TX_STATE_ROLLING_BACK ||
-                       state0 == IGNITE_TX_STATE_ROLLED_BACK;
+                return state0 == TransactionState::MARKED_ROLLBACK ||
+                       state0 == TransactionState::ROLLING_BACK ||
+                       state0 == TransactionState::ROLLED_BACK;
             }
 
-            TransactionState TransactionImpl::GetState(IgniteError& err)
+            TransactionState::Type TransactionImpl::GetState(IgniteError& err)
             {
                 common::concurrent::CsLockGuard guard(accessLock);
 

@@ -115,6 +115,7 @@ namespace Apache.Ignite.Core.Tests.DataStructures
         /// Tests multithreaded scenario.
         /// </summary>
         [Test]
+        [Category(TestUtils.CategoryIntensive)]
         public void TestMultithreaded()
         {
             const int atomicCnt = 10;

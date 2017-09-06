@@ -19,7 +19,6 @@ namespace Apache.Ignite.Core.Cache.Affinity
 {
     using System;
     using System.Collections.Generic;
-    using Apache.Ignite.Core.Cache.Affinity.Fair;
     using Apache.Ignite.Core.Cache.Affinity.Rendezvous;
     using Apache.Ignite.Core.Cluster;
 
@@ -27,7 +26,7 @@ namespace Apache.Ignite.Core.Cache.Affinity
     /// Represents a function that maps cache keys to cluster nodes.
     /// <para />
     /// Predefined implementations: 
-    /// <see cref="RendezvousAffinityFunction"/>, <see cref="FairAffinityFunction"/>.
+    /// <see cref="RendezvousAffinityFunction"/>.
     /// </summary>
     public interface IAffinityFunction
     {

@@ -161,13 +161,13 @@ public final class MarshallerMappingTransport {
      */
     private IgniteCheckedException duplicateMappingException(MarshallerMappingItem item, String mappedClsName) {
         return new IgniteCheckedException("Duplicate ID [platformId="
-                + item.platformId()
-                + ", typeId="
-                + item.typeId()
-                + ", oldCls="
-                + mappedClsName
-                + ", newCls="
-                + item.className() + "]");
+            + item.platformId()
+            + ", typeId="
+            + item.typeId()
+            + ", oldCls="
+            + mappedClsName
+            + ", newCls="
+            + item.className() + "]");
     }
 
     /** */
@@ -184,9 +184,6 @@ public final class MarshallerMappingTransport {
      * Future to wait for mapping exchange result to arrive. Removes itself from map when completed.
      */
     private class MappingExchangeResultFuture extends GridFutureAdapter<MappingExchangeResult> {
-        /** */
-        private static final long serialVersionUID = 0L;
-
         /** */
         private final MarshallerMappingItem mappingItem;
 

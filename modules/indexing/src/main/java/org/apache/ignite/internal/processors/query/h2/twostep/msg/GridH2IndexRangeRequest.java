@@ -174,6 +174,8 @@ public class GridH2IndexRangeRequest implements Message {
                 if (!writer.writeInt("segmentId", segmentId))
                     return false;
 
+                writer.incrementState();
+
             case 5:
                 if (!writer.writeInt("originSegId", originSegmentId))
                     return false;
@@ -245,7 +247,7 @@ public class GridH2IndexRangeRequest implements Message {
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return -30;
     }
 

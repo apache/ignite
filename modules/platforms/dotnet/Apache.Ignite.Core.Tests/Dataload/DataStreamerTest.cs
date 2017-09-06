@@ -25,8 +25,6 @@ namespace Apache.Ignite.Core.Tests.Dataload
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Datastream;
-    using Apache.Ignite.Core.Impl;
-    using Apache.Ignite.Core.Tests.Cache;
     using NUnit.Framework;
 
     /// <summary>
@@ -34,14 +32,14 @@ namespace Apache.Ignite.Core.Tests.Dataload
     /// </summary>
     public sealed class DataStreamerTest
     {
-        /** Node name. */
-        private const string GridName = "grid";
-
         /** Cache name. */
         private const string CacheName = "partitioned";
 
         /** Node. */
         private IIgnite _grid;
+
+        /** Node 2. */
+        private IIgnite _grid2;
 
         /** Cache. */
         private ICache<int, int?> _cache;
@@ -52,15 +50,18 @@ namespace Apache.Ignite.Core.Tests.Dataload
         [TestFixtureSetUp]
         public void InitClient()
         {
-            _grid = Ignition.Start(GetIgniteConfiguration(GridName));
+            _grid = Ignition.Start(TestUtils.GetTestConfiguration());
 
-            Ignition.Start(GetIgniteConfiguration(GridName + "_1"));
+            _grid2 = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                IgniteInstanceName = "grid1"
+            });
 
-            _cache = _grid.GetCache<int, int?>(CacheName);
+            _cache = _grid.CreateCache<int, int?>(CacheName);
         }
 
         /// <summary>
-        ///
+        /// Fixture teardown.
         /// </summary>
         [TestFixtureTearDown]
         public void StopGrids()
@@ -190,39 +191,61 @@ namespace Apache.Ignite.Core.Tests.Dataload
         [Test]
         public void TestBufferSize()
         {
-            using (IDataStreamer<int, int> ldr = _grid.GetDataStreamer<int, int>(CacheName))
+            using (var ldr = _grid.GetDataStreamer<int, int>(CacheName))
             {
-                var fut = ldr.AddData(1, 1);
+                const int timeout = 5000;
+
+                var part1 = GetPrimaryPartitionKeys(_grid, 4);
+                var part2 = GetPrimaryPartitionKeys(_grid2, 4);
+
+                var task = ldr.AddData(part1[0], part1[0]);
 
                 Thread.Sleep(100);
 
-                Assert.IsFalse(fut.IsCompleted);
+                Assert.IsFalse(task.IsCompleted);
 
                 ldr.PerNodeBufferSize = 2;
 
-                ldr.AddData(2, 2);
-                ldr.AddData(3, 3);
-                ldr.AddData(4, 4).Wait();
-                fut.Wait();
+                ldr.AddData(part2[0], part2[0]);
+                ldr.AddData(part1[1], part1[1]);
+                Assert.IsTrue(ldr.AddData(part2[1], part2[1]).Wait(timeout));
+                Assert.IsTrue(task.Wait(timeout));
 
-                Assert.AreEqual(1, _cache.Get(1));
-                Assert.AreEqual(2, _cache.Get(2));
-                Assert.AreEqual(3, _cache.Get(3));
-                Assert.AreEqual(4, _cache.Get(4));
+                Assert.AreEqual(part1[0], _cache.Get(part1[0]));
+                Assert.AreEqual(part1[1], _cache.Get(part1[1]));
+                Assert.AreEqual(part2[0], _cache.Get(part2[0]));
+                Assert.AreEqual(part2[1], _cache.Get(part2[1]));
 
-                ldr.AddData(new List<KeyValuePair<int, int>>
+                Assert.IsTrue(ldr.AddData(new[]
                 {
-                    new KeyValuePair<int, int>(5, 5), 
-                    new KeyValuePair<int, int>(6, 6),
-                    new KeyValuePair<int, int>(7, 7), 
-                    new KeyValuePair<int, int>(8, 8)
-                }).Wait();
+                    new KeyValuePair<int, int>(part1[2], part1[2]),
+                    new KeyValuePair<int, int>(part1[3], part1[3]),
+                    new KeyValuePair<int, int>(part2[2], part2[2]),
+                    new KeyValuePair<int, int>(part2[3], part2[3])
+                }).Wait(timeout));
 
-                Assert.AreEqual(5, _cache.Get(5));
-                Assert.AreEqual(6, _cache.Get(6));
-                Assert.AreEqual(7, _cache.Get(7));
-                Assert.AreEqual(8, _cache.Get(8));
+                Assert.AreEqual(part1[2], _cache.Get(part1[2]));
+                Assert.AreEqual(part1[3], _cache.Get(part1[3]));
+                Assert.AreEqual(part2[2], _cache.Get(part2[2]));
+                Assert.AreEqual(part2[3], _cache.Get(part2[3]));
             }
+        }
+
+        /// <summary>
+        /// Gets the primary partition keys.
+        /// </summary>
+        private static int[] GetPrimaryPartitionKeys(IIgnite ignite, int count)
+        {
+            var affinity = ignite.GetAffinity(CacheName);
+            
+            var localNode = ignite.GetCluster().GetLocalNode();
+
+            var part = affinity.GetPrimaryPartitions(localNode).First();
+
+            return Enumerable.Range(0, int.MaxValue)
+                .Where(k => affinity.GetPartition(k) == part)
+                .Take(count)
+                .ToArray();
         }
 
         /// <summary>
@@ -455,45 +478,6 @@ namespace Apache.Ignite.Core.Tests.Dataload
                 for (var i = 0; i < 100; i++)
                     Assert.AreEqual(i + 1, cache.Get(i).Val);
             }
-        }
-
-        /// <summary>
-        /// Gets the Ignite configuration.
-        /// </summary>
-        /// <param name="gridName">Grid name.</param>
-        private static IgniteConfiguration GetIgniteConfiguration(string gridName)
-        {
-            return new IgniteConfiguration
-            {
-                GridName = gridName,
-                SpringConfigUrl = "config\\native-client-test-cache.xml",
-                JvmClasspath = TestUtils.CreateTestClasspath(),
-                BinaryConfiguration = new BinaryConfiguration
-                {
-                    TypeConfigurations = new List<BinaryTypeConfiguration>
-                    {
-                        new BinaryTypeConfiguration(typeof (CacheTestKey)),
-                        new BinaryTypeConfiguration(typeof (TestReferenceObject)),
-                        new BinaryTypeConfiguration(typeof (StreamReceiverBinarizable)),
-                        new BinaryTypeConfiguration(typeof (EntryProcessorBinarizable)),
-                        new BinaryTypeConfiguration(typeof (BinarizableEntry))
-                    }
-                },
-                JvmOptions = TestUtils.TestJavaOptions().Concat(new[]
-                {
-                    "-Xms3096m",
-                    "-Xmx3096m",
-                    "-XX:+UseParNewGC",
-                    "-XX:+UseConcMarkSweepGC",
-                    "-XX:+UseTLAB",
-                    "-XX:NewSize=128m",
-                    "-XX:MaxNewSize=128m",
-                    "-XX:MaxTenuringThreshold=0",
-                    "-XX:SurvivorRatio=1024",
-                    "-XX:+UseCMSInitiatingOccupancyOnly",
-                    "-XX:CMSInitiatingOccupancyFraction=60"
-                }).ToArray()
-            };
         }
 
         /// <summary>

@@ -27,7 +27,7 @@ import javax.transaction.xa.Xid;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.transactions.TransactionState;
@@ -51,32 +51,45 @@ final class CacheJtaResource implements XAResource, Synchronization {
     private static final Xid[] NO_XID = new Xid[] {};
 
     /** Cache transaction. */
-    private IgniteInternalTx cacheTx;
+    private GridNearTxLocal cacheTx;
 
     /** */
     private Xid xid;
+
+    /** */
+    private final GridKernalContext ctx;
 
     /**
      * @param cacheTx Cache jta.
      * @param ctx Kernal context.
      */
-    public CacheJtaResource(IgniteInternalTx cacheTx, GridKernalContext ctx) {
+    CacheJtaResource(GridNearTxLocal cacheTx, GridKernalContext ctx) {
         assert cacheTx != null;
         assert ctx != null;
 
         this.cacheTx = cacheTx;
+        this.ctx = ctx;
 
         if (log == null)
             log = U.logger(ctx, logRef, CacheJtaResource.class);
     }
 
     /** {@inheritDoc} */
-    @Override public void start(Xid xid, int flags) {
+    @Override public void start(Xid xid, int flags) throws XAException {
         if (log.isDebugEnabled())
             log.debug("XA resource start(...) [xid=" + xid + ", flags=<" + flags(flags) + ">]");
 
         // Simply save global transaction id.
         this.xid = xid;
+
+        if ((flags & TMRESUME) == TMRESUME) {
+            try {
+                cacheTx.resume();
+            }
+            catch (IgniteCheckedException e) {
+                throwException("Failed to resume cache transaction: " + e.getMessage(), e);
+            }
+        }
     }
 
     /**
@@ -100,7 +113,7 @@ final class CacheJtaResource implements XAResource, Synchronization {
             log.debug("XA resource rollback(...) [xid=" + xid + "]");
 
         try {
-            cacheTx.rollback();
+            ctx.cache().context().rollbackTxAsync(cacheTx).get();
         }
         catch (IgniteCheckedException e) {
             throwException("Failed to rollback cache transaction: " + e.getMessage(), e);
@@ -118,7 +131,7 @@ final class CacheJtaResource implements XAResource, Synchronization {
             throw new XAException("Cache transaction is not in active state.");
 
         try {
-            cacheTx.prepare();
+            cacheTx.prepare(true);
         }
         catch (IgniteCheckedException e) {
             throwException("Failed to prepare cache transaction.", e);
@@ -128,7 +141,7 @@ final class CacheJtaResource implements XAResource, Synchronization {
     }
 
     /** {@inheritDoc} */
-    @Override public void end(Xid xid, int flags) {
+    @Override public void end(Xid xid, int flags) throws XAException {
         assert this.xid.equals(xid);
 
         if (log.isDebugEnabled())
@@ -136,6 +149,14 @@ final class CacheJtaResource implements XAResource, Synchronization {
 
         if ((flags & TMFAIL) > 0)
             cacheTx.setRollbackOnly();
+        else if ((flags & TMSUSPEND) == TMSUSPEND) {
+            try {
+                cacheTx.suspend();
+            }
+            catch (IgniteCheckedException e) {
+                throwException("Failed to suspend cache transaction: " + e.getMessage(), e);
+            }
+        }
     }
 
     /** {@inheritDoc} */
@@ -146,7 +167,7 @@ final class CacheJtaResource implements XAResource, Synchronization {
             log.debug("XA resource commit(...) [xid=" + xid + ", onePhase=" + onePhase + "]");
 
         try {
-            cacheTx.commit();
+            ctx.cache().context().commitTxAsync(cacheTx).get();
         }
         catch (IgniteCheckedException e) {
             throwException("Failed to commit cache transaction: " + e.getMessage(), e);
@@ -161,9 +182,7 @@ final class CacheJtaResource implements XAResource, Synchronization {
             log.debug("XA resource forget(...) [xid=" + xid + "]");
 
         try {
-            cacheTx.invalidate(true);
-
-            cacheTx.commit();
+            ctx.cache().context().rollbackTxAsync(cacheTx).get();
         }
         catch (IgniteCheckedException e) {
             throwException("Failed to forget cache transaction: " + e.getMessage(), e);
@@ -246,7 +265,7 @@ final class CacheJtaResource implements XAResource, Synchronization {
             throw new CacheException("Cache transaction is not in active state.");
 
         try {
-            cacheTx.prepare();
+            cacheTx.prepare(true);
         }
         catch (IgniteCheckedException e) {
             throw new CacheException("Failed to prepare cache transaction.", e);
@@ -261,7 +280,7 @@ final class CacheJtaResource implements XAResource, Synchronization {
                     log.debug("Synchronization.afterCompletion(STATUS_COMMITTED) [xid=" + cacheTx.xid() + "]");
 
                 try {
-                    cacheTx.commit();
+                    ctx.cache().context().commitTxAsync(cacheTx).get();
                 }
                 catch (IgniteCheckedException e) {
                     throw new CacheException("Failed to commit cache transaction.", e);
@@ -274,7 +293,7 @@ final class CacheJtaResource implements XAResource, Synchronization {
                     log.debug("Synchronization.afterCompletion(STATUS_ROLLEDBACK) [xid=" + cacheTx.xid() + "]");
 
                 try {
-                    cacheTx.rollback();
+                    ctx.cache().context().rollbackTxAsync(cacheTx).get();
                 }
                 catch (IgniteCheckedException e) {
                     throw new CacheException("Failed to rollback cache transaction.", e);
@@ -291,10 +310,17 @@ final class CacheJtaResource implements XAResource, Synchronization {
      *
      * @return {@code true} if jta was already committed or rolled back.
      */
-    public boolean isFinished() {
+    boolean isFinished() {
         TransactionState state = cacheTx.state();
 
         return state == COMMITTED || state == ROLLED_BACK;
+    }
+
+    /**
+     * @return Internal tx
+     */
+    GridNearTxLocal cacheTx() {
+        return cacheTx;
     }
 
     /** {@inheritDoc} */

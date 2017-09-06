@@ -324,9 +324,7 @@ public class GridJobMetricsProcessor extends GridProcessorAdapter {
         /** */
         private GridJobMetricsSnapshot lastSnapshot;
 
-        /**
-         * {@inheritDoc}
-         */
+        /** {@inheritDoc} */
         @Override public boolean collect(GridJobMetricsSnapshot s) {
             assert s != null;
 

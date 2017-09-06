@@ -41,7 +41,7 @@ public class CacheOffheapBatchIndexingSingleTypeTest extends CacheOffheapBatchIn
     public void testBatchRemove() throws Exception {
         Ignite ignite = grid(0);
 
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(1,
+        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(
             new Class<?>[] {Integer.class, CacheOffheapBatchIndexingBaseTest.Organization.class});
 
         final IgniteCache<Object, Object> cache = ignite.createCache(ccfg);
@@ -88,18 +88,6 @@ public class CacheOffheapBatchIndexingSingleTypeTest extends CacheOffheapBatchIn
         doStreamerBatchTest(50,
             1_000,
             new Class<?>[] {Integer.class, CacheOffheapBatchIndexingBaseTest.Organization.class},
-            1,
-            true);
-    }
-
-    /**
-     *
-     */
-    public void testPutAllAndStreamerDfltOffHeapRowCacheSize() {
-        doStreamerBatchTest(50,
-            1_000,
-            new Class<?>[] {Integer.class, CacheOffheapBatchIndexingBaseTest.Organization.class},
-            CacheConfiguration.DFLT_SQL_ONHEAP_ROW_CACHE_SIZE,
             true);
     }
 
@@ -110,7 +98,6 @@ public class CacheOffheapBatchIndexingSingleTypeTest extends CacheOffheapBatchIn
         doStreamerBatchTest(50,
             1_000,
             new Class<?>[] {Integer.class, CacheOffheapBatchIndexingBaseTest.Organization.class},
-            1,
             false);
     }
 
@@ -118,18 +105,17 @@ public class CacheOffheapBatchIndexingSingleTypeTest extends CacheOffheapBatchIn
      * @param iterations Number of iterations.
      * @param entitiesCnt Number of entities to put.
      * @param entityClasses Entity classes.
-     * @param onHeapRowCacheSize Cache size.
+
      * @param preloadInStreamer Data preload flag.
      */
     private void doStreamerBatchTest(int iterations,
         int entitiesCnt,
         Class<?>[] entityClasses,
-        int onHeapRowCacheSize,
         boolean preloadInStreamer) {
         Ignite ignite = grid(0);
 
         final IgniteCache<Object, Object> cache =
-            ignite.createCache(cacheConfiguration(onHeapRowCacheSize, entityClasses));
+            ignite.createCache(cacheConfiguration(entityClasses));
 
         try {
             if (preloadInStreamer)

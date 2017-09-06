@@ -79,8 +79,7 @@ public class IgniteTransactionalInvokeRetryBenchmark extends IgniteFailoverAbstr
                                 for (int i = 0; i < keysCnt; i++) {
                                     String key = "key-" + k + "-" + cfg.memberId() + "-" + i;
 
-                                    asyncCache.get(key);
-                                    Long cacheVal = asyncCache.<Long>future().get(timeout);
+                                    Long cacheVal = cache.getAsync(key).get(timeout);
 
                                     AtomicLong aVal = map.get(key);
                                     Long mapVal = aVal != null ? aVal.get() : null;
@@ -114,8 +113,7 @@ public class IgniteTransactionalInvokeRetryBenchmark extends IgniteFailoverAbstr
                                     for (int i2 = 0; i2 < keysCnt; i2++) {
                                         String key2 = "key-" + k2 + "-" + cfg.memberId() + "-" + i2;
 
-                                        asyncCache.get(key2);
-                                        Long val = asyncCache.<Long>future().get(timeout);
+                                        Long val = cache.getAsync(key2).get(timeout);
 
                                         if (val != null)
                                             println(cfg, "Entry [key=" + key2 + ", val=" + val + "]");
@@ -169,8 +167,8 @@ public class IgniteTransactionalInvokeRetryBenchmark extends IgniteFailoverAbstr
                 if (ex != null)
                     throw ex;
 
-                asyncCache.invoke(key, new IncrementInvokeRetryCacheEntryProcessor());
-                asyncCache.future().get(args.cacheOperationTimeoutMillis());
+                cache.invokeAsync(key, new IncrementInvokeRetryCacheEntryProcessor())
+                    .get(args.cacheOperationTimeoutMillis());
 
                 AtomicLong prevVal = map.putIfAbsent(key, new AtomicLong(0));
 

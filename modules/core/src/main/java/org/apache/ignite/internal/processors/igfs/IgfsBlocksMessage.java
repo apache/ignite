@@ -168,7 +168,7 @@ public class IgfsBlocksMessage extends IgfsCommunicationMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 66;
     }
 

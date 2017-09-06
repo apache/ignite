@@ -24,7 +24,6 @@ import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
@@ -34,15 +33,13 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemander;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap2;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
 import org.apache.ignite.internal.util.typedef.G;
@@ -115,7 +112,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
         if (getTestIgniteInstanceName(10).equals(igniteInstanceName))
             iCfg.setClientMode(true);
 
-        CacheConfiguration<Integer, Integer> cachePCfg = new CacheConfiguration<>();
+        CacheConfiguration<Integer, Integer> cachePCfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         cachePCfg.setName(CACHE_NAME_DHT_PARTITIONED);
         cachePCfg.setCacheMode(CacheMode.PARTITIONED);
@@ -125,7 +122,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
         cachePCfg.setRebalanceBatchesPrefetchCount(1);
         cachePCfg.setRebalanceOrder(2);
 
-        CacheConfiguration<Integer, Integer> cachePCfg2 = new CacheConfiguration<>();
+        CacheConfiguration<Integer, Integer> cachePCfg2 = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         cachePCfg2.setName(CACHE_NAME_DHT_PARTITIONED_2);
         cachePCfg2.setCacheMode(CacheMode.PARTITIONED);
@@ -134,7 +131,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
         cachePCfg2.setRebalanceOrder(2);
         //cachePCfg2.setRebalanceDelay(5000);//Known issue, possible deadlock in case of low priority cache rebalancing delayed.
 
-        CacheConfiguration<Integer, Integer> cacheRCfg = new CacheConfiguration<>();
+        CacheConfiguration<Integer, Integer> cacheRCfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         cacheRCfg.setName(CACHE_NAME_DHT_REPLICATED);
         cacheRCfg.setCacheMode(CacheMode.REPLICATED);
@@ -143,7 +140,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
         cacheRCfg.setRebalanceBatchesPrefetchCount(Integer.MAX_VALUE);
         ((TcpCommunicationSpi)iCfg.getCommunicationSpi()).setSharedMemoryPort(-1);//Shmem fail fix for Integer.MAX_VALUE.
 
-        CacheConfiguration<Integer, Integer> cacheRCfg2 = new CacheConfiguration<>();
+        CacheConfiguration<Integer, Integer> cacheRCfg2 = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         cacheRCfg2.setName(CACHE_NAME_DHT_REPLICATED_2);
         cacheRCfg2.setCacheMode(CacheMode.REPLICATED);
@@ -240,7 +237,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
         waitForRebalancing(0, 2, waitMinorVer);
         waitForRebalancing(1, 2, waitMinorVer);
 
-        awaitPartitionMapExchange(true, true, null);
+        awaitPartitionMapExchange(true, true, null, true);
 
         checkPartitionMapExchangeFinished();
 
@@ -250,7 +247,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
 
         waitForRebalancing(1, 3);
 
-        awaitPartitionMapExchange(true, true, null);
+        awaitPartitionMapExchange(true, true, null, true);
 
         checkPartitionMapExchangeFinished();
 
@@ -261,7 +258,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
         waitForRebalancing(1, 4, waitMinorVer);
         waitForRebalancing(2, 4, waitMinorVer);
 
-        awaitPartitionMapExchange(true, true, null);
+        awaitPartitionMapExchange(true, true, null, true);
 
         checkPartitionMapExchangeFinished();
 
@@ -271,7 +268,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
 
         waitForRebalancing(1, 5);
 
-        awaitPartitionMapExchange(true, true, null);
+        awaitPartitionMapExchange(true, true, null, true);
 
         checkPartitionMapExchangeFinished();
 
@@ -397,8 +394,16 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
                     List<GridDhtLocalPartition> locs = top.localPartitions();
 
                     for (GridDhtLocalPartition loc : locs) {
-                        assertTrue("Wrong partition state, should be OWNING [state=" + loc.state() + "]",
-                            loc.state() == GridDhtPartitionState.OWNING);
+                        GridDhtPartitionState actl = loc.state();
+
+                        boolean res = GridDhtPartitionState.OWNING.equals(actl);
+
+                        if (!res)
+                            printPartitionState(c);
+
+                        assertTrue("Wrong local partition state part=" +
+                            loc.id() + ", should be OWNING [state=" + actl +
+                            "], node=" + g0.name() + " cache=" + c.getName(), res);
 
                         Collection<ClusterNode> affNodes =
                             g0.affinity(cfg.getName()).mapPartitionToPrimaryAndBackups(loc.id());
@@ -415,12 +420,14 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
 
                         GridDhtPartitionTopology remoteTop = remoteDht.topology();
 
-                        GridDhtPartitionMap2 pMap = remoteTop.partitionMap(true).get(((IgniteKernal)g).getLocalNodeId());
+                        GridDhtPartitionMap pMap = remoteTop.partitionMap(true).get(((IgniteKernal)g).getLocalNodeId());
 
                         assertEquals(pMap.size(), locs.size());
 
                         for (Map.Entry entry : pMap.entrySet()) {
-                            assertTrue("Wrong partition state, should be OWNING [state=" + entry.getValue() + "]",
+                            assertTrue("Wrong remote partition state part=" + entry.getKey() +
+                                    ", should be OWNING [state=" + entry.getValue() + "], node="
+                                    + remote.name() + " cache=" + c.getName(),
                                 entry.getValue() == GridDhtPartitionState.OWNING);
                         }
 
@@ -430,6 +437,8 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
                 }
             }
         }
+
+        log.info("checkPartitionMapExchangeFinished finished");
     }
 
     /**
@@ -493,7 +502,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
                     waitForRebalancing(4, 5, 0);
 
                     //New cache should start rebalancing.
-                    CacheConfiguration<Integer, Integer> cacheRCfg = new CacheConfiguration<>();
+                    CacheConfiguration<Integer, Integer> cacheRCfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
                     cacheRCfg.setName(CACHE_NAME_DHT_PARTITIONED + "_NEW");
                     cacheRCfg.setCacheMode(CacheMode.PARTITIONED);

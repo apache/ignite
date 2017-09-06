@@ -33,8 +33,7 @@ namespace Apache.Ignite.Linq.Impl
         /// <param name="queryOptions">The query options.</param>
         public CacheQueryable(ICache<TKey, TValue> cache, QueryOptions queryOptions)
             : base(new CacheFieldsQueryProvider(CacheQueryParser.Instance,
-                new CacheFieldsQueryExecutor((ICacheInternal) cache, queryOptions.Local, queryOptions.PageSize,
-                    queryOptions.EnableDistributedJoins, queryOptions.EnforceJoinOrder), 
+                new CacheFieldsQueryExecutor((ICacheInternal) cache, queryOptions), 
                 cache.Ignite, cache.GetConfiguration(), queryOptions.TableName, typeof(TValue)))
         {
             // No-op.

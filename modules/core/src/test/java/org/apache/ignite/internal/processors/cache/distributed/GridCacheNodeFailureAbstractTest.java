@@ -87,10 +87,9 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
-        disco.setMaxMissedHeartbeats(Integer.MAX_VALUE);
-
         disco.setIpFinder(ipFinder);
 
+        c.setFailureDetectionTimeout(Integer.MAX_VALUE);
         c.setDiscoverySpi(disco);
 
         c.setDeploymentMode(DeploymentMode.SHARED);
@@ -135,7 +134,7 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
      * @return Cache.
      */
     @Override protected <K, V> IgniteCache<K, V> jcache(int i) {
-        return IGNITEs.get(i).cache(null);
+        return IGNITEs.get(i).cache(DEFAULT_CACHE_NAME);
     }
 
     /**
@@ -177,7 +176,7 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
         Transaction tx = g.transactions().txStart(concurrency, isolation);
 
         try {
-            g.cache(null).put(KEY, VALUE);
+            g.cache(DEFAULT_CACHE_NAME).put(KEY, VALUE);
 
             int checkIdx = (idx + 1) % G.allGrids().size();
 
@@ -244,7 +243,7 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
 
         info("Grid will be stopped: " + idx);
 
-        info("Nodes for key [id=" + grid(idx).affinity(null).mapKeyToPrimaryAndBackups(KEY) +
+        info("Nodes for key [id=" + grid(idx).affinity(DEFAULT_CACHE_NAME).mapKeyToPrimaryAndBackups(KEY) +
             ", key=" + KEY + ']');
 
         IgniteCache<Integer, String> cache = jcache(idx);

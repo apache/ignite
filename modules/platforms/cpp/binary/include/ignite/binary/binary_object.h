@@ -29,10 +29,16 @@
 
 namespace ignite
 {
+    namespace impl
+    {
+        namespace binary
+        {
+            class BinaryWriterImpl;
+        }
+    }
+
     namespace binary
     {
-        class BinaryArrayIdentityResolver;
-
         /**
          * Binary object.
          *
@@ -41,7 +47,7 @@ namespace ignite
          */
         class IGNITE_IMPORT_EXPORT BinaryObject
         {
-            friend class BinaryArrayIdentityResolver;
+            friend class ignite::impl::binary::BinaryWriterImpl;
         public:
             /// @cond INTERNAL
             /**
@@ -53,24 +59,52 @@ namespace ignite
                 impl(impl)
             {
                 // No-op.
-            };
+            }
 
             /**
-             * Constructor.
+             * Direct constructor.
+             * Constructs binary object without any safety checks.
              *
              * @param mem Binary object memory.
              * @param start Object starting position in memory.
+             * @param idRslvr ID resolver.
              */
-            BinaryObject(impl::interop::InteropMemory& mem, int32_t start) :
-                impl(mem, start)
+            BinaryObject(impl::interop::InteropMemory& mem, int32_t start,
+                impl::binary::BinaryIdResolver* idRslvr, impl::binary::BinaryTypeManager* metaMgr) :
+                impl(mem, start, idRslvr, metaMgr)
             {
                 // No-op.
-            };
+            }
             /// @endcond
 
             /**
+             * Copy constructor.
+             *
+             * @param other Another instance.
+             */
+            BinaryObject(const BinaryObject& other) :
+                impl(other.impl)
+            {
+                // No-op.
+            }
+
+            /**
+             * Assignment operator.
+             *
+             * @param other Another instance.
+             * @return *this.
+             */
+            BinaryObject& operator=(const BinaryObject& other)
+            {
+                impl = other.impl;
+
+                return *this;
+            }
+
+            /**
              * Deserialize object.
-             * @throw IgniteError if the object can not be deserialized to specified type.
+             * @throw IgniteError if the object can not be deserialized to
+             *     specified type.
              *
              * @return Deserialized value.
              */
@@ -80,12 +114,43 @@ namespace ignite
                 return impl.Deserialize<T>();
             }
 
+            /**
+             * Get field.
+             * @throw IgniteError if the there is no specified field or if it
+             *     is not of the specified type.
+             *
+             * @param name Field name.
+             * @return Field value.
+             */
+            template<typename T>
+            T GetField(const char* name) const
+            {
+                return impl.GetField<T>(name);
+            }
+
+            /**
+             * Check if the binary object has the specified field.
+             *
+             * @param name Field name.
+             * @return True if the binary object has the specified field and
+             *     false otherwise.
+             */
+            bool HasField(const char* name) const
+            {
+                return impl.HasField(name);
+            }
+
         private:
             /** Implementation. */
             impl::binary::BinaryObjectImpl impl;
-
-            IGNITE_NO_COPY_ASSIGNMENT(BinaryObject)
         };
+
+        /* Specialization */
+        template<>
+        inline BinaryObject BinaryObject::GetField(const char* name) const
+        {
+            return BinaryObject(impl.GetField<impl::binary::BinaryObjectImpl>(name));
+        }
     }
 }
 

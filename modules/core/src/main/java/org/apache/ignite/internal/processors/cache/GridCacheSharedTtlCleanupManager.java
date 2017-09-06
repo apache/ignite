@@ -80,6 +80,15 @@ public class GridCacheSharedTtlCleanupManager extends GridCacheSharedManagerAdap
     }
 
     /**
+     * @return {@code True} if eager TTL is enabled.
+     */
+    public boolean eagerTtlEnabled() {
+        assert cctx != null : "Manager is not started";
+
+        return cleanupWorker != null;
+    }
+
+    /**
      *
      */
     private void startCleanupWorker() {

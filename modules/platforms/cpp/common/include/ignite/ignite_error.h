@@ -124,6 +124,9 @@ namespace ignite
         /** Binary error. */
         static const int IGNITE_ERR_BINARY = 1002;
 
+        /** Standard library exception. */
+        static const int IGNITE_ERR_STD = 1003;
+
         /** Generic %Ignite error. */
         static const int IGNITE_ERR_GENERIC = 2000;
 
@@ -195,6 +198,9 @@ namespace ignite
 
         /** Security error. */
         static const int IGNITE_ERR_SECURITY = 2023;
+
+        /** Future state error. */
+        static const int IGNITE_ERR_FUTURE_STATE = 2024;
         
         /** Unknown error. */
         static const int IGNITE_ERR_UNKNOWN = -1;

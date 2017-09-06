@@ -17,6 +17,7 @@
 
 package org.apache.ignite.spi.discovery;
 
+import java.io.Serializable;
 import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
@@ -25,7 +26,6 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.spi.IgniteSpi;
 import org.apache.ignite.spi.IgniteSpiException;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -47,6 +47,14 @@ import org.jetbrains.annotations.Nullable;
  * to undefined behavior and explicitly not supported.
  */
 public interface DiscoverySpi extends IgniteSpi {
+    /**
+     * Gets consistent ID.
+     *
+     * @return Consistent ID of this Ignite instance or {@code null} if not applicable.
+     * @throws IgniteSpiException If failed.
+     */
+    @Nullable public Serializable consistentId() throws IgniteSpiException;
+
     /**
      * Gets collection of remote nodes in grid or empty collection if no remote nodes found.
      *
@@ -80,7 +88,7 @@ public interface DiscoverySpi extends IgniteSpi {
     /**
      * Sets node attributes and node version which will be distributed in grid during
      * join process. Note that these attributes cannot be changed and set only once.
-     *
+     *set
      * @param attrs Map of node attributes.
      * @param ver Product version.
      */
@@ -104,9 +112,8 @@ public interface DiscoverySpi extends IgniteSpi {
      * Sets a handler for initial data exchange between Ignite nodes.
      *
      * @param exchange Discovery data exchange handler.
-     * @return {@code this} for chaining.
      */
-    public TcpDiscoverySpi setDataExchange(DiscoverySpiDataExchange exchange);
+    public void setDataExchange(DiscoverySpiDataExchange exchange);
 
     /**
      * Sets discovery metrics provider. Use metrics provided by
@@ -114,9 +121,8 @@ public interface DiscoverySpi extends IgniteSpi {
      * dynamic metrics between nodes.
      *
      * @param metricsProvider Provider of metrics data.
-     * @return {@code this} for chaining.
      */
-    public TcpDiscoverySpi setMetricsProvider(DiscoveryMetricsProvider metricsProvider);
+    public void setMetricsProvider(DiscoveryMetricsProvider metricsProvider);
 
     /**
      * Tells discovery SPI to disconnect from topology. This is very close to calling
@@ -147,7 +153,7 @@ public interface DiscoverySpi extends IgniteSpi {
     /**
      * Sends custom message across the ring.
      * @param msg Custom message.
-     * @throws IgniteException if failed to marshal evt.
+     * @throws IgniteException if failed to sent the event message.
      */
     public void sendCustomEvent(DiscoverySpiCustomMessage msg) throws IgniteException;
 

@@ -22,6 +22,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.lang.IgniteAsyncSupport;
 import org.apache.ignite.lang.IgniteAsyncSupported;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
 
 /**
@@ -237,6 +238,19 @@ public interface Transaction extends AutoCloseable, IgniteAsyncSupport {
     public void commit() throws IgniteException;
 
     /**
+     * Asynchronously commits this transaction by initiating {@code two-phase-commit} process.
+     *
+     * @return a Future representing pending completion of the commit.
+     * @throws IgniteException If commit failed.
+     * @throws TransactionTimeoutException If transaction is timed out.
+     * @throws TransactionRollbackException If transaction is automatically rolled back.
+     * @throws TransactionOptimisticException If transaction concurrency is {@link TransactionConcurrency#OPTIMISTIC}
+     * and commit is optimistically failed.
+     * @throws TransactionHeuristicException If transaction has entered an unknown state.
+     */
+    public IgniteFuture<Void> commitAsync() throws IgniteException;
+
+    /**
      * Ends the transaction. Transaction will be rolled back if it has not been committed.
      *
      * @throws IgniteException If transaction could not be gracefully ended.
@@ -250,4 +264,26 @@ public interface Transaction extends AutoCloseable, IgniteAsyncSupport {
      */
     @IgniteAsyncSupported
     public void rollback() throws IgniteException;
+
+    /**
+     * Asynchronously rolls back this transaction.
+     *
+     * @return a Future representing pending completion of the rollback.
+     * @throws IgniteException If rollback failed.
+     */
+    public IgniteFuture<Void> rollbackAsync() throws IgniteException;
+
+    /**
+     * Resume transaction if it was previously suspended. <strong>Supported only for optimistic transactions.</strong>
+     *
+     * @throws IgniteException If resume failed.
+     */
+    public void resume() throws IgniteException;
+
+    /**
+     * Suspends transaction. It could be resumed later. <strong>Supported only for optimistic transactions.</strong>
+     *
+     * @throws IgniteException If suspension failed.
+     */
+    public void suspend() throws IgniteException;
 }

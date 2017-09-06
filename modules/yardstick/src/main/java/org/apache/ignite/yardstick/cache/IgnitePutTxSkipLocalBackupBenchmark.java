@@ -39,6 +39,8 @@ public class IgnitePutTxSkipLocalBackupBenchmark extends IgniteCacheAbstractBenc
 
     /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
+        IgniteCache<Integer, Object> cache = cacheForOperation();
+
         int key;
 
         Affinity<Object> aff = ignite().affinity("tx");

@@ -17,10 +17,15 @@
 
 namespace Apache.Ignite.Linq
 {
+    using System;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
+    using System.Linq.Expressions;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
+    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Linq.Impl;
+    using Apache.Ignite.Linq.Impl.Dml;
 
     /// <summary>
     /// Extensions methods for <see cref="ICache{TK,TV}"/>.
@@ -43,6 +48,8 @@ namespace Apache.Ignite.Linq
         public static IQueryable<ICacheEntry<TKey, TValue>> AsCacheQueryable<TKey, TValue>(
             this ICache<TKey, TValue> cache)
         {
+            IgniteArgumentCheck.NotNull(cache, "cache");
+
             return cache.AsCacheQueryable(false, null);
         }
 
@@ -64,6 +71,8 @@ namespace Apache.Ignite.Linq
         public static IQueryable<ICacheEntry<TKey, TValue>> AsCacheQueryable<TKey, TValue>(
             this ICache<TKey, TValue> cache, bool local)
         {
+            IgniteArgumentCheck.NotNull(cache, "cache");
+
             return cache.AsCacheQueryable(local, null);
         }
 
@@ -92,6 +101,8 @@ namespace Apache.Ignite.Linq
         public static IQueryable<ICacheEntry<TKey, TValue>> AsCacheQueryable<TKey, TValue>(
             this ICache<TKey, TValue> cache, bool local, string tableName)
         {
+            IgniteArgumentCheck.NotNull(cache, "cache");
+
             return cache.AsCacheQueryable(new QueryOptions {Local = local, TableName = tableName});
         }
 
@@ -114,7 +125,71 @@ namespace Apache.Ignite.Linq
         public static IQueryable<ICacheEntry<TKey, TValue>> AsCacheQueryable<TKey, TValue>(
             this ICache<TKey, TValue> cache, QueryOptions queryOptions)
         {
+            IgniteArgumentCheck.NotNull(cache, "cache");
+            IgniteArgumentCheck.NotNull(queryOptions, "queryOptions");
+
             return new CacheQueryable<TKey, TValue>(cache, queryOptions);
+        }
+
+        /// <summary>
+        /// Casts this query to <see cref="ICacheQueryable"/>.
+        /// </summary>
+        public static ICacheQueryable ToCacheQueryable<T>(this IQueryable<T> query)
+        {
+            IgniteArgumentCheck.NotNull(query, "query");
+
+            return (ICacheQueryable) query;
+        }
+
+        /// <summary>
+        /// Removes all rows that are matched by the specified query.
+        /// <para />
+        /// This method results in "DELETE FROM" distributed SQL query, performing bulk delete 
+        /// (as opposed to fetching all rows locally).
+        /// </summary>
+        /// <typeparam name="TKey">Key type.</typeparam>
+        /// <typeparam name="TValue">Value type.</typeparam>
+        /// <param name="query">The query.</param>
+        /// <returns>Affected row count.</returns>
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods",
+            Justification = "Validation is present.")]
+        public static int RemoveAll<TKey, TValue>(this IQueryable<ICacheEntry<TKey, TValue>> query)
+        {
+            IgniteArgumentCheck.NotNull(query, "query");
+
+            var method = RemoveAllExpressionNode.RemoveAllMethodInfo.MakeGenericMethod(typeof(TKey), typeof(TValue));
+
+            return query.Provider.Execute<int>(Expression.Call(null, method, query.Expression));
+        }
+
+        /// <summary>
+        /// Deletes all rows that are matched by the specified query.
+        /// <para />
+        /// This method results in "DELETE FROM" distributed SQL query, performing bulk delete
+        /// (as opposed to fetching all rows locally).
+        /// </summary>
+        /// <typeparam name="TKey">Key type.</typeparam>
+        /// <typeparam name="TValue">Value type.</typeparam>
+        /// <param name="query">The query.</param>
+        /// <param name="predicate">The predicate.</param>
+        /// <returns>
+        /// Affected row count.
+        /// </returns>
+        [SuppressMessage("Microsoft.Design", "CA1011:ConsiderPassingBaseTypesAsParameters",
+            Justification = "Only specified type of predicate is valid.")]
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods",
+            Justification = "Validation is present.")]
+        public static int RemoveAll<TKey, TValue>(this IQueryable<ICacheEntry<TKey, TValue>> query, 
+            Expression<Func<ICacheEntry<TKey, TValue>, bool>> predicate)
+        {
+            IgniteArgumentCheck.NotNull(query, "query");
+            IgniteArgumentCheck.NotNull(predicate, "predicate");
+
+            var method = RemoveAllExpressionNode.RemoveAllPredicateMethodInfo
+                .MakeGenericMethod(typeof(TKey), typeof(TValue));
+
+            return query.Provider.Execute<int>(Expression.Call(null, method, query.Expression,
+                Expression.Quote(predicate)));
         }
     }
 }

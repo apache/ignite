@@ -27,6 +27,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
@@ -70,7 +71,6 @@ public class TcpCommunicationSpiFaultyClientTest extends GridCommonAbstractTest 
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setClockSyncFrequency(300000);
         cfg.setFailureDetectionTimeout(1000);
         cfg.setClientMode(clientMode);
 
@@ -88,6 +88,20 @@ public class TcpCommunicationSpiFaultyClientTest extends GridCommonAbstractTest 
         cfg.setDiscoverySpi(discoSpi);
 
         return cfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
+        System.setProperty(IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL,"true");
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        System.clearProperty(IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL);
     }
 
     /** {@inheritDoc} */
@@ -143,8 +157,7 @@ public class TcpCommunicationSpiFaultyClientTest extends GridCommonAbstractTest 
             final CountDownLatch latch = new CountDownLatch(1);
 
             grid(0).events().localListen(new IgnitePredicate<Event>() {
-                @Override
-                public boolean apply(Event event) {
+                @Override public boolean apply(Event event) {
                     latch.countDown();
 
                     return true;

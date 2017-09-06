@@ -114,9 +114,12 @@ public class BinaryBasicIdMapper implements BinaryIdMapper {
      * Sets whether to use strings in lower case or not.
      *
      * @param isLowerCase Whether to use strings in lower case or not.
+     * @return {@code this} for chaining.
      */
-    public void setLowerCase(boolean isLowerCase) {
+    public BinaryBasicIdMapper setLowerCase(boolean isLowerCase) {
         this.isLowerCase = isLowerCase;
+
+        return this;
     }
 
     /**

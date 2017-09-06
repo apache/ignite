@@ -59,8 +59,21 @@ public class IgniteEventsProcessProxy implements IgniteEvents {
     }
 
     /** {@inheritDoc} */
+    @Override public <T extends Event> IgniteFuture<List<T>> remoteQueryAsync(IgnitePredicate<T> p, long timeout,
+        @Nullable int... types) throws IgniteException {
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
+    }
+
+    /** {@inheritDoc} */
     @Override public <T extends Event> UUID remoteListen(@Nullable IgniteBiPredicate<UUID, T> locLsnr,
         @Nullable IgnitePredicate<T> rmtFilter, @Nullable int... types) throws IgniteException {
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T extends Event> IgniteFuture<UUID> remoteListenAsync(
+        @Nullable IgniteBiPredicate<UUID, T> locLsnr, @Nullable IgnitePredicate<T> rmtFilter,
+        @Nullable int... types) throws IgniteException {
         throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
@@ -72,12 +85,30 @@ public class IgniteEventsProcessProxy implements IgniteEvents {
     }
 
     /** {@inheritDoc} */
+    @Override public <T extends Event> IgniteFuture<UUID> remoteListenAsync(int bufSize, long interval,
+        boolean autoUnsubscribe, @Nullable IgniteBiPredicate<UUID, T> locLsnr, @Nullable IgnitePredicate<T> rmtFilter,
+        @Nullable int... types) throws IgniteException {
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
+    }
+
+    /** {@inheritDoc} */
     @Override public void stopRemoteListen(UUID opId) throws IgniteException {
         throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteFuture<Void> stopRemoteListenAsync(UUID opId) throws IgniteException {
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
+    }
+
+    /** {@inheritDoc} */
     @Override public <T extends Event> T waitForLocal(@Nullable IgnitePredicate<T> filter,
+        @Nullable int... types) throws IgniteException {
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T extends Event> IgniteFuture<T> waitForLocalAsync(@Nullable IgnitePredicate<T> filter,
         @Nullable int... types) throws IgniteException {
         throw new UnsupportedOperationException("Operation isn't supported yet.");
     }

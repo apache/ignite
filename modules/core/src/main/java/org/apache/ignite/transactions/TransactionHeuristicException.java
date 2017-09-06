@@ -17,8 +17,6 @@
 
 package org.apache.ignite.transactions;
 
-import org.apache.ignite.IgniteException;
-
 /**
  * Exception thrown whenever grid transaction enters an unknown state.
  * This exception is usually thrown whenever commit partially succeeds.
@@ -26,7 +24,7 @@ import org.apache.ignite.IgniteException;
  * integrity, by invalidating all values participating in this transaction
  * on remote nodes.
  */
-public class TransactionHeuristicException extends IgniteException {
+public class TransactionHeuristicException extends TransactionException {
     /** */
     private static final long serialVersionUID = 0L;
 

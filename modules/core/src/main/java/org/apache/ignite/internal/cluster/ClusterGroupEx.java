@@ -40,8 +40,7 @@ public interface ClusterGroupEx extends ClusterGroup {
      * @param clientNodes Flag to include client nodes.
      * @return Cluster group.
      */
-    public ClusterGroup forCacheNodes(@Nullable String cacheName, boolean affNodes, boolean nearNodes,
-        boolean clientNodes);
+    public ClusterGroup forCacheNodes(String cacheName, boolean affNodes, boolean nearNodes, boolean clientNodes);
 
     /**
      * Create projection for IGFS server nodes.
@@ -50,5 +49,5 @@ public interface ClusterGroupEx extends ClusterGroup {
      * @param metaCacheName Metadata cache name.
      * @return Cluster group.
      */
-    public ClusterGroup forIgfsMetadataDataNodes(@Nullable String igfsName, @Nullable String metaCacheName);
+    public ClusterGroup forIgfsMetadataDataNodes(String igfsName, String metaCacheName);
 }

@@ -29,8 +29,7 @@ namespace Apache.Ignite.Core.Impl.Common
     /// Grid future implementation.
     /// </summary>
     [SuppressMessage("ReSharper", "ParameterHidesMember")]
-    [CLSCompliant(false)]
-    public sealed class Future<T> : IFutureInternal
+    internal sealed class Future<T> : IFutureInternal
     {
         /** Converter. */
         private readonly IFutureConverter<T> _converter;
@@ -53,19 +52,10 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <summary>
         /// Gets the result.
         /// </summary>
+        /// <exception cref="AggregateException" />
         public T Get()
         {
-            try
-            {
-                return Task.Result;
-            }
-            catch (AggregateException ex)
-            {
-                if (ex.InnerException != null)
-                    throw ex.InnerException;
-
-                throw;
-            }
+            return Task.Result;
         }
 
         /// <summary>

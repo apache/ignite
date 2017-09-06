@@ -41,7 +41,7 @@ public class GridCacheJtaFactoryConfigValidationSelfTest extends GridCommonAbstr
 
         cfg.getTransactionConfiguration().setTxManagerFactory(factory);
 
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setAtomicityMode(ATOMIC);
 

@@ -41,9 +41,9 @@ public class IgniteStartFromStreamConfigurationTest extends GridCommonAbstractTe
         URL cfgLocation = U.resolveIgniteUrl(cfg);
 
         try (Ignite grid = Ignition.start(new FileInputStream(cfgLocation.getFile()))) {
-            grid.cache(null).put("1", "1");
+            grid.cache(DEFAULT_CACHE_NAME).put("1", "1");
 
-            assert grid.cache(null).get("1").equals("1");
+            assert grid.cache(DEFAULT_CACHE_NAME).get("1").equals("1");
 
             IgniteConfiguration icfg = Ignition.loadSpringBean(new FileInputStream(cfgLocation.getFile()), "ignite.cfg");
 

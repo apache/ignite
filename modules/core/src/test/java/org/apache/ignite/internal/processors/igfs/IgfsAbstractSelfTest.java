@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.igfs;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.igfs.IgfsDirectoryNotEmptyException;
 import org.apache.ignite.igfs.IgfsException;
@@ -76,16 +75,6 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      */
     protected IgfsAbstractSelfTest(IgfsMode mode) {
         super(mode);
-    }
-
-    /**
-     * Constructor.
-     *
-     * @param mode IGFS mode.
-     * @param memoryMode Memory mode.
-     */
-    protected IgfsAbstractSelfTest(IgfsMode mode, CacheMemoryMode memoryMode) {
-        super(mode, memoryMode);
     }
 
     /**
@@ -693,7 +682,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
 
         assert dataCache.size(new CachePeekMode[] {CachePeekMode.ALL}) > 0;
 
-        igfs.format();
+        igfs.clear();
 
         // Ensure format is not propagated to the secondary file system.
         if (dual) {
@@ -756,7 +745,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
     private void checkRootPropertyUpdate(String prop, String setVal, String expGetVal) throws Exception {
         igfs.update(IgfsPath.ROOT, Collections.singletonMap(prop, setVal));
 
-        igfs.format();
+        igfs.clear();
 
         IgfsFile file = igfs.info(IgfsPath.ROOT);
 
@@ -863,7 +852,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
             }
 
             // Change only access time.
-            igfs.setTimes(path, info.accessTime() + 1000, -1);
+            igfs.setTimes(path, -1, info.accessTime() + 1000);
 
             newInfo = igfs.info(path);
 
@@ -875,12 +864,12 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
             if (dual) {
                 T2<Long, Long> newSecondaryTimes = igfsSecondary.times(path.toString());
 
-                assertEquals(newInfo.accessTime(), (long) newSecondaryTimes.get1());
-                assertEquals(secondaryTimes.get2(), newSecondaryTimes.get2());
+                assertEquals(newInfo.accessTime(), (long) newSecondaryTimes.get2());
+                assertEquals(secondaryTimes.get1(), newSecondaryTimes.get1());
             }
 
             // Change only modification time.
-            igfs.setTimes(path, -1, info.modificationTime() + 1000);
+            igfs.setTimes(path, info.modificationTime() + 1000, -1);
 
             newInfo = igfs.info(path);
 
@@ -892,12 +881,11 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
             if (dual) {
                 T2<Long, Long> newSecondaryTimes = igfsSecondary.times(path.toString());
 
-                assertEquals(newInfo.accessTime(), (long) newSecondaryTimes.get1());
-                assertEquals(newInfo.modificationTime(), (long) newSecondaryTimes.get2());
+                assertEquals(newInfo.accessTime(), (long) newSecondaryTimes.get2());
             }
 
             // Change both.
-            igfs.setTimes(path, info.accessTime() + 2000, info.modificationTime() + 2000);
+            igfs.setTimes(path, info.modificationTime() + 2000, info.accessTime() + 2000);
 
             newInfo = igfs.info(path);
 
@@ -909,8 +897,8 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
             if (dual) {
                 T2<Long, Long> newSecondaryTimes = igfsSecondary.times(path.toString());
 
-                assertEquals(newInfo.accessTime(), (long) newSecondaryTimes.get1());
-                assertEquals(newInfo.modificationTime(), (long) newSecondaryTimes.get2());
+                assertEquals(newInfo.modificationTime(), (long) newSecondaryTimes.get1());
+                assertEquals(newInfo.accessTime(), (long) newSecondaryTimes.get2());
             }
         }
     }

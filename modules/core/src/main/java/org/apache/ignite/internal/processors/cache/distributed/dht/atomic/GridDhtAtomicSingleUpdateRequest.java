@@ -135,7 +135,7 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
         assert conflictVer == null : conflictVer;
         assert key.partition() >= 0 : key;
 
-        near(false);
+        assert this.key == null;
 
         this.key = key;
         this.val = val;
@@ -144,6 +144,20 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
             this.prevVal = prevVal;
 
         this.updateCntr = updateCntr;
+    }
+
+    /**
+     * @return {@code True} if near cache update request.
+     */
+    private boolean near() {
+        return isFlag(DHT_ATOMIC_NEAR_FLAG_MASK);
+    }
+
+    /**
+     * @param near Near cache update flag.
+     */
+    private void near(boolean near) {
+        setFlag(near, DHT_ATOMIC_NEAR_FLAG_MASK);
     }
 
     /**
@@ -161,6 +175,12 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
         assert entryProcessor == null;
         assert ttl <= 0 : ttl;
         assert key.partition() >= 0 : key;
+
+        if (this.key != null) {
+            setFlag(true, DHT_ATOMIC_OBSOLETE_NEAR_KEY_FLAG_MASK);
+
+            return;
+        }
 
         near(true);
 
@@ -193,6 +213,18 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
         assert idx == 0 : idx;
 
         return near() ? null : key;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int obsoleteNearKeysSize() {
+        return isFlag(DHT_ATOMIC_OBSOLETE_NEAR_KEY_FLAG_MASK) ? 1 : 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public KeyCacheObject obsoleteNearKey(int idx) {
+        assert obsoleteNearKeysSize() == 1 && idx == 0 : idx;
+
+        return key;
     }
 
     /** {@inheritDoc} */
@@ -304,7 +336,6 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
         prepareMarshalObject(val, cctx);
 
         prepareMarshalObject(prevVal, cctx);
-
     }
 
     /** {@inheritDoc} */
@@ -443,7 +474,7 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return -36;
     }
 

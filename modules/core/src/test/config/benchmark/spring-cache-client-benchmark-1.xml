@@ -71,9 +71,6 @@
 
                     <property name="cacheMode" value="PARTITIONED"/>
 
-                    <!-- Initial cache size. -->
-                    <property name="startSize" value="10000"/>
-
                     <property name="swapEnabled" value="false"/>
 
                     <property name="writeSynchronizationMode" value="FULL_ASYNC"/>

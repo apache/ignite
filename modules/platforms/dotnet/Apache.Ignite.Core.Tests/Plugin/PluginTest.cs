@@ -20,10 +20,14 @@ namespace Apache.Ignite.Core.Tests.Plugin
     using System;
     using System.Collections.Generic;
     using System.IO;
+    using System.Linq;
+    using System.Threading;
+    using System.Threading.Tasks;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Interop;
     using Apache.Ignite.Core.Plugin;
+    using Apache.Ignite.Core.Resource;
     using NUnit.Framework;
 
     /// <summary>
@@ -66,6 +70,7 @@ namespace Apache.Ignite.Core.Tests.Plugin
                 Assert.IsNotNull(ctx.Ignite);
                 Assert.AreEqual(cfg, ctx.IgniteConfiguration);
                 Assert.AreEqual("barbaz", ctx.PluginConfiguration.PluginProperty);
+                CheckResourceInjection(ctx);
 
                 var plugin2 = ignite.GetPlugin<TestIgnitePlugin>(TestIgnitePluginProvider.PluginName);
                 Assert.AreEqual(plugin, plugin2);
@@ -78,6 +83,21 @@ namespace Apache.Ignite.Core.Tests.Plugin
 
             Assert.AreEqual(true, plugin.Provider.Stopped);
             Assert.AreEqual(true, plugin.Provider.IgniteStopped);
+        }
+
+        /// <summary>
+        /// Checks the resource injection.
+        /// </summary>
+        private static void CheckResourceInjection(IPluginContext<TestIgnitePluginConfiguration> ctx)
+        {
+            var obj = new Injectee();
+
+            Assert.IsNull(obj.Ignite);
+
+            ctx.InjectResources(obj);
+
+            Assert.IsNotNull(obj.Ignite);
+            Assert.AreEqual(ctx.Ignite.Name, obj.Ignite.Name);
         }
 
         /// <summary>
@@ -117,6 +137,31 @@ namespace Apache.Ignite.Core.Tests.Plugin
             var resCopy = res.Item2.OutObject(1);
             Assert.AreEqual("name1_abc", resCopy.OutStream(1, r => r.ReadString()));
 
+            // Async operation.
+            var task = target.DoOutOpAsync(1, w => w.WriteString("foo"), r => r.ReadString());
+            Assert.IsFalse(task.IsCompleted);
+            var asyncRes = task.Result;
+            Assert.IsTrue(task.IsCompleted);
+            Assert.AreEqual("FOO", asyncRes);
+
+            // Async operation with cancellation.
+            var cts = new CancellationTokenSource();
+            task = target.DoOutOpAsync(1, w => w.WriteString("foo"), r => r.ReadString(), cts.Token);
+            Assert.IsFalse(task.IsCompleted);
+            cts.Cancel();
+            Assert.IsTrue(task.IsCanceled);
+            var aex = Assert.Throws<AggregateException>(() => { asyncRes = task.Result; });
+            Assert.IsInstanceOf<TaskCanceledException>(aex.GetBaseException());
+
+            // Async operation with exception in entry point.
+            Assert.Throws<TestIgnitePluginException>(() => target.DoOutOpAsync<object>(2, null, null));
+
+            // Async operation with exception in future.
+            var errTask = target.DoOutOpAsync<object>(3, null, null);
+            Assert.IsFalse(errTask.IsCompleted);
+            aex = Assert.Throws<AggregateException>(() => errTask.Wait());
+            Assert.IsInstanceOf<IgniteException>(aex.InnerExceptions.Single());
+
             // Throws custom mapped exception.
             var ex = Assert.Throws<TestIgnitePluginException>(() => target.InLongOutLong(-1, 0));
             Assert.AreEqual("Baz", ex.Message);
@@ -142,13 +187,15 @@ namespace Apache.Ignite.Core.Tests.Plugin
 
             // Missing attribute.
             var ex = Assert.Throws<IgniteException>(() => check(new[] { new NoAttributeConfig(),  }));
+            Assert.IsNotNull(ex.InnerException);
             Assert.AreEqual(string.Format("{0} of type {1} has no {2}", typeof(IPluginConfiguration),
-                typeof(NoAttributeConfig), typeof(PluginProviderTypeAttribute)), ex.Message);
+                typeof(NoAttributeConfig), typeof(PluginProviderTypeAttribute)), ex.InnerException.Message);
 
             // Empty plugin name.
             ex = Assert.Throws<IgniteException>(() => check(new[] {new EmptyNameConfig()}));
+            Assert.IsNotNull(ex.InnerException);
             Assert.AreEqual(string.Format("{0}.Name should not be null or empty: {1}", typeof(IPluginProvider<>),
-                typeof(EmptyNamePluginProvider)), ex.Message);
+                typeof(EmptyNamePluginProvider)), ex.InnerException.Message);
 
             // Duplicate plugin name.
             ex = Assert.Throws<IgniteException>(() => check(new[]
@@ -156,24 +203,27 @@ namespace Apache.Ignite.Core.Tests.Plugin
                 new TestIgnitePluginConfiguration(),
                 new TestIgnitePluginConfiguration()
             }));
+            Assert.IsNotNull(ex.InnerException);
             Assert.AreEqual(string.Format("Duplicate plugin name 'TestPlugin1' is used by plugin providers " +
-                                          "'{0}' and '{0}'", typeof(TestIgnitePluginProvider)), ex.Message);
+                                          "'{0}' and '{0}'", typeof(TestIgnitePluginProvider)),
+                                          ex.InnerException.Message);
 
             // Provider throws an exception.
             PluginLog.Clear();
 
-            var ioex = Assert.Throws<IOException>(() => check(new IPluginConfiguration[]
+            ex = Assert.Throws<IgniteException>(() => check(new IPluginConfiguration[]
             {
                 new NormalConfig(), new ExceptionConfig()
             }));
-            Assert.AreEqual("Failure in plugin provider", ioex.Message);
+            Assert.IsNotNull(ex.InnerException);
+            Assert.IsInstanceOf<IOException>(ex.InnerException);
+            Assert.AreEqual("Failure in plugin provider", ex.InnerException.Message);
 
             // Verify that plugins are started and stopped in correct order:
             Assert.AreEqual(
                 new[]
                 {
                     "normalPlugin.Start", "errPlugin.Start",
-                    "errPlugin.OnIgniteStop", "normalPlugin.OnIgniteStop",
                     "errPlugin.Stop", "normalPlugin.Stop"
                 }, PluginLog);
         }
@@ -297,6 +347,13 @@ namespace Apache.Ignite.Core.Tests.Plugin
             {
                 PluginLog.Add(Name + ".Start");
             }
+        }
+
+        private class Injectee
+        {
+            [InstanceResource]
+            // ReSharper disable once UnusedAutoPropertyAccessor.Local
+            public IIgnite Ignite { get; set; }
         }
     }
 }

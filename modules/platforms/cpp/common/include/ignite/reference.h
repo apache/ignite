@@ -160,9 +160,9 @@ namespace ignite
          *
          * @return Constant reference to underlying value.
          */
-        const T& Get() const
+        const T* Get() const
         {
-            return *reinterpret_cast<const T*>(reinterpret_cast<ptrdiff_t>(ptr.Get()->Get()) + offset);
+            return reinterpret_cast<const T*>(reinterpret_cast<ptrdiff_t>(ptr.Get()->Get()) + offset);
         }
 
         /**
@@ -326,11 +326,11 @@ namespace ignite
          * If the pointer is null then this operation causes undefined
          * behaviour.
          *
-         * @return Constant reference to underlying value.
+         * @return Constant pointer to underlying value.
          */
-        const T& Get() const
+        const T* Get() const
         {
-            return *reinterpret_cast<const T*>(reinterpret_cast<ptrdiff_t>(ptr.Get()->Get()) + offset);
+            return reinterpret_cast<const T*>(reinterpret_cast<ptrdiff_t>(ptr.Get()->Get()) + offset);
         }
 
         /**
@@ -341,9 +341,9 @@ namespace ignite
          *
          * @return Reference to underlying value.
          */
-        T& Get()
+        T* Get()
         {
-            return *reinterpret_cast<T*>(reinterpret_cast<ptrdiff_t>(ptr.Get()->Get()) + offset);
+            return reinterpret_cast<T*>(reinterpret_cast<ptrdiff_t>(ptr.Get()->Get()) + offset);
         }
 
         /**

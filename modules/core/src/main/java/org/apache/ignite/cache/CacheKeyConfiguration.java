@@ -81,9 +81,12 @@ public class CacheKeyConfiguration implements Serializable {
 
     /**
      * @param typeName Type name for which affinity field name is being defined.
+     * @return {@code this} for chaining.
      */
-    public void setTypeName(String typeName) {
+    public CacheKeyConfiguration setTypeName(String typeName) {
         this.typeName = typeName;
+
+        return this;
     }
 
     /**
@@ -99,9 +102,12 @@ public class CacheKeyConfiguration implements Serializable {
      * Sets affinity key field name.
      *
      * @param affKeyFieldName Affinity key field name.
+     * @return {@code this} for chaining.
      */
-    public void setAffinityKeyFieldName(String affKeyFieldName) {
+    public CacheKeyConfiguration setAffinityKeyFieldName(String affKeyFieldName) {
         this.affKeyFieldName = affKeyFieldName;
+
+        return this;
     }
 
     /** {@inheritDoc} */

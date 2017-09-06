@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<!--
+ Licensed to the Apache Software Foundation (ASF) under one or more
+ contributor license agreements.  See the NOTICE file distributed with
+ this work for additional information regarding copyright ownership.
+ The ASF licenses this file to You under the Apache License, Version 2.0
+ (the "License"); you may not use this file except in compliance with
+ the License.  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+-->
+<meta charset="utf-8">
+<title>IgniteML</title>
+<style>
+    body {
+        margin: 0 15px;
+    }
+
+    p {
+        margin: 10px 0 !important;
+    }
+
+    .name {
+        font-size: 20px;
+        font-weight: 400;
+        font-family: monospace;
+    }
+
+    .swatch {
+        display: inline-block;
+        width: 25px;
+        height: 25px;
+        margin-left: 5px;
+        vertical-align: bottom;
+    }
+
+</style>
+<body>
+<img style="margin-top: 15px" width="100px" src="https://ignite.apache.org/images/logo3.png">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/4.5.0/d3.min.js"></script>
+<script>
+    /*@DATA@*/var data = [{d: 2.256, r: 128, g: 128, b: 128}, {d: 0.123, r: 228, g: 228, b: 228}];
+    /*@MAX@*/var max = {d: 2.256, r: 128, g: 128, b: 128};
+    /*@MIN@*/var min = {d: 0.123, r: 228, g: 228, b: 228};
+    /*@NAME@*/var name = "Vector";
+
+    var W, H = 1000;
+    var range = max.d - min.d;
+    var rh = 20; // Constant.
+    var rw;
+
+    if (data.length > W) {
+        rw = 1;
+        W = data.length;
+    }
+    else {
+        W = 1000;
+        rw = Math.min(Math.round(W / data.length), 5);
+    }
+
+    d3.selectAll("body")
+        .append("p")
+        .text(name + " (size: " + data.length + ")")
+        .attr("class", "name");
+
+    d3.selectAll("body")
+        .append("p")
+        .attr("class", "name")
+        .text("Max: " + max.d)
+        .append("span")
+        .attr("class", "swatch")
+        .attr("style", "background-color: rgb(" + max.r + ", " + max.g + ", " + max.b + ")");
+
+    d3.selectAll("body")
+        .append("p")
+        .attr("class", "name")
+        .text("Min: " + min.d)
+        .append("span")
+        .attr("class", "swatch")
+        .attr("style", "background-color: rgb(" + min.r + ", " + min.g + ", " + min.b + ")");
+
+    var svg = d3.select("body").append("svg")
+        .attr("width", W)
+        .attr("height", H);
+
+    svg.selectAll("rect")
+        .data(data)
+        .enter()
+        .append("rect")
+        .attr("x", function (d, i) {
+            return i * rw
+        })
+        .attr("y", 10)
+        .attr("fill", function (d) {
+            return "rgb(" + d.r + ", " + d.g + ", " + d.b + ")";
+        })
+        .attr("width", rw)
+        .attr("height", rh);
+
+</script>

@@ -50,7 +50,6 @@ public class GridCacheConcurrentMapSelfTest extends GridCommonAbstractTest {
 
         cc.setCacheMode(LOCAL);
         cc.setWriteSynchronizationMode(FULL_SYNC);
-        cc.setStartSize(4);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
@@ -77,7 +76,7 @@ public class GridCacheConcurrentMapSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testRehash() throws Exception {
-        IgniteCache<Integer, String> c = grid().cache(null);
+        IgniteCache<Integer, String> c = grid().cache(DEFAULT_CACHE_NAME);
 
         int cnt = 100 * 1024;
 
@@ -108,7 +107,7 @@ public class GridCacheConcurrentMapSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testRehashRandom() throws Exception {
-        IgniteCache<Integer, String> c = grid().cache(null);
+        IgniteCache<Integer, String> c = grid().cache(DEFAULT_CACHE_NAME);
 
         int cnt = 100 * 1024;
 
@@ -156,7 +155,7 @@ public class GridCacheConcurrentMapSelfTest extends GridCommonAbstractTest {
         multithreaded(new Callable<Object>() {
             @SuppressWarnings("UnusedAssignment")
             @Override public Object call() throws Exception {
-                IgniteCache<Integer, String> c = grid().cache(null);
+                IgniteCache<Integer, String> c = grid().cache(DEFAULT_CACHE_NAME);
 
                 int tid = tidGen.getAndIncrement();
 
@@ -228,7 +227,7 @@ public class GridCacheConcurrentMapSelfTest extends GridCommonAbstractTest {
         multithreaded(new Callable<Object>() {
             @SuppressWarnings("UnusedAssignment")
             @Override public Object call() throws Exception {
-                IgniteCache<Integer, String> c = grid().cache(null);
+                IgniteCache<Integer, String> c = grid().cache(DEFAULT_CACHE_NAME);
 
                 int tid = tidGen.getAndIncrement();
 
@@ -313,7 +312,7 @@ public class GridCacheConcurrentMapSelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings("ResultOfObjectAllocationIgnored")
     public void testEmptyWeakIterator() throws Exception {
-        final IgniteCache<Integer, String> c = grid().cache(null);
+        final IgniteCache<Integer, String> c = grid().cache(DEFAULT_CACHE_NAME);
 
         for (int i = 0; i < 10; i++) {
             multithreaded(new Callable<Object>() {

@@ -397,7 +397,8 @@ public class TcpDiscoveryNodesRing {
 
             topVer = 0;
 
-            minNodeVer = locNode.version();
+            if (locNode != null)
+                minNodeVer = locNode.version();
         }
         finally {
             rwLock.writeLock().unlock();

@@ -19,6 +19,10 @@ const DFLT_CACHE = {
     cacheMode: {
         clsName: 'org.apache.ignite.cache.CacheMode'
     },
+    partitionLossPolicy: {
+        clsName: 'org.apache.ignite.cache.PartitionLossPolicy',
+        value: 'IGNORE'
+    },
     atomicityMode: {
         clsName: 'org.apache.ignite.cache.CacheAtomicityMode'
     },
@@ -26,6 +30,7 @@ const DFLT_CACHE = {
         clsName: 'org.apache.ignite.cache.CacheMemoryMode',
         value: 'ONHEAP_TIERED'
     },
+    onheapCacheEnabled: false,
     offHeapMaxMemory: -1,
     startSize: 1500000,
     swapEnabled: false,
@@ -50,6 +55,7 @@ const DFLT_CACHE = {
     writeBehindFlushSize: 10240,
     writeBehindFlushFrequency: 5000,
     writeBehindFlushThreadCount: 1,
+    writeBehindCoalescing: true,
     maxConcurrentAsyncOperations: 500,
     defaultLockTimeout: 0,
     atomicWriteOrderMode: {
@@ -93,6 +99,8 @@ const DFLT_CACHE = {
         }
     },
     queryMetadata: 'Configuration',
+    queryDetailMetricsSize: 0,
+    queryParallelism: 1,
     fields: {
         keyClsName: 'java.lang.String',
         valClsName: 'java.lang.String',
@@ -121,7 +129,8 @@ const DFLT_CACHE = {
         databaseFieldType: {
             clsName: 'java.sql.Types'
         }
-    }
+    },
+    memoryPolicyName: 'default'
 };
 
 export default class IgniteCacheDefaults {

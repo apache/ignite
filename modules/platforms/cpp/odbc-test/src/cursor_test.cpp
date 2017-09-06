@@ -23,8 +23,8 @@
 
 #include <ignite/impl/binary/binary_writer_impl.h>
 
-#include "ignite/odbc/system/odbc_constants.h"
-#include "ignite/odbc/cursor.h"
+#include <ignite/odbc/system/odbc_constants.h>
+#include <ignite/odbc/cursor.h>
 
 using namespace ignite::odbc;
 
@@ -35,7 +35,7 @@ std::auto_ptr<ResultPage> CreateTestPage(bool last, int32_t size)
     using namespace ignite::impl::binary;
     using namespace ignite::impl::interop;
 
-    ignite::impl::interop::InteropUnpooledMemory mem(1024);
+    InteropUnpooledMemory mem(1024);
     InteropOutputStream outStream(&mem);
     BinaryWriterImpl writer(&outStream, 0);
 

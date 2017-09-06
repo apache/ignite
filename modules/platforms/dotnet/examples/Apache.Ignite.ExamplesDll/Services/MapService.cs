@@ -26,7 +26,6 @@ namespace Apache.Ignite.ExamplesDll.Services
     /// <summary>
     /// Service implementation.
     /// </summary>
-    [Serializable]
     public class MapService<TK, TV> : IService
     {
         /** Injected Ignite instance. */

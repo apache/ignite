@@ -45,14 +45,14 @@ namespace ignite
                  *
                  * @return Diagnostic record.
                  */
-                virtual const diagnostic::DiagnosticRecordStorage& GetDiagnosticRecords() const = 0;
+                virtual const DiagnosticRecordStorage& GetDiagnosticRecords() const = 0;
 
                 /**
                  * Get diagnostic record.
                  *
                  * @return Diagnostic record.
                  */
-                virtual diagnostic::DiagnosticRecordStorage& GetDiagnosticRecords() = 0;
+                virtual DiagnosticRecordStorage& GetDiagnosticRecords() = 0;
 
                 /**
                  * Add new status record.
@@ -62,7 +62,7 @@ namespace ignite
                  * @param rowNum Associated row number.
                  * @param columnNum Associated column number.
                  */
-                virtual void AddStatusRecord(SqlState sqlState, const std::string& message,
+                virtual void AddStatusRecord(SqlState::Type sqlState, const std::string& message,
                     int32_t rowNum, int32_t columnNum) = 0;
 
                 /**
@@ -71,7 +71,7 @@ namespace ignite
                  * @param sqlState SQL state.
                  * @param message Message.
                  */
-                virtual void AddStatusRecord(SqlState sqlState, const std::string& message) = 0;
+                virtual void AddStatusRecord(SqlState::Type sqlState, const std::string& message) = 0;
 
             protected:
                 /**

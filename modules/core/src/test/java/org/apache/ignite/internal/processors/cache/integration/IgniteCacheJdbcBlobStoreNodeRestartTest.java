@@ -17,15 +17,15 @@
 
 package org.apache.ignite.internal.processors.cache.integration;
 
-import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.jdbc.CacheJdbcBlobStore;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
-
+/**
+ *
+ */
 public class IgniteCacheJdbcBlobStoreNodeRestartTest extends IgniteCacheStoreNodeRestartAbstractTest {
     /** {@inheritDoc} */
     @Override protected CacheStore getStore() {
@@ -45,10 +45,5 @@ public class IgniteCacheJdbcBlobStoreNodeRestartTest extends IgniteCacheStoreNod
     /** {@inheritDoc} */
     @Override protected NearCacheConfiguration nearConfiguration() {
         return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected CacheAtomicWriteOrderMode atomicWriteOrderMode() {
-        return PRIMARY;
     }
 }

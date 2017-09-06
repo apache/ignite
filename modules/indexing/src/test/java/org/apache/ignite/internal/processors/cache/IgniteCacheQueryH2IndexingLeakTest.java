@@ -132,7 +132,7 @@ public class IgniteCacheQueryH2IndexingLeakTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings({"TooBroadScope"})
     public void testLeaksInIgniteH2IndexingOnTerminatedThread() throws Exception {
-        final IgniteCache<Integer, Integer> c = grid(0).cache(null);
+        final IgniteCache<Integer, Integer> c = grid(0).cache(DEFAULT_CACHE_NAME);
 
         for(int i = 0; i < ITERATIONS; ++i) {
             info("Iteration #" + i);
@@ -180,7 +180,7 @@ public class IgniteCacheQueryH2IndexingLeakTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testLeaksInIgniteH2IndexingOnUnusedThread() throws Exception {
-        final IgniteCache<Integer, Integer> c = grid(0).cache(null);
+        final IgniteCache<Integer, Integer> c = grid(0).cache(DEFAULT_CACHE_NAME);
 
         final CountDownLatch latch = new CountDownLatch(1);
 

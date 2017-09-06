@@ -216,7 +216,7 @@ public class IgniteClientReconnectContinuousProcessorTest extends IgniteClientRe
 
         assertTrue(client.cluster().localNode().isClient());
 
-        IgniteCache<Object, Object> clientCache = client.getOrCreateCache(new CacheConfiguration<>());
+        IgniteCache<Object, Object> clientCache = client.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME));
 
         CacheEventListener lsnr = new CacheEventListener();
 
@@ -253,7 +253,7 @@ public class IgniteClientReconnectContinuousProcessorTest extends IgniteClientRe
 
         assertTrue(client.cluster().localNode().isClient());
 
-        IgniteCache<Object, Object> clientCache = client.getOrCreateCache(new CacheConfiguration<>());
+        IgniteCache<Object, Object> clientCache = client.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME));
 
         CacheEventListener lsnr = new CacheEventListener();
 
@@ -273,7 +273,7 @@ public class IgniteClientReconnectContinuousProcessorTest extends IgniteClientRe
 
             lsnr.latch = new CountDownLatch(10);
 
-            IgniteCache<Object, Object> newSrvCache = newSrv.cache(null);
+            IgniteCache<Object, Object> newSrvCache = newSrv.cache(DEFAULT_CACHE_NAME);
 
             for (Integer key : primaryKeys(newSrvCache, 10))
                 newSrvCache.put(key, key);
@@ -289,7 +289,7 @@ public class IgniteClientReconnectContinuousProcessorTest extends IgniteClientRe
 
             lsnr.latch = new CountDownLatch(5);
 
-            IgniteCache<Object, Object> newSrvCache = newSrv.cache(null);
+            IgniteCache<Object, Object> newSrvCache = newSrv.cache(DEFAULT_CACHE_NAME);
 
             for (Integer key : primaryKeys(newSrvCache, 5))
                 newSrvCache.put(key, key);
@@ -343,7 +343,7 @@ public class IgniteClientReconnectContinuousProcessorTest extends IgniteClientRe
 
         lsnr.latch = new CountDownLatch(1);
 
-        srv.cache(null).put(2, 2);
+        srv.cache(DEFAULT_CACHE_NAME).put(2, 2);
 
         assertTrue(lsnr.latch.await(5000, MILLISECONDS));
     }

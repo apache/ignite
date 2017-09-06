@@ -38,6 +38,7 @@ import org.apache.ignite.spi.IgniteSpiThread;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryRingLatencyCheckMessage;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -237,6 +238,16 @@ abstract class TcpDiscoveryImpl {
     public abstract void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException;
 
     /**
+     * Will start TCP server if applicable and not started yet.
+     *
+     * @return Port this instance bound to.
+     * @throws IgniteSpiException If failed.
+     */
+    public int boundPort() throws IgniteSpiException {
+        return 0;
+    }
+
+    /**
      * @throws IgniteSpiException If failed.
      */
     public abstract void spiStop() throws IgniteSpiException;
@@ -259,6 +270,13 @@ abstract class TcpDiscoveryImpl {
     }
 
     /**
+     * Leave cluster and try to join again.
+     *
+     * @throws IgniteSpiException If failed.
+     */
+    public abstract void reconnect() throws IgniteSpiException;
+
+    /**
      * <strong>FOR TEST ONLY!!!</strong>
      * <p>
      * Simulates this node failure by stopping service threads. So, node will become
@@ -272,6 +290,11 @@ abstract class TcpDiscoveryImpl {
      * FOR TEST PURPOSE ONLY!
      */
     public abstract void brakeConnection();
+
+    /**
+     * @param maxHops Maximum hops for {@link TcpDiscoveryRingLatencyCheckMessage}.
+     */
+    public abstract void checkRingLatency(int maxHops);
 
     /**
      * <strong>FOR TEST ONLY!!!</strong>

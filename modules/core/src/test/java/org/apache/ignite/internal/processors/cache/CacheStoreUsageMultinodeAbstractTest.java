@@ -26,7 +26,6 @@ import javax.cache.configuration.Factory;
 import javax.cache.integration.CacheLoaderException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.store.CacheStore;
@@ -101,11 +100,10 @@ public abstract class CacheStoreUsageMultinodeAbstractTest extends GridCommonAbs
      */
     @SuppressWarnings("unchecked")
     protected CacheConfiguration cacheConfiguration() {
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(PARTITIONED);
         ccfg.setAtomicityMode(atomicityMode());
-        ccfg.setAtomicWriteOrderMode(CacheAtomicWriteOrderMode.PRIMARY);
         ccfg.setBackups(1);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
 
@@ -149,9 +147,9 @@ public abstract class CacheStoreUsageMultinodeAbstractTest extends GridCommonAbs
 
         awaitPartitionMapExchange();
 
-        IgniteCache<Object, Object> cache0 = ignite(0).cache(null);
-        IgniteCache<Object, Object> cache1 = ignite(1).cache(null);
-        IgniteCache<Object, Object> clientCache = client.cache(null);
+        IgniteCache<Object, Object> cache0 = ignite(0).cache(DEFAULT_CACHE_NAME);
+        IgniteCache<Object, Object> cache1 = ignite(1).cache(DEFAULT_CACHE_NAME);
+        IgniteCache<Object, Object> clientCache = client.cache(DEFAULT_CACHE_NAME);
 
         assertTrue(((IgniteCacheProxy)cache0).context().store().configured());
         assertEquals(clientStore, ((IgniteCacheProxy) clientCache).context().store().configured());

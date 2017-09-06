@@ -71,10 +71,13 @@ public abstract class TcpDiscoveryIpFinderAdapter implements TcpDiscoveryIpFinde
      * with IP finder will be seen by IP finders on all other nodes.
      *
      * @param shared {@code true} if this IP finder is shared.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
-    public void setShared(boolean shared) {
+    public TcpDiscoveryIpFinderAdapter setShared(boolean shared) {
         this.shared = shared;
+
+        return this;
     }
 
     /** {@inheritDoc} */

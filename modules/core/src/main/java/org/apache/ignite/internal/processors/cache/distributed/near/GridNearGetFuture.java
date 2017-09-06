@@ -110,7 +110,8 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
         boolean skipVals,
         boolean canRemap,
         boolean needVer,
-        boolean keepCacheObjects
+        boolean keepCacheObjects,
+        boolean recovery
     ) {
         super(cctx,
             keys,
@@ -123,7 +124,8 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
             skipVals,
             canRemap,
             needVer,
-            keepCacheObjects);
+            keepCacheObjects,
+            recovery);
 
         assert !F.isEmpty(keys);
 
@@ -312,12 +314,14 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                     dht().getDhtAsync(n.id(),
                         -1,
                         mappedKeys,
+                        false,
                         readThrough,
                         topVer,
                         subjId,
                         taskName == null ? 0 : taskName.hashCode(),
                         expiryPlc,
-                        skipVals);
+                        skipVals,
+                        recovery);
 
                 final Collection<Integer> invalidParts = fut.invalidPartitions();
 
@@ -329,7 +333,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                             remapKeys.add(key);
                     }
 
-                    AffinityTopologyVersion updTopVer = cctx.discovery().topologyVersionEx();
+                    AffinityTopologyVersion updTopVer = cctx.shared().exchange().readyAffinityVersion();
 
                     assert updTopVer.compareTo(topVer) > 0 : "Got invalid partitions for local node but topology version did " +
                         "not change [topVer=" + topVer + ", updTopVer=" + updTopVer +
@@ -376,8 +380,10 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                     taskName == null ? 0 : taskName.hashCode(),
                     expiryPlc != null ? expiryPlc.forCreate() : -1L,
                     expiryPlc != null ? expiryPlc.forAccess() : -1L,
+                    true,
                     skipVals,
-                    cctx.deploymentEnabled());
+                    cctx.deploymentEnabled(),
+                    recovery);
 
                 add(fut); // Append new future.
 
@@ -441,9 +447,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                         EntryGetResult res = entry.innerGetVersioned(
                             null,
                             null,
-                            /*swap*/true,
-                            /*unmarshal*/true,
-                            /**update-metrics*/true,
+                            /*update-metrics*/true,
                             /*event*/!skipVals,
                             subjId,
                             null,
@@ -461,11 +465,9 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                         v = entry.innerGet(
                             null,
                             tx,
-                            /*swap*/false,
                             /*read-through*/false,
                             /*metrics*/true,
                             /*events*/!skipVals,
-                            /*temporary*/false,
                             subjId,
                             null,
                             taskName,
@@ -570,7 +572,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
             GridCacheEntryEx dhtEntry = null;
 
             try {
-                dhtEntry = dht.context().isSwapOrOffheapEnabled() ? dht.entryEx(key) : dht.peekEx(key);
+                dhtEntry = dht.entryEx(key);
 
                 CacheObject v = null;
 
@@ -582,9 +584,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                         EntryGetResult res = dhtEntry.innerGetVersioned(
                             null,
                             null,
-                            /*swap*/true,
-                            /*unmarshal*/true,
-                            /**update-metrics*/false,
+                            /*update-metrics*/false,
                             /*event*/!nearRead && !skipVals,
                             subjId,
                             null,
@@ -602,11 +602,9 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                         v = dhtEntry.innerGet(
                             null,
                             tx,
-                            /*swap*/true,
                             /*read-through*/false,
                             /*update-metrics*/false,
                             /*events*/!nearRead && !skipVals,
-                            /*temporary*/false,
                             subjId,
                             null,
                             taskName,
@@ -628,7 +626,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                     return true;
                 }
                 else {
-                    boolean topStable = cctx.isReplicated() || topVer.equals(cctx.topology().topologyVersion());
+                    boolean topStable = cctx.isReplicated() || topVer.equals(cctx.topology().lastTopologyChangeVersion());
 
                     // Entry not found, do not continue search if topology did not change and there is no store.
                     return !cctx.readThroughConfigured() && (topStable || partitionOwned(part));
@@ -824,9 +822,6 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
      */
     private class MiniFuture extends GridFutureAdapter<Map<K, V>> {
         /** */
-        private static final long serialVersionUID = 0L;
-
-        /** */
         private final IgniteUuid futId = IgniteUuid.randomUuid();
 
         /** Node ID. */
@@ -997,7 +992,8 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                 IgniteInternalFuture<AffinityTopologyVersion> topFut = cctx.affinity().affinityReadyFuture(rmtTopVer);
 
                 topFut.listen(new CIX1<IgniteInternalFuture<AffinityTopologyVersion>>() {
-                    @Override public void applyx(IgniteInternalFuture<AffinityTopologyVersion> fut) throws IgniteCheckedException {
+                    @Override public void applyx(
+                        IgniteInternalFuture<AffinityTopologyVersion> fut) throws IgniteCheckedException {
                         AffinityTopologyVersion readyTopVer = fut.get();
 
                         // This will append new futures to compound list.

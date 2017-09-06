@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -59,6 +60,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
@@ -77,6 +79,9 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  *
  */
 public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
+    /** Ip finder. */
+    private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
+
     /** Cache name. */
     private static final String CACHE_NAME = "cache";
 
@@ -97,9 +102,11 @@ public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        if (isDebug()) {
-            TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
+        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
+        discoSpi.setIpFinder(IP_FINDER);
+
+        if (isDebug()) {
             discoSpi.failureDetectionTimeoutEnabled(false);
 
             cfg.setDiscoverySpi(discoSpi);
@@ -111,8 +118,7 @@ public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
 
         cfg.setClientMode(client);
 
-        // Test spi blocks message send, this can cause hang with striped pool.
-        cfg.setStripedPoolSize(-1);
+        cfg.setDiscoverySpi(discoSpi);
 
         return cfg;
     }
@@ -142,6 +148,7 @@ public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testDeadlocksPartitioned() throws Exception {
+        fail("IGNITE-5865");
         for (CacheWriteSynchronizationMode syncMode : CacheWriteSynchronizationMode.values()) {
             doTestDeadlocks(createCache(PARTITIONED, syncMode, false), NO_OP_TRANSFORMER);
             doTestDeadlocks(createCache(PARTITIONED, syncMode, false), WRAPPING_TRANSFORMER);
@@ -152,6 +159,7 @@ public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testDeadlocksPartitionedNear() throws Exception {
+        fail("IGNITE-5865");
         for (CacheWriteSynchronizationMode syncMode : CacheWriteSynchronizationMode.values()) {
             doTestDeadlocks(createCache(PARTITIONED, syncMode, true), NO_OP_TRANSFORMER);
             doTestDeadlocks(createCache(PARTITIONED, syncMode, true), WRAPPING_TRANSFORMER);
@@ -393,7 +401,7 @@ public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
 
                 KeyCacheObject keyCacheObj = intCache.context().toCacheKeyObject(key0);
 
-                GridCacheMapEntry entry = map.getEntry(keyCacheObj);
+                GridCacheMapEntry entry = map.getEntry(intCache.context(), keyCacheObj);
 
                 if (entry != null)
                     assertNull("Entry still has locks " + entry, entry.mvccAllLocal());
@@ -555,15 +563,25 @@ public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
 
                     GridCacheVersion txId = req.version();
 
-                    if (TX_IDS.contains(txId)) {
-                        while (TX_IDS.size() < TX_CNT) {
-                            try {
-                                U.sleep(50);
+                    if (TX_IDS.contains(txId) && TX_IDS.size() < TX_CNT) {
+                        GridTestUtils.runAsync(new Callable<Void>() {
+                            @Override public Void call() throws Exception {
+                                while (TX_IDS.size() < TX_CNT) {
+                                    try {
+                                        U.sleep(50);
+                                    }
+                                    catch (IgniteInterruptedCheckedException e) {
+                                        e.printStackTrace();
+                                    }
+                                }
+
+                                TestCommunicationSpi.super.sendMessage(node, msg, ackC);
+
+                                return null;
                             }
-                            catch (IgniteInterruptedCheckedException e) {
-                                e.printStackTrace();
-                            }
-                        }
+                        });
+
+                        return;
                     }
                 }
                 else if (msg0 instanceof GridNearTxPrepareResponse) {

@@ -20,6 +20,7 @@ package org.apache.ignite.yardstick.cache.dml;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.yardstick.cache.IgniteCacheAbstractBenchmark;
@@ -39,7 +40,7 @@ public class IgniteSqlDeleteFilteredBenchmark extends IgniteCacheAbstractBenchma
     private AtomicInteger delCnt = new AtomicInteger();
 
     /** */
-    private AtomicInteger delItemsCnt = new AtomicInteger();
+    private AtomicLong delItemsCnt = new AtomicLong();
 
     /** {@inheritDoc} */
     @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
@@ -55,7 +56,7 @@ public class IgniteSqlDeleteFilteredBenchmark extends IgniteCacheAbstractBenchma
 
             double maxSalary = salary + 1000;
 
-            int res = (Integer) cache().query(new SqlFieldsQuery("delete from Person where salary >= ? and salary <= ?")
+            Long res = (Long)cache().query(new SqlFieldsQuery("delete from Person where salary >= ? and salary <= ?")
                 .setArgs(salary, maxSalary)).getAll().get(0).get(0);
 
             delItemsCnt.getAndAdd(res);

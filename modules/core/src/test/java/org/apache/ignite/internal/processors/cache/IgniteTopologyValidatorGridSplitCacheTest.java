@@ -33,7 +33,7 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lifecycle.LifecycleAware;
@@ -90,7 +90,7 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends GridCommonAbstrac
                 CacheConfiguration[] ccfgs = new CacheConfiguration[CACHES_CNT];
 
                 for (int cnt = 0; cnt < CACHES_CNT; cnt++) {
-                    CacheConfiguration ccfg = new CacheConfiguration();
+                    CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
                     ccfg.setName(testCacheName(cnt));
                     ccfg.setCacheMode(PARTITIONED);
@@ -130,7 +130,8 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends GridCommonAbstrac
 
     /**
      * Tests topology split scenario.
-     * @throws Exception
+     *
+     * @throws Exception If failed.
      */
     public void testTopologyValidator() throws Exception {
         assertTrue(initLatch.await(10, TimeUnit.SECONDS));
@@ -201,6 +202,8 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends GridCommonAbstrac
 
     /**
      * Resolves split by client node join.
+     *
+     * @throws Exception If failed.
      */
     private void resolveSplit() throws Exception {
         startGrid(RESOLVER_GRID_IDX);
@@ -242,12 +245,15 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends GridCommonAbstrac
         /** */
         private static final long serialVersionUID = 0L;
 
+        /** */
         @CacheNameResource
         private String cacheName;
 
+        /** */
         @IgniteInstanceResource
         private Ignite ignite;
 
+        /** */
         @LoggerResource
         private IgniteLogger log;
 
@@ -263,11 +269,11 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends GridCommonAbstrac
             }).isEmpty())
                 return false;
 
-            IgniteKernal kernal = (IgniteKernal)ignite.cache(cacheName).unwrap(Ignite.class);
+            IgniteKernal kernal = (IgniteKernal)ignite;
 
-            GridDhtCacheAdapter<Object, Object> dht = kernal.context().cache().internalCache(cacheName).context().dht();
+            GridDhtPartitionsExchangeFuture curFut = kernal.context().cache().context().exchange().lastTopologyFuture();
 
-            long cacheTopVer = dht.topology().topologyVersionFuture().topologyVersion().topologyVersion();
+            long cacheTopVer = curFut.context().events().topologyVersion().topologyVersion();
 
             if (hasSplit(nodes)) {
                 boolean resolved = activatorTopVer != 0 && cacheTopVer >= activatorTopVer;
@@ -301,6 +307,7 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends GridCommonAbstrac
             return true;
         }
 
+        /** {@inheritDoc} */
         @Override public void start() throws IgniteException {
             if (ignite.cluster().localNode().isClient())
                 return;
@@ -323,12 +330,15 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends GridCommonAbstrac
 
         /**
          * @param node Node.
+         * @return {@code True} if this is marker node.
          */
         private boolean isMarkerNode(ClusterNode node) {
             return node.isClient() && node.attribute(ACTIVATOR_NODE_ATTR) != null;
         }
 
-        @Override public void stop() throws IgniteException {
+        /** {@inheritDoc} */
+        @Override public void stop() {
+            // No-op.
         }
     }
 }

@@ -34,19 +34,23 @@ BOOST_AUTO_TEST_CASE(TestIgnition)
 {
     IgniteConfiguration cfg;
 
+#ifdef IGNITE_TESTS_32
+    ignite_test::InitConfig(cfg, "cache-test-32.xml");
+#else
     ignite_test::InitConfig(cfg, "cache-test.xml");
+#endif
 
     IgniteError err;
 
     // Start two Ignite instances.
-    Ignite grid1 = Ignition::Start(cfg, "ignitionTest-1", &err);
+    Ignite grid1 = Ignition::Start(cfg, "ignitionTest-1", err);
     
     if (err.GetCode() != IgniteError::IGNITE_SUCCESS)
         BOOST_ERROR(err.GetText());
     
     BOOST_REQUIRE(strcmp(grid1.GetName(), "ignitionTest-1") == 0);
 
-    Ignite grid2 = Ignition::Start(cfg, "ignitionTest-2", &err);
+    Ignite grid2 = Ignition::Start(cfg, "ignitionTest-2", err);
 
     if (err.GetCode() != IgniteError::IGNITE_SUCCESS)
         BOOST_ERROR(err.GetText());
@@ -54,7 +58,7 @@ BOOST_AUTO_TEST_CASE(TestIgnition)
     BOOST_REQUIRE(strcmp(grid2.GetName(), "ignitionTest-2") == 0);
 
     // Test get
-    Ignite grid0 = Ignition::Get("ignitionTest-1", &err);
+    Ignite grid0 = Ignition::Get("ignitionTest-1", err);
     
     if (err.GetCode() != IgniteError::IGNITE_SUCCESS)
         BOOST_ERROR(err.GetText());
@@ -64,16 +68,16 @@ BOOST_AUTO_TEST_CASE(TestIgnition)
     // Stop one grid
     Ignition::Stop(grid1.GetName(), true);
     
-    Ignition::Get("ignitionTest-1", &err);
+    Ignition::Get("ignitionTest-1", err);
     BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_GENERIC);
     
-    Ignition::Get("ignitionTest-2", &err);
+    Ignition::Get("ignitionTest-2", err);
     BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_SUCCESS);
 
     // Stop all
     Ignition::StopAll(true);
     
-    Ignition::Get("ignitionTest-2", &err);
+    Ignition::Get("ignitionTest-2", err);
     BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_GENERIC);    
 }
 

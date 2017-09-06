@@ -133,7 +133,7 @@ public class GridCacheDhtPreloadBigDataSelfTest extends GridCommonAbstractTest {
 
             int cnt = 10000;
 
-            populate(grid(0).<Integer, byte[]>cache(null), cnt, KBSIZE);
+            populate(grid(0).<Integer, byte[]>cache(DEFAULT_CACHE_NAME), cnt, KBSIZE);
 
             int gridCnt = 3;
 
@@ -143,7 +143,7 @@ public class GridCacheDhtPreloadBigDataSelfTest extends GridCommonAbstractTest {
             Thread.sleep(10000);
 
             for (int i = 0; i < gridCnt; i++) {
-                IgniteCache<Integer, String> c = grid(i).cache(null);
+                IgniteCache<Integer, String> c = grid(i).cache(DEFAULT_CACHE_NAME);
 
                 if (backups + 1 <= gridCnt)
                     assert c.localSize() < cnt : "Cache size: " + c.localSize();
@@ -172,7 +172,7 @@ public class GridCacheDhtPreloadBigDataSelfTest extends GridCommonAbstractTest {
 
                 @Override public void onLifecycleEvent(LifecycleEventType evt) {
                     if (evt == LifecycleEventType.AFTER_NODE_START) {
-                        IgniteCache<Integer, byte[]> c = ignite.cache(null);
+                        IgniteCache<Integer, byte[]> c = ignite.cache(DEFAULT_CACHE_NAME);
 
                         if (c.putIfAbsent(-1, new byte[1])) {
                             populate(c, cnt, KBSIZE);
@@ -189,12 +189,12 @@ public class GridCacheDhtPreloadBigDataSelfTest extends GridCommonAbstractTest {
                 startGrid(i);
 
             for (int i = 0; i < gridCnt; i++)
-                info("Grid size [i=" + i + ", size=" + grid(i).cache(null).size() + ']');
+                info("Grid size [i=" + i + ", size=" + grid(i).cache(DEFAULT_CACHE_NAME).size() + ']');
 
             Thread.sleep(10000);
 
             for (int i = 0; i < gridCnt; i++) {
-                IgniteCache<Integer, String> c = grid(i).cache(null);
+                IgniteCache<Integer, String> c = grid(i).cache(DEFAULT_CACHE_NAME);
 
                 if (backups + 1 <= gridCnt)
                     assert c.localSize() < cnt;

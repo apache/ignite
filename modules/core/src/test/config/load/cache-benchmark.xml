@@ -39,8 +39,6 @@
                     <property name="swapEnabled" value="false"/>
 
                     <property name="writeSynchronizationMode" value="FULL_ASYNC"/>
-
-                    <property name="startSize" value="400000"/>
                 </bean>
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <property name="name" value="local"/>
@@ -50,8 +48,6 @@
                     <property name="swapEnabled" value="false"/>
 
                     <property name="writeSynchronizationMode" value="FULL_ASYNC"/>
-
-                    <property name="startSize" value="400000"/>
                 </bean>
             </list>
         </property>

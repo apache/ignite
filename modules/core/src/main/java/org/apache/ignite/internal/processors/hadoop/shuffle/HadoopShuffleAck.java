@@ -89,13 +89,13 @@ public class HadoopShuffleAck implements HadoopMessage, Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeLong("msgId", msgId))
+                if (!writer.writeMessage("jobId", jobId))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeMessage("jobId", jobId))
+                if (!writer.writeLong("msgId", msgId))
                     return false;
 
                 writer.incrementState();
@@ -114,7 +114,7 @@ public class HadoopShuffleAck implements HadoopMessage, Message {
 
         switch (reader.state()) {
             case 0:
-                msgId = reader.readLong("msgId");
+                jobId = reader.readMessage("jobId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -122,7 +122,7 @@ public class HadoopShuffleAck implements HadoopMessage, Message {
                 reader.incrementState();
 
             case 1:
-                jobId = reader.readMessage("jobId");
+                msgId = reader.readLong("msgId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -135,7 +135,7 @@ public class HadoopShuffleAck implements HadoopMessage, Message {
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return -38;
     }
 

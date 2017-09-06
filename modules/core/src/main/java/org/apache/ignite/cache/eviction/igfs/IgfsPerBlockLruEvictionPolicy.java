@@ -33,6 +33,7 @@ import org.apache.ignite.cache.eviction.EvictionPolicy;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.processors.cache.CacheEvictableEntryImpl;
 import org.apache.ignite.internal.processors.igfs.IgfsBlockKey;
+import org.apache.ignite.mxbean.IgniteMBeanAware;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentLinkedDeque8;
 import org.jsr166.ConcurrentLinkedDeque8.Node;
@@ -41,8 +42,8 @@ import org.jsr166.LongAdder8;
 /**
  * IGFS eviction policy which evicts particular blocks.
  */
-public class IgfsPerBlockLruEvictionPolicy implements EvictionPolicy<IgfsBlockKey, byte[]>,
-    IgfsPerBlockLruEvictionPolicyMXBean, Externalizable {
+public class IgfsPerBlockLruEvictionPolicy implements EvictionPolicy<IgfsBlockKey, byte[]>, IgniteMBeanAware,
+    Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -237,46 +238,95 @@ public class IgfsPerBlockLruEvictionPolicy implements EvictionPolicy<IgfsBlockKe
             curSize.add(delta);
     }
 
-    /** {@inheritDoc} */
-    @Override public long getMaxSize() {
+    /**
+     * Gets maximum allowed size of all blocks in bytes.
+     *
+     * @return Maximum allowed size of all blocks in bytes.
+     */
+    public long getMaxSize() {
         return maxSize;
     }
 
-    /** {@inheritDoc} */
-    @Override public void setMaxSize(long maxSize) {
+    /**
+     * Sets maximum allowed size of data in all blocks in bytes.
+     *
+     * @param maxSize Maximum allowed size of data in all blocks in bytes.
+     *
+     * @return {@code this} for chaining.
+     */
+    public IgfsPerBlockLruEvictionPolicy setMaxSize(long maxSize) {
         this.maxSize = maxSize;
+
+        return this;
     }
 
-    /** {@inheritDoc} */
-    @Override public int getMaxBlocks() {
+    /**
+     * Gets maximum allowed amount of blocks.
+     *
+     * @return Maximum allowed amount of blocks.
+     */
+    public int getMaxBlocks() {
         return maxBlocks;
     }
 
-    /** {@inheritDoc} */
-    @Override public void setMaxBlocks(int maxBlocks) {
+    /**
+     * Sets maximum allowed amount of blocks.
+     *
+     * @param maxBlocks Maximum allowed amount of blocks.
+     *
+     * @return {@code this} for chaining.
+     */
+    public IgfsPerBlockLruEvictionPolicy setMaxBlocks(int maxBlocks) {
         this.maxBlocks = maxBlocks;
+
+        return this;
     }
 
-    /** {@inheritDoc} */
-    @Override public Collection<String> getExcludePaths() {
+    /**
+     * Gets collection of regex for paths whose blocks must not be evicted.
+     *
+     * @return Collection of regex for paths whose blocks must not be evicted.
+     */
+    public Collection<String> getExcludePaths() {
         return Collections.unmodifiableCollection(excludePaths);
     }
 
-    /** {@inheritDoc} */
-    @Override public void setExcludePaths(@Nullable Collection<String> excludePaths) {
+    /**
+     * Sets collection of regex for paths whose blocks must not be evicted.
+     *
+     * @param excludePaths Collection of regex for paths whose blocks must not be evicted.
+     *
+     * @return {@code this} for chaining.
+     */
+    public IgfsPerBlockLruEvictionPolicy setExcludePaths(@Nullable Collection<String> excludePaths) {
         this.excludePaths = excludePaths;
 
         excludeRecompile.set(true);
+
+        return this;
     }
 
-    /** {@inheritDoc} */
-    @Override public long getCurrentSize() {
+    /**
+     * Gets current size of data in all blocks.
+     *
+     * @return Current size of data in all blocks.
+     */
+    public long getCurrentSize() {
         return curSize.longValue();
     }
 
-    /** {@inheritDoc} */
-    @Override public int getCurrentBlocks() {
+    /**
+     * Gets current amount of blocks.
+     *
+     * @return Current amount of blocks.
+     */
+    public int getCurrentBlocks() {
         return queue.size();
+    }
+
+    /** {@inheritDoc} */
+    @Override public Object getMBean() {
+        return new IgfsPerBlockLruEvictionPolicyMXBeanImpl();
     }
 
     /** {@inheritDoc} */
@@ -379,6 +429,51 @@ public class IgfsPerBlockLruEvictionPolicy implements EvictionPolicy<IgfsBlockKe
          */
         private int size() {
             return size;
+        }
+    }
+
+    /**
+     * MBean implementation for IgfsPerBlockLruEvictionPolicy.
+     */
+    private class IgfsPerBlockLruEvictionPolicyMXBeanImpl implements IgfsPerBlockLruEvictionPolicyMXBean {
+        /** {@inheritDoc} */
+        @Override public long getMaxSize() {
+            return IgfsPerBlockLruEvictionPolicy.this.getMaxSize();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void setMaxSize(long maxSize) {
+            IgfsPerBlockLruEvictionPolicy.this.setMaxSize(maxSize);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getMaxBlocks() {
+            return IgfsPerBlockLruEvictionPolicy.this.getMaxBlocks();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void setMaxBlocks(int maxBlocks) {
+            IgfsPerBlockLruEvictionPolicy.this.setMaxBlocks(maxBlocks);
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public Collection<String> getExcludePaths() {
+            return IgfsPerBlockLruEvictionPolicy.this.getExcludePaths();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void setExcludePaths(@Nullable Collection<String> excludePaths) {
+            IgfsPerBlockLruEvictionPolicy.this.setExcludePaths(excludePaths);
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getCurrentSize() {
+            return IgfsPerBlockLruEvictionPolicy.this.getCurrentSize();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getCurrentBlocks() {
+            return IgfsPerBlockLruEvictionPolicy.this.getCurrentBlocks();
         }
     }
 }

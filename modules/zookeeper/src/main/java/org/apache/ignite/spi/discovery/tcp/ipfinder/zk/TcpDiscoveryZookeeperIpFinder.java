@@ -274,9 +274,12 @@ public class TcpDiscoveryZookeeperIpFinder extends TcpDiscoveryIpFinderAdapter {
 
     /**
      * @param curator A {@link CuratorFramework} instance to use. It can already be in <tt>STARTED</tt> state.
+     * @return {@code this} for chaining.
      */
-    public void setCurator(CuratorFramework curator) {
+    public TcpDiscoveryZookeeperIpFinder setCurator(CuratorFramework curator) {
         this.curator = curator;
+
+        return this;
     }
 
     /**
@@ -289,9 +292,12 @@ public class TcpDiscoveryZookeeperIpFinder extends TcpDiscoveryIpFinderAdapter {
     /**
      * @param zkConnectionString ZooKeeper connection string in case a {@link CuratorFramework} is not being set
      * explicitly.
+     * @return {@code this} for chaining.
      */
-    public void setZkConnectionString(String zkConnectionString) {
+    public TcpDiscoveryZookeeperIpFinder setZkConnectionString(String zkConnectionString) {
         this.zkConnectionString = zkConnectionString;
+
+        return this;
     }
 
     /**
@@ -304,9 +310,12 @@ public class TcpDiscoveryZookeeperIpFinder extends TcpDiscoveryIpFinderAdapter {
     /**
      * @param retryPolicy {@link RetryPolicy} to use in case a ZK Connection String is being injected, or if using a
      * system property.
+     * @return {@code this} for chaining.
      */
-    public void setRetryPolicy(RetryPolicy retryPolicy) {
+    public TcpDiscoveryZookeeperIpFinder setRetryPolicy(RetryPolicy retryPolicy) {
         this.retryPolicy = retryPolicy;
+
+        return this;
     }
 
     /**
@@ -318,9 +327,12 @@ public class TcpDiscoveryZookeeperIpFinder extends TcpDiscoveryIpFinderAdapter {
 
     /**
      * @param basePath Base path for service registration in ZK. If not passed, {@link #BASE_PATH} will be used.
+     * @return {@code this} for chaining.
      */
-    public void setBasePath(String basePath) {
+    public TcpDiscoveryZookeeperIpFinder setBasePath(String basePath) {
         this.basePath = basePath;
+
+        return this;
     }
 
     /**
@@ -333,9 +345,12 @@ public class TcpDiscoveryZookeeperIpFinder extends TcpDiscoveryIpFinderAdapter {
     /**
      * @param serviceName Service name to use, as defined by Curator's {#link ServiceDiscovery} recipe. In physical ZK
      * terms, it represents the node under {@link #basePath}, under which services will be registered.
+     * @return {@code this} for chaining.
      */
-    public void setServiceName(String serviceName) {
+    public TcpDiscoveryZookeeperIpFinder setServiceName(String serviceName) {
         this.serviceName = serviceName;
+
+        return this;
     }
 
     /**
@@ -350,9 +365,19 @@ public class TcpDiscoveryZookeeperIpFinder extends TcpDiscoveryIpFinderAdapter {
      * allowed. Nodes will attempt to register themselves, plus those they know about. By default, duplicate
      * registrations are not allowed, but you might want to set this property to <tt>true</tt> if you have multiple
      * network interfaces or if you are facing troubles.
+     * @return {@code this} for chaining.
      */
-    public void setAllowDuplicateRegistrations(boolean allowDuplicateRegistrations) {
+    public TcpDiscoveryZookeeperIpFinder setAllowDuplicateRegistrations(boolean allowDuplicateRegistrations) {
         this.allowDuplicateRegistrations = allowDuplicateRegistrations;
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public TcpDiscoveryZookeeperIpFinder setShared(boolean shared) {
+        super.setShared(shared);
+
+        return this;
     }
 
     /**

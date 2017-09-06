@@ -29,12 +29,10 @@ import org.apache.ignite.internal.util.lang.{GridFunc => F}
 import org.apache.ignite.internal.util.typedef._
 import org.apache.ignite.internal.util.{GridConfigurationFinder, IgniteUtils => U}
 import org.apache.ignite.lang._
-import org.apache.ignite.thread.IgniteThreadPoolExecutor
+import org.apache.ignite.thread.{IgniteThreadFactory, IgniteThreadPoolExecutor}
 import org.apache.ignite.visor.commands.common.VisorTextTable
-
 import jline.console.ConsoleReader
 import org.jetbrains.annotations.Nullable
-
 import java.io._
 import java.lang.{Boolean => JavaBoolean}
 import java.net._
@@ -43,7 +41,7 @@ import java.util.concurrent._
 import java.util.{Collection => JavaCollection, HashSet => JavaHashSet, _}
 
 import org.apache.ignite.internal.visor.cache._
-import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTask.VisorNodeEventsCollectorTaskArg
+import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTaskArg
 import org.apache.ignite.internal.visor.node._
 import org.apache.ignite.internal.visor.util.VisorEventMapper
 import org.apache.ignite.internal.visor.util.VisorTaskUtils._
@@ -152,16 +150,16 @@ object visor extends VisorTag {
     private var cmdLst: Seq[VisorCommandHolder] = Nil
 
     /** Node left listener. */
-    private var nodeLeftLsnr: IgnitePredicate[Event] = null
+    private var nodeLeftLsnr: IgnitePredicate[Event] = _
 
     /** Node join listener. */
-    private var nodeJoinLsnr: IgnitePredicate[Event] = null
+    private var nodeJoinLsnr: IgnitePredicate[Event] = _
 
     /** Node segmentation listener. */
-    private var nodeSegLsnr: IgnitePredicate[Event] = null
+    private var nodeSegLsnr: IgnitePredicate[Event] = _
 
     /** Node stop listener. */
-    private var nodeStopLsnr: IgnitionListener = null
+    private var nodeStopLsnr: IgnitionListener = _
 
     /** */
     @volatile private var isCon: Boolean = false
@@ -209,30 +207,36 @@ object visor extends VisorTag {
     private final val DFLT_LOG_PATH = "visor/visor-log"
 
     /** Log file. */
-    private var logFile: File = null
+    private var logFile: File = _
 
     /** Log timer. */
-    private var logTimer: Timer = null
+    private var logTimer: Timer = _
 
     /** Topology log timer. */
-    private var topTimer: Timer = null
+    private var topTimer: Timer = _
 
     /** Log started flag. */
     @volatile private var logStarted = false
 
     /** Internal thread pool. */
-    @volatile var pool: ExecutorService = new IgniteThreadPoolExecutor()
+    @volatile var pool: ExecutorService = new IgniteThreadPoolExecutor(
+        Runtime.getRuntime().availableProcessors(),
+        Runtime.getRuntime().availableProcessors(),
+        0L,
+        new LinkedBlockingQueue[Runnable](),
+        new IgniteThreadFactory("visorInstance", "visor")
+    )
 
     /** Configuration file path, if any. */
-    @volatile var cfgPath: String = null
+    @volatile var cfgPath: String = _
 
     /** */
-    @volatile var ignite: IgniteEx = null
+    @volatile var ignite: IgniteEx = _
 
     /** */
     @volatile var prevIgnite: Option[IgniteEx] = None
 
-    private var reader: ConsoleReader = null
+    private var reader: ConsoleReader = _
 
     var batchMode: Boolean = false
 
@@ -272,7 +276,8 @@ object visor extends VisorTag {
     def groupForDataNode(node: Option[ClusterNode], cacheName: String) = {
         val grp = node match {
             case Some(n) => ignite.cluster.forNode(n)
-            case None => ignite.cluster.forNodeIds(executeRandom(classOf[VisorCacheNodesTask], cacheName))
+            case None => ignite.cluster.forNodeIds(executeRandom(classOf[VisorCacheNodesTask],
+                new VisorCacheNodesTaskArg(cacheName)))
         }
 
         if (grp.nodes().isEmpty)
@@ -1674,7 +1679,7 @@ object visor extends VisorTag {
             val id8 = nid8(id)
             var v = mfindHead(id8)
 
-            if(!v.isDefined){
+            if(v.isEmpty){
                v = assignNodeValue(n)
             }
 
@@ -1832,7 +1837,7 @@ object visor extends VisorTag {
     @throws[ClusterGroupEmptyException]("In case of empty topology.")
     def cacheConfigurations(nid: UUID): JavaCollection[VisorCacheConfiguration] =
         executeOne(nid, classOf[VisorCacheConfigurationCollectorTask],
-            null.asInstanceOf[JavaCollection[IgniteUuid]]).values()
+            new VisorCacheConfigurationCollectorTaskArg(null.asInstanceOf[JavaCollection[String]])).values()
 
     /**
      * Asks user to select a node from the list.
@@ -2172,7 +2177,13 @@ object visor extends VisorTag {
                         Thread.currentThread.interrupt()
                 }
 
-                pool = new IgniteThreadPoolExecutor()
+                pool = new IgniteThreadPoolExecutor(
+                    Runtime.getRuntime().availableProcessors(),
+                    Runtime.getRuntime().availableProcessors(),
+                    0L,
+                    new LinkedBlockingQueue[Runnable](),
+                    new IgniteThreadFactory("visorInstance", "visor")
+                )
             }
 
             // Call all close callbacks.
@@ -2454,15 +2465,15 @@ object visor extends VisorTag {
                             try {
                                 out = new FileWriter(logFile, true)
 
-                                evts.toList.sortBy(_.timestamp).foreach(e => {
+                                evts.toList.sortBy(_.getTimestamp).foreach(e => {
                                     logImpl(
                                         out,
-                                        formatDateTime(e.timestamp),
-                                        nodeId8Addr(e.nid()),
-                                        U.compact(e.shortDisplay())
+                                        formatDateTime(e.getTimestamp),
+                                        nodeId8Addr(e.getNid),
+                                        U.compact(e.getShortDisplay)
                                     )
 
-                                    if (EVTS_DISCOVERY.contains(e.typeId()))
+                                    if (EVTS_DISCOVERY.contains(e.getTypeId))
                                         snapshot()
                                 })
                             }

@@ -113,9 +113,12 @@ public class IgfsIpcEndpointConfiguration {
      * Defaults to {@link #DFLT_TYPE}.
      *
      * @param type Endpoint type.
+     * @return {@code this} for chaining.
      */
-    public void setType(IgfsIpcEndpointType type) {
+    public IgfsIpcEndpointConfiguration setType(IgfsIpcEndpointType type) {
         this.type = type;
+
+        return this;
     }
 
     /**
@@ -147,9 +150,12 @@ public class IgfsIpcEndpointConfiguration {
      * Defaults to {@link #DFLT_HOST}.
      *
      * @param host Host.
+     * @return {@code this} for chaining.
      */
-    public void setHost(String host) {
+    public IgfsIpcEndpointConfiguration setHost(String host) {
         this.host = host;
+
+        return this;
     }
 
     /**
@@ -179,9 +185,12 @@ public class IgfsIpcEndpointConfiguration {
      * Defaults to {@link #DFLT_PORT}.
      *
      * @param port Port.
+     * @return {@code this} for chaining.
      */
-    public void setPort(int port) {
+    public IgfsIpcEndpointConfiguration setPort(int port) {
         this.port = port;
+
+        return this;
     }
 
     /**
@@ -205,9 +214,12 @@ public class IgfsIpcEndpointConfiguration {
      * Defaults to {@link #DFLT_MEM_SIZE}.
      *
      * @param memSize Shared memory size.
+     * @return {@code this} for chaining.
      */
-    public void setMemorySize(int memSize) {
+    public IgfsIpcEndpointConfiguration setMemorySize(int memSize) {
         this.memSize = memSize;
+
+        return this;
     }
 
     /**
@@ -237,9 +249,12 @@ public class IgfsIpcEndpointConfiguration {
      * Defaults to {@link #DFLT_TOKEN_DIR_PATH}.
      *
      * @param tokenDirPath Directory where shared memory tokens are stored.
+     * @return {@code this} for chaining.
      */
-    public void setTokenDirectoryPath(String tokenDirPath) {
+    public IgfsIpcEndpointConfiguration setTokenDirectoryPath(String tokenDirPath) {
         this.tokenDirPath = tokenDirPath;
+
+        return this;
     }
 
     /**
@@ -259,9 +274,12 @@ public class IgfsIpcEndpointConfiguration {
      * See {@link #getThreadCount()} for more information.
      *
      * @param threadCnt Number of threads used by this endpoint to process incoming requests.
+     * @return {@code this} for chaining.
      */
-    public void setThreadCount(int threadCnt) {
+    public IgfsIpcEndpointConfiguration setThreadCount(int threadCnt) {
         this.threadCnt = threadCnt;
+
+        return this;
     }
 
     /** {@inheritDoc} */

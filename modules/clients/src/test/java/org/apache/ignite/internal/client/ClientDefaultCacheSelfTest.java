@@ -112,7 +112,7 @@ public class ClientDefaultCacheSelfTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(disco);
 
-        CacheConfiguration cLoc = new CacheConfiguration();
+        CacheConfiguration cLoc = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         cLoc.setName(LOCAL_CACHE);
 
@@ -176,8 +176,8 @@ public class ClientDefaultCacheSelfTest extends GridCommonAbstractTest {
 
         assertFalse(node.get("affinityNodeId").asText().isEmpty());
         assertEquals(0, node.get("successStatus").asInt());
-        assertTrue(node.get("error").asText().isEmpty());
-        assertTrue(node.get("sessionToken").asText().isEmpty());
+        assertTrue(node.get("error").isNull());
+        assertTrue(node.get("sessionToken").isNull());
 
         return node.get("response");
     }

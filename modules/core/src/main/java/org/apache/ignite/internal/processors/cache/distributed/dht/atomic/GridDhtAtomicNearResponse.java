@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 import java.nio.ByteBuffer;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.cache.GridCacheMessage;
+import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -36,7 +36,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.atomic
 /**
  * Message sent from DHT nodes to near node in FULL_SYNC mode.
  */
-public class GridDhtAtomicNearResponse extends GridCacheMessage {
+public class GridDhtAtomicNearResponse extends GridCacheIdMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -165,8 +165,8 @@ public class GridDhtAtomicNearResponse extends GridCacheMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
-        return -45;
+    @Override public short directType() {
+        return -48;
     }
 
     /** {@inheritDoc} */

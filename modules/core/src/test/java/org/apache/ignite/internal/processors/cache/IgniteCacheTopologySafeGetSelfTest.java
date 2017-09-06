@@ -147,7 +147,7 @@ public class IgniteCacheTopologySafeGetSelfTest extends GridCommonAbstractTest {
             IgniteInternalFuture<?> nodeFut = startNodeAsync();
 
             if (failPrimary)
-                stopGrid(1);
+                stopGrid(getTestIgniteInstanceName(1), false, false);
 
             assertEquals(key, ((IgniteKernal)ignite(0)).internalCache("tx").getTopologySafe(key));
             assertEquals(key, ((IgniteKernal)ignite(0)).internalCache("atomic").getTopologySafe(key));

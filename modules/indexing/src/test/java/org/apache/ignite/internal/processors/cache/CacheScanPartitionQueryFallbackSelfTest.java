@@ -237,12 +237,12 @@ public class CacheScanPartitionQueryFallbackSelfTest extends GridCommonAbstractT
                     @Override public Object call() throws Exception {
                         int nodeId = nodeIdx.getAndIncrement();
 
-                        IgniteCache<Integer, Integer> cache = grid(nodeId).cache(null);
+                        IgniteCache<Integer, Integer> cache = grid(nodeId).cache(DEFAULT_CACHE_NAME);
 
                         int cntr = 0;
 
                         while (!done.get()) {
-                            int part = ThreadLocalRandom.current().nextInt(ignite(nodeId).affinity(null).partitions());
+                            int part = ThreadLocalRandom.current().nextInt(ignite(nodeId).affinity(DEFAULT_CACHE_NAME).partitions());
 
                             if (cntr++ % 100 == 0)
                                 info("Running query [node=" + nodeId + ", part=" + part + ']');
@@ -314,12 +314,12 @@ public class CacheScanPartitionQueryFallbackSelfTest extends GridCommonAbstractT
                     @Override public Object call() throws Exception {
                         int nodeId = nodeIdx.getAndIncrement();
 
-                        IgniteCache<Integer, Integer> cache = grid(nodeId).cache(null);
+                        IgniteCache<Integer, Integer> cache = grid(nodeId).cache(DEFAULT_CACHE_NAME);
 
                         int cntr = 0;
 
                         while (!done.get()) {
-                            int part = ThreadLocalRandom.current().nextInt(ignite(nodeId).affinity(null).partitions());
+                            int part = ThreadLocalRandom.current().nextInt(ignite(nodeId).affinity(DEFAULT_CACHE_NAME).partitions());
 
                             if (cntr++ % 100 == 0)
                                 info("Running query [node=" + nodeId + ", part=" + part + ']');
@@ -356,7 +356,7 @@ public class CacheScanPartitionQueryFallbackSelfTest extends GridCommonAbstractT
      */
     protected IgniteCacheProxy<Integer, Integer> fillCache(Ignite ignite) {
         IgniteCacheProxy<Integer, Integer> cache =
-            (IgniteCacheProxy<Integer, Integer>)ignite.<Integer, Integer>cache(null);
+            (IgniteCacheProxy<Integer, Integer>)ignite.<Integer, Integer>cache(DEFAULT_CACHE_NAME);
 
         for (int i = 0; i < KEYS_CNT; i++) {
             cache.put(i, i);
@@ -440,7 +440,7 @@ public class CacheScanPartitionQueryFallbackSelfTest extends GridCommonAbstractT
      * @return Local partitions.
      */
     private Set<Integer> localPartitions(Ignite ignite) {
-        GridCacheContext cctx = ((IgniteCacheProxy)ignite.cache(null)).context();
+        GridCacheContext cctx = ((IgniteCacheProxy)ignite.cache(DEFAULT_CACHE_NAME)).context();
 
         Collection<GridDhtLocalPartition> owningParts = F.view(cctx.topology().localPartitions(),
             new IgnitePredicate<GridDhtLocalPartition>() {

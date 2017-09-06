@@ -195,6 +195,9 @@ namespace ignite
     void SqlTestSuiteFixture::CheckSingleResult<Timestamp>(const char* request);
 
     template<>
+    void SqlTestSuiteFixture::CheckSingleResult<Time>(const char* request);
+
+    template<>
     void SqlTestSuiteFixture::CheckSingleResult<std::vector<int8_t> >(const char* request, const std::vector<int8_t>& expected);
 
     template<>
@@ -204,10 +207,10 @@ namespace ignite
     void SqlTestSuiteFixture::CheckSingleResult<Date>(const char* request, const Date& expected);
 
     template<>
-    void SqlTestSuiteFixture::CheckSingleResult<SQL_TIME_STRUCT>(const char* request, const SQL_TIME_STRUCT& expected);
+    void SqlTestSuiteFixture::CheckSingleResult<Timestamp>(const char* request, const Timestamp& expected);
 
     template<>
-    void SqlTestSuiteFixture::CheckSingleResult<Timestamp>(const char* request, const Timestamp& expected);
+    void SqlTestSuiteFixture::CheckSingleResult<Time>(const char* request, const Time& expected);
 }
 
 #endif //_IGNITE_ODBC_TEST_SQL_TEST_SUIT_FIXTURE

@@ -25,7 +25,6 @@ namespace Apache.Ignite.ExamplesDll.Messaging
     /// <summary>
     /// Listener for Ordered topic.
     /// </summary>
-    [Serializable]
     public class RemoteOrderedListener : IMessageListener<int>
     {
         /** Injected Ignite instance. */

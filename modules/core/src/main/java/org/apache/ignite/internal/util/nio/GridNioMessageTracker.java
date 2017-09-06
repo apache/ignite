@@ -93,6 +93,13 @@ public class GridNioMessageTracker implements IgniteRunnable {
     }
 
     /**
+     *
+     */
+    public void onMessageProcessed() {
+        run();
+    }
+
+    /**
      */
     public void onMessageReceived() {
         int cnt = msgCnt.incrementAndGet();

@@ -112,10 +112,13 @@ public class TcpDiscoverySharedFsIpFinder extends TcpDiscoveryIpFinderAdapter {
      * Sets path.
      *
      * @param path Shared path.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
-    public void setPath(String path) {
+    public TcpDiscoverySharedFsIpFinder setPath(String path) {
         this.path = path;
+
+        return this;
     }
 
     /**
@@ -299,6 +302,13 @@ public class TcpDiscoverySharedFsIpFinder extends TcpDiscoveryIpFinderAdapter {
      */
     private String denormalizeAddress(String hostAddress) {
         return hostAddress.replaceAll(COLON_SUBST, COLON_DELIM);
+    }
+
+    /** {@inheritDoc} */
+    @Override public TcpDiscoverySharedFsIpFinder setShared(boolean shared) {
+        super.setShared(shared);
+
+        return this;
     }
 
     /** {@inheritDoc} */

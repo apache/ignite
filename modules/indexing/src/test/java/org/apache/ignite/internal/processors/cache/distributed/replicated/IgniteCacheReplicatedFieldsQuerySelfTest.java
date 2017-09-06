@@ -48,13 +48,13 @@ public class IgniteCacheReplicatedFieldsQuerySelfTest extends IgniteCacheAbstrac
      * @throws Exception If failed.
      */
     public void testLostIterator() throws Exception {
-        IgniteCache<Object, Object> cache = grid(0).cache(null);
+        IgniteCache<Integer, Integer> cache = intCache;
 
         QueryCursor<List<?>> qry = null;
 
-        int maximumQueryIteratorCount = cache.getConfiguration(CacheConfiguration.class).getMaxQueryIteratorsCount();
+        int maximumQryIterCnt = cache.getConfiguration(CacheConfiguration.class).getMaxQueryIteratorsCount();
 
-        for (int i = 0; i < maximumQueryIteratorCount + 1; i++) {
+        for (int i = 0; i < maximumQryIterCnt + 1; i++) {
             QueryCursor<List<?>> q = cache
                 .query(new SqlFieldsQuery("select _key from Integer where _key >= 0 order by _key"));
 

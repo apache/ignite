@@ -25,8 +25,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.binary.BinaryBasicIdMapper;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
@@ -53,9 +55,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  */
 public class IgniteMarshallerCacheClassNameConflictTest extends GridCommonAbstractTest {
     /** */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
-    /** */
     private volatile boolean bbClsRejected;
 
     /** */
@@ -77,17 +76,22 @@ public class IgniteMarshallerCacheClassNameConflictTest extends GridCommonAbstra
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         TcpDiscoverySpi disco = new TestTcpDiscoverySpi();
-        disco.setIpFinder(ipFinder);
+        disco.setIpFinder(LOCAL_IP_FINDER);
 
         cfg.setDiscoverySpi(disco);
 
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(REPLICATED);
         ccfg.setRebalanceMode(SYNC);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
 
         cfg.setCacheConfiguration(ccfg);
+
+        // Use case sensitive mapper
+        BinaryConfiguration binaryCfg = new BinaryConfiguration().setIdMapper(new BinaryBasicIdMapper(false));
+
+        cfg.setBinaryConfiguration(binaryCfg);
 
         return cfg;
     }
@@ -96,6 +100,7 @@ public class IgniteMarshallerCacheClassNameConflictTest extends GridCommonAbstra
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
     }
+
     /**
      * @throws Exception If failed.
      */
@@ -107,8 +112,9 @@ public class IgniteMarshallerCacheClassNameConflictTest extends GridCommonAbstra
 
         final AtomicInteger trickCompilerVar = new AtomicInteger(1);
 
-        final Organization aOrg1 = new Organization(1, "Microsoft", "One Microsoft Way Redmond, WA 98052-6399, USA");
-        final OrganizatioN bOrg2 = new OrganizatioN(2, "Apple", "1 Infinite Loop, Cupertino, CA 95014, USA");
+        // "Aa" and "BB" have same hash code
+        final Aa aOrg1 = new Aa(1, "Microsoft", "One Microsoft Way Redmond, WA 98052-6399, USA");
+        final BB bOrg2 = new BB(2, "Apple", "1 Infinite Loop, Cupertino, CA 95014, USA");
 
         exec1.submit(new Runnable() {
             @Override public void run() {
@@ -127,7 +133,7 @@ public class IgniteMarshallerCacheClassNameConflictTest extends GridCommonAbstra
                         break;
                 }
 
-                Ignition.localIgnite().cache(null).put(1, aOrg1);
+                Ignition.localIgnite().cache(DEFAULT_CACHE_NAME).put(1, aOrg1);
             }
         });
 
@@ -148,7 +154,7 @@ public class IgniteMarshallerCacheClassNameConflictTest extends GridCommonAbstra
                         break;
                 }
 
-                Ignition.localIgnite().cache(null).put(2, bOrg2);
+                Ignition.localIgnite().cache(DEFAULT_CACHE_NAME).put(2, bOrg2);
             }
         });
         startLatch.countDown();
@@ -163,7 +169,7 @@ public class IgniteMarshallerCacheClassNameConflictTest extends GridCommonAbstra
 
         Ignite ignite = startGrid(2);
 
-        int cacheSize = ignite.cache(null).size(CachePeekMode.PRIMARY);
+        int cacheSize = ignite.cache(DEFAULT_CACHE_NAME).size(CachePeekMode.PRIMARY);
 
         assertTrue("Expected cache size 1 but was " + cacheSize, cacheSize == 1);
 
@@ -198,20 +204,27 @@ public class IgniteMarshallerCacheClassNameConflictTest extends GridCommonAbstra
                 DiscoveryCustomMessage customMsg = spiCustomMsg == null ? null
                         : (DiscoveryCustomMessage) U.field(spiCustomMsg, "delegate");
 
-                if (customMsg != null)
+                if (customMsg != null) {
                     //don't want to make this class public, using equality of class name instead of instanceof operator
                     if ("MappingProposedMessage".equals(customMsg.getClass().getSimpleName())) {
                         String conflClsName = U.field(customMsg, "conflictingClsName");
                         if (conflClsName != null && !conflClsName.isEmpty()) {
                             rejectObserved = true;
-                            if (conflClsName.contains("Organization"))
+                            if (conflClsName.contains(Aa.class.getSimpleName()))
                                 bbClsRejected = true;
-                            else if (conflClsName.contains("OrganizatioN"))
+                            else if (conflClsName.contains(BB.class.getSimpleName()))
                                 aaClsRejected = true;
                         }
                     }
+                }
 
-                delegate.onDiscovery(type, topVer, node, topSnapshot, topHist, spiCustomMsg);
+                if (delegate != null)
+                    delegate.onDiscovery(type, topVer, node, topSnapshot, topHist, spiCustomMsg);
+            }
+
+            /** {@inheritDoc} */
+            @Override public void onLocalNodeInitialized(ClusterNode locNode) {
+                // No-op.
             }
         }
 
@@ -221,53 +234,54 @@ public class IgniteMarshallerCacheClassNameConflictTest extends GridCommonAbstra
         }
     }
 
+}
+
+/**
+ * Class name is chosen to be in conflict with other class name this test put to cache.
+ */
+class Aa {
+    /** */
+    private final int id;
+
+    /** */
+    private final String name;
+
+    /** */
+    private final String addr;
+
     /**
-     * Class name is chosen to be in conflict with other class name this test put to cache.
+     * @param id Id.
+     * @param name Name.
+     * @param addr Address.
      */
-    private static class Organization {
-        /** */
-        private final int id;
-
-        /** */
-        private final String name;
-
-        /** */
-        private final String addr;
-
-        /**
-         * @param id Id.
-         * @param name Name.
-         * @param addr Address.
-         */
-        Organization(int id, String name, String addr) {
-            this.id = id;
-            this.name = name;
-            this.addr = addr;
-        }
+    Aa(int id, String name, String addr) {
+        this.id = id;
+        this.name = name;
+        this.addr = addr;
     }
+}
+
+/**
+ * Class name is chosen to be in conflict with other class name this test put to cache.
+ */
+class BB {
+    /** */
+    private final int id;
+
+    /** */
+    private final String name;
+
+    /** */
+    private final String addr;
 
     /**
-     * Class name is chosen to be in conflict with other class name this test put to cache.
+     * @param id Id.
+     * @param name Name.
+     * @param addr Address.
      */
-    private static class OrganizatioN {
-        /** */
-        private final int id;
-
-        /** */
-        private final String name;
-
-        /** */
-        private final String addr;
-
-        /**
-         * @param id Id.
-         * @param name Name.
-         * @param addr Address.
-         */
-        OrganizatioN(int id, String name, String addr) {
-            this.id = id;
-            this.name = name;
-            this.addr = addr;
-        }
+    BB(int id, String name, String addr) {
+        this.id = id;
+        this.name = name;
+        this.addr = addr;
     }
 }

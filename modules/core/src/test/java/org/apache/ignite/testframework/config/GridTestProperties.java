@@ -28,6 +28,8 @@ import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.apache.ignite.binary.BinaryBasicNameMapper;
+import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.log4j.xml.DOMConfigurator;
 import org.jetbrains.annotations.Nullable;
@@ -78,7 +80,7 @@ public final class GridTestProperties {
     /** Binary marshaller compact footers property. */
     public static final String BINARY_COMPACT_FOOTERS = "binary.marshaller.compact.footers";
 
-    /** */
+    /** "True value" enables {@link BinaryBasicNameMapper} in {@link BinaryTypeConfiguration#getNameMapper()}  */
     public static final String BINARY_MARSHALLER_USE_SIMPLE_NAME_MAPPER = "binary.marshaller.use.simple.name.mapper";
 
     /** */
@@ -96,7 +98,7 @@ public final class GridTestProperties {
         // Load default properties.
         File cfgFile = getTestConfigurationFile(null, TESTS_PROP_FILE);
 
-        assert cfgFile.exists();
+        assert cfgFile != null && cfgFile.exists();
         assert !cfgFile.isDirectory();
 
         dfltProps = Collections.unmodifiableMap(loadFromFile(new HashMap<String, String>(), cfgFile));
@@ -307,13 +309,11 @@ public final class GridTestProperties {
 
                 fileProps.load(in);
 
-                for (Entry<Object, Object> prop : fileProps.entrySet()) {
+                for (Entry<Object, Object> prop : fileProps.entrySet())
                     props.put((String) prop.getKey(), (String) prop.getValue());
-                }
 
-                for (Entry<String, String> prop : props.entrySet()) {
+                for (Entry<String, String> prop : props.entrySet())
                     prop.setValue(substituteProperties(prop.getValue()));
-                }
             }
         }
         catch (IOException e) {

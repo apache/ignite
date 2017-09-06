@@ -15,6 +15,13 @@
     limitations under the License.
 
 include ./form
+include ../../primitives/btn-group/index
+include ../../primitives/datepicker/index
+include ../../primitives/timepicker/index
+include ../../primitives/dropdown/index
+include ../../primitives/tooltip/index
+include ../../primitives/radio/index
+include ../../primitives/switcher/index
 
 //- Mixin for advanced options toggle.
 mixin advanced-options-toggle(click, cond, showMessage, hideMessage)
@@ -49,7 +56,7 @@ mixin main-table(title, rows, focusId, click, rowTemplate, searchField)
 
 //- Mixin with save, remove, clone and undo buttons.
 mixin save-remove-clone-undo-buttons(objectName)
-    -var removeTip = '"Remove current ' + objectName + '"'
+    -var removeTip = 'Remove current ' + objectName
     -var cloneTip = '"Clone current ' + objectName + '"'
     -var undoTip = '"Undo all changes for current ' + objectName + '"'
 
@@ -60,10 +67,11 @@ mixin save-remove-clone-undo-buttons(objectName)
             a.btn.btn-primary(id='save-item' ng-disabled='!ui.inputForm.$dirty' ng-click='ui.inputForm.$dirty && saveItem()' bs-tooltip='' data-title=`{{saveBtnTipText(ui.inputForm.$dirty, '${objectName}')}}` data-placement='bottom' data-trigger='hover') Save
         .panel-tip-container(ng-show='backupItem._id')
             a.btn.btn-primary(id='clone-item' ng-click='cloneItem()' bs-tooltip=cloneTip data-placement='bottom' data-trigger='hover') Clone
-        .btn-group.panel-tip-container(ng-show='backupItem._id')
-            button.btn.btn-primary(id='remove-item' ng-click='removeItem()' bs-tooltip=removeTip data-placement='bottom' data-trigger='hover') Remove
-            button.btn.dropdown-toggle.btn-primary(id='remove-item-dropdown' data-toggle='dropdown' data-container='body' bs-dropdown='[{ text: "Remove All", click: "removeAllItems()" }]' data-placement='bottom-right')
-                span.caret
+
+        -var options = [{ text: "Remove", click: "removeItem()" }, { text: "Remove All", click: "removeAllItems()" }]
+
+        +btn-group(false, options, removeTip)(ng-show='backupItem._id')
+
         .panel-tip-container(ng-show='backupItem')
             i.btn.btn-primary.fa.fa-undo(id='undo-item' ng-disabled='!ui.inputForm.$dirty' ng-click='ui.inputForm.$dirty && resetAll()' bs-tooltip=undoTip data-placement='bottom' data-trigger='hover')
 
@@ -196,6 +204,16 @@ mixin text(lbl, model, name, required, placeholder, tip)
     +ignite-form-field-text(lbl, model, name, false, required, placeholder, tip)
         if  block
             block
+
+//- Mixin for url field.
+mixin url(lbl, model, name, enabled, required, placeholder, tip)
+    -var errLbl = lbl.substring(0, lbl.length - 1)
+
+    +ignite-form-field-text(lbl, model, name, enabledToDisabled(enabled), required, placeholder, tip)(type='url')
+        if  block
+            block
+
+        +form-field-feedback(name, 'url', errLbl + ' should be a valid URL!')
 
 //- Mixin for password field.
 mixin password(lbl, model, name, required, placeholder, tip)
@@ -348,7 +366,7 @@ mixin table-java-package-field(name, model, items, valid, save, newItem)
                 ignite-on-escape=onEscape
             )
 
-//- Mixin for table java package field.
+//- Mixin for table url field.
 mixin table-url-field(name, model, items, valid, save, newItem)
     -var resetOnEnter = newItem ? '(stopblur = true) && (group.add = [{}])' : '(field.edit = false)'
     -var onEnter = `${valid} && (${save}); ${valid} && ${resetOnEnter};`
@@ -359,11 +377,15 @@ mixin table-url-field(name, model, items, valid, save, newItem)
     -var onBlur = `${valid} && (${save}); ${resetOnBlur};`
 
     div(ignite-on-focus-out=onBlur)
+        +form-field-feedback(name, 'url', 'URL should be valid!')
+
         if block
             block
 
         .input-tip
-            +ignite-form-field-url-input(name, model, false, 'true', 'Enter URL')(
+            +ignite-form-field-input(name, model, false, 'true', 'Enter URL')(
+                type='url'
+
                 data-ignite-unique=items
                 data-ignite-form-field-input-autofocus='true'
 
@@ -477,7 +499,7 @@ mixin evictionPolicy(model, name, enabled, required, tip)
             {value: "LRU", label: "LRU"},\
             {value: "FIFO", label: "FIFO"},\
             {value: "SORTED", label: "Sorted"},\
-            {value: undefined, label: "Not set"}\
+            {value: null, label: "Not set"}\
         ]', tip)
     span(ng-show=kind)
         +showHideLink('expanded', 'settings')
@@ -493,12 +515,12 @@ mixin evictionPolicy(model, name, enabled, required, tip)
 
 //- Mixin for clusters dropdown.
 mixin clusters(model, tip)
-    +dropdown-multiple('<span>Clusters:</span>' + '<a ui-sref="base.configuration.clusters({linkId: linkId()})"> (add)</a>',
+    +dropdown-multiple('<span>Clusters:</span>' + '<a ui-sref="base.configuration.tabs.advanced.clusters({linkId: linkId()})"> (add)</a>',
         model + '.clusters', '"clusters"', true, 'Choose clusters', 'No clusters configured', 'clusters', tip)
 
 //- Mixin for caches dropdown.
 mixin caches(model, tip)
-    +dropdown-multiple('<span>Caches:</span>' + '<a ui-sref="base.configuration.caches({linkId: linkId()})"> (add)</a>',
+    +dropdown-multiple('<span>Caches:</span>' + '<a ui-sref="base.configuration.tabs.advanced.caches({linkId: linkId()})"> (add)</a>',
         model + '.caches', '"caches"', true, 'Choose caches', 'No caches configured', 'caches', tip)
 
 //- Mixin for XML, Java, .Net preview.
@@ -511,9 +533,9 @@ mixin preview(master, generator, detail)
                 a(ng-class='{active: mode === "csharp"}' ng-click='mode = "csharp"') C#
                 //a(ng-class='{active: mode === "app.config"}' ng-click='mode = "app.config"') app.config
             .preview-content(ng-switch='mode')
-                ignite-ui-ace-spring(ng-switch-when="spring" data-master=master data-generator=generator ng-model='$parent.data' data-detail=detail)
-                ignite-ui-ace-java(ng-switch-when="java" data-master=master data-generator=generator ng-model='$parent.data' data-detail=detail)
-                ignite-ui-ace-sharp(ng-switch-when="csharp" data-master=master data-generator=generator ng-model='$parent.data' data-detail=detail)
+                ignite-ui-ace-spring(ng-switch-when='spring' data-master=master data-generator=generator ng-model='$parent.data' data-detail=detail)
+                ignite-ui-ace-java(ng-switch-when='java' data-master=master data-generator=generator ng-model='$parent.data' data-detail=detail)
+                ignite-ui-ace-sharp(ng-switch-when='csharp' data-master=master data-generator=generator ng-model='$parent.data' data-detail=detail)
             .preview-content-empty(ng-if='!data')
                 label All Defaults
 
@@ -527,8 +549,8 @@ mixin preview-xml-java(master, generator, detail)
                 //a(ng-class='{active: mode === "csharp"}' ng-click='mode = "csharp"') C#
                 //a(ng-class='{active: mode === "app.config"}' ng-click='mode = "app.config"') app.config
             .preview-content(ng-switch='mode')
-                ignite-ui-ace-spring(ng-switch-when="spring" data-master=master data-generator=generator ng-model='$parent.data' data-detail=detail)
-                ignite-ui-ace-java(ng-switch-when="java" data-master=master data-generator=generator ng-model='$parent.data' data-detail=detail)
+                ignite-ui-ace-spring(ng-switch-when='spring' data-master=master data-generator=generator ng-model='$parent.data' data-detail=detail)
+                ignite-ui-ace-java(ng-switch-when='java' data-master=master data-generator=generator ng-model='$parent.data' data-detail=detail)
                 //ignite-ui-ace-sharp(ng-switch-when="csharp" data-master=master data-generator=generator ng-model='$parent.data' data-detail=detail)
             .preview-content-empty(ng-if='!data')
                 label All Defaults

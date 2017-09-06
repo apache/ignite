@@ -20,9 +20,7 @@ import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.util.Date;
-import java.util.Iterator;
 import java.util.UUID;
-import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryBasicNameMapper;
 import org.apache.ignite.binary.BinaryObjectException;
@@ -45,6 +43,9 @@ public class BinaryObjectExceptionSelfTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
+    /** Cache name. */
+    private final String cacheName = "cache";
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
@@ -52,11 +53,13 @@ public class BinaryObjectExceptionSelfTest extends GridCommonAbstractTest {
         cfg.setMarshaller(new BinaryMarshaller());
         cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER));
 
-        cfg.setCacheConfiguration(new CacheConfiguration().setCopyOnRead(true));
+        cfg.setCacheConfiguration(
+            new CacheConfiguration(cacheName)
+                .setCopyOnRead(true)
+        );
 
-        BinaryConfiguration bcfg = new BinaryConfiguration();
-
-        bcfg.setNameMapper(new BinaryBasicNameMapper(false));
+        BinaryConfiguration bcfg = new BinaryConfiguration()
+                .setNameMapper(new BinaryBasicNameMapper(false));
 
         cfg.setBinaryConfiguration(bcfg);
 
@@ -84,7 +87,7 @@ public class BinaryObjectExceptionSelfTest extends GridCommonAbstractTest {
     public void testUnexpectedFieldType() throws Exception {
         IgniteEx grid = grid(0);
 
-        IgniteCache<String, Value> cache = grid.cache(null);
+        IgniteCache<String, Value> cache = grid.cache(cacheName);
 
         cache.put(TEST_KEY, new Value());
 
@@ -106,10 +109,7 @@ public class BinaryObjectExceptionSelfTest extends GridCommonAbstractTest {
             a[i] = -1;
 
             try {
-                Iterator<Cache.Entry<String, Value>> it = cache.iterator();
-
-                while (it.hasNext())
-                    it.next();
+                b.deserialize();
             }
             catch (Exception ex) {
                 Throwable root = ex;

@@ -74,11 +74,11 @@ public class IndexingSpiQuerySelfTest extends TestCase {
         TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
-        disco.setMaxMissedHeartbeats(Integer.MAX_VALUE);
-
         disco.setIpFinder(ipFinder);
 
         cfg.setDiscoverySpi(disco);
+
+        cfg.setFailureDetectionTimeout(Integer.MAX_VALUE);
 
         return cfg;
     }
@@ -254,7 +254,7 @@ public class IndexingSpiQuerySelfTest extends TestCase {
         }
 
         /** {@inheritDoc} */
-        @Override public Iterator<Cache.Entry<?, ?>> query(@Nullable String spaceName, Collection<Object> params,
+        @Override public Iterator<Cache.Entry<?, ?>> query(@Nullable String cacheName, Collection<Object> params,
             @Nullable IndexingQueryFilter filters) throws IgniteSpiException {
             if (params.size() < 2)
                 throw new IgniteSpiException("Range parameters required.");
@@ -278,7 +278,7 @@ public class IndexingSpiQuerySelfTest extends TestCase {
         }
 
         /** {@inheritDoc} */
-        @Override public void store(@Nullable String spaceName, Object key, Object val, long expirationTime)
+        @Override public void store(@Nullable String cacheName, Object key, Object val, long expirationTime)
             throws IgniteSpiException {
             assertFalse(key instanceof BinaryObject);
             assertFalse(val instanceof BinaryObject);
@@ -287,17 +287,7 @@ public class IndexingSpiQuerySelfTest extends TestCase {
         }
 
         /** {@inheritDoc} */
-        @Override public void remove(@Nullable String spaceName, Object key) throws IgniteSpiException {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onSwap(@Nullable String spaceName, Object key) throws IgniteSpiException {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onUnswap(@Nullable String spaceName, Object key, Object val) throws IgniteSpiException {
+        @Override public void remove(@Nullable String cacheName, Object key) throws IgniteSpiException {
             // No-op.
         }
     }
@@ -308,30 +298,18 @@ public class IndexingSpiQuerySelfTest extends TestCase {
     private static class MyBinaryIndexingSpi extends MyIndexingSpi {
 
         /** {@inheritDoc} */
-        @Override public void store(@Nullable String spaceName, Object key, Object val,
+        @Override public void store(@Nullable String cacheName, Object key, Object val,
             long expirationTime) throws IgniteSpiException {
             assertTrue(key instanceof BinaryObject);
 
             assertTrue(val instanceof BinaryObject);
 
-            super.store(spaceName, ((BinaryObject)key).deserialize(), ((BinaryObject)val).deserialize(), expirationTime);
+            super.store(cacheName, ((BinaryObject)key).deserialize(), ((BinaryObject)val).deserialize(), expirationTime);
         }
 
         /** {@inheritDoc} */
-        @Override public void remove(@Nullable String spaceName, Object key) throws IgniteSpiException {
+        @Override public void remove(@Nullable String cacheName, Object key) throws IgniteSpiException {
             assertTrue(key instanceof BinaryObject);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onSwap(@Nullable String spaceName, Object key) throws IgniteSpiException {
-            assertTrue(key instanceof BinaryObject);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onUnswap(@Nullable String spaceName, Object key, Object val) throws IgniteSpiException {
-            assertTrue(key instanceof BinaryObject);
-
-            assertTrue(val instanceof BinaryObject);
         }
     }
 
@@ -340,7 +318,7 @@ public class IndexingSpiQuerySelfTest extends TestCase {
      */
     private static class MyBrokenIndexingSpi extends MyIndexingSpi {
         /** {@inheritDoc} */
-        @Override public void store(@Nullable String spaceName, Object key, Object val,
+        @Override public void store(@Nullable String cacheName, Object key, Object val,
             long expirationTime) throws IgniteSpiException {
             throw new IgniteSpiException("Test exception");
         }

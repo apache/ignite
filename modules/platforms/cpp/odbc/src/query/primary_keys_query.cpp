@@ -24,25 +24,28 @@
 
 namespace
 {
-    enum ResultColumn
+    struct ResultColumn
     {
-        /** Catalog name. NULL if not applicable to the data source. */
-        TABLE_CAT = 1,
+        enum Type
+        {
+            /** Catalog name. NULL if not applicable to the data source. */
+            TABLE_CAT = 1,
 
-        /** Schema name. NULL if not applicable to the data source. */
-        TABLE_SCHEM,
+            /** Schema name. NULL if not applicable to the data source. */
+            TABLE_SCHEM,
 
-        /** Table name. */
-        TABLE_NAME,
+            /** Table name. */
+            TABLE_NAME,
 
-        /** Column name. */
-        COLUMN_NAME,
+            /** Column name. */
+            COLUMN_NAME,
 
-        /** Column sequence number in key. */
-        KEY_SEQ,
+            /** Column sequence number in key. */
+            KEY_SEQ,
 
-        /** Primary key name. */
-        PK_NAME
+            /** Primary key name. */
+            PK_NAME
+        };
     };
 }
 
@@ -55,7 +58,7 @@ namespace ignite
             PrimaryKeysQuery::PrimaryKeysQuery(diagnostic::Diagnosable& diag,
                 Connection& connection, const std::string& catalog,
                 const std::string& schema, const std::string& table) :
-                Query(diag, PRIMARY_KEYS),
+                Query(diag, QueryType::PRIMARY_KEYS),
                 connection(connection),
                 catalog(catalog),
                 schema(schema),
@@ -86,7 +89,7 @@ namespace ignite
                 // No-op.
             }
 
-            SqlResult PrimaryKeysQuery::Execute()
+            SqlResult::Type PrimaryKeysQuery::Execute()
             {
                 if (executed)
                     Close();
@@ -97,7 +100,7 @@ namespace ignite
 
                 cursor = meta.begin();
 
-                return SQL_RESULT_SUCCESS;
+                return SqlResult::AI_SUCCESS;
             }
 
             const meta::ColumnMetaVector & PrimaryKeysQuery::GetMeta() const
@@ -105,17 +108,17 @@ namespace ignite
                 return columnsMeta;
             }
 
-            SqlResult PrimaryKeysQuery::FetchNextRow(app::ColumnBindingMap & columnBindings)
+            SqlResult::Type PrimaryKeysQuery::FetchNextRow(app::ColumnBindingMap & columnBindings)
             {
                 if (!executed)
                 {
-                    diag.AddStatusRecord(SQL_STATE_HY010_SEQUENCE_ERROR, "Query was not executed.");
+                    diag.AddStatusRecord(SqlState::SHY010_SEQUENCE_ERROR, "Query was not executed.");
 
-                    return SQL_RESULT_ERROR;
+                    return SqlResult::AI_ERROR;
                 }
 
                 if (cursor == meta.end())
-                    return SQL_RESULT_NO_DATA;
+                    return SqlResult::AI_NO_DATA;
 
                 app::ColumnBindingMap::iterator it;
 
@@ -124,56 +127,56 @@ namespace ignite
 
                 ++cursor;
 
-                return SQL_RESULT_SUCCESS;
+                return SqlResult::AI_SUCCESS;
             }
 
-            SqlResult PrimaryKeysQuery::GetColumn(uint16_t columnIdx, app::ApplicationDataBuffer& buffer)
+            SqlResult::Type PrimaryKeysQuery::GetColumn(uint16_t columnIdx, app::ApplicationDataBuffer& buffer)
             {
                 if (!executed)
                 {
-                    diag.AddStatusRecord(SQL_STATE_HY010_SEQUENCE_ERROR, "Query was not executed.");
+                    diag.AddStatusRecord(SqlState::SHY010_SEQUENCE_ERROR, "Query was not executed.");
 
-                    return SQL_RESULT_ERROR;
+                    return SqlResult::AI_ERROR;
                 }
 
                 if (cursor == meta.end())
-                    return SQL_RESULT_NO_DATA;
+                    return SqlResult::AI_NO_DATA;
 
                 const meta::PrimaryKeyMeta& currentColumn = *cursor;
 
                 switch (columnIdx)
                 {
-                    case TABLE_CAT:
+                    case ResultColumn::TABLE_CAT:
                     {
                         buffer.PutString(currentColumn.GetCatalogName());
                         break;
                     }
 
-                    case TABLE_SCHEM:
+                    case ResultColumn::TABLE_SCHEM:
                     {
                         buffer.PutString(currentColumn.GetSchemaName());
                         break;
                     }
 
-                    case TABLE_NAME:
+                    case ResultColumn::TABLE_NAME:
                     {
                         buffer.PutString(currentColumn.GetTableName());
                         break;
                     }
 
-                    case COLUMN_NAME:
+                    case ResultColumn::COLUMN_NAME:
                     {
                         buffer.PutString(currentColumn.GetColumnName());
                         break;
                     }
 
-                    case KEY_SEQ:
+                    case ResultColumn::KEY_SEQ:
                     {
                         buffer.PutInt16(currentColumn.GetKeySeq());
                         break;
                     }
 
-                    case PK_NAME:
+                    case ResultColumn::PK_NAME:
                     {
                         buffer.PutString(currentColumn.GetKeyName());
                         break;
@@ -183,16 +186,16 @@ namespace ignite
                         break;
                 }
 
-                return SQL_RESULT_SUCCESS;
+                return SqlResult::AI_SUCCESS;
             }
 
-            SqlResult PrimaryKeysQuery::Close()
+            SqlResult::Type PrimaryKeysQuery::Close()
             {
                 meta.clear();
 
                 executed = false;
 
-                return SQL_RESULT_SUCCESS;
+                return SqlResult::AI_SUCCESS;
             }
 
             bool PrimaryKeysQuery::DataAvailable() const

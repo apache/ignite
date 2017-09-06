@@ -22,38 +22,38 @@ const path = require('path');
 const http = require('http');
 const https = require('https');
 
-const igniteModules = process.env.IGNITE_MODULES || './ignite_modules';
+const igniteModules = process.env.IGNITE_MODULES ?
+    path.join(path.normalize(process.env.IGNITE_MODULES), 'backend') : './ignite_modules';
 
 let injector;
 
 try {
-    const igniteModulesInjector = path.resolve(path.join(igniteModules, 'backend', 'injector.js'));
+    const igniteModulesInjector = path.resolve(path.join(igniteModules, 'injector.js'));
 
     fs.accessSync(igniteModulesInjector, fs.F_OK);
 
     injector = require(igniteModulesInjector);
-} catch (ignore) {
+}
+catch (ignore) {
     injector = require(path.join(__dirname, './injector'));
 }
 
 /**
  * Event listener for HTTP server "error" event.
  */
-const _onError = (port, error) => {
+const _onError = (addr, error) => {
     if (error.syscall !== 'listen')
         throw error;
-
-    const bind = typeof port === 'string' ? 'Pipe ' + port : 'Port ' + port;
 
     // Handle specific listen errors with friendly messages.
     switch (error.code) {
         case 'EACCES':
-            console.error(bind + ' requires elevated privileges');
+            console.error(`Requires elevated privileges for bind to ${addr}`);
             process.exit(1);
 
             break;
         case 'EADDRINUSE':
-            console.error(bind + ' is already in use');
+            console.error(`${addr} is already in use`);
             process.exit(1);
 
             break;
@@ -71,25 +71,36 @@ const _onListening = (addr) => {
     console.log('Start listening on ' + bind);
 };
 
-Promise.all([injector('settings'), injector('app'), injector('agent-manager'), injector('browser-manager')])
-    .then(([settings, app, agentMgr, browserMgr]) => {
-        // Start rest server.
-        const server = settings.server.SSLOptions
-            ? https.createServer(settings.server.SSLOptions) : http.createServer();
+/**
+ * @param settings
+ * @param {ApiServer} apiSrv
+ * @param {AgentsHandler} agentsHnd
+ * @param {BrowsersHandler} browsersHnd
+ */
+const init = ([settings, apiSrv, agentsHnd, browsersHnd]) => {
+    // Start rest server.
+    const srv = settings.server.SSLOptions ? https.createServer(settings.server.SSLOptions) : http.createServer();
 
-        server.listen(settings.server.port);
-        server.on('error', _onError.bind(null, settings.server.port));
-        server.on('listening', _onListening.bind(null, server.address()));
+    srv.listen(settings.server.port, settings.server.host);
 
-        app.listen(server);
+    const addr = `${settings.server.host}:${settings.server.port}`;
 
-        agentMgr.attach(server);
-        browserMgr.attach(server);
+    srv.on('error', _onError.bind(null, addr));
+    srv.on('listening', () => console.log(`Start listening on ${addr}`));
 
-        // Used for automated test.
-        if (process.send)
-            process.send('running');
-    }).catch((err) => {
+    apiSrv.attach(srv);
+
+    agentsHnd.attach(srv, browsersHnd);
+    browsersHnd.attach(srv, agentsHnd);
+
+    // Used for automated test.
+    if (process.send)
+        process.send('running');
+};
+
+Promise.all([injector('settings'), injector('api-server'), injector('agents-handler'), injector('browsers-handler')])
+    .then(init)
+    .catch((err) => {
         console.error(err);
 
         process.exit(1);

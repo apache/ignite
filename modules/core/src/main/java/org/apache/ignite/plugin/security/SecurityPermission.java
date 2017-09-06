@@ -21,7 +21,7 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * Supported security permissions within grid. Permissions
- * are specified on per-cache or per-task level.
+ * are specified on per-cache, per-task or per-service level.
  */
 public enum SecurityPermission {
     /** Cache {@code read} permission. */
@@ -55,7 +55,16 @@ public enum SecurityPermission {
     ADMIN_CACHE,
 
     /** Visor admin operations permissions. */
-    ADMIN_OPS;
+    ADMIN_OPS,
+
+    /** Service deploy permission. */
+    SERVICE_DEPLOY,
+
+    /** Service cancel permission. */
+    SERVICE_CANCEL,
+
+    /** Service invoke permission. */
+    SERVICE_INVOKE;
 
     /** Enumerated values. */
     private static final SecurityPermission[] VALS = values();

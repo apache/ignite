@@ -75,7 +75,7 @@ public class IgniteCacheFieldsQueryNoDataSelfTest extends GridCommonAbstractTest
      * @throws Exception If failed.
      */
     public void testQuery() throws Exception {
-        Collection<Cache.Entry<Object, Object>> res = grid().cache(null)
+        Collection<Cache.Entry<Object, Object>> res = grid().cache(DEFAULT_CACHE_NAME)
             .query(new SqlQuery("Integer", "from Integer")).getAll();
 
         assert res != null;

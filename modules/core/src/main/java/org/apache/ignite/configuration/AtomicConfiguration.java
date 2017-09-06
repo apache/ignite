@@ -19,6 +19,7 @@ package org.apache.ignite.configuration;
 
 import org.apache.ignite.IgniteAtomicSequence;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -45,6 +46,12 @@ public class AtomicConfiguration {
     /** Number of backups. */
     private int backups = DFLT_BACKUPS;
 
+    /** Affinity function */
+    private AffinityFunction aff;
+
+    /** Group name. */
+    private String grpName;
+
     /**
      * @return Number of backup nodes.
      */
@@ -54,9 +61,12 @@ public class AtomicConfiguration {
 
     /**
      * @param backups Number of backup nodes.
+     * @return {@code this} for chaining.
      */
-    public void setBackups(int backups) {
+    public AtomicConfiguration setBackups(int backups) {
         this.backups = backups;
+
+        return this;
     }
 
     /**
@@ -68,9 +78,12 @@ public class AtomicConfiguration {
 
     /**
      * @param cacheMode Cache mode.
+     * @return {@code this} for chaining.
      */
-    public void setCacheMode(CacheMode cacheMode) {
+    public AtomicConfiguration setCacheMode(CacheMode cacheMode) {
         this.cacheMode = cacheMode;
+
+        return this;
     }
 
     /**
@@ -93,9 +106,50 @@ public class AtomicConfiguration {
      *
      * @param seqReserveSize Atomic sequence reservation size.
      * @see #getAtomicSequenceReserveSize()
+     * @return {@code this} for chaining.
      */
-    public void setAtomicSequenceReserveSize(int seqReserveSize) {
+    public AtomicConfiguration setAtomicSequenceReserveSize(int seqReserveSize) {
         this.seqReserveSize = seqReserveSize;
+
+        return this;
+    }
+
+    /**
+     * Gets atomic cache affinity function.
+     *
+     * @return Affinity function or null, if not set.
+     */
+    public AffinityFunction getAffinity() {
+        return aff;
+    }
+
+    /**
+     * Sets atomic cache affinity function.
+     *
+     * @param aff Affinity function.
+     * @return {@code this} for chaining.
+     */
+    public AtomicConfiguration setAffinity(AffinityFunction aff) {
+        this.aff = aff;
+
+        return this;
+    }
+
+    /**
+     * @return Group name.
+     */
+    public String getGroupName() {
+        return grpName;
+    }
+
+    /**
+     * @param grpName Group name.
+     * @return {@code this} for chaining.
+     */
+    public AtomicConfiguration setGroupName(String grpName) {
+        this.grpName = grpName;
+
+        return this;
     }
 
     /** {@inheritDoc} */

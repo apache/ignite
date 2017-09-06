@@ -90,7 +90,7 @@ public class PlatformSqlQueryTask extends ComputeTaskAdapter<String, Object> {
 
         /** {@inheritDoc} */
         @Nullable @Override public Object execute() {
-            IgniteCache<Integer, PlatformComputeBinarizable> cache = ignite.cache(null);
+            IgniteCache<Integer, PlatformComputeBinarizable> cache = ignite.cache("default");
 
             SqlQuery<Integer, PlatformComputeBinarizable> qry = new SqlQuery<>("PlatformComputeBinarizable", arg);
 

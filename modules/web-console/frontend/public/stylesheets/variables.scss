@@ -24,5 +24,12 @@ $ignite-border-color: #ddd;
 $ignite-darck-border-color: #aaa;
 $ignite-border-bottom-color: $brand-primary;
 $ignite-background-color: #fff;
+// New background color for layouts without white content box
+$ignite-new-background-color: #f9f9f9;
 $ignite-header-color: #555;
 $ignite-invalid-color: $brand-primary;
+$ignite-button-border-radius: 4px;
+
+// Color palette
+$ignite-brand-primary: #ee2b27; // Red
+$ignite-brand-success: #0067b9; // Blue

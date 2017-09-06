@@ -122,18 +122,16 @@ public class IgniteCacheConnectionRecoveryTest extends GridCommonAbstractTest {
 
                 Thread.currentThread().setName("test-thread-" + idx0 + "-" + node.name());
 
-                IgniteCache cache1 = node.cache("cache1").withAsync();
-                IgniteCache cache2 = node.cache("cache2").withAsync();
+                IgniteCache cache1 = node.cache("cache1");
+                IgniteCache cache2 = node.cache("cache2");
 
                 int iter = 0;
 
                 while (U.currentTimeMillis() < stopTime) {
                     try {
-                        cache1.putAll(data);
-                        cache1.future().get(15, SECONDS);
+                        cache1.putAllAsync(data).get(15, SECONDS);
 
-                        cache2.putAll(data);
-                        cache2.future().get(15, SECONDS);
+                        cache2.putAllAsync(data).get(15, SECONDS);
 
                         CyclicBarrier b = barrierRef.get();
 
@@ -193,7 +191,7 @@ public class IgniteCacheConnectionRecoveryTest extends GridCommonAbstractTest {
      * @return Configuration.
      */
     private CacheConfiguration cacheConfiguration(String name, CacheAtomicityMode atomicityMode) {
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setName(name);
         ccfg.setAtomicityMode(atomicityMode);

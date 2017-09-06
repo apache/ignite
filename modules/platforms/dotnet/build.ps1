@@ -74,15 +74,15 @@ param (
  )
 
 # 1) Build Java (Maven)
+# Detect Ignite root directory
+cd $PSScriptRoot\..
+
+while (!((Test-Path bin) -and (Test-Path examples) -and ((Test-Path modules) -or (Test-Path platforms))))
+{ cd .. }
+
+echo "Ignite home detected at '$pwd'."
+
 if (!$skipJava) {
-    # Detect Ignite root directory
-    cd $PSScriptRoot\..
-
-    while (!((Test-Path bin) -and (Test-Path examples) -and ((Test-Path modules) -or (Test-Path platforms))))
-    { cd .. }
-
-    echo "Ignite home detected at '$pwd'."
-
     # Detect Maven
     $mv = "mvn"
     if ((Get-Command $mv -ErrorAction SilentlyContinue) -eq $null) { 
@@ -107,22 +107,22 @@ if (!$skipJava) {
     if ($LastExitCode -ne 0) {
         echo "Java (Maven) build failed."; exit -1
     }
-
-    # Copy (relevant) jars
-    $libsDir = "$PSScriptRoot\bin\Libs"
-    mkdir -Force $libsDir; del -Force $libsDir\*.*
-    
-    copy -Force target\release-package\libs\*.jar $libsDir
-    copy -Force target\release-package\libs\ignite-spring\*.jar $libsDir
-    copy -Force target\release-package\libs\ignite-indexing\*.jar $libsDir
-    copy -Force target\release-package\libs\licenses\*.jar $libsDir
-
-    # Restore directory
-    cd $PSScriptRoot
 }
 else {
     echo "Java (Maven) build skipped."
 }
+
+# Copy (relevant) jars
+$libsDir = "$PSScriptRoot\bin\Libs"
+mkdir -Force $libsDir; del -Force $libsDir\*.*
+
+ls modules\indexing\target,modules\core\target,modules\spring\target *.jar -recurse `
+   -include "ignite-core*","ignite-indexing*","ignite-shmem*","ignite-spring*","lucene*","h2*","cache-api*","commons-*","spring*" `
+   -exclude "*-sources*","*-javadoc*","*-tests*" `
+   | % { copy -Force $_ $libsDir }
+
+# Restore directory
+cd $PSScriptRoot
 
 
 # 2) Build .NET
@@ -143,9 +143,12 @@ echo "MSBuild detected at '$msbuildExe'."
 # Detect NuGet
 $ng = "nuget"
 if ((Get-Command $ng -ErrorAction SilentlyContinue) -eq $null) { 
-    echo "Downloading NuGet..."
-    (New-Object System.Net.WebClient).DownloadFile("https://dist.nuget.org/win-x86-commandline/v3.3.0/nuget.exe", "nuget.exe");    
     $ng = ".\nuget.exe"
+
+    if (-not (Test-Path $ng)) {
+        echo "Downloading NuGet..."
+        (New-Object System.Net.WebClient).DownloadFile("https://dist.nuget.org/win-x86-commandline/v3.3.0/nuget.exe", "nuget.exe");    
+    }
 }
 
 # Restore NuGet packages
@@ -153,10 +156,11 @@ echo "Restoring NuGet..."
 & $ng restore
 
 # Build
-echo "Starting MsBuild..."
 $targets = if ($clean) {"Clean;Rebuild"} else {"Build"}
 $codeAnalysis = if ($skipCodeAnalysis) {"/p:RunCodeAnalysis=false"} else {""}
-& $msbuildExe Apache.Ignite.sln /target:$targets /p:Configuration=$configuration /p:Platform=`"$platform`" $codeAnalysis /p:UseSharedCompilation=false
+$msBuildCommand = "`"$msBuildExe`" Apache.Ignite.sln /target:$targets /p:Configuration=$configuration /p:Platform=`"$platform`" $codeAnalysis /p:UseSharedCompilation=false"
+echo "Starting MsBuild: '$msBuildCommand'"
+cmd /c $msBuildCommand
 
 # Check result
 if ($LastExitCode -ne 0) {

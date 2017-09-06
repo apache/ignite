@@ -17,12 +17,10 @@
 
 package org.apache.ignite.transactions;
 
-import org.apache.ignite.IgniteException;
-
 /**
  * Exception thrown whenever grid transactions has been automatically rolled back.
  */
-public class TransactionRollbackException extends IgniteException {
+public class TransactionRollbackException extends TransactionException {
     /** */
     private static final long serialVersionUID = 0L;
 

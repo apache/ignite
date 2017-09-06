@@ -38,21 +38,41 @@ const generator = IgniteConfigurationGenerator;
 
 const escapeFileName = (name) => name.replace(/[\\\/*\"\[\],\.:;|=<>?]/g, '-').replace(/ /g, '_');
 
+const kubernetesConfig = (cluster) => {
+    if (!cluster.discovery.Kubernetes)
+        cluster.discovery.Kubernetes = { serviceName: 'ignite' };
+
+    return `apiVersion: v1\n\
+kind: Service\n\
+metadata:\n\
+  # Name of Ignite Service used by Kubernetes IP finder for IP addresses lookup.\n\
+  name: ${ cluster.discovery.Kubernetes.serviceName || 'ignite' }\n\
+spec:\n\
+  clusterIP: None # custom value.\n\
+  ports:\n\
+    - port: 9042 # custom value.\n\
+  selector:\n\
+    # Must be equal to one of the labels set in Ignite pods'\n\
+    # deployement configuration.\n\
+    app: ${ cluster.discovery.Kubernetes.serviceName || 'ignite' }`;
+};
+
 // eslint-disable-next-line no-undef
 onmessage = function(e) {
-    const {cluster, data, demo} = e.data;
+    const {cluster, data, demo, targetVer} = e.data;
 
     const zip = new JSZip();
 
     if (!data.docker)
-        data.docker = docker.generate(cluster, 'latest');
+        data.docker = docker.generate(cluster, targetVer);
 
     zip.file('Dockerfile', data.docker);
     zip.file('.dockerignore', docker.ignoreFile());
 
-    const cfg = generator.igniteConfiguration(cluster, false);
-    const clientCfg = generator.igniteConfiguration(cluster, true);
-    const clientNearCaches = _.filter(cluster.caches, (cache) => _.get(cache, 'clientNearConfiguration.enabled'));
+    const cfg = generator.igniteConfiguration(cluster, targetVer, false);
+    const clientCfg = generator.igniteConfiguration(cluster, targetVer, true);
+    const clientNearCaches = _.filter(cluster.caches, (cache) =>
+        cache.cacheMode === 'PARTITIONED' && _.get(cache, 'clientNearConfiguration.enabled'));
 
     const secProps = properties.generate(cfg);
 
@@ -66,6 +86,9 @@ onmessage = function(e) {
     const clientXml = `${escapeFileName(cluster.name)}-client.xml`;
 
     const metaPath = `${resourcesPath}/META-INF`;
+
+    if (cluster.discovery.kind === 'Kubernetes')
+        zip.file(`${metaPath}/ignite-service.yaml`, kubernetesConfig(cluster));
 
     zip.file(`${metaPath}/${serverXml}`, spring.igniteConfiguration(cfg).asString());
     zip.file(`${metaPath}/${clientXml}`, spring.igniteConfiguration(clientCfg, clientNearCaches).asString());
@@ -96,7 +119,7 @@ onmessage = function(e) {
     zip.file(`${startupPath}/ClientNodeCodeStartup.java`, java.nodeStartup(cluster, 'startup.ClientNodeCodeStartup',
         'ClientConfigurationFactory.createConfiguration()', 'config.ClientConfigurationFactory', clientNearCaches));
 
-    zip.file('pom.xml', maven.generate(cluster));
+    zip.file('pom.xml', maven.generate(cluster, targetVer));
 
     zip.file('README.txt', readme.generate());
     zip.file('jdbc-drivers/README.txt', readme.generateJDBC());

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-export default ['$scope', 'IgniteDockerGenerator', function($scope, docker) {
+export default ['$scope', 'IgniteVersion', 'IgniteDockerGenerator', function($scope, Version, docker) {
     const ctrl = this;
 
     // Watchers definition.
@@ -25,9 +25,13 @@ export default ['$scope', 'IgniteDockerGenerator', function($scope, docker) {
         if (!$scope.cluster)
             return;
 
-        ctrl.data = docker.generate($scope.cluster, 'latest');
+        ctrl.data = docker.generate($scope.cluster, Version.currentSbj.getValue());
     };
 
     // Setup watchers.
+    Version.currentSbj.subscribe({
+        next: clusterWatcher
+    });
+
     $scope.$watch('cluster', clusterWatcher);
 }];

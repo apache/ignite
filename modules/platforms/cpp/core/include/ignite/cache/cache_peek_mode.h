@@ -30,45 +30,48 @@ namespace ignite
         /**
          * Enumeration of all supported cache peek modes.
          */
-        enum CachePeekMode
+        struct CachePeekMode
         {
-            /**
-             * Peeks into all available cache storages.
-             */
-            IGNITE_PEEK_MODE_ALL = 0x01,
+            enum Type
+            {
+                /**
+                 * Peeks into all available cache storages.
+                 */
+                ALL = 0x01,
 
-            /**
-             * Peek into near cache only (don't peek into partitioned cache).
-             * In case of LOCAL cache, behaves as IGNITE_PEEK_MODE_ALL mode.
-             */
-            IGNITE_PEEK_MODE_NEAR = 0x02,
+                /**
+                 * Peek into near cache only (don't peek into partitioned cache).
+                 * In case of LOCAL cache, behaves as CachePeekMode::ALL mode.
+                 */
+                NEAR_CACHE = 0x02,
 
-            /**
-             * Peek value from primary copy of partitioned cache only (skip near cache).
-             * In case of LOCAL cache, behaves as IGNITE_PEEK_MODE_ALL mode.
-             */
-            IGNITE_PEEK_MODE_PRIMARY = 0x04,
+                /**
+                 * Peek value from primary copy of partitioned cache only (skip near cache).
+                 * In case of LOCAL cache, behaves as CachePeekMode::ALL mode.
+                 */
+                PRIMARY = 0x04,
 
-            /**
-             * Peek value from backup copies of partitioned cache only (skip near cache).
-             * In case of LOCAL cache, behaves as IGNITE_PEEK_MODE_ALL mode.
-             */
-            IGNITE_PEEK_MODE_BACKUP = 0x08,
+                /**
+                 * Peek value from backup copies of partitioned cache only (skip near cache).
+                 * In case of LOCAL cache, behaves as CachePeekMode::ALL mode.
+                 */
+                BACKUP = 0x08,
 
-            /**
-             * Peeks value from the on-heap storage only.
-             */
-            IGNITE_PEEK_MODE_ONHEAP = 0x10,
+                /**
+                 * Peeks value from the on-heap storage only.
+                 */
+                ONHEAP = 0x10,
 
-            /**
-             * Peeks value from the off-heap storage only, without loading off-heap value into cache.
-             */
-            IGNITE_PEEK_MODE_OFFHEAP = 0x20,
+                /**
+                 * Peeks value from the off-heap storage only, without loading off-heap value into cache.
+                 */
+                OFFHEAP = 0x20,
 
-            /**
-             * Peeks value from the swap storage only, without loading swapped value into cache.
-             */
-            IGNITE_PEEK_MODE_SWAP = 0x40
+                /**
+                 * Peeks value from the swap storage only, without loading swapped value into cache.
+                 */
+                SWAP = 0x40
+            };
         };
     }
 }

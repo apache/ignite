@@ -251,7 +251,7 @@ public class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V> implements 
      * instead of initial value when read via a data race.  Although a
      * reordering leading to this is not likely to ever actually
      * occur, the Segment.readValueUnderLock method is used as a
-     * backup in case a null (pre-initialized) value is ever seen in
+     * snapshot in case a null (pre-initialized) value is ever seen in
      * an unsynchronized access method.
      */
     @SuppressWarnings({"PublicInnerClass"})

@@ -485,6 +485,14 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
                 return new BinaryPlainBinaryObject(binaryObj);
             }
 
+            case GridBinaryMarshaller.OPTM_MARSH: {
+                final BinaryHeapInputStream bin = BinaryHeapInputStream.create(arr, pos + 1);
+
+                final Object obj = BinaryUtils.doReadOptimized(bin, ctx, U.resolveClassLoader(ctx.configuration()));
+
+                return obj;
+            }
+
             default:
                 throw new BinaryObjectException("Invalid flag value: " + type);
         }

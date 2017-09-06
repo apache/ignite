@@ -87,7 +87,6 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
 
     /** Conflict expire times. */
     private GridLongList conflictExpireTimes;
-
     /** Optional arguments for entry processor. */
     @GridDirectTransient
     private Object[] invokeArgs;
@@ -123,17 +122,14 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
      * @param nodeId Node ID.
      * @param futId Future ID.
      * @param topVer Topology version.
-     * @param topLocked Topology locked flag.
      * @param syncMode Synchronization mode.
      * @param op Cache update operation.
-     * @param retval Return value required flag.
      * @param expiryPlc Expiry policy.
      * @param invokeArgs Optional arguments for entry processor.
      * @param filter Optional filter for atomic check.
      * @param subjId Subject ID.
      * @param taskNameHash Task name hash code.
-     * @param skipStore Skip write-through to a persistent storage.
-     * @param keepBinary Keep binary flag.
+     * @param flags Flags.
      * @param addDepInfo Deployment info flag.
      * @param maxEntryCnt Maximum entries count.
      */
@@ -142,18 +138,14 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
         UUID nodeId,
         long futId,
         @NotNull AffinityTopologyVersion topVer,
-        boolean topLocked,
         CacheWriteSynchronizationMode syncMode,
         GridCacheOperation op,
-        boolean retval,
         @Nullable ExpiryPolicy expiryPlc,
         @Nullable Object[] invokeArgs,
         @Nullable CacheEntryPredicate[] filter,
         @Nullable UUID subjId,
         int taskNameHash,
-        boolean needPrimaryRes,
-        boolean skipStore,
-        boolean keepBinary,
+        byte flags,
         boolean addDepInfo,
         int maxEntryCnt
     ) {
@@ -161,16 +153,13 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
             nodeId,
             futId,
             topVer,
-            topLocked,
             syncMode,
             op,
-            retval,
             subjId,
             taskNameHash,
-            needPrimaryRes,
-            skipStore,
-            keepBinary,
+            flags,
             addDepInfo);
+
         this.expiryPlc = expiryPlc;
         this.invokeArgs = invokeArgs;
         this.filter = filter;
@@ -605,7 +594,7 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 40;
     }
 

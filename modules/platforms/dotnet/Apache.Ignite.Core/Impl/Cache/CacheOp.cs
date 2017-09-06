@@ -40,7 +40,6 @@ namespace Apache.Ignite.Core.Impl.Cache
         LoadCache = 15,
         LocEvict = 16,
         LocLoadCache = 17,
-        LocPromote = 18,
         LocalClear = 20,
         LocalClearAll = 21,
         Lock = 22,
@@ -63,7 +62,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         GetConfig = 39,
         LoadAll = 40,
         ClearCache = 41,
-        WithAsync = 42,
+        WithPartitionRecover = 42,
         RemoveAll2 = 43,
         WithKeepBinary = 44,
         WithExpiryPolicy = 45,
@@ -104,6 +103,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         InvokeAllAsync = 80,
         PutIfAbsentAsync = 81,
         Extension = 82,
-        GlobalMetrics = 83
+        GlobalMetrics = 83,
+        GetLostPartitions = 84
     }
 }

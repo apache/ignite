@@ -21,7 +21,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.compute.ComputeJob;
@@ -71,11 +70,7 @@ public class ComputeJobCancelWithServiceSelfTest extends GridCommonAbstractTest 
 
         Ignite client = startGrid("client");
 
-        IgniteCompute compute = client.compute().withAsync();
-
-        compute.execute(new MyTask(), null);
-
-        ComputeTaskFuture<Integer> fut = compute.future();
+        ComputeTaskFuture<Integer> fut = client.compute().executeAsync(new MyTask(), null);
 
         Thread.sleep(3000);
 
@@ -122,8 +117,7 @@ public class ComputeJobCancelWithServiceSelfTest extends GridCommonAbstractTest 
                 @IgniteInstanceResource
                 private Ignite ignite;
 
-                @Override
-                public Object execute() throws IgniteException {
+                @Override public Object execute() throws IgniteException {
                     MyService svc = ignite.services().service("my-service");
 
                     while (!isCancelled()) {

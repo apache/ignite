@@ -649,6 +649,32 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    public void testDeclaredBodyEnum() throws Exception {
+        final MarshallerContextTestImpl ctx = new MarshallerContextTestImpl();
+        ctx.registerClassName((byte)0, 1, EnumObject.class.getName());
+        ctx.registerClassName((byte)0, 2, DeclaredBodyEnum.class.getName());
+
+        BinaryMarshaller marsh = binaryMarshaller();
+        marsh.setContext(ctx);
+
+        EnumObject obj = new EnumObject(1L, "test 1", DeclaredBodyEnum.TWO);
+
+        final byte[] marshal = marsh.marshal(obj);
+        final Object restored = marsh.unmarshal(marshal, null);
+
+        assertTrue(restored instanceof EnumObject);
+
+        obj = (EnumObject)restored;
+
+        assertEquals(1, obj.id);
+        assertEquals(DeclaredBodyEnum.TWO.ordinal(), obj.type.ordinal());
+        assertEquals(DeclaredBodyEnum.TWO, obj.type);
+        assertTrue(obj.type == DeclaredBodyEnum.TWO);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testDateAndTimestampInSingleObject() throws Exception {
         BinaryTypeConfiguration cfg1 = new BinaryTypeConfiguration(DateClass1.class.getName());
 
@@ -694,8 +720,6 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         SimpleObject obj = simpleObject();
 
         BinaryObject po = marshal(obj, marsh);
-
-        assertEquals(obj.hashCode(), po.hashCode());
 
         assertEquals(obj, po.deserialize());
 
@@ -780,8 +804,6 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         TestBinary obj = binaryObject();
 
         BinaryObject po = marshal(obj, marsh);
-
-        assertEquals(obj.hashCode(), po.hashCode());
 
         assertEquals(obj, po.deserialize());
 
@@ -2630,16 +2652,29 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         // 1. Test reflective stuff.
         DecimalReflective obj1 = new DecimalReflective();
 
-        obj1.val = BigDecimal.ZERO;
-        obj1.valArr = new BigDecimal[] {BigDecimal.ONE, BigDecimal.TEN};
+        BigDecimal valArr[] = new BigDecimal[] {BigDecimal.ONE, BigDecimal.TEN, new BigDecimal("-100.5"),
+            BigDecimal.valueOf(Long.MAX_VALUE, 0), BigDecimal.valueOf(Long.MIN_VALUE, 0),
+            BigDecimal.valueOf(Long.MAX_VALUE, 8), BigDecimal.valueOf(Long.MIN_VALUE, 8)};
 
+        obj1.val = BigDecimal.ZERO;
+        obj1.valArr = valArr;
         BinaryObjectImpl portObj = marshal(obj1, marsh);
 
-        assertEquals(obj1.val, portObj.field("val"));
         assertArrayEquals(obj1.valArr, portObj.<BigDecimal[]>field("valArr"));
-
-        assertEquals(obj1.val, portObj.<DecimalReflective>deserialize().val);
         assertArrayEquals(obj1.valArr, portObj.<DecimalReflective>deserialize().valArr);
+        assertArrayEquals(obj1.valArr, (BigDecimal[])portObj.type().field("valArr").value(portObj));
+
+        obj1.valArr = null;
+
+        for (BigDecimal v: valArr) {
+            obj1.val = v;
+
+            portObj = marshal(obj1, marsh);
+
+            assertEquals(obj1.val, portObj.field("val"));
+            assertEquals(obj1.val, portObj.<DecimalReflective>deserialize().val);
+            assertEquals(obj1.val, portObj.type().field("val").value(portObj));
+        }
 
         // 2. Test marshal aware stuff.
         DecimalMarshalAware obj2 = new DecimalMarshalAware();
@@ -2658,6 +2693,19 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         assertArrayEquals(obj2.valArr, portObj.<DecimalMarshalAware>deserialize().valArr);
         assertEquals(obj2.rawVal, portObj.<DecimalMarshalAware>deserialize().rawVal);
         assertArrayEquals(obj2.rawValArr, portObj.<DecimalMarshalAware>deserialize().rawValArr);
+
+        assertEquals(obj2.val, portObj.type().field("val").value(portObj));
+        assertArrayEquals(obj2.valArr, (BigDecimal[])portObj.type().field("valArr").value(portObj));
+
+        for (BigDecimal v: valArr) {
+            obj2.val = v;
+
+            portObj = marshal(obj2, marsh);
+
+            assertEquals(obj2.val, portObj.field("val"));
+            assertEquals(obj2.val, portObj.<DecimalMarshalAware>deserialize().val);
+            assertEquals(obj2.val, portObj.type().field("val").value(portObj));
+        }
     }
 
     /**
@@ -5433,5 +5481,40 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
             val0 = reader.rawReader().readInt();
             val1 = reader.rawReader().readInt();
         }
+    }
+
+    /** */
+    private static class EnumObject implements Serializable {
+        /** */
+        private long id;
+
+        /** */
+        private String name;
+
+        /** */
+        private DeclaredBodyEnum type;
+
+        /** */
+        EnumObject(final long id, final String name, final DeclaredBodyEnum type) {
+            this.id = id;
+            this.name = name;
+            this.type = type;
+        }
+    }
+
+    /** */
+    public enum DeclaredBodyEnum {
+        ONE {
+            @Override boolean isSupported() {
+                return false;
+            }
+        },
+        TWO {
+            @Override boolean isSupported() {
+                return false;
+            }
+        };
+
+        abstract boolean isSupported();
     }
 }

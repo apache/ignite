@@ -58,9 +58,12 @@ public abstract class GridClientBalancerAdapter implements GridClientLoadBalance
      * Sets prefer direct nodes.
      *
      * @param preferDirectNodes Prefer direct nodes.
+     * @return {@code this} for chaining.
      */
-    public void setPreferDirectNodes(boolean preferDirectNodes) {
+    public GridClientBalancerAdapter setPreferDirectNodes(boolean preferDirectNodes) {
         this.preferDirectNodes = preferDirectNodes;
+
+        return this;
     }
 
     /**

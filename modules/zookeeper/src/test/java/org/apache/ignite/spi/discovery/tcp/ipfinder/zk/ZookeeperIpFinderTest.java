@@ -33,6 +33,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -366,7 +367,9 @@ public class ZookeeperIpFinderTest extends GridCommonAbstractTest {
                 try {
                     return 0 == zkCurator.getChildren().forPath(SERVICES_IGNITE_ZK_PATH).size();
                 }
-                catch (Exception ignored) {
+                catch (Exception e) {
+                    U.error(log, "Failed to wait for zk condition", e);
+
                     return false;
                 }
             }

@@ -50,7 +50,7 @@ namespace Apache.Ignite.Core.Events
         {
             _taskName = r.ReadString();
             _taskClassName = r.ReadString();
-            _taskSessionId = IgniteGuid.Read(r);
+            _taskSessionId = r.ReadObject<IgniteGuid?>();
             _internal = r.ReadBoolean();
             _subjectId = r.ReadGuid();
         }
@@ -82,7 +82,9 @@ namespace Apache.Ignite.Core.Events
         /// </summary>
         public Guid? SubjectId { get { return _subjectId; } }
 
-        /** <inheritDoc /> */
+	    /// <summary>
+	    /// Gets shortened version of ToString result.
+	    /// </summary>
 	    public override string ToShortString()
 	    {
 	        return string.Format(CultureInfo.InvariantCulture,
