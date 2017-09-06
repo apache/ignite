@@ -870,18 +870,6 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
 
         checkNotSupported(new RunnableX() {
             @Override public void run() throws Exception {
-                rs.getNString(1);
-            }
-        });
-
-        checkNotSupported(new RunnableX() {
-            @Override public void run() throws Exception {
-                rs.getNString("id");
-            }
-        });
-
-        checkNotSupported(new RunnableX() {
-            @Override public void run() throws Exception {
                 rs.getRef(1);
             }
         });
