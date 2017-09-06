@@ -32,7 +32,7 @@ namespace ignite
                 DsnConfigurationWindow::DsnConfigurationWindow(Window* parent, config::Configuration& config):
                     CustomWindow(parent, "IgniteConfigureDsn", "Configure Apache Ignite DSN"),
                     width(360),
-                    height(280),
+                    height(300),
                     connectionSettingsGroupBox(),
                     nameLabel(),
                     nameEdit(),
@@ -142,13 +142,17 @@ namespace ignite
 
                     const ProtocolVersion::VersionSet& supported = ProtocolVersion::GetSupported();
 
+                    ProtocolVersion version = ProtocolVersion::GetCurrent();
                     ProtocolVersion::VersionSet::const_iterator it;
                     for (it = supported.begin(); it != supported.end(); ++it)
                     {
                         protocolVersionComboBox->AddString(it->ToString());
 
                         if (*it == config.GetProtocolVersion())
+                        {
                             protocolVersionComboBox->SetSelection(id);
+                            version = *it;
+                        }
 
                         ++id;
                     }
@@ -168,6 +172,13 @@ namespace ignite
 
                     collocatedCheckBox = CreateCheckBox(editPosX + checkBoxSize + interval, rowPos, checkBoxSize,
                         rowSize, "Collocated", ChildId::COLLOCATED_CHECK_BOX, config.IsCollocated());
+
+                    rowPos += rowSize;
+
+                    lazyCheckBox = CreateCheckBox(editPosX, rowPos, checkBoxSize, rowSize,
+                        "Lazy", ChildId::LAZY_CHECK_BOX, config.IsLazy());
+
+                    lazyCheckBox->SetEnabled(version >= ProtocolVersion::VERSION_2_1_5);
 
                     rowPos += interval * 2 + rowSize;
 
@@ -246,7 +257,24 @@ namespace ignite
                                     break;
                                 }
 
+                                case ChildId::LAZY_CHECK_BOX:
+                                {
+                                    lazyCheckBox->SetChecked(!lazyCheckBox->IsChecked());
+
+                                    break;
+                                }
+
                                 case ChildId::PROTOCOL_VERSION_COMBO_BOX:
+                                {
+                                    std::string versionStr;
+                                    protocolVersionComboBox->GetText(versionStr);
+
+                                    ProtocolVersion version = ProtocolVersion::FromString(versionStr);
+                                    lazyCheckBox->SetEnabled(version >= ProtocolVersion::VERSION_2_1_5);
+
+                                    break;
+                                }
+
                                 default:
                                     return false;
                             }
@@ -280,6 +308,7 @@ namespace ignite
                     bool enforceJoinOrder;
                     bool replicatedOnly;
                     bool collocated;
+                    bool lazy;
 
                     nameEdit->GetText(dsn);
                     addressEdit->GetText(address);
@@ -299,6 +328,7 @@ namespace ignite
                     enforceJoinOrder = enforceJoinOrderCheckBox->IsEnabled() && enforceJoinOrderCheckBox->IsChecked();
                     replicatedOnly = replicatedOnlyCheckBox->IsEnabled() && replicatedOnlyCheckBox->IsChecked();
                     collocated = collocatedCheckBox->IsEnabled() && collocatedCheckBox->IsChecked();
+                    lazy = lazyCheckBox->IsEnabled() && lazyCheckBox->IsChecked();
 
                     LOG_MSG("Retriving arguments:");
                     LOG_MSG("DSN:                " << dsn);
@@ -310,6 +340,7 @@ namespace ignite
                     LOG_MSG("Enforce Join Order: " << (enforceJoinOrder ? "true" : "false"));
                     LOG_MSG("Replicated only:    " << (replicatedOnly ? "true" : "false"));
                     LOG_MSG("Collocated:         " << (collocated ? "true" : "false"));
+                    LOG_MSG("Lazy:               " << (lazy ? "true" : "false"));
 
                     if (dsn.empty())
                         throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, "DSN name can not be empty.");
@@ -323,6 +354,7 @@ namespace ignite
                     cfg.SetEnforceJoinOrder(enforceJoinOrder);
                     cfg.SetReplicatedOnly(replicatedOnly);
                     cfg.SetCollocated(collocated);
+                    cfg.SetLazy(lazy);
                 }
             }
         }

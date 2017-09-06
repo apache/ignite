@@ -1263,8 +1263,19 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
             if (isDone())
                 return;
 
-            if (last) {
-                if (waitCrdCntrFut != null) {
+            if (last)
+                sendPrepareRequests();
+        }
+        finally {
+            markInitialized();
+        }
+    }
+
+    /**
+     *
+     */
+    private void sendPrepareRequests() {
+        if (waitCrdCntrFut != null) {
                     skipInit = true;
 
                     waitCrdCntrFut.listen(new IgniteInClosure<IgniteInternalFuture<Long>>() {
@@ -1311,9 +1322,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
             }
         }
 
-        assert !tx.txState().mvccEnabled(cctx) || !tx.onePhaseCommit() || tx.mvccCoordinatorCounter() != TxMvccVersion.COUNTER_NA;
-
-        int miniId = 0;
+                assert !tx.txState().mvccEnabled(cctx) || !tx.onePhaseCommit() || tx.mvccCoordinatorCounter() != TxMvccVersion.COUNTER_NA;int miniId = 0;
 
         assert tx.transactionNodes() != null;
 

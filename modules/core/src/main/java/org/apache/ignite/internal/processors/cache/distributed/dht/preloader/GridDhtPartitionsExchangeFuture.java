@@ -2249,7 +2249,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     CacheGroupContext grp = cctx.cache().cacheGroup(desc.groupId());
 
                     GridDhtPartitionTopology top = grp != null ? grp.topology() :
-                        cctx.exchange().clientTopology(desc.groupId());
+                        cctx.exchange().clientTopology(desc.groupId(), events().discoveryCache());
 
                     top.beforeExchange(this, true, true);
                 }
@@ -2267,7 +2267,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
 
                     GridDhtPartitionTopology top = grp != null ? grp.topology() :
-                        cctx.exchange().clientTopology(grpId);
+                        cctx.exchange().clientTopology(grpId, events().discoveryCache());
 
                     CachePartitionPartialCountersMap cntrs = msg.partitionUpdateCounters(grpId,
                         top.partitions());
@@ -2450,7 +2450,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 if (grpCtx != null)
                     top = grpCtx.topology();
                 else
-                    top = cctx.exchange().clientTopology(e.getKey());
+                    top = cctx.exchange().clientTopology(e.getKey(), events().discoveryCache());
 
                 assignPartitionStates(top);
             }
@@ -2831,7 +2831,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 ClusterNode oldest = cctx.discovery().oldestAliveServerNode(AffinityTopologyVersion.NONE);
 
                 if (oldest != null && oldest.isLocal()) {
-                    GridDhtPartitionTopology top = cctx.exchange().clientTopology(grpId);
+                    GridDhtPartitionTopology top = cctx.exchange().clientTopology(grpId, events().discoveryCache());
 
                     CachePartitionFullCountersMap cntrMap = msg.partitionUpdateCounters(grpId,
                         top.partitions());
@@ -2860,7 +2860,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
 
             GridDhtPartitionTopology top = grp != null ? grp.topology() :
-                cctx.exchange().clientTopology(grpId);
+                cctx.exchange().clientTopology(grpId, events().discoveryCache());
 
             top.update(exchId, entry.getValue(), false);
         }
