@@ -224,10 +224,6 @@ public class DdlStatementsProcessor {
                             cmd.tableName());
                 }
                 else {
-                    if (tbl.rowDescriptor().type().valueClass() != Object.class)
-                        throw new SchemaOperationException("ALTER TABLE may only be executed on " +
-                            "tables that do not have actual class for cache value.");
-
                     List<QueryField> cols = new ArrayList<>(cmd.columns().length);
 
                     for (GridSqlColumn col : cmd.columns()) {
