@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
@@ -27,25 +28,16 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
     /// <summary>
     /// Abstract query cursor implementation.
     /// </summary>
-    internal abstract class AbstractQueryCursor<T> : PlatformDisposableTargetAdapter, IQueryCursor<T>, IEnumerator<T>
+    internal abstract class QueryCursorBase<T> : IQueryCursor<T>, IEnumerator<T>
     {
-        /** */
-        private const int OpGetAll = 1;
-
-        /** */
-        private const int OpGetBatch = 2;
-
-        /** */
-        private const int OpIterator = 4;
-
-        /** */
-        private const int OpIteratorClose = 5;
-
         /** Position before head. */
         private const int BatchPosBeforeHead = -1;
 
         /** Keep binary flag. */
         private readonly bool _keepBinary;
+
+        /** Marshaller. */
+        private readonly Marshaller _marsh;
 
         /** Wherther "GetAll" was called. */
         private bool _getAllCalled;
@@ -59,17 +51,21 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
         /** Current position in batch. */
         private int _batchPos = BatchPosBeforeHead;
 
+        /** Disposed flag. */
+        private volatile bool _disposed;
+
         /// <summary>
         /// Constructor.
         /// </summary>
-        /// <param name="target">Target.</param>
+        /// <param name="marsh">Marshaller.</param>
         /// <param name="keepBinary">Keep binary flag.</param>
-        protected AbstractQueryCursor(IPlatformTargetInternal target, bool keepBinary) : base(target)
+        protected QueryCursorBase(Marshaller marsh, bool keepBinary)
         {
-            _keepBinary = keepBinary;
-        }
+            Debug.Assert(marsh != null);
 
-        #region Public methods
+            _keepBinary = keepBinary;
+            _marsh = marsh;
+        }
 
         /** <inheritdoc /> */
         public IList<T> GetAll()
@@ -84,27 +80,12 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
                 throw new InvalidOperationException("Failed to get all entries because GetAll() " + 
                     "method has already been called.");
 
-            var res = DoInOp(OpGetAll, ConvertGetAll);
+            var res = GetAllInternal();
 
             _getAllCalled = true;
 
             return res;
         }
-
-        /** <inheritdoc /> */
-        protected override void Dispose(bool disposing)
-        {
-            try
-            {
-                DoOutInOp(OpIteratorClose);
-            }
-            finally 
-            {
-                base.Dispose(disposing);
-            }
-        }
-
-        #endregion
 
         #region Public IEnumerable methods
 
@@ -114,19 +95,25 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
             ThrowIfDisposed();
 
             if (_iterCalled)
-                throw new InvalidOperationException("Failed to get enumerator entries because " + 
-                    "GetEnumerator() method has already been called.");
+            {
+                throw new InvalidOperationException("Failed to get enumerator entries because " +
+                                                    "GetEnumerator() method has already been called.");
+            }
 
             if (_getAllCalled)
-                throw new InvalidOperationException("Failed to get enumerator entries because " + 
-                    "GetAll() method has already been called.");
+            {
+                throw new InvalidOperationException("Failed to get enumerator entries because " +
+                                                    "GetAll() method has already been called.");
+            }
 
-            DoOutInOp(OpIterator);
+            InitIterator();
 
             _iterCalled = true;
 
             return this;
         }
+
+        protected abstract void InitIterator();
 
         /** <inheritdoc /> */
         IEnumerator IEnumerable.GetEnumerator()
@@ -192,39 +179,41 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
 
         #endregion
 
-        #region Non-public methods
+        /// <summary>
+        /// Gets all entries.
+        /// </summary>
+        protected abstract IList<T> GetAllInternal();
 
         /// <summary>
-        /// Read entry from the reader.
-        /// </summary>
+        /// Reads entry from the reader.
+        /// </summary> 
         /// <param name="reader">Reader.</param>
         /// <returns>Entry.</returns>
         protected abstract T Read(BinaryReader reader);
 
-        /** <inheritdoc /> */
-        protected override T1 Unmarshal<T1>(IBinaryStream stream)
-        {
-            return Marshaller.Unmarshal<T1>(stream, _keepBinary);
-        }
-
         /// <summary>
-        /// Request next batch.
+        /// Requests next batch.
         /// </summary>
         private void RequestBatch()
         {
-            _batch = DoInOp(OpGetBatch, ConvertGetBatch);
+            _batch = GetBatch();
 
             _batchPos = 0;
         }
+
+        /// <summary>
+        /// Gets the next batch.
+        /// </summary>
+        protected abstract T[] GetBatch();
 
         /// <summary>
         /// Converter for GET_ALL operation.
         /// </summary>
         /// <param name="stream">Stream.</param>
         /// <returns>Result.</returns>
-        private IList<T> ConvertGetAll(IBinaryStream stream)
+        protected IList<T> ConvertGetAll(IBinaryStream stream)
         {
-            var reader = Marshaller.StartUnmarshal(stream, _keepBinary);
+            var reader = _marsh.StartUnmarshal(stream, _keepBinary);
 
             var size = reader.ReadInt();
 
@@ -241,9 +230,9 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
         /// </summary>
         /// <param name="stream">Stream.</param>
         /// <returns>Result.</returns>
-        private T[] ConvertGetBatch(IBinaryStream stream)
+        protected T[] ConvertGetBatch(IBinaryStream stream)
         {
-            var reader = Marshaller.StartUnmarshal(stream, _keepBinary);
+            var reader = _marsh.StartUnmarshal(stream, _keepBinary);
 
             var size = reader.ReadInt();
 
@@ -258,7 +247,42 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
             return res;
         }
 
-        #endregion
+        /** <inheritdoc /> */
+        public void Dispose()
+        {
+            lock (this)
+            {
+                if (_disposed)
+                    return;
 
+                Dispose(true);
+
+                GC.SuppressFinalize(this);
+
+                _disposed = true;
+            }
+        }
+
+        /// <summary>
+        /// Releases unmanaged and - optionally - managed resources.
+        /// </summary>
+        /// <param name="disposing">
+        /// <c>true</c> when called from Dispose;  <c>false</c> when called from finalizer.
+        /// </param>
+        protected virtual void Dispose(bool disposing)
+        {
+            // No-op.
+        }
+
+        /// <summary>
+        /// Throws <see cref="ObjectDisposedException"/> if this instance has been disposed.
+        /// </summary>
+        private void ThrowIfDisposed()
+        {
+            if (_disposed)
+            {
+                throw new ObjectDisposedException(GetType().Name, "Object has been disposed.");
+            }
+        }
     }
 }
