@@ -113,4 +113,14 @@ public class LazyDataEntry extends DataEntry {
 
         return val;
     }
+
+    /** */
+    public byte[] getValBytes() {
+        return valBytes;
+    }
+
+    /** */
+    public byte getValType() {
+        return valType;
+    }
 }
