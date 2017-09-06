@@ -65,9 +65,9 @@ public class JdbcThinResultSet implements ResultSet {
             symbols.setGroupingSeparator(',');
             symbols.setDecimalSeparator('.');
 
-            String pattern = "#,##0.0#";
+            String ptrn = "#,##0.0#";
 
-            DecimalFormat decimalFormat = new DecimalFormat(pattern, symbols);
+            DecimalFormat decimalFormat = new DecimalFormat(ptrn, symbols);
 
             decimalFormat.setParseBigDecimal(true);
 
@@ -143,7 +143,7 @@ public class JdbcThinResultSet implements ResultSet {
         isQuery = true;
         updCnt = -1;
 
-        this.rows = fields;
+        rows = fields;
 
         rowsIter = fields.iterator();
 
@@ -505,12 +505,8 @@ public class JdbcThinResultSet implements ResultSet {
 
         if (cls == Date.class)
             return (Date)val;
-        else if (cls == java.util.Date.class)
+        else if (cls == java.util.Date.class || cls == Time.class || cls == Timestamp.class)
             return new Date(((java.util.Date)val).getTime());
-        else if (cls == Time.class)
-            return new Date(((Time)val).getTime());
-        else if (cls == Timestamp.class)
-            return new Date(((Timestamp)val).getTime());
         else
             throw new SQLException("Cannot convert to date: " + val);
     }
@@ -526,12 +522,8 @@ public class JdbcThinResultSet implements ResultSet {
 
         if (cls == Time.class)
             return (Time)val;
-        else if (cls == java.util.Date.class)
+        else if (cls == java.util.Date.class || cls == Date.class || cls == Timestamp.class)
             return new Time(((java.util.Date)val).getTime());
-        else if (cls == Date.class)
-            return new Time(((Date)val).getTime());
-        else if (cls == Timestamp.class)
-            return new Time(((Timestamp)val).getTime());
         else
             throw new SQLException("Cannot convert to time: " + val);
     }
@@ -547,12 +539,8 @@ public class JdbcThinResultSet implements ResultSet {
 
         if (cls == Timestamp.class)
             return (Timestamp)val;
-        if (cls == java.util.Date.class)
+        else if (cls == java.util.Date.class || cls == Date.class || cls == Time.class)
             return new Timestamp(((java.util.Date)val).getTime());
-        else if (cls == Date.class)
-            return new Timestamp(((Date)val).getTime());
-        else if (cls == Time.class)
-            return new Timestamp(((Time)val).getTime());
         else
             throw new SQLException("Cannot convert to timestamp: " + val);
     }
