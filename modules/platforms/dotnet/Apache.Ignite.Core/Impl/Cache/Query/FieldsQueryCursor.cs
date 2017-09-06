@@ -26,7 +26,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
     /// <summary>
     /// Cursor for entry-based queries.
     /// </summary>
-    internal class FieldsQueryCursor<T> : JniQueryQursorBase<T>
+    internal class FieldsQueryCursor<T> : PlatformQueryQursorBase<T>
     {
         /** */
         private readonly Func<IBinaryRawReader, int, T> _readerFunc;
