@@ -222,7 +222,7 @@ namespace Apache.Ignite.Core.Impl.Services
                 w.WriteObject(service);
                 w.WriteInt(totalCount);
                 w.WriteInt(maxPerNodeCount);
-            });
+            }, _keepBinary, r => ReadDeploymentResult(r.Stream));
         }
 
         /** <inheritDoc /> */
@@ -238,7 +238,8 @@ namespace Apache.Ignite.Core.Impl.Services
         {
             IgniteArgumentCheck.NotNull(configuration, "configuration");
 
-            return DoOutOpAsync(OpDeployAsync, w => WriteServiceConfiguration(configuration, w));
+            return DoOutOpAsync(OpDeployAsync, w => WriteServiceConfiguration(configuration, w), 
+                _keepBinary, r => ReadDeploymentResult(r.Stream));
         }
 
         /** <inheritDoc /> */
