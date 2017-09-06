@@ -825,6 +825,7 @@ namespace Apache.Ignite.Core.Tests.Services
             /** <inheritdoc /> */
             public Guid NodeId
             {
+                // ReSharper disable once InconsistentlySynchronizedField
                 get { return _grid.GetCluster().GetLocalNode().Id; }
             }
 
