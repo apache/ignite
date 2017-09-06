@@ -1971,6 +1971,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * @return Newly created discovery cache.
      */
     @NotNull private DiscoCache createDiscoCache(ClusterNode loc, Collection<ClusterNode> topSnapshot) {
+        assert topSnapshot.contains(loc);
+
         if (!topSnapshot.contains(loc)) {
             topSnapshot = new TreeSet<>(topSnapshot);
 
