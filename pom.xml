@@ -54,6 +54,7 @@
         <module>modules/hadoop</module>
         <module>modules/extdata/p2p</module>
         <module>modules/extdata/uri</module>
+        <module>modules/extdata/platform</module>
         <module>modules/clients</module>
         <module>modules/spring</module>
         <module>modules/spring-data</module>
