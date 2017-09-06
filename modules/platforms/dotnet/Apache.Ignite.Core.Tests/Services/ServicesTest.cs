@@ -431,41 +431,44 @@ namespace Apache.Ignite.Core.Tests.Services
         /// Tests exception in Initialize.
         /// </summary>
         [Test]
-        public void TestDeployMultipleException()
+        public void TestDeployMultipleException([Values(true, false)] bool keepBinary)
         {
-            var svc = new TestIgniteServiceSerializable { ThrowInit = true };
-
-            var ex = Assert.Throws<ServiceDeploymentException>(() =>
-                Services.DeployMultiple(SvcName, svc, Grids.Length, 1));
-
-            VerifyDeploymentException(ex);
+            VerifyDeploymentException((services, svc) =>
+                services.DeployMultiple(SvcName, svc, Grids.Length, 1), keepBinary);
         }
 
         /// <summary>
         /// Tests exception in Initialize.
         /// </summary>
         [Test]
-        public void TestDeployException()
+        public void TestDeployException([Values(true, false)] bool keepBinary)
         {
-            var svc = new TestIgniteServiceSerializable { ThrowInit = true };
-
-            var ex = Assert.Throws<ServiceDeploymentException>(() =>
-                Services.Deploy(new ServiceConfiguration
+            VerifyDeploymentException((services, svc) =>
+                services.Deploy(new ServiceConfiguration
                 {
                     Name = SvcName,
                     Service = svc,
                     TotalCount = Grids.Length,
                     MaxPerNodeCount = 1
-                }));
-
-            VerifyDeploymentException(ex);
+                }), keepBinary);
         }
 
         /// <summary>
         /// Verifies the deployment exception.
         /// </summary>
-        private void VerifyDeploymentException(ServiceDeploymentException deploymentException)
+        private void VerifyDeploymentException(Action<IServices, IService> deploy, bool keepBinary)
         {
+            var svc = new TestIgniteServiceSerializable { ThrowInit = true };
+
+            var services = Services;
+
+            if (keepBinary)
+            {
+                services = services.WithKeepBinary();
+            }
+
+            var deploymentException = Assert.Throws<ServiceDeploymentException>(() => deploy(services, svc));
+
             Assert.AreEqual(deploymentException.Message,
                 "Service deployment failed with an exception. Examine InnerException for details.");
 
