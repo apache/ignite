@@ -19,11 +19,10 @@ namespace Apache.Ignite.Core.Resource
 {
     using System;
     using Apache.Ignite.Core.Compute;
-    using Apache.Ignite.Core.Impl.Compute;
 
     /// <summary>
     /// Attribute which injects <see cref="IIgnite"/> instance. Can be defined inside
-    /// implementors of <see cref="IComputeTask{A,T,TR}"/> and <see cref="IComputeJob"/> interfaces.
+    /// implementors of <see cref="IComputeTask{A,T,TR}"/> and <see cref="IComputeJob{T}"/> interfaces.
     /// Can be applied to non-static fields, properties and methods returning <c>void</c> and 
     /// accepting a single parameter.
     /// </summary>
