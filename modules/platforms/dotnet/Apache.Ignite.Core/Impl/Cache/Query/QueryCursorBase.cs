@@ -67,8 +67,6 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
             _marsh = marsh;
         }
 
-        #region Public methods
-
         /** <inheritdoc /> */
         public IList<T> GetAll()
         {
@@ -88,10 +86,6 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
 
             return res;
         }
-
-        protected abstract IList<T> GetAllInternal();
-
-        #endregion
 
         #region Public IEnumerable methods
 
@@ -185,23 +179,20 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
 
         #endregion
 
-        #region Non-public methods
+        /// <summary>
+        /// Gets all entries.
+        /// </summary>
+        protected abstract IList<T> GetAllInternal();
 
         /// <summary>
-        /// Read entry from the reader.
+        /// Reads entry from the reader.
         /// </summary> 
         /// <param name="reader">Reader.</param>
         /// <returns>Entry.</returns>
         protected abstract T Read(BinaryReader reader);
 
-        /** <inheritdoc /> */
-        protected T1 Unmarshal<T1>(IBinaryStream stream)
-        {
-            return _marsh.Unmarshal<T1>(stream, _keepBinary);
-        }
-
         /// <summary>
-        /// Request next batch.
+        /// Requests next batch.
         /// </summary>
         private void RequestBatch()
         {
@@ -210,6 +201,9 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
             _batchPos = 0;
         }
 
+        /// <summary>
+        /// Gets the next batch.
+        /// </summary>
         protected abstract T[] GetBatch();
 
         /// <summary>
@@ -253,8 +247,6 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
             return res;
         }
 
-        #endregion
-
         /** <inheritdoc /> */
         public void Dispose()
         {
@@ -285,10 +277,12 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
         /// <summary>
         /// Throws <see cref="ObjectDisposedException"/> if this instance has been disposed.
         /// </summary>
-        protected void ThrowIfDisposed()
+        private void ThrowIfDisposed()
         {
             if (_disposed)
+            {
                 throw new ObjectDisposedException(GetType().Name, "Object has been disposed.");
+            }
         }
     }
 }
