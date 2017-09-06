@@ -36,7 +36,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -49,7 +48,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Result set test.
  */
-@SuppressWarnings("FloatingPointEquality")
+@SuppressWarnings({"FloatingPointEquality", "AssertWithSideEffects", "ThrowableNotThrown"})
 public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -86,8 +85,6 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
         disco.setIpFinder(IP_FINDER);
 
         cfg.setDiscoverySpi(disco);
-
-        cfg.setMarshaller(new BinaryMarshaller());
 
         return cfg;
     }
@@ -747,71 +744,71 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
         private final int id;
 
         /** */
-        @QuerySqlField(index = false)
+        @QuerySqlField
         private Boolean boolVal;
 
         /** */
-        @QuerySqlField(index = false)
+        @QuerySqlField
         private Byte byteVal;
 
         /** */
-        @QuerySqlField(index = false)
+        @QuerySqlField
         private Short shortVal;
 
         /** */
-        @QuerySqlField(index = false)
+        @QuerySqlField
         private Integer intVal;
 
         /** */
-        @QuerySqlField(index = false)
+        @QuerySqlField
         private Long longVal;
 
         /** */
-        @QuerySqlField(index = false)
+        @QuerySqlField
         private Float floatVal;
 
         /** */
-        @QuerySqlField(index = false)
+        @QuerySqlField
         private Double doubleVal;
 
         /** */
-        @QuerySqlField(index = false)
+        @QuerySqlField
         private BigDecimal bigVal;
 
         /** */
-        @QuerySqlField(index = false)
+        @QuerySqlField
         private String strVal;
 
         /** */
-        @QuerySqlField(index = false)
+        @QuerySqlField
         private byte[] arrVal;
 
         /** */
-        @QuerySqlField(index = false)
+        @QuerySqlField
         private Date dateVal;
 
         /** */
-        @QuerySqlField(index = false)
+        @QuerySqlField
         private Time timeVal;
 
         /** */
-        @QuerySqlField(index = false)
+        @QuerySqlField
         private Timestamp tsVal;
 
         /** */
-        @QuerySqlField(index = false)
+        @QuerySqlField
         private URL urlVal;
 
         /** */
-        @QuerySqlField(index = false)
+        @QuerySqlField
         private TestObjectField f1 = new TestObjectField(100, "AAAA");
 
         /** */
-        @QuerySqlField(index = false)
+        @QuerySqlField
         private TestObjectField f2 = new TestObjectField(500, "BBBB");
 
         /** */
-        @QuerySqlField(index = false)
+        @QuerySqlField
         private TestObjectField f3;
 
         /**

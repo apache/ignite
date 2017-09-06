@@ -286,7 +286,7 @@ public class JdbcThinResultSet implements ResultSet {
         Class<?> cls = val.getClass();
 
         if (cls == Boolean.class)
-            return ((Boolean)val).booleanValue();
+            return ((Boolean)val);
         else if (val instanceof Number)
             return ((Number)val).intValue() != 0;
         else if (cls == String.class || cls == Character.class) {
@@ -1990,34 +1990,5 @@ public class JdbcThinResultSet implements ResultSet {
      */
     void closeStatement(boolean closeStmt) {
         this.closeStmt = closeStmt;
-    }
-
-    // TODO: Remove two methods below?
-
-    /**
-     * @param val Number value.
-     * @return Boolean value.
-     */
-    private static boolean castToBoolean(Number val) {
-        if (val.intValue() == 1)
-            return true;
-        else if (val.intValue() == 0)
-            return false;
-        else
-            throw new ClassCastException("Cannot cast " + val.getClass().getName()
-                + " [val=" + val +"] to boolean");
-    }
-
-    /**
-     * @param str String value.
-     * @return Boolean value.
-     */
-    private static boolean castToBoolean(String str) {
-        try {
-            return castToBoolean(Integer.parseInt(str));
-        }
-        catch (NumberFormatException e) {
-            throw new ClassCastException("Cannot cast [val=" + str +"] to boolean");
-        }
     }
 }
