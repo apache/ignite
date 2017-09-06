@@ -27,6 +27,7 @@ import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.PlatformTarget;
 import org.apache.ignite.internal.processors.platform.dotnet.PlatformDotNetService;
 import org.apache.ignite.internal.processors.platform.dotnet.PlatformDotNetServiceImpl;
+import org.apache.ignite.internal.processors.platform.utils.PlatformFutureUtils;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.processors.platform.utils.PlatformWriterBiClosure;
 import org.apache.ignite.internal.processors.platform.utils.PlatformWriterClosure;
@@ -37,6 +38,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceDescriptor;
+import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -45,7 +47,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * Interop services.
@@ -110,6 +111,9 @@ public class PlatformServices extends PlatformAbstractTarget {
     /** Server keep binary flag. */
     private final boolean srvKeepBinary;
 
+    /** Future result writer. */
+    private final ServiceDeploymentResultWriter resultWriter;
+
     /**
      * Ctor.
      *
@@ -124,6 +128,7 @@ public class PlatformServices extends PlatformAbstractTarget {
 
         this.services = services;
         this.srvKeepBinary = srvKeepBinary;
+        resultWriter = new ServiceDeploymentResultWriter(platformCtx);
     }
 
     /**
@@ -151,7 +156,7 @@ public class PlatformServices extends PlatformAbstractTarget {
             }
 
             case OP_DOTNET_DEPLOY_MULTIPLE_ASYNC: {
-                readAndListenFuture(reader, dotnetDeployMultipleAsync(reader));
+                readAndListenFuture(reader, dotnetDeployMultipleAsync(reader), resultWriter);
 
                 return TRUE;
             }
@@ -635,4 +640,34 @@ public class PlatformServices extends PlatformAbstractTarget {
             }
         }
     }
+
+    /**
+     * Writes an EventBase.
+     */
+    private static class ServiceDeploymentResultWriter implements PlatformFutureUtils.Writer {
+        /** */
+        private final PlatformContext platformCtx;
+
+        /**
+         * Constructor.
+         *
+         * @param platformCtx Context.
+         */
+        public ServiceDeploymentResultWriter(PlatformContext platformCtx) {
+            assert platformCtx != null;
+
+            this.platformCtx = platformCtx;
+        }
+
+        /** <inheritDoc /> */
+        @Override public void write(BinaryRawWriterEx writer, Object obj, Throwable err) {
+            // TODO:
+        }
+
+        /** <inheritDoc /> */
+        @Override public boolean canWrite(Object obj, Throwable err) {
+            return true;
+        }
+    }
+
 }
