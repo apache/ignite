@@ -120,17 +120,20 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
 
     /**
      * @param cctx Context.
+     * @param discoCache Discovery data cache.
      * @param grpId Group ID.
      * @param parts Number of partitions in the group.
      * @param similarAffKey Key to find caches with similar affinity.
      */
     public GridClientPartitionTopology(
         GridCacheSharedContext<?, ?> cctx,
+        DiscoCache discoCache,
         int grpId,
         int parts,
         Object similarAffKey
     ) {
         this.cctx = cctx;
+        this.discoCache = discoCache;
         this.grpId = grpId;
         this.similarAffKey = similarAffKey;
         this.parts = parts;
@@ -338,7 +341,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
         }
 
         // In case if node joins, get topology at the time of joining node.
-        ClusterNode oldest = discoCache.oldestAliveServerNodeWithCache();
+        ClusterNode oldest = discoCache.oldestAliveServerNode();
 
         assert oldest != null;
 
@@ -535,7 +538,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
      * @return List of nodes for the partition.
      */
     private List<ClusterNode> nodes(int p, AffinityTopologyVersion topVer, GridDhtPartitionState state, GridDhtPartitionState... states) {
-        Collection<UUID> allIds = topVer.topologyVersion() > 0 ? F.nodeIds(discoCache.allNodesWithCaches()) : null;
+        Collection<UUID> allIds = F.nodeIds(discoCache.cacheGroupAffinityNodes(grpId));
 
         lock.readLock().lock();
 
@@ -961,10 +964,10 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
         assert nodeId.equals(cctx.localNodeId());
 
         // In case if node joins, get topology at the time of joining node.
-        ClusterNode oldest = discoCache.oldestAliveServerNodeWithCache();
+        ClusterNode oldest = discoCache.oldestAliveServerNode();
 
         // If this node became the oldest node.
-        if (oldest.id().equals(cctx.localNodeId())) {
+        if (cctx.localNode().equals(oldest)) {
             long seq = node2part.updateSequence();
 
             if (seq != updateSeq) {

@@ -1489,7 +1489,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
 
             if (!cache.context().affinityNode()) {
                 ClusterNode oldestSrvNode =
-                    ctx.discovery().oldestAliveCacheServerNode(AffinityTopologyVersion.NONE);
+                    ctx.discovery().oldestAliveServerNode(AffinityTopologyVersion.NONE);
 
                 if (oldestSrvNode == null)
                     return new GridEmptyIterator<>();
@@ -1730,7 +1730,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
                         // In case the cache instance isn't tracked by DiscoveryManager anymore.
                         discoCache.updateAlives(ctx.discovery());
 
-                        ClusterNode oldest = discoCache.oldestAliveServerNodeWithCache();
+                        ClusterNode oldest = discoCache.oldestAliveServerNode();
 
                         if (oldest != null && oldest.isLocal()) {
                             final Collection<GridServiceDeployment> retries = new ConcurrentLinkedQueue<>();

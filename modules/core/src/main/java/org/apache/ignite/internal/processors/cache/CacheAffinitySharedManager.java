@@ -1659,7 +1659,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                         if (!aff.lastVersion().equals(topVer))
                             calculateAndInit(fut.events(), aff, topVer);
 
-                        grpHolder.topology().beforeExchange(fut, true, false);
+                        grpHolder.topology(fut.context().events().discoveryCache()).beforeExchange(fut, true, false);
                     }
                     else {
                         List<GridDhtPartitionsExchangeFuture> exchFuts = cctx.exchange().exchangeFutures();
@@ -1715,7 +1715,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                         if (!aff.lastVersion().equals(topVer))
                             calculateAndInit(fut.events(), aff, topVer);
 
-                        grpHolder.topology().beforeExchange(fut, true, false);
+                        grpHolder.topology(fut.context().events().discoveryCache()).beforeExchange(fut, true, false);
                     }
                 }
 
@@ -1833,7 +1833,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                         Map<UUID, GridDhtPartitionMap> map = affinityFullMap(aff);
 
                         for (GridDhtPartitionMap map0 : map.values())
-                            cache.topology().update(fut.exchangeId(), map0, true);
+                            cache.topology(fut.context().events().discoveryCache()).update(fut.exchangeId(), map0, true);
                     }
                 }
             });
@@ -2059,7 +2059,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
                 List<List<ClusterNode>> newAssignment0 = initAff ? new ArrayList<>(newAssignment) : null;
 
-                GridDhtPartitionTopology top = grpHolder.topology();
+                GridDhtPartitionTopology top = grpHolder.topology(fut.context().events().discoveryCache());
 
                 Map<Integer, List<T>> cacheAssignment = null;
 
@@ -2277,9 +2277,10 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         }
 
         /**
+         * @param discoCache Discovery data cache.
          * @return Cache topology.
          */
-        abstract GridDhtPartitionTopology topology();
+        abstract GridDhtPartitionTopology topology(DiscoCache discoCache);
 
         /**
          * @return Affinity.
@@ -2314,7 +2315,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         }
 
         /** {@inheritDoc} */
-        @Override public GridDhtPartitionTopology topology() {
+        @Override public GridDhtPartitionTopology topology(DiscoCache discoCache) {
             return grp.topology();
         }
     }
@@ -2390,8 +2391,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         }
 
         /** {@inheritDoc} */
-        @Override public GridDhtPartitionTopology topology() {
-            return cctx.exchange().clientTopology(groupId());
+        @Override public GridDhtPartitionTopology topology(DiscoCache discoCache) {
+            return cctx.exchange().clientTopology(groupId(), discoCache);
         }
     }
 
