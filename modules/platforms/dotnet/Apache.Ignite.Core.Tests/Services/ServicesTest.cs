@@ -475,9 +475,22 @@ namespace Apache.Ignite.Core.Tests.Services
 
             Assert.AreEqual(text, deploymentException.Message);
 
-            Assert.IsNull(deploymentException.BinaryCause);
+            Exception ex;
 
-            var ex = deploymentException.InnerException;
+            if (keepBinary)
+            {
+                Assert.IsNull(deploymentException.InnerException);
+
+                ex = deploymentException.BinaryCause.Deserialize<Exception>();
+            }
+            else
+            {
+                Assert.IsNull(deploymentException.BinaryCause);
+
+                ex = deploymentException.InnerException;
+            }
+
+            ex = deploymentException.InnerException;
             Assert.IsNotNull(ex);
             Assert.AreEqual("Expected exception", ex.Message);
             Assert.IsTrue(ex.StackTrace.Trim().StartsWith(
