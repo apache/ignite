@@ -55,7 +55,6 @@ import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
-
 /**
  * Create HTML release report based on Jira Issues
  */
@@ -67,7 +66,7 @@ public class ReleaseReportGenerator {
     private static String templatePath = "./report_template.json";
 
     /** Release report css file path */
-    private static String cssPath="./report_template.css";
+    private static String cssPath = "./report_template.css";
 
     /**
      * Generate reports.
@@ -80,11 +79,11 @@ public class ReleaseReportGenerator {
 
         JSONParser parser = new JSONParser();
 
-        JSONObject template = (JSONObject) parser.parse(readFile(templatePath));
+        JSONObject template = (JSONObject)parser.parse(readFile(templatePath));
 
         String css = readFile(cssPath);
 
-        PrintWriter writer = new PrintWriter((String) template.get("outfile"), "UTF-8");
+        PrintWriter writer = new PrintWriter((String)template.get("outfile"), "UTF-8");
 
         writer.println(generateHTMLReleaseReport(template, css));
 
@@ -131,16 +130,17 @@ public class ReleaseReportGenerator {
      *
      * @throws HttpException On search failed throws exception
      */
-    private static String generateHTMLReleaseReport(JSONObject template, String templateCss) throws HttpException, ParseException {
+    private static String generateHTMLReleaseReport(JSONObject template,
+        String templateCss) throws HttpException, ParseException {
         StringBuilder htmlReport = new StringBuilder("<head>\n<style>" + templateCss + "</style>\n</head>\n");
 
         htmlReport.append("<body>\n");
 
-        htmlReport.append("<h1>").append((String) template.get("header")).append("</h1>\n");
+        htmlReport.append("<h1>").append((String)template.get("header")).append("</h1>\n");
 
-        htmlReport.append("<div>").append((String) template.get("description")).append("</div>");
+        htmlReport.append("<div>").append((String)template.get("description")).append("</div>");
 
-        for (Object item : (JSONArray )template.get("items"))
+        for (Object item : (JSONArray)template.get("items"))
             htmlReport.append(buildReportForTemplateItem(template, (JSONObject)item));
 
         htmlReport.append("</body>");
@@ -156,14 +156,15 @@ public class ReleaseReportGenerator {
      * @return String with report if issues founded for conditions in jql's
      * @throws HttpException If Jira search throw exception
      */
-    private static String buildReportForTemplateItem(JSONObject template, JSONObject item) throws HttpException, ParseException {
+    private static String buildReportForTemplateItem(JSONObject template,
+        JSONObject item) throws HttpException, ParseException {
         StringBuilder itemReport = new StringBuilder("<h2>" + item.get("header") + "</h2>\n");
 
         itemReport.append("<ul>\n");
 
-        for (Object search : (JSONArray) item.get("search")) {
+        for (Object search : (JSONArray)item.get("search")) {
             JSONObject srv = getJsonObjectFromArrayById((long)((JSONObject)search).get("server"),
-                "id", (JSONArray) template.get("servers"));
+                "id", (JSONArray)template.get("servers"));
 
             if (srv != null)
                 itemReport.append(buildReportForSearch((JSONObject)search, srv));
@@ -192,7 +193,7 @@ public class ReleaseReportGenerator {
     }
 
     /**
-     *  Build report part for search with personal settings
+     * Build report part for search with personal settings
      *
      * @param search JsonObject with search settings
      * @return HTML formatted string
@@ -200,22 +201,26 @@ public class ReleaseReportGenerator {
     private static String buildReportForSearch(JSONObject search, JSONObject srv) throws HttpException, ParseException {
         StringBuilder sr = new StringBuilder();
 
-        String baseUrl = (String) srv.get("baseurl");
+        String baseUrl = (String)srv.get("baseurl");
 
-        String kField = (String) search.get("key");
+        String kField = (String)search.get("key");
+
         if (kField == null)
             kField = "key";
-        String kPtrn = (String) search.get("kptrn");
 
-        String sField = (String) search.get("summary");
+        String kPtrn = (String)search.get("kptrn");
+
+        String sField = (String)search.get("summary");
+
         if (sField == null)
             sField = "fields.summary";
-        String sPtrn = (String) search.get("sptrn");
 
-        List<JSONObject> issues = searchIssues((String) srv.get("apiurl"),
-                (String) srv.get("username"),
-                (String) srv.get("password"),
-                (String) search.get("jql"),
+        String sPtrn = (String)search.get("sptrn");
+
+        List<JSONObject> issues = searchIssues((String)srv.get("apiurl"),
+            (String)srv.get("username"),
+            (String)srv.get("password"),
+            (String)search.get("jql"),
             jiraFields);
 
         for (JSONObject issue : issues) {
@@ -231,19 +236,19 @@ public class ReleaseReportGenerator {
             sr.append("<li>");
             sr.append(summary);
 
-                if ((boolean) search.get("showlink")) {
-                    sr.append("<a href=\"");
-                    sr.append(baseUrl);
-                    sr.append(key);
-                    sr.append("\"> [#");
-                    sr.append(key);
-                    sr.append("]</a>\n");
-                }
-                else {
-                    sr.append(" <span>[#");
-                    sr.append(key);
-                    sr.append("]</span>");
-                }
+            if ((boolean)search.get("showlink")) {
+                sr.append("<a href=\"");
+                sr.append(baseUrl);
+                sr.append(key);
+                sr.append("\"> [#");
+                sr.append(key);
+                sr.append("]</a>\n");
+            }
+            else {
+                sr.append(" <span>[#");
+                sr.append(key);
+                sr.append("]</span>");
+            }
 
             sr.append("</li>\n");
         }
@@ -258,39 +263,40 @@ public class ReleaseReportGenerator {
      * @return List if issues implemented as JSONObject
      * @throws HttpException All error throws HttpException
      */
-    private static List<JSONObject> searchIssues(final String jiraApiUrl, final String jiraUsername, final String jiraApiPwd, final String jql, final String[] fields) throws HttpException, ParseException {
-        final List<JSONObject> issues = new CopyOnWriteArrayList<> ();
+    private static List<JSONObject> searchIssues(final String jiraApiUrl, final String jiraUsername,
+        final String jiraApiPwd, final String jql, final String[] fields) throws HttpException, ParseException {
+        final List<JSONObject> issues = new CopyOnWriteArrayList<>();
         final int startAt = 0;
         final int maxResults = 50;
 
         JSONObject firstRes = executeSearchRequest(jiraApiUrl, jiraUsername, jiraApiPwd, jql, fields,
             startAt, maxResults);
 
-        final long total = (long) firstRes.get("total");
+        final long total = (long)firstRes.get("total");
 
         if (firstRes.get("issues") != null) {
-            for (Object issue : (JSONArray) firstRes.get("issues")) {
-                issues.add((JSONObject) issue);
-            }
+            for (Object issue : (JSONArray)firstRes.get("issues"))
+                issues.add((JSONObject)issue);
         }
 
         ExecutorService svc = Executors.newFixedThreadPool(16);
+
         Collection<Future<Void>> futs = new ArrayList<>();
-        for (double i = 0; i < (double) total / 50; i++) {
-            final int ost = (int) i + 1;
+
+        for (double i = 0; i < (double)total / 50; i++) {
+            final int ost = (int)i + 1;
 
             futs.add(svc.submit(new Callable<Void>() {
-                @Override
-                public Void call() throws Exception {
-                    JSONObject jiraRes = executeSearchRequest(jiraApiUrl, jiraUsername, jiraApiPwd, jql, fields, maxResults * ost, maxResults);
+                @Override public Void call() throws Exception {
+                    JSONObject jiraRes = executeSearchRequest(jiraApiUrl, jiraUsername, jiraApiPwd, jql,
+                        fields, maxResults * ost, maxResults);
 
-                    if ((long) jiraRes.get("total") != total)
+                    if ((long)jiraRes.get("total") != total)
                         throw new HttpException("Total count of issues changed, please restart report");
 
                     if (jiraRes.get("issues") != null) {
-                        for (Object issue : (JSONArray) jiraRes.get("issues")) {
-                            issues.add((JSONObject) issue);
-                        }
+                        for (Object issue : (JSONArray)jiraRes.get("issues"))
+                            issues.add((JSONObject)issue);
                     }
 
                     return null;
@@ -301,13 +307,16 @@ public class ReleaseReportGenerator {
         try {
             for (Future<Void> fut : futs)
                 fut.get();
-        } catch (InterruptedException ignore) {
+        }
+        catch (InterruptedException ignore) {
             Thread.currentThread().interrupt();
-        } catch (ExecutionException ex) {
+        }
+        catch (ExecutionException ex) {
             throw new HttpException(ex.toString());
         }
-
-        svc.shutdown();
+        finally {
+            svc.shutdown();
+        }
 
         return issues;
     }
@@ -322,8 +331,10 @@ public class ReleaseReportGenerator {
      * @return JSONObject with jira response
      * @throws HttpException On search failed
      */
-    private static JSONObject executeSearchRequest(String jiraApiUrl, String jiraUsername, String jiraPwd, String jql, String[] fields, int startAt, int maxResults) throws HttpException, ParseException {
+    private static JSONObject executeSearchRequest(String jiraApiUrl, String jiraUsername, String jiraPwd, String jql,
+        String[] fields, int startAt, int maxResults) throws HttpException, ParseException {
         JSONObject data = new JSONObject();
+
         data.put("jql", jql);
         data.put("fields", Arrays.asList(fields));
         data.put("startAt", startAt);
@@ -332,12 +343,12 @@ public class ReleaseReportGenerator {
         JSONParser parser = new JSONParser();
 
         if (!jiraApiUrl.endsWith("/"))
-            jiraApiUrl+= "/";
+            jiraApiUrl += "/";
 
         HttpRequestBase req = buildRequestWithData("POST", jiraApiUrl + "search", jiraUsername, jiraPwd,
             data.toString(), ContentType.APPLICATION_JSON);
 
-        return (JSONObject) parser.parse(executeRequest(req));
+        return (JSONObject)parser.parse(executeRequest(req));
     }
 
     /**
@@ -347,7 +358,7 @@ public class ReleaseReportGenerator {
      * @return String read from HttpResponse
      * @throws HttpException If status code not in (200, 201, 204) or IOException caught on execute or read response
      */
-    private static String executeRequest(HttpRequestBase req) throws HttpException{
+    private static String executeRequest(HttpRequestBase req) throws HttpException {
         int statusCode;
         HttpResponse httpRes;
         HttpClient client = HttpClientBuilder.create().build();
@@ -360,14 +371,15 @@ public class ReleaseReportGenerator {
 
             if (statusCode != 204) {
                 BufferedReader br = new BufferedReader(
-                        new InputStreamReader((httpRes.getEntity().getContent())));
+                    new InputStreamReader((httpRes.getEntity().getContent())));
 
                 String line;
 
                 while ((line = br.readLine()) != null)
                     res.append(line);
             }
-        } catch (IOException e) {
+        }
+        catch (IOException e) {
             throw new HttpException(String.format("IOException caught on read request response. Message: %s", e.getMessage()));
         }
 
@@ -387,7 +399,8 @@ public class ReleaseReportGenerator {
      * @return HttpRequestBase for execute
      * @throws HttpException On bad request type
      */
-    private static HttpRequestBase buildRequest(String type, String url, String username, String pwd) throws HttpException {
+    private static HttpRequestBase buildRequest(String type, String url, String username,
+        String pwd) throws HttpException {
         HttpRequestBase httpReq = new HttpGet(url);
 
         switch (type.toUpperCase()) {
@@ -424,13 +437,14 @@ public class ReleaseReportGenerator {
      * @return HttpRequestBase for execute
      * @throws HttpException On bad request type
      */
-    private static HttpRequestBase buildRequestWithData(String type, String url, String username, String pwd, String data, ContentType contentType) throws HttpException {
+    private static HttpRequestBase buildRequestWithData(String type, String url, String username, String pwd,
+        String data, ContentType contentType) throws HttpException {
         HttpRequestBase httpReq = buildRequest(type, url, username, pwd);
 
         if (type.toUpperCase().equals("GET") || type.toUpperCase().equals("DELETE"))
             throw new HttpException("GET and DELETE requests can't contains data");
         else
-            setRequestEntity((HttpEntityEnclosingRequestBase) httpReq, data, contentType);
+            setRequestEntity((HttpEntityEnclosingRequestBase)httpReq, data, contentType);
 
         return httpReq;
     }
@@ -444,7 +458,7 @@ public class ReleaseReportGenerator {
      */
     private static void setAuthenticationHeader(HttpRequestBase httpReq, String username, String pwd) {
         httpReq.setHeader("Authorization",
-                "Basic " + new String(Base64.encodeBase64((username + ":" + pwd).getBytes(Charset.forName("ISO-8859-1")))));
+            "Basic " + new String(Base64.encodeBase64((username + ":" + pwd).getBytes(Charset.forName("ISO-8859-1")))));
     }
 
     /**
@@ -471,11 +485,12 @@ public class ReleaseReportGenerator {
     private static String getFieldFromJsonByPattern(JSONObject jsonObject, String fieldName, String regex) {
         String[] fArray = fieldName.split("\\.");
         String retval = null;
+
         for (int i = 0; i < fArray.length; i++) {
-            if (i != fArray.length -1)
-                jsonObject = (JSONObject) jsonObject.get(fArray[i]);
+            if (i != fArray.length - 1)
+                jsonObject = (JSONObject)jsonObject.get(fArray[i]);
             else
-                retval = (String) jsonObject.get(fArray[i]);
+                retval = (String)jsonObject.get(fArray[i]);
         }
 
         if (regex == null)
@@ -486,6 +501,7 @@ public class ReleaseReportGenerator {
 
         Pattern ptrn = Pattern.compile(regex);
         Matcher matcher = ptrn.matcher(retval);
+
         if (matcher.find())
             return matcher.group(1);
 
