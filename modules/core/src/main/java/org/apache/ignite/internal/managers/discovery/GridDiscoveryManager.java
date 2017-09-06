@@ -2392,15 +2392,15 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     lastChk = now;
 
                     if (!segValid) {
-                        Collection<ClusterNode> locNodeOnlyTopology = Collections.singleton(locNode);
-
                         ClusterNode node = getSpi().getLocalNode();
+
+                        Collection<ClusterNode> locNodeOnlyTop = Collections.singleton(node);
 
                         discoWrk.addEvent(EVT_NODE_SEGMENTED,
                             AffinityTopologyVersion.NONE,
                             node,
-                            createDiscoCache(AffinityTopologyVersion.NONE, null, node, locNodeOnlyTopology),
-                            locNodeOnlyTopology,
+                            createDiscoCache(AffinityTopologyVersion.NONE, null, node, locNodeOnlyTop),
+                            locNodeOnlyTop,
                             null);
 
                         lastSegChkRes.set(false);
