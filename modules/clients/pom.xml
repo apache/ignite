@@ -173,11 +173,9 @@
                                 <phase>prepare-package</phase>
                                 <configuration>
                                     <target>
-                                        <exec executable="${doxygen.exec}" searchpath="true" dir="../platforms/dotnet/">
-                                            <arg value="Apache.Ignite.dxg" />
+                                        <exec executable="${docfx.exec}" searchpath="true" dir="../platforms/dotnet/docfx/">
+                                            <arg value="Apache.Ignite.docfx.json" />
                                         </exec>
-
-                                        <copy file="../../assembly/docfiles/ignite_logo.png" todir="target/dotnetdoc/html" />
                                     </target>
                                 </configuration>
                             </execution>
