@@ -274,7 +274,7 @@ public class GridLogThrottle {
 
             long curTs = U.currentTimeMillis();
 
-            if (loggedTs == null || loggedTs <= (curTs)) {
+            if (loggedTs == null || loggedTs <= (curTs - throttleTimeout)) {
                 errors.remove(key);
             }
         }
