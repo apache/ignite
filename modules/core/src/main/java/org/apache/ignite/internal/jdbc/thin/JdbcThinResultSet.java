@@ -100,6 +100,9 @@ public class JdbcThinResultSet implements ResultSet {
     /** Update count. */
     private long updCnt;
 
+    /** Close statement after close result set count. */
+    private boolean closeStmt;
+
     /** Jdbc metadata. Cache the JDBC object on the first access */
     private JdbcThinResultSetMetadata jdbcMeta;
 
@@ -139,10 +142,11 @@ public class JdbcThinResultSet implements ResultSet {
      * @param isQuery Is Result ser for Select query.
      * @param autoClose Is automatic close of server cursors enabled.
      * @param updCnt Update count.
+     * @param closeStmt Close statement on the result set close.
      */
     @SuppressWarnings("OverlyStrongTypeCast")
     JdbcThinResultSet(JdbcThinStatement stmt, long qryId, int fetchSize, boolean finished,
-        List<List<Object>> rows, boolean isQuery, boolean autoClose, long updCnt) {
+        List<List<Object>> rows, boolean isQuery, boolean autoClose, long updCnt, boolean closeStmt) {
         assert stmt != null;
         assert fetchSize > 0;
 
@@ -152,6 +156,7 @@ public class JdbcThinResultSet implements ResultSet {
         this.finished = finished;
         this.isQuery = isQuery;
         this.autoClose = autoClose;
+        this.closeStmt = closeStmt;
 
         if (isQuery) {
             this.fetchSize = fetchSize;
@@ -208,7 +213,17 @@ public class JdbcThinResultSet implements ResultSet {
 
     /** {@inheritDoc} */
     @Override public void close() throws SQLException {
-        if (closed || stmt == null || stmt.connection().isClosed())
+        if (closeStmt)
+            stmt.close();
+
+        close0();
+    }
+
+    /**
+     * @throws SQLException On error.
+     */
+    void close0() throws SQLException {
+        if (isClosed())
             return;
 
         try {
@@ -1270,7 +1285,7 @@ public class JdbcThinResultSet implements ResultSet {
 
     /** {@inheritDoc} */
     @Override public boolean isClosed() throws SQLException {
-        return stmt.isClosed() || closed;
+        return closed || stmt == null || stmt.connection().isClosed();
     }
 
     /** {@inheritDoc} */
@@ -1732,6 +1747,13 @@ public class JdbcThinResultSet implements ResultSet {
      */
     long updatedCount() {
         return updCnt;
+    }
+
+    /**
+     * @param closeStmt Close statement on this result set close.
+     */
+    void closeStatement(boolean closeStmt) {
+        this.closeStmt = closeStmt;
     }
 
     /**
