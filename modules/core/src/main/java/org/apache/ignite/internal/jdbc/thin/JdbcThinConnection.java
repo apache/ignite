@@ -264,7 +264,7 @@ public class JdbcThinConnection implements Connection {
         ensureNotClosed();
 
         if (autoCommit)
-            throw new SQLException("Manual transaction commit is prohibited in auto-commit mode.");
+            throw new SQLException("Transaction cannot be committed explicitly in auto-commit mode.");
 
         LOG.warning("Transactions are not supported.");
     }
@@ -274,7 +274,7 @@ public class JdbcThinConnection implements Connection {
         ensureNotClosed();
 
         if (autoCommit)
-            throw new SQLException("Manual transaction rollback is prohibited in auto-commit mode.");
+            throw new SQLException("Transaction cannot rollback in auto-commit mode.");
 
         LOG.warning("Transactions are not supported.");
     }
@@ -413,7 +413,7 @@ public class JdbcThinConnection implements Connection {
         ensureNotClosed();
 
         if (autoCommit)
-            throw new SQLException("Savepoints are prohibited in auto-commit mode.");
+            throw new SQLException("Savepoint cannot be set in auto-commit mode.");
 
         throw new SQLFeatureNotSupportedException("Savepoints are not supported.");
     }
@@ -426,7 +426,7 @@ public class JdbcThinConnection implements Connection {
             throw new SQLException("Savepoint name cannot be null.");
 
         if (autoCommit)
-            throw new SQLException("Savepoints are prohibited in auto-commit mode.");
+            throw new SQLException("Savepoint cannot be set in auto-commit mode.");
 
         throw new SQLFeatureNotSupportedException("Savepoints are not supported.");
     }

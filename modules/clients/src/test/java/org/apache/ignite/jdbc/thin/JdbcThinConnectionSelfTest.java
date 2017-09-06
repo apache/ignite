@@ -540,7 +540,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
                     }
                 },
                 SQLException.class,
-                "Invalid arguments"
+                "SQL string cannot be null"
             );
 
             final String sqlText = "select * from test where param = ?";
@@ -589,7 +589,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
                                 }
                             },
                             SQLException.class,
-                            "Invalid arguments"
+                            "SQL string cannot be null"
                         );
 
                         continue;
@@ -653,7 +653,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
                                     }
                                 },
                                 SQLException.class,
-                                "Invalid arguments"
+                                "SQL string cannot be null"
                             );
 
                             continue;
@@ -787,7 +787,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
                     }
                 },
                 SQLException.class,
-                "Invalid arguments"
+                "SQL string cannot be null"
             );
 
             final String sqlText = "select * from test";
@@ -848,7 +848,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
                     }
                 },
                 SQLException.class,
-                "Auto-commit mode"
+                "Transaction cannot be committed explicitly in auto-commit mode"
             );
 
             conn.setAutoCommit(false);
@@ -883,7 +883,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
                     }
                 },
                 SQLException.class,
-                "Auto-commit mode"
+                "Transaction cannot rollback in auto-commit mode"
             );
 
             conn.setAutoCommit(false);
@@ -1189,7 +1189,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
                     }
                 },
                 SQLException.class,
-                "Auto-commit mode"
+                "Savepoint cannot be set in auto-commit mode"
             );
 
             conn.setAutoCommit(false);
@@ -1228,7 +1228,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
                     }
                 },
                 SQLException.class,
-                "Invalid savepoint name"
+                "Savepoint name cannot be null"
             );
 
             final String name = "savepoint";
@@ -1243,7 +1243,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
                     }
                 },
                 SQLException.class,
-                "Auto-commit mode"
+                "Savepoint cannot be set in auto-commit mode"
             );
 
             conn.setAutoCommit(false);
@@ -1336,7 +1336,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
                     }
                 },
                 SQLException.class,
-                "Invalid savepoint"
+                "Savepoint cannot be null"
             );
 
             final Savepoint savepoint = getFakeSavepoint();
@@ -1569,7 +1569,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
                     }
                 },
                 SQLException.class,
-                "Invalid type name"
+                "Type name cannot be null"
             );
 
             // Unsupported
@@ -1603,7 +1603,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
                     }
                 },
                 SQLException.class,
-                "Invalid type name"
+                "Type name cannot be null"
             );
 
             final String typeName = "employee";
@@ -1632,19 +1632,6 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     public void testGetSetSchema() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
             assertEquals("PUBLIC", conn.getSchema());
-
-            // Invalid schema
-            GridTestUtils.assertThrows(log,
-                new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        conn.setSchema(null);
-
-                        return null;
-                    }
-                },
-                SQLException.class,
-                "Invalid schema value"
-            );
 
             final String schema = "test";
 
@@ -1683,7 +1670,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
                     }
                 },
                 SQLException.class,
-                "Invalid executor value"
+                "Executor cannot be null"
             );
 
             final Executor executor = Executors.newFixedThreadPool(1);
@@ -1716,7 +1703,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
                     }
                 },
                 SQLException.class,
-                "Invalid executor value"
+                "Executor cannot be null"
             );
 
             //Invalid timeout
@@ -1729,7 +1716,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
                     }
                 },
                 SQLException.class,
-                "Invalid timeout value"
+                "Network timeout cannot be negative"
             );
 
             conn.setNetworkTimeout(executor, timeout);
