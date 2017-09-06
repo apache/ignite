@@ -661,7 +661,7 @@ public class PlatformServices extends PlatformAbstractTarget {
 
         /** <inheritDoc /> */
         @Override public void write(BinaryRawWriterEx writer, Object obj, Throwable err) {
-            // TODO:
+            PlatformUtils.writeInvocationResult(writer, obj, err);
         }
 
         /** <inheritDoc /> */
