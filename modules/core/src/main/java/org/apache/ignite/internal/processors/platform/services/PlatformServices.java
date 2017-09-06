@@ -105,14 +105,14 @@ public class PlatformServices extends PlatformAbstractTarget {
     private static final CopyOnWriteConcurrentMap<T3<Class, String, Integer>, Method> SVC_METHODS
         = new CopyOnWriteConcurrentMap<>();
 
+    /** Future result writer. */
+    private static final PlatformFutureUtils.Writer RESULT_WRITER = new ServiceDeploymentResultWriter();
+
     /** */
     private final IgniteServices services;
 
     /** Server keep binary flag. */
     private final boolean srvKeepBinary;
-
-    /** Future result writer. */
-    private final ServiceDeploymentResultWriter resultWriter;
 
     /**
      * Ctor.
@@ -128,7 +128,6 @@ public class PlatformServices extends PlatformAbstractTarget {
 
         this.services = services;
         this.srvKeepBinary = srvKeepBinary;
-        resultWriter = new ServiceDeploymentResultWriter(platformCtx);
     }
 
     /**
@@ -150,13 +149,13 @@ public class PlatformServices extends PlatformAbstractTarget {
         throws IgniteCheckedException {
         switch (type) {
             case OP_DOTNET_DEPLOY_ASYNC: {
-                readAndListenFuture(reader, dotnetDeployAsync(reader, services), resultWriter);
+                readAndListenFuture(reader, dotnetDeployAsync(reader, services), RESULT_WRITER);
 
                 return TRUE;
             }
 
             case OP_DOTNET_DEPLOY_MULTIPLE_ASYNC: {
-                readAndListenFuture(reader, dotnetDeployMultipleAsync(reader), resultWriter);
+                readAndListenFuture(reader, dotnetDeployMultipleAsync(reader), RESULT_WRITER);
 
                 return TRUE;
             }
@@ -645,20 +644,6 @@ public class PlatformServices extends PlatformAbstractTarget {
      * Writes an EventBase.
      */
     private static class ServiceDeploymentResultWriter implements PlatformFutureUtils.Writer {
-        /** */
-        private final PlatformContext platformCtx;
-
-        /**
-         * Constructor.
-         *
-         * @param platformCtx Context.
-         */
-        public ServiceDeploymentResultWriter(PlatformContext platformCtx) {
-            assert platformCtx != null;
-
-            this.platformCtx = platformCtx;
-        }
-
         /** <inheritDoc /> */
         @Override public void write(BinaryRawWriterEx writer, Object obj, Throwable err) {
             PlatformUtils.writeInvocationResult(writer, obj, err);
