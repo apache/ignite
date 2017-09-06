@@ -17,12 +17,17 @@
 
 package org.apache.ignite.internal.processors.cache.index;
 
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMode;
+
 /**
- * Test to check {@code ALTER TABLE} operations started from client node.
+ * Test to check concurrent operations on dynamic columns on TRANSACTIONAL PARTITIONED cache.
  */
-public class H2DynamicColumnsClientBasicSelfTest extends H2DynamicColumnsAbstractBasicSelfTest {
-    /** {@inheritDoc} */
-    @Override protected int nodeIndex() {
-        return CLI_IDX;
+public class DynamicColumnsConcurrentTransactionalPartitionedSelfTest extends DynamicColumnsAbstractConcurrentSelfTest {
+    /**
+     * Constructor.
+     */
+    public DynamicColumnsConcurrentTransactionalPartitionedSelfTest() {
+        super(CacheMode.PARTITIONED, CacheAtomicityMode.TRANSACTIONAL);
     }
 }
