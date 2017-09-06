@@ -226,7 +226,7 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
 
                 return null;
             }
-        }, SQLException.class, "Cannot convert [val=] to boolean");
+        }, SQLException.class, "Cannot convert to boolean: ");
 
         GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
@@ -237,7 +237,7 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
 
                 return null;
             }
-        }, SQLException.class, "Cannot convert [val=qwe] to boolean");
+        }, SQLException.class, "Cannot convert to boolean: qwe");
     }
 
     /**
