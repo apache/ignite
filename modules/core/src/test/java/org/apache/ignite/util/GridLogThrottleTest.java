@@ -202,7 +202,7 @@ public class GridLogThrottleTest extends GridCommonAbstractTest {
         assertEquals(1, LT.errorsSize());
 
         Thread.sleep(LT.throttleTimeout() + 200);
-        info("Slept for throttle timeout: " + (LT.throttleTimeout() + 50));
+        info("Slept for throttle timeout: " + (LT.throttleTimeout() + 200));
 
         assertEquals(0, LT.errorsSize());
 
@@ -212,7 +212,7 @@ public class GridLogThrottleTest extends GridCommonAbstractTest {
         assertEquals(1, LT.errorsSize());
 
         Thread.sleep(LT.throttleTimeout() + 200);
-        info("Set new throttle timeout and slept : " + LT.throttleTimeout() + 15);
+        info("Set new throttle timeout and slept : " + LT.throttleTimeout() + 200);
 
         assertEquals(0, LT.errorsSize());
     }
