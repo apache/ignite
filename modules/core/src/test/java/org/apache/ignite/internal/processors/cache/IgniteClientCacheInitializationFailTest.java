@@ -49,6 +49,7 @@ import org.apache.ignite.internal.processors.query.GridQueryIndexing;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
+import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.QueryIndexDescriptorImpl;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
@@ -281,6 +282,13 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
         @Override public void dynamicIndexDrop(String spaceName, String idxName,
             boolean ifExists) throws IgniteCheckedException {
             // No-op
+        }
+
+        /** {@inheritDoc} */
+        @Override public void dynamicAddColumn(String schemaName, String tblName, List<QueryField> cols,
+                                               boolean ifTblExists, boolean ifColNotExists)
+            throws IgniteCheckedException {
+            // No-op.
         }
 
         /** {@inheritDoc} */

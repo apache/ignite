@@ -165,6 +165,21 @@ public interface GridQueryIndexing {
     public void dynamicIndexDrop(String schemaName, String idxName, boolean ifExists) throws IgniteCheckedException;
 
     /**
+     * Add columns to dynamic table.
+     *
+     * @param schemaName Schema name.
+     * @param tblName Table name.
+     * @param cols Columns to add.
+     * @param ifTblExists Ignore operation if target table does not exist (instead of throwing an error).
+     * @param ifColNotExists Ignore operation if column already exists (instead of throwing an error) - is honored only
+     *     for single column case.
+     * @throws IgniteCheckedException If failed.
+     */
+    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
+    public void dynamicAddColumn(String schemaName, String tblName, List<QueryField> cols, boolean ifTblExists,
+        boolean ifColNotExists) throws IgniteCheckedException;
+
+    /**
      * Registers cache.
      *
      * @param cacheName Cache name.
