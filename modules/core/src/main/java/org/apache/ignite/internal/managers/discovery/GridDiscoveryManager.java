@@ -1973,12 +1973,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     @NotNull private DiscoCache createDiscoCache(ClusterNode loc, Collection<ClusterNode> topSnapshot) {
         assert topSnapshot.contains(loc);
 
-        if (!topSnapshot.contains(loc)) {
-            topSnapshot = new TreeSet<>(topSnapshot);
-
-            topSnapshot.add(loc);
-        }
-
         HashSet<UUID> alives = U.newHashSet(topSnapshot.size());
         HashMap<UUID, ClusterNode> nodeMap = U.newHashMap(topSnapshot.size());
 
@@ -2182,9 +2176,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     lastChk = now;
 
                     if (!segValid) {
-                        Collection<ClusterNode> locNodeOnlyTopology = Collections.singleton(locNode);
-
                         ClusterNode node = getSpi().getLocalNode();
+
+                        Collection<ClusterNode> locNodeOnlyTopology = Collections.singleton(node);
 
                         discoWrk.addEvent(EVT_NODE_SEGMENTED,
                             AffinityTopologyVersion.NONE,
