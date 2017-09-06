@@ -15,11 +15,10 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.service;
+package org.apache.ignite.services;
 
 import java.util.Collection;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.services.ServiceConfiguration;
 import org.jetbrains.annotations.Nullable;
 
 /**

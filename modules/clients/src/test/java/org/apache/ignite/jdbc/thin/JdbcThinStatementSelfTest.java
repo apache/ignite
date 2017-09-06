@@ -300,6 +300,64 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testCloseOnCompletionAfterQuery() throws Exception {
+        assert !stmt.isCloseOnCompletion() : "Invalid default closeOnCompletion";
+
+        ResultSet rs0 = stmt.executeQuery(SQL);
+
+        ResultSet rs1 = stmt.executeQuery(SQL);
+
+        assert rs0.isClosed() : "Result set must be closed implicitly";
+
+        assert !stmt.isClosed() : "Statement must not be closed";
+
+        rs1.close();
+
+        assert !stmt.isClosed() : "Statement must not be closed";
+
+        ResultSet rs2 = stmt.executeQuery(SQL);
+
+        stmt.closeOnCompletion();
+
+        assert stmt.isCloseOnCompletion() : "Invalid closeOnCompletion";
+
+        rs2.close();
+
+        assert stmt.isClosed() : "Statement must be closed";
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCloseOnCompletionBeforeQuery() throws Exception {
+        assert !stmt.isCloseOnCompletion() : "Invalid default closeOnCompletion";
+
+        ResultSet rs0 = stmt.executeQuery(SQL);
+
+        ResultSet rs1 = stmt.executeQuery(SQL);
+
+        assert rs0.isClosed() : "Result set must be closed implicitly";
+
+        assert !stmt.isClosed() : "Statement must not be closed";
+
+        rs1.close();
+
+        assert !stmt.isClosed() : "Statement must not be closed";
+
+        stmt.closeOnCompletion();
+
+        ResultSet rs2 = stmt.executeQuery(SQL);
+
+        assert stmt.isCloseOnCompletion() : "Invalid closeOnCompletion";
+
+        rs2.close();
+
+        assert stmt.isClosed() : "Statement must be closed";
+    }
+
+    /**
      * Person.
      */
     @SuppressWarnings("UnusedDeclaration")
@@ -309,11 +367,11 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
         private final int id;
 
         /** First name. */
-        @QuerySqlField(index = false)
+        @QuerySqlField
         private final String firstName;
 
         /** Last name. */
-        @QuerySqlField(index = false)
+        @QuerySqlField
         private final String lastName;
 
         /** Age. */
