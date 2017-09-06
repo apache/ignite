@@ -17,40 +17,40 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
+import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+
 /**
  * SQL listener connection context.
  */
-public class SqlListenerConnectionContext {
-    /** Request handler. */
-    private final SqlListenerRequestHandler handler;
-
-    /** Message parser. */
-    private final SqlListenerMessageParser parser;
+public interface SqlListenerConnectionContext {
+    /**
+     * @param ver Version to check.
+     * @return {@code true} if version is supported.
+     */
+    boolean isVersionSupported(SqlListenerProtocolVersion ver);
 
     /**
-     * Constructor.
-     *
-     * @param handler Handler.
-     * @param parser Parser.
+     * @return Current context version.
      */
-    public SqlListenerConnectionContext(SqlListenerRequestHandler handler, SqlListenerMessageParser parser) {
-        this.handler = handler;
-        this.parser = parser;
-    }
+    SqlListenerProtocolVersion currentVersion();
+
+    /**
+     * Initialize from handshake message.
+     *
+     * @param ver Protocol version.
+     * @param reader Reader set to the configuration part of the handshake message.
+     */
+    void initializeFromHandshake(SqlListenerProtocolVersion ver, BinaryReaderExImpl reader);
 
     /**
      * Handler getter.
      * @return Request handler for the connection.
      */
-    public SqlListenerRequestHandler handler() {
-        return handler;
-    }
+    SqlListenerRequestHandler handler();
 
     /**
      * Parser getter
      * @return Message parser for the connection.
      */
-    public SqlListenerMessageParser parser() {
-        return parser;
-    }
+    SqlListenerMessageParser parser();
 }
