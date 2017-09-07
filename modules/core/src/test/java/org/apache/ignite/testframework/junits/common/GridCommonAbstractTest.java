@@ -1109,7 +1109,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                             key = (T)v;
                         }
                         else if (key instanceof IncrementalTestObject)
-                            key = (T)((IncrementalTestObject)key).increment(i);
+                            key = (T)((IncrementalTestObject)key).increment(1);
                         else {
                             throw new IgniteException("Unable to increment objects of class " +
                                 key.getClass().getName() + ".");
