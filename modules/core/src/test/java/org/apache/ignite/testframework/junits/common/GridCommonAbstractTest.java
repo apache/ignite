@@ -60,8 +60,8 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityFunctionContextImpl;
@@ -97,6 +97,8 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestNode;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.IncrementalTestObject;
+import org.apache.ignite.testframework.IncrementalTestObjectImpl;
 import org.apache.ignite.testframework.junits.GridAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -106,7 +108,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
-import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -1054,20 +1055,33 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Collection of keys for which given cache is primary.
      */
     @SuppressWarnings("unchecked")
-    protected List<Integer> findKeys(IgniteCache<?, ?> cache, final int cnt, final int startFrom, final int type) {
+    protected List<IncrementalTestObject> primaryKeys(IgniteCache<?, ?> cache, final int cnt,
+        final IncrementalTestObject startFrom) {
+        return findKeys(cache, cnt, startFrom, 0);
+    }
+
+    /**
+     * @param cache Cache.
+     * @param cnt Keys count.
+     * @param startFrom Start value for keys search.
+     * @return Collection of keys for which given cache is primary.
+     */
+    @SuppressWarnings("unchecked")
+    protected <T> List<T> findKeys(IgniteCache<?, ?> cache, final int cnt, final T startFrom, final int type) {
         assert cnt > 0 : cnt;
 
-        final List<Integer> found = new ArrayList<>(cnt);
+        final List<T> found = new ArrayList<>(cnt);
 
         final ClusterNode locNode = localNode(cache);
 
-        final Affinity<Integer> aff = (Affinity<Integer>)affinity(cache);
+        final Affinity<T> aff = (Affinity<T>)affinity(cache);
 
         try {
             GridTestUtils.waitForCondition(new PA() {
                 @Override public boolean apply() {
-                    for (int i = startFrom; i < startFrom + 100_000; i++) {
-                        Integer key = i;
+                    T key = startFrom;
+
+                    for (int i = 0; i < 100_000; i++) {
 
                         boolean ok;
 
@@ -1090,6 +1104,8 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                             if (found.size() == cnt)
                                 return true;
                         }
+
+                        key = (T)incrementAndGet(key, 1);
                     }
 
                     return false;
@@ -1104,6 +1120,23 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
             throw new IgniteException("Unable to find " + cnt + " requied keys.");
 
         return found;
+    }
+
+    /**
+     * @param obj Object. Must be {@link Integer} or implementation of {@link IncrementalTestObject}
+     * @return incremented Object.
+     */
+    protected Object incrementAndGet(Object obj, int i) {
+        if(obj instanceof Integer){
+            Integer v = (Integer)obj;
+
+            return v + i;
+        }
+        else if (obj instanceof IncrementalTestObject)
+            return ((IncrementalTestObject)obj).increment(i);
+        else
+            throw new IgniteException("Unable to increment objects of class " + obj.getClass().getName() + ".");
+
     }
 
     /**
@@ -1131,6 +1164,15 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     /**
      * @param cache Cache.
      * @param cnt Keys count.
+     * @return Collection of keys for which given cache is primary.
+     */
+    protected List<IncrementalTestObject> primaryKeysCustom(IgniteCache<?, ?> cache, int cnt) {
+        return primaryKeys(cache, cnt, new IncrementalTestObjectImpl(1));
+    }
+
+    /**
+     * @param cache Cache.
+     * @param cnt Keys count.
      * @param startFrom Start value for keys search.
      * @return Collection of keys for which given cache is backup.
      */
@@ -1143,11 +1185,36 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param cache Cache.
      * @param cnt Keys count.
      * @param startFrom Start value for keys search.
+     * @return Collection of keys for which given cache is backup.
+     */
+    @SuppressWarnings("unchecked")
+    protected List<IncrementalTestObject> backupKeys(IgniteCache<?, ?> cache, int cnt,
+        IncrementalTestObject startFrom) {
+        return findKeys(cache, cnt, startFrom, 1);
+    }
+
+    /**
+     * @param cache Cache.
+     * @param cnt Keys count.
+     * @param startFrom Start value for keys search.
      * @return Collection of keys for which given cache is neither primary nor backup.
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
     protected List<Integer> nearKeys(IgniteCache<?, ?> cache, int cnt, int startFrom)
+        throws IgniteCheckedException {
+        return findKeys(cache, cnt, startFrom, 2);
+    }
+
+    /**
+     * @param cache Cache.
+     * @param cnt Keys count.
+     * @param startFrom Start value for keys search.
+     * @return Collection of keys for which given cache is neither primary nor backup.
+     * @throws IgniteCheckedException If failed.
+     */
+    @SuppressWarnings("unchecked")
+    protected List<IncrementalTestObject> nearKeys(IgniteCache<?, ?> cache, int cnt, IncrementalTestObject startFrom)
         throws IgniteCheckedException {
         return findKeys(cache, cnt, startFrom, 2);
     }
@@ -1235,6 +1302,16 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
     /**
      * @param cache Cache.
+     * @return Key for which given cache is primary.
+     * @throws IgniteCheckedException If failed.
+     */
+    protected IncrementalTestObject primaryKeyCustom(IgniteCache<?, ?> cache)
+        throws IgniteCheckedException {
+        return primaryKeys(cache, 1, new IncrementalTestObjectImpl(1)).get(0);
+    }
+
+    /**
+     * @param cache Cache.
      * @return Keys for which given cache is backup.
      * @throws IgniteCheckedException If failed.
      */
@@ -1245,12 +1322,32 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
     /**
      * @param cache Cache.
+     * @return Keys for which given cache is backup.
+     * @throws IgniteCheckedException If failed.
+     */
+    protected IncrementalTestObject backupKeyCustom(IgniteCache<?, ?> cache)
+        throws IgniteCheckedException {
+        return backupKeys(cache, 1, new IncrementalTestObjectImpl(1)).get(0);
+    }
+
+    /**
+     * @param cache Cache.
      * @return Key for which given cache is neither primary nor backup.
      * @throws IgniteCheckedException If failed.
      */
     protected Integer nearKey(IgniteCache<?, ?> cache)
         throws IgniteCheckedException {
         return nearKeys(cache, 1, 1).get(0);
+    }
+
+    /**
+     * @param cache Cache.
+     * @return Key for which given cache is neither primary nor backup.
+     * @throws IgniteCheckedException If failed.
+     */
+    protected IncrementalTestObject nearKeyCustom(IgniteCache<?, ?> cache)
+        throws IgniteCheckedException {
+        return nearKeys(cache, 1, new IncrementalTestObjectImpl(1)).get(0);
     }
 
     /**
