@@ -476,11 +476,11 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
     }
 
     public void testParseBinary() throws IgniteCheckedException {
-
-        final StandaloneGridKernalContext ctx = new StandaloneGridKernalContext(log);
-        ctx.setBinaryMetadataFileStoreDirectory("C:\\projects\\incubator-ignite\\work\\binary_meta\\127_0_0_1_47500");
-        CacheObjectBinaryProcessorImpl processor = new CacheObjectBinaryProcessorImpl(ctx);
-        processor.start();
+        final String consistentId = "127_0_0_1_47500";
+        final File binaryMeta = U.resolveWorkDirectory(U.defaultWorkDirectory(), "binary_meta", false);
+        final File binaryMetaWithConsId = new File(binaryMeta, consistentId);
+        final IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory(log, 4096);
+        final IgniteCacheObjectProcessor processor = factory.binaryProcessor(binaryMetaWithConsId.getAbsolutePath());
 
         byte[] bytes = DatatypeConverter.parseHexBinary(
             "67010B00055724EC162AF496540000005F121E934A00000003000000000C280000004142434445464748494A4142434445464748494A4142434445464748494A4142434445464748494A1882310018AAEF2E001D");

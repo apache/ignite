@@ -131,7 +131,7 @@ public class IgniteWalIteratorFactory {
      * @throws IgniteCheckedException Throws in case of initialization errors.
      */
     public IgniteCacheObjectProcessor binaryProcessor(final String binaryMetadataFileStoreDir) throws IgniteCheckedException {
-        final GridKernalContext ctx = new StandaloneGridKernalContext(log, binaryMetadataFileStoreDir);
+        final GridKernalContext ctx = new StandaloneGridKernalContext(log);
         final CacheObjectBinaryProcessorImpl processor = new CacheObjectBinaryProcessorImpl(ctx);
         processor.setBinaryMetadataFileStoreDir(binaryMetadataFileStoreDir);
         processor.start();
