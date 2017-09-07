@@ -415,21 +415,27 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void testExecuteQueryMultipleResultSets() throws Exception {
-        assert !conn.getMetaData().supportsMultipleResultSets();
+        assert conn.getMetaData().supportsMultipleResultSets();
 
-        fail("https://issues.apache.org/jira/browse/IGNITE-6046");
+        final String sqlText = "select 1; select 2";
 
-        final String sqlText = "select 1; select 1";
+        assert stmt.execute(sqlText);
 
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    return stmt.executeQuery(sqlText);
-                }
-            },
-            SQLException.class,
-            "Multiple result sets"
-        );
+        ResultSet rs = stmt.getResultSet();
+
+        assert rs.next();
+        assert rs.getInt(1) == 1;
+        assert !rs.next();
+
+        assert stmt.getMoreResults();
+
+        rs = stmt.getResultSet();
+
+        assert rs.next();
+        assert rs.getInt(1) == 2;
+        assert !rs.next();
+
+        assert !stmt.getMoreResults();
     }
 
     /**
@@ -946,25 +952,6 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
                 stmt.execute("select 1", new String[] {"a", "b"});
             }
         });
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testCloseOnCompletion() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-5344");
-
-        assert !stmt.isCloseOnCompletion() : "Default value of CloseOnCompletion is invalid";
-
-        stmt.execute("select 1");
-
-        stmt.closeOnCompletion();
-
-        assert stmt.isCloseOnCompletion();
-
-        stmt.getResultSet().close();
-
-        assert stmt.isClosed() : "Must be closed on complete";
     }
 
     /**

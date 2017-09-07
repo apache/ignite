@@ -142,9 +142,9 @@ public class JdbcThinStatement implements Statement {
             else if (res0 instanceof JdbcQueryExecuteMultipleStatementsResult) {
                 JdbcQueryExecuteMultipleStatementsResult res = (JdbcQueryExecuteMultipleStatementsResult)res0;
 
-                resultSets = Collections.emptyList();
-
                 resInfo = res.results();
+
+                resultSets = new ArrayList<>(resInfo.size());
             }
             else
                 throw new SQLException("Unexpected result [res=" + res0 + ']');
@@ -341,12 +341,12 @@ public class JdbcThinStatement implements Statement {
                     JdbcQueryFetchResult res = conn.io().queryFetch(qryId, pageSize);
 
                     rs = new JdbcThinResultSet(this, qryId, pageSize,
-                        res.last(), res.items(), true, conn.io().autoCloseServerCursor(),-1);
+                        res.last(), res.items(), true, conn.io().autoCloseServerCursor(), -1, closeOnCompletion);
                 }
                 else {
                     rs = new JdbcThinResultSet(this, -1, pageSize,
                         true, Collections.<List<Object>>emptyList(), false,
-                        conn.io().autoCloseServerCursor(),resInfo.get(curRes).updateCount());
+                        conn.io().autoCloseServerCursor(),resInfo.get(curRes).updateCount(), closeOnCompletion);
                 }
 
                 resultSets.add(rs);
@@ -369,7 +369,6 @@ public class JdbcThinStatement implements Statement {
         ensureNotClosed();
 
         return getMoreResults(CLOSE_CURRENT_RESULT);
-        return (resInfo != null && curRes < resInfo.size());
     }
 
     /** {@inheritDoc} */
@@ -478,8 +477,16 @@ public class JdbcThinStatement implements Statement {
 
         switch (curr) {
             case CLOSE_CURRENT_RESULT:
+                if (resultSets != null && curRes < resultSets.size())
+                    resultSets.get(curRes - 1).close0();
+
+                break;
+
             case CLOSE_ALL_RESULTS:
-                closeResults();
+                if (resultSets != null) {
+                    for (int i = 0; i < curRes; ++i)
+                        resultSets.get(i).close0();
+                }
 
                 break;
 
@@ -490,7 +497,7 @@ public class JdbcThinStatement implements Statement {
                 throw new SQLException("Invalid 'current' parameter.");
         }
 
-        return false;
+        return (resInfo != null && curRes < resInfo.size());
     }
 
     /** {@inheritDoc} */
@@ -612,8 +619,10 @@ public class JdbcThinStatement implements Statement {
 
         closeOnCompletion = true;
 
-        if (rs != null)
-            rs.closeStatement(true);
+        if (resultSets != null) {
+            for (JdbcThinResultSet rs : resultSets)
+                rs.closeStatement(true);
+        }
     }
 
     /** {@inheritDoc} */

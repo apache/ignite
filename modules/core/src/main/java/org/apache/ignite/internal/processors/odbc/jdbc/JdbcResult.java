@@ -142,6 +142,11 @@ public class JdbcResult implements JdbcRawBinarylizable {
 
                 break;
 
+            case QRY_EXEC_MULT:
+                res = new JdbcQueryExecuteMultipleStatementsResult();
+
+                break;
+
             default:
                 throw new IgniteException("Unknown SQL listener request ID: [request ID=" + resId + ']');
         }
