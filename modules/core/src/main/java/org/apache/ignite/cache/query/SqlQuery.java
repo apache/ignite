@@ -17,6 +17,7 @@
 
 package org.apache.ignite.cache.query;
 
+import java.util.Collection;
 import java.util.concurrent.TimeUnit;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
@@ -122,6 +123,18 @@ public final class SqlQuery<K, V> extends Query<Cache.Entry<K, V>> {
      */
     public SqlQuery<K, V> setArgs(Object... args) {
         this.args = args;
+
+        return this;
+    }
+
+    /**
+     * Sets SQL arguments.
+     *
+     * @param args SQL arguments.
+     * @return {@code this} For chaining.
+     */
+    public SqlQuery<K, V> setArgs(Collection args) {
+        this.args = args.toArray(new Object[args.size()]);
 
         return this;
     }
