@@ -307,7 +307,7 @@ namespace ignite
         // Even if the call has failed environment are going to be released by the Java.
         envTarget.release();
 
-        if (!javaRef)
+        if (!javaRef || jniErr.code != java::IGNITE_JNI_ERR_SUCCESS)
         {
             IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
 
