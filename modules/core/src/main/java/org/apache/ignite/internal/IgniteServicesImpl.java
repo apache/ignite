@@ -151,17 +151,17 @@ public class IgniteServicesImpl extends AsyncSupportAdapter implements IgniteSer
     @Override public void deploy(ServiceConfiguration cfg) {
         A.notNull(cfg, "cfg");
 
-        deployAll(Collections.singleton(cfg), false);
+        deployAll(Collections.singleton(cfg));
     }
 
     /** {@inheritDoc} */
-    @Override public void deployAll(Collection<ServiceConfiguration> cfgs, boolean allOrNone) {
+    @Override public void deployAll(Collection<ServiceConfiguration> cfgs) {
         A.notNull(cfgs, "cfgs");
 
         guard();
 
         try {
-            saveOrGet(ctx.service().deployAll(cfgs, allOrNone));
+            saveOrGet(ctx.service().deployAll(cfgs));
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
