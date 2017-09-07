@@ -89,10 +89,12 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
         @NotNull File walFilesDir,
         @NotNull IgniteLogger log,
         @NotNull GridCacheSharedContext sharedCtx,
-        @NotNull FileIOFactory ioFactory) throws IgniteCheckedException {
+        @NotNull FileIOFactory ioFactory,
+        int serializerVersion
+        ) throws IgniteCheckedException {
         super(log,
             sharedCtx,
-            new RecordV1Serializer(sharedCtx),
+            FileWriteAheadLogManager.forVersion(sharedCtx, serializerVersion),
             ioFactory,
             BUF_SIZE);
         init(walFilesDir, false, null);
@@ -112,11 +114,12 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
             @NotNull IgniteLogger log,
             @NotNull GridCacheSharedContext sharedCtx,
             @NotNull FileIOFactory ioFactory,
+            int serializerVersion,
             boolean workDir,
             @NotNull File... walFiles) throws IgniteCheckedException {
         super(log,
             sharedCtx,
-            new RecordV1Serializer(sharedCtx),
+            FileWriteAheadLogManager.forVersion(sharedCtx, serializerVersion),
             ioFactory,
             BUF_SIZE);
         this.workDir = workDir;

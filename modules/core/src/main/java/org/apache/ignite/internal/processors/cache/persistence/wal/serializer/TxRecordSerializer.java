@@ -60,9 +60,9 @@ public class TxRecordSerializer {
      * @throws IgniteCheckedException In case of fail.
      */
     public void writeTxRecord(TxRecord record, ByteBuffer buf) throws IgniteCheckedException {
-        buf.put((byte) record.state().ordinal());
-        RecordV1Serializer.putVersion(buf, record.nearXidVersion(), true);
-        RecordV1Serializer.putVersion(buf, record.writeVersion(), true);
+        buf.put((byte)record.state().ordinal());
+        putVersion(buf, record.nearXidVersion(), true);
+        putVersion(buf, record.writeVersion(), true);
 
         if (record.participatingNodes() != null) {
             buf.putInt(record.participatingNodes().keySet().size());
@@ -74,9 +74,8 @@ public class TxRecordSerializer {
 
                 buf.putInt(backupNodes.size());
 
-                for (Object backupNode : backupNodes) {
+                for (Object backupNode : backupNodes)
                     writeConsistentId(backupNode, buf);
-                }
             }
         }
         else {
@@ -86,9 +85,8 @@ public class TxRecordSerializer {
 
         buf.put((byte) (record.remote() ? 1 : 0));
 
-        if (record.remote()) {
+        if (record.remote())
             writeConsistentId(record.primaryNode(), buf);
-        }
 
         buf.putLong(record.timestamp());
     }
@@ -105,8 +103,8 @@ public class TxRecordSerializer {
         byte txState = in.readByte();
         TransactionState state = TransactionState.fromOrdinal(txState);
 
-        GridCacheVersion nearXidVer = RecordV1Serializer.readVersion(in, true);
-        GridCacheVersion writeVer = RecordV1Serializer.readVersion(in, true);
+        GridCacheVersion nearXidVer = readVersion(in, true);
+        GridCacheVersion writeVer = readVersion(in, true);
 
         int participatingNodesSize = in.readInt();
         Map<Object, Collection<Object>> participatingNodes = new HashMap<>(2 * participatingNodesSize);
@@ -222,5 +220,37 @@ public class TxRecordSerializer {
 
         buf.putInt(content.length);
         buf.put(content);
+    }
+
+    /**
+     * @param buf Buffer.
+     * @param ver Version to write.
+     * @param allowNull Is {@code null}version allowed.
+     */
+    private static void putVersion(ByteBuffer buf, GridCacheVersion ver, boolean allowNull) {
+        CacheVersionIO.write(buf, ver, allowNull);
+    }
+
+    /**
+     * Changes the buffer position by the number of read bytes.
+     *
+     * @param in Data input to read from.
+     * @param allowNull Is {@code null}version allowed.
+     * @return Read cache version.
+     */
+    private GridCacheVersion readVersion(ByteBufferBackedDataInput in, boolean allowNull) throws IOException {
+        // To be able to read serialization protocol version.
+        in.ensure(1);
+
+        try {
+            int size = CacheVersionIO.readSize(in.buffer(), allowNull);
+
+            in.ensure(size);
+
+            return CacheVersionIO.read(in.buffer(), allowNull);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IOException(e);
+        }
     }
 }
