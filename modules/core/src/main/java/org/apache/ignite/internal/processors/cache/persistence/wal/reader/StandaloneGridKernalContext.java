@@ -77,6 +77,7 @@ import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
 import org.apache.ignite.internal.util.IgniteExceptionRegistry;
 import org.apache.ignite.internal.util.StripedExecutor;
+import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.PluginNotFoundException;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
@@ -112,16 +113,20 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
     }
 
+    /**
+     * @return Ignite configuration which allows to start requied processors for WAL reader
+     */
     private IgniteConfiguration prepareIgniteConfiguration() {
         IgniteConfiguration cfg = new IgniteConfiguration();
-        BinaryMarshaller marshaller = new BinaryMarshaller();
+
+        cfg.setDiscoverySpi(new StandaloneNoopDiscoverySpi());
+        cfg.setCommunicationSpi(new StandaloneNoopCommunicationSpi());
+
+        final Marshaller marshaller = new BinaryMarshaller();
         cfg.setMarshaller(marshaller);
 
         PersistentStoreConfiguration pstCfg = new PersistentStoreConfiguration();
         cfg.setPersistentStoreConfiguration(pstCfg);
-
-        //todo set work directory from outside
-        cfg.setWorkDirectory("C:\\projects\\incubator-ignite\\work\\");
 
         marshaller.setContext(new MarshallerContextImpl(null));
 
@@ -165,7 +170,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
     /** {@inheritDoc} */
     @Override public IgniteEx grid() {
-        IgniteKernal kernal = new IgniteKernal();
+        final IgniteEx kernal = new IgniteKernal();
         try {
             Field fieldCfg = kernal.getClass().getDeclaredField("cfg");
             fieldCfg.setAccessible(true);
@@ -284,7 +289,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
     /** {@inheritDoc} */
     @Override public PoolProcessor pools() {
-        return null;
+        return new PoolProcessor(this);
     }
 
     /** {@inheritDoc} */
@@ -334,12 +339,17 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
     /** {@inheritDoc} */
     @Override public GridIoManager io() {
-        return null;
+        return new GridIoManager(this);
     }
 
     /** {@inheritDoc} */
     @Override public GridDiscoveryManager discovery() {
-        return null;
+        final GridDiscoveryManager manager = new GridDiscoveryManager(this) {
+            @Override public Object consistentId() {
+                return ""; // some non null value is required
+            }
+        };
+        return manager;
     }
 
     /** {@inheritDoc} */

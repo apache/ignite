@@ -25,7 +25,9 @@ import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
+import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -118,5 +120,21 @@ public class IgniteWalIteratorFactory {
             null, null, dbMgr, null,
             null, null, null, null,
             null, null, null);
+    }
+
+    /**
+     * @param binaryMetadataFileStoreDir folder specifying location of metadata File Store
+     *
+     * {@code null} means no specific folder is configured. <br>
+     * In this case folder for metadata is composed from work directory and consistentId
+     * @return Cache object processor able to restore data records content into binary objects
+     * @throws IgniteCheckedException Throws in case of initialization errors.
+     */
+    public IgniteCacheObjectProcessor binaryProcessor(final String binaryMetadataFileStoreDir) throws IgniteCheckedException {
+        final GridKernalContext ctx = new StandaloneGridKernalContext(log, binaryMetadataFileStoreDir);
+        final CacheObjectBinaryProcessorImpl processor = new CacheObjectBinaryProcessorImpl(ctx);
+        processor.setBinaryMetadataFileStoreDir(binaryMetadataFileStoreDir);
+        processor.start();
+        return processor;
     }
 }

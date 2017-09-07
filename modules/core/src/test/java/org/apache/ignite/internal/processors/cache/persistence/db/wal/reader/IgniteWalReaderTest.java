@@ -43,11 +43,7 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.events.WalSegmentArchivedEvent;
-import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.binary.BinaryCachingMetadataHandler;
 import org.apache.ignite.internal.binary.BinaryContext;
-import org.apache.ignite.internal.managers.communication.GridIoManager;
-import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
@@ -62,17 +58,15 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAhea
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
-import org.mockito.Mockito;
 
 import static org.apache.ignite.events.EventType.EVT_WAL_SEGMENT_ARCHIVED;
-import static org.mockito.Mockito.when;
 
 /**
  * Test suite for WAL segments reader and event generator.
@@ -401,27 +395,32 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         final File walArchive = new File(wal, "archive");
         final String consistentId = "127_0_0_1_47500";
 
-        final FileIOFactory fileIOFactory = getConfiguration("").getPersistentStoreConfiguration().getFileIOFactory();
+        final File binaryMeta = U.resolveWorkDirectory(U.defaultWorkDirectory(), "binary_meta", false);
+        final File binaryMetaWithConsId = new File(binaryMeta, consistentId);
 
         final File walArchiveDirWithConsistentId = new File(walArchive, consistentId);
         final File walWorkDirWithConsistentId = new File(wal, consistentId);
 
-        final IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory(log, fileIOFactory, PAGE_SIZE);
+        final IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory(log, PAGE_SIZE);
         final WALIterator iter = factory.iteratorArchiveFiles(
             walArchiveDirWithConsistentId.listFiles(FileWriteAheadLogManager.WAL_SEGMENT_FILE_FILTER));
-        final int cntArchiveFileByFile = iterateAndCountLogical(iter);
+        final IgniteCacheObjectProcessor cacheObjProcessor = factory.binaryProcessor(binaryMetaWithConsId.getAbsolutePath());
+        final int cntArchiveFileByFile = iterateAndCountLogical(iter,
+            cacheObjProcessor);
 
         log.info("Total records loaded using archive directory (file-by-file): " + cntArchiveFileByFile);
 
         final File[] workFiles = walWorkDirWithConsistentId.listFiles(FileWriteAheadLogManager.WAL_SEGMENT_FILE_FILTER);
 
         WALIterator tuples = factory.iteratorWorkFiles(workFiles);
-        int cntWork = iterateAndCountLogical(tuples);
+        int cntWork = iterateAndCountLogical(tuples,
+            cacheObjProcessor);
         log.info("Total records loaded from work: " + cntWork);
 
     }
 
-    private int iterateAndCountLogical(WALIterator walIterator) throws IgniteCheckedException {
+    private int iterateAndCountLogical(WALIterator walIterator,
+        IgniteCacheObjectProcessor processor) throws IgniteCheckedException {
         int cntLogical = 0;
 
         try (WALIterator stIt = walIterator) {
@@ -438,25 +437,28 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
                         log.info("//Entry operation " + entry.op() + "; cache Id" + entry.cacheId() + "; " +
                             "under transaction: " + globalTxId + "; entry " + entry);
 
-                        final GridKernalContext ctx = new StandaloneGridKernalContext(log);
-
+                        final CacheObject val;
                         if (entry instanceof LazyDataEntry) {
                             final LazyDataEntry lazyDataEntry = (LazyDataEntry)entry;
-                            final CacheObjectBinaryProcessorImpl processor = new CacheObjectBinaryProcessorImpl(ctx);
                             final byte[] bytes = lazyDataEntry.getValBytes();
                             final byte type = lazyDataEntry.getValType();
 
                             log.info("Entry value binary:" + DatatypeConverter.printHexBinary(bytes));
                             log.info("Entry type:" + type);
 
-                            final BinaryContext bctx = new BinaryContext(BinaryCachingMetadataHandler.create(), ctx.config(), new NullLogger()) {
-                                @Override public int typeId(String typeName) {
-                                    return typeName.hashCode();
-                                }
-                            };
-                            final CacheObject val = toCacheObject(ctx, processor, bctx, bytes, type);
+                            val = processor.toCacheObject(null,
+                                                     type,
+                                                     bytes);
 
-                            log.info("Entry value:" + val);
+                        } else
+                            val = entry.value();
+
+                        log.info("Entry value:" + val);
+                        if (val instanceof BinaryObject) {
+                            BinaryObject binaryObject = (BinaryObject)val;
+
+                            log.info("Entry type:" +
+                                binaryObject.type().typeName());
                         }
                     }
                     cntLogical++;
@@ -474,34 +476,12 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
     }
 
     public void testParseBinary() throws IgniteCheckedException {
-        final GridKernalContext ctx = new StandaloneGridKernalContext(log) {
-            @Override public GridDiscoveryManager discovery() {
-                GridDiscoveryManager mock = Mockito.mock(GridDiscoveryManager.class);
 
-
-                //todo set consistent ID, work directory from outside
-                when(mock.consistentId()).thenReturn("127_0_0_1_47501");
-                return mock;
-            }
-
-            @Override public GridIoManager io() {
-                return Mockito.mock(GridIoManager.class);
-            }
-        };
-
+        final StandaloneGridKernalContext ctx = new StandaloneGridKernalContext(log);
+        ctx.setBinaryMetadataFileStoreDirectory("C:\\projects\\incubator-ignite\\work\\binary_meta\\127_0_0_1_47500");
         CacheObjectBinaryProcessorImpl processor = new CacheObjectBinaryProcessorImpl(ctx);
         processor.start();
 
-
-        IgniteConfiguration cfg = ctx.config();
-
-        BinaryContext bctx3 = new BinaryContext(BinaryCachingMetadataHandler.create(), cfg, new NullLogger()) {
-            @Override public int typeId(String typeName) {
-                return typeName.hashCode();
-            }
-        };
-
-        BinaryContext bctx = processor.binaryContext();
         byte[] bytes = DatatypeConverter.parseHexBinary(
             "67010B00055724EC162AF496540000005F121E934A00000003000000000C280000004142434445464748494A4142434445464748494A4142434445464748494A4142434445464748494A1882310018AAEF2E001D");
         byte type = 100;
@@ -509,7 +489,9 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         log.info("Entry type:" + type);
 
-        CacheObject obj = toCacheObject(ctx, processor, bctx, bytes, type);
+        CacheObject obj = processor.toCacheObject(null,
+            type,
+            bytes);
         log.info("Cache Object: " + obj);
         byte b = obj.fieldsCount();
         log.info("Cache Object fields: " + b);
@@ -523,20 +505,6 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         String s = binaryObject.type().typeName();
 
         log.info("Cache Object type name: " + s);
-    }
-
-    private CacheObject toCacheObject(GridKernalContext ctx, CacheObjectBinaryProcessorImpl processor,
-        BinaryContext bctx,
-        byte[] bytes, byte type) {
-       /* if (type == BinaryObjectImpl.TYPE_BINARY)
-            return new BinaryObjectImpl(bctx, bytes, 0);
-        else if (type == BinaryObjectImpl.TYPE_BINARY_ENUM)
-            return new BinaryEnumObjectImpl(bctx, bytes);
-        else
-                */
-       return processor.toCacheObject(null,
-                type,
-                bytes);
     }
 
     /** Test object for placing into grid in this test */

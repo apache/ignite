@@ -109,6 +109,13 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     /** */
     private BinaryMetadataFileStore metadataFileStore;
 
+    /**
+     * Custom folder specifying local folder for {@link #metadataFileStore}.<br>
+     * {@code null} means no specific folder is configured. <br>
+     * In this case folder for metadata is composed from work directory and consistentId <br>
+     */
+    @Nullable private String binaryMetadataFileStoreDir;
+
     /** */
     @GridToStringExclude
     private IgniteBinary binaries;
@@ -147,7 +154,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
             if (ctx.clientNode())
                 ctx.event().addLocalEventListener(clientDisconLsnr, EVT_CLIENT_NODE_DISCONNECTED);
 
-            metadataFileStore = new BinaryMetadataFileStore(metadataLocCache, ctx, log);
+            metadataFileStore = new BinaryMetadataFileStore(metadataLocCache, ctx, log, binaryMetadataFileStoreDir);
 
             transport = new BinaryMetadataTransport(metadataLocCache, metadataFileStore, ctx, log);
 
@@ -905,5 +912,13 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
                     metadataFileStore.saveMetadata(holder.metadata());
             }
         }
+    }
+
+    /**
+     * Sets path to binary metadata store configured by user, should include binary_meta and consistentId
+     * @param binaryMetadataFileStoreDir path to binary_meta
+     */
+    public void setBinaryMetadataFileStoreDir(@Nullable String binaryMetadataFileStoreDir) {
+        this.binaryMetadataFileStoreDir = binaryMetadataFileStoreDir;
     }
 }
