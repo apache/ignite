@@ -246,31 +246,62 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
 
             qry.setSchema(schemaName);
 
-            FieldsQueryCursor<List<?>> qryCur = ctx.query().querySqlFieldsNoCache(qry, true);
+            List<FieldsQueryCursor<List<?>>> results = ctx.query().querySqlFieldsNoCache0(qry, true);
 
-            JdbcQueryCursor cur = new JdbcQueryCursor(qryId, req.pageSize(), req.maxRows(), (QueryCursorImpl)qryCur);
+            if (results.size() == 1) {
+                FieldsQueryCursor<List<?>> qryCur = results.get(0);
 
-            JdbcQueryExecuteResult res;
+                JdbcQueryCursor cur = new JdbcQueryCursor(qryId, req.pageSize(), req.maxRows(), (QueryCursorImpl)qryCur);
 
-            if (cur.isQuery())
-                res = new JdbcQueryExecuteResult(qryId, cur.fetchRows(), !cur.hasNext());
+                JdbcQueryExecuteResult res;
+
+                if (cur.isQuery())
+                    res = new JdbcQueryExecuteResult(qryId, cur.fetchRows(), !cur.hasNext());
+                else {
+                    List<List<Object>> items = cur.fetchRows();
+
+                    assert items != null && items.size() == 1 && items.get(0).size() == 1
+                        && items.get(0).get(0) instanceof Long :
+                        "Invalid result set for not-SELECT query. [qry=" + sql +
+                            ", res=" + S.toString(List.class, items) + ']';
+
+                    res = new JdbcQueryExecuteResult(qryId, (Long)items.get(0).get(0));
+                }
+
+                if (res.last() && (!res.isQuery() || autoCloseCursors))
+                    cur.close();
+                else
+                    qryCursors.put(qryId, cur);
+
+                return new JdbcResponse(res);
+            }
             else {
-                List<List<Object>> items = cur.fetchRows();
+                List<JdbcStatementResults> jdbcResults = new ArrayList<>(results.size());
 
-                assert items != null && items.size() == 1 && items.get(0).size() == 1
-                    && items.get(0).get(0) instanceof Long :
-                    "Invalid result set for not-SELECT query. [qry=" + sql +
-                        ", res=" + S.toString(List.class, items) + ']';
+                for (FieldsQueryCursor<List<?>> c : results) {
+                    QueryCursorImpl qryCur = (QueryCursorImpl)c;
 
-                res = new JdbcQueryExecuteResult(qryId, (Long)items.get(0).get(0));
+                    JdbcStatementResults jdbcRes;
+
+                    if (qryCur.isQuery()) {
+                        jdbcRes = new JdbcStatementResults(true, qryId);
+
+                        JdbcQueryCursor cur = new JdbcQueryCursor(qryId, req.pageSize(), req.maxRows(), (QueryCursorImpl)qryCur);
+
+                        qryCursors.put(qryId, cur);
+
+                        qryId = QRY_ID_GEN.getAndIncrement();
+                    }
+                    else
+                        jdbcRes = new JdbcStatementResults(false, (Long)((List<?>)qryCur.getAll().get(0)).get(0));
+
+                    jdbcResults.add(jdbcRes);
+                }
+
+                return new JdbcResponse(new JdbcQueryExecuteMultipleStatementsResult(jdbcResults));
             }
 
-            if (res.last() && (!res.isQuery() || autoCloseCursors))
-                cur.close();
-            else
-                qryCursors.put(qryId, cur);
 
-            return new JdbcResponse(res);
         }
         catch (Exception e) {
             qryCursors.remove(qryId);

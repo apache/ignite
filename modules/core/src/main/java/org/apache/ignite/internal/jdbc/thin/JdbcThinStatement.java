@@ -26,17 +26,21 @@ import java.sql.SQLFeatureNotSupportedException;
 import java.sql.SQLWarning;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.internal.processors.odbc.SqlListenerResponse;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBatchExecuteResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQuery;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteMultipleStatementsResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteResult;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryFetchResult;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResult;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcStatementResults;
 
 import static java.sql.ResultSet.CONCUR_READ_ONLY;
 import static java.sql.ResultSet.FETCH_FORWARD;
-import static java.sql.ResultSet.HOLD_CURSORS_OVER_COMMIT;
 import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
 
 /**
@@ -58,27 +62,38 @@ public class JdbcThinStatement implements Statement {
     /** Query timeout. */
     private int timeout;
 
-    /** Current result set. */
-    protected JdbcThinResultSet rs;
-
     /** Fetch size. */
     private int pageSize = DFLT_PAGE_SIZE;
 
-    /** */
-    private boolean alreadyRead;
+    /** Result set  holdability*/
+    private final int resHoldability;
 
     /** Batch. */
     protected List<JdbcQuery> batch;
+
+    /** Close this statement on result set close. */
+    private boolean closeOnCompletion;
+
+    /** Result sets. */
+    protected List<JdbcThinResultSet> resultSets;
+
+    /** Multiple statement result info. */
+    protected List<JdbcStatementResults> resInfo;
+
+    /** Current result. */
+    protected int curRes;
 
     /**
      * Creates new statement.
      *
      * @param conn JDBC connection.
+     * @param resHoldability Result set holdability.
      */
-    JdbcThinStatement(JdbcThinConnection conn) {
+    JdbcThinStatement(JdbcThinConnection conn, int resHoldability) {
         assert conn != null;
 
         this.conn = conn;
+        this.resHoldability = resHoldability;
     }
 
     /** {@inheritDoc} */
@@ -102,25 +117,38 @@ public class JdbcThinStatement implements Statement {
     protected void execute0(String sql, List<Object> args) throws SQLException {
         ensureNotClosed();
 
-        if (rs != null) {
-            rs.close();
-
-            rs = null;
-        }
-
-        alreadyRead = false;
+        closeResults();
 
         if (sql == null || sql.isEmpty())
             throw new SQLException("SQL query is empty.");
 
         try {
-            JdbcQueryExecuteResult res = conn.io().queryExecute(conn.getSchema(), pageSize, maxRows,
+            JdbcResult res0 = conn.io().queryExecute(conn.getSchema(), pageSize, maxRows,
                 sql, args);
 
-            assert res != null;
+            assert res0 != null;
 
-            rs = new JdbcThinResultSet(this, res.getQueryId(), pageSize, res.last(), res.items(),
-                res.isQuery(), conn.io().autoCloseServerCursor(), res.updateCount());
+            if (res0 instanceof JdbcQueryExecuteResult) {
+                JdbcQueryExecuteResult res = (JdbcQueryExecuteResult)res0;
+
+                resultSets = Collections.singletonList(new JdbcThinResultSet(this, res.getQueryId(), pageSize,
+                    res.last(), res.items(), res.isQuery(), conn.io().autoCloseServerCursor(), res.updateCount(),
+                    closeOnCompletion));
+
+                resInfo = Collections.singletonList(new JdbcStatementResults(res.isQuery(),
+                    res.isQuery() ? res.getQueryId() : res.updateCount()));
+            }
+            else if (res0 instanceof JdbcQueryExecuteMultipleStatementsResult) {
+                JdbcQueryExecuteMultipleStatementsResult res = (JdbcQueryExecuteMultipleStatementsResult)res0;
+
+                resInfo = res.results();
+
+                resultSets = new ArrayList<>(resInfo.size());
+            }
+            else
+                throw new SQLException("Unexpected result [res=" + res0 + ']');
+
+            assert resInfo.size() > 0 : "At least one results set is expected";
         }
         catch (IOException e) {
             conn.close();
@@ -149,10 +177,24 @@ public class JdbcThinStatement implements Statement {
         if (isClosed())
             return;
 
-        if (rs != null)
-            rs.close();
+        closeResults();
 
         closed = true;
+    }
+
+    /**
+     * Close results.
+     * @throws SQLException On error.
+     */
+    private void closeResults() throws SQLException {
+        if (resultSets != null) {
+            for (JdbcThinResultSet rs : resultSets)
+                rs.close0();
+
+            resultSets = null;
+            resInfo = null;
+            curRes = 0;
+        }
     }
 
     /** {@inheritDoc} */
@@ -165,6 +207,9 @@ public class JdbcThinStatement implements Statement {
     /** {@inheritDoc} */
     @Override public void setMaxFieldSize(int max) throws SQLException {
         ensureNotClosed();
+
+        if (max < 0)
+            throw new SQLException("Invalid field limit.");
 
         throw new SQLFeatureNotSupportedException("Field size limitation is not supported.");
     }
@@ -179,6 +224,9 @@ public class JdbcThinStatement implements Statement {
     /** {@inheritDoc} */
     @Override public void setMaxRows(int maxRows) throws SQLException {
         ensureNotClosed();
+
+        if (maxRows < 0)
+            throw new SQLException("Invalid max rows value.");
 
         this.maxRows = maxRows;
     }
@@ -198,6 +246,9 @@ public class JdbcThinStatement implements Statement {
     /** {@inheritDoc} */
     @Override public void setQueryTimeout(int timeout) throws SQLException {
         ensureNotClosed();
+
+        if (timeout < 0)
+            throw new SQLException("Invalid timeout value.");
 
         this.timeout = timeout * 1000;
     }
@@ -232,31 +283,39 @@ public class JdbcThinStatement implements Statement {
 
         execute0(sql, null);
 
-        return rs.isQuery();
+        return resInfo.get(0).isQuery();
     }
 
     /** {@inheritDoc} */
     @Override public ResultSet getResultSet() throws SQLException {
-        JdbcThinResultSet rs = lastResultSet();
+        JdbcThinResultSet rs = nextResultSet();
 
-        ResultSet res = rs == null || !rs.isQuery() ? null : rs;
+        if (rs == null)
+            return null;
 
-        if (res != null)
-            alreadyRead = true;
+        if (!rs.isQuery()) {
+            curRes--;
 
-        return res;
+            return null;
+        }
+
+        return rs;
     }
 
     /** {@inheritDoc} */
     @Override public int getUpdateCount() throws SQLException {
-        JdbcThinResultSet rs = lastResultSet();
+        JdbcThinResultSet rs = nextResultSet();
 
-        int res = rs == null || rs.isQuery() ? -1 : (int)rs.updatedCount();
+        if (rs == null)
+            return -1;
 
-        if (res != -1)
-            alreadyRead = true;
+        if (rs.isQuery()) {
+            curRes--;
 
-        return res;
+            return -1;
+        }
+
+        return (int)rs.updatedCount();
     }
 
     /**
@@ -265,20 +324,50 @@ public class JdbcThinStatement implements Statement {
      * @return Result set or null.
      * @throws SQLException If failed.
      */
-    private JdbcThinResultSet lastResultSet() throws SQLException {
+    private JdbcThinResultSet nextResultSet() throws SQLException {
         ensureNotClosed();
 
-        if (rs == null || alreadyRead)
+        if (resultSets == null || resInfo == null || curRes >= resInfo.size())
             return null;
 
-        return rs;
+        if (curRes >= resultSets.size()) {
+            try {
+                JdbcThinResultSet rs;
+
+                if (resInfo.get(curRes).isQuery()) {
+                    long qryId = resInfo.get(curRes).queryId();
+
+                    JdbcQueryFetchResult res = conn.io().queryFetch(qryId, pageSize);
+
+                    rs = new JdbcThinResultSet(this, qryId, pageSize,
+                        res.last(), res.items(), true, conn.io().autoCloseServerCursor(), -1, closeOnCompletion);
+                }
+                else {
+                    rs = new JdbcThinResultSet(this, -1, pageSize,
+                        true, Collections.<List<Object>>emptyList(), false,
+                        conn.io().autoCloseServerCursor(),resInfo.get(curRes).updateCount(), closeOnCompletion);
+                }
+
+                resultSets.add(rs);
+            }
+            catch (IOException e) {
+                conn.close();
+
+                throw new SQLException("Failed get next results.", e);
+            }
+            catch (IgniteCheckedException e) {
+                throw new SQLException("Failed get next results.", e);
+            }
+        }
+
+        return resultSets.get(curRes++);
     }
 
     /** {@inheritDoc} */
     @Override public boolean getMoreResults() throws SQLException {
         ensureNotClosed();
 
-        return false;
+        return getMoreResults(CLOSE_CURRENT_RESULT);
     }
 
     /** {@inheritDoc} */
@@ -286,7 +375,7 @@ public class JdbcThinStatement implements Statement {
         ensureNotClosed();
 
         if (direction != FETCH_FORWARD)
-            throw new SQLFeatureNotSupportedException("Only forward direction is supported");
+            throw new SQLFeatureNotSupportedException("Only forward direction is supported.");
     }
 
     /** {@inheritDoc} */
@@ -348,13 +437,7 @@ public class JdbcThinStatement implements Statement {
     @Override public int[] executeBatch() throws SQLException {
         ensureNotClosed();
 
-        if (rs != null) {
-            rs.close();
-
-            rs = null;
-        }
-
-        alreadyRead = false;
+        closeResults();
 
         if (batch == null || batch.isEmpty())
             throw new SQLException("Batch is empty.");
@@ -391,48 +474,81 @@ public class JdbcThinStatement implements Statement {
     @Override public boolean getMoreResults(int curr) throws SQLException {
         ensureNotClosed();
 
-        if (curr == KEEP_CURRENT_RESULT || curr == CLOSE_ALL_RESULTS)
-            throw new SQLFeatureNotSupportedException("Multiple open results are not supported.");
+        switch (curr) {
+            case CLOSE_CURRENT_RESULT:
+                if (resultSets != null && curRes < resultSets.size())
+                    resultSets.get(curRes - 1).close0();
 
-        return false;
+                break;
+
+            case CLOSE_ALL_RESULTS:
+                if (resultSets != null) {
+                    for (int i = 0; i < curRes; ++i)
+                        resultSets.get(i).close0();
+                }
+
+                break;
+
+            case KEEP_CURRENT_RESULT:
+                break;
+
+            default:
+                throw new SQLException("Invalid 'current' parameter.");
+        }
+
+        return (resInfo != null && curRes < resInfo.size());
     }
 
     /** {@inheritDoc} */
     @Override public ResultSet getGeneratedKeys() throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Auto-generated columns are not supported .");
+        throw new SQLFeatureNotSupportedException("Auto-generated columns are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public int executeUpdate(String sql, int autoGeneratedKeys) throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Auto-generated columns are not supported .");
+        switch (autoGeneratedKeys) {
+            case Statement.RETURN_GENERATED_KEYS:
+                throw new SQLFeatureNotSupportedException("Auto-generated columns are not supported.");
+
+            case Statement.NO_GENERATED_KEYS:
+                return executeUpdate(sql);
+
+            default:
+                throw new SQLException("Invalid autoGeneratedKeys value");
+        }
     }
 
     /** {@inheritDoc} */
     @Override public int executeUpdate(String sql, int[] colIndexes) throws SQLException {
         ensureNotClosed();
-
-        throw new SQLFeatureNotSupportedException("Auto-generated columns are not supported .");
+        throw new SQLFeatureNotSupportedException("Auto-generated columns are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public int executeUpdate(String sql, String[] colNames) throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Auto-generated columns are not supported .");
+        throw new SQLFeatureNotSupportedException("Auto-generated columns are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public boolean execute(String sql, int autoGeneratedKeys) throws SQLException {
         ensureNotClosed();
 
-        if (autoGeneratedKeys == RETURN_GENERATED_KEYS)
-            throw new SQLFeatureNotSupportedException("Auto-generated columns are not supported .");
+        switch (autoGeneratedKeys) {
+            case Statement.RETURN_GENERATED_KEYS:
+                throw new SQLFeatureNotSupportedException("Auto-generated columns are not supported.");
 
-        return execute(sql);
+            case Statement.NO_GENERATED_KEYS:
+                return execute(sql);
+
+            default:
+                throw new SQLException("Invalid autoGeneratedKeys value.");
+        }
     }
 
     /** {@inheritDoc} */
@@ -440,7 +556,7 @@ public class JdbcThinStatement implements Statement {
         ensureNotClosed();
 
         if (colIndexes != null && colIndexes.length > 0)
-            throw new SQLFeatureNotSupportedException("Auto-generated columns are not supported .");
+            throw new SQLFeatureNotSupportedException("Auto-generated columns are not supported.");
 
         return execute(sql);
     }
@@ -450,7 +566,7 @@ public class JdbcThinStatement implements Statement {
         ensureNotClosed();
 
         if (colNames != null && colNames.length > 0)
-            throw new SQLFeatureNotSupportedException("Auto-generated columns are not supported .");
+            throw new SQLFeatureNotSupportedException("Auto-generated columns are not supported.");
 
         return execute(sql);
     }
@@ -459,7 +575,7 @@ public class JdbcThinStatement implements Statement {
     @Override public int getResultSetHoldability() throws SQLException {
         ensureNotClosed();
 
-        return HOLD_CURSORS_OVER_COMMIT;
+        return resHoldability;
     }
 
     /** {@inheritDoc} */
@@ -483,6 +599,7 @@ public class JdbcThinStatement implements Statement {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public <T> T unwrap(Class<T> iface) throws SQLException {
         if (!isWrapperFor(iface))
             throw new SQLException("Statement is not a wrapper for " + iface.getName());
@@ -497,14 +614,21 @@ public class JdbcThinStatement implements Statement {
 
     /** {@inheritDoc} */
     @Override public void closeOnCompletion() throws SQLException {
-        throw new SQLFeatureNotSupportedException("closeOnCompletion is not supported.");
+        ensureNotClosed();
+
+        closeOnCompletion = true;
+
+        if (resultSets != null) {
+            for (JdbcThinResultSet rs : resultSets)
+                rs.closeStatement(true);
+        }
     }
 
     /** {@inheritDoc} */
     @Override public boolean isCloseOnCompletion() throws SQLException {
         ensureNotClosed();
 
-        return false;
+        return closeOnCompletion;
     }
 
     /**

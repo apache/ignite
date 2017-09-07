@@ -111,7 +111,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
 
     /** {@inheritDoc} */
     @Override public String getDatabaseProductName() throws SQLException {
-        return "Ignite";
+        return "Apache Ignite";
     }
 
     /** {@inheritDoc} */
@@ -305,7 +305,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
 
     /** {@inheritDoc} */
     @Override public boolean supportsMultipleResultSets() throws SQLException {
-        return false;
+        return true;
     }
 
     /** {@inheritDoc} */

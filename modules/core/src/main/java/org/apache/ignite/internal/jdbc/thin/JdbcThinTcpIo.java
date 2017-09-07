@@ -265,7 +265,7 @@ public class JdbcThinTcpIo {
      * @throws IOException On error.
      * @throws IgniteCheckedException On error.
      */
-    public JdbcQueryExecuteResult queryExecute(String cache, int fetchSize, int maxRows,
+    public JdbcResult queryExecute(String cache, int fetchSize, int maxRows,
         String sql, List<Object> args)
         throws IOException, IgniteCheckedException {
         return sendRequest(new JdbcQueryExecuteRequest(cache, fetchSize, maxRows, sql,

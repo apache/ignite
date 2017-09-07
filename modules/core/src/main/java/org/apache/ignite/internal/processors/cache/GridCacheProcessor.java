@@ -279,6 +279,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Start cache rebalance.
+     */
+    public void enableRebalance() {
+        for (IgniteCacheProxy c : publicCaches())
+            c.rebalance();
+    }
+
+    /**
      * Create exchange worker task for custom discovery message.
      *
      * @param msg Custom discovery message.

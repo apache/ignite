@@ -461,6 +461,18 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
+    @Override
+    public boolean isRebalanceEnabled() {
+        return ctx.cache().context().isRebalanceEnabled();
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public void rebalanceEnabled(boolean rebalanceEnabled) {
+        ctx.cache().context().rebalanceEnabled(rebalanceEnabled);
+    }
+
+    /** {@inheritDoc} */
     @Override public long getUpTime() {
         return U.currentTimeMillis() - startTime;
     }
@@ -1408,9 +1420,10 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             long safeToUse = ram - Math.max(4L << 30, (long)(ram * 0.2));
 
             if (total > safeToUse) {
-                U.quietAndWarn(log, "Attempting to start more nodes than physical RAM available on the host " +
-                    "what can lead to significant slowdown (please decrease JVM heap size, memory policy size or " +
-                    "checkpoint buffer size) [required=" + (total >> 20) + "MB, available=" + (ram >> 20) + "MB]");
+                U.quietAndWarn(log, "Nodes started on local machine require more than 80% of physical RAM what can " +
+                    "lead to significant slowdown due to swapping (please decrease JVM heap size, memory policy " +
+                    "size or checkpoint buffer size) [required=" + (total >> 20) + "MB, available=" +
+                    (ram >> 20) + "MB]");
             }
         }
     }

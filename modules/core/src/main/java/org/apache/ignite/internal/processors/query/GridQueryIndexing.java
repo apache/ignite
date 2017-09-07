@@ -90,6 +90,20 @@ public interface GridQueryIndexing {
         boolean keepBinary, GridQueryCancel cancel, @Nullable Integer mainCacheId) throws IgniteCheckedException;
 
     /**
+     * Parses SQL query into two step query and executes it.
+     *
+     * @param schemaName Schema name.
+     * @param qry Query.
+     * @param keepBinary Keep binary flag.
+     * @param cancel Query cancel.
+     * @param mainCacheId Main cache ID.
+     * @return Cursor.
+     * @throws IgniteCheckedException If failed.
+     */
+    public List<FieldsQueryCursor<List<?>>> queryDistributedSqlFieldsMultiple(String schemaName, SqlFieldsQuery qry,
+        boolean keepBinary, GridQueryCancel cancel, @Nullable Integer mainCacheId) throws IgniteCheckedException;
+
+    /**
      * Perform a MERGE statement using data streamer as receiver.
      *
      * @param schemaName Schema name.
@@ -163,6 +177,21 @@ public interface GridQueryIndexing {
      */
     @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
     public void dynamicIndexDrop(String schemaName, String idxName, boolean ifExists) throws IgniteCheckedException;
+
+    /**
+     * Add columns to dynamic table.
+     *
+     * @param schemaName Schema name.
+     * @param tblName Table name.
+     * @param cols Columns to add.
+     * @param ifTblExists Ignore operation if target table does not exist (instead of throwing an error).
+     * @param ifColNotExists Ignore operation if column already exists (instead of throwing an error) - is honored only
+     *     for single column case.
+     * @throws IgniteCheckedException If failed.
+     */
+    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
+    public void dynamicAddColumn(String schemaName, String tblName, List<QueryField> cols, boolean ifTblExists,
+        boolean ifColNotExists) throws IgniteCheckedException;
 
     /**
      * Registers cache.
@@ -295,13 +324,4 @@ public interface GridQueryIndexing {
      * @return {@code True} if insert.
      */
     public boolean isInsertStatement(PreparedStatement nativeStmt);
-
-    /**
-     * Split multi-statements SQL query to the first statement and remaining SQL query string.
-     *
-     * @param schema Schema.
-     * @param qry Query with multiple statements.
-     * @return List of queries.
-     */
-    MultipleStatementsQuery splitSqlQuery(String schema, SqlFieldsQuery qry);
 }

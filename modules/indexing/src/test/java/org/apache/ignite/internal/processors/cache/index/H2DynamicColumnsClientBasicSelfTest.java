@@ -15,40 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query;
-
-import org.apache.ignite.cache.query.SqlFieldsQuery;
+package org.apache.ignite.internal.processors.cache.index;
 
 /**
- * Multiple statement SQL query.
+ * Test to check {@code ALTER TABLE} operations started from client node.
  */
-public class MultipleStatementsQuery {
-    /** First statement. */
-    private SqlFieldsQuery first;
-
-    /** Remaining query. */
-    private SqlFieldsQuery remaining;
-
-    /**
-     * @param first Fisrt statement.
-     * @param remaining Remaining statement.
-     */
-    public MultipleStatementsQuery(SqlFieldsQuery first, SqlFieldsQuery remaining) {
-        this.first = first;
-        this.remaining = remaining;
-    }
-
-    /**
-     * @return The first query.
-     */
-    public SqlFieldsQuery first() {
-        return first;
-    }
-
-    /**
-     * @return Remaining query.
-     */
-    public SqlFieldsQuery remaining() {
-        return remaining;
+public class H2DynamicColumnsClientBasicSelfTest extends H2DynamicColumnsAbstractBasicSelfTest {
+    /** {@inheritDoc} */
+    @Override protected int nodeIndex() {
+        return CLI_IDX;
     }
 }

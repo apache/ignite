@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query;
 
 import java.util.List;
+import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
@@ -57,25 +58,25 @@ public class MultipleStatementsSqlQuerySelfTest extends GridCommonAbstractTest {
                 "select * from test;")
             .setSchema("PUBLIC");
 
-        GridQueryProcessor.QueryResult res = qryProc.querySqlFieldsMultipleNoCache(qry, true);
+        List<FieldsQueryCursor<List<?>>> res = qryProc.querySqlFieldsNoCache0(qry, true);
 
-        assert !((QueryCursorImpl)res.cursor()).isQuery() : "Results of DDL statement is expected ";
+        assert res.size() == 4 : "Unexpected cursors count: " + res.size();
 
-        res = qryProc.querySqlFieldsMultipleNoCache(res.remaining(), true);
+        assert !((QueryCursorImpl)res.get(0)).isQuery() : "Results of DDL statement is expected ";
 
-        List<List<?>> rows = res.cursor().getAll();
+        List<List<?>> rows = res.get(1).getAll();
 
-        assert !((QueryCursorImpl)res.cursor()).isQuery() : "Results of DML statement is expected";
+        assert !((QueryCursorImpl)res.get(1)).isQuery() : "Results of DDL statement is expected ";
         assert Long.valueOf(1).equals(rows.get(0).get(0)) : "1 row must be updated. [actual=" + rows.get(0).get(0) + ']';
 
-        res = qryProc.querySqlFieldsMultipleNoCache(res.remaining(), true);
+        rows = res.get(2).getAll();
 
-        assert !((QueryCursorImpl)res.cursor()).isQuery() : "Results of DML statement is expected";
-        assert Long.valueOf(2).equals(res.cursor().getAll().get(0).get(0)) : "2 row must be updated";
+        assert !((QueryCursorImpl)res.get(2)).isQuery() : "Results of DML statement is expected ";
+        assert Long.valueOf(2).equals(rows.get(0).get(0)) : "2 row must be updated";
 
-        res = qryProc.querySqlFieldsMultipleNoCache(res.remaining(), true);
+        rows = res.get(3).getAll();
 
-        rows = res.cursor().getAll();
+        assert ((QueryCursorImpl)res.get(3)).isQuery() : "Results of SELECT statement is expected ";
 
         assert rows.size() == 3 : "Invalid rows count: " + rows.size();
 
@@ -85,7 +86,51 @@ public class MultipleStatementsSqlQuerySelfTest extends GridCommonAbstractTest {
                 || Integer.valueOf(3).equals(rows.get(i).get(0))
                 : "Invalid ID: " + rows.get(i).get(0);
         }
+    }
 
-        assert res.remaining() == null : "No more results expected";
+    /**
+     * Test query without caches.
+     *
+     * @throws Exception If failed.
+     */
+    public void testQueryWithParameters() throws Exception {
+        GridQueryProcessor qryProc = node.context().query();
+
+        SqlFieldsQuery qry = new SqlFieldsQuery(
+            "create table test(ID int primary key, NAME varchar(20)); " +
+                "insert into test (ID, NAME) values (?, ?);" +
+                "insert into test (ID, NAME) values (?, ?), (?, ?);" +
+                "select * from test;")
+            .setSchema("PUBLIC")
+            .setArgs(1, "name_1", 2, "name2", 3, "name_3");
+
+        List<FieldsQueryCursor<List<?>>> res = qryProc.querySqlFieldsNoCache0(qry, true);
+
+        assert res.size() == 4 : "Unexpected cursors count: " + res.size();
+
+        assert !((QueryCursorImpl)res.get(0)).isQuery() : "Results of DDL statement is expected ";
+
+        List<List<?>> rows = res.get(1).getAll();
+
+        assert !((QueryCursorImpl)res.get(1)).isQuery() : "Results of DDL statement is expected ";
+        assert Long.valueOf(1).equals(rows.get(0).get(0)) : "1 row must be updated. [actual=" + rows.get(0).get(0) + ']';
+
+        rows = res.get(2).getAll();
+
+        assert !((QueryCursorImpl)res.get(2)).isQuery() : "Results of DML statement is expected ";
+        assert Long.valueOf(2).equals(rows.get(0).get(0)) : "2 row must be updated";
+
+        rows = res.get(3).getAll();
+
+        assert ((QueryCursorImpl)res.get(3)).isQuery() : "Results of SELECT statement is expected ";
+
+        assert rows.size() == 3 : "Invalid rows count: " + rows.size();
+
+        for (int i = 0; i < rows.size(); ++i) {
+            assert Integer.valueOf(1).equals(rows.get(i).get(0))
+                || Integer.valueOf(2).equals(rows.get(i).get(0))
+                || Integer.valueOf(3).equals(rows.get(i).get(0))
+                : "Invalid ID: " + rows.get(i).get(0);
+        }
     }
 }

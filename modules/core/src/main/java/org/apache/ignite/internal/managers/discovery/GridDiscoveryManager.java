@@ -30,7 +30,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -43,9 +42,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.zip.CRC32;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteException;
@@ -896,8 +893,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         locNode = spi.getLocalNode();
 
         checkAttributes(discoCache().remoteNodes());
-
-        ctx.service().initCompatibilityMode(discoCache().remoteNodes());
 
         // Start discovery worker.
         new IgniteThread(discoWrk).start();
@@ -1850,42 +1845,21 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     }
 
     /**
-     * Gets cache nodes for cache with given ID.
-     *
-     * @param cacheId Cache ID.
-     * @param topVer Topology version.
-     * @return Collection of cache nodes.
-     */
-    public Collection<ClusterNode> cacheNodes(int cacheId, AffinityTopologyVersion topVer) {
-        return resolveDiscoCache(cacheId, topVer).cacheNodes(cacheId);
-    }
-
-    /**
-     * Gets all nodes with at least one cache configured.
-     *
-     * @param topVer Topology version.
-     * @return Collection of cache nodes.
-     */
-    public Collection<ClusterNode> cacheNodes(AffinityTopologyVersion topVer) {
-        return resolveDiscoCache(CU.cacheId(null), topVer).allNodesWithCaches();
-    }
-
-    /**
      * Gets cache remote nodes for cache with given name.
      *
      * @param topVer Topology version.
      * @return Collection of cache nodes.
      */
-    public Collection<ClusterNode> remoteCacheNodes(AffinityTopologyVersion topVer) {
-        return resolveDiscoCache(CU.cacheId(null), topVer).remoteNodesWithCaches();
+    public Collection<ClusterNode> remoteAliveNodesWithCaches(AffinityTopologyVersion topVer) {
+        return resolveDiscoCache(CU.cacheId(null), topVer).remoteAliveNodesWithCaches();
     }
 
     /**
      * @param topVer Topology version (maximum allowed node order).
      * @return Oldest alive server nodes with at least one cache configured.
      */
-    @Nullable public ClusterNode oldestAliveCacheServerNode(AffinityTopologyVersion topVer) {
-        return resolveDiscoCache(CU.cacheId(null), topVer).oldestAliveServerNodeWithCache();
+    @Nullable public ClusterNode oldestAliveServerNode(AffinityTopologyVersion topVer) {
+        return resolveDiscoCache(CU.cacheId(null), topVer).oldestAliveServerNode();
     }
 
     /**
@@ -2248,9 +2222,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         Map<Integer, List<ClusterNode>> allCacheNodes = U.newHashMap(allNodes.size());
         Map<Integer, List<ClusterNode>> cacheGrpAffNodes = U.newHashMap(allNodes.size());
 
-        Set<ClusterNode> allNodesWithCaches = new TreeSet<>(GridNodeOrderComparator.INSTANCE);
         Set<ClusterNode> rmtNodesWithCaches = new TreeSet<>(GridNodeOrderComparator.INSTANCE);
-        Set<ClusterNode> srvNodesWithCaches = new TreeSet<>(GridNodeOrderComparator.INSTANCE);
 
         for (ClusterNode node : allNodes) {
             assert node.order() != 0 : "Invalid node order [locNode=" + loc + ", node=" + node + ']';
@@ -2275,11 +2247,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 CachePredicate filter = entry.getValue();
 
                 if (filter.cacheNode(node)) {
-                    allNodesWithCaches.add(node);
-
-                    if(!CU.clientNode(node))
-                        srvNodesWithCaches.add(node);
-
                     if (!node.isLocal())
                         rmtNodesWithCaches.add(node);
 
@@ -2296,8 +2263,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             Collections.unmodifiableList(allNodes),
             Collections.unmodifiableList(srvNodes),
             Collections.unmodifiableList(daemonNodes),
-            U.sealList(srvNodesWithCaches),
-            U.sealList(allNodesWithCaches),
             U.sealList(rmtNodesWithCaches),
             Collections.unmodifiableMap(allCacheNodes),
             Collections.unmodifiableMap(cacheGrpAffNodes),
