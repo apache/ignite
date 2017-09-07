@@ -16,7 +16,7 @@
 #
 
 # Start from a Java image.
-FROM java:8
+FROM openjdk:8
 
 # Ignite version
 ENV IGNITE_VERSION 2.1.0
