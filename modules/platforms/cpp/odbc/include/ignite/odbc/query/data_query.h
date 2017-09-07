@@ -161,6 +161,9 @@ namespace ignite
 
                 /** Cursor. */
                 std::auto_ptr<Cursor> cursor;
+
+                /** Number of rows affected. */
+                int64_t rowsAffected;
             };
         }
     }

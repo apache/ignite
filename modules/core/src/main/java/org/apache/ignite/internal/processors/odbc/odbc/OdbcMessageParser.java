@@ -214,7 +214,7 @@ public class OdbcMessageParser implements SqlListenerMessageParser {
 
             writer.writeLong(res.queryId());
 
-            Collection<OdbcColumnMeta> metas = res.getColumnsMetadata();
+            Collection<OdbcColumnMeta> metas = res.columnsMetadata();
 
             assert metas != null;
 
@@ -222,6 +222,8 @@ public class OdbcMessageParser implements SqlListenerMessageParser {
 
             for (OdbcColumnMeta meta : metas)
                 meta.write(writer);
+
+            writer.writeLong(res.affectedRows());
         }
         else if (res0 instanceof OdbcQueryExecuteBatchResult) {
             OdbcQueryExecuteBatchResult res = (OdbcQueryExecuteBatchResult) res0;

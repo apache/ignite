@@ -275,7 +275,10 @@ namespace ignite
             queryId = reader.ReadInt64();
         }
 
-        QueryExecuteResponse::QueryExecuteResponse(): queryId(0), meta()
+        QueryExecuteResponse::QueryExecuteResponse():
+            queryId(0),
+            meta(),
+            affectedRows(0)
         {
             // No-op.
         }
@@ -290,6 +293,8 @@ namespace ignite
             queryId = reader.ReadInt64();
 
             meta::ReadColumnMetaVector(reader, meta);
+
+            affectedRows = reader.ReadInt64();
         }
 
         QueryExecuteBatchResponse::QueryExecuteBatchResponse():

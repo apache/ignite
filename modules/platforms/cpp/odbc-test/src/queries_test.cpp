@@ -360,6 +360,14 @@ struct QueriesTestSuiteFixture
             if (!SQL_SUCCEEDED(ret))
                 BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
+            SQLLEN affected = 0;
+            ret = SQLRowCount(stmt, &affected);
+
+            if (!SQL_SUCCEEDED(ret))
+                BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+            BOOST_CHECK_EQUAL(affected, 1);
+
             ret = SQLMoreResults(stmt);
 
             if (ret != SQL_NO_DATA)
@@ -2116,6 +2124,56 @@ BOOST_AUTO_TEST_CASE(TestErrorMessage)
     boost::cmatch what;
     if (!boost::regex_match(error.c_str(), what, boost::regex(pattern)))
         BOOST_FAIL("'" + error + "' does not match '" + pattern + "'");
+}
+
+BOOST_AUTO_TEST_CASE(TestAffectedRows)
+{
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
+
+    const int recordsNum = 100;
+
+    // Inserting values.
+    InsertTestStrings(recordsNum);
+
+    int64_t key = 0;
+    char strField[1024] = { 0 };
+    SQLLEN strFieldLen = 0;
+
+    SQLCHAR updateReq[] = "UPDATE TestType SET strField = 'Updated value' WHERE _key > 20 AND _key < 40";
+
+    SQLRETURN ret = SQLExecDirect(stmt, updateReq, SQL_NTS);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    SQLLEN affected = 0;
+    ret = SQLRowCount(stmt, &affected);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    BOOST_CHECK_EQUAL(affected, 19);
+
+    ret = SQLFreeStmt(stmt, SQL_CLOSE);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    // Just selecting everything to make sure everything is OK
+    SQLCHAR selectReq[] = "SELECT _key, strField FROM TestType ORDER BY _key";
+
+    ret = SQLExecDirect(stmt, selectReq, sizeof(selectReq));
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    affected = -1;
+    ret = SQLRowCount(stmt, &affected);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    BOOST_CHECK_EQUAL(affected, 0);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
