@@ -510,10 +510,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         try {
             if (obj == null)
                 stmt.setNull(idx, Types.VARCHAR);
-
             else if (obj instanceof BigInteger)
                 stmt.setObject(idx, obj, Types.JAVA_OBJECT);
-
             else
                 stmt.setObject(idx, obj);
         }
