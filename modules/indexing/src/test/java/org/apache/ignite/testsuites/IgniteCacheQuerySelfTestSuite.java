@@ -89,11 +89,18 @@ import org.apache.ignite.internal.processors.cache.distributed.replicated.Ignite
 import org.apache.ignite.internal.processors.cache.distributed.replicated.IgniteCacheReplicatedQueryP2PDisabledSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.IgniteCacheReplicatedQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.index.DuplicateKeyValueClassesSelfTest;
+import org.apache.ignite.internal.processors.cache.index.DynamicColumnsConcurrentAtomicPartitionedSelfTest;
+import org.apache.ignite.internal.processors.cache.index.DynamicColumnsConcurrentAtomicReplicatedSelfTest;
+import org.apache.ignite.internal.processors.cache.index.DynamicColumnsConcurrentTransactionalPartitionedSelfTest;
+import org.apache.ignite.internal.processors.cache.index.DynamicColumnsConcurrentTransactionalReplicatedSelfTest;
 import org.apache.ignite.internal.processors.cache.index.DynamicIndexClientBasicSelfTest;
 import org.apache.ignite.internal.processors.cache.index.DynamicIndexServerBasicSelfTest;
 import org.apache.ignite.internal.processors.cache.index.DynamicIndexServerCoordinatorBasicSelfTest;
 import org.apache.ignite.internal.processors.cache.index.DynamicIndexServerNodeFIlterBasicSelfTest;
 import org.apache.ignite.internal.processors.cache.index.DynamicIndexServerNodeFilterCoordinatorBasicSelfTest;
+import org.apache.ignite.internal.processors.cache.index.H2DynamicColumnsClientBasicSelfTest;
+import org.apache.ignite.internal.processors.cache.index.H2DynamicColumnsServerBasicSelfTest;
+import org.apache.ignite.internal.processors.cache.index.H2DynamicColumnsServerCoordinatorBasicSelfTest;
 import org.apache.ignite.internal.processors.cache.index.H2DynamicIndexAtomicPartitionedNearSelfTest;
 import org.apache.ignite.internal.processors.cache.index.H2DynamicIndexAtomicPartitionedSelfTest;
 import org.apache.ignite.internal.processors.cache.index.H2DynamicIndexAtomicReplicatedSelfTest;
@@ -251,6 +258,13 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
         suite.addTestSuite(H2DynamicIndexAtomicPartitionedSelfTest.class);
         suite.addTestSuite(H2DynamicIndexAtomicPartitionedNearSelfTest.class);
         suite.addTestSuite(H2DynamicTableSelfTest.class);
+        suite.addTestSuite(H2DynamicColumnsClientBasicSelfTest.class);
+        suite.addTestSuite(H2DynamicColumnsServerBasicSelfTest.class);
+        suite.addTestSuite(H2DynamicColumnsServerCoordinatorBasicSelfTest.class);
+        suite.addTestSuite(DynamicColumnsConcurrentAtomicPartitionedSelfTest.class);
+        suite.addTestSuite(DynamicColumnsConcurrentTransactionalPartitionedSelfTest.class);
+        suite.addTestSuite(DynamicColumnsConcurrentAtomicReplicatedSelfTest.class);
+        suite.addTestSuite(DynamicColumnsConcurrentTransactionalReplicatedSelfTest.class);
 
         // DML+DDL.
         suite.addTestSuite(H2DynamicIndexingComplexClientAtomicPartitionedTest.class);

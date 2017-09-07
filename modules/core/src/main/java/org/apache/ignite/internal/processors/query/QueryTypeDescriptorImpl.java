@@ -17,8 +17,15 @@
 
 package org.apache.ignite.internal.processors.query;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Set;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
@@ -27,13 +34,6 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
 
 /**
  * Descriptor of type.
@@ -53,7 +53,7 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
 
     /** Value field names and types with preserved order. */
     @GridToStringInclude
-    private final Map<String, Class<?>> fields = new LinkedHashMap<>();
+    private final LinkedHashMap<String, Class<?>> fields = new LinkedHashMap<>();
 
     /** */
     @GridToStringExclude
@@ -71,9 +71,6 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
 
     /** Aliases. */
     private Map<String, String> aliases;
-
-    /** Not-null fields. */
-    private Set<String> notNulls;
 
     /** */
     private QueryIndexDescriptorImpl fullTextIdx;
@@ -164,7 +161,7 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     }
 
     /** {@inheritDoc} */
-    @Override public Map<String, Class<?>> fields() {
+    @Override public LinkedHashMap<String, Class<?>> fields() {
         return fields;
     }
 
@@ -432,11 +429,6 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
      */
     public void aliases(Map<String, String> aliases) {
         this.aliases = aliases;
-    }
-
-    /** */
-    public void notNulls(Set<String> notNulls) {
-        this.notNulls = notNulls;
     }
 
     /**
