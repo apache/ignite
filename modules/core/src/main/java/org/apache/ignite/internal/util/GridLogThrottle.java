@@ -269,7 +269,7 @@ public class GridLogThrottle {
      * Method iterates though man and removes outdated entries (compares entry timestamp with current timestamp minus
      * timeout). It protects the map from causing memory leak.
      */
-    private static synchronized void  cleanUpOldEntries() {
+    private static void  cleanUpOldEntries() {
         long curTs = U.currentTimeMillis();
 
         for (Iterator<Long> it = errors.values().iterator(); it.hasNext();){
