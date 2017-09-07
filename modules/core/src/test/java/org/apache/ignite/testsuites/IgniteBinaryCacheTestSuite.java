@@ -19,6 +19,7 @@ package org.apache.ignite.testsuites;
 
 import java.util.HashSet;
 import junit.framework.TestSuite;
+import org.apache.ignite.internal.processors.cache.CacheBinaryStringEncodingPersistenceTest;
 import org.apache.ignite.internal.processors.cache.GridCacheAffinityRoutingSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryMemorySizeSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheMixedBinaryStringEncodingsTest;
@@ -80,6 +81,7 @@ public class IgniteBinaryCacheTestSuite extends TestSuite {
         suite.addTestSuite(CacheKeepBinaryWithInterceptorTest.class);
 
         suite.addTestSuite(GridCacheMixedBinaryStringEncodingsTest.class);
+        suite.addTestSuite(CacheBinaryStringEncodingPersistenceTest.class);
 
         return suite;
     }
