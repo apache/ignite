@@ -438,7 +438,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
                 in.readFully(payload);
 
-                res = new DataPageInsertFragmentRecord(cacheId, pageId, payload, lastLink);
+                res = new DataPageInsertFragmentRecord(cacheId, pageId, lastLink, payload);
 
                 break;
             }
@@ -1399,6 +1399,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
         int partId = in.readInt();
         long partCntr = in.readLong();
         long expireTime = in.readLong();
+        boolean storeCacheId = false;
 
         GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
 
@@ -1417,7 +1418,8 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                     writeVer,
                     expireTime,
                     partId,
-                    partCntr
+                    partCntr,
+                    storeCacheId
             );
         }
         else
@@ -1433,7 +1435,8 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                     writeVer,
                     expireTime,
                     partId,
-                    partCntr);
+                    partCntr,
+                    storeCacheId);
     }
 
     /**

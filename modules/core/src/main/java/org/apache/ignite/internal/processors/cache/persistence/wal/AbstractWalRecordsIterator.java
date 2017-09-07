@@ -24,12 +24,16 @@ import java.io.IOException;
 import java.nio.ByteOrder;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
+import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
+import org.apache.ignite.internal.pagemem.wal.record.WALReferenceAwareRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.wal.link.CachedPayloadLinker;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.NotNull;
@@ -76,6 +80,9 @@ public abstract class AbstractWalRecordsIterator
     /** Utility buffer for reading records */
     private final ByteBufferExpander buf;
 
+    /** Class to link {@link DataRecord) entries payload to {@link WALReferenceAwareRecord} records. */
+    private final CachedPayloadLinker linker;
+
     /**
      * @param log Logger
      * @param sharedCtx Shared context
@@ -94,7 +101,10 @@ public abstract class AbstractWalRecordsIterator
         this.serializer = serializer;
         this.ioFactory = ioFactory;
 
-        buf = new ByteBufferExpander(bufSize, ByteOrder.nativeOrder());
+        // Do not allocate direct buffer for iterator.
+        this.buf = new ByteBufferExpander(bufSize, ByteOrder.nativeOrder());
+
+        this.linker = new CachedPayloadLinker(sharedCtx.wal());
     }
 
     /**
@@ -128,6 +138,13 @@ public abstract class AbstractWalRecordsIterator
 
     /** {@inheritDoc} */
     @Override protected void onClose() throws IgniteCheckedException {
+        int walLookups = linker.walLookups();
+        if (walLookups > 0)
+            log.warning("The number DataRecord WAL lookups is " + walLookups +
+                    ". Try to increase " + IgniteSystemProperties.IGNITE_WAL_DATA_RECORDS_CACHE_SIZE_MB
+                    + " to reduce number of such lookups.");
+
+
         try {
             buf.close();
         }
@@ -219,6 +236,11 @@ public abstract class AbstractWalRecordsIterator
 
             ptr.length(rec.size());
 
+            /* Link payload for records with reference to DataRecord.
+               This operation allowed from serializer version 2. */
+            if (hnd.ser.version() > 1)
+                linker.linkPayload(rec, ptr);
+
             // cast using diamond operator here can break compile for 7
             return new IgniteBiTuple<>((WALPointer)ptr, rec);
         }
@@ -241,8 +263,7 @@ public abstract class AbstractWalRecordsIterator
     protected void handleRecordException(
         @NotNull final Exception e,
         @Nullable final FileWALPointer ptr) {
-        if (log.isInfoEnabled())
-            log.info("Stopping WAL iteration due to an exception: " + e.getMessage());
+        log.warning("Stopping WAL iteration due to an exception: " + e.getMessage());
     }
 
     /**

@@ -35,6 +35,7 @@ import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
+import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
@@ -384,6 +385,11 @@ public class FreeListImplSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public void key(KeyCacheObject key) {
             this.key = (TestCacheObject)key;
+        }
+
+        @Override
+        public WALPointer reference() {
+            return null;
         }
 
         /** {@inheritDoc} */

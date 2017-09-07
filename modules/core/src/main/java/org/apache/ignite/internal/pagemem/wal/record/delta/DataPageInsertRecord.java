@@ -19,24 +19,54 @@ package org.apache.ignite.internal.pagemem.wal.record.delta;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageMemory;
+import org.apache.ignite.internal.pagemem.wal.WALPointer;
+import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
+import org.apache.ignite.internal.pagemem.wal.record.WALReferenceAwareRecord;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Insert into data page.
  */
-public class DataPageInsertRecord extends PageDeltaRecord {
-    /** */
+public class DataPageInsertRecord extends PageDeltaRecord implements WALReferenceAwareRecord {
+    /** Actual fragment data size. */
+    private int payloadSize;
+
+    /** WAL reference to {@link DataRecord}. */
+    private WALPointer reference;
+
+    /** Actual fragment data. */
     private byte[] payload;
 
     /**
      * @param grpId Cache group ID.
      * @param pageId Page ID.
-     * @param payload Remainder of the record.
+     * @param payloadSize Record data size.
+     * @param reference WAL reference to {@link DataRecord}.
      */
     public DataPageInsertRecord(
         int grpId,
         long pageId,
-        byte[] payload
+        int payloadSize,
+        WALPointer reference
+    ) {
+        super(grpId, pageId);
+
+        this.payloadSize = payloadSize;
+        this.reference = reference;
+    }
+
+    /**
+     * Old constructor for backward compatibility.
+     *
+     * @param grpId Cache group ID.
+     * @param pageId Page ID.
+     * @param payload Record payload.
+     */
+    public DataPageInsertRecord(
+            int grpId,
+            long pageId,
+            byte[] payload
     ) {
         super(grpId, pageId);
 
@@ -62,5 +92,32 @@ public class DataPageInsertRecord extends PageDeltaRecord {
     /** {@inheritDoc} */
     @Override public RecordType type() {
         return RecordType.DATA_PAGE_INSERT_RECORD;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int payloadSize() {
+        return payloadSize;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int offset() {
+        return -1;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void payload(byte[] payload) {
+        this.payload = payload;
+    }
+
+    /** {@inheritDoc} */
+    @Override public WALPointer reference() {
+        return reference;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(DataPageInsertRecord.class, this,
+                "payloadSize", payloadSize,
+                "super", super.toString());
     }
 }

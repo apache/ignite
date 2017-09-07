@@ -15,50 +15,40 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.persistence;
+package org.apache.ignite.internal.pagemem.wal.record;
 
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
-import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
-import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 
 /**
- * Cache data row.
+ * Interface is needed to link WAL reference of {@link DataRecord} entries
+ * to appropriate physical DataPage insert/update records.
  */
-public interface CacheDataRow extends CacheSearchRow {
+public interface WALReferenceAwareRecord {
     /**
-     * @return Cache value.
+     * Record payload size which is needed for extracting actual payload from WAL reference.
+     *
+     * @return Payload size in bytes.
      */
-    public CacheObject value();
+    int payloadSize();
 
     /**
-     * @return Cache entry version.
+     * In case of fragmented record - offset of fragmented payload relatively to whole payload.
+     *
+     * @return Offset in bytes or -1 if record is not fragmented.
      */
-    public GridCacheVersion version();
+    int offset();
 
     /**
-     * @return Expire time.
+     * Set payload extracted from {@link DataRecord} to this record.
+     *
+     * @param payload Payload.
      */
-    public long expireTime();
+    void payload(byte[] payload);
 
     /**
-     * @return Partition for this key.
-     */
-    public int partition();
-
-    /**
-     * @param link Link for this row.
-     */
-    public void link(long link);
-
-    /**
-     * @param key Key.
-     */
-    public void key(KeyCacheObject key);
-
-    /**
-     * @return WAL reference to {@link DataRecord}.
+     * WAL reference to appropriate {@link DataRecord}.
+     *
+     * @return WAL reference.
      */
     WALPointer reference();
 }

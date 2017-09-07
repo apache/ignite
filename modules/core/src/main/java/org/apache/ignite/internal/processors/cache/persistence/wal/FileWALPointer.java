@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.wal;
 
+import java.io.IOException;
+import java.nio.ByteBuffer;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -84,6 +86,40 @@ public class FileWALPointer implements WALPointer, Comparable<FileWALPointer> {
      */
     public void length(int len) {
         this.len = len;
+    }
+
+    /**
+     * Serialize pointer to ByteBuffer.
+     *
+     * @param buf Byte Buffer.
+     */
+    public void put(ByteBuffer buf) {
+        buf.putLong(idx);
+        buf.putInt(fileOffset);
+        buf.putInt(len);
+    }
+
+    /**
+     * @return Size of pointer to serialize.
+     */
+    public int size() {
+        // Index + offset + length.
+        return 8 + 4 + 4;
+    }
+
+    /**
+     * Deserialize pointer from ByteBuffer.
+     *
+     * @param in Byte Buffer.
+     * @return Deserialized pointer.
+     * @throws IOException In case of deserialization exception.
+     */
+    public static FileWALPointer read(ByteBufferBackedDataInput in) throws IOException {
+        long idx = in.readLong();
+        int fileOffset = in.readInt();
+        int len = in.readInt();
+
+        return new FileWALPointer(idx, fileOffset, len);
     }
 
     /** {@inheritDoc} */

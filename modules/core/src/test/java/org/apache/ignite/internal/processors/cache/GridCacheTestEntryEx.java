@@ -25,6 +25,7 @@ import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessorResult;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.eviction.EvictableEntry;
+import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicAbstractUpdateFuture;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
@@ -435,27 +436,29 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     }
 
     /** @inheritDoc */
-    @Override public GridCacheUpdateTxResult innerSet(@Nullable IgniteInternalTx tx,
-        UUID evtNodeId,
-        UUID affNodeId,
-        @Nullable CacheObject val,
-        boolean writeThrough,
-        boolean retval,
-        long ttl,
-        boolean evt,
-        boolean metrics,
-        boolean keepBinary,
-        boolean hasOldVal,
-        @Nullable CacheObject oldVal,
-        AffinityTopologyVersion topVer,
-        CacheEntryPredicate[] filter,
-        GridDrType drType,
-        long drExpireTime,
-        @Nullable GridCacheVersion drVer,
-        UUID subjId,
-        String taskName,
-        @Nullable GridCacheVersion dhtVer,
-        @Nullable Long updateCntr)
+    @Override public GridCacheUpdateTxResult innerSet(
+            @Nullable IgniteInternalTx tx,
+            UUID evtNodeId,
+          UUID affNodeId,
+          @Nullable CacheObject val,
+          boolean writeThrough,
+          boolean retval,
+          long ttl,
+          boolean evt,
+          boolean metrics,
+          boolean keepBinary,
+          boolean hasOldVal,
+          @Nullable CacheObject oldVal,
+          AffinityTopologyVersion topVer,
+          CacheEntryPredicate[] filter,
+          GridDrType drType,
+          long drExpireTime,
+          @Nullable GridCacheVersion drVer,
+          UUID subjId,
+          String taskName,
+          @Nullable GridCacheVersion dhtVer,
+          @Nullable Long updateCntr,
+          @Nullable WALPointer reference)
         throws IgniteCheckedException, GridCacheEntryRemovedException {
         return new GridCacheUpdateTxResult(true, rawPut(val, ttl));
     }

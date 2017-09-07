@@ -19,34 +19,67 @@ package org.apache.ignite.internal.pagemem.wal.record.delta;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageMemory;
+import org.apache.ignite.internal.pagemem.wal.WALPointer;
+import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
+import org.apache.ignite.internal.pagemem.wal.record.WALReferenceAwareRecord;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Update existing record in data page.
  */
-public class DataPageUpdateRecord extends PageDeltaRecord {
+public class DataPageUpdateRecord extends PageDeltaRecord implements WALReferenceAwareRecord {
     /** */
-    private int itemId;
+    private final int itemId;
 
-    /** */
+    /** Actual fragment data size. */
+    private int payloadSize;
+
+    /** WAL reference to {@link DataRecord}. */
+    private WALPointer reference;
+
+    /** Actual fragment data. */
     private byte[] payload;
 
     /**
      * @param grpId Cache group ID.
      * @param pageId Page ID.
      * @param itemId Item ID.
-     * @param payload Record data.
+     * @param payloadSize Record data size.
+     * @param reference WAL reference to {@link DataRecord}.
      */
     public DataPageUpdateRecord(
         int grpId,
         long pageId,
         int itemId,
-        byte[] payload
+        int payloadSize,
+        WALPointer reference
     ) {
         super(grpId, pageId);
 
-        this.payload = payload;
         this.itemId = itemId;
+        this.payloadSize = payloadSize;
+        this.reference = reference;
+    }
+
+    /**
+     * Old constructor for backward compatibility.
+     *
+     * @param grpId Cache group ID.
+     * @param pageId Page ID.
+     * @param itemId Item ID.
+     * @param payload Record data.
+     */
+    public DataPageUpdateRecord(
+            int grpId,
+            long pageId,
+            int itemId,
+            byte[] payload
+    ) {
+        super(grpId, pageId);
+
+        this.itemId = itemId;
+        this.payload = payload;
     }
 
     /**
@@ -75,5 +108,32 @@ public class DataPageUpdateRecord extends PageDeltaRecord {
     /** {@inheritDoc} */
     @Override public RecordType type() {
         return RecordType.DATA_PAGE_UPDATE_RECORD;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int payloadSize() {
+        return payloadSize;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int offset() {
+        return -1;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void payload(byte[] payload) {
+        this.payload = payload;
+    }
+
+    /** {@inheritDoc} */
+    @Override public WALPointer reference() {
+        return reference;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(DataPageUpdateRecord.class, this,
+                "payloadSize", payloadSize,
+                "super", super.toString());
     }
 }

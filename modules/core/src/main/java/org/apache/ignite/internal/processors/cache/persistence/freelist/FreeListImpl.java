@@ -22,7 +22,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
-import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageInsertFragmentRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageInsertRecord;
@@ -36,7 +35,6 @@ import org.apache.ignite.internal.processors.cache.persistence.MemoryPolicy;
 import org.apache.ignite.internal.processors.cache.persistence.evict.PageEvictionTracker;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.CacheVersionIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPagePayload;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseBag;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
@@ -109,20 +107,9 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
             evictionTracker.touchPage(pageId);
 
             if (updated && needWalDeltaRecord(pageId, page, walPlc)) {
-                // TODO This record must contain only a reference to a logical WAL record with the actual data.
-                byte[] payload = new byte[rowSize];
+                assert row.reference() != null;
 
-                DataPagePayload data = io.readPayload(pageAddr, itemId, pageSize());
-
-                assert data.payloadSize() == rowSize;
-
-                PageUtils.getBytes(pageAddr, data.offset(), payload, 0, rowSize);
-
-                wal.log(new DataPageUpdateRecord(
-                    cacheId,
-                    pageId,
-                    itemId,
-                    payload));
+                wal.log(new DataPageUpdateRecord(grpId, pageId, itemId, rowSize, row.reference()));
             }
 
             return updated;
@@ -194,19 +181,9 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
             io.addRow(pageAddr, row, rowSize, pageSize());
 
             if (needWalDeltaRecord(pageId, page, null)) {
-                // TODO IGNITE-5829 This record must contain only a reference to a logical WAL record with the actual data.
-                byte[] payload = new byte[rowSize];
+                assert row.reference() != null;
 
-                DataPagePayload data = io.readPayload(pageAddr, PageIdUtils.itemId(row.link()), pageSize());
-
-                assert data.payloadSize() == rowSize;
-
-                PageUtils.getBytes(pageAddr, data.offset(), payload, 0, rowSize);
-
-                wal.log(new DataPageInsertRecord(
-                    grpId,
-                    pageId,
-                    payload));
+                wal.log(new DataPageInsertRecord(grpId, pageId, rowSize, row.reference()));
             }
 
             return rowSize;
@@ -240,14 +217,9 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
             assert payloadSize > 0 : payloadSize;
 
             if (needWalDeltaRecord(pageId, page, null)) {
-                // TODO IGNITE-5829 This record must contain only a reference to a logical WAL record with the actual data.
-                byte[] payload = new byte[payloadSize];
+                assert row.reference() != null;
 
-                DataPagePayload data = io.readPayload(pageAddr, PageIdUtils.itemId(row.link()), pageSize());
-
-                PageUtils.getBytes(pageAddr, data.offset(), payload, 0, payloadSize);
-
-                wal.log(new DataPageInsertFragmentRecord(grpId, pageId, payload, lastLink));
+                wal.log(new DataPageInsertFragmentRecord(grpId, pageId, payloadSize, written, lastLink, row.reference()));
             }
 
             return written + payloadSize;

@@ -35,7 +35,10 @@ import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageUtils;
+import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.CacheSearchRow;
@@ -51,8 +54,6 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageI
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPagePayload;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridAtomicLong;
@@ -360,11 +361,12 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         GridCacheVersion ver,
         long expireTime,
         GridDhtLocalPartition part,
-        @Nullable CacheDataRow oldRow
+        @Nullable CacheDataRow oldRow,
+        @Nullable WALPointer reference
     ) throws IgniteCheckedException {
         assert expireTime >= 0;
 
-        dataStore(part).update(cctx, key, val, ver, expireTime, oldRow);
+        dataStore(part).update(cctx, key, val, ver, expireTime, oldRow, reference);
     }
 
     /** {@inheritDoc} */
@@ -1242,16 +1244,17 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
         /** {@inheritDoc} */
         @Override public CacheDataRow createRow(
-            GridCacheContext cctx,
-            KeyCacheObject key,
-            CacheObject val,
-            GridCacheVersion ver,
-            long expireTime,
-            @Nullable CacheDataRow oldRow) throws IgniteCheckedException
+                GridCacheContext cctx,
+                KeyCacheObject key,
+                CacheObject val,
+                GridCacheVersion ver,
+                long expireTime,
+                @Nullable CacheDataRow oldRow,
+                @Nullable WALPointer reference) throws IgniteCheckedException
         {
             int cacheId = grp.storeCacheIdInDataPage() ? cctx.cacheId() : UNDEFINED_CACHE_ID;
 
-            DataRow dataRow = new DataRow(key, val, ver, partId, expireTime, cacheId);
+            DataRow dataRow = new DataRow(key, val, ver, partId, expireTime, cacheId, reference);
 
             if (canUpdateOldRow(cctx, oldRow, dataRow) && rowStore.updateRow(oldRow.link(), dataRow))
                 dataRow.link(oldRow.link());
@@ -1273,13 +1276,15 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
 
         /** {@inheritDoc} */
-        @Override public void update(GridCacheContext cctx,KeyCacheObject key,
-
-            CacheObject val,
-            GridCacheVersion ver,
-            long expireTime,
-            @Nullable CacheDataRow oldRow
-        ) throws IgniteCheckedException {
+        @Override public void update(
+                GridCacheContext cctx,
+                KeyCacheObject key,
+                CacheObject val,
+                GridCacheVersion ver,
+                long expireTime,
+                @Nullable CacheDataRow oldRow,
+                @Nullable WALPointer reference) throws IgniteCheckedException
+        {
             assert oldRow == null || oldRow.link() != 0L : oldRow;
 
             if (!busyLock.enterBusy())
@@ -1290,7 +1295,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
                 assert oldRow == null || oldRow.cacheId() == cacheId : oldRow;
 
-                DataRow dataRow = new DataRow(key, val, ver, partId, expireTime, cacheId);
+                DataRow dataRow = new DataRow(key, val, ver, partId, expireTime, cacheId, reference);
 
                 CacheObjectContext coCtx = cctx.cacheObjectContext();
 
@@ -1629,6 +1634,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
          * @param key Key.
          * @param oldVal Old value.
          * @param newVal New value.
+         * @throws IgniteCheckedException If failed.
          */
         private void updateIgfsMetrics(
             GridCacheContext cctx,
@@ -1737,6 +1743,9 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         /** */
         protected int hash;
 
+        /** */
+        protected WALPointer reference;
+
         /**
          * @param hash Hash code.
          * @param link Link.
@@ -1770,7 +1779,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
          * @param expireTime Expire time.
          * @param cacheId Cache ID.
          */
-        DataRow(KeyCacheObject key, CacheObject val, GridCacheVersion ver, int part, long expireTime, int cacheId) {
+        DataRow(KeyCacheObject key, CacheObject val, GridCacheVersion ver, int part, long expireTime, int cacheId, WALPointer reference) {
             super(0);
 
             this.hash = key.hashCode();
@@ -1780,6 +1789,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             this.part = part;
             this.expireTime = expireTime;
             this.cacheId = cacheId;
+            this.reference = reference;
         }
 
         /** {@inheritDoc} */
@@ -1802,6 +1812,11 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
          */
         void cacheId(int cacheId) {
             this.cacheId = cacheId;
+        }
+
+        @Override
+        public WALPointer reference() {
+            return reference;
         }
     }
 

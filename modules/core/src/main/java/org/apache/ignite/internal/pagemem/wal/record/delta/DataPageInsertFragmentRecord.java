@@ -19,29 +19,68 @@ package org.apache.ignite.internal.pagemem.wal.record.delta;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageMemory;
+import org.apache.ignite.internal.pagemem.wal.WALPointer;
+import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
+import org.apache.ignite.internal.pagemem.wal.record.WALReferenceAwareRecord;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Insert fragment to data page record.
  */
-public class DataPageInsertFragmentRecord extends PageDeltaRecord {
+public class DataPageInsertFragmentRecord extends PageDeltaRecord implements WALReferenceAwareRecord {
     /** Link to the last entry fragment. */
     private final long lastLink;
 
+    /** Actual fragment data size. */
+    private int payloadSize;
+
+    /** Fragment payload offset relatively to whole record payload. */
+    private int offset;
+
+    /** WAL reference to {@link DataRecord}. */
+    private WALPointer reference;
+
     /** Actual fragment data. */
-    private final byte[] payload;
+    private byte[] payload;
 
     /**
      * @param grpId Cache group ID.
      * @param pageId Page ID.
-     * @param payload Fragment payload.
+     * @param payloadSize Fragment data size.
+     * @param offset Fragment data offset.
      * @param lastLink Link to the last entry fragment.
+     * @param reference WAL reference to {@link DataRecord}.
      */
     public DataPageInsertFragmentRecord(
-        final int grpId,
-        final long pageId,
-        final byte[] payload,
-        final long lastLink
+        int grpId,
+        long pageId,
+        int payloadSize,
+        int offset,
+        long lastLink,
+        WALPointer reference
+    ) {
+        super(grpId, pageId);
+
+        this.lastLink = lastLink;
+        this.payloadSize = payloadSize;
+        this.offset = offset;
+        this.reference = reference;
+    }
+
+    /**
+     * Old constructor for backward compatibility.
+     *
+     * @param grpId Cache group ID.
+     * @param pageId Page ID.
+     * @param lastLink Link to the last entry fragment.
+     * @param payload Fragment payload.
+     */
+    public DataPageInsertFragmentRecord(
+            int grpId,
+            long pageId,
+            long lastLink,
+            byte[] payload
     ) {
         super(grpId, pageId);
 
@@ -61,11 +100,8 @@ public class DataPageInsertFragmentRecord extends PageDeltaRecord {
         return RecordType.DATA_PAGE_INSERT_FRAGMENT_RECORD;
     }
 
-    /**
-     * @return Fragment payload size.
-     */
-    public int payloadSize() {
-        return payload.length;
+    public byte[] getPayload() {
+        return payload;
     }
 
     /**
@@ -80,5 +116,33 @@ public class DataPageInsertFragmentRecord extends PageDeltaRecord {
      */
     public long lastLink() {
         return lastLink;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int payloadSize() {
+        return payloadSize;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int offset() {
+        return offset;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void payload(byte[] payload) {
+        this.payload = payload;
+    }
+
+    /** {@inheritDoc} */
+    @Override public WALPointer reference() {
+        return reference;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(DataPageInsertFragmentRecord.class, this,
+                "payloadSize", payloadSize,
+                "offset", offset,
+                "super", super.toString());
     }
 }

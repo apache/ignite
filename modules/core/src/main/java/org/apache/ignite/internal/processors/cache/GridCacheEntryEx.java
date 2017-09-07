@@ -24,6 +24,7 @@ import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessorResult;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.eviction.EvictableEntry;
+import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockCancelledException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
@@ -360,28 +361,29 @@ public interface GridCacheEntryEx {
      * @throws GridCacheEntryRemovedException If entry has been removed.
      */
     public GridCacheUpdateTxResult innerSet(
-        @Nullable IgniteInternalTx tx,
-        UUID evtNodeId,
-        UUID affNodeId,
-        @Nullable CacheObject val,
-        boolean writeThrough,
-        boolean retval,
-        long ttl,
-        boolean evt,
-        boolean metrics,
-        boolean keepBinary,
-        boolean oldValPresent,
-        @Nullable CacheObject oldVal,
-        AffinityTopologyVersion topVer,
-        CacheEntryPredicate[] filter,
-        GridDrType drType,
-        long drExpireTime,
-        @Nullable GridCacheVersion explicitVer,
-        @Nullable UUID subjId,
-        String taskName,
-        @Nullable GridCacheVersion dhtVer,
-        @Nullable Long updateCntr
-    ) throws IgniteCheckedException, GridCacheEntryRemovedException;
+            @Nullable IgniteInternalTx tx,
+            UUID evtNodeId,
+            UUID affNodeId,
+            @Nullable CacheObject val,
+            boolean writeThrough,
+            boolean retval,
+            long ttl,
+            boolean evt,
+            boolean metrics,
+            boolean keepBinary,
+            boolean oldValPresent,
+            @Nullable CacheObject oldVal,
+            AffinityTopologyVersion topVer,
+            CacheEntryPredicate[] filter,
+            GridDrType drType,
+            long drExpireTime,
+            @Nullable GridCacheVersion explicitVer,
+            @Nullable UUID subjId,
+            String taskName,
+            @Nullable GridCacheVersion dhtVer,
+            @Nullable Long updateCntr,
+            @Nullable WALPointer reference
+            ) throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**
      * @param tx Cache transaction.

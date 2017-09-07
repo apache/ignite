@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed;
 
 import java.io.Externalizable;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -476,8 +475,6 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                     try {
                         Collection<IgniteTxEntry> entries = near() ? allEntries() : writeEntries();
 
-                        List<DataEntry> dataEntries = null;
-
                         batchStoreCommit(writeMap().values());
 
                         try {
@@ -556,25 +553,6 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
 
                                             GridCacheVersion dhtVer = cached.isNear() ? writeVersion() : null;
 
-                                            if (!near() && cctx.wal() != null && op != NOOP && op != RELOAD && op != READ) {
-                                                if (dataEntries == null)
-                                                    dataEntries = new ArrayList<>(entries.size());
-
-                                                dataEntries.add(
-                                                    new DataEntry(
-                                                        cacheCtx.cacheId(),
-                                                        txEntry.key(),
-                                                        val,
-                                                        op,
-                                                        nearXidVersion(),
-                                                        writeVersion(),
-                                                        0,
-                                                        txEntry.key().partition(),
-                                                        txEntry.updateCounter()
-                                                    )
-                                                );
-                                            }
-
                                             if (op == CREATE || op == UPDATE) {
                                                 // Invalidate only for near nodes (backups cannot be invalidated).
                                                 if (isSystemInvalidate() || (isInvalidate() && cacheCtx.isNear()))
@@ -598,6 +576,24 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                                 else {
                                                     assert val != null : txEntry;
 
+                                                    WALPointer reference = null;
+
+                                                    if (cctx.wal() != null)
+                                                        reference = cctx.wal().log(new DataRecord(
+                                                            new DataEntry(
+                                                                    cacheCtx.cacheId(),
+                                                                    txEntry.key(),
+                                                                    val,
+                                                                    op,
+                                                                    nearXidVersion(),
+                                                                    writeVersion(),
+                                                                    cached.expireTime(),
+                                                                    txEntry.key().partition(),
+                                                                    txEntry.updateCounter(),
+                                                                    cacheCtx.group().storeCacheIdInDataPage()
+                                                            )
+                                                        ));
+
                                                     cached.innerSet(this,
                                                         eventNodeId(),
                                                         nodeId,
@@ -618,7 +614,8 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                                         CU.subjectId(this, cctx),
                                                         resolveTaskName(),
                                                         dhtVer,
-                                                        txEntry.updateCounter());
+                                                        txEntry.updateCounter(),
+                                                        reference);
 
                                                     // Keep near entry up to date.
                                                     if (nearCached != null) {
@@ -740,9 +737,6 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                         throw (Error)ex;
                                 }
                             }
-
-                            if (!near() && cctx.wal() != null)
-                                cctx.wal().log(new DataRecord(dataEntries));
 
                             if (ptr != null)
                                 cctx.wal().fsync(ptr);

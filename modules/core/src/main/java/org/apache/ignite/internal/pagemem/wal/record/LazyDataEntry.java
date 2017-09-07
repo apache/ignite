@@ -31,7 +31,7 @@ import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProces
  *
  */
 public class LazyDataEntry extends DataEntry {
-    /** */
+    /** Cache context associated with entry. */
     private GridCacheSharedContext cctx;
 
     /** */
@@ -66,9 +66,10 @@ public class LazyDataEntry extends DataEntry {
         GridCacheVersion writeVer,
         long expireTime,
         int partId,
-        long partCnt
+        long partCnt,
+        boolean storeCacheId
     ) {
-        super(cacheId, null, null, op, nearXidVer, writeVer, expireTime, partId, partCnt);
+        super(cacheId, null, null, op, nearXidVer, writeVer, expireTime, partId, partCnt, storeCacheId);
 
         this.cctx = cctx;
         this.keyType = keyType;
@@ -112,5 +113,33 @@ public class LazyDataEntry extends DataEntry {
         }
 
         return val;
+    }
+
+    /**
+     * @return Key {@link CacheObject} type.
+     */
+    public byte keyType() {
+        return keyType;
+    }
+
+    /**
+     * @return Key byte array.
+     */
+    public byte[] rawKey() {
+        return keyBytes;
+    }
+
+    /**
+     * @return Value {@link CacheObject} type.
+     */
+    public byte valueType() {
+        return valType;
+    }
+
+    /**
+     * @return Value byte array.
+     */
+    public byte[] rawValue() {
+        return valBytes;
     }
 }
