@@ -839,7 +839,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
      * @param internal Internal flag.
      * @param id Listener ID.
      */
-    void unregisterListener(boolean internal, UUID id) {
+    public void unregisterListener(boolean internal, UUID id) {
         CacheContinuousQueryListener lsnr;
 
         if (internal) {
