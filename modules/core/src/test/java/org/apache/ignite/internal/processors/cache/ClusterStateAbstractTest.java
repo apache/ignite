@@ -280,7 +280,7 @@ public abstract class ClusterStateAbstractTest extends GridCommonAbstractTest {
      * @throws Exception If fails.
      */
     public void testDeactivationWithPendingLock() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-4931");
+        //fail("https://issues.apache.org/jira/browse/IGNITE-4931");
 
         startGrids(GRID_CNT);
 
@@ -337,7 +337,7 @@ public abstract class ClusterStateAbstractTest extends GridCommonAbstractTest {
      * @throws Exception If fails.
      */
     public void testDeactivationWithPendingTransaction() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-4931");
+        //fail("https://issues.apache.org/jira/browse/IGNITE-4931");
 
         startGrids(GRID_CNT);
 
