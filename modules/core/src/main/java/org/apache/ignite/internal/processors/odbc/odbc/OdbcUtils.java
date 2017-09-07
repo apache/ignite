@@ -139,4 +139,26 @@ public class OdbcUtils {
                 throw new IgniteException("Invalid ODBC data type '" + odbcDataType + "'");
         }
     }
+
+    /**
+     * Retrieves error message from exception.
+     * @param err Exception.
+     * @return Error message.
+     */
+    public static String retrieveH2ErrorMessage(Throwable err) {
+        String msg = err.getMessage();
+
+        Throwable e = err.getCause();
+        while (e != null) {
+            if (e.getClass().getCanonicalName().equals("org.h2.jdbc.JdbcSQLException")) {
+                msg = e.getMessage();
+
+                break;
+            }
+
+            e = e.getCause();
+        }
+
+        return msg;
+    }
 }
