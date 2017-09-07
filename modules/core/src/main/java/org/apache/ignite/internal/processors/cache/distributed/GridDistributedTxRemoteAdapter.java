@@ -386,7 +386,7 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
         // If another thread is doing prepare or rollback.
         if (!state(PREPARING)) {
             // In optimistic mode prepare may be called multiple times.
-            if(state() != PREPARING || !optimistic()) {
+            if (state() != PREPARING || !optimistic()) {
                 if (log.isDebugEnabled())
                     log.debug("Invalid transaction state for prepare: " + this);
 

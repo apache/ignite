@@ -17,22 +17,25 @@
 
 import defaultName from '../../app/filters/default-name.filter';
 
+import { suite, test } from 'mocha';
 import { assert } from 'chai';
 
-const INSTANCE = defaultName[0]();
+const instance = defaultName[0]();
 
 suite('defaultName', () => {
     test('defaultName filter', () => {
-        assert.equal(INSTANCE(''), '<default>');
-        assert.equal(INSTANCE(null), '<default>');
-        assert.equal(INSTANCE(undefined), '<default>');
-        assert.equal(INSTANCE('', false), '<default>');
-        assert.equal(INSTANCE(null, false), '<default>');
-        assert.equal(INSTANCE(undefined, false), '<default>');
-        assert.equal(INSTANCE('', true), '&lt;default&gt;');
-        assert.equal(INSTANCE(null, true), '&lt;default&gt;');
-        assert.equal(INSTANCE(undefined, true), '&lt;default&gt;');
-        assert.equal(INSTANCE("name", false), 'name');
-        assert.equal(INSTANCE("name", true), 'name');
+        let undef;
+
+        assert.equal(instance(''), '<default>');
+        assert.equal(instance(null), '<default>');
+        assert.equal(instance(), '<default>');
+        assert.equal(instance('', false), '<default>');
+        assert.equal(instance(null, false), '<default>');
+        assert.equal(instance(undef, false), '<default>');
+        assert.equal(instance('', true), '&lt;default&gt;');
+        assert.equal(instance(null, true), '&lt;default&gt;');
+        assert.equal(instance(undef, true), '&lt;default&gt;');
+        assert.equal(instance('name', false), 'name');
+        assert.equal(instance('name', true), 'name');
     });
 });

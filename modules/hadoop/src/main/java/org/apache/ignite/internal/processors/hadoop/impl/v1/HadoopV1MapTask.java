@@ -30,6 +30,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.hadoop.HadoopFileBlock;
 import org.apache.ignite.internal.processors.hadoop.HadoopInputSplit;
 import org.apache.ignite.internal.processors.hadoop.HadoopJob;
+import org.apache.ignite.internal.processors.hadoop.HadoopMapperUtils;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskCancelledException;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskContext;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskInfo;
@@ -45,7 +46,7 @@ public class HadoopV1MapTask extends HadoopV1Task {
     /**
      * Constructor.
      *
-     * @param taskInfo 
+     * @param taskInfo Taks info.
      */
     public HadoopV1MapTask(HadoopTaskInfo taskInfo) {
         super(taskInfo);
@@ -56,67 +57,79 @@ public class HadoopV1MapTask extends HadoopV1Task {
     @Override public void run(HadoopTaskContext taskCtx) throws IgniteCheckedException {
         HadoopJob job = taskCtx.job();
 
-        HadoopV2TaskContext ctx = (HadoopV2TaskContext)taskCtx;
+        HadoopV2TaskContext taskCtx0 = (HadoopV2TaskContext)taskCtx;
 
-        JobConf jobConf = ctx.jobConf();
-
-        InputFormat inFormat = jobConf.getInputFormat();
-
-        HadoopInputSplit split = info().inputSplit();
-
-        InputSplit nativeSplit;
-
-        if (split instanceof HadoopFileBlock) {
-            HadoopFileBlock block = (HadoopFileBlock)split;
-
-            nativeSplit = new FileSplit(new Path(block.file().toString()), block.start(), block.length(), EMPTY_HOSTS);
-        }
+        if (taskCtx.taskInfo().hasMapperIndex())
+            HadoopMapperUtils.mapperIndex(taskCtx.taskInfo().mapperIndex());
         else
-            nativeSplit = (InputSplit)ctx.getNativeSplit(split);
-
-        assert nativeSplit != null;
-
-        Reporter reporter = new HadoopV1Reporter(taskCtx);
-
-        HadoopV1OutputCollector collector = null;
+            HadoopMapperUtils.clearMapperIndex();
 
         try {
-            collector = collector(jobConf, ctx, !job.info().hasCombiner() && !job.info().hasReducer(),
-                fileName(), ctx.attemptId());
+            JobConf jobConf = taskCtx0.jobConf();
 
-            RecordReader reader = inFormat.getRecordReader(nativeSplit, jobConf, reporter);
+            InputFormat inFormat = jobConf.getInputFormat();
 
-            Mapper mapper = ReflectionUtils.newInstance(jobConf.getMapperClass(), jobConf);
+            HadoopInputSplit split = info().inputSplit();
 
-            Object key = reader.createKey();
-            Object val = reader.createValue();
+            InputSplit nativeSplit;
 
-            assert mapper != null;
+            if (split instanceof HadoopFileBlock) {
+                HadoopFileBlock block = (HadoopFileBlock)split;
+
+                nativeSplit = new FileSplit(new Path(block.file().toString()), block.start(), block.length(), EMPTY_HOSTS);
+            }
+            else
+                nativeSplit = (InputSplit)taskCtx0.getNativeSplit(split);
+
+            assert nativeSplit != null;
+
+            Reporter reporter = new HadoopV1Reporter(taskCtx);
+
+            HadoopV1OutputCollector collector = null;
 
             try {
-                try {
-                    while (reader.next(key, val)) {
-                        if (isCancelled())
-                            throw new HadoopTaskCancelledException("Map task cancelled.");
+                collector = collector(jobConf, taskCtx0, !job.info().hasCombiner() && !job.info().hasReducer(),
+                    fileName(), taskCtx0.attemptId());
 
-                        mapper.map(key, val, collector, reporter);
+                RecordReader reader = inFormat.getRecordReader(nativeSplit, jobConf, reporter);
+
+                Mapper mapper = ReflectionUtils.newInstance(jobConf.getMapperClass(), jobConf);
+
+                Object key = reader.createKey();
+                Object val = reader.createValue();
+
+                assert mapper != null;
+
+                try {
+                    try {
+                        while (reader.next(key, val)) {
+                            if (isCancelled())
+                                throw new HadoopTaskCancelledException("Map task cancelled.");
+
+                            mapper.map(key, val, collector, reporter);
+                        }
+
+                        taskCtx.onMapperFinished();
+                    }
+                    finally {
+                        mapper.close();
                     }
                 }
                 finally {
-                    mapper.close();
+                    collector.closeWriter();
                 }
-            }
-            finally {
-                collector.closeWriter();
-            }
 
-            collector.commit();
+                collector.commit();
+            }
+            catch (Exception e) {
+                if (collector != null)
+                    collector.abort();
+
+                throw new IgniteCheckedException(e);
+            }
         }
-        catch (Exception e) {
-            if (collector != null)
-                collector.abort();
-
-            throw new IgniteCheckedException(e);
+        finally {
+            HadoopMapperUtils.clearMapperIndex();
         }
     }
 }

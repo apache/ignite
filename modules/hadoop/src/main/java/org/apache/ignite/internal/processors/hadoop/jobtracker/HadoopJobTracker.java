@@ -240,7 +240,7 @@ public class HadoopJobTracker extends HadoopComponent {
 
                     try {
                         // Must process query callback in a separate thread to avoid deadlocks.
-                        evtProcSvc.submit(new EventHandler() {
+                        evtProcSvc.execute(new EventHandler() {
                             @Override protected void body() throws IgniteCheckedException {
                                 processJobMetadataUpdates(evts);
                             }
@@ -264,7 +264,7 @@ public class HadoopJobTracker extends HadoopComponent {
 
                 try {
                     // Must process discovery callback in a separate thread to avoid deadlock.
-                    evtProcSvc.submit(new EventHandler() {
+                    evtProcSvc.execute(new EventHandler() {
                         @Override protected void body() {
                             processNodeLeft((DiscoveryEvent)evt);
                         }
@@ -1018,6 +1018,8 @@ public class HadoopJobTracker extends HadoopComponent {
             if (state == null)
                 state = initState(jobId);
 
+            int mapperIdx = 0;
+
             for (HadoopInputSplit split : mappers) {
                 if (state.addMapper(split)) {
                     if (log.isDebugEnabled())
@@ -1025,6 +1027,8 @@ public class HadoopJobTracker extends HadoopComponent {
                             ", split=" + split + ']');
 
                     HadoopTaskInfo taskInfo = new HadoopTaskInfo(MAP, jobId, meta.taskNumber(split), 0, split);
+
+                    taskInfo.mapperIndex(mapperIdx++);
 
                     if (tasks == null)
                         tasks = new ArrayList<>();

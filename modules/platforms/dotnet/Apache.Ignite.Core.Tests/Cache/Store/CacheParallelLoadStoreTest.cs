@@ -25,7 +25,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
     /// <summary>
     /// Tests for GridCacheParallelLoadStoreAdapter.
     /// </summary>
-    public class CacheParallelLoadStoreTest
+    public sealed class CacheParallelLoadStoreTest
     {
         // object store name
         private const string ObjectStoreCacheName = "object_store_parallel";
@@ -34,11 +34,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         /// Set up test class.
         /// </summary>
         [TestFixtureSetUp]
-        public virtual void BeforeTests()
+        public void BeforeTests()
         {
-            TestUtils.KillProcesses();
-            TestUtils.JvmDebug = true;
-
             Ignition.Start(new IgniteConfiguration
             {
                 JvmClasspath = TestUtils.CreateTestClasspath(),
@@ -55,7 +52,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         /// Tear down test class.
         /// </summary>
         [TestFixtureTearDown]
-        public virtual void AfterTests()
+        public void AfterTests()
         {
             Ignition.StopAll(true);
         }
