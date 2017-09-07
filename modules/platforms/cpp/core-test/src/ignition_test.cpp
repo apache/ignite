@@ -35,9 +35,9 @@ BOOST_AUTO_TEST_CASE(TestIgnition)
     IgniteConfiguration cfg;
 
 #ifdef IGNITE_TESTS_32
-    ignite_test::InitConfig(cfg, "cache-test-32.xml");
+    ignite_test::InitConfig(cfg, "persistance-store-32.xml");
 #else
-    ignite_test::InitConfig(cfg, "cache-test.xml");
+    ignite_test::InitConfig(cfg, "persistance-store.xml");
 #endif
 
     IgniteError err;
@@ -101,6 +101,17 @@ BOOST_AUTO_TEST_CASE(TestStartWithPersistance)
 
         throw;
     }
+}
+
+BOOST_AUTO_TEST_CASE(GracefulDeathOnInvalidConfig)
+{
+    IgniteConfiguration cfg;
+
+    ignite_test::InitConfig(cfg, "invalid.xml");
+
+    BOOST_CHECK_THROW(Ignition::Start(cfg), IgniteError);
+
+    Ignition::StopAll(false);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
