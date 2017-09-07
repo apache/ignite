@@ -270,18 +270,14 @@ public class GridLogThrottle {
      * timeout). It protects the map from causing memory leak.
      */
     private static synchronized void  cleanUpOldEntries() {
-
         long curTs = U.currentTimeMillis();
 
         for (Iterator<Long> it = errors.values().iterator(); it.hasNext();){
             Long loggedTs = it.next();
 
-            if (loggedTs <= (curTs - throttleTimeout)) {
+            if (loggedTs <= (curTs - throttleTimeout))
                 it.remove();
-                System.out.println("Errors size: " + errorsSize() + " Time Stamp " + U.currentTimeMillis());
-            }
         }
-
     }
 
     /** Ensure singleton. */
