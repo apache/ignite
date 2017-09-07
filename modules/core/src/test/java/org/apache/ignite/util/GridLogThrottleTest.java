@@ -19,6 +19,7 @@ package org.apache.ignite.util;
 
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.typedef.internal.LT;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -133,6 +134,7 @@ public class GridLogThrottleTest extends GridCommonAbstractTest {
         LT.throttleTimeout(1000);
 
         LT.error(log, new RuntimeException("Test exception 1."), "Test");
+        System.out.println("Test exception 1." + U.currentTimeMillis());
         assertTrue(log.toString().contains("Test\r\njava.lang.RuntimeException: Test exception 1."));
         assertEquals(1, LT.errorsSize());
         log.reset();
@@ -175,14 +177,13 @@ public class GridLogThrottleTest extends GridCommonAbstractTest {
         assertTrue(log.toString().contains("Test\r\njava.lang.RuntimeException: Test exception 1."));
         log.reset();
 
-        info("Slept for throttle timeout: " + LT.throttleTimeout() * 2);
-        Thread.sleep(LT.throttleTimeout() * 2);
+        info("Slept for throttle timeout: " + LT.throttleTimeout());
+        Thread.sleep(LT.throttleTimeout());
 
-        LT.info(log(), "Test info message 1.");
-        assertEquals(1, LT.errorsSize());
+        info("Slept for throttle timeout: " + LT.throttleTimeout());
+        Thread.sleep(LT.throttleTimeout());
 
-        LT.info(log(), "Test info message 2.");
-        assertEquals(2, LT.errorsSize());
+        assertEquals(0, LT.errorsSize());
     }
 
     /**
