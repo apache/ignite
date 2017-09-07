@@ -114,6 +114,13 @@ mixin query-settings
                     indexes are not selected in optimal order.' data-trigger='hover')
                     input(type='checkbox' ng-model='paragraph.enforceJoinOrder')
                     span Enforce join order
+            .row(ng-if='lazyQueryAvailable(paragraph)')
+                label.tipLabel(bs-tooltip data-placement='bottom' data-title='By default Ignite attempts to fetch the whole query result set to memory and send it to the client.<br/>\
+                    For small and medium result sets this provides optimal performance and minimize duration of internal database locks, thus increasing concurrency.<br/>\
+                    If result set is too big to fit in available memory this could lead to excessive GC pauses and even OutOfMemoryError.<br/>\
+                    Use this flag as a hint for Ignite to fetch result set lazily, thus minimizing memory consumption at the cost of moderate performance hit.' data-trigger='hover')
+                    input(type='checkbox' ng-model='paragraph.lazy')
+                    span Lazy result set
 
 mixin query-actions
     button.btn.btn-primary(ng-disabled='!actionAvailable(paragraph, true)' ng-click='execute(paragraph)') Execute

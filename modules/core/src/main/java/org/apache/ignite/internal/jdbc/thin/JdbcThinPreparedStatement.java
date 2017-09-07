@@ -95,7 +95,7 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
         int res = getUpdateCount();
 
         if (res == -1)
-            throw new SQLException("The query is not DML statememt: " + sql);
+            throw new SQLException("The query is not DML statement: " + sql);
 
         return res;
     }
@@ -378,7 +378,7 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
     @Override public void setNString(int paramIdx, String val) throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("SQL-specific types are not supported.");
+        setString(paramIdx, val);
     }
 
     /** {@inheritDoc} */
