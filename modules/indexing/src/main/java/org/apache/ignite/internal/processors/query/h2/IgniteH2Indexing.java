@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.h2;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.math.BigInteger;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -509,6 +510,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         try {
             if (obj == null)
                 stmt.setNull(idx, Types.VARCHAR);
+            else if (obj instanceof BigInteger)
+                stmt.setObject(idx, obj, Types.JAVA_OBJECT);
             else
                 stmt.setObject(idx, obj);
         }
