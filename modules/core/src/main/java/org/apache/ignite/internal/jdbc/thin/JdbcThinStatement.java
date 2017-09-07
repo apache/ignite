@@ -466,7 +466,8 @@ public class JdbcThinStatement implements Statement {
 
             switch (curr) {
                 case CLOSE_CURRENT_RESULT:
-                    resultSets.get(curRes - 1).close0();
+                    if (curRes > 0)
+                        resultSets.get(curRes - 1).close0();
 
                     break;
 
