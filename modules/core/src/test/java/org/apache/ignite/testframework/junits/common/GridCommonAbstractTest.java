@@ -1291,7 +1291,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
     /**
      * @param cache Cache.
-     * @return Keys for which given cache is primary.
+     * @return Key for which given cache is primary.
      * @throws IgniteCheckedException If failed.
      */
     protected<T> T primaryKey(IgniteCache<?, ?> cache, T startFrom)
