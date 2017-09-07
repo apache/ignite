@@ -61,7 +61,6 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.IncrementalTestObject;
-import org.apache.ignite.testframework.IncrementalTestObjectImpl;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionDeadlockException;
@@ -92,7 +91,7 @@ public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
     private static final Integer ORDINAL_START_KEY = 1;
 
     /** Custom start key. */
-    private static final IncrementalTestObject CUSTOM_START_KEY = new IncrementalTestObjectImpl(1);
+    private static final IncrementalTestObject CUSTOM_START_KEY = new KeyObject(1);
 
     /** Client mode flag. */
     private static boolean client;
@@ -445,6 +444,58 @@ public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
         }
 
         return keySets;
+    }
+
+    /**
+     *
+     */
+    private static class KeyObject implements IncrementalTestObject {
+        /** Id. */
+        private int id;
+
+        /** Name. */
+        private String name;
+
+        /**
+         * @param id Id.
+         */
+        public KeyObject(int id) {
+            this.id = id;
+            this.name = "KeyObject" + id;
+        }
+
+
+        /** {@inheritDoc} */
+        @Override public IncrementalTestObject increment(int times) {
+            return new KeyObject(id + times);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return "KeyObject{" +
+                "id=" + id +
+                ", name='" + name + '\'' +
+                '}';
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            KeyObject obj = (KeyObject)o;
+
+            return id == obj.id && name.equals(obj.name);
+
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return id;
+        }
     }
 
     /**

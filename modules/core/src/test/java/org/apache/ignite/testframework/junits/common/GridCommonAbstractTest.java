@@ -98,7 +98,6 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestNode;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.IncrementalTestObject;
-import org.apache.ignite.testframework.IncrementalTestObjectImpl;
 import org.apache.ignite.testframework.junits.GridAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -1164,15 +1163,6 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     /**
      * @param cache Cache.
      * @param cnt Keys count.
-     * @return Collection of keys for which given cache is primary.
-     */
-    protected List<IncrementalTestObject> primaryKeysCustom(IgniteCache<?, ?> cache, int cnt) {
-        return primaryKeys(cache, cnt, new IncrementalTestObjectImpl(1));
-    }
-
-    /**
-     * @param cache Cache.
-     * @param cnt Keys count.
      * @param startFrom Start value for keys search.
      * @return Collection of keys for which given cache is backup.
      */
@@ -1302,16 +1292,6 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
     /**
      * @param cache Cache.
-     * @return Key for which given cache is primary.
-     * @throws IgniteCheckedException If failed.
-     */
-    protected IncrementalTestObject primaryKeyCustom(IgniteCache<?, ?> cache)
-        throws IgniteCheckedException {
-        return primaryKeys(cache, 1, new IncrementalTestObjectImpl(1)).get(0);
-    }
-
-    /**
-     * @param cache Cache.
      * @return Keys for which given cache is backup.
      * @throws IgniteCheckedException If failed.
      */
@@ -1322,32 +1302,12 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
     /**
      * @param cache Cache.
-     * @return Keys for which given cache is backup.
-     * @throws IgniteCheckedException If failed.
-     */
-    protected IncrementalTestObject backupKeyCustom(IgniteCache<?, ?> cache)
-        throws IgniteCheckedException {
-        return backupKeys(cache, 1, new IncrementalTestObjectImpl(1)).get(0);
-    }
-
-    /**
-     * @param cache Cache.
      * @return Key for which given cache is neither primary nor backup.
      * @throws IgniteCheckedException If failed.
      */
     protected Integer nearKey(IgniteCache<?, ?> cache)
         throws IgniteCheckedException {
         return nearKeys(cache, 1, 1).get(0);
-    }
-
-    /**
-     * @param cache Cache.
-     * @return Key for which given cache is neither primary nor backup.
-     * @throws IgniteCheckedException If failed.
-     */
-    protected IncrementalTestObject nearKeyCustom(IgniteCache<?, ?> cache)
-        throws IgniteCheckedException {
-        return nearKeys(cache, 1, new IncrementalTestObjectImpl(1)).get(0);
     }
 
     /**
