@@ -18,11 +18,6 @@
 #define _IGNITE_COMMON_LAZY
 
 #include <stdint.h>
-#include <cstring>
-#include <cassert>
-
-#include <utility>
-#include <algorithm>
 
 #include <ignite/common/concurrent.h>
 #include <ignite/common/common.h>
@@ -102,9 +97,9 @@ namespace ignite
             typedef T InstanceType;
 
             /**
-             * Default constructor.
+             * Constructor.
              *
-             * Constructs zero-size array.
+             * @param initFunc Initialization function.
              */
             template<typename F>
             Lazy(F initFunc) :
@@ -113,6 +108,30 @@ namespace ignite
                 lock()
             {
                 // No-op.
+            }
+
+            /**
+             * Default constructor for late init.
+             */
+            Lazy() :
+                initFunc(),
+                instance(),
+                lock()
+            {
+                // No-op.
+            }
+
+            /**
+             * Init function. Can be used for late init.
+             *
+             * @warning Do not re-init inited instances to avoid undefined behaviour.
+             *
+             * @param initFunc Initialization function.
+             */
+            template<typename F>
+            void Init(F initFunc)
+            {
+                this->initFunc = concurrent::SharedPointer<InitFunctionType>(new InitFunctionType0<F>(initFunc));
             }
 
             /**
@@ -129,7 +148,7 @@ namespace ignite
 
                 concurrent::CsLockGuard guard(lock);
 
-                instance = concurrent::SharedPointer<InstanceType>(initFunc.Get()->template Init());
+                instance = concurrent::SharedPointer<InstanceType>(initFunc.Get()->Init());
 
                 return instance;
             }

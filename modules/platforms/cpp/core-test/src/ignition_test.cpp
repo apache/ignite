@@ -92,7 +92,7 @@ BOOST_AUTO_TEST_CASE(TestStartWithPersistance)
 #endif
     try
     {
-        Ignite grid = Ignition::Start(cfg, "ignitionTest-1");
+        Ignite grid = Ignition::Start(cfg, "test");
     }
     catch (...)
     {
