@@ -1912,8 +1912,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         // Break the proxy before exchange future is done.
         IgniteCacheProxyImpl<?, ?> proxy = jCacheProxies.get(cacheName);
 
-        if (restart)
-            caches.get(cacheName).active(false);
+        if (restart) {
+            GridCacheAdapter<?, ?> cache = caches.get(cacheName);
+
+            if (cache != null)
+                cache.active(false);
+        }
 
         if (proxy != null) {
             if (stop) {
@@ -1938,7 +1942,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         // Break the proxy before exchange future is done.
         if (req.restart()) {
-            caches.get(req.cacheName()).active(false);
+            GridCacheAdapter<?, ?> cache = caches.get(req.cacheName());
+
+            if (cache != null)
+                cache.active(false);
 
             proxy = jCacheProxies.get(req.cacheName());
 
