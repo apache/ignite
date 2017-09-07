@@ -100,7 +100,7 @@ public class GridServiceProcessorBatchDeploySelfTest extends GridCommonAbstractT
 
         subscribeExeLatch(cfgs, latch);
 
-        client.services().deployAll(cfgs, false);
+        client.services().deployAll(cfgs);
 
         assertTrue("Waiting for services deployment timed out.", latch.await(30, TimeUnit.SECONDS));
 
@@ -121,7 +121,7 @@ public class GridServiceProcessorBatchDeploySelfTest extends GridCommonAbstractT
 
         IgniteServices services =  client.services().withAsync();
 
-        services.deployAll(cfgs, false);
+        services.deployAll(cfgs);
 
         services.future().get();
 
@@ -131,7 +131,7 @@ public class GridServiceProcessorBatchDeploySelfTest extends GridCommonAbstractT
     }
 
     /**
-     * TODO: enable when IGNITE-6259 is fixed
+     * TODO: enable when IGNITE-6259 is fixed.
      *
      * @throws Exception If failed.
      */
@@ -170,7 +170,7 @@ public class GridServiceProcessorBatchDeploySelfTest extends GridCommonAbstractT
             while (from < numServices) {
                 int to = Math.min(numServices, from + batchSize);
 
-                services.deployAll(cfgs.subList(from, to), false);
+                services.deployAll(cfgs.subList(from, to));
 
                 services.future().get(5000);
 
@@ -189,7 +189,7 @@ public class GridServiceProcessorBatchDeploySelfTest extends GridCommonAbstractT
     }
 
     /**
-     * TODO: enable when IGNITE-6259 is fixed
+     * TODO: enable when IGNITE-6259 is fixed.
      *
      * @throws Exception If failed.
      */
@@ -239,7 +239,7 @@ public class GridServiceProcessorBatchDeploySelfTest extends GridCommonAbstractT
                 failingCfgs.add(failingCfg);
 
                 try {
-                    services.deployAll(cfgsBatch, false);
+                    services.deployAll(cfgsBatch);
 
                     services.future().get(5000);
 
@@ -274,37 +274,22 @@ public class GridServiceProcessorBatchDeploySelfTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
-    public void testDeployAllFailAll() throws Exception {
-        deployAllFail(false, true);
+    public void testDeployAllFail() throws Exception {
+        deployAllFail(false);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testDeployAllPartial() throws Exception {
-        deployAllFail(false, false);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testDeployAllAsyncFailAll() throws Exception {
-        deployAllFail(true, true);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testDeployAllAsyncFailPartial() throws Exception {
-        deployAllFail(true, false);
+    public void testDeployAllAsyncFail() throws Exception {
+        deployAllFail(true);
     }
 
     /**
      * @param async If {@code true}, then asynchronous method of deployment will be performed.
-     * @param allOrNone Failing strategy.
      * @throws Exception If failed.
      */
-    private void deployAllFail(boolean async, boolean allOrNone) throws Exception {
+    private void deployAllFail(boolean async) throws Exception {
         Ignite client = grid(CLIENT_NODE_NAME);
 
         CountDownLatch latch = new CountDownLatch(NUM_SERVICES - 1);
@@ -317,20 +302,11 @@ public class GridServiceProcessorBatchDeploySelfTest extends GridCommonAbstractT
 
         failingCfg.setName(null);
 
-        assertFailingDeploy(client, async, allOrNone, cfgs, failingCfg);
+        assertFailingDeploy(client, async, cfgs, failingCfg);
 
-        if (allOrNone) {
-            assertFalse("Some of the services were deployed.", latch.await(2, TimeUnit.SECONDS));
+        assertTrue("Waiting for services deployment timed out.", latch.await(30, TimeUnit.SECONDS));
 
-            assertEquals(NUM_SERVICES - 1, latch.getCount());
-
-            assertTrue(client.services().serviceDescriptors().isEmpty());
-        }
-        else {
-            assertTrue("Waiting for services deployment timed out.", latch.await(30, TimeUnit.SECONDS));
-
-            assertDeployedServices(client, cfgs.subList(0, cfgs.size() - 1));
-        }
+        assertDeployedServices(client, cfgs.subList(0, cfgs.size() - 1));
     }
 
     /**
@@ -351,8 +327,8 @@ public class GridServiceProcessorBatchDeploySelfTest extends GridCommonAbstractT
         IgniteServices svcs1 = client.services().withAsync();
         IgniteServices svcs2 = client.services().withAsync();
 
-        svcs1.deployAll(fstBatch, false);
-        svcs2.deployAll(sndBatch, false);
+        svcs1.deployAll(fstBatch);
+        svcs2.deployAll(sndBatch);
 
         svcs1.future().get();
         svcs2.future().get();
@@ -365,32 +341,12 @@ public class GridServiceProcessorBatchDeploySelfTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
-    public void testClashingNamesFailAll() throws Exception {
-        clashingNamesFail(true);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testClashingNamesPartial() throws Exception {
-        clashingNamesFail(false);
-    }
-
-    /**
-     * @param allOrNone Failing strategy.
-     * @throws Exception If failed.
-     */
-    private void clashingNamesFail(boolean allOrNone) throws Exception {
+    public void testClashingNamesFail() throws Exception {
         Ignite client = grid(CLIENT_NODE_NAME);
 
         List<ServiceConfiguration> cfgs = getConfigs(client.cluster().forServers().predicate(), NUM_SERVICES);
 
-        int numDepSvcs;
-
-        if (allOrNone)
-            numDepSvcs = NUM_SERVICES / 2;
-        else
-            numDepSvcs = NUM_SERVICES - 1;
+        int numDepSvcs = NUM_SERVICES - 1;
 
         CountDownLatch latch = new CountDownLatch(numDepSvcs);
 
@@ -401,13 +357,13 @@ public class GridServiceProcessorBatchDeploySelfTest extends GridCommonAbstractT
 
         IgniteServices services = client.services().withAsync();
 
-        services.deployAll(fstBatch, false);
+        services.deployAll(fstBatch);
 
         ServiceConfiguration failingCfg = cfgs.get(NUM_SERVICES - 1);
 
         failingCfg.setName(null);
 
-        assertFailingDeploy(client, false, allOrNone, sndBatch, failingCfg);
+        assertFailingDeploy(client, false, sndBatch, failingCfg);
 
         services.future().get();
 
@@ -419,33 +375,12 @@ public class GridServiceProcessorBatchDeploySelfTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
-    public void testClashingNameDifferentConfigFailAll() throws Exception {
-        testClashingNameDifferentConfig(true);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testClashingNameDifferentConfigPartial() throws Exception {
-        testClashingNameDifferentConfig(false);
-    }
-
-    /**
-     * @param allOrNone Failing strategy.
-     * @throws Exception If failed.
-     */
-    private void testClashingNameDifferentConfig(boolean allOrNone) throws Exception {
+    public void testClashingNameDifferentConfig() throws Exception {
         Ignite client = grid(CLIENT_NODE_NAME);
 
         List<ServiceConfiguration> cfgs = getConfigs(client.cluster().forServers().predicate(), NUM_SERVICES);
 
-        int numDepSvcs;
-
-        if (allOrNone)
-            numDepSvcs = NUM_SERVICES / 2;
-        else
-            numDepSvcs = NUM_SERVICES - 1;
-
+        int numDepSvcs = NUM_SERVICES - 1;
 
         CountDownLatch latch = new CountDownLatch(numDepSvcs);
 
@@ -454,7 +389,7 @@ public class GridServiceProcessorBatchDeploySelfTest extends GridCommonAbstractT
 
         subscribeExeLatch(cfgs, latch);
 
-        client.services().deployAll(fstBatch, false);
+        client.services().deployAll(fstBatch);
 
         ServiceConfiguration failingCfg = copyService(cfgs.get(NUM_SERVICES - 1));
 
@@ -464,7 +399,7 @@ public class GridServiceProcessorBatchDeploySelfTest extends GridCommonAbstractT
 
         sndBatch.add(failingCfg);
 
-        assertFailingDeploy(client, false, allOrNone, sndBatch, failingCfg);
+        assertFailingDeploy(client, false, sndBatch, failingCfg);
 
         assertTrue("Waiting for services deployment timed out.", latch.await(30, TimeUnit.SECONDS));
 
@@ -483,7 +418,7 @@ public class GridServiceProcessorBatchDeploySelfTest extends GridCommonAbstractT
 
         subscribeExeLatch(cfgs, latch);
 
-        client.services().deployAll(cfgs, true);
+        client.services().deployAll(cfgs);
 
         latch.await(30, TimeUnit.SECONDS);
 
@@ -504,7 +439,7 @@ public class GridServiceProcessorBatchDeploySelfTest extends GridCommonAbstractT
 
         subscribeExeLatch(cfgs, latch);
 
-        client.services().deployAll(cfgs, true);
+        client.services().deployAll(cfgs);
 
         latch.await(30, TimeUnit.SECONDS);
 
@@ -518,7 +453,7 @@ public class GridServiceProcessorBatchDeploySelfTest extends GridCommonAbstractT
     }
 
     /**
-     * TODO: enable when IGNITE-6259 is fixed
+     * TODO: enable when IGNITE-6259 is fixed.
      *
      * @throws Exception If failed.
      */
@@ -533,7 +468,7 @@ public class GridServiceProcessorBatchDeploySelfTest extends GridCommonAbstractT
 
         subscribeExeLatch(cfgs, latch);
 
-        client.services().deployAll(cfgs, true);
+        client.services().deployAll(cfgs);
 
         latch.await(30, TimeUnit.SECONDS);
 
@@ -585,7 +520,7 @@ public class GridServiceProcessorBatchDeploySelfTest extends GridCommonAbstractT
 
         subscribeExeLatch(cfgs, latch);
 
-        client.services().deployAll(cfgs, true);
+        client.services().deployAll(cfgs);
 
         latch.await(30, TimeUnit.SECONDS);
 
@@ -616,11 +551,10 @@ public class GridServiceProcessorBatchDeploySelfTest extends GridCommonAbstractT
      * @param client Client.
      * @param async If {@code true}, then async version of deploy method will be used.
      * @param cfgs Service configurations.
-     * @param allOrNone Failing policy.
      * @param failingCfg Configuration of the failing service.
      * @throws Exception If failed.
      */
-    private void assertFailingDeploy(Ignite client, boolean async, boolean allOrNone, List<ServiceConfiguration> cfgs,
+    private void assertFailingDeploy(Ignite client, boolean async, List<ServiceConfiguration> cfgs,
         ServiceConfiguration failingCfg) throws Exception {
 
         IgniteServices services = client.services();
@@ -628,26 +562,21 @@ public class GridServiceProcessorBatchDeploySelfTest extends GridCommonAbstractT
         if (async) {
             services = services.withAsync();
 
-            services.deployAll(cfgs, allOrNone);
+            services.deployAll(cfgs);
         }
 
         try {
             if (async)
                 services.future().get();
             else
-                services.deployAll(cfgs, allOrNone);
+                services.deployAll(cfgs);
 
             fail("Should never reach here.");
         }
         catch (ServiceDeploymentException e) {
             info("Expected exception: " + e.getMessage());
 
-            Collection<ServiceConfiguration> expFails;
-
-            if (allOrNone)
-                expFails = cfgs;
-            else
-                expFails = Collections.singleton(failingCfg);
+            Collection<ServiceConfiguration> expFails = Collections.singleton(failingCfg);
 
             Collection<ServiceConfiguration> actFails = e.getFailedConfigurations();
 
