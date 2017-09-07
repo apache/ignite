@@ -18,12 +18,16 @@
 package org.apache.ignite.compatibility.testframework.junits;
 
 import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.compatibility.testframework.junits.logger.ListenedGridTestLog4jLogger;
 import org.apache.ignite.compatibility.testframework.plugins.TestCompatibilityPluginProvider;
@@ -61,6 +65,47 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
         TestCompatibilityPluginProvider.disable();
     }
 
+    /**
+     * Gets a path to the default DB working directory.
+     *
+     * @return Path to the default DB working directory.
+     * @throws IgniteCheckedException In case of an error.
+     * @see #deleteDefaultDBWorkDirectory()
+     * @see #defaultDBWorkDirectoryIsEmpty()
+     */
+    protected Path getDefaultDbWorkPath() throws IgniteCheckedException {
+        return Paths.get(U.defaultWorkDirectory() + File.separator + "db");
+    }
+
+    /**
+     * Deletes the default DB working directory with all sub-directories and files.
+     *
+     * @return {@code true} if and only if the file or directory is successfully deleted, otherwise {@code false}.
+     * @throws IgniteCheckedException In case of an error.
+     * @see #getDefaultDbWorkPath()
+     * @see #deleteDefaultDBWorkDirectory()
+     */
+    protected boolean deleteDefaultDBWorkDirectory() throws IgniteCheckedException {
+        Path dir = getDefaultDbWorkPath();
+
+        return Files.notExists(dir) || U.delete(dir.toFile());
+    }
+
+    /**
+     * Checks if the default DB working directory is empty.
+     *
+     * @return {@code true} if the default DB working directory is empty or doesn't exist, otherwise {@code false}.
+     * @throws IgniteCheckedException In case of an error.
+     * @see #getDefaultDbWorkPath()
+     * @see #deleteDefaultDBWorkDirectory()
+     */
+    @SuppressWarnings("ConstantConditions")
+    protected boolean defaultDBWorkDirectoryIsEmpty() throws IgniteCheckedException {
+        File dir = getDefaultDbWorkPath().toFile();
+
+        return !dir.exists() || (dir.isDirectory() && dir.list().length == 0);
+    }
+
     /** {@inheritDoc} */
     @Override protected boolean isMultiJvm() {
         return true;
@@ -74,12 +119,12 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
      *
      * @param idx Index of the grid to start.
      * @param ver Ignite version.
-     * @param clos IgniteInClosure for post-configuration.
+     * @param cfgClos IgniteInClosure for post-configuration.
      * @return Started grid.
      * @throws Exception If failed.
      */
-    protected IgniteEx startGrid(int idx, String ver, IgniteInClosure<IgniteConfiguration> clos) throws Exception {
-        return startGrid(getTestIgniteInstanceName(idx), ver, clos);
+    protected IgniteEx startGrid(int idx, String ver, IgniteInClosure<IgniteConfiguration> cfgClos) throws Exception {
+        return startGrid(getTestIgniteInstanceName(idx), ver, cfgClos, null);
     }
 
     /**
@@ -90,17 +135,52 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
      *
      * @param igniteInstanceName Instance name.
      * @param ver Ignite version.
-     * @param clos IgniteInClosure for post-configuration.
+     * @param cfgClos IgniteInClosure for post-configuration.
+     * @return Started grid.
+     * @throws Exception If failed.
+     */
+    protected IgniteEx startGrid(String igniteInstanceName, String ver,
+        IgniteInClosure<IgniteConfiguration> cfgClos) throws Exception {
+        return startGrid(igniteInstanceName, ver, cfgClos, null);
+    }
+
+    /**
+     * Starts new grid of given version and index <b>in separate JVM</b>.
+     *
+     * Uses an ignite-core artifact in the Maven local repository, if it isn't exists there, it will be downloaded and
+     * stored via Maven.
+     *
+     * @param idx Index of the grid to start.
+     * @param ver Ignite version.
+     * @param cfgClos IgniteInClosure for post-configuration.
+     * @return Started grid.
+     * @throws Exception If failed.
+     */
+    protected IgniteEx startGrid(int idx, final String ver,
+        IgniteInClosure<IgniteConfiguration> cfgClos, IgniteInClosure<Ignite> iClos) throws Exception {
+        return startGrid(getTestIgniteInstanceName(idx), ver, cfgClos, iClos);
+    }
+
+    /**
+     * Starts new grid of given version and name <b>in separate JVM</b>.
+     *
+     * Uses an ignite-core artifact in the Maven local repository, if it isn't exists there, it will be downloaded and
+     * stored via Maven.
+     *
+     * @param igniteInstanceName Instance name.
+     * @param ver Ignite version.
+     * @param cfgClos IgniteInClosure for post-configuration.
      * @return Started grid.
      * @throws Exception If failed.
      */
     protected IgniteEx startGrid(final String igniteInstanceName, final String ver,
-        IgniteInClosure<IgniteConfiguration> clos) throws Exception {
+        IgniteInClosure<IgniteConfiguration> cfgClos, IgniteInClosure<Ignite> iClos) throws Exception {
         assert isMultiJvm() : "MultiJvm mode must be switched on for the node stop properly.";
 
         assert !igniteInstanceName.equals(getTestIgniteInstanceName(0)) : "Use default instance name for local nodes only.";
 
-        final String closPath = CompatibilityTestIgniteNodeRunner.storeToFile(clos);
+        final String cfgClosPath = CompatibilityTestIgniteNodeRunner.storeToFile(cfgClos);
+        final String iClosPath = CompatibilityTestIgniteNodeRunner.storeToFile(iClos);
 
         final IgniteConfiguration cfg = getConfiguration(igniteInstanceName); // stub - won't be used at node startup
 
@@ -114,7 +194,7 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
             }
 
             @Override protected String params(IgniteConfiguration cfg, boolean resetDiscovery) throws Exception {
-                return closPath + " " + igniteInstanceName + " " + getId();
+                return cfgClosPath + " " + igniteInstanceName + " " + getId() + (iClosPath == null ? "" : " " + iClosPath);
             }
 
             @Override protected Collection<String> filteredJvmArgs() throws Exception {
@@ -216,6 +296,14 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
 
             locJvmInstance = null;
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void stopAllGrids(boolean cancel) {
+        locJvmInstance = null;
+        rmJvmInstance = null;
+
+        super.stopAllGrids(cancel);
     }
 
     /** */

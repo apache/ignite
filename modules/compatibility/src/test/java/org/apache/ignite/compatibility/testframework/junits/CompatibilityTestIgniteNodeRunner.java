@@ -37,6 +37,8 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.multijvm.IgniteNodeRunner;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Runs Ignite node.
@@ -58,15 +60,16 @@ public class CompatibilityTestIgniteNodeRunner extends IgniteNodeRunner {
         X.println("Starting Ignite Node... Args=" + Arrays.toString(args));
 
         if (args.length < 3)
-            throw new IllegalArgumentException("Three arguments expected: [path/to/closure/file] [ignite-instance-name] [node-uuid]");
+            throw new IllegalArgumentException("At least three arguments expected:" +
+                " [path/to/closure/file] [ignite-instance-name] [node-uuid] [optional/path/to/closure/file]");
 
         TestCompatibilityPluginProvider.enable();
 
         IgniteConfiguration cfg = CompatibilityTestsFacade.getConfiguration();
 
-        IgniteInClosure<IgniteConfiguration> clos = readClosureFromFileAndDelete(args[0]);
+        IgniteInClosure<IgniteConfiguration> cfgClos = readClosureFromFileAndDelete(args[0]);
 
-        clos.apply(cfg);
+        cfgClos.apply(cfg);
 
         // Ignite instance name and id must be set according to arguments
         // it's used for nodes managing: start, stop etc.
@@ -77,6 +80,12 @@ public class CompatibilityTestIgniteNodeRunner extends IgniteNodeRunner {
 
         // it needs to set private static field 'ignite' of the IgniteNodeRunner class via reflection
         GridTestUtils.setFieldValue(new IgniteNodeRunner(), "ignite", ignite);
+
+        if (args.length == 4) {
+            IgniteInClosure<Ignite> iClos = readClosureFromFileAndDelete(args[3]);
+
+            iClos.apply(ignite);
+        }
     }
 
     /**
@@ -87,7 +96,10 @@ public class CompatibilityTestIgniteNodeRunner extends IgniteNodeRunner {
      * @throws IOException In case of an error.
      * @see #readClosureFromFileAndDelete(String)
      */
-    public static String storeToFile(IgniteInClosure clos) throws IOException {
+    @Nullable public static String storeToFile(@Nullable IgniteInClosure clos) throws IOException {
+        if (clos == null)
+            return null;
+
         String fileName = IGNITE_CLOSURE_FILE + clos.hashCode();
 
         storeToFile(clos, fileName);
@@ -103,7 +115,7 @@ public class CompatibilityTestIgniteNodeRunner extends IgniteNodeRunner {
      * @throws IOException In case of an error.
      * @see #readClosureFromFileAndDelete(String)
      */
-    public static void storeToFile(IgniteInClosure clos, String fileName) throws IOException {
+    public static void storeToFile(@NotNull IgniteInClosure clos, @NotNull String fileName) throws IOException {
         try (BufferedWriter writer = Files.newBufferedWriter(Paths.get(fileName), StandardCharsets.UTF_8)) {
             new XStream().toXML(clos, writer);
         }
@@ -113,15 +125,16 @@ public class CompatibilityTestIgniteNodeRunner extends IgniteNodeRunner {
      * Reads closure from given file name and delete the file after.
      *
      * @param fileName Closure file name.
+     * @param <T> Type of closure argument.
      * @return IgniteInClosure for post-configuration.
      * @throws IOException In case of an error.
      * @see #storeToFile(IgniteInClosure, String)
      */
     @SuppressWarnings("unchecked")
-    public static IgniteInClosure<IgniteConfiguration> readClosureFromFileAndDelete(
+    public static <T> IgniteInClosure<T> readClosureFromFileAndDelete(
         String fileName) throws IOException {
         try (BufferedReader reader = Files.newBufferedReader(Paths.get(fileName), StandardCharsets.UTF_8)) {
-            return (IgniteInClosure)new XStream().fromXML(reader);
+            return (IgniteInClosure<T>)new XStream().fromXML(reader);
         }
         finally {
             new File(fileName).delete();
