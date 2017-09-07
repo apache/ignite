@@ -474,26 +474,28 @@ public class JdbcThinStatement implements Statement {
     @Override public boolean getMoreResults(int curr) throws SQLException {
         ensureNotClosed();
 
-        switch (curr) {
-            case CLOSE_CURRENT_RESULT:
-                if (resultSets != null && curRes < resultSets.size())
+        if (resultSets != null) {
+            assert curRes <= resultSets.size() : "Invalid results state: [resultsCount=" + resultSets.size() +
+                ", curRes=" + curRes + ']';
+
+            switch (curr) {
+                case CLOSE_CURRENT_RESULT:
                     resultSets.get(curRes - 1).close0();
 
-                break;
+                    break;
 
-            case CLOSE_ALL_RESULTS:
-                if (resultSets != null) {
+                case CLOSE_ALL_RESULTS:
                     for (int i = 0; i < curRes; ++i)
                         resultSets.get(i).close0();
-                }
 
-                break;
+                    break;
 
-            case KEEP_CURRENT_RESULT:
-                break;
+                case KEEP_CURRENT_RESULT:
+                    break;
 
-            default:
-                throw new SQLException("Invalid 'current' parameter.");
+                default:
+                    throw new SQLException("Invalid 'current' parameter.");
+            }
         }
 
         return (resInfo != null && curRes < resInfo.size());

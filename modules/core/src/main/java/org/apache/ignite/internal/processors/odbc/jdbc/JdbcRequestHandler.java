@@ -246,7 +246,7 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
 
             qry.setSchema(schemaName);
 
-            List<FieldsQueryCursor<List<?>>> results = ctx.query().querySqlFieldsNoCache0(qry, true);
+            List<FieldsQueryCursor<List<?>>> results = ctx.query().querySqlFieldsNoCache(qry, true);
 
             if (results.size() == 1) {
                 FieldsQueryCursor<List<?>> qryCur = results.get(0);
@@ -433,7 +433,7 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
                 qry.setSchema(schemaName);
 
                 QueryCursorImpl<List<?>> qryCur = (QueryCursorImpl<List<?>>)ctx.query()
-                    .querySqlFieldsNoCache(qry, true);
+                    .querySqlFieldsNoCache(qry, true).get(0);
 
                 if (qryCur.isQuery())
                     throw new IgniteCheckedException("Query produced result set [qry=" + q.sql() + ", args=" +

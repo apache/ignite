@@ -1862,7 +1862,13 @@ private IgniteInternalFuture<Object> rebuildIndexesFromHash(@Nullable final Stri
                         if (cctx.config().getQueryParallelism() > 1) {
                             qry.setDistributedJoins(true);
 
-                            cur = idx.queryDistributedSqlFields(schemaName, qry, keepBinary, cancel, mainCacheId);
+                            List<FieldsQueryCursor<List<?>>> curLst = idx.queryDistributedSqlFields(schemaName, qry,
+                                keepBinary, cancel, mainCacheId);
+
+                            if (curLst.size() > 1)
+                                throw new IgniteSQLException("Multiple statements queries are not supported");
+
+                            cur = curLst.get(0);
                         }
                         else {
                             IndexingQueryFilter filter = idx.backupFilter(requestTopVer.get(), qry.getPartitions());
@@ -1879,7 +1885,13 @@ private IgniteInternalFuture<Object> rebuildIndexesFromHash(@Nullable final Stri
             else {
                 clo = new IgniteOutClosureX<FieldsQueryCursor<List<?>>>() {
                     @Override public FieldsQueryCursor<List<?>> applyx() throws IgniteCheckedException {
-                        return idx.queryDistributedSqlFields(schemaName, qry, keepBinary, null, mainCacheId);
+                        List<FieldsQueryCursor<List<?>>> curLst =
+                        idx.queryDistributedSqlFields(schemaName, qry, keepBinary, null, mainCacheId);
+
+                        if (curLst.size() > 1)
+                            throw new IgniteSQLException("Multiple statements queries are not supported");
+
+                        return curLst.get(0);
                     }
                 };
             }
@@ -1901,47 +1913,7 @@ private IgniteInternalFuture<Object> rebuildIndexesFromHash(@Nullable final Stri
      * @param keepBinary Keep binary flag.
      * @return Cursor.
      */
-    public FieldsQueryCursor<List<?>> querySqlFieldsNoCache(final SqlFieldsQuery qry, final boolean keepBinary) {
-        checkxEnabled();
-
-        validateSqlFieldsQuery(qry);
-
-        if (qry.isLocal())
-            throw new IgniteException("Local query is not supported without specific cache.");
-
-        if (qry.getSchema() == null)
-            qry.setSchema(QueryUtils.DFLT_SCHEMA);
-
-        if (!busyLock.enterBusy())
-            throw new IllegalStateException("Failed to execute query (grid is stopping).");
-
-        try {
-            IgniteOutClosureX<FieldsQueryCursor<List<?>>> clo = new IgniteOutClosureX<FieldsQueryCursor<List<?>>>() {
-                @Override public FieldsQueryCursor<List<?>> applyx() throws IgniteCheckedException {
-                    GridQueryCancel cancel = new GridQueryCancel();
-
-                    return idx.queryDistributedSqlFields(qry.getSchema(), qry, keepBinary, cancel, null);
-                }
-            };
-
-            return executeQuery(GridCacheQueryType.SQL_FIELDS, qry.getSql(), null, clo, true);
-        }
-        catch (IgniteCheckedException e) {
-            throw new CacheException(e);
-        }
-        finally {
-            busyLock.leaveBusy();
-        }
-    }
-
-    /**
-     * Query SQL fields without strict dependency on concrete cache.
-     *
-     * @param qry Query.
-     * @param keepBinary Keep binary flag.
-     * @return Cursor.
-     */
-    public List<FieldsQueryCursor<List<?>>> querySqlFieldsNoCache0(final SqlFieldsQuery qry, final boolean keepBinary) {
+    public List<FieldsQueryCursor<List<?>>> querySqlFieldsNoCache(final SqlFieldsQuery qry, final boolean keepBinary) {
         checkxEnabled();
 
         validateSqlFieldsQuery(qry);
@@ -1960,7 +1932,7 @@ private IgniteInternalFuture<Object> rebuildIndexesFromHash(@Nullable final Stri
                 @Override public List<FieldsQueryCursor<List<?>>> applyx() throws IgniteCheckedException {
                     GridQueryCancel cancel = new GridQueryCancel();
 
-                    return idx.queryDistributedSqlFieldsMultiple(qry.getSchema(), qry, keepBinary, cancel, null);
+                    return idx.queryDistributedSqlFields(qry.getSchema(), qry, keepBinary, cancel, null);
                 }
             };
 

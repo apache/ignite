@@ -86,21 +86,7 @@ public interface GridQueryIndexing {
      * @return Cursor.
      * @throws IgniteCheckedException If failed.
      */
-    public FieldsQueryCursor<List<?>> queryDistributedSqlFields(String schemaName, SqlFieldsQuery qry,
-        boolean keepBinary, GridQueryCancel cancel, @Nullable Integer mainCacheId) throws IgniteCheckedException;
-
-    /**
-     * Parses SQL query into two step query and executes it.
-     *
-     * @param schemaName Schema name.
-     * @param qry Query.
-     * @param keepBinary Keep binary flag.
-     * @param cancel Query cancel.
-     * @param mainCacheId Main cache ID.
-     * @return Cursor.
-     * @throws IgniteCheckedException If failed.
-     */
-    public List<FieldsQueryCursor<List<?>>> queryDistributedSqlFieldsMultiple(String schemaName, SqlFieldsQuery qry,
+    public List<FieldsQueryCursor<List<?>>> queryDistributedSqlFields(String schemaName, SqlFieldsQuery qry,
         boolean keepBinary, GridQueryCancel cancel, @Nullable Integer mainCacheId) throws IgniteCheckedException;
 
     /**

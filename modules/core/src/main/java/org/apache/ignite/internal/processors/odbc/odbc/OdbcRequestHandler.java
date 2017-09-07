@@ -29,6 +29,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.GridKernalContext;
@@ -42,6 +43,7 @@ import org.apache.ignite.internal.processors.odbc.odbc.escape.OdbcEscapeUtils;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.GridQueryIndexing;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -216,7 +218,12 @@ public class OdbcRequestHandler implements SqlListenerRequestHandler {
 
             SqlFieldsQuery qry = makeQuery(req.schema(), sql, req.arguments());
 
-            QueryCursor qryCur = ctx.query().querySqlFieldsNoCache(qry, true);
+            List<FieldsQueryCursor<List<?>>> curLst = ctx.query().querySqlFieldsNoCache(qry, true);
+
+            if (curLst.size() > 1)
+                throw new IgniteSQLException("Multiple statements queries are not supported");
+
+            QueryCursor qryCur = curLst.get(0);
 
             qryCursors.put(qryId, new IgniteBiTuple<QueryCursor, Iterator>(qryCur, null));
 
@@ -263,7 +270,12 @@ public class OdbcRequestHandler implements SqlListenerRequestHandler {
             // Getting meta and do the checks for the first execution.
             qry.setArgs(paramSet[0]);
 
-            QueryCursorImpl<List<?>> qryCur = (QueryCursorImpl<List<?>>)ctx.query().querySqlFieldsNoCache(qry, true);
+            List<FieldsQueryCursor<List<?>>> curLst = ctx.query().querySqlFieldsNoCache(qry, true);
+
+            if (curLst.size() > 1)
+                throw new IgniteSQLException("Multiple statements queries are not supported");
+
+            QueryCursorImpl<List<?>> qryCur = (QueryCursorImpl<List<?>>)curLst.get(0);
 
             if (qryCur.isQuery())
                 throw new IgniteException("Batching of parameters only supported for DML statements. [query=" +
@@ -297,7 +309,12 @@ public class OdbcRequestHandler implements SqlListenerRequestHandler {
     private long executeQuery(SqlFieldsQuery qry, Object[] row) {
         qry.setArgs(row);
 
-        QueryCursor<List<?>> cur = ctx.query().querySqlFieldsNoCache(qry, true);
+        List<FieldsQueryCursor<List<?>>> curLst = ctx.query().querySqlFieldsNoCache(qry, true);
+
+        if (curLst.size() > 1)
+            throw new IgniteSQLException("Multiple statements queries are not supported");
+
+        QueryCursor<List<?>> cur = curLst.get(0);
 
         return getRowsAffected(cur);
     }

@@ -63,13 +63,13 @@ public class SqlSchemaSelfTest extends GridCommonAbstractTest {
 
         SqlFieldsQuery qry = new SqlFieldsQuery("SELECT 1").setSchema("PUBLIC");
 
-        List<List<?>> res = qryProc.querySqlFieldsNoCache(qry, true).getAll();
+        List<List<?>> res = qryProc.querySqlFieldsNoCache(qry, true).get(0).getAll();
 
         assertEquals(1, res.size());
         assertEquals(1, res.get(0).size());
         assertEquals(1, res.get(0).get(0));
 
-        Iterator<List<?>> iter = qryProc.querySqlFieldsNoCache(qry, true).iterator();
+        Iterator<List<?>> iter = qryProc.querySqlFieldsNoCache(qry, true).get(0).iterator();
 
         assertTrue(iter.hasNext());
 
@@ -95,13 +95,13 @@ public class SqlSchemaSelfTest extends GridCommonAbstractTest {
 
         SqlFieldsQuery qry = new SqlFieldsQuery("SELECT 1").setSchema(CACHE_PERSON);
 
-        List<List<?>> res = qryProc.querySqlFieldsNoCache(qry, true).getAll();
+        List<List<?>> res = qryProc.querySqlFieldsNoCache(qry, true).get(0).getAll();
 
         assertEquals(1, res.size());
         assertEquals(1, res.get(0).size());
         assertEquals(1, res.get(0).get(0));
 
-        Iterator<List<?>> iter = qryProc.querySqlFieldsNoCache(qry, true).iterator();
+        Iterator<List<?>> iter = qryProc.querySqlFieldsNoCache(qry, true).get(0).iterator();
 
         assertTrue(iter.hasNext());
 
