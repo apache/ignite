@@ -42,6 +42,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.build.timestamp.format>MMMM d yyyy</maven.build.timestamp.format>
         <doxygen.exec>doxygen</doxygen.exec>
+        <docfx.exec>docfx</docfx.exec>
         <git.exec>git</git.exec>
         <maven.bundle.plugin.version>2.5.4</maven.bundle.plugin.version>
         <javadoc.opts>-XDenableSunApiLintControl</javadoc.opts>
