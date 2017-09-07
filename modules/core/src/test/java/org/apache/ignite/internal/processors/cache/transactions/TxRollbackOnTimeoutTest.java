@@ -60,7 +60,7 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
     private final CountDownLatch blocked = new CountDownLatch(1);
 
     /** */
-    private CountDownLatch unblocked = new CountDownLatch(1);
+    private final CountDownLatch unblocked = new CountDownLatch(1);
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {

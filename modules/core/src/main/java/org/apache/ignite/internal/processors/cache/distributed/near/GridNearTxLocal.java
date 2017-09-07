@@ -3256,9 +3256,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      * @throws IgniteCheckedException If failed.
      */
     public void rollback() throws IgniteCheckedException {
-        if (timeout() > 0)
-            cctx.time().removeTimeoutObject(this);
-
         rollbackNearTxLocalAsync().get();
     }
 
@@ -3268,6 +3265,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     public IgniteInternalFuture<IgniteInternalTx> rollbackNearTxLocalAsync() {
         if (log.isDebugEnabled())
             log.debug("Rolling back near tx: " + this);
+
+        if (remainingTime() > 0)
+            cctx.time().removeTimeoutObject(this);
 
         if (fastFinish()) {
             state(PREPARING);
