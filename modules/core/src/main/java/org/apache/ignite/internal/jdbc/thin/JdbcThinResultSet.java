@@ -185,7 +185,7 @@ public class JdbcThinResultSet implements ResultSet {
             this.fetchSize = fetchSize;
             this.rows = rows;
 
-            rowsIter = rows.iterator();
+            rowsIter = rows != null ? rows.iterator() : null;
         }
         else
             this.updCnt = updCnt;

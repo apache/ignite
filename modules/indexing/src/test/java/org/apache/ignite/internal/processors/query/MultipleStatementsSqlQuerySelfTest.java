@@ -99,7 +99,8 @@ public class MultipleStatementsSqlQuerySelfTest extends GridCommonAbstractTest {
         SqlFieldsQuery qry = new SqlFieldsQuery(
             "create table test(ID int primary key, NAME varchar(20)); " +
                 "insert into test (ID, NAME) values (?, ?);" +
-                "insert into test (ID, NAME) values (?, ?), (?, ?);" +
+                "insert into test (ID, NAME) values (?, ?);" +
+                "insert into test (ID, NAME) values (?, ?);" +
                 "select * from test;")
             .setSchema("PUBLIC")
             .setArgs(1, "name_1", 2, "name2", 3, "name_3");

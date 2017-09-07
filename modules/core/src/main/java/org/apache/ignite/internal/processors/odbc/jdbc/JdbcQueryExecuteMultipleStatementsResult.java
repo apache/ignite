@@ -32,6 +32,12 @@ public class JdbcQueryExecuteMultipleStatementsResult extends JdbcResult {
     /** Statements results. */
     private List<JdbcStatementResults> results;
 
+    /** Query result rows for the first query. */
+    private List<List<Object>> items;
+
+    /** Flag indicating the query has no unfetched results for the first query. */
+    private boolean last;
+
     /**
      * Default constructor.
      */
@@ -41,10 +47,15 @@ public class JdbcQueryExecuteMultipleStatementsResult extends JdbcResult {
 
     /**
      * @param results Statements results.
+     * @param items Query result rows for the first query.
+     * @param last Flag indicating the query has no unfetched results for the first query.
      */
-    public JdbcQueryExecuteMultipleStatementsResult(List<JdbcStatementResults> results) {
+    public JdbcQueryExecuteMultipleStatementsResult(List<JdbcStatementResults> results,
+        List<List<Object>> items, boolean last) {
         super(QRY_EXEC_MULT);
         this.results = results;
+        this.items = items;
+        this.last = last;
     }
 
     /**
@@ -52,6 +63,20 @@ public class JdbcQueryExecuteMultipleStatementsResult extends JdbcResult {
      */
     public List<JdbcStatementResults> results() {
         return results;
+    }
+
+    /**
+     * @return Query result rows for the first query.
+     */
+    public List<List<Object>> items() {
+        return items;
+    }
+
+    /**
+     * @return Flag indicating the query has no unfetched results for the first query.
+     */
+    public boolean isLast() {
+        return last;
     }
 
     /** {@inheritDoc} */
@@ -64,6 +89,11 @@ public class JdbcQueryExecuteMultipleStatementsResult extends JdbcResult {
             for (JdbcStatementResults r : results)
                 r.writeBinary(writer);
 
+            if (results.get(0).isQuery()) {
+                writer.writeBoolean(last);
+
+                JdbcUtils.writeItems(writer, items);
+            }
         } else
             writer.writeInt(0);
     }
@@ -86,6 +116,12 @@ public class JdbcQueryExecuteMultipleStatementsResult extends JdbcResult {
                 r.readBinary(reader);
 
                 results.add(r);
+            }
+
+            if (results.get(0).isQuery()) {
+                last = reader.readBoolean();
+
+                items = JdbcUtils.readItems(reader);
             }
         }
     }

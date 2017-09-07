@@ -277,6 +277,8 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
             }
             else {
                 List<JdbcStatementResults> jdbcResults = new ArrayList<>(results.size());
+                List<List<Object>> items = null;
+                boolean last = true;
 
                 for (FieldsQueryCursor<List<?>> c : results) {
                     QueryCursorImpl qryCur = (QueryCursorImpl)c;
@@ -291,6 +293,11 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
                         qryCursors.put(qryId, cur);
 
                         qryId = QRY_ID_GEN.getAndIncrement();
+
+                        if (items == null) {
+                            items = cur.fetchRows();
+                            last = cur.hasNext();
+                        }
                     }
                     else
                         jdbcRes = new JdbcStatementResults(false, (Long)((List<?>)qryCur.getAll().get(0)).get(0));
@@ -298,7 +305,7 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
                     jdbcResults.add(jdbcRes);
                 }
 
-                return new JdbcResponse(new JdbcQueryExecuteMultipleStatementsResult(jdbcResults));
+                return new JdbcResponse(new JdbcQueryExecuteMultipleStatementsResult(jdbcResults, items, last));
             }
 
 

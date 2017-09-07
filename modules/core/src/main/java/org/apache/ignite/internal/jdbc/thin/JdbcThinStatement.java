@@ -35,7 +35,6 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBatchExecuteResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQuery;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteMultipleStatementsResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteResult;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryFetchResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcStatementResults;
 
@@ -76,9 +75,6 @@ public class JdbcThinStatement implements Statement {
 
     /** Result sets. */
     protected List<JdbcThinResultSet> resultSets;
-
-    /** Multiple statement result info. */
-    protected List<JdbcStatementResults> resInfo;
 
     /** Current result. */
     protected int curRes;
@@ -134,21 +130,42 @@ public class JdbcThinStatement implements Statement {
                 resultSets = Collections.singletonList(new JdbcThinResultSet(this, res.getQueryId(), pageSize,
                     res.last(), res.items(), res.isQuery(), conn.io().autoCloseServerCursor(), res.updateCount(),
                     closeOnCompletion));
-
-                resInfo = Collections.singletonList(new JdbcStatementResults(res.isQuery(),
-                    res.isQuery() ? res.getQueryId() : res.updateCount()));
             }
             else if (res0 instanceof JdbcQueryExecuteMultipleStatementsResult) {
                 JdbcQueryExecuteMultipleStatementsResult res = (JdbcQueryExecuteMultipleStatementsResult)res0;
 
-                resInfo = res.results();
+                List<JdbcStatementResults> resInfos = res.results();
 
-                resultSets = new ArrayList<>(resInfo.size());
+                resultSets = new ArrayList<>(resInfos.size());
+
+                boolean firstRes = true;
+
+                for(JdbcStatementResults rsInfo : resInfos) {
+                    if (!rsInfo.isQuery()) {
+                        resultSets.add(new JdbcThinResultSet(this, -1, pageSize,
+                            true, Collections.<List<Object>>emptyList(), false,
+                            conn.io().autoCloseServerCursor(), rsInfo.updateCount(), closeOnCompletion));
+                    }
+                    else {
+                        if (firstRes) {
+                            firstRes = false;
+
+                            resultSets.add(new JdbcThinResultSet(this, rsInfo.queryId(), pageSize,
+                                res.isLast(), res.items(), true,
+                                conn.io().autoCloseServerCursor(), -1, closeOnCompletion));
+                        }
+                        else {
+                            resultSets.add(new JdbcThinResultSet(this, rsInfo.queryId(), pageSize,
+                                false, null, true,
+                                conn.io().autoCloseServerCursor(), -1, closeOnCompletion));
+                        }
+                    }
+                }
             }
             else
                 throw new SQLException("Unexpected result [res=" + res0 + ']');
 
-            assert resInfo.size() > 0 : "At least one results set is expected";
+            assert resultSets.size() > 0 : "At least one results set is expected";
         }
         catch (IOException e) {
             conn.close();
@@ -192,7 +209,6 @@ public class JdbcThinStatement implements Statement {
                 rs.close0();
 
             resultSets = null;
-            resInfo = null;
             curRes = 0;
         }
     }
@@ -283,7 +299,7 @@ public class JdbcThinStatement implements Statement {
 
         execute0(sql, null);
 
-        return resInfo.get(0).isQuery();
+        return resultSets.get(0).isQuery();
     }
 
     /** {@inheritDoc} */
@@ -327,40 +343,10 @@ public class JdbcThinStatement implements Statement {
     private JdbcThinResultSet nextResultSet() throws SQLException {
         ensureNotClosed();
 
-        if (resultSets == null || resInfo == null || curRes >= resInfo.size())
+        if (resultSets == null || curRes >= resultSets.size())
             return null;
-
-        if (curRes >= resultSets.size()) {
-            try {
-                JdbcThinResultSet rs;
-
-                if (resInfo.get(curRes).isQuery()) {
-                    long qryId = resInfo.get(curRes).queryId();
-
-                    JdbcQueryFetchResult res = conn.io().queryFetch(qryId, pageSize);
-
-                    rs = new JdbcThinResultSet(this, qryId, pageSize,
-                        res.last(), res.items(), true, conn.io().autoCloseServerCursor(), -1, closeOnCompletion);
-                }
-                else {
-                    rs = new JdbcThinResultSet(this, -1, pageSize,
-                        true, Collections.<List<Object>>emptyList(), false,
-                        conn.io().autoCloseServerCursor(),resInfo.get(curRes).updateCount(), closeOnCompletion);
-                }
-
-                resultSets.add(rs);
-            }
-            catch (IOException e) {
-                conn.close();
-
-                throw new SQLException("Failed get next results.", e);
-            }
-            catch (IgniteCheckedException e) {
-                throw new SQLException("Failed get next results.", e);
-            }
-        }
-
-        return resultSets.get(curRes++);
+        else
+            return resultSets.get(curRes++);
     }
 
     /** {@inheritDoc} */
@@ -498,7 +484,7 @@ public class JdbcThinStatement implements Statement {
             }
         }
 
-        return (resInfo != null && curRes < resInfo.size());
+        return (resultSets != null && curRes < resultSets.size());
     }
 
     /** {@inheritDoc} */

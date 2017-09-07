@@ -343,7 +343,9 @@ public class DmlStatementsProcessor {
      * @param cctx Cache context.
      * @param prepared Prepared statement for DML query.
      * @param fieldsQry Fields query.
+     * @param loc Local query flag.
      * @param filters Cache name and key filter.
+     * @param cancel Query cancel state holder.
      * @param failedKeys Keys to restrict UPDATE and DELETE operations with. Null or empty array means no restriction.
      * @return Pair [number of successfully processed items; keys that have failed to be processed]
      * @throws IgniteCheckedException if failed.

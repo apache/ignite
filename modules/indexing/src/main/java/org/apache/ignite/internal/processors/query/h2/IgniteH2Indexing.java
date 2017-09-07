@@ -1385,6 +1385,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     cachedQry = twoStepCache.get(cachedQryKey);
 
                     if (cachedQry != null) {
+                        System.out.println("+++ cached " + cachedQry);
                         twoStepQry = cachedQry.query().copy();
                         meta = cachedQry.meta();
 
