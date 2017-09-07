@@ -56,6 +56,16 @@
     <None Include="..\..\config\cache-query-continuous.xml" />
     <None Include="..\..\config\cache-query-continuous-default.xml" />
     <None Include="..\..\config\invalid.xml" />
+    <None Include="..\..\config\isolated-32.xml" />
+    <None Include="..\..\config\isolated-default.xml" />
+    <None Include="..\..\config\isolated.xml" />
+    <None Include="..\..\config\persistence-store-32.xml">
+      <SubType>Designer</SubType>
+    </None>
+    <None Include="..\..\config\persistence-store-default.xml" />
+    <None Include="..\..\config\persistence-store.xml">
+      <SubType>Designer</SubType>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\binary_object_test.cpp" />
