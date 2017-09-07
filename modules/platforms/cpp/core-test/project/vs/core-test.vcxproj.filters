@@ -178,15 +178,6 @@
     <None Include="..\..\config\cache-store-32.xml">
       <Filter>Configs</Filter>
     </None>
-    <None Include="..\..\config\persistance-store.xml">
-      <Filter>Configs</Filter>
-    </None>
-    <None Include="..\..\config\persistance-store-32.xml">
-      <Filter>Configs</Filter>
-    </None>
-    <None Include="..\..\config\persistance-store-default.xml">
-      <Filter>Configs</Filter>
-    </None>
     <None Include="..\..\config\isolated.xml">
       <Filter>Configs</Filter>
     </None>
@@ -194,6 +185,16 @@
       <Filter>Configs</Filter>
     </None>
     <None Include="..\..\config\isolated-default.xml">
+      <Filter>Configs</Filter>
+    </None>
+    <None Include="..\..\config\cache-query-continuous.xml" />
+    <None Include="..\..\config\persistence-store.xml">
+      <Filter>Configs</Filter>
+    </None>
+    <None Include="..\..\config\persistence-store-32.xml">
+      <Filter>Configs</Filter>
+    </None>
+    <None Include="..\..\config\persistence-store-default.xml">
       <Filter>Configs</Filter>
     </None>
   </ItemGroup>

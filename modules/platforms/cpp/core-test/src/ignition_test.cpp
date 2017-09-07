@@ -35,9 +35,9 @@ BOOST_AUTO_TEST_CASE(TestIgnition)
     IgniteConfiguration cfg;
 
 #ifdef IGNITE_TESTS_32
-    ignite_test::InitConfig(cfg, "persistance-store-32.xml");
+    ignite_test::InitConfig(cfg, "persistence-store-32.xml");
 #else
-    ignite_test::InitConfig(cfg, "persistance-store.xml");
+    ignite_test::InitConfig(cfg, "persistence-store.xml");
 #endif
 
     IgniteError err;
@@ -81,14 +81,14 @@ BOOST_AUTO_TEST_CASE(TestIgnition)
     BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_GENERIC);    
 }
 
-BOOST_AUTO_TEST_CASE(TestStartWithPersistance)
+BOOST_AUTO_TEST_CASE(TestStartWithpersistence)
 {
     IgniteConfiguration cfg;
 
 #ifdef IGNITE_TESTS_32
-    ignite_test::InitConfig(cfg, "persistance-store-32.xml");
+    ignite_test::InitConfig(cfg, "persistence-store-32.xml");
 #else
-    ignite_test::InitConfig(cfg, "persistance-store.xml");
+    ignite_test::InitConfig(cfg, "persistence-store.xml");
 #endif
     try
     {
