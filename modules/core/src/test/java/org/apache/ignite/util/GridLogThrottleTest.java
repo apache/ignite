@@ -157,8 +157,8 @@ public class GridLogThrottleTest extends GridCommonAbstractTest {
         assertEquals(4, LT.errorsSize());
         log.reset();
 
-        info("Slept for throttle timeout: " + LT.throttleTimeout() + 15);
-        Thread.sleep(LT.throttleTimeout() + 150);
+        info("Slept for throttle timeout: " + LT.throttleTimeout() + 50);
+        Thread.sleep(LT.throttleTimeout() + 50);
 
         LT.error(log, new RuntimeException("Test exception 3."), "Test");
         assertTrue(log.toString().contains("Test\r\njava.lang.RuntimeException: Test exception 3."));
@@ -175,8 +175,8 @@ public class GridLogThrottleTest extends GridCommonAbstractTest {
         assertTrue(log.toString().contains("Test\r\njava.lang.RuntimeException: Test exception 1."));
         log.reset();
 
-        info("Slept for throttle timeout: " + LT.throttleTimeout() + 15);
-        Thread.sleep(LT.throttleTimeout() + 150);
+        info("Slept for throttle timeout: " + LT.throttleTimeout() * 2);
+        Thread.sleep(LT.throttleTimeout() * 2);
 
         LT.info(log(), "Test info message 1.");
         assertEquals(1, LT.errorsSize());
@@ -201,8 +201,8 @@ public class GridLogThrottleTest extends GridCommonAbstractTest {
         LT.error(log, new RuntimeException("Test exception 1."), "Test");
         assertEquals(1, LT.errorsSize());
 
-        Thread.sleep(LT.throttleTimeout() + 30);
-        info("Slept for throttle timeout: " + (LT.throttleTimeout() + 200));
+        Thread.sleep(LT.throttleTimeout() + 50);
+        info("Slept for throttle timeout: " + (LT.throttleTimeout() + 50));
 
         assertEquals(0, LT.errorsSize());
 
@@ -211,8 +211,8 @@ public class GridLogThrottleTest extends GridCommonAbstractTest {
         LT.error(log, new RuntimeException("Test exception 1."), "Test");
         assertEquals(1, LT.errorsSize());
 
-        Thread.sleep(LT.throttleTimeout() + 30);
-        info("Set new throttle timeout and slept : " + LT.throttleTimeout() + 200);
+        Thread.sleep(LT.throttleTimeout() + 50);
+        info("Set new throttle timeout and slept : " + LT.throttleTimeout() + 50);
 
         assertEquals(0, LT.errorsSize());
     }

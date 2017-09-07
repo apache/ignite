@@ -17,16 +17,18 @@
 
 package org.apache.ignite.internal.util;
 
+import java.util.Iterator;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
-
-import java.util.Iterator;
-import java.util.Map;
-import java.util.concurrent.*;
 
 /**
  * Grid log throttle.
@@ -74,8 +76,12 @@ public class GridLogThrottle {
 
         throttleTimeout = timeout;
 
-        if (scheduledFuture != null && !scheduledFuture.isCancelled())
+        if (scheduledFuture != null) {
+
+            scheduledFuture.cancel(false);
+
             schedulerSetup();
+        }
     }
 
     /**
@@ -215,7 +221,7 @@ public class GridLogThrottle {
         @Nullable String shortMsg, LogLevel level, boolean quiet, boolean byMsg) {
         assert !F.isEmpty(longMsg);
 
-        if (scheduledFuture == null || scheduledFuture.isCancelled())
+        if (scheduledFuture == null)
             schedulerSetup();
 
         IgniteBiTuple<Class<? extends Throwable>, String> tup =
@@ -263,19 +269,14 @@ public class GridLogThrottle {
      * Method iterates though man and removes outdated entries (compares entry timestamp with current timestamp minus
      * timeout). It protects the map from causing memory leak.
      */
-    private static void cleanUpOldEntries() {
-        Iterator<Map.Entry<IgniteBiTuple<Class<? extends Throwable>, String>, Long>> itr = errors.entrySet().iterator();
-
-        while (itr.hasNext()) {
-
-            Map.Entry<IgniteBiTuple<Class<? extends Throwable>, String>, Long> entry = itr.next();
-
-            Long loggedTs = entry.getValue();
+    private static synchronized void  cleanUpOldEntries() {
+        for (Iterator<Long> it = errors.values().iterator(); it.hasNext();){
+            Long loggedTs = it.next();
 
             long curTs = U.currentTimeMillis();
 
-            if (loggedTs == null || loggedTs <= (curTs - throttleTimeout)) {
-                itr.remove();
+            if (loggedTs <= (curTs - throttleTimeout)) {
+                it.remove();
             }
         }
     }
