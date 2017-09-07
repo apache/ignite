@@ -296,7 +296,7 @@ public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
                         ((IgniteCacheProxy)cache).context().affinity().primaryByKey(key, NONE);
 
                     List<Object> primaryKeys = primaryKeys(
-                        grid(primaryNode).cache(CACHE_NAME), 5, incrementAndGet(key , (100 * threadNum)));
+                        grid(primaryNode).cache(CACHE_NAME), 5, incrementKey(key , (100 * threadNum)));
 
                     Map<Object, Integer> entries = new HashMap<>();
 
@@ -309,7 +309,7 @@ public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
 
                         entries.put(o, 1);
 
-                        k = incrementAndGet(o, 13);
+                        k = incrementKey(o, 13);
 
                         involvedKeys.add(k);
 
@@ -418,6 +418,23 @@ public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
             else
                 assertFalse(msg.contains("[key=" + key));
         }
+    }
+
+    /**
+     * @param key Key.
+     * @param i I.
+     * @return Incremented key.
+     */
+    private Object incrementKey(Object key, int i) {
+        if(key instanceof Integer){
+            Integer v = (Integer)key;
+
+            return v + i;
+        }
+        else if (key instanceof IncrementalTestObject)
+            return ((IncrementalTestObject)key).increment(i);
+        else
+            throw new IgniteException("Unable to increment objects of class " + key.getClass().getName() + ".");
     }
 
     /**

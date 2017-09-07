@@ -1103,7 +1103,17 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                                 return true;
                         }
 
-                        key = (T)incrementAndGet(key, 1);
+                        if (key instanceof Integer) {
+                            Integer v = ((Integer)key + 1);
+
+                            key = (T)v;
+                        }
+                        else if (key instanceof IncrementalTestObject)
+                            key = (T)((IncrementalTestObject)key).increment(i);
+                        else {
+                            throw new IgniteException("Unable to increment objects of class " +
+                                key.getClass().getName() + ".");
+                        }
                     }
 
                     return false;
@@ -1118,23 +1128,6 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
             throw new IgniteException("Unable to find " + cnt + " requied keys.");
 
         return found;
-    }
-
-    /**
-     * @param obj Object. Must be {@link Integer} or implementation of {@link IncrementalTestObject}
-     * @return incremented Object.
-     */
-    protected Object incrementAndGet(Object obj, int i) {
-        if(obj instanceof Integer){
-            Integer v = (Integer)obj;
-
-            return v + i;
-        }
-        else if (obj instanceof IncrementalTestObject)
-            return ((IncrementalTestObject)obj).increment(i);
-        else
-            throw new IgniteException("Unable to increment objects of class " + obj.getClass().getName() + ".");
-
     }
 
     /**
