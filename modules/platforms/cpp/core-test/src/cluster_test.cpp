@@ -118,10 +118,6 @@ BOOST_FIXTURE_TEST_SUITE(ClusterTestSuiteIsolated, ClusterTestSuiteFixtureIsolat
 
 BOOST_AUTO_TEST_CASE(IgniteSetActive)
 {
-    BOOST_REQUIRE(!node.IsActive());
-
-    node.SetActive(true);
-
     BOOST_REQUIRE(node.IsActive());
 
     node.SetActive(false);
