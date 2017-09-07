@@ -34,7 +34,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxPrepareRequest;
-import org.apache.ignite.internal.processors.cache.mvcc.TxMvccVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccUpdateVersion;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -105,7 +105,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
     private List<IgniteTxKey> nearWritesCacheMissed;
 
     /** */
-    private long mvccCrdCntr = TxMvccVersion.COUNTER_NA;
+    private long mvccCrdCntr = MvccUpdateVersion.COUNTER_NA;
 
     /**
      * Empty constructor required for {@link Externalizable}.

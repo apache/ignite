@@ -67,6 +67,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetR
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetResponse;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheEntryFilter;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
@@ -776,7 +777,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         boolean skipVals,
         boolean canRemap,
         boolean recovery,
-        long mvccCrdCntr
+        MvccQueryVersion mvccVer
     ) {
         return getAllAsync0(keys,
             readerArgs,
@@ -791,7 +792,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             recovery,
             canRemap,
             /*need version*/true,
-            mvccCrdCntr);
+            mvccVer);
     }
 
     /**
@@ -818,7 +819,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         @Nullable IgniteCacheExpiryPolicy expiry,
         boolean skipVals,
         boolean recovery,
-        long mvccCrdCntr
+        MvccQueryVersion mvccVer
     ) {
         GridDhtGetFuture<K, V> fut = new GridDhtGetFuture<>(ctx,
             msgId,
@@ -832,7 +833,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             skipVals,
             recovery,
             addReaders,
-            mvccCrdCntr);
+            mvccVer);
 
         fut.init();
 
@@ -1005,7 +1006,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                 expiryPlc,
                 req.skipValues(),
                 req.recovery(),
-                req.mvccCoordinatorCounter());
+                req.mvccVersion());
 
         fut.listen(new CI1<IgniteInternalFuture<Collection<GridCacheEntryInfo>>>() {
             @Override public void apply(IgniteInternalFuture<Collection<GridCacheEntryInfo>> f) {

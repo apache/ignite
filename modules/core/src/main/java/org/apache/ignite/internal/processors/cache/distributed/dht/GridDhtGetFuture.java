@@ -37,6 +37,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedExceptio
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.ReaderArguments;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridCompoundIdentityFuture;
@@ -115,7 +116,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
     private final boolean addReaders;
 
     /** */
-    private final long mvccCrdCntr;
+    private final MvccQueryVersion mvccVer;
 
     /**
      * @param cctx Context.
@@ -142,7 +143,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
         boolean skipVals,
         boolean recovery,
         boolean addReaders,
-        long mvccCrdCntr
+        MvccQueryVersion mvccVer
     ) {
         super(CU.<GridCacheEntryInfo>collectionsReducer(keys.size()));
 
@@ -161,7 +162,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
         this.skipVals = skipVals;
         this.recovery = recovery;
         this.addReaders = addReaders;
-        this.mvccCrdCntr = mvccCrdCntr;
+        this.mvccVer = mvccVer;
 
         futId = IgniteUuid.randomUuid();
 
@@ -429,7 +430,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
                 skipVals,
                 /*can remap*/true,
                 recovery,
-                mvccCrdCntr);
+                mvccVer);
         }
         else {
             final ReaderArguments args = readerArgs;
@@ -454,7 +455,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
                             skipVals,
                             /*can remap*/true,
                             recovery,
-                            mvccCrdCntr);
+                            mvccVer);
                     }
                 }
             );

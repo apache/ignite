@@ -34,7 +34,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.mvcc.TxMvccVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionable;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -108,7 +108,7 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
     private long accessTtl;
 
     /** */
-    private long mvccCrdCntr = TxMvccVersion.COUNTER_NA;
+    private MvccQueryVersion mvccVer;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -149,7 +149,7 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
         boolean skipVals,
         boolean addDepInfo,
         boolean recovery,
-        long mvccCrdCntr
+        MvccQueryVersion mvccVer
     ) {
         assert futId != null;
         assert miniId != null;
@@ -178,7 +178,7 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
         this.createTtl = createTtl;
         this.accessTtl = accessTtl;
         this.addDepInfo = addDepInfo;
-        this.mvccCrdCntr = mvccCrdCntr;
+        this.mvccVer = mvccVer;
 
         if (readThrough)
             flags |= READ_THROUGH_FLAG_MASK;
@@ -196,8 +196,8 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
     /**
      * @return Counter.
      */
-    public long mvccCoordinatorCounter() {
-        return mvccCrdCntr;
+    public MvccQueryVersion mvccVersion() {
+        return mvccVer;
     }
 
     /**
@@ -395,7 +395,7 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
                 writer.incrementState();
 
             case 9:
-                if (!writer.writeLong("mvccCrdCntr", mvccCrdCntr))
+                if (!writer.writeMessage("mvccVer", mvccVer))
                     return false;
 
                 writer.incrementState();
@@ -495,7 +495,7 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
                 reader.incrementState();
 
             case 9:
-                mvccCrdCntr = reader.readLong("mvccCrdCntr");
+                mvccVer = reader.readMessage("mvccVer");
 
                 if (!reader.isLastRead())
                     return false;

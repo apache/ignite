@@ -27,7 +27,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 /**
  *
  */
-public class CoordinatorMvccCounterResponse implements Message {
+public class CoordinatorTxCounterResponse implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -40,7 +40,7 @@ public class CoordinatorMvccCounterResponse implements Message {
     /**
      * Required by {@link GridIoMessageFactory}.
      */
-    public CoordinatorMvccCounterResponse() {
+    public CoordinatorTxCounterResponse() {
         // No-op.
     }
 
@@ -48,7 +48,7 @@ public class CoordinatorMvccCounterResponse implements Message {
      * @param cntr Counter.
      * @param futId Future ID.
      */
-    CoordinatorMvccCounterResponse(long cntr, long futId) {
+    CoordinatorTxCounterResponse(long cntr, long futId) {
         this.cntr = cntr;
         this.futId = futId;
     }
@@ -122,7 +122,7 @@ public class CoordinatorMvccCounterResponse implements Message {
 
         }
 
-        return reader.afterMessageRead(CoordinatorMvccCounterResponse.class);
+        return reader.afterMessageRead(CoordinatorTxCounterResponse.class);
     }
 
     /** {@inheritDoc} */
@@ -142,6 +142,6 @@ public class CoordinatorMvccCounterResponse implements Message {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(CoordinatorMvccCounterResponse.class, this);
+        return S.toString(CoordinatorTxCounterResponse.class, this);
     }
 }

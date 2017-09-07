@@ -179,4 +179,14 @@ public abstract class GridH2Row implements GridSearchRowPointer, CacheDataRow, R
     @Override public int cacheId() {
         return 0;
     }
+
+    /** {@inheritDoc} */
+    @Override public long mvccUpdateTopologyVersion() {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long mvccUpdateCounter() {
+        throw new UnsupportedOperationException();
+    }
 }

@@ -41,7 +41,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedExceptio
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.mvcc.TxMvccVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryVersion;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetResponse;
@@ -82,7 +82,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
     private ClusterNode mvccCrd;
 
     /** */
-    private long mvccCntr = TxMvccVersion.COUNTER_NA;
+    private MvccQueryVersion mvccVer;
 
     /**
      * @param cctx Context.
@@ -162,12 +162,13 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                 return;
             }
 
-            IgniteInternalFuture<Long> cntrFut = cctx.shared().coordinators().requestQueryCounter(mvccCrd);
+            IgniteInternalFuture<MvccQueryVersion> cntrFut = cctx.shared().coordinators().requestQueryCounter(mvccCrd,
+                topVer.topologyVersion());
 
-            cntrFut.listen(new IgniteInClosure<IgniteInternalFuture<Long>>() {
-                @Override public void apply(IgniteInternalFuture<Long> fut) {
+            cntrFut.listen(new IgniteInClosure<IgniteInternalFuture<MvccQueryVersion>>() {
+                @Override public void apply(IgniteInternalFuture<MvccQueryVersion> fut) {
                     try {
-                        mvccCntr = fut.get();
+                        mvccVer = fut.get();
 
                         map(keys,
                             Collections.<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>>emptyMap(),
@@ -246,10 +247,10 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
             if (trackable)
                 cctx.mvcc().removeFuture(futId);
 
-            if (mvccCntr != TxMvccVersion.COUNTER_NA) {
+            if (mvccVer != null) {
                 assert mvccCrd != null;
 
-                cctx.shared().coordinators().ackQueryDone(mvccCrd, mvccCntr);
+                cctx.shared().coordinators().ackQueryDone(mvccCrd, mvccVer.counter());
             }
 
             cache().sendTtlUpdateRequest(expiryPlc);
@@ -345,7 +346,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                         expiryPlc,
                         skipVals,
                         recovery,
-                        mvccCntr);
+                        mvccVer);
 
                 final Collection<Integer> invalidParts = fut.invalidPartitions();
 
@@ -402,7 +403,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                     skipVals,
                     cctx.deploymentEnabled(),
                     recovery,
-                    mvccCntr);
+                    mvccVer);
 
                 add(fut); // Append new future.
 
@@ -508,7 +509,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
 
                 if (readNoEntry) {
                     CacheDataRow row = cctx.mvccEnabled() ?
-                        cctx.offheap().readMvcc(cctx, key, topVer.topologyVersion(), mvccCntr) :
+                        cctx.offheap().mvccRead(cctx, key, mvccVer) :
                         cctx.offheap().read(cctx, key);
 
                     if (row != null) {
@@ -552,7 +553,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                                 taskName,
                                 expiryPlc,
                                 !deserializeBinary,
-                                mvccCntr,
+                                mvccVer,
                                 null);
 
                             if (getRes != null) {
@@ -572,7 +573,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                                 taskName,
                                 expiryPlc,
                                 !deserializeBinary,
-                                mvccCntr);
+                                mvccVer);
                         }
 
                         cache.context().evicts().touch(entry, topVer);

@@ -61,7 +61,7 @@ import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTx
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
-import org.apache.ignite.internal.processors.cache.mvcc.TxMvccVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccUpdateVersion;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
@@ -394,7 +394,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                         tx.resolveTaskName(),
                         null,
                         keepBinary,
-                        TxMvccVersion.COUNTER_NA); // TODO IGNITE-3478
+                        null); // TODO IGNITE-3478
 
                     if (retVal || txEntry.op() == TRANSFORM) {
                         if (!F.isEmpty(txEntry.entryProcessors())) {
@@ -495,7 +495,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                             /*taskName*/null,
                             /*expiryPlc*/null,
                             /*keepBinary*/true,
-                            TxMvccVersion.COUNTER_NA); // TODO IGNITE-3478
+                            null); // TODO IGNITE-3478
                     }
 
                     if (oldVal != null)
@@ -1235,7 +1235,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 assert crd != null : tx.topologyVersion();
 
                 if (crd.isLocal())
-                    tx.mvccCoordinatorCounter(cctx.coordinators().requestTxCounterOnCoordinator(tx.nearXidVersion()));
+                    tx.mvccCoordinatorCounter(cctx.coordinators().requestTxCounterOnCoordinator(tx));
                 else {
                     IgniteInternalFuture<Long> crdCntrFut = cctx.coordinators().requestTxCounter(crd, tx);
 
@@ -1311,7 +1311,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
             }
         }
 
-        assert !tx.txState().mvccEnabled(cctx) || !tx.onePhaseCommit() || tx.mvccCoordinatorCounter() != TxMvccVersion.COUNTER_NA;
+        assert !tx.txState().mvccEnabled(cctx) || !tx.onePhaseCommit() || tx.mvccCoordinatorCounter() != MvccUpdateVersion.COUNTER_NA;
 
         int miniId = 0;
 

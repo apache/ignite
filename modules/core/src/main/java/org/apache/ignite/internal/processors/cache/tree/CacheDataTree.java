@@ -21,7 +21,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.mvcc.TxMvccVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccUpdateVersion;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.CacheSearchRow;
@@ -114,7 +114,7 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
     /** {@inheritDoc} */
     @Override protected int compare(BPlusIO<CacheSearchRow> iox, long pageAddr, int idx, CacheSearchRow row)
         throws IgniteCheckedException {
-        assert !grp.mvccEnabled() || row.mvccUpdateTopologyVersion() != 0 || row.getClass() == SearchRow.class;
+        assert !grp.mvccEnabled() || row.mvccUpdateTopologyVersion() != 0;// || row.getClass() == SearchRow.class;
 
         RowLinkIO io = (RowLinkIO)iox;
 
@@ -155,7 +155,7 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
 
         cmp = compareKeys(row.key(), link);
 
-        if (cmp != 0 || !grp.mvccEnabled() || row.mvccUpdateTopologyVersion() == 0)
+        if (cmp != 0 || !grp.mvccEnabled())
             return 0;
 
         long mvccTopVer = io.getMvccUpdateTopologyVersion(pageAddr, idx);
@@ -167,7 +167,7 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
 
         long mvccCntr = io.getMvccUpdateCounter(pageAddr, idx);
 
-        assert row.mvccUpdateCounter() != TxMvccVersion.COUNTER_NA;
+        assert row.mvccUpdateCounter() != MvccUpdateVersion.COUNTER_NA;
 
         cmp = Long.compare(row.mvccUpdateCounter(), mvccCntr);
 
@@ -187,7 +187,14 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
             (CacheDataRowAdapter.RowData)flags :
             CacheDataRowAdapter.RowData.FULL;
 
-        return rowStore.dataRow(cacheId, hash, link, x);
+        if (grp.mvccEnabled()) {
+            long mvccTopVer = rowIo.getMvccUpdateTopologyVersion(pageAddr, idx);
+            long mvccCntr = rowIo.getMvccUpdateCounter(pageAddr, idx);
+
+            return rowStore.mvccRow(cacheId, hash, link, x, mvccTopVer, mvccCntr);
+        }
+        else
+            return rowStore.dataRow(cacheId, hash, link, x);
     }
 
     /**

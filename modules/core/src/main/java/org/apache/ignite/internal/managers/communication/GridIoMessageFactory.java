@@ -102,12 +102,14 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFi
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearUnlockRequest;
-import org.apache.ignite.internal.processors.cache.mvcc.CoordinatorMvccCounterResponse;
+import org.apache.ignite.internal.processors.cache.mvcc.CoordinatorQueryVersionResponse;
+import org.apache.ignite.internal.processors.cache.mvcc.CoordinatorTxCounterResponse;
 import org.apache.ignite.internal.processors.cache.mvcc.CoordinatorQueryAckRequest;
-import org.apache.ignite.internal.processors.cache.mvcc.CoordinatorQueryCounterRequest;
+import org.apache.ignite.internal.processors.cache.mvcc.CoordinatorQueryVersionRequest;
 import org.apache.ignite.internal.processors.cache.mvcc.CoordinatorTxAckRequest;
 import org.apache.ignite.internal.processors.cache.mvcc.CoordinatorTxAckResponse;
 import org.apache.ignite.internal.processors.cache.mvcc.CoordinatorTxCounterRequest;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccUpdateVersion;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryRequest;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryResponse;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
@@ -887,7 +889,7 @@ public class GridIoMessageFactory implements MessageFactory {
                 break;
 
             case 130:
-                msg = new CoordinatorMvccCounterResponse();
+                msg = new CoordinatorTxCounterResponse();
 
                 break;
 
@@ -902,7 +904,7 @@ public class GridIoMessageFactory implements MessageFactory {
                 break;
 
             case 133:
-                msg = new CoordinatorQueryCounterRequest();
+                msg = new CoordinatorQueryVersionRequest();
 
                 break;
 
@@ -910,6 +912,16 @@ public class GridIoMessageFactory implements MessageFactory {
                 msg = new CoordinatorQueryAckRequest();
 
                 break;
+
+            case 135:
+                msg = new MvccUpdateVersion();
+
+                return msg;
+
+            case 136:
+                msg = new CoordinatorQueryVersionResponse();
+
+                return msg;
 
 
             // [-3..119] [124..128] [-23..-27] [-36..-55]- this

@@ -25,7 +25,7 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxFinishRequest;
-import org.apache.ignite.internal.processors.cache.mvcc.TxMvccVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccUpdateVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -68,7 +68,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
     private GridCacheVersion writeVer;
 
     /** */
-    private long mvccCrdCntr = TxMvccVersion.COUNTER_NA;
+    private long mvccCrdCntr = MvccUpdateVersion.COUNTER_NA;
 
     /**
      * Empty constructor required for {@link Externalizable}.

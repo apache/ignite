@@ -37,7 +37,7 @@ import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTx
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxMapping;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheCoordinatorsSharedManager;
-import org.apache.ignite.internal.processors.cache.mvcc.TxMvccVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccUpdateVersion;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
@@ -427,7 +427,7 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
             assert !tx.onePhaseCommit();
 
             if (mvccCrd.isLocal())
-                tx.mvccCoordinatorCounter(cctx.coordinators().requestTxCounterOnCoordinator(tx.nearXidVersion()));
+                tx.mvccCoordinatorCounter(cctx.coordinators().requestTxCounterOnCoordinator(tx));
             else {
                 IgniteInternalFuture<Long> cntrFut = cctx.coordinators().requestTxCounter(mvccCrd, tx);
 
@@ -471,9 +471,9 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
                         ", loc=" + ((MiniFuture)f).primary().isLocal() +
                         ", done=" + f.isDone() + "]";
                 }
-                else if (f instanceof CacheCoordinatorsSharedManager.MvccCounterFuture) {
-                    CacheCoordinatorsSharedManager.MvccCounterFuture crdFut =
-                        (CacheCoordinatorsSharedManager.MvccCounterFuture)f;
+                else if (f instanceof CacheCoordinatorsSharedManager.TxCounterFuture) {
+                    CacheCoordinatorsSharedManager.TxCounterFuture crdFut =
+                        (CacheCoordinatorsSharedManager.TxCounterFuture)f;
 
                     return "[crdNode=" + crdFut.crd.id() +
                         ", loc=" + crdFut.crd.isLocal() +
@@ -530,7 +530,7 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
             if (res.error() != null)
                 onError(res.error());
             else {
-                if (res.mvccCoordinatorCounter() != TxMvccVersion.COUNTER_NA)
+                if (res.mvccCoordinatorCounter() != MvccUpdateVersion.COUNTER_NA)
                     tx.mvccCoordinatorCounter(res.mvccCoordinatorCounter());
 
                 onPrepareResponse(m, res, updateMapping);

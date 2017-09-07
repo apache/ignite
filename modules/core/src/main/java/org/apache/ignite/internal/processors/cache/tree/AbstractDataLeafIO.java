@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.cache.tree;
 
 import org.apache.ignite.internal.pagemem.PageUtils;
-import org.apache.ignite.internal.processors.cache.mvcc.TxMvccVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccUpdateVersion;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.CacheSearchRow;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
@@ -62,7 +62,7 @@ public abstract class AbstractDataLeafIO extends BPlusLeafIO<CacheSearchRow> imp
             long mvccUpdateCntr = row.mvccUpdateCounter();
 
             assert mvccUpdateTopVer > 0 : mvccUpdateCntr;
-            assert mvccUpdateCntr != TxMvccVersion.COUNTER_NA;
+            assert mvccUpdateCntr != MvccUpdateVersion.COUNTER_NA;
 
             PageUtils.putLong(pageAddr, off, mvccUpdateTopVer);
             off += 8;
@@ -98,7 +98,7 @@ public abstract class AbstractDataLeafIO extends BPlusLeafIO<CacheSearchRow> imp
             long mvccUpdateCntr = ((RowLinkIO)srcIo).getMvccUpdateCounter(srcPageAddr, srcIdx);
 
             assert mvccUpdateTopVer >=0 : mvccUpdateCntr;
-            assert mvccUpdateCntr != TxMvccVersion.COUNTER_NA;
+            assert mvccUpdateCntr != MvccUpdateVersion.COUNTER_NA;
 
             PageUtils.putLong(dstPageAddr, off, mvccUpdateTopVer);
             off += 8;
@@ -117,9 +117,10 @@ public abstract class AbstractDataLeafIO extends BPlusLeafIO<CacheSearchRow> imp
             long mvccTopVer = getMvccUpdateTopologyVersion(pageAddr, idx);
             long mvccCntr = getMvccUpdateCounter(pageAddr, idx);
 
-            return ((CacheDataTree)tree).rowStore().mvccKeySearchRow(cacheId,
+            return ((CacheDataTree)tree).rowStore().mvccRow(cacheId,
                 hash,
                 link,
+                CacheDataRowAdapter.RowData.KEY_ONLY,
                 mvccTopVer,
                 mvccCntr);
         }

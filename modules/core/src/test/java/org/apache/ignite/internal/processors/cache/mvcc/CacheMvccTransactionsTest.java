@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -40,6 +41,9 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishRequest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishResponse;
 import org.apache.ignite.internal.util.lang.GridInClosure3;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
@@ -63,7 +67,7 @@ import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
- *
+ * TODO IGNITE-3478: extend tests to use single/mutiple nodes, all tx types.
  */
 public class CacheMvccTransactionsTest extends GridCommonAbstractTest {
     /** */
@@ -75,17 +79,30 @@ public class CacheMvccTransactionsTest extends GridCommonAbstractTest {
     /** */
     private boolean client;
 
+    /** */
+    private boolean testSpi;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
+        if (testSpi)
+            cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
+
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
         cfg.setClientMode(client);
 
         return cfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        verifyCoordinatorInternalState();
+
+        stopAllGrids();
     }
 
     /**
@@ -206,7 +223,7 @@ public class CacheMvccTransactionsTest extends GridCommonAbstractTest {
 
             Ignite ignite = startGrid(SRVS);
 
-            CacheConfiguration ccfg = cacheConfiguration(PARTITIONED, FULL_SYNC, 1);
+            CacheConfiguration ccfg = cacheConfiguration(PARTITIONED, FULL_SYNC, 1, 512);
 
             IgniteCache<Integer, Integer> cache = ignite.createCache(ccfg);
 
@@ -231,7 +248,7 @@ public class CacheMvccTransactionsTest extends GridCommonAbstractTest {
 
         IgniteTransactions txs = node.transactions();
 
-        final IgniteCache<Object, Object> cache = node.createCache(cacheConfiguration(PARTITIONED, FULL_SYNC, 0));
+        final IgniteCache<Object, Object> cache = node.createCache(cacheConfiguration(PARTITIONED, FULL_SYNC, 0, 1));
 
         final int KEYS = 10_000;
 
@@ -278,6 +295,158 @@ public class CacheMvccTransactionsTest extends GridCommonAbstractTest {
                 assertEquals(KEYS / 2, map.size());
 
                 tx.commit();
+            }
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testMyUpdatesAreVisible() throws Exception {
+        final Ignite ignite = startGrid(0);
+
+        final IgniteCache<Object, Object> cache = ignite.createCache(cacheConfiguration(PARTITIONED, FULL_SYNC, 0, 1));
+
+        final int THREADS = Runtime.getRuntime().availableProcessors() * 2;
+
+        final int KEYS = 10;
+
+        final CyclicBarrier b = new CyclicBarrier(THREADS);
+
+        GridTestUtils.runMultiThreaded(new IgniteInClosure<Integer>() {
+            @Override public void apply(Integer idx) {
+                try {
+                    int min = idx * KEYS;
+                    int max = min + KEYS;
+
+                    Set<Integer> keys = new HashSet<>();
+
+                    for (int k = min; k < max; k++)
+                        keys.add(k);
+
+                    b.await();
+
+                    for (int i = 0; i < 100; i++) {
+                        try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                            for (int k = min; k < max; k++)
+                                cache.put(k, i);
+
+                            tx.commit();
+                        }
+
+                        Map<Object, Object> res = cache.getAll(keys);
+
+                        for (Integer key : keys)
+                            assertEquals(i, res.get(key));
+
+                        assertEquals(KEYS, res.size());
+                    }
+                }
+                catch (Exception e) {
+                    error("Unexpected error: " + e, e);
+
+                    fail("Unexpected error: " + e);
+                }
+            }
+        }, THREADS, "test-thread");
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPartialCommitGetAll() throws Exception {
+        testSpi = true;
+
+        startGrids(2);
+
+        client = true;
+
+        final Ignite ignite = startGrid(3);
+
+        awaitPartitionMapExchange();
+
+        final IgniteCache<Object, Object> cache =
+            ignite.createCache(cacheConfiguration(PARTITIONED, FULL_SYNC, 0, 16));
+
+        final Integer key1 = primaryKey(ignite(0).cache(cache.getName()));
+        final Integer key2 = primaryKey(ignite(1).cache(cache.getName()));
+
+        try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            cache.put(key1, 1);
+            cache.put(key2, 1);
+
+            tx.commit();
+        }
+
+        Integer val = 1;
+
+        // Allow finish update for key1 and block update for key2.
+
+        TestRecordingCommunicationSpi clientSpi = TestRecordingCommunicationSpi.spi(ignite);
+        TestRecordingCommunicationSpi srvSpi = TestRecordingCommunicationSpi.spi(ignite(0));
+
+        for (int i = 0; i < 10; i++) {
+            info("Iteration: " + i);
+
+            clientSpi.blockMessages(GridNearTxFinishRequest.class, getTestIgniteInstanceName(1));
+
+            srvSpi.record(GridNearTxFinishResponse.class);
+
+            final Integer newVal = val + 1;
+
+            IgniteInternalFuture<?> fut = GridTestUtils.runAsync(new Callable<Void>() {
+                @Override public Void call() throws Exception {
+                    try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                        cache.put(key1, newVal);
+                        cache.put(key2, newVal);
+
+                        tx.commit();
+                    }
+
+                    return null;
+                }
+            });
+
+            try {
+                srvSpi.waitForRecorded();
+
+                srvSpi.recordedMessages(true);
+
+                assertFalse(fut.isDone());
+
+                if (i % 2 == 1) {
+                    // Execute one more update to increase counter.
+                    try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                        cache.put(1000_0000, 1);
+
+                        tx.commit();
+                    }
+                }
+
+                Set<Integer> keys = new HashSet<>();
+                keys.add(key1);
+                keys.add(key2);
+
+                Map<Object, Object> res;
+
+                res = cache.getAll(keys);
+
+                assertEquals(val, res.get(key1));
+                assertEquals(val, res.get(key2));
+
+                clientSpi.stopBlock(true);
+
+                fut.get();
+
+                res = cache.getAll(keys);
+
+                assertEquals(newVal, res.get(key1));
+                assertEquals(newVal, res.get(key2));
+
+                val = newVal;
+            }
+            finally {
+                clientSpi.stopBlock(true);
             }
         }
     }
@@ -392,16 +561,16 @@ public class CacheMvccTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testAccountsSumGetAll() throws Exception {
+    public void testAccountsTxGetAll() throws Exception {
         final int ACCOUNTS = 20;
 
         final int ACCOUNT_START_VAL = 1000;
 
         final long time = 10_000;
 
-        final int writers = 1;
+        final int writers = 4;
 
-        final int readers = 1;
+        final int readers = 4;
 
         final IgniteInClosure<IgniteCache<Object, Object>> init = new IgniteInClosure<IgniteCache<Object, Object>>() {
             @Override public void apply(IgniteCache<Object, Object> cache) {
@@ -432,13 +601,13 @@ public class CacheMvccTransactionsTest extends GridCommonAbstractTest {
                     while (!stop.get()) {
                         cnt++;
 
+                        Integer id1 = rnd.nextInt(ACCOUNTS);
+                        Integer id2 = rnd.nextInt(ACCOUNTS);
+
+                        while (id1.equals(id2))
+                            id2 = rnd.nextInt(ACCOUNTS);
+
                         try (Transaction tx = txs.txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                            Integer id1 = rnd.nextInt(ACCOUNTS);
-                            Integer id2 = rnd.nextInt(ACCOUNTS);
-
-                            if (id1.equals(id2))
-                                continue;
-
                             Account a1;
                             Account a2;
 
@@ -450,7 +619,7 @@ public class CacheMvccTransactionsTest extends GridCommonAbstractTest {
                             Map<Object, Object> accounts = cache.getAll(keys);
 
                             a1 = (Account)accounts.get(id1);
-                            a2 = (Account)accounts.get(id1);
+                            a2 = (Account)accounts.get(id2);
 
                             assertNotNull(a1);
                             assertNotNull(a2);
@@ -519,6 +688,7 @@ public class CacheMvccTransactionsTest extends GridCommonAbstractTest {
      * @param time Test time.
      * @param writers Number of writers.
      * @param readers Number of readers.
+     * @param init Optional init closure.
      * @param writer Writers threads closure.
      * @param reader Readers threads closure.
      * @throws Exception If failed.
@@ -531,7 +701,7 @@ public class CacheMvccTransactionsTest extends GridCommonAbstractTest {
         final GridInClosure3<Integer, IgniteCache<Object, Object>, AtomicBoolean> reader) throws Exception {
         final Ignite ignite = startGrid(0);
 
-        final IgniteCache<Object, Object> cache = ignite.createCache(cacheConfiguration(PARTITIONED, FULL_SYNC, 0));
+        final IgniteCache<Object, Object> cache = ignite.createCache(cacheConfiguration(PARTITIONED, FULL_SYNC, 0, 1));
 
         if (init != null)
             init.apply(cache);
@@ -602,10 +772,10 @@ public class CacheMvccTransactionsTest extends GridCommonAbstractTest {
     private List<CacheConfiguration<Object, Object>> cacheConfigurations() {
         List<CacheConfiguration<Object, Object>> ccfgs = new ArrayList<>();
 
-        ccfgs.add(cacheConfiguration(PARTITIONED, FULL_SYNC, 0));
-        ccfgs.add(cacheConfiguration(PARTITIONED, FULL_SYNC, 1));
-        ccfgs.add(cacheConfiguration(PARTITIONED, FULL_SYNC, 2));
-        ccfgs.add(cacheConfiguration(REPLICATED, FULL_SYNC, 0));
+        ccfgs.add(cacheConfiguration(PARTITIONED, FULL_SYNC, 0, RendezvousAffinityFunction.DFLT_PARTITION_COUNT));
+        ccfgs.add(cacheConfiguration(PARTITIONED, FULL_SYNC, 1, RendezvousAffinityFunction.DFLT_PARTITION_COUNT));
+        ccfgs.add(cacheConfiguration(PARTITIONED, FULL_SYNC, 2, RendezvousAffinityFunction.DFLT_PARTITION_COUNT));
+        ccfgs.add(cacheConfiguration(REPLICATED, FULL_SYNC, 0, RendezvousAffinityFunction.DFLT_PARTITION_COUNT));
 
         return ccfgs;
     }
@@ -646,19 +816,21 @@ public class CacheMvccTransactionsTest extends GridCommonAbstractTest {
      * @param cacheMode Cache mode.
      * @param syncMode Write synchronization mode.
      * @param backups Number of backups.
+     * @param parts Number of partitions.
      * @return Cache configuration.
      */
     private CacheConfiguration<Object, Object> cacheConfiguration(
         CacheMode cacheMode,
         CacheWriteSynchronizationMode syncMode,
-        int backups) {
+        int backups,
+        int parts) {
         CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(cacheMode);
         ccfg.setAtomicityMode(TRANSACTIONAL);
         ccfg.setWriteSynchronizationMode(syncMode);
         ccfg.setMvccEnabled(true);
-        ccfg.setAffinity(new RendezvousAffinityFunction(false, 1));
+        ccfg.setAffinity(new RendezvousAffinityFunction(false, parts));
 
         if (cacheMode == PARTITIONED)
             ccfg.setBackups(backups);

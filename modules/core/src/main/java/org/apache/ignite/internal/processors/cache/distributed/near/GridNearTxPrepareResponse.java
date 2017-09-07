@@ -33,7 +33,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxPrepareResponse;
-import org.apache.ignite.internal.processors.cache.mvcc.TxMvccVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccUpdateVersion;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -99,7 +99,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
     private AffinityTopologyVersion clientRemapVer;
 
     /** */
-    private long mvccCrdCntr = TxMvccVersion.COUNTER_NA;
+    private long mvccCrdCntr = MvccUpdateVersion.COUNTER_NA;
 
     /**
      * Empty constructor required by {@link Externalizable}.

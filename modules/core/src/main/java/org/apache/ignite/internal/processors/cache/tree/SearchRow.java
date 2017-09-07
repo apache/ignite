@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.cache.tree;
 
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.mvcc.TxMvccVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccUpdateVersion;
 import org.apache.ignite.internal.processors.cache.persistence.CacheSearchRow;
 
 /**
@@ -82,6 +82,6 @@ public class SearchRow implements CacheSearchRow {
 
     /** {@inheritDoc} */
     @Override public long mvccUpdateCounter() {
-        return TxMvccVersion.COUNTER_NA;
+        return MvccUpdateVersion.COUNTER_NA;
     }
 }

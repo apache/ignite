@@ -46,7 +46,8 @@ import org.apache.ignite.internal.processors.cache.extras.GridCacheEntryExtras;
 import org.apache.ignite.internal.processors.cache.extras.GridCacheMvccEntryExtras;
 import org.apache.ignite.internal.processors.cache.extras.GridCacheObsoleteEntryExtras;
 import org.apache.ignite.internal.processors.cache.extras.GridCacheTtlEntryExtras;
-import org.apache.ignite.internal.processors.cache.mvcc.TxMvccVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccUpdateVersion;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.MemoryPolicy;
@@ -467,7 +468,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         String taskName,
         @Nullable IgniteCacheExpiryPolicy expirePlc,
         boolean keepBinary,
-        long mvccCntr)
+        MvccQueryVersion mvccVer)
         throws IgniteCheckedException, GridCacheEntryRemovedException {
         return (CacheObject)innerGet0(
             ver,
@@ -482,7 +483,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             false,
             keepBinary,
             false,
-            mvccCntr,
+            mvccVer,
             null);
     }
 
@@ -493,7 +494,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         String taskName,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean keepBinary,
-        long mvccCntr,
+        MvccQueryVersion mvccVer,
         @Nullable ReaderArguments readerArgs) throws IgniteCheckedException, GridCacheEntryRemovedException {
         return (EntryGetResult)innerGet0(
             /*ver*/null,
@@ -508,7 +509,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             true,
             keepBinary,
             /*reserve*/true,
-            mvccCntr,
+            mvccVer,
             readerArgs);
     }
 
@@ -523,7 +524,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         String taskName,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean keepBinary,
-        long mvccCntr,
+        MvccQueryVersion mvccVer,
         @Nullable ReaderArguments readerArgs)
         throws IgniteCheckedException, GridCacheEntryRemovedException {
         return (EntryGetResult)innerGet0(
@@ -539,7 +540,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             true,
             keepBinary,
             false,
-            mvccCntr,
+            mvccVer,
             readerArgs);
     }
 
@@ -558,7 +559,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         boolean retVer,
         boolean keepBinary,
         boolean reserveForLoad,
-        long mvccCntr,
+        MvccQueryVersion mvccVer,
         @Nullable ReaderArguments readerArgs
     ) throws IgniteCheckedException, GridCacheEntryRemovedException {
         assert !(retVer && readThrough);
@@ -582,8 +583,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             CacheObject val;
 
-            if (mvccCntr != TxMvccVersion.COUNTER_NA) {
-                CacheDataRow row = cctx.offheap().readMvcc(cctx, key, 0, mvccCntr); // TODO IGNITE-3484.
+            if (mvccVer != null) {
+                CacheDataRow row = cctx.offheap().mvccRead(cctx, key, mvccVer);
 
                 if (row != null) {
                     val = row.value();
@@ -1007,7 +1008,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             assert val != null;
 
             if (cctx.mvccEnabled()) {
-                assert mvccCntr != TxMvccVersion.COUNTER_NA;
+                assert mvccCntr != MvccUpdateVersion.COUNTER_NA;
 
                 cctx.offheap().mvccUpdate(this, val, newVer, topVer.topologyVersion(), mvccCntr);
             }

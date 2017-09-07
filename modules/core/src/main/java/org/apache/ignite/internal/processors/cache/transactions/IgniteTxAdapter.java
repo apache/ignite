@@ -56,7 +56,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
-import org.apache.ignite.internal.processors.cache.mvcc.TxMvccVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccUpdateVersion;
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheLazyPlainVersionedEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -247,7 +247,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     protected boolean storeEnabled = true;
 
     /** */
-    private long mvccCrdCntr = TxMvccVersion.COUNTER_NA;
+    private long mvccCrdCntr = MvccUpdateVersion.COUNTER_NA;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -1445,7 +1445,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                     resolveTaskName(),
                     null,
                     keepBinary,
-                    TxMvccVersion.COUNTER_NA); // TODO IGNITE-3478
+                    null); // TODO IGNITE-3478
             }
 
             boolean modified = false;
@@ -1546,7 +1546,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
      * @return Mvcc version.
      */
     protected final long mvccCounterForCommit() {
-        assert !txState().mvccEnabled(cctx) || mvccCrdCntr != TxMvccVersion.COUNTER_NA : mvccCrdCntr;
+        assert !txState().mvccEnabled(cctx) || mvccCrdCntr != MvccUpdateVersion.COUNTER_NA : mvccCrdCntr;
 
         return mvccCrdCntr;
     }

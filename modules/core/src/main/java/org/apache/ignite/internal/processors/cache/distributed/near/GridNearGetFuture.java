@@ -45,7 +45,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.CacheDistribu
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
-import org.apache.ignite.internal.processors.cache.mvcc.TxMvccVersion;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridLeanMap;
@@ -323,7 +322,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                         expiryPlc,
                         skipVals,
                         recovery,
-                        TxMvccVersion.COUNTER_NA); // TODO IGNITE-3478
+                        null); // TODO IGNITE-3478
 
                 final Collection<Integer> invalidParts = fut.invalidPartitions();
 
@@ -386,7 +385,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                     skipVals,
                     cctx.deploymentEnabled(),
                     recovery,
-                    TxMvccVersion.COUNTER_NA); // TODO IGNITE-3478.
+                    null); // TODO IGNITE-3478.
 
                 add(fut); // Append new future.
 
@@ -457,7 +456,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                             taskName,
                             expiryPlc,
                             !deserializeBinary,
-                            TxMvccVersion.COUNTER_NA,
+                            null,
                             null); // TODO IGNITE-3478
 
                         if (res != null) {
@@ -477,7 +476,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                             taskName,
                             expiryPlc,
                             !deserializeBinary,
-                            TxMvccVersion.COUNTER_NA); // TODO IGNITE-3478
+                            null); // TODO IGNITE-3478
                     }
                 }
 
@@ -596,7 +595,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                             taskName,
                             expiryPlc,
                             !deserializeBinary,
-                            TxMvccVersion.COUNTER_NA,
+                            null,
                             null); // TODO IGNITE-3478
 
                         if (res != null) {
@@ -616,7 +615,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                             taskName,
                             expiryPlc,
                             !deserializeBinary,
-                            TxMvccVersion.COUNTER_NA); // TODO IGNITE-3478
+                            null); // TODO IGNITE-3478
                     }
 
                     // Entry was not in memory or in swap, so we remove it from cache.

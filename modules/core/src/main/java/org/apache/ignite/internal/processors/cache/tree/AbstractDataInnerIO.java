@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.cache.tree;
 
 import org.apache.ignite.internal.pagemem.PageUtils;
-import org.apache.ignite.internal.processors.cache.mvcc.TxMvccVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccUpdateVersion;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.CacheSearchRow;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
@@ -60,7 +60,7 @@ public abstract class AbstractDataInnerIO extends BPlusInnerIO<CacheSearchRow> i
 
         if (storeMvccVersion()) {
             assert row.mvccUpdateTopologyVersion() > 0 : row;
-            assert row.mvccUpdateCounter() != TxMvccVersion.COUNTER_NA : row;
+            assert row.mvccUpdateCounter() != MvccUpdateVersion.COUNTER_NA : row;
 
             PageUtils.putLong(pageAddr, off, row.mvccUpdateTopologyVersion());
             off += 8;
@@ -79,7 +79,12 @@ public abstract class AbstractDataInnerIO extends BPlusInnerIO<CacheSearchRow> i
             long mvccTopVer = getMvccUpdateTopologyVersion(pageAddr, idx);
             long mvccCntr = getMvccUpdateCounter(pageAddr, idx);
 
-            return ((CacheDataTree)tree).rowStore().mvccKeySearchRow(cacheId, hash, link, mvccTopVer, mvccCntr);
+            return ((CacheDataTree)tree).rowStore().mvccRow(cacheId,
+                hash,
+                link,
+                CacheDataRowAdapter.RowData.KEY_ONLY,
+                mvccTopVer,
+                mvccCntr);
         }
 
         return ((CacheDataTree)tree).rowStore().keySearchRow(cacheId, hash, link);
@@ -118,7 +123,7 @@ public abstract class AbstractDataInnerIO extends BPlusInnerIO<CacheSearchRow> i
             long mvcCntr = rowIo.getMvccUpdateCounter(srcPageAddr, srcIdx);
 
             assert mvccTopVer > 0 : mvccTopVer;
-            assert mvcCntr != TxMvccVersion.COUNTER_NA;
+            assert mvcCntr != MvccUpdateVersion.COUNTER_NA;
 
             PageUtils.putLong(dstPageAddr, off, mvccTopVer);
             off += 8;

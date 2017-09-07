@@ -46,6 +46,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
@@ -59,7 +60,7 @@ public class MvccTestApp2 {
     private static final boolean DEBUG_LOG = false;
 
     /** */
-    private static final boolean SQL = true;
+    private static final boolean SQL = false;
 
     public static void main1(String[] args) throws Exception {
         final TestCluster cluster = new TestCluster(1);
@@ -124,7 +125,7 @@ public class MvccTestApp2 {
 
         cluster.txPutAll(data);
 
-        cluster.txRemoveTransfer(0, 1);
+        //cluster.txRemoveTransfer(0, 1);
 
         Map<Object, Object> getData = cluster.sqlAll();;//cluster.getAll(data.keySet());
 
@@ -283,52 +284,60 @@ public class MvccTestApp2 {
                 if (REMOVES) {
                     thread = new Thread(new Runnable() {
                         @Override public void run() {
-                            Thread.currentThread().setName("update" + id);
+                            try {
+                                Thread.currentThread().setName("update" + id);
 
-                            ThreadLocalRandom rnd = ThreadLocalRandom.current();
+                                ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
-                            while (!stop.get()) {
-                                int id1 = rnd.nextInt(ACCOUNTS);
+                                while (!stop.get()) {
+                                    int id1 = rnd.nextInt(ACCOUNTS);
 
-                                int id2 = rnd.nextInt(ACCOUNTS);
+                                    int id2 = rnd.nextInt(ACCOUNTS);
 
-                                while (id2 == id1)
-                                    id2 = rnd.nextInt(ACCOUNTS);
+                                    while (id2 == id1)
+                                        id2 = rnd.nextInt(ACCOUNTS);
 
-                                if (rnd.nextBoolean()) {
-                                    cluster.txRemoveTransfer(id1, id2);
+                                    if (rnd.nextBoolean()) {
+                                        //cluster.txRemoveTransfer(id1, id2);
+                                    }
+                                    else
+                                        cluster.txTransfer(id1, id2, rnd.nextBoolean());
                                 }
-                                else
-                                    cluster.txTransfer(id1, id2, rnd.nextBoolean());
                             }
-
+                            catch (Exception e) {
+                                e.printStackTrace();
+                            }
                         }
                     });
                 }
                 else {
                     thread = new Thread(new Runnable() {
                         @Override public void run() {
-                            Thread.currentThread().setName("update" + id);
+                            try {
+                                Thread.currentThread().setName("update" + id);
 
-                            ThreadLocalRandom rnd = ThreadLocalRandom.current();
+                                ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
-                            while (!stop.get()) {
-                                int id1 = rnd.nextInt(ACCOUNTS);
+                                while (!stop.get()) {
+                                    int id1 = rnd.nextInt(ACCOUNTS);
 
-                                int id2 = rnd.nextInt(ACCOUNTS);
+                                    int id2 = rnd.nextInt(ACCOUNTS);
 
-                                while (id2 == id1)
-                                    id2 = rnd.nextInt(ACCOUNTS);
+                                    while (id2 == id1)
+                                        id2 = rnd.nextInt(ACCOUNTS);
 
-                                if (id1 > id2) {
-                                    int tmp = id1;
-                                    id1 = id2;
-                                    id2 = tmp;
+                                    if (id1 > id2) {
+                                        int tmp = id1;
+                                        id1 = id2;
+                                        id2 = tmp;
+                                    }
+
+                                    cluster.txTransfer(id1, id2, rnd.nextBoolean());
                                 }
-
-                                cluster.txTransfer(id1, id2, rnd.nextBoolean());
                             }
-
+                            catch (Exception e) {
+                                e.printStackTrace();
+                            }
                         }
                     });
                 }
@@ -429,9 +438,9 @@ public class MvccTestApp2 {
                 mappedEntries.put(key, node);
             }
 
-            CoordinatorCounter cntr = crd.nextTxCounter(txId);
+            TxVersion ver = crd.nextTxCounter(txId);
 
-            MvccUpdateVersion mvccVer = new MvccUpdateVersion(cntr, txId);
+            MvccUpdateVersion mvccVer = new MvccUpdateVersion(ver.cntr, txId);
 
             for (Map.Entry<Object, Node> e : mappedEntries.entrySet()) {
                 Node node = e.getValue();
@@ -445,10 +454,10 @@ public class MvccTestApp2 {
                 node.dataStore.unlockEntry(e.getKey());
             }
 
-            crd.txDone(txId, cntr.cntr);
+            crd.txDone(txId, ver.cntr.cntr);
         }
 
-        void txTransfer(Integer id1, Integer id2, boolean fromFirst) {
+        void txTransfer(Integer id1, Integer id2, boolean fromFirst) throws Exception {
             TreeSet<Integer> keys = new TreeSet<>();
 
             keys.add(id1);
@@ -472,7 +481,29 @@ public class MvccTestApp2 {
                 mappedEntries.put(key, node);
             }
 
-            CoordinatorCounter cntr = crd.nextTxCounter(txId);
+            TxVersion ver = crd.nextTxCounter(txId);
+
+            Collection<TxId> waitTxs = null;
+
+            for (Object key : keys) {
+                int nodeIdx = nodeForKey(key);
+
+                Node node = nodes.get(nodeIdx);
+
+                Collection<TxId> txs = node.dataStore.waitTxsAck(key, ver.activeTxs);
+
+                if (txs != null) {
+                    if (waitTxs == null)
+                        waitTxs = txs;
+                    else
+                        waitTxs.addAll(txs);
+                }
+            }
+
+            if (waitTxs != null) {
+                crd.waitTxs(waitTxs);
+            }
+
 
             Integer curVal1 = (Integer)vals.get(id1);
             Integer curVal2 = (Integer)vals.get(id2);
@@ -507,10 +538,10 @@ public class MvccTestApp2 {
                 newVals.put(id1, newVal1);
                 newVals.put(id2, newVal2);
 
-                MvccUpdateVersion mvccVer = new MvccUpdateVersion(cntr, txId);
+                MvccUpdateVersion mvccVer = new MvccUpdateVersion(ver.cntr, txId);
 
                 if (DEBUG_LOG) {
-                    TestDebugLog.msgs.add(new TestDebugLog.Msg6("update", txId, id1, newVal1, id2, newVal2, cntr));
+                    TestDebugLog.msgs.add(new TestDebugLog.Msg6("update", txId, id1, newVal1, id2, newVal2, ver.cntr));
                 }
 
                 for (Map.Entry<Object, Node> e : mappedEntries.entrySet()) {
@@ -524,6 +555,8 @@ public class MvccTestApp2 {
 
                     node.dataStore.unlockEntry(e.getKey());
                 }
+
+                crd.txDone(txId, ver.cntr.cntr);
             }
             else {
                 for (Map.Entry<Object, Node> e : mappedEntries.entrySet()) {
@@ -531,82 +564,82 @@ public class MvccTestApp2 {
 
                     node.dataStore.unlockEntry(e.getKey());
                 }
-            }
 
-            crd.txDone(txId, cntr.cntr);
+                crd.txDone(txId, ver.cntr.cntr);
+            }
 
 //            if (DEBUG_LOG)
 //                TestDebugLog.msgs.add(new TestDebugLog.Msg2("tx done", txId, cntr.cntr));
         }
 
-        void txRemoveTransfer(Integer from, Integer to) {
-            TreeSet<Integer> keys = new TreeSet<>();
-
-            keys.add(from);
-            keys.add(to);
-
-            TxId txId = new TxId(txIdGen.incrementAndGet());
-
-            Map<Object, Node> mappedEntries = new LinkedHashMap<>();
-
-            Map<Object, Object> vals = new HashMap<>();
-
-            for (Object key : keys) {
-                int nodeIdx = nodeForKey(key);
-
-                Node node = nodes.get(nodeIdx);
-
-                node.dataStore.lockEntry(key);
-
-                vals.put(key, node.dataStore.lastValue(key));
-
-                mappedEntries.put(key, node);
-            }
-
-            CoordinatorCounter cntr = crd.nextTxCounter(txId);
-
-            Integer fromVal = (Integer)vals.get(from);
-            Integer toVal = (Integer)vals.get(to);
-
-            boolean update = fromVal != null && toVal != null;
-
-            if (update) {
-                Map<Object, Object> newVals = new HashMap<>();
-
-                newVals.put(from, null);
-                newVals.put(to, fromVal + toVal);
-
-                MvccUpdateVersion mvccVer = new MvccUpdateVersion(cntr, txId);
-
-                if (DEBUG_LOG) {
-                    TestDebugLog.msgs.add(new TestDebugLog.Msg6("remove", txId, from, fromVal, to, toVal, cntr));
-                }
-
-                for (Map.Entry<Object, Node> e : mappedEntries.entrySet()) {
-                    Node node = e.getValue();
-
-                    node.dataStore.updateEntry(e.getKey(), newVals.get(e.getKey()), mvccVer);
-                }
-
-                for (Map.Entry<Object, Node> e : mappedEntries.entrySet()) {
-                    Node node = e.getValue();
-
-                    node.dataStore.unlockEntry(e.getKey());
-                }
-            }
-            else {
-                for (Map.Entry<Object, Node> e : mappedEntries.entrySet()) {
-                    Node node = e.getValue();
-
-                    node.dataStore.unlockEntry(e.getKey());
-                }
-            }
-
-            crd.txDone(txId, cntr.cntr);
-
-            if (DEBUG_LOG)
-                TestDebugLog.msgs.add(new TestDebugLog.Msg2("tx done", txId, cntr.cntr));
-        }
+//        void txRemoveTransfer(Integer from, Integer to) {
+//            TreeSet<Integer> keys = new TreeSet<>();
+//
+//            keys.add(from);
+//            keys.add(to);
+//
+//            TxId txId = new TxId(txIdGen.incrementAndGet());
+//
+//            Map<Object, Node> mappedEntries = new LinkedHashMap<>();
+//
+//            Map<Object, Object> vals = new HashMap<>();
+//
+//            for (Object key : keys) {
+//                int nodeIdx = nodeForKey(key);
+//
+//                Node node = nodes.get(nodeIdx);
+//
+//                node.dataStore.lockEntry(key);
+//
+//                vals.put(key, node.dataStore.lastValue(key));
+//
+//                mappedEntries.put(key, node);
+//            }
+//
+//            CoordinatorCounter cntr = crd.nextTxCounter(txId);
+//
+//            Integer fromVal = (Integer)vals.get(from);
+//            Integer toVal = (Integer)vals.get(to);
+//
+//            boolean update = fromVal != null && toVal != null;
+//
+//            if (update) {
+//                Map<Object, Object> newVals = new HashMap<>();
+//
+//                newVals.put(from, null);
+//                newVals.put(to, fromVal + toVal);
+//
+//                MvccUpdateVersion mvccVer = new MvccUpdateVersion(cntr, txId);
+//
+//                if (DEBUG_LOG) {
+//                    TestDebugLog.msgs.add(new TestDebugLog.Msg6("remove", txId, from, fromVal, to, toVal, cntr));
+//                }
+//
+//                for (Map.Entry<Object, Node> e : mappedEntries.entrySet()) {
+//                    Node node = e.getValue();
+//
+//                    node.dataStore.updateEntry(e.getKey(), newVals.get(e.getKey()), mvccVer);
+//                }
+//
+//                for (Map.Entry<Object, Node> e : mappedEntries.entrySet()) {
+//                    Node node = e.getValue();
+//
+//                    node.dataStore.unlockEntry(e.getKey());
+//                }
+//            }
+//            else {
+//                for (Map.Entry<Object, Node> e : mappedEntries.entrySet()) {
+//                    Node node = e.getValue();
+//
+//                    node.dataStore.unlockEntry(e.getKey());
+//                }
+//            }
+//
+//            crd.txDone(txId, cntr.cntr);
+//
+//            if (DEBUG_LOG)
+//                TestDebugLog.msgs.add(new TestDebugLog.Msg2("tx done", txId, cntr.cntr));
+//        }
 
         public void dumpMvccInfo() {
             for (Node node : nodes) {
@@ -701,6 +734,19 @@ public class MvccTestApp2 {
         }
     }
 
+    static class TxVersion {
+        final CoordinatorCounter cntr;
+
+        /** */
+        @GridToStringInclude
+        final Collection<TxId> activeTxs;
+
+        public TxVersion(CoordinatorCounter cntr, Collection<TxId> activeTxs) {
+            this.cntr = cntr;
+            this.activeTxs = activeTxs;
+        }
+    }
+
     /**
      *
      */
@@ -718,14 +764,28 @@ public class MvccTestApp2 {
         @GridToStringInclude
         private final ConcurrentHashMap8<TxId, Long> activeTxs = new ConcurrentHashMap8<>();
 
-        synchronized CoordinatorCounter nextTxCounter(TxId txId) {
+        synchronized void waitTxs(Collection<TxId> waitTxs) throws InterruptedException {
+            for (TxId txId : waitTxs) {
+                while (activeTxs.containsKey(txId))
+                    wait();
+            }
+        }
+
+        synchronized TxVersion nextTxCounter(TxId txId) {
             long cur = cntr.get();
 
             activeTxs.put(txId, cur + 1);
 
             CoordinatorCounter newCtr = new CoordinatorCounter(cntr.incrementAndGet());
 
-            return newCtr;
+            Set<TxId> txs = new HashSet<>();
+
+            for (Map.Entry<TxId, Long> e : activeTxs.entrySet())
+                txs.add(e.getKey());
+
+            TxVersion ver = new TxVersion(newCtr, txs);
+
+            return ver;
         }
 
         synchronized void txDone(TxId txId, long cntr) {
@@ -734,6 +794,8 @@ public class MvccTestApp2 {
             assert rmvd != null;
 
             commitCntr.setIfGreater(cntr);
+
+            notifyAll();
         }
 
         private Long minActive(Set<TxId> txs) {
@@ -762,12 +824,15 @@ public class MvccTestApp2 {
         synchronized MvccQueryVersion queryVersion() {
             long useCntr = commitCntr.get();
 
+//            Long minActive = minActive(txs);
+//
+//            if (minActive != null && minActive < useCntr)
+//                useCntr = minActive - 1;
+
             Set<TxId> txs = new HashSet<>();
 
-            Long minActive = minActive(txs);
-
-            if (minActive != null && minActive < useCntr)
-                useCntr = minActive - 1;
+            for (Map.Entry<TxId, Long> e : activeTxs.entrySet())
+                txs.add(e.getKey());
 
             MvccQueryVersion qryVer = new MvccQueryVersion(new CoordinatorCounter(useCntr), txs);
 
@@ -1058,6 +1123,28 @@ public class MvccTestApp2 {
             }
         }
 
+        Collection<TxId> waitTxsAck(Object key, Collection<TxId> activeTxs) {
+            if (!F.isEmpty(activeTxs))
+                return null;
+
+            List<MvccValue> list = mvccIdx.get(key);
+
+            List<TxId> waitTxs = null;
+
+            if (list != null) {
+                for (MvccValue val : list) {
+                    if (activeTxs.contains(val.ver.txId)) {
+                        if (waitTxs == null)
+                            waitTxs = new ArrayList<>();
+
+                        waitTxs.add(val.ver.txId);
+                    }
+                }
+            }
+
+            return waitTxs;
+        }
+
         void lockEntry(Object key) {
             ReentrantLock e = lock(key);
 
@@ -1165,7 +1252,7 @@ public class MvccTestApp2 {
         private boolean versionVisible(MvccUpdateVersion ver, MvccQueryVersion qryVer) {
             int cmp = ver.cntr.compareTo(qryVer.cntr);
 
-            return cmp <= 0;// && !qryVer.activeTxs.contains(ver.txId);
+            return cmp <= 0 && !qryVer.activeTxs.contains(ver.txId);
         }
 
         Object get(Object key, MvccQueryVersion ver) {

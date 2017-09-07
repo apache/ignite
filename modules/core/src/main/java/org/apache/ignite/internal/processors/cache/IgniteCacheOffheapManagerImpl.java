@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
@@ -36,6 +37,8 @@ import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccUpdateVersion;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.CacheSearchRow;
@@ -414,11 +417,13 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public CacheDataRow readMvcc(GridCacheContext cctx, KeyCacheObject key, long topVer, long mvccCntr)
+    @Nullable @Override public CacheDataRow mvccRead(GridCacheContext cctx, KeyCacheObject key, MvccQueryVersion ver)
         throws IgniteCheckedException {
+        assert ver != null;
+
         CacheDataStore dataStore = dataStore(cctx, key);
 
-        CacheDataRow row = dataStore != null ? dataStore.findMvcc(cctx, key, topVer, mvccCntr) : null;
+        CacheDataRow row = dataStore != null ? dataStore.mvccFind(cctx, key, ver) : null;
 
         assert row == null || row.value() != null : row;
 
@@ -1313,6 +1318,10 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             try {
                 int cacheId = grp.storeCacheIdInDataPage() ? cctx.cacheId() : CU.UNDEFINED_CACHE_ID;
 
+//                log.info("mvccUpdate [k=" + key.value(cctx.cacheObjectContext(), false) +
+//                    ", topVer=" + topVer +
+//                    ", cntr=" + mvccCntr + ']');
+
                 MvccDataRow dataRow = new MvccDataRow(key, val, ver, partId, cacheId, topVer, mvccCntr);
 
                 CacheObjectContext coCtx = cctx.cacheObjectContext();
@@ -1536,7 +1545,20 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
             int cacheId = grp.sharedGroup() ? cctx.cacheId() : CU.UNDEFINED_CACHE_ID;
 
-            CacheDataRow row = dataTree.findOne(new SearchRow(cacheId, key), CacheDataRowAdapter.RowData.NO_KEY);
+            CacheDataRow row;
+
+            if (grp.mvccEnabled()) {
+                // TODO IGNITE-3484: need special method.
+                GridCursor<CacheDataRow> cur = dataTree.find(new MvccSearchRow(cacheId, key, Long.MAX_VALUE, Long.MAX_VALUE),
+                    new MvccSearchRow(cacheId, key, 1, 1));
+
+                if (cur.next())
+                    row = cur.get();
+                else
+                    row = null;
+            }
+            else
+                row = dataTree.findOne(new SearchRow(cacheId, key), CacheDataRowAdapter.RowData.NO_KEY);
 
             afterRowFound(row, key);
 
@@ -1544,24 +1566,49 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
 
         /** {@inheritDoc} */
-        @Override public CacheDataRow findMvcc(GridCacheContext cctx,
+        @Override public CacheDataRow mvccFind(GridCacheContext cctx,
             KeyCacheObject key,
-            long topVer,
-            long mvccCntr) throws IgniteCheckedException {
+            MvccQueryVersion ver) throws IgniteCheckedException {
+//            log.info("mvccFind [k=" + key.value(cctx.cacheObjectContext(), false) +
+//                ", topVer=" + ver.topologyVersion() +
+//                ", cntr=" + ver.counter() + ']');
+
             key.valueBytes(cctx.cacheObjectContext());
 
             int cacheId = grp.sharedGroup() ? cctx.cacheId() : CU.UNDEFINED_CACHE_ID;
 
             // TODO IGNITE-3484: need special method.
-
-            GridCursor<CacheDataRow> cur = dataTree.find(new MvccSearchRow(cacheId, key, topVer, mvccCntr),
-                new MvccSearchRow(cacheId, key, topVer + 1, mvccCntr)/*,
-                CacheDataRowAdapter.RowData.NO_KEY*/);
+            GridCursor<CacheDataRow> cur = dataTree.find(
+                new MvccSearchRow(cacheId, key, ver.topologyVersion(), ver.counter()),
+                new MvccSearchRow(cacheId, key, 1, 1));
 
             CacheDataRow row = null;
 
-            if (cur.next())
-                row = cur.get();
+            List<MvccUpdateVersion> txs = ver.activeTransactions();
+
+            while (cur.next()) {
+                CacheDataRow row0 = cur.get();
+
+                assert row0.mvccUpdateTopologyVersion() > 0 : row0;
+
+                boolean visible;
+
+                if (txs != null) {
+                    MvccUpdateVersion rowTx = new MvccUpdateVersion(
+                        row0.mvccUpdateTopologyVersion(),
+                        row0.mvccUpdateCounter());
+
+                    visible = !txs.contains(rowTx);
+                }
+                else
+                    visible = true;
+
+                if (visible) {
+                    row = row0;
+
+                    break;
+                }
+            }
 
             assert row == null || key.equals(row.key());
 

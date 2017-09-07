@@ -27,7 +27,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 /**
  *
  */
-public class CoordinatorQueryCounterRequest implements Message {
+public class CoordinatorQueryVersionRequest implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -37,14 +37,14 @@ public class CoordinatorQueryCounterRequest implements Message {
     /**
      * Required by {@link GridIoMessageFactory}.
      */
-    public CoordinatorQueryCounterRequest() {
+    public CoordinatorQueryVersionRequest() {
         // No-op.
     }
 
     /**
      * @param futId Future ID.
      */
-    CoordinatorQueryCounterRequest(long futId) {
+    CoordinatorQueryVersionRequest(long futId) {
         this.futId = futId;
     }
 
@@ -96,7 +96,7 @@ public class CoordinatorQueryCounterRequest implements Message {
 
         }
 
-        return reader.afterMessageRead(CoordinatorQueryCounterRequest.class);
+        return reader.afterMessageRead(CoordinatorQueryVersionRequest.class);
     }
 
     /** {@inheritDoc} */
@@ -116,6 +116,6 @@ public class CoordinatorQueryCounterRequest implements Message {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(CoordinatorQueryCounterRequest.class, this);
+        return S.toString(CoordinatorQueryVersionRequest.class, this);
     }
 }

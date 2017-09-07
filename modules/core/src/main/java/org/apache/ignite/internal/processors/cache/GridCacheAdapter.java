@@ -89,7 +89,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvali
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
-import org.apache.ignite.internal.processors.cache.mvcc.TxMvccVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryVersion;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalAdapter;
@@ -1813,7 +1813,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             recovery,
             canRemap,
             needVer,
-            TxMvccVersion.COUNTER_NA); // TODO IGNITE-3478.
+            null); // TODO IGNITE-3478.
     }
 
     /**
@@ -1845,7 +1845,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         final boolean recovery,
         boolean canRemap,
         final boolean needVer,
-        long mvccCrdCntr
+        MvccQueryVersion mvccVer
     ) {
         if (F.isEmpty(keys))
             return new GridFinishedFuture<>(Collections.<K1, V1>emptyMap());
@@ -1902,7 +1902,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                             boolean skipEntry = readNoEntry;
 
                             if (readNoEntry) {
-                                CacheDataRow row = ctx.offheap().read(ctx, key);
+                                CacheDataRow row = mvccVer != null ? ctx.offheap().mvccRead(ctx, key, mvccVer) :
+                                    ctx.offheap().read(ctx, key);
 
                                 if (row != null) {
                                     long expireTime = row.expireTime();
@@ -1956,7 +1957,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                                         taskName,
                                         expiry,
                                         !deserializeBinary,
-                                        mvccCrdCntr,
+                                        mvccVer,
                                         readerArgs);
 
                                     assert res != null;
@@ -1981,7 +1982,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                                         taskName,
                                         expiry,
                                         !deserializeBinary,
-                                        mvccCrdCntr,
+                                        mvccVer,
                                         readerArgs);
 
                                     if (res == null)
@@ -4752,7 +4753,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             /*taskName*/null,
             /*expiryPlc*/null,
             !deserializeBinary,
-            TxMvccVersion.COUNTER_NA); // TODO IGNITE-3478
+            null); // TODO IGNITE-3478
 
         if (val == null)
             return null;

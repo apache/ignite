@@ -18,50 +18,50 @@
 package org.apache.ignite.internal.processors.cache.mvcc;
 
 import java.nio.ByteBuffer;
+import java.util.List;
+import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  *
  */
-public class CoordinatorTxCounterRequest implements Message {
+public class CoordinatorQueryVersionResponse implements Message, MvccQueryVersion {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
+    private long cntr;
+
+    /** */
+    public long topVer;
+
+    /** */
+    @GridDirectCollection(MvccUpdateVersion.class)
+    private List<MvccUpdateVersion> txs;
+
+    /** */
     private long futId;
-
-    /** */
-    private GridCacheVersion txId;
-
-    /** */
-    private long topVer;
 
     /**
      * Required by {@link GridIoMessageFactory}.
      */
-    public CoordinatorTxCounterRequest() {
+    public CoordinatorQueryVersionResponse() {
         // No-op.
     }
 
     /**
+     * @param cntr Counter.
      * @param futId Future ID.
-     * @param txId Transaction ID.
      */
-    CoordinatorTxCounterRequest(long futId, GridCacheVersion txId, long topVer) {
-        assert txId != null;
-
+    CoordinatorQueryVersionResponse(long futId, long cntr, List<MvccUpdateVersion> txs) {
         this.futId = futId;
-        this.txId = txId;
-        this.topVer = topVer;
-    }
-
-    public long topologyVersion() {
-        return topVer;
+        this.cntr = cntr;
+        this.txs = txs;
     }
 
     /**
@@ -71,11 +71,26 @@ public class CoordinatorTxCounterRequest implements Message {
         return futId;
     }
 
-    /**
-     * @return Transaction ID.
-     */
-    public GridCacheVersion txId() {
-        return txId;
+    /** {@inheritDoc} */
+    public long counter() {
+        return cntr;
+    }
+
+    /** {@inheritDoc} */
+    @Override public List<MvccUpdateVersion> activeTransactions() {
+        return txs;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long topologyVersion() {
+        return topVer;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void topologyVersion(long topVer) {
+        assert topVer > 0;
+
+        this.topVer = topVer;
     }
 
     /** {@inheritDoc} */
@@ -91,19 +106,25 @@ public class CoordinatorTxCounterRequest implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeLong("futId", futId))
+                if (!writer.writeLong("cntr", cntr))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeLong("topVer", topVer))
+                if (!writer.writeLong("futId", futId))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeMessage("txId", txId))
+                if (!writer.writeLong("topVer", topVer))
+                    return false;
+
+                writer.incrementState();
+
+            case 3:
+                if (!writer.writeCollection("txs", txs, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -122,7 +143,7 @@ public class CoordinatorTxCounterRequest implements Message {
 
         switch (reader.state()) {
             case 0:
-                futId = reader.readLong("futId");
+                cntr = reader.readLong("cntr");
 
                 if (!reader.isLastRead())
                     return false;
@@ -130,7 +151,7 @@ public class CoordinatorTxCounterRequest implements Message {
                 reader.incrementState();
 
             case 1:
-                topVer = reader.readLong("topVer");
+                futId = reader.readLong("futId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -138,7 +159,15 @@ public class CoordinatorTxCounterRequest implements Message {
                 reader.incrementState();
 
             case 2:
-                txId = reader.readMessage("txId");
+                topVer = reader.readLong("topVer");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 3:
+                txs = reader.readCollection("txs", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -147,17 +176,17 @@ public class CoordinatorTxCounterRequest implements Message {
 
         }
 
-        return reader.afterMessageRead(CoordinatorTxCounterRequest.class);
+        return reader.afterMessageRead(CoordinatorQueryVersionResponse.class);
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 129;
+        return 136;
     }
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 3;
+        return 4;
     }
 
     /** {@inheritDoc} */
@@ -167,6 +196,6 @@ public class CoordinatorTxCounterRequest implements Message {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(CoordinatorTxCounterRequest.class, this);
+        return S.toString(CoordinatorQueryVersionResponse.class, this);
     }
 }

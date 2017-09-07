@@ -61,7 +61,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxLoca
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtDetachedCacheEntry;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
-import org.apache.ignite.internal.processors.cache.mvcc.TxMvccVersion;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
@@ -1168,7 +1167,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
                                         resolveTaskName(),
                                         null,
                                         keepBinary,
-                                        TxMvccVersion.COUNTER_NA,
+                                        null,
                                         null) : null; // TODO IGNITE-3478
 
                                 if (res != null) {
@@ -1188,7 +1187,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
                                     resolveTaskName(),
                                     null,
                                     keepBinary,
-                                    TxMvccVersion.COUNTER_NA); // TODO IGNITE-3478
+                                    null); // TODO IGNITE-3478
                             }
                         }
                         catch (ClusterTopologyCheckedException e) {
@@ -1773,7 +1772,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
                                             resolveTaskName(),
                                             null,
                                             txEntry.keepBinary(),
-                                            TxMvccVersion.COUNTER_NA,
+                                            null,
                                             null); // TODO IGNITE-3478
 
                                         if (getRes != null) {
@@ -1793,7 +1792,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
                                             resolveTaskName(),
                                             null,
                                             txEntry.keepBinary(),
-                                            TxMvccVersion.COUNTER_NA); // TODO IGNITE-3478
+                                            null); // TODO IGNITE-3478
                                     }
 
                                     // If value is in cache and passed the filter.
@@ -2069,7 +2068,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
                                     resolveTaskName(),
                                     null,
                                     txEntry.keepBinary(),
-                                    TxMvccVersion.COUNTER_NA,
+                                    null,
                                     null); // TODO IGNITE-3478
 
                                 if (getRes != null) {
@@ -2089,7 +2088,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
                                     resolveTaskName(),
                                     null,
                                     txEntry.keepBinary(),
-                                    TxMvccVersion.COUNTER_NA); // TODO IGNITE-3478
+                                    null); // TODO IGNITE-3478
                             }
 
                             if (val != null) {
@@ -2157,7 +2156,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
                                         resolveTaskName(),
                                         accessPlc,
                                         !deserializeBinary,
-                                        TxMvccVersion.COUNTER_NA,
+                                        null,
                                         null) : null; // TODO IGNITE-3478
 
                                 if (getRes != null) {
@@ -2177,7 +2176,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
                                     resolveTaskName(),
                                     accessPlc,
                                     !deserializeBinary,
-                                    TxMvccVersion.COUNTER_NA); // TODO IGNITE-3478
+                                    null); // TODO IGNITE-3478
                             }
 
                             if (val != null) {
@@ -2645,7 +2644,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
                             resolveTaskName(),
                             expiryPlc0,
                             txEntry == null ? keepBinary : txEntry.keepBinary(),
-                            TxMvccVersion.COUNTER_NA,
+                            null,
                             null); // TODO IGNITE-3478
 
                         if (res == null) {

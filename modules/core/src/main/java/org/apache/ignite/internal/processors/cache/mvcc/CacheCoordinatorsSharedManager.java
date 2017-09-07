@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.mvcc;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -61,13 +63,17 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
     private final GridAtomicLong committedCntr = new GridAtomicLong(1L);
 
     /** */
-    private final ConcurrentHashMap<GridCacheVersion, Long> activeTxs = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<GridCacheVersion, MvccUpdateVersion> activeTxs = new ConcurrentHashMap<>();
 
     /** */
     private final Map<Long, Integer> activeQueries = new HashMap<>();
 
     /** */
-    private final ConcurrentMap<Long, MvccCounterFuture> cntrFuts = new ConcurrentHashMap<>();
+    private final ConcurrentMap<Long, TxCounterFuture> cntrFuts = new ConcurrentHashMap<>();
+
+    /** */
+    private final ConcurrentMap<Long, QueryVersionFuture> qryVerFuts = new ConcurrentHashMap<>();
+
 
     /** */
     private final ConcurrentMap<Long, TxAckFuture> ackFuts = new ConcurrentHashMap<>();
@@ -86,13 +92,17 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
     }
 
     /**
-     * @param txVer Tx version.
+     * @param tx Transaction.
      * @return Counter.
      */
-    public long requestTxCounterOnCoordinator(GridCacheVersion txVer) {
+    public long requestTxCounterOnCoordinator(IgniteInternalTx tx) {
         assert cctx.localNode().equals(assignHist.currentCoordinator());
 
-        return assignTxCounter(txVer);
+        AffinityTopologyVersion txTopVer = tx.topologyVersionSnapshot();
+
+        assert txTopVer != null && txTopVer.initialized() : txTopVer;
+
+        return assignTxCounter(tx.nearXidVersion(), txTopVer.topologyVersion());
     }
 
     /**
@@ -103,14 +113,18 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
     public IgniteInternalFuture<Long> requestTxCounter(ClusterNode crd, IgniteInternalTx tx) {
         assert !crd.isLocal() : crd;
 
-        MvccCounterFuture fut = new MvccCounterFuture(futIdCntr.incrementAndGet(), crd, tx);
+        AffinityTopologyVersion txTopVer = tx.topologyVersionSnapshot();
+
+        assert txTopVer != null && txTopVer.initialized() : txTopVer;
+
+        TxCounterFuture fut = new TxCounterFuture(futIdCntr.incrementAndGet(), crd, tx);
 
         cntrFuts.put(fut.id, fut);
 
         try {
             cctx.gridIO().sendToGridTopic(crd,
                 TOPIC_CACHE_COORDINATOR,
-                new CoordinatorTxCounterRequest(fut.id, tx.nearXidVersion()),
+                new CoordinatorTxCounterRequest(fut.id, tx.nearXidVersion(), txTopVer.topologyVersion()),
                 SYSTEM_POOL);
         }
         catch (IgniteCheckedException e) {
@@ -145,15 +159,15 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
      * @param crd Coordinator.
      * @return Counter request future.
      */
-    public IgniteInternalFuture<Long> requestQueryCounter(ClusterNode crd) {
-        MvccCounterFuture fut = new MvccCounterFuture(futIdCntr.incrementAndGet(), crd, null);
+    public IgniteInternalFuture<MvccQueryVersion> requestQueryCounter(ClusterNode crd, long topVer) {
+        QueryVersionFuture fut = new QueryVersionFuture(futIdCntr.incrementAndGet(), topVer, crd);
 
-        cntrFuts.put(fut.id, fut);
+        qryVerFuts.put(fut.id, fut);
 
         try {
             cctx.gridIO().sendToGridTopic(crd,
                 TOPIC_CACHE_COORDINATOR,
-                new CoordinatorQueryCounterRequest(fut.id),
+                new CoordinatorQueryVersionRequest(fut.id),
                 SYSTEM_POOL);
         }
         catch (IgniteCheckedException e) {
@@ -230,12 +244,12 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
             return;
         }
 
-        long nextCtr = assignTxCounter(msg.txId());
+        long nextCtr = assignTxCounter(msg.txId(), msg.topologyVersion());
 
         try {
             cctx.gridIO().sendToGridTopic(node,
                 TOPIC_CACHE_COORDINATOR,
-                new CoordinatorMvccCounterResponse(nextCtr, msg.futureId()),
+                new CoordinatorTxCounterResponse(nextCtr, msg.futureId()),
                 SYSTEM_POOL);
         }
         catch (ClusterTopologyCheckedException e) {
@@ -251,8 +265,8 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
      * @param nodeId Sender node ID.
      * @param msg Message.
      */
-    private void processCoordinatorCounterResponse(UUID nodeId, CoordinatorMvccCounterResponse msg) {
-        MvccCounterFuture fut = cntrFuts.remove(msg.futureId());
+    private void processCoordinatorCounterResponse(UUID nodeId, CoordinatorTxCounterResponse msg) {
+        TxCounterFuture fut = cntrFuts.remove(msg.futureId());
 
         if (fut != null)
             fut.onResponse(msg.counter());
@@ -260,15 +274,16 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
             if (cctx.discovery().alive(nodeId))
                 U.warn(log, "Failed to find coordinator counter future [node=" + nodeId + ", msg=" + msg + ']');
             else if (log.isDebugEnabled())
-                log.debug("Failed to find query counter future [node=" + nodeId + ", msg=" + msg + ']');
+                log.debug("Failed to find coordinator counter future [node=" + nodeId + ", msg=" + msg + ']');
         }
     }
+
     /**
      *
      * @param nodeId Sender node ID.
      * @param msg Message.
      */
-    private void processCoordinatorQueryCounterRequest(UUID nodeId, CoordinatorQueryCounterRequest msg) {
+    private void processCoordinatorQueryVersionRequest(UUID nodeId, CoordinatorQueryVersionRequest msg) {
         ClusterNode node = cctx.discovery().node(nodeId);
 
         if (node == null) {
@@ -278,9 +293,7 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
             return;
         }
 
-        long qryCntr = assignQueryCounter(nodeId);
-
-        CoordinatorMvccCounterResponse res = new CoordinatorMvccCounterResponse(qryCntr, msg.futureId());
+        CoordinatorQueryVersionResponse res = assignQueryCounter(nodeId, msg.futureId());
 
         try {
             cctx.gridIO().sendToGridTopic(node,
@@ -292,12 +305,29 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
             if (log.isDebugEnabled())
                 log.debug("Failed to send query counter response, node left [msg=" + msg + ", node=" + nodeId + ']');
 
-            onQueryDone(qryCntr);
+            onQueryDone(res.counter());
         }
         catch (IgniteCheckedException e) {
             U.error(log, "Failed to send query counter response [msg=" + msg + ", node=" + nodeId + ']', e);
 
-            onQueryDone(qryCntr);
+            onQueryDone(res.counter());
+        }
+    }
+
+    /**
+     * @param nodeId Sender node ID.
+     * @param msg Message.
+     */
+    private void processCoordinatorQueryVersionResponse(UUID nodeId, CoordinatorQueryVersionResponse msg) {
+        QueryVersionFuture fut = qryVerFuts.remove(msg.futureId());
+
+        if (fut != null)
+            fut.onResponse(msg);
+        else {
+            if (cctx.discovery().alive(nodeId))
+                U.warn(log, "Failed to find query version future [node=" + nodeId + ", msg=" + msg + ']');
+            else if (log.isDebugEnabled())
+                log.debug("Failed to find query version future [node=" + nodeId + ", msg=" + msg + ']');
         }
     }
 
@@ -351,12 +381,15 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
 
     /**
      * @param txId Transaction ID.
+     * @param topVer Topology version.
      * @return Counter.
      */
-    private synchronized long assignTxCounter(GridCacheVersion txId) {
-        long nextCtr = mvccCntr.getAndIncrement();
+    private synchronized long assignTxCounter(GridCacheVersion txId, long topVer) {
+        long nextCtr = mvccCntr.incrementAndGet();
 
-        Object old = activeTxs.put(txId, nextCtr);
+        MvccUpdateVersion ver = new MvccUpdateVersion(topVer, nextCtr);
+
+        Object old = activeTxs.put(txId, ver);
 
         assert old == null : txId;
 
@@ -367,24 +400,28 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
      * @param txId Transaction ID.
      */
     private synchronized void onTxDone(GridCacheVersion txId) {
-        Long cntr = activeTxs.remove(txId);
+        MvccUpdateVersion ver = activeTxs.remove(txId);
 
-        assert cntr != null;
+        assert ver != null;
 
-        committedCntr.setIfGreater(cntr);
+        committedCntr.setIfGreater(ver.counter());
     }
 
     /**
      * @param qryNodeId Node initiated query.
      * @return Counter for query.
      */
-    private synchronized long assignQueryCounter(UUID qryNodeId) {
+    private synchronized CoordinatorQueryVersionResponse assignQueryCounter(UUID qryNodeId, long futId) {
         Long mvccCntr = committedCntr.get();
 
-        Long minActive = minActiveTx();
+        List<MvccUpdateVersion> txs = null;
 
-        if (minActive != null && minActive < mvccCntr)
-            mvccCntr = minActive - 1;
+        for (MvccUpdateVersion txVer : activeTxs.values()) {
+            if (txs == null)
+                txs = new ArrayList<>();
+
+            txs.add(txVer);
+        }
 
         Integer queries = activeQueries.get(mvccCntr);
 
@@ -393,7 +430,7 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
         else
             activeQueries.put(mvccCntr, 1);
 
-        return mvccCntr;
+        return new CoordinatorQueryVersionResponse(futId, mvccCntr, txs);
     }
 
     /**
@@ -431,9 +468,9 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
     @Nullable private Long minActiveTx() {
         Long min = null;
 
-        for (Map.Entry<GridCacheVersion, Long> e : activeTxs.entrySet()) {
-            if (min == null || e.getValue() < min)
-                min = e.getValue();
+        for (Map.Entry<GridCacheVersion, MvccUpdateVersion> e : activeTxs.entrySet()) {
+            if (min == null || e.getValue().counter() < min)
+                min = e.getValue().counter();
         }
 
         return min;
@@ -475,7 +512,51 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
     /**
      *
      */
-    public class MvccCounterFuture extends GridFutureAdapter<Long> {
+    public class QueryVersionFuture extends GridFutureAdapter<MvccQueryVersion> {
+        /** */
+        private final Long id;
+
+        /** */
+        private long topVer;
+
+        /** */
+        public final ClusterNode crd;
+
+        /**
+         * @param id Future ID.
+         * @param topVer Topology version.
+         * @param crd Coordinator.
+         */
+        QueryVersionFuture(Long id, long topVer, ClusterNode crd) {
+            this.id = id;
+            this.topVer = topVer;
+            this.crd = crd;
+        }
+
+        /**
+         * @param res Response.
+         */
+        void onResponse(CoordinatorQueryVersionResponse res) {
+            assert res.counter() != MvccUpdateVersion.COUNTER_NA;
+
+            res.topologyVersion(topVer);
+
+            onDone(res);
+        }
+
+        /**
+         * @param nodeId Failed node ID.
+         */
+        void onNodeLeft(UUID nodeId) {
+            if (crd.id().equals(nodeId) && cntrFuts.remove(id) != null)
+                onDone(new ClusterTopologyCheckedException("Failed to request query version, coordinator failed: " + nodeId));
+        }
+    }
+
+    /**
+     *
+     */
+    public class TxCounterFuture extends GridFutureAdapter<Long> {
         /** */
         private final Long id;
 
@@ -489,7 +570,7 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
          * @param id Future ID.
          * @param crd Coordinator.
          */
-        MvccCounterFuture(Long id, ClusterNode crd, IgniteInternalTx tx) {
+        TxCounterFuture(Long id, ClusterNode crd, IgniteInternalTx tx) {
             this.id = id;
             this.crd = crd;
             this.tx = tx;
@@ -499,7 +580,7 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
          * @param cntr Counter.
          */
         void onResponse(long cntr) {
-            assert cntr != TxMvccVersion.COUNTER_NA;
+            assert cntr != MvccUpdateVersion.COUNTER_NA;
 
             if (tx != null)
                 tx.mvccCoordinatorCounter(cntr);
@@ -512,7 +593,7 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
          */
         void onNodeLeft(UUID nodeId) {
             if (crd.id().equals(nodeId) && cntrFuts.remove(id) != null)
-                onDone(new ClusterTopologyCheckedException("Failed to request counter, node failed: " + nodeId));
+                onDone(new ClusterTopologyCheckedException("Failed to request counter, coordinator failed: " + nodeId));
         }
     }
 
@@ -563,7 +644,10 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
 
             UUID nodeId = discoEvt.eventNode().id();
 
-            for (MvccCounterFuture fut : cntrFuts.values())
+            for (TxCounterFuture fut : cntrFuts.values())
+                fut.onNodeLeft(nodeId);
+
+            for (QueryVersionFuture fut : qryVerFuts.values())
                 fut.onNodeLeft(nodeId);
 
             for (TxAckFuture fut : ackFuts.values())
@@ -578,16 +662,18 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
         @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
             if (msg instanceof CoordinatorTxCounterRequest)
                 processCoordinatorTxCounterRequest(nodeId, (CoordinatorTxCounterRequest)msg);
-            else if (msg instanceof CoordinatorMvccCounterResponse)
-                processCoordinatorCounterResponse(nodeId, (CoordinatorMvccCounterResponse)msg);
+            else if (msg instanceof CoordinatorTxCounterResponse)
+                processCoordinatorCounterResponse(nodeId, (CoordinatorTxCounterResponse)msg);
             else if (msg instanceof CoordinatorTxAckRequest)
                 processCoordinatorTxAckRequest(nodeId, (CoordinatorTxAckRequest)msg);
             else if (msg instanceof CoordinatorTxAckResponse)
                 processCoordinatorTxAckResponse(nodeId, (CoordinatorTxAckResponse)msg);
             else if (msg instanceof CoordinatorQueryAckRequest)
                 processCoordinatorQueryAckRequest((CoordinatorQueryAckRequest)msg);
-            else if (msg instanceof CoordinatorQueryCounterRequest)
-                processCoordinatorQueryCounterRequest(nodeId, (CoordinatorQueryCounterRequest)msg);
+            else if (msg instanceof CoordinatorQueryVersionRequest)
+                processCoordinatorQueryVersionRequest(nodeId, (CoordinatorQueryVersionRequest)msg);
+            else if (msg instanceof CoordinatorQueryVersionResponse)
+                processCoordinatorQueryVersionResponse(nodeId, (CoordinatorQueryVersionResponse) msg);
             else
                 U.warn(log, "Unexpected message received [node=" + nodeId + ", msg=" + msg + ']');
         }
