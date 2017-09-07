@@ -894,11 +894,8 @@ public class GridToStringBuilder {
                         buf.a("null");
                     }
                     else {
-                        if (isSaved(val)) {
-                            buf.a(val.getClass().getSimpleName() + "{position " + getPosition(val) + "}");
-                        } else {
+                        if (!addNameWithPositionToBuffer(buf, val))
                             toStringAddVal(val.getClass(), val, buf);
-                        }
                     }
                 }
             }
@@ -999,10 +996,7 @@ public class GridToStringBuilder {
                         val = tmp;
                     }
 
-                    if (isSaved(val)) {
-                        buf.a(val.getClass().getSimpleName() + "{position " + getPosition(val) + "}");
-                    }
-                    else
+                    if (!addNameWithPositionToBuffer(buf, val))
                         buf.a(val);
                 }
             }
@@ -1698,18 +1692,20 @@ public class GridToStringBuilder {
         return cd;
     }
 
-    private static boolean isSaved(Object o) {
-        return savedObjects.get().containsKey(o);
-    }
-
-    private static Object getPosition(Object o) {
+    private static boolean addNameWithPositionToBuffer(SB buf, Object val) {
         IdentityHashMap<Object, Integer> map = savedObjects.get();
 
-        Object obj = map.get(o);
+        if (map.containsKey(val)) {
+            Object position = map.get(val);
 
-        if (obj != null)
-            return obj;
-        else
-            throw new IllegalStateException("Method \"getPosition(Object o)\" must be called only after method isSaved(object) returned true.");
+            if (position == null)
+                throw new IllegalStateException("Method \"getPosition(Object o)\" must be called " +
+                    "only after method isSaved(object) returned true.");
+
+            buf.a(val.getClass().getSimpleName() + "{position " + position + "}");
+
+            return true;
+        } else
+            return false;
     }
 }
