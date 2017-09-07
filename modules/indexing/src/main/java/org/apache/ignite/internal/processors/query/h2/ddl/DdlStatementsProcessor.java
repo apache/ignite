@@ -89,6 +89,8 @@ public class DdlStatementsProcessor {
      *
      * @param sql SQL.
      * @param prepared Prepared.
+     * @return Cursor on query results.
+     * @throws IgniteCheckedException On error.
      */
     @SuppressWarnings({"unchecked", "ThrowableResultOfMethodCallIgnored"})
     public FieldsQueryCursor<List<?>> runDdlStatement(String sql, Prepared prepared)

@@ -39,26 +39,6 @@ public class JdbcQueryExecuteMultipleStatementsResult extends JdbcResult {
         super(QRY_EXEC_MULT);
     }
 
-//    /**
-//     * @param queryId Query ID.
-//     * @param items Query result rows.
-//     * @param last Flag indicates the query has no unfetched results.
-//     * @param results Statements results.
-//     */
-//    public JdbcQueryExecuteMultipleStatementsResult(long queryId, List<List<Object>> items, boolean last, List<JdbcStatementResults> results) {
-//        super(QRY_EXEC_MULT);
-//        this.results = results;
-//    }
-//
-//    /**
-//     * @param updCnt Update count.
-//     * @param results Statements results.
-//     */
-//    public JdbcQueryExecuteMultipleStatementsResult(long updCnt,  List<JdbcStatementResults> results) {
-//        super(QRY_EXEC_MULT);
-//        this.results = results;
-//    }
-
     /**
      * @param results Statements results.
      */

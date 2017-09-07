@@ -50,13 +50,6 @@ public class JdbcQueryExecuteResult extends JdbcResult {
     }
 
     /**
-     * @param type Result type.
-     */
-    protected JdbcQueryExecuteResult(byte type) {
-        super(type);
-    }
-
-    /**
      * @param queryId Query ID.
      * @param items Query result rows.
      * @param last Flag indicates the query has no unfetched results.
