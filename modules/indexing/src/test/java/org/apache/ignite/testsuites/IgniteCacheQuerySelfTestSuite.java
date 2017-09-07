@@ -89,10 +89,6 @@ import org.apache.ignite.internal.processors.cache.distributed.replicated.Ignite
 import org.apache.ignite.internal.processors.cache.distributed.replicated.IgniteCacheReplicatedQueryP2PDisabledSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.IgniteCacheReplicatedQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.index.DuplicateKeyValueClassesSelfTest;
-import org.apache.ignite.internal.processors.cache.index.DynamicColumnsConcurrentAtomicPartitionedSelfTest;
-import org.apache.ignite.internal.processors.cache.index.DynamicColumnsConcurrentAtomicReplicatedSelfTest;
-import org.apache.ignite.internal.processors.cache.index.DynamicColumnsConcurrentTransactionalPartitionedSelfTest;
-import org.apache.ignite.internal.processors.cache.index.DynamicColumnsConcurrentTransactionalReplicatedSelfTest;
 import org.apache.ignite.internal.processors.cache.index.DynamicIndexClientBasicSelfTest;
 import org.apache.ignite.internal.processors.cache.index.DynamicIndexServerBasicSelfTest;
 import org.apache.ignite.internal.processors.cache.index.DynamicIndexServerCoordinatorBasicSelfTest;
@@ -260,10 +256,6 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
         suite.addTestSuite(H2DynamicColumnsClientBasicSelfTest.class);
         suite.addTestSuite(H2DynamicColumnsServerBasicSelfTest.class);
         suite.addTestSuite(H2DynamicColumnsServerCoordinatorBasicSelfTest.class);
-        suite.addTestSuite(DynamicColumnsConcurrentAtomicPartitionedSelfTest.class);
-        suite.addTestSuite(DynamicColumnsConcurrentTransactionalPartitionedSelfTest.class);
-        suite.addTestSuite(DynamicColumnsConcurrentAtomicReplicatedSelfTest.class);
-        suite.addTestSuite(DynamicColumnsConcurrentTransactionalReplicatedSelfTest.class);
 
         // DML+DDL.
         suite.addTestSuite(H2DynamicIndexingComplexClientAtomicPartitionedTest.class);
