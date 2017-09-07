@@ -25,7 +25,7 @@ using namespace ignite::impl::binary;
 using namespace ignite::binary;
 
 namespace ignite
-{    
+{
     namespace impl
     {
         IgniteImpl::IgniteImpl(SharedPointer<IgniteEnvironment> env) :
@@ -56,16 +56,6 @@ namespace ignite
         IgniteImpl::SP_IgniteBindingImpl IgniteImpl::GetBinding()
         {
             return env.Get()->GetBinding();
-        }
-
-        IgniteImpl::SP_TransactionsImpl IgniteImpl::GetTransactions()
-        {
-            return txImpl.Get();
-        }
-
-        cluster::SP_ClusterGroupImpl IgniteImpl::GetProjection()
-        {
-            return prjImpl.Get();
         }
 
         IgniteImpl::SP_ComputeImpl IgniteImpl::GetCompute()

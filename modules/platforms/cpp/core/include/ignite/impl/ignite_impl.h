@@ -29,9 +29,9 @@
 #include <ignite/impl/cluster/cluster_group_impl.h>
 #include <ignite/impl/compute/compute_impl.h>
 
-namespace ignite 
+namespace ignite
 {
-    namespace impl 
+    namespace impl
     {
         /*
         * PlatformProcessor op codes.
@@ -155,14 +155,20 @@ namespace ignite
              *
              * @return TransactionsImpl instance.
              */
-            SP_TransactionsImpl GetTransactions();
+            SP_TransactionsImpl GetTransactions()
+            {
+                return txImpl.Get();
+            }
 
             /**
              * Get projection.
              *
              * @return ClusterGroupImpl instance.
              */
-            cluster::SP_ClusterGroupImpl GetProjection();
+            cluster::SP_ClusterGroupImpl GetProjection()
+            {
+                return prjImpl.Get();
+            }
 
             /**
              * Get compute.
