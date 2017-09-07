@@ -215,11 +215,11 @@ public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
 
             doTestDeadlock(3, true, true, startKey);
             doTestDeadlock(3, false, false, startKey);
-            doTestDeadlock(3, true, false, startKey);
+            doTestDeadlock(3, false, true, startKey);
 
             doTestDeadlock(4, true, true, startKey);
             doTestDeadlock(4, false, false, startKey);
-            doTestDeadlock(4, true, false, startKey);
+            doTestDeadlock(4, false, true, startKey);
         }
         catch (Throwable e) {
             U.error(log, "Unexpected exception: ", e);
@@ -237,8 +237,8 @@ public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
      */
     private void doTestDeadlock(
         final int txCnt,
-        final boolean clientTx,
         boolean lockPrimaryFirst,
+        final boolean clientTx,
         Object startKey
     ) throws Exception {
         log.info(">>> Test deadlock [txCnt=" + txCnt + ", lockPrimaryFirst=" + lockPrimaryFirst +
@@ -435,8 +435,8 @@ public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
             int i1 = n1 < nodesCnt ? n1 : n1 - nodesCnt;
             int i2 = n2 < nodesCnt ? n2 : n2 - nodesCnt;
 
-            keys.add(findKeys(ignite(i1).cache(CACHE_NAME), 1, startKey, 0).get(0));
-            keys.add(findKeys(ignite(i2).cache(CACHE_NAME), 1, startKey, 0).get(0));
+            keys.add(primaryKeys(ignite(i1).cache(CACHE_NAME), 1, startKey).get(0));
+            keys.add(primaryKeys(ignite(i2).cache(CACHE_NAME), 1, startKey).get(0));
 
             if (reverse)
                 Collections.reverse(keys);

@@ -1054,8 +1054,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Collection of keys for which given cache is primary.
      */
     @SuppressWarnings("unchecked")
-    protected List<IncrementalTestObject> primaryKeys(IgniteCache<?, ?> cache, final int cnt,
-        final IncrementalTestObject startFrom) {
+    protected <T> List<T> primaryKeys(IgniteCache<?, ?> cache, final int cnt, final T startFrom) {
         return findKeys(cache, cnt, startFrom, 0);
     }
 
