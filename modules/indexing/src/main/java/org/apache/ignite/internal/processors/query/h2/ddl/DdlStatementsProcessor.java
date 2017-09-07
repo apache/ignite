@@ -242,7 +242,8 @@ public class DdlStatementsProcessor {
                         }
 
                         cols.add(new QueryField(col.columnName(),
-                            DataType.getTypeClassName(col.column().getType())));
+                            DataType.getTypeClassName(col.column().getType()),
+                            col.column().isNullable()));
                     }
 
                     if (cols != null) {

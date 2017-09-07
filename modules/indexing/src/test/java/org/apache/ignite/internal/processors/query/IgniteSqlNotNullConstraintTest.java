@@ -31,6 +31,7 @@ import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
@@ -41,6 +42,9 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
+import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -592,116 +596,170 @@ public class IgniteSqlNotNullConstraintTest extends GridCommonAbstractTest {
 
     /** */
     public void testDynamicTableCreateNotNullFieldsAllowed() throws Exception {
-        executeSql("create table test(id int primary key, field int not null)");
+        executeSql("CREATE TABLE test(id INT PRIMARY KEY, field INT NOT NULL)");
 
         String cacheName = QueryUtils.createTableCacheName("PUBLIC", "TEST");
 
-        CacheConfiguration ccfg = grid(NODE_CLIENT).context().cache().cache(cacheName).configuration();
+        IgniteEx client = grid(NODE_CLIENT);
+
+        CacheConfiguration ccfg = client.context().cache().cache(cacheName).configuration();
 
         QueryEntity qe = (QueryEntity)F.first(ccfg.getQueryEntities());
 
         assertEquals(Collections.singleton("FIELD"), qe.getNotNullFields());
 
-        executeSql("drop table test");
+        checkState("PUBLIC", "TEST", "FIELD");
+    }
+
+    /** */
+    public void testAlterTableAddColumnNotNullFieldAllowed() throws Exception {
+        executeSql("CREATE TABLE test(id INT PRIMARY KEY, age INT)");
+
+        executeSql("ALTER TABLE test ADD COLUMN name CHAR NOT NULL");
+
+        checkState("PUBLIC", "TEST", "NAME");
     }
 
     /** */
     public void testAtomicNotNullCheckDmlInsertValues() throws Exception {
-        executeSql("create table test(id int primary key, name varchar not null) with \"atomicity=atomic\"");
+        checkNotNullCheckDmlInsertValues(CacheAtomicityMode.ATOMIC);
+    }
+
+    /** */
+    public void testTransactionalNotNullCheckDmlInsertValues() throws Exception {
+        checkNotNullCheckDmlInsertValues(CacheAtomicityMode.TRANSACTIONAL);
+    }
+
+    /** */
+    private void checkNotNullCheckDmlInsertValues(CacheAtomicityMode atomicityMode) throws Exception {
+        executeSql("CREATE TABLE test(id INT PRIMARY KEY, name VARCHAR NOT NULL) WITH \"atomicity="
+                + atomicityMode.name() + "\"");
 
         GridTestUtils.assertThrows(log(), new Callable<Object>() {
             @Override public Object call() throws Exception {
-                executeSql("insert into test(id, name) " +
-                    "values (1, 'ok'), (2, nullif('a', 'a')), (3, 'ok')");
+                executeSql("INSERT INTO test(id, name) " +
+                    "VALUES (1, 'ok'), (2, NULLIF('a', 'a')), (3, 'ok')");
 
                 return null;
             }
         }, IgniteSQLException.class, ERR_MSG);
 
-        List<List<?>> result = executeSql("select id, name from test order by id");
+        List<List<?>> result = executeSql("SELECT id, name FROM test ORDER BY id");
 
         assertEquals(0, result.size());
 
-        executeSql("drop table test");
+        executeSql("INSERT INTO test(id, name) VALUES (1, 'ok'), (2, 'ok2'), (3, 'ok3')");
+
+        result = executeSql("SELECT id, name FROM test ORDER BY id");
+
+        assertEquals(3, result.size());
     }
 
     /** */
-    public void testTransactionalNotNullCheckDmlInsertValues() throws Exception {
-        executeSql("create table test(id int primary key, name varchar not null) with \"atomicity=transactional\"");
+    public void testAtomicAddColumnNotNullCheckDmlInsertValues() throws Exception {
+        checkAddColumnNotNullCheckDmlInsertValues(CacheAtomicityMode.ATOMIC);
+    }
+
+    /** */
+    public void testTransactionalAddColumnNotNullCheckDmlInsertValues() throws Exception {
+        checkAddColumnNotNullCheckDmlInsertValues(CacheAtomicityMode.TRANSACTIONAL);
+    }
+
+    /** */
+    private void checkAddColumnNotNullCheckDmlInsertValues(CacheAtomicityMode atomicityMode) throws Exception {
+        executeSql("CREATE TABLE test(id INT PRIMARY KEY, age INT) WITH \"atomicity="
+            + atomicityMode.name() + "\"");
+
+        executeSql("ALTER TABLE test ADD COLUMN name VARCHAR NOT NULL");
 
         GridTestUtils.assertThrows(log(), new Callable<Object>() {
             @Override public Object call() throws Exception {
-                return executeSql("insert into test(id, name) " +
-                    "values (1, 'ok'), (2, nullif('a', 'a')), (3, 'ok')");
+                executeSql("INSERT INTO test(id, name, age) " +
+                    "VALUES (1, 'ok', 1), (2, NULLIF('a', 'a'), 2), (3, 'ok', 3)");
+
+                return null;
             }
         }, IgniteSQLException.class, ERR_MSG);
 
-        List<List<?>> result = executeSql("select id, name from test order by id");
+        List<List<?>> result = executeSql("SELECT id, name, age FROM test ORDER BY id");
 
         assertEquals(0, result.size());
 
-        executeSql("drop table test");
+        executeSql("INSERT INTO test(id, name) VALUES (1, 'ok'), (2, 'ok2'), (3, 'ok3')");
+
+        result = executeSql("SELECT id, name FROM test ORDER BY id");
+
+        assertEquals(3, result.size());
     }
 
     /** */
     public void testNotNullCheckDmlInsertFromSelect() throws Exception {
-        executeSql("create table test(id int primary key, name varchar, age int)");
+        executeSql("CREATE TABLE test(id INT PRIMARY KEY, name VARCHAR, age INT)");
 
-        executeSql("insert into test(id, name, age) values (1, 'Macy', 25), (2, null, 25), (3, 'John', 30)");
+        executeSql("INSERT INTO test(id, name, age) VALUES (1, 'Macy', 25), (2, null, 25), (3, 'John', 30)");
 
         GridTestUtils.assertThrows(log(), new Callable<Object>() {
             @Override public Object call() throws Exception {
-                return executeSql("insert into " + TABLE_PERSON +
+                return executeSql("INSERT INTO " + TABLE_PERSON +
                     "(_key, name, age) " +
-                    "select id, name, age from test");
+                    "SELECT id, name, age FROM test");
             }
         }, IgniteSQLException.class, ERR_MSG);
 
-        List<List<?>> result = executeSql("select _key, name from " + TABLE_PERSON + " order by _key");
+        List<List<?>> result = executeSql("SELECT _key, name FROM " + TABLE_PERSON + " ORDER BY _key");
 
         assertEquals(0, result.size());
 
-        executeSql("drop table test");
+        executeSql("DELETE FROM test WHERE id = 2");
+
+        result = executeSql("INSERT INTO " + TABLE_PERSON + "(_key, name, age) " + "SELECT id, name, age FROM test");
+
+        assertEquals(2L, result.get(0).get(0));
     }
 
     /** */
     public void testNotNullCheckDmlUpdateValues() throws Exception {
-        executeSql("create table test(id int primary key, name varchar not null)");
+        executeSql("CREATE TABLE test(id INT PRIMARY KEY, name VARCHAR NOT NULL)");
 
-        executeSql("insert into test(id, name) values (1, 'John')");
+        executeSql("INSERT INTO test(id, name) VALUES (1, 'John')");
 
         GridTestUtils.assertThrows(log(), new Callable<Object>() {
             @Override public Object call() throws Exception {
-                return executeSql("update test set name = nullif('a', 'a') where id = 1");
+                return executeSql("UPDATE test SET name = NULLIF(id, 1) WHERE id = 1");
             }
         }, IgniteSQLException.class, ERR_MSG);
 
-        List<List<?>> result = executeSql("select id, name from test");
+        List<List<?>> result = executeSql("SELECT id, name FROM test");
 
         assertEquals(1, result.size());
         assertEquals(1, result.get(0).get(0));
         assertEquals("John", result.get(0).get(1));
 
-        executeSql("drop table test");
+        executeSql("UPDATE test SET name = 'James' WHERE id = 1");
+
+        result = executeSql("SELECT id, name FROM test");
+
+        assertEquals(1, result.get(0).get(0));
+        assertEquals("James", result.get(0).get(1));
     }
 
     /** */
     public void testNotNullCheckDmlUpdateFromSelect() throws Exception {
-        executeSql("create table src(id int primary key, name varchar)");
-        executeSql("create table dest(id int primary key, name varchar not null)");
+        executeSql("CREATE TABLE src(id INT PRIMARY KEY, name VARCHAR)");
+        executeSql("CREATE TABLE dest(id INT PRIMARY KEY, name VARCHAR NOT NULL)");
 
-        executeSql("insert into dest(id, name) values (1, 'William'), (2, 'Warren'), (3, 'Robert')");
-        executeSql("insert into src(id, name) values (1, 'Bill'), (2, null), (3, 'Bob')");
+        executeSql("INSERT INTO dest(id, name) VALUES (1, 'William'), (2, 'Warren'), (3, 'Robert')");
+        executeSql("INSERT INTO src(id, name) VALUES (1, 'Bill'), (2, null), (3, 'Bob')");
 
         GridTestUtils.assertThrows(log(), new Callable<Object>() {
             @Override public Object call() throws Exception {
-                return executeSql("update dest" +
-                    " p set (name) = " +
-                    "(select name from src t where p.id = t.id)");
+                return executeSql("UPDATE dest" +
+                    " p SET (name) = " +
+                    "(SELECT name FROM src t WHERE p.id = t.id)");
             }
         }, IgniteSQLException.class, ERR_MSG);
 
-        List<List<?>> result = executeSql("select id, name from dest order by id");
+        List<List<?>> result = executeSql("SELECT id, name FROM dest ORDER BY id");
 
         assertEquals(3, result.size());
 
@@ -713,6 +771,23 @@ public class IgniteSqlNotNullConstraintTest extends GridCommonAbstractTest {
 
         assertEquals(3, result.get(2).get(0));
         assertEquals("Robert", result.get(2).get(1));
+
+        executeSql("UPDATE src SET name = 'Ren' WHERE id = 2");
+
+        executeSql("UPDATE dest p SET (name) = (SELECT name FROM src t WHERE p.id = t.id)");
+
+        result = executeSql("SELECT id, name FROM dest ORDER BY id");
+
+        assertEquals(3, result.size());
+
+        assertEquals(1, result.get(0).get(0));
+        assertEquals("Bill", result.get(0).get(1));
+
+        assertEquals(2, result.get(1).get(0));
+        assertEquals("Ren", result.get(1).get(1));
+
+        assertEquals(3, result.get(2).get(0));
+        assertEquals("Bob", result.get(2).get(1));
     }
 
     /** */
@@ -804,7 +879,49 @@ public class IgniteSqlNotNullConstraintTest extends GridCommonAbstractTest {
             }
         }
 
-        executeSql("drop table test if exists");
+        executeSql("DROP TABLE test IF EXISTS");
+    }
+
+    /** */
+    private void checkState(String schemaName, String tableName, String fieldName) {
+        IgniteEx client = grid(NODE_CLIENT);
+
+        checkNodeState(client, schemaName, tableName, fieldName);
+
+        for (int i = 0; i < NODE_COUNT; i++)
+            checkNodeState(grid(i), schemaName, tableName, fieldName);
+    }
+
+    /** */
+    private void checkNodeState(IgniteEx node, String schemaName, String tableName, String fieldName) {
+        String cacheName = F.eq(schemaName, QueryUtils.DFLT_SCHEMA) ?
+            QueryUtils.createTableCacheName(schemaName, tableName) : schemaName;
+
+        DynamicCacheDescriptor desc = node.context().cache().cacheDescriptor(cacheName);
+
+        assertNotNull("Cache descriptor not found", desc);
+
+        //assertTrue(desc.sql() == F.eq(schemaName, QueryUtils.DFLT_SCHEMA));
+
+        QuerySchema schema = desc.schema();
+
+        assertNotNull(schema);
+
+        QueryEntity entity = null;
+
+        for (QueryEntity e : schema.entities()) {
+            if (F.eq(tableName, e.getTableName())) {
+                entity = e;
+
+                break;
+            }
+        }
+
+        assertNotNull(entity);
+
+        assertNotNull(entity.getNotNullFields());
+
+        assertTrue(entity.getNotNullFields().contains(fieldName));
     }
 
     /** */

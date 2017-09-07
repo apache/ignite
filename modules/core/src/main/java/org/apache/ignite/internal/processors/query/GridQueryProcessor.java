@@ -2236,7 +2236,7 @@ private IgniteInternalFuture<Object> rebuildIndexesFromHash(@Nullable final Stri
         for (QueryField col : cols) {
             try {
                 props.add(new QueryBinaryProperty(ctx, col.name(), null, Class.forName(col.typeName()),
-                    false, null));
+                    false, null, !col.isNullable()));
             }
             catch (ClassNotFoundException e) {
                 throw new SchemaOperationException("Class not found for new property: " + col.typeName());
