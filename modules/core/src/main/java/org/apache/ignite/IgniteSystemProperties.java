@@ -706,6 +706,22 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_ENABLE_FORCIBLE_NODE_KILL = "IGNITE_ENABLE_FORCIBLE_NODE_KILL";
 
     /**
+     * Tasks stealing will be started if tasks queue size per data-streamer thread exceeds this threshold.
+     * <p>
+     * Default value is {@code 4}.
+     */
+    public static final String IGNITE_DATA_STREAMING_EXECUTOR_SERVICE_TASKS_STEALING_THRESHOLD =
+            "IGNITE_DATA_STREAMING_EXECUTOR_SERVICE_TASKS_STEALING_THRESHOLD";
+
+    /**
+     * If the property is set {@link org.apache.ignite.internal.pagemem.wal.record.TxRecord} records
+     * will be logged to WAL.
+     *
+     * Default value is {@code false}.
+     */
+    public static final String IGNITE_WAL_LOG_TX_RECORDS = "IGNITE_WAL_LOG_TX_RECORDS";
+
+    /**
      * Enforces singleton.
      */
     private IgniteSystemProperties() {

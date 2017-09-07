@@ -38,6 +38,7 @@ import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.LazyDataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.MemoryRecoveryRecord;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
+import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageInsertFragmentRecord;
@@ -83,6 +84,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusInnerIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.CacheVersionIO;
@@ -93,7 +95,6 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.RecordSeriali
 import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentEofException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.PureJavaCrc32;
 import org.apache.ignite.internal.processors.cache.persistence.wal.record.HeaderRecord;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.util.typedef.F;
@@ -136,6 +137,9 @@ public class RecordV1Serializer implements RecordSerializer {
     /** Skip CRC calculation/check flag */
     private boolean skipCrc = IgniteSystemProperties.getBoolean(IGNITE_PDS_SKIP_CRC, false);
 
+    /** Serializer of {@link TxRecord} records. */
+    private TxRecordSerializer txRecordSerializer;
+
     /**
      * @param cctx Cache shared context.
      */
@@ -144,6 +148,7 @@ public class RecordV1Serializer implements RecordSerializer {
 
         co = cctx.kernalContext().cacheObjects();
         pageSize = cctx.database().pageSize();
+        txRecordSerializer = new TxRecordSerializer(cctx);
     }
 
     /** {@inheritDoc} */
@@ -642,6 +647,11 @@ public class RecordV1Serializer implements RecordSerializer {
 
                 buf.putInt(pageListMetaResetCntRecord.groupId());
                 buf.putLong(pageListMetaResetCntRecord.pageId());
+
+                break;
+
+            case TX_RECORD:
+                txRecordSerializer.writeTxRecord((TxRecord) record, buf);
 
                 break;
 
@@ -1222,6 +1232,11 @@ public class RecordV1Serializer implements RecordSerializer {
             case SWITCH_SEGMENT_RECORD:
                 throw new EOFException("END OF SEGMENT");
 
+            case TX_RECORD:
+                res = txRecordSerializer.readTxRecord(in);
+
+                break;
+
             default:
                 throw new UnsupportedOperationException("Type: " + recType);
         }
@@ -1392,6 +1407,9 @@ public class RecordV1Serializer implements RecordSerializer {
 
             case SWITCH_SEGMENT_RECORD:
                 return commonFields - CRC_SIZE; //CRC is not loaded for switch segment, exception is thrown instead
+
+            case TX_RECORD:
+                return commonFields + txRecordSerializer.sizeOfTxRecord((TxRecord) record);
 
             default:
                 throw new UnsupportedOperationException("Type: " + record.type());
@@ -1635,7 +1653,7 @@ public class RecordV1Serializer implements RecordSerializer {
      * @param ver Version to write.
      * @param allowNull Is {@code null}version allowed.
      */
-    private void putVersion(ByteBuffer buf, GridCacheVersion ver, boolean allowNull) {
+    static void putVersion(ByteBuffer buf, GridCacheVersion ver, boolean allowNull) {
         CacheVersionIO.write(buf, ver, allowNull);
     }
 
@@ -1646,7 +1664,7 @@ public class RecordV1Serializer implements RecordSerializer {
      * @param allowNull Is {@code null}version allowed.
      * @return Read cache version.
      */
-    private GridCacheVersion readVersion(ByteBufferBackedDataInput in, boolean allowNull) throws IOException {
+    static GridCacheVersion readVersion(ByteBufferBackedDataInput in, boolean allowNull) throws IOException {
         // To be able to read serialization protocol version.
         in.ensure(1);
 
