@@ -35,6 +35,7 @@ import org.apache.ignite.jdbc.JdbcResultSetSelfTest;
 import org.apache.ignite.jdbc.JdbcStatementSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinAutoCloseServerCursorTest;
 import org.apache.ignite.jdbc.thin.JdbcThinBatchSelfTest;
+import org.apache.ignite.jdbc.thin.JdbcThinComplexDmlDdlSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinComplexQuerySelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinConnectionSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinDeleteStatementSelfTest;
@@ -48,6 +49,7 @@ import org.apache.ignite.jdbc.thin.JdbcThinEmptyCacheSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinInsertStatementSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinMergeStatementSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinMetadataSelfTest;
+import org.apache.ignite.jdbc.thin.JdbcThinMissingLongArrayResultsTest;
 import org.apache.ignite.jdbc.thin.JdbcThinNoDefaultSchemaTest;
 import org.apache.ignite.jdbc.thin.JdbcThinPreparedStatementSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinResultSetSelfTest;
@@ -114,10 +116,11 @@ public class IgniteJdbcDriverTestSuite extends TestSuite {
 
         // New thin JDBC
         suite.addTest(new TestSuite(JdbcThinConnectionSelfTest.class));
-        suite.addTest(new TestSuite(JdbcThinStatementSelfTest.class));
-        suite.addTest(new TestSuite(JdbcThinResultSetSelfTest.class));
-        suite.addTest(new TestSuite(JdbcThinComplexQuerySelfTest.class));
         suite.addTest(new TestSuite(JdbcThinPreparedStatementSelfTest.class));
+        suite.addTest(new TestSuite(JdbcThinResultSetSelfTest.class));
+
+        suite.addTest(new TestSuite(JdbcThinStatementSelfTest.class));
+        suite.addTest(new TestSuite(JdbcThinComplexQuerySelfTest.class));
         suite.addTest(new TestSuite(JdbcThinNoDefaultSchemaTest.class));
         suite.addTest(new TestSuite(JdbcThinEmptyCacheSelfTest.class));
         suite.addTest(new TestSuite(JdbcThinMetadataSelfTest.class));
@@ -128,6 +131,7 @@ public class IgniteJdbcDriverTestSuite extends TestSuite {
         suite.addTest(new TestSuite(JdbcThinDeleteStatementSelfTest.class));
         suite.addTest(new TestSuite(JdbcThinAutoCloseServerCursorTest.class));
         suite.addTest(new TestSuite(JdbcThinBatchSelfTest.class));
+        suite.addTest(new TestSuite(JdbcThinMissingLongArrayResultsTest.class));
 
         // New thin JDBC driver, DDL tests
         suite.addTest(new TestSuite(JdbcThinDynamicIndexAtomicPartitionedNearSelfTest.class));
@@ -136,6 +140,9 @@ public class IgniteJdbcDriverTestSuite extends TestSuite {
         suite.addTest(new TestSuite(JdbcThinDynamicIndexTransactionalPartitionedNearSelfTest.class));
         suite.addTest(new TestSuite(JdbcThinDynamicIndexTransactionalPartitionedSelfTest.class));
         suite.addTest(new TestSuite(JdbcThinDynamicIndexTransactionalReplicatedSelfTest.class));
+
+        // New thin JDBC driver, full SQL tests
+        suite.addTest(new TestSuite(JdbcThinComplexDmlDdlSelfTest.class));
 
         return suite;
     }

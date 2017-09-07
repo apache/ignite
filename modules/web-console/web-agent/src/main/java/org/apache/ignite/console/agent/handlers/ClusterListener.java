@@ -24,6 +24,7 @@ import io.socket.emitter.Emitter;
 import java.net.ConnectException;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Executors;
@@ -35,6 +36,7 @@ import org.apache.ignite.console.agent.rest.RestResult;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientNodeBean;
 import org.apache.ignite.internal.processors.rest.protocols.http.jetty.GridJettyObjectMapper;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteProductVersion;
@@ -203,14 +205,23 @@ public class ClusterListener {
         TopologySnapshot(Collection<GridClientNodeBean> nodes) {
             nids = F.viewReadOnly(nodes, NODE2ID);
 
-            Collection<IgniteProductVersion> vers = F.transform(nodes,
-                new IgniteClosure<GridClientNodeBean, IgniteProductVersion>() {
-                    @Override public IgniteProductVersion apply(GridClientNodeBean bean) {
-                        return IgniteProductVersion.fromString((String)bean.getAttributes().get(ATTR_BUILD_VER));
+            Collection<T2<String, IgniteProductVersion>> vers = F.transform(nodes,
+                new IgniteClosure<GridClientNodeBean, T2<String, IgniteProductVersion>>() {
+                    @Override public T2<String, IgniteProductVersion> apply(GridClientNodeBean bean) {
+                        String ver = (String)bean.getAttributes().get(ATTR_BUILD_VER);
+
+                        return new T2<>(ver, IgniteProductVersion.fromString(ver));
                     }
                 });
 
-            clusterVer = Collections.min(vers).toString();
+            T2<String, IgniteProductVersion> min = Collections.min(vers, new Comparator<T2<String, IgniteProductVersion>>() {
+                @SuppressWarnings("ConstantConditions")
+                @Override public int compare(T2<String, IgniteProductVersion> o1, T2<String, IgniteProductVersion> o2) {
+                    return o1.get2().compareTo(o2.get2());
+                }
+            });
+
+            clusterVer = min.get1();
         }
 
         /**
