@@ -937,7 +937,8 @@ public class GridSqlQueryParser {
         int valColsNum = cols.size() - pkCols.size();
 
         if (valColsNum == 0)
-            throw new IgniteSQLException("No cache value related columns found");
+            throw new IgniteSQLException("No cache value related columns found",
+                IgniteQueryErrorCode.PARSING);
 
         res.columns(cols);
         res.primaryKeyColumns(pkCols);
@@ -1011,7 +1012,8 @@ public class GridSqlQueryParser {
                 return parseAddColumn(stmt);
 
             default:
-                throw new IgniteSQLException("Unsupported operation code: " + stmt.getType());
+                throw new IgniteSQLException("Unsupported operation code: " + stmt.getType(),
+                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
         }
     }
 

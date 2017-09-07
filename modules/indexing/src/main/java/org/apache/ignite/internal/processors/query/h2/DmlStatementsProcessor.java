@@ -661,48 +661,53 @@ public class DmlStatementsProcessor {
 
         Class<?> currCls = val.getClass();
 
-        if (val instanceof Date && currCls != Date.class && expCls == Date.class) {
-            // H2 thinks that java.util.Date is always a Timestamp, while binary marshaller expects
-            // precise Date instance. Let's satisfy it.
-            return new Date(((Date) val).getTime());
+        try {
+            if (val instanceof Date && currCls != Date.class && expCls == Date.class) {
+                // H2 thinks that java.util.Date is always a Timestamp, while binary marshaller expects
+                // precise Date instance. Let's satisfy it.
+                return new Date(((Date) val).getTime());
+            }
+
+            // User-given UUID is always serialized by H2 to byte array, so we have to deserialize manually
+            if (type == Value.UUID && currCls == byte[].class)
+                return U.unmarshal(desc.context().marshaller(), (byte[]) val,
+                    U.resolveClassLoader(desc.context().gridConfig()));
+
+            if (LocalDateTimeUtils.isJava8DateApiPresent()) {
+                if (val instanceof Timestamp && LocalDateTimeUtils.isLocalDateTime(expCls))
+                    return LocalDateTimeUtils.valueToLocalDateTime(ValueTimestamp.get((Timestamp) val));
+
+                if (val instanceof Date && LocalDateTimeUtils.isLocalDate(expCls))
+                    return LocalDateTimeUtils.valueToLocalDate(ValueDate.fromDateValue(
+                        DateTimeUtils.dateValueFromDate(((Date) val).getTime())));
+
+                if (val instanceof Time && LocalDateTimeUtils.isLocalTime(expCls))
+                    return LocalDateTimeUtils.valueToLocalTime(ValueTime.get((Time) val));
+            }
+
+            // We have to convert arrays of reference types manually - see https://issues.apache.org/jira/browse/IGNITE-4327
+            // Still, we only can convert from Object[] to something more precise.
+            if (type == Value.ARRAY && currCls != expCls) {
+                if (currCls != Object[].class)
+                    throw new IgniteCheckedException("Unexpected array type - only conversion from Object[] is assumed");
+
+                // Why would otherwise type be Value.ARRAY?
+                assert expCls.isArray();
+
+                Object[] curr = (Object[]) val;
+
+                Object newArr = Array.newInstance(expCls.getComponentType(), curr.length);
+
+                System.arraycopy(curr, 0, newArr, 0, curr.length);
+
+                return newArr;
+            }
+
+            return H2Utils.convert(val, desc, type);
         }
-
-        // User-given UUID is always serialized by H2 to byte array, so we have to deserialize manually
-        if (type == Value.UUID && currCls == byte[].class)
-            return U.unmarshal(desc.context().marshaller(), (byte[]) val,
-                U.resolveClassLoader(desc.context().gridConfig()));
-
-        if (LocalDateTimeUtils.isJava8DateApiPresent()) {
-            if (val instanceof Timestamp && LocalDateTimeUtils.isLocalDateTime(expCls))
-                return LocalDateTimeUtils.valueToLocalDateTime(ValueTimestamp.get((Timestamp)val));
-
-            if (val instanceof Date && LocalDateTimeUtils.isLocalDate(expCls))
-                return LocalDateTimeUtils.valueToLocalDate(ValueDate.fromDateValue(
-                    DateTimeUtils.dateValueFromDate(((Date)val).getTime())));
-
-            if (val instanceof Time && LocalDateTimeUtils.isLocalTime(expCls))
-                return LocalDateTimeUtils.valueToLocalTime(ValueTime.get((Time)val));
+        catch (Exception e) {
+            throw new IgniteSQLException("Value conversion failed.", IgniteQueryErrorCode.CACHE_NOT_FOUND, e);
         }
-
-        // We have to convert arrays of reference types manually - see https://issues.apache.org/jira/browse/IGNITE-4327
-        // Still, we only can convert from Object[] to something more precise.
-        if (type == Value.ARRAY && currCls != expCls) {
-            if (currCls != Object[].class)
-                throw new IgniteCheckedException("Unexpected array type - only conversion from Object[] is assumed");
-
-            // Why would otherwise type be Value.ARRAY?
-            assert expCls.isArray();
-
-            Object[] curr = (Object[]) val;
-
-            Object newArr = Array.newInstance(expCls.getComponentType(), curr.length);
-
-            System.arraycopy(curr, 0, newArr, 0, curr.length);
-
-            return newArr;
-        }
-
-        return H2Utils.convert(val, desc, type);
     }
 
     /**

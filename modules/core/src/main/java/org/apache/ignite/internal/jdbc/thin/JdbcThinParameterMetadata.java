@@ -22,6 +22,8 @@ import java.sql.SQLException;
 import java.util.List;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcParameterMeta;
 
+import static org.apache.ignite.internal.jdbc2.JdbcUtils.igniteSqlException;
+
 /**
  * JDBC SQL query's parameters metadata.
  */
@@ -89,7 +91,7 @@ public class JdbcThinParameterMetadata implements ParameterMetaData {
     @SuppressWarnings("unchecked")
     @Override public <T> T unwrap(Class<T> iface) throws SQLException {
         if (!isWrapperFor(iface))
-            throw new SQLException("Parameters metadata is not a wrapper for " + iface.getName());
+            throw igniteSqlException("Parameters metadata is not a wrapper for " + iface.getName());
 
         return (T)this;
     }
@@ -108,7 +110,7 @@ public class JdbcThinParameterMetadata implements ParameterMetaData {
      */
     private JdbcParameterMeta parameter(int param) throws SQLException {
         if (param <= 0 || param > meta.size())
-            throw new SQLException("Invalid parameter number");
+            throw igniteSqlException("Invalid parameter number");
 
         return meta.get(param - 1);
     }

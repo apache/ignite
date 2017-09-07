@@ -647,6 +647,11 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
             str.matches(ptrn.replace("%", ".*").replace("_", ".")));
     }
 
+    /**
+     * Extract {@link SQLException} from given {@link Exception}, and form {@link JdbcErrorResult}, if possible.
+     * @param e Exception to convert.
+     * @return resulting {@link JdbcErrorResult}, or {@code null} if conversion wasn't possible.
+     */
     private JdbcErrorResult exceptionToResult(Exception e) {
         if (!errorResponses)
             return null;

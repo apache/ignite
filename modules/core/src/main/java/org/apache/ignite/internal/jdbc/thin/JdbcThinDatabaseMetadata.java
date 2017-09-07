@@ -32,6 +32,7 @@ import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.jdbc2.JdbcUtils;
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcColumnMeta;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcIndexMeta;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaColumnsResult;
@@ -41,6 +42,7 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaSchemasResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaTablesResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcPrimaryKeyMeta;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcTableMeta;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.util.typedef.F;
 
 import static java.sql.Connection.TRANSACTION_NONE;
@@ -48,6 +50,7 @@ import static java.sql.ResultSet.CONCUR_READ_ONLY;
 import static java.sql.ResultSet.HOLD_CURSORS_OVER_COMMIT;
 import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
 import static java.sql.RowIdLifetime.ROWID_UNSUPPORTED;
+import static org.apache.ignite.internal.jdbc2.JdbcUtils.igniteSqlException;
 
 /**
  * JDBC database metadata implementation.
@@ -702,7 +705,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
     @Override public ResultSet getTables(String catalog, String schemaPtrn, String tblNamePtrn,
         String[] tblTypes) throws SQLException {
         if (conn.isClosed())
-            throw new SQLException("Connection is closed.");
+            throw igniteSqlException("Connection is closed.", IgniteQueryErrorCode.CONNECTION_CLOSED);
 
         final List<JdbcColumnMeta> meta = Arrays.asList(
             new JdbcColumnMeta(null, null, "TABLE_CAT", String.class),
@@ -743,13 +746,16 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
 
             return new JdbcThinResultSet(rows, meta);
         }
+        catch (IgniteSQLException e) {
+            throw e.toJdbcException();
+        }
         catch (IOException e) {
             conn.close();
 
-            throw new SQLException("Failed to query Ignite.", e);
+            throw igniteSqlException("Failed to query Ignite.", e);
         }
         catch (IgniteCheckedException e) {
-            throw new SQLException("Failed to query Ignite.", e);
+            throw igniteSqlException("Failed to query Ignite [err=\"" + e.getMessage() + "\"]", e);
         }
     }
 
@@ -797,7 +803,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
     @Override public ResultSet getColumns(String catalog, String schemaPtrn, String tblNamePtrn,
         String colNamePtrn) throws SQLException {
         if (conn.isClosed())
-            throw new SQLException("Connection is closed.");
+            throw igniteSqlException("Connection is closed.", IgniteQueryErrorCode.CONNECTION_CLOSED);
 
         final List<JdbcColumnMeta> meta = Arrays.asList(
             new JdbcColumnMeta(null, null, "TABLE_CAT", String.class),
@@ -834,13 +840,16 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
 
             return new JdbcThinResultSet(rows, meta);
         }
+        catch (IgniteSQLException e) {
+            throw e.toJdbcException();
+        }
         catch (IOException e) {
             conn.close();
 
-            throw new SQLException("Failed to query Ignite.", e);
+            throw igniteSqlException("Failed to query Ignite.", e);
         }
         catch (IgniteCheckedException e) {
-            throw new SQLException("Failed to query Ignite.", e);
+            throw igniteSqlException("Failed to query Ignite [err=\"" + e.getMessage() + "\"]", e);
         }
     }
 
@@ -937,7 +946,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
     /** {@inheritDoc} */
     @Override public ResultSet getPrimaryKeys(String catalog, String schema, String tbl) throws SQLException {
         if (conn.isClosed())
-            throw new SQLException("Connection is closed.");
+            throw igniteSqlException("Connection is closed.", IgniteQueryErrorCode.CONNECTION_CLOSED);
 
         final List<JdbcColumnMeta> meta = Arrays.asList(
             new JdbcColumnMeta(null, null, "TABLE_CAT", String.class),
@@ -960,13 +969,16 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
 
             return new JdbcThinResultSet(rows, meta);
         }
+        catch (IgniteSQLException e) {
+            throw e.toJdbcException();
+        }
         catch (IOException e) {
             conn.close();
 
-            throw new SQLException("Failed to query Ignite.", e);
+            throw igniteSqlException("Failed to query Ignite.", e);
         }
         catch (IgniteCheckedException e) {
-            throw new SQLException("Failed to query Ignite.", e);
+            throw igniteSqlException("Failed to query Ignite [err=\"" + e.getMessage() + "\"]", e);
         }
     }
 
@@ -1168,7 +1180,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
     @Override public ResultSet getIndexInfo(String catalog, String schema, String tbl, boolean unique,
         boolean approximate) throws SQLException {
         if (conn.isClosed())
-            throw new SQLException("Connection is closed.");
+            throw igniteSqlException("Connection is closed.", IgniteQueryErrorCode.CONNECTION_CLOSED);
 
         final List<JdbcColumnMeta> meta = Arrays.asList(
             new JdbcColumnMeta(null, null, "TABLE_CAT", String.class),
@@ -1198,13 +1210,16 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
 
             return new JdbcThinResultSet(rows, meta);
         }
+        catch (IgniteSQLException e) {
+            throw e.toJdbcException();
+        }
         catch (IOException e) {
             conn.close();
 
-            throw new SQLException("Failed to query Ignite.", e);
+            throw igniteSqlException("Failed to query Ignite.", e);
         }
         catch (IgniteCheckedException e) {
-            throw new SQLException("Failed to query Ignite.", e);
+            throw igniteSqlException("Failed to query Ignite [err=\"" + e.getMessage() + "\"]", e);
         }
     }
 
@@ -1442,7 +1457,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
     /** {@inheritDoc} */
     @Override public ResultSet getSchemas(String catalog, String schemaPtrn) throws SQLException {
         if (conn.isClosed())
-            throw new SQLException("Connection is closed.");
+            throw igniteSqlException("Connection is closed.", IgniteQueryErrorCode.CONNECTION_CLOSED);
 
         final List<JdbcColumnMeta> meta = Arrays.asList(
             new JdbcColumnMeta(null, null, "TABLE_SCHEM", String.class),
@@ -1468,13 +1483,16 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
 
             return new JdbcThinResultSet(rows, meta);
         }
+        catch (IgniteSQLException e) {
+            throw e.toJdbcException();
+        }
         catch (IOException e) {
             conn.close();
 
-            throw new SQLException("Failed to query Ignite.", e);
+            throw igniteSqlException("Failed to query Ignite.", e);
         }
         catch (IgniteCheckedException e) {
-            throw new SQLException("Failed to query Ignite.", e);
+            throw igniteSqlException("Failed to query Ignite [err=\"" + e.getMessage() + "\"]", e);
         }
     }
 
@@ -1541,7 +1559,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
     @SuppressWarnings("unchecked")
     @Override public <T> T unwrap(Class<T> iface) throws SQLException {
         if (!isWrapperFor(iface))
-            throw new SQLException("Database meta data is not a wrapper for " + iface.getName());
+            throw igniteSqlException("Database meta data is not a wrapper for " + iface.getName());
 
         return (T)this;
     }

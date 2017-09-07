@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.query;
 
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCache;
@@ -76,6 +77,24 @@ public final class IgniteQueryErrorCode {
     /** Required column already exists. */
     public final static int COLUMN_ALREADY_EXISTS = 3009;
 
+    /** Parameter type is not supported. */
+    public final static int UNSUPPORTED_PARAM_TYPE = 3010;
+
+    /** Invalid transaction level. */
+    public final static int INVALID_TRANSACTION_LEVEL = 3011;
+
+    /** Invalid data type. */
+    public final static int INVALID_DATA_TYPE = 3012;
+
+    /** Conversion failure. */
+    public final static int CONVERSION_FAILED = 3013;
+
+    /** Invalid number format. */
+    public final static int INVALID_NUMBER_FORMAT = 3014;
+
+    /** Value can't be converted to expected type (to be used in {@link ResultSet}'s {@code getXxx()} methods. */
+    public final static int INVALID_VALUE_FORMAT = 3015;
+
     /* 4xxx - cache related runtime errors */
 
     /** Attempt to INSERT a key that is already in cache. */
@@ -95,6 +114,23 @@ public final class IgniteQueryErrorCode {
 
     /** Cache not found. */
     public final static int CACHE_NOT_FOUND = 4006;
+
+    /* 5xxx - codes for primary use by JDBC driver. */
+
+    /** IO error during communication. */
+    public final static int CONNECTION_FAILURE = 5001;
+
+    /** Connect. */
+    public final static int CONNECTION_CLOSED = 5002;
+
+    /** Client failed to open connection. */
+    public final static int CLIENT_CONNECTION_FAILED = 5003;
+
+    /** General connection establishment error. */
+    public final static int CONNECTION_ERROR_GENERAL = 5004;
+
+    /** Invalid result set state. */
+    public final static int INVALID_RESULT_SET_STATE = 5005;
 
     /** */
     private IgniteQueryErrorCode() {
@@ -130,6 +166,37 @@ public final class IgniteQueryErrorCode {
 
             case UNSUPPORTED_OPERATION:
                 return "0A000"; // Generic value for "feature not supported" 0A class.
+
+            case CONNECTION_ERROR_GENERAL:
+                return "08000";
+
+            case CLIENT_CONNECTION_FAILED:
+                return "08001"; // "SQL-client unable to establish SQL-connection"
+
+            case CONNECTION_CLOSED:
+                return "08003"; // "Connection does not exist"
+
+            case CONNECTION_FAILURE:
+                return "08006"; // "Connection failure"
+
+            case UNSUPPORTED_PARAM_TYPE:
+                return "22023"; // "Invalid parameter value"
+
+            case INVALID_TRANSACTION_LEVEL:
+                return "0700E"; // "Invalid LEVEL value"
+
+            case INVALID_DATA_TYPE:
+                return "0D000"; // "Invalid target type specification"
+
+            case CONVERSION_FAILED:
+                return "0700B"; // "Data type transform function violation"
+
+            case INVALID_NUMBER_FORMAT:
+            case INVALID_VALUE_FORMAT:
+                return "22000"; // "Data exception"
+
+            case INVALID_RESULT_SET_STATE:
+                return "24000"; // "Invalid cursor state"
 
             case PARSING:
             case TABLE_NOT_FOUND:

@@ -48,10 +48,8 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
-import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.util.typedef.CAX;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
@@ -174,23 +172,7 @@ public class GridCacheQueryJdbcTask extends ComputeTaskAdapter<byte[], byte[]> {
             else {
                 status = 1;
 
-                Throwable ex = res.getException();
-
-                SQLException sqlEx = null;
-
-                if (X.hasCause(ex, IgniteSQLException.class)) {
-                    while (true) {
-                        if (ex.getCause() == null)
-                            break;
-
-                        ex = ex.getCause();
-
-                        if (ex instanceof IgniteSQLException)
-                            sqlEx = ((IgniteSQLException)ex).toJdbcException();
-                    }
-                }
-
-                bytes = U.marshal(MARSHALLER, sqlEx == null ? new SQLException(res.getException().getMessage()) : sqlEx);
+                bytes = U.marshal(MARSHALLER, new SQLException(res.getException().getMessage()));
             }
 
             byte[] packet = new byte[bytes.length + 1];

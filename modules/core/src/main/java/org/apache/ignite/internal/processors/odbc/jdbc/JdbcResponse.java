@@ -61,6 +61,13 @@ public class JdbcResponse extends SqlListenerResponse implements JdbcRawBinaryli
         assert status != STATUS_SUCCESS;
     }
 
+    /**
+     * Constructor for arbitrary response.
+     *
+     * @param res result.
+     * @param status status code.
+     * @param err optional error message.
+     */
     public JdbcResponse(JdbcResult res, int status, @Nullable String err) {
         super(status, err);
 
