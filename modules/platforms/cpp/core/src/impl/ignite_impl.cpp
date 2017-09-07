@@ -25,22 +25,17 @@ using namespace ignite::impl::binary;
 using namespace ignite::binary;
 
 namespace ignite
-{    
+{
     namespace impl
     {
         IgniteImpl::IgniteImpl(SharedPointer<IgniteEnvironment> env, jobject javaRef) :
             env(env),
-            javaRef(javaRef)
+            javaRef(javaRef),
+            txImpl(),
+            prjImpl()
         {
-            IgniteError err;
-
-            txImpl = InternalGetTransactions(err);
-
-            IgniteError::ThrowIfNeeded(err);
-
-            prjImpl = InternalGetProjection(err);
-
-            IgniteError::ThrowIfNeeded(err);
+            txImpl.Init(common::Bind(this, &IgniteImpl::InternalGetTransactions));
+            prjImpl.Init(common::Bind(this, &IgniteImpl::InternalGetProjection));
         }
 
         IgniteImpl::~IgniteImpl()
@@ -70,41 +65,41 @@ namespace ignite
 
         IgniteImpl::SP_ComputeImpl IgniteImpl::GetCompute()
         {
-            cluster::SP_ClusterGroupImpl serversCluster = prjImpl.Get()->ForServers();
+            cluster::SP_ClusterGroupImpl serversCluster = prjImpl.Get().Get()->ForServers();
 
             return serversCluster.Get()->GetCompute();
         }
 
-        IgniteImpl::SP_TransactionsImpl IgniteImpl::InternalGetTransactions(IgniteError &err)
+        transactions::TransactionsImpl* IgniteImpl::InternalGetTransactions()
         {
-            SP_TransactionsImpl res;
-
             JniErrorInfo jniErr;
 
             jobject txJavaRef = env.Get()->Context()->ProcessorTransactions(javaRef, &jniErr);
 
-            if (txJavaRef)
-                res = SP_TransactionsImpl(new transactions::TransactionsImpl(env, txJavaRef));
-            else
+            if (!txJavaRef)
+            {
+                IgniteError err;
                 IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
+                throw err;
+            }
 
-            return res;
+            return new transactions::TransactionsImpl(env, txJavaRef);
         }
 
-        cluster::SP_ClusterGroupImpl IgniteImpl::InternalGetProjection(IgniteError& err)
+        cluster::ClusterGroupImpl* IgniteImpl::InternalGetProjection()
         {
-            cluster::SP_ClusterGroupImpl res;
-
             JniErrorInfo jniErr;
 
-            jobject txJavaRef = env.Get()->Context()->ProcessorProjection(javaRef, &jniErr);
+            jobject clusterGroupJavaRef = env.Get()->Context()->ProcessorProjection(javaRef, &jniErr);
 
-            if (txJavaRef)
-                res = cluster::SP_ClusterGroupImpl(new cluster::ClusterGroupImpl(env, txJavaRef));
-            else
+            if (!clusterGroupJavaRef)
+            {
+                IgniteError err;
                 IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
+                throw err;
+            }
 
-            return res;
+            return new cluster::ClusterGroupImpl(env, clusterGroupJavaRef);
         }
     }
 }

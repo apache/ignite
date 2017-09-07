@@ -173,6 +173,7 @@
     <ClInclude Include="..\..\include\ignite\common\dynamic_size_array.h" />
     <ClInclude Include="..\..\include\ignite\common\fixed_size_array.h" />
     <ClInclude Include="..\..\include\ignite\common\bits.h" />
+    <ClInclude Include="..\..\include\ignite\common\lazy.h" />
     <ClInclude Include="..\..\include\ignite\common\platform_utils.h" />
     <ClInclude Include="..\..\include\ignite\common\promise.h" />
     <ClInclude Include="..\..\include\ignite\common\reference_impl.h" />

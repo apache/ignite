@@ -18,9 +18,10 @@
 #ifndef _IGNITE_IMPL_IGNITE_IMPL
 #define _IGNITE_IMPL_IGNITE_IMPL
 
-#include <ignite/common/concurrent.h>
 #include <ignite/jni/java.h>
 #include <ignite/common/utils.h>
+#include <ignite/common/concurrent.h>
+#include <ignite/common/lazy.h>
 
 #include <ignite/impl/ignite_environment.h>
 #include <ignite/impl/cache/cache_impl.h>
@@ -28,9 +29,9 @@
 #include <ignite/impl/cluster/cluster_group_impl.h>
 #include <ignite/impl/compute/compute_impl.h>
 
-namespace ignite 
+namespace ignite
 {
-    namespace impl 
+    namespace impl
     {
         /**
          * Ignite implementation.
@@ -188,7 +189,7 @@ namespace ignite
              */
             SP_TransactionsImpl GetTransactions()
             {
-                return txImpl;
+                return txImpl.Get();
             }
 
             /**
@@ -198,7 +199,7 @@ namespace ignite
              */
             cluster::SP_ClusterGroupImpl GetProjection()
             {
-                return prjImpl;
+                return prjImpl.Get();
             }
 
             /**
@@ -215,7 +216,7 @@ namespace ignite
              */
             bool IsActive()
             {
-                return prjImpl.Get()->IsActive();
+                return prjImpl.Get().Get()->IsActive();
             }
 
             /**
@@ -226,7 +227,7 @@ namespace ignite
              */
             void SetActive(bool active)
             {
-                prjImpl.Get()->SetActive(active);
+                prjImpl.Get().Get()->SetActive(active);
             }
 
         private:
@@ -235,14 +236,14 @@ namespace ignite
              *
              * @return TransactionsImpl instance.
              */
-            SP_TransactionsImpl InternalGetTransactions(IgniteError &err);
+            transactions::TransactionsImpl* InternalGetTransactions();
 
             /**
              * Get current projection internal call.
              *
              * @return ClusterGroupImpl instance.
              */
-            cluster::SP_ClusterGroupImpl InternalGetProjection(IgniteError &err);
+            cluster::ClusterGroupImpl* InternalGetProjection();
 
             /** Environment. */
             SP_IgniteEnvironment env;
@@ -251,10 +252,10 @@ namespace ignite
             jobject javaRef;
 
             /** Transactions implementaion. */
-            SP_TransactionsImpl txImpl;
+            common::Lazy<transactions::TransactionsImpl> txImpl;
 
             /** Projection implementation. */
-            cluster::SP_ClusterGroupImpl prjImpl;
+            common::Lazy<cluster::ClusterGroupImpl> prjImpl;
 
             IGNITE_NO_COPY_ASSIGNMENT(IgniteImpl)
         };
