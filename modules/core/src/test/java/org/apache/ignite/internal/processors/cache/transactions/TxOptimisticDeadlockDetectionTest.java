@@ -295,8 +295,8 @@ public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
                     ClusterNode primaryNode =
                         ((IgniteCacheProxy)cache).context().affinity().primaryByKey(key, NONE);
 
-                    List<Object> primaryKeys = findKeys(
-                        grid(primaryNode).cache(CACHE_NAME), 5, incrementAndGet(key , (100 * threadNum)), 0);
+                    List<Object> primaryKeys = primaryKeys(
+                        grid(primaryNode).cache(CACHE_NAME), 5, incrementAndGet(key , (100 * threadNum)));
 
                     Map<Object, Integer> entries = new HashMap<>();
 
@@ -435,8 +435,8 @@ public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
             int i1 = n1 < nodesCnt ? n1 : n1 - nodesCnt;
             int i2 = n2 < nodesCnt ? n2 : n2 - nodesCnt;
 
-            keys.add(primaryKeys(ignite(i1).cache(CACHE_NAME), 1, startKey).get(0));
-            keys.add(primaryKeys(ignite(i2).cache(CACHE_NAME), 1, startKey).get(0));
+            keys.add(primaryKey(ignite(i1).cache(CACHE_NAME), startKey));
+            keys.add(primaryKey(ignite(i2).cache(CACHE_NAME), startKey));
 
             if (reverse)
                 Collections.reverse(keys);
