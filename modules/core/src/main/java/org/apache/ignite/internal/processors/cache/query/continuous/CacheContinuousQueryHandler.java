@@ -477,10 +477,12 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                         if (nodeId0 != null) {
                             GridCacheContext<K, V> cctx = cacheContext(ctx);
 
-                            for (CacheContinuousQueryEntry e : backupQueue0) {
-                                if (!e.isFiltered())
-                                    prepareEntry(cctx, nodeId, e);
-                            }
+                        for (CacheContinuousQueryEntry e : backupQueue0) {
+                            if (!e.isFiltered())
+                                prepareEntry(cctx, nodeId, e);
+
+
+                        }
 
                             ctx.continuous().addBackupNotification(nodeId, routineId, backupQueue0, topic);
                         }
