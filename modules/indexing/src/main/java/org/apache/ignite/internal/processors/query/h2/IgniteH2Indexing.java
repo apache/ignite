@@ -2375,7 +2375,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         assert partInfo != null;
         assert partInfo.partition() < 0;
 
-        GridH2RowDescriptor desc = dataTable(partInfo.cacheName(),
+        GridH2RowDescriptor desc = dataTable(partInfo.schemaName(),
                 partInfo.tableName()).rowDescriptor();
 
         Object param = H2Utils.convert(params[partInfo.paramIdx()],
