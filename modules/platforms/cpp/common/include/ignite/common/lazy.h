@@ -148,6 +148,9 @@ namespace ignite
 
                 concurrent::CsLockGuard guard(lock);
 
+                if (instance.Get())
+                    return instance;
+
                 instance = concurrent::SharedPointer<InstanceType>(initFunc.Get()->Init());
 
                 return instance;
