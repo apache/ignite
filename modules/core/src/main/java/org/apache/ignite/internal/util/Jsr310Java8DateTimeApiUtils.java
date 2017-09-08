@@ -17,12 +17,11 @@
 
 package org.apache.ignite.internal.util;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
+
+import java.util.ArrayList;
+import java.util.Collection;
 
 /**
  * Provides utility functions for JSR-310 Java 8 Date and Time API types
@@ -47,13 +46,18 @@ public final class Jsr310Java8DateTimeApiUtils {
      * @return Collection of the available JSR-310 classes.
      */
     @NotNull private static Collection<Class<?>> createJsr310ApiClassesCollection() {
-        Collection<Class<?>> apiClasses =
-            new ArrayList<>(Arrays.asList(LOCAL_TIME_CLASS, LOCAL_DATE_CLASS, LOCAL_DATE_TIME_CLASS));
+        Collection<Class<?>> res = new ArrayList<>(3);
 
-        // Remove all possible nulls to comply with H2 LocalDateTimeUtils approach.
-        apiClasses.removeAll(Collections.<Class<?>>singleton(null));
+        if (LOCAL_DATE_CLASS != null)
+            res.add(LOCAL_DATE_CLASS);
 
-        return Collections.unmodifiableCollection(apiClasses);
+        if (LOCAL_TIME_CLASS != null)
+            res.add(LOCAL_TIME_CLASS);
+
+        if (LOCAL_DATE_TIME_CLASS != null)
+            res.add(LOCAL_DATE_TIME_CLASS);
+
+        return res;
     }
 
     /**
