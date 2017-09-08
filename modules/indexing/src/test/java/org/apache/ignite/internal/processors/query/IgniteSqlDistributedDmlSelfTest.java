@@ -19,8 +19,8 @@ package org.apache.ignite.internal.processors.query;
 
 import java.sql.Date;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -58,6 +58,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
 
 /** Tests for distributed DML. */
+@SuppressWarnings({"unchecked", "ThrowableResultOfMethodCallIgnored"})
 public class IgniteSqlDistributedDmlSelfTest extends GridCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -121,7 +122,7 @@ public class IgniteSqlDistributedDmlSelfTest extends GridCommonAbstractTest {
 
             QueryEntity entity = new QueryEntity(Integer.class, Organization.class);
 
-            ccfg.setQueryEntities(Arrays.asList(entity));
+            ccfg.setQueryEntities(Collections.singletonList(entity));
 
             ccfg.setSqlFunctionClasses(IgniteSqlDistributedDmlSelfTest.class);
 
@@ -134,7 +135,7 @@ public class IgniteSqlDistributedDmlSelfTest extends GridCommonAbstractTest {
 
             QueryEntity entity = new QueryEntity(PersonKey.class, Person.class);
 
-            ccfg.setQueryEntities(Arrays.asList(entity));
+            ccfg.setQueryEntities(Collections.singletonList(entity));
 
             ccfg.setKeyConfiguration(new CacheKeyConfiguration(PersonKey.class));
 
@@ -149,12 +150,14 @@ public class IgniteSqlDistributedDmlSelfTest extends GridCommonAbstractTest {
 
             QueryEntity entity = new QueryEntity(Integer.class, Position.class);
 
-            ccfg.setQueryEntities(Arrays.asList(entity));
+            ccfg.setQueryEntities(Collections.singletonList(entity));
 
             ccfg.setSqlFunctionClasses(IgniteSqlDistributedDmlSelfTest.class);
 
             return ccfg;
         }
+
+        assert false;
 
         return null;
     }
