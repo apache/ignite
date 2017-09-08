@@ -1167,36 +1167,11 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param cache Cache.
      * @param cnt Keys count.
      * @param startFrom Start value for keys search.
-     * @return Collection of keys for which given cache is backup.
-     */
-    @SuppressWarnings("unchecked")
-    protected List<IncrementalTestObject> backupKeys(IgniteCache<?, ?> cache, int cnt,
-        IncrementalTestObject startFrom) {
-        return findKeys(cache, cnt, startFrom, 1);
-    }
-
-    /**
-     * @param cache Cache.
-     * @param cnt Keys count.
-     * @param startFrom Start value for keys search.
      * @return Collection of keys for which given cache is neither primary nor backup.
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
     protected List<Integer> nearKeys(IgniteCache<?, ?> cache, int cnt, int startFrom)
-        throws IgniteCheckedException {
-        return findKeys(cache, cnt, startFrom, 2);
-    }
-
-    /**
-     * @param cache Cache.
-     * @param cnt Keys count.
-     * @param startFrom Start value for keys search.
-     * @return Collection of keys for which given cache is neither primary nor backup.
-     * @throws IgniteCheckedException If failed.
-     */
-    @SuppressWarnings("unchecked")
-    protected List<IncrementalTestObject> nearKeys(IgniteCache<?, ?> cache, int cnt, IncrementalTestObject startFrom)
         throws IgniteCheckedException {
         return findKeys(cache, cnt, startFrom, 2);
     }

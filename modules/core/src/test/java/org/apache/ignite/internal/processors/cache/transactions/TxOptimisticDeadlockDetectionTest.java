@@ -421,6 +421,7 @@ public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
     }
 
     /**
+     * This method added in order to not Change the behavior of this test after refactoring.
      * @param key Key.
      * @param i I.
      * @return Incremented key.
