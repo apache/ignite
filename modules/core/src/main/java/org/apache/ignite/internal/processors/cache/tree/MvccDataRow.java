@@ -28,7 +28,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
  */
 public class MvccDataRow extends DataRow {
     /** */
-    private long mvccTopVer;
+    private long crdVer;
 
     /** */
     private long mvccCntr;
@@ -39,16 +39,16 @@ public class MvccDataRow extends DataRow {
      * @param link
      * @param part
      * @param rowData
-     * @param mvccTopVer
+     * @param crdVer
      * @param mvccCntr
      */
-    public MvccDataRow(CacheGroupContext grp, int hash, long link, int part, RowData rowData, long mvccTopVer, long mvccCntr) {
+    public MvccDataRow(CacheGroupContext grp, int hash, long link, int part, RowData rowData, long crdVer, long mvccCntr) {
         super(grp, hash, link, part, rowData);
 
-        assert mvccTopVer > 0 : mvccTopVer;
+        assert crdVer > 0 : crdVer;
         assert mvccCntr != CacheCoordinatorsSharedManager.COUNTER_NA;
 
-        this.mvccTopVer = mvccTopVer;
+        this.crdVer = crdVer;
         this.mvccCntr = mvccCntr;
     }
 
@@ -64,17 +64,17 @@ public class MvccDataRow extends DataRow {
         GridCacheVersion ver,
         int part,
         int cacheId,
-        long mvccTopVer,
+        long crdVer,
         long mvccCntr) {
         super(key, val, ver, part, 0L, cacheId);
 
         this.mvccCntr = mvccCntr;
-        this.mvccTopVer = mvccTopVer;
+        this.crdVer = crdVer;
     }
 
     /** {@inheritDoc} */
-    @Override public long mvccUpdateTopologyVersion() {
-        return mvccTopVer;
+    @Override public long mvccCoordinatorVersion() {
+        return crdVer;
     }
 
     /** {@inheritDoc} */

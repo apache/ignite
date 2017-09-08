@@ -24,7 +24,7 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
  */
 public class MvccSearchRow extends SearchRow {
     /** */
-    private long mvccTopVer;
+    private long crdVer;
 
     /** */
     private long mvccCntr;
@@ -32,19 +32,19 @@ public class MvccSearchRow extends SearchRow {
     /**
      * @param cacheId
      * @param key
-     * @param mvccTopVer
+     * @param crdVer
      * @param mvccCntr
      */
-    public MvccSearchRow(int cacheId, KeyCacheObject key, long mvccTopVer, long mvccCntr) {
+    public MvccSearchRow(int cacheId, KeyCacheObject key, long crdVer, long mvccCntr) {
         super(cacheId, key);
 
-        this.mvccTopVer = mvccTopVer;
+        this.crdVer = crdVer;
         this.mvccCntr = mvccCntr;
     }
 
     /** {@inheritDoc} */
-    @Override public long mvccUpdateTopologyVersion() {
-        return mvccTopVer;
+    @Override public long mvccCoordinatorVersion() {
+        return crdVer;
     }
 
     /** {@inheritDoc} */

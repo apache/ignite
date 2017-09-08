@@ -37,6 +37,7 @@ import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -50,7 +51,9 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -354,6 +357,95 @@ public class CacheMvccTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    public void testWaitPreviousTxAck() throws Exception {
+        testSpi = true;
+
+        startGrid(0);
+
+        client = true;
+
+        final Ignite ignite = startGrid(1);
+
+        final IgniteCache<Object, Object> cache =
+            ignite.createCache(cacheConfiguration(PARTITIONED, FULL_SYNC, 0, 16));
+
+        try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            cache.put(1, 1);
+            cache.put(2, 1);
+            cache.put(3, 1);
+
+            tx.commit();
+        }
+
+        TestRecordingCommunicationSpi clientSpi = TestRecordingCommunicationSpi.spi(ignite);
+
+        clientSpi.blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
+            /** */
+            boolean block = true;
+
+            @Override public boolean apply(ClusterNode node, Message msg) {
+                if (block && msg instanceof CoordinatorTxAckRequest) {
+                    block = false;
+
+                    return true;
+                }
+
+                return false;
+            }
+        });
+
+        IgniteInternalFuture<?> txFut1 = GridTestUtils.runAsync(new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                    cache.put(2, 2);
+                    cache.put(3, 2);
+
+                    tx.commit();
+                }
+
+                return null;
+            }
+        });
+
+        IgniteInternalFuture<?> txFut2 = GridTestUtils.runAsync(new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                    cache.put(1, 3);
+                    cache.put(2, 3);
+
+                    tx.commit();
+                }
+
+                // Should see changes mady by both tx1 and tx2.
+                Map<Object, Object> res = cache.getAll(F.asSet(1, 2, 3));
+
+                assertEquals(3, res.get(1));
+                assertEquals(3, res.get(2));
+                assertEquals(2, res.get(3));
+
+                return null;
+            }
+        });
+
+        clientSpi.waitForBlocked();
+
+        Thread.sleep(1000);
+
+        clientSpi.stopBlock(true);
+
+        txFut1.get();
+        txFut2.get();
+
+        Map<Object, Object> res = cache.getAll(F.asSet(1, 2, 3));
+
+        assertEquals(3, res.get(1));
+        assertEquals(3, res.get(2));
+        assertEquals(2, res.get(3));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testPartialCommitGetAll() throws Exception {
         testSpi = true;
 
@@ -424,6 +516,7 @@ public class CacheMvccTransactionsTest extends GridCommonAbstractTest {
                 }
 
                 Set<Integer> keys = new HashSet<>();
+
                 keys.add(key1);
                 keys.add(key2);
 

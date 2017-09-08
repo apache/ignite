@@ -427,12 +427,12 @@ public class FreeListImplSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public long mvccUpdateCounter() {
+        @Override public long mvccCoordinatorVersion() {
             return 0;
         }
 
         /** {@inheritDoc} */
-        @Override public long mvccUpdateTopologyVersion() {
+        @Override public long mvccUpdateCounter() {
             return 0;
         }
     }

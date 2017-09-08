@@ -17,9 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.mvcc;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -78,7 +76,7 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
     private final ConcurrentMap<Long, MvccVersionFuture> verFuts = new ConcurrentHashMap<>();
 
     /** */
-    private final ConcurrentMap<Long, TxAckFuture> ackFuts = new ConcurrentHashMap<>();
+    private final ConcurrentMap<Long, WaitAckFuture> ackFuts = new ConcurrentHashMap<>();
 
     /** */
     private final AtomicLong futIdCntr = new AtomicLong();
@@ -86,7 +84,7 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
     /** */
     private final CountDownLatch crdLatch = new CountDownLatch(1);
 
-    /** */
+    /** Topology version when local node was assigned as coordinator. */
     private long crdVer;
 
     /** {@inheritDoc} */
@@ -193,11 +191,39 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
 
     /**
      * @param crd Coordinator.
+     * @param txs Transaction IDs.
+     * @return Future.
+     */
+    public IgniteInternalFuture<Void> waitTxsFuture(ClusterNode crd, GridLongList txs) {
+        WaitAckFuture fut = new WaitAckFuture(futIdCntr.incrementAndGet(), crd);
+
+        ackFuts.put(fut.id, fut);
+
+        try {
+            cctx.gridIO().sendToGridTopic(crd,
+                TOPIC_CACHE_COORDINATOR,
+                new CoordinatorWaitTxsRequest(fut.id, txs),
+                SYSTEM_POOL);
+        }
+        catch (ClusterTopologyCheckedException e) {
+            if (ackFuts.remove(fut.id) != null)
+                fut.onDone(); // No need to ack, finish without error.
+        }
+        catch (IgniteCheckedException e) {
+            if (ackFuts.remove(fut.id) != null)
+                fut.onDone(e);
+        }
+
+        return fut;
+    }
+
+    /**
+     * @param crd Coordinator.
      * @param txId Transaction ID.
      * @return Acknowledge future.
      */
     public IgniteInternalFuture<Void> ackTxCommit(ClusterNode crd, GridCacheVersion txId) {
-        TxAckFuture fut = new TxAckFuture(futIdCntr.incrementAndGet(), crd);
+        WaitAckFuture fut = new WaitAckFuture(futIdCntr.incrementAndGet(), crd);
 
         ackFuts.put(fut.id, fut);
 
@@ -345,7 +371,7 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
             try {
                 cctx.gridIO().sendToGridTopic(nodeId,
                     TOPIC_CACHE_COORDINATOR,
-                    new CoordinatorTxAckResponse(msg.futureId()),
+                    new CoordinatorFutureResponse(msg.futureId()),
                     SYSTEM_POOL);
             }
             catch (ClusterTopologyCheckedException e) {
@@ -362,8 +388,8 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
      * @param nodeId Sender node ID.
      * @param msg Message.
      */
-    private void processCoordinatorTxAckResponse(UUID nodeId, CoordinatorTxAckResponse msg) {
-        TxAckFuture fut = ackFuts.remove(msg.futureId());
+    private void processCoordinatorTxAckResponse(UUID nodeId, CoordinatorFutureResponse msg) {
+        WaitAckFuture fut = ackFuts.remove(msg.futureId());
 
         if (fut != null)
             fut.onResponse();
@@ -399,14 +425,14 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
 
         assert old == null : txId;
 
-        long minQry = 0;
+        long cleanupVer = Long.MAX_VALUE;
 
-        for (Long qryCntr : activeQueries.keySet()) {
-            if (qryCntr < minQry)
-                minQry = qryCntr;
+        for (Long qryVer : activeQueries.keySet()) {
+            if (qryVer < cleanupVer)
+                cleanupVer = qryVer - 1;
         }
 
-        return new MvccCoordinatorVersionResponse(futId, crdVer, nextCtr, txs, minQry);
+        return new MvccCoordinatorVersionResponse(futId, crdVer, nextCtr, txs, cleanupVer);
     }
 
     /**
@@ -418,6 +444,8 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
         assert cntr != null;
 
         committedCntr.setIfGreater(cntr);
+
+        notifyAll(); // TODO IGNITE-3478.
     }
 
     /**
@@ -462,6 +490,52 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
 
         if (left == 0)
             activeQueries.remove(mvccCntr);
+    }
+
+    /**
+     * @param msg Message.
+     */
+    private void processCoordinatorWaitTxsRequest(UUID nodeId, CoordinatorWaitTxsRequest msg) {
+        GridLongList txs = msg.transactions();
+
+        // TODO IGNITE-3478.
+        synchronized (this) {
+            for (int i = 0; i < txs.size(); i++) {
+                long txId = txs.get(i);
+
+                while (hasActiveTx(txId)) {
+                    try {
+                        wait();
+                    }
+                    catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        }
+        try {
+            cctx.gridIO().sendToGridTopic(nodeId,
+                TOPIC_CACHE_COORDINATOR,
+                new CoordinatorFutureResponse(msg.futureId()),
+                SYSTEM_POOL);
+        }
+        catch (ClusterTopologyCheckedException e) {
+            if (log.isDebugEnabled())
+                log.debug("Failed to send tx ack response, node left [msg=" + msg + ", node=" + nodeId + ']');
+        }
+        catch (IgniteCheckedException e) {
+            U.error(log, "Failed to send tx ack response [msg=" + msg + ", node=" + nodeId + ']', e);
+        }
+
+    }
+
+    private boolean hasActiveTx(long txId) {
+        for (Long id : activeTxs.values()) {
+            if (id == txId)
+                return true;
+        }
+
+        return false;
     }
 
     /**
@@ -552,7 +626,7 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
     /**
      *
      */
-    private class TxAckFuture extends GridFutureAdapter<Void> {
+    private class WaitAckFuture extends GridFutureAdapter<Void> {
         /** */
         private final long id;
 
@@ -563,7 +637,7 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
          * @param id Future ID.
          * @param crd Coordinator.
          */
-        TxAckFuture(long id, ClusterNode crd) {
+        WaitAckFuture(long id, ClusterNode crd) {
             this.id = id;
             this.crd = crd;
         }
@@ -599,7 +673,7 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
             for (MvccVersionFuture fut : verFuts.values())
                 fut.onNodeLeft(nodeId);
 
-            for (TxAckFuture fut : ackFuts.values())
+            for (WaitAckFuture fut : ackFuts.values())
                 fut.onNodeLeft(nodeId);
         }
     }
@@ -631,14 +705,16 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
                 processCoordinatorTxCounterRequest(nodeId, (CoordinatorTxCounterRequest)msg);
             else if (msg instanceof CoordinatorTxAckRequest)
                 processCoordinatorTxAckRequest(nodeId, (CoordinatorTxAckRequest)msg);
-            else if (msg instanceof CoordinatorTxAckResponse)
-                processCoordinatorTxAckResponse(nodeId, (CoordinatorTxAckResponse)msg);
+            else if (msg instanceof CoordinatorFutureResponse)
+                processCoordinatorTxAckResponse(nodeId, (CoordinatorFutureResponse)msg);
             else if (msg instanceof CoordinatorQueryAckRequest)
                 processCoordinatorQueryAckRequest((CoordinatorQueryAckRequest)msg);
             else if (msg instanceof CoordinatorQueryVersionRequest)
                 processCoordinatorQueryVersionRequest(nodeId, (CoordinatorQueryVersionRequest)msg);
             else if (msg instanceof MvccCoordinatorVersionResponse)
                 processCoordinatorQueryVersionResponse(nodeId, (MvccCoordinatorVersionResponse) msg);
+            else if (msg instanceof CoordinatorWaitTxsRequest)
+                processCoordinatorWaitTxsRequest(nodeId, (CoordinatorWaitTxsRequest)msg);
             else
                 U.warn(log, "Unexpected message received [node=" + nodeId + ", msg=" + msg + ']');
         }

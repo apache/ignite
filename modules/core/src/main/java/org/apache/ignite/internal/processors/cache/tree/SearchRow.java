@@ -76,7 +76,7 @@ public class SearchRow implements CacheSearchRow {
     }
 
     /** {@inheritDoc} */
-    @Override public long mvccUpdateTopologyVersion() {
+    @Override public long mvccCoordinatorVersion() {
         return 0;
     }
 

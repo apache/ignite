@@ -55,7 +55,7 @@ public interface CacheDataRow extends CacheSearchRow {
      */
     public void key(KeyCacheObject key);
 
-    public long mvccUpdateTopologyVersion();
+    public long mvccCoordinatorVersion();
 
     public long mvccUpdateCounter();
 }

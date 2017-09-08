@@ -18,88 +18,56 @@
 package org.apache.ignite.internal.processors.cache.mvcc;
 
 import java.nio.ByteBuffer;
+import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
-import org.jetbrains.annotations.NotNull;
 
 /**
  *
  */
-public class MvccCounter implements Comparable<MvccCounter>, Message {
+public class CoordinatorWaitTxsRequest implements MvccCoordinatorMessage {
     /** */
-    private long crdVer;
+    private long futId;
 
     /** */
-    private long cntr;
-
-    /** */
-    private long cleanupCntr;
+    private GridLongList txs;
 
     /**
      *
      */
-    public MvccCounter() {
+    public CoordinatorWaitTxsRequest() {
         // No-op.
     }
 
     /**
-     * @param crdVer Coordinator version.
-     * @param cntr Coordinator counter.
+     * @param futId Future ID.
+     * @param txs Transactions to wait for.
      */
-    public MvccCounter(long crdVer, long cntr, long cleanupCntr) {
-        assert crdVer > 0 : crdVer;
-        assert cntr != CacheCoordinatorsSharedManager.COUNTER_NA;
+    public CoordinatorWaitTxsRequest(long futId, GridLongList txs) {
+        assert txs != null && txs.size() > 0 : txs;
 
-        this.crdVer = crdVer;
-        this.cntr = cntr;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int compareTo(@NotNull MvccCounter other) {
-        int cmp = Long.compare(crdVer, other.crdVer);
-
-        if (cmp != 0)
-            return cmp;
-
-        return Long.compare(cntr, other.cntr);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean equals(Object o) {
-        if (this == o)
-            return true;
-
-        if (o == null || getClass() != o.getClass())
-            return false;
-
-        MvccCounter that = (MvccCounter) o;
-
-        return crdVer == that.crdVer && cntr == that.cntr;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int hashCode() {
-        int res = (int) (crdVer ^ (crdVer >>> 32));
-
-        res = 31 * res + (int) (cntr ^ (cntr >>> 32));
-
-        return res;
+        this.futId = futId;
+        this.txs = txs;
     }
 
     /**
-     * @return Coordinator version.
+     * @return Future ID.
      */
-    public long coordinatorVersion() {
-        return crdVer;
+    long futureId() {
+        return futId;
     }
 
     /**
-     * @return Counters.
+     * @return Transactions to wait for.
      */
-    public long counter() {
-        return cntr;
+    GridLongList transactions() {
+        return txs;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean waitForCoordinatorInit() {
+        return false;
     }
 
     /** {@inheritDoc} */
@@ -115,13 +83,13 @@ public class MvccCounter implements Comparable<MvccCounter>, Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeLong("cntr", cntr))
+                if (!writer.writeLong("futId", futId))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeLong("crdVer", crdVer))
+                if (!writer.writeMessage("txs", txs))
                     return false;
 
                 writer.incrementState();
@@ -140,7 +108,7 @@ public class MvccCounter implements Comparable<MvccCounter>, Message {
 
         switch (reader.state()) {
             case 0:
-                cntr = reader.readLong("cntr");
+                futId = reader.readLong("futId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -148,7 +116,7 @@ public class MvccCounter implements Comparable<MvccCounter>, Message {
                 reader.incrementState();
 
             case 1:
-                crdVer = reader.readLong("crdVer");
+                txs = reader.readMessage("txs");
 
                 if (!reader.isLastRead())
                     return false;
@@ -157,12 +125,12 @@ public class MvccCounter implements Comparable<MvccCounter>, Message {
 
         }
 
-        return reader.afterMessageRead(MvccCounter.class);
+        return reader.afterMessageRead(CoordinatorWaitTxsRequest.class);
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 135;
+        return 137;
     }
 
     /** {@inheritDoc} */
@@ -177,6 +145,6 @@ public class MvccCounter implements Comparable<MvccCounter>, Message {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(MvccCounter.class, this);
+        return S.toString(CoordinatorWaitTxsRequest.class, this);
     }
 }

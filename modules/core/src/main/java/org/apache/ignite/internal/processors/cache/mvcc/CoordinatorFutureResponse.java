@@ -26,21 +26,21 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 /**
  *
  */
-public class CoordinatorTxAckResponse implements MvccCoordinatorMessage {
+public class CoordinatorFutureResponse implements MvccCoordinatorMessage {
     /** */
     private long futId;
 
     /**
      * Required by {@link GridIoMessageFactory}.
      */
-    public CoordinatorTxAckResponse() {
+    public CoordinatorFutureResponse() {
         // No-op.
     }
 
     /**
      * @param futId Future ID.
      */
-    CoordinatorTxAckResponse(long futId) {
+    CoordinatorFutureResponse(long futId) {
         this.futId = futId;
     }
 
@@ -97,7 +97,7 @@ public class CoordinatorTxAckResponse implements MvccCoordinatorMessage {
 
         }
 
-        return reader.afterMessageRead(CoordinatorTxAckResponse.class);
+        return reader.afterMessageRead(CoordinatorFutureResponse.class);
     }
 
     /** {@inheritDoc} */
@@ -117,6 +117,6 @@ public class CoordinatorTxAckResponse implements MvccCoordinatorMessage {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(CoordinatorTxAckResponse.class, this);
+        return S.toString(CoordinatorFutureResponse.class, this);
     }
 }

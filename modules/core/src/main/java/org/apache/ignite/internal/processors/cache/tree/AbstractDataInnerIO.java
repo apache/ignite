@@ -59,10 +59,10 @@ public abstract class AbstractDataInnerIO extends BPlusInnerIO<CacheSearchRow> i
         }
 
         if (storeMvccVersion()) {
-            assert row.mvccUpdateTopologyVersion() > 0 : row;
+            assert row.mvccCoordinatorVersion() > 0 : row;
             assert row.mvccUpdateCounter() != CacheCoordinatorsSharedManager.COUNTER_NA : row;
 
-            PageUtils.putLong(pageAddr, off, row.mvccUpdateTopologyVersion());
+            PageUtils.putLong(pageAddr, off, row.mvccCoordinatorVersion());
             off += 8;
 
             PageUtils.putLong(pageAddr, off, row.mvccUpdateCounter());

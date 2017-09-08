@@ -105,10 +105,10 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearUnlo
 import org.apache.ignite.internal.processors.cache.mvcc.CoordinatorQueryAckRequest;
 import org.apache.ignite.internal.processors.cache.mvcc.CoordinatorQueryVersionRequest;
 import org.apache.ignite.internal.processors.cache.mvcc.CoordinatorTxAckRequest;
-import org.apache.ignite.internal.processors.cache.mvcc.CoordinatorTxAckResponse;
+import org.apache.ignite.internal.processors.cache.mvcc.CoordinatorFutureResponse;
 import org.apache.ignite.internal.processors.cache.mvcc.CoordinatorTxCounterRequest;
+import org.apache.ignite.internal.processors.cache.mvcc.CoordinatorWaitTxsRequest;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorVersionResponse;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccCounter;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryRequest;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryResponse;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
@@ -893,7 +893,7 @@ public class GridIoMessageFactory implements MessageFactory {
                 break;
 
             case 132:
-                msg = new CoordinatorTxAckResponse();
+                msg = new CoordinatorFutureResponse();
 
                 break;
 
@@ -907,13 +907,13 @@ public class GridIoMessageFactory implements MessageFactory {
 
                 break;
 
-            case 135:
-                msg = new MvccCounter();
+            case 136:
+                msg = new MvccCoordinatorVersionResponse();
 
                 return msg;
 
-            case 136:
-                msg = new MvccCoordinatorVersionResponse();
+            case 137:
+                msg = new CoordinatorWaitTxsRequest();
 
                 return msg;
 

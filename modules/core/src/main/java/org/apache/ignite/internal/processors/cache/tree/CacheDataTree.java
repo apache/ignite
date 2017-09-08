@@ -114,7 +114,7 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
     /** {@inheritDoc} */
     @Override protected int compare(BPlusIO<CacheSearchRow> iox, long pageAddr, int idx, CacheSearchRow row)
         throws IgniteCheckedException {
-        assert !grp.mvccEnabled() || row.mvccUpdateTopologyVersion() != 0;// || row.getClass() == SearchRow.class;
+        assert !grp.mvccEnabled() || row.mvccCoordinatorVersion() != 0;// || row.getClass() == SearchRow.class;
 
         RowLinkIO io = (RowLinkIO)iox;
 
@@ -158,9 +158,9 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
         if (cmp != 0 || !grp.mvccEnabled())
             return 0;
 
-        long mvccTopVer = io.getMvccUpdateTopologyVersion(pageAddr, idx);
+        long mvccCrdVer = io.getMvccUpdateTopologyVersion(pageAddr, idx);
 
-        cmp = Long.compare(row.mvccUpdateTopologyVersion(), mvccTopVer);
+        cmp = Long.compare(row.mvccCoordinatorVersion(), mvccCrdVer);
 
         if (cmp != 0)
             return cmp;
