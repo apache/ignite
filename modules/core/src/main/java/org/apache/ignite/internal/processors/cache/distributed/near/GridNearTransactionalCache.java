@@ -433,7 +433,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         assert nodeId != null;
         assert res != null;
 
-        GridNearLockFuture fut = (GridNearLockFuture)ctx.mvcc().<Boolean>mvccFuture(res.version(),
+        GridNearLockFuture fut = (GridNearLockFuture)ctx.mvcc().<Boolean>versionedFuture(res.version(),
             res.futureId());
 
         if (fut != null)
@@ -540,7 +540,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                             ver = cand.version();
 
                             if (map == null) {
-                                Collection<ClusterNode> affNodes = CU.allNodes(ctx, cand.topologyVersion());
+                                Collection<ClusterNode> affNodes = CU.affinityNodes(ctx, cand.topologyVersion());
 
                                 if (F.isEmpty(affNodes))
                                     return;
@@ -663,7 +663,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
 
                             if (cand != null) {
                                 if (map == null) {
-                                    Collection<ClusterNode> affNodes = CU.allNodes(ctx, cand.topologyVersion());
+                                    Collection<ClusterNode> affNodes = CU.affinityNodes(ctx, cand.topologyVersion());
 
                                     if (F.isEmpty(affNodes))
                                         return;

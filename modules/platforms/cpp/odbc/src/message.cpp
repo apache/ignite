@@ -23,12 +23,13 @@ namespace ignite
     namespace odbc
     {
         HandshakeRequest::HandshakeRequest(const ProtocolVersion& version, bool distributedJoins,
-            bool enforceJoinOrder, bool replicatedOnly, bool collocated):
+            bool enforceJoinOrder, bool replicatedOnly, bool collocated, bool lazy):
             version(version),
             distributedJoins(distributedJoins),
             enforceJoinOrder(enforceJoinOrder),
             replicatedOnly(replicatedOnly),
-            collocated(collocated)
+            collocated(collocated),
+            lazy(lazy)
         {
             // No-op.
         }
@@ -52,9 +53,11 @@ namespace ignite
             writer.WriteBool(enforceJoinOrder);
             writer.WriteBool(replicatedOnly);
             writer.WriteBool(collocated);
+            writer.WriteBool(lazy);
         }
 
-        QueryExecuteRequest::QueryExecuteRequest(const std::string& schema, const std::string& sql, const app::ParameterSet& params):
+        QueryExecuteRequest::QueryExecuteRequest(const std::string& schema, const std::string& sql,
+            const app::ParameterSet& params):
             schema(schema),
             sql(sql),
             params(params)
@@ -147,7 +150,8 @@ namespace ignite
             writer.WriteInt32(pageSize);
         }
 
-        QueryGetColumnsMetaRequest::QueryGetColumnsMetaRequest(const std::string& schema, const std::string& table, const std::string& column):
+        QueryGetColumnsMetaRequest::QueryGetColumnsMetaRequest(const std::string& schema, const std::string& table,
+            const std::string& column):
             schema(schema),
             table(table),
             column(column)
@@ -169,7 +173,8 @@ namespace ignite
             writer.WriteObject<std::string>(column);
         }
 
-        QueryGetTablesMetaRequest::QueryGetTablesMetaRequest(const std::string& catalog, const std::string& schema, const std::string& table, const std::string& tableTypes):
+        QueryGetTablesMetaRequest::QueryGetTablesMetaRequest(const std::string& catalog, const std::string& schema,
+            const std::string& table, const std::string& tableTypes):
             catalog(catalog),
             schema(schema),
             table(table),
@@ -270,7 +275,10 @@ namespace ignite
             queryId = reader.ReadInt64();
         }
 
-        QueryExecuteResponse::QueryExecuteResponse(): queryId(0), meta()
+        QueryExecuteResponse::QueryExecuteResponse():
+            queryId(0),
+            meta(),
+            affectedRows(0)
         {
             // No-op.
         }
@@ -285,6 +293,8 @@ namespace ignite
             queryId = reader.ReadInt64();
 
             meta::ReadColumnMetaVector(reader, meta);
+
+            affectedRows = reader.ReadInt64();
         }
 
         QueryExecuteBatchResponse::QueryExecuteBatchResponse():

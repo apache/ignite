@@ -233,6 +233,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_NODE_CONSISTE
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PEER_CLASSLOADING;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PHY_RAM;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PREFIX;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_OFFHEAP_SIZE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_RESTART_ENABLED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_REST_PORT_RANGE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SPI_CLASS;
@@ -457,6 +458,18 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /** {@inheritDoc} */
     @Override public String getStartTimestampFormatted() {
         return DateFormat.getDateTimeInstance().format(new Date(startTime));
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public boolean isRebalanceEnabled() {
+        return ctx.cache().context().isRebalanceEnabled();
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public void rebalanceEnabled(boolean rebalanceEnabled) {
+        ctx.cache().context().rebalanceEnabled(rebalanceEnabled);
     }
 
     /** {@inheritDoc} */
@@ -1383,19 +1396,34 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             String macs = ctx.discovery().localNode().attribute(ATTR_MACS);
 
             long totalHeap = 0;
+            long totalOffheap = 0;
 
             for (ClusterNode node : ctx.discovery().allNodes()) {
                 if (macs.equals(node.attribute(ATTR_MACS))) {
                     long heap = node.metrics().getHeapMemoryMaximum();
+                    Long offheap = node.<Long>attribute(ATTR_OFFHEAP_SIZE);
 
                     if (heap != -1)
                         totalHeap += heap;
+
+                    if (offheap != null)
+                        totalOffheap += offheap;
                 }
             }
 
-            if (totalHeap > ram) {
-                U.quietAndWarn(log, "Attempting to start more nodes than physical RAM " +
-                    "available on current host (this can cause significant slowdown)");
+            long total = totalHeap + totalOffheap;
+
+            if (total < 0)
+                total = Long.MAX_VALUE;
+
+            // 4GB or 20% of available memory is expected to be used by OS and user applications
+            long safeToUse = ram - Math.max(4L << 30, (long)(ram * 0.2));
+
+            if (total > safeToUse) {
+                U.quietAndWarn(log, "Nodes started on local machine require more than 80% of physical RAM what can " +
+                    "lead to significant slowdown due to swapping (please decrease JVM heap size, memory policy " +
+                    "size or checkpoint buffer size) [required=" + (total >> 20) + "MB, available=" +
+                    (ram >> 20) + "MB]");
             }
         }
     }

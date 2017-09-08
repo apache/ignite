@@ -41,6 +41,7 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -393,6 +394,24 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
             }
 
             assertEquals(expectedSchemas, schemas);
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testVersions() throws Exception {
+        try (Connection conn = DriverManager.getConnection(BASE_URL)) {
+            assertEquals("Apache Ignite", conn.getMetaData().getDatabaseProductName());
+            assertEquals(JdbcDatabaseMetadata.DRIVER_NAME, conn.getMetaData().getDriverName());
+            assertEquals(IgniteVersionUtils.VER.toString(), conn.getMetaData().getDatabaseProductVersion());
+            assertEquals(IgniteVersionUtils.VER.toString(), conn.getMetaData().getDriverVersion());
+            assertEquals(IgniteVersionUtils.VER.major(), conn.getMetaData().getDatabaseMajorVersion());
+            assertEquals(IgniteVersionUtils.VER.major(), conn.getMetaData().getDriverMajorVersion());
+            assertEquals(IgniteVersionUtils.VER.minor(), conn.getMetaData().getDatabaseMinorVersion());
+            assertEquals(IgniteVersionUtils.VER.minor(), conn.getMetaData().getDriverMinorVersion());
+            assertEquals(4, conn.getMetaData().getJDBCMajorVersion());
+            assertEquals(1, conn.getMetaData().getJDBCMinorVersion());
         }
     }
 
