@@ -1,6 +1,16 @@
 Apache Ignite Release Notes
 ===========================
 
+Apache Ignite In-Memory Data Fabric 2.2
+---------------------------------------
+Ignite:
+* Checkpointing algorithm optimized
+* Default max memory size changed from 80% to 20%
+
+Ignite CPP:
+* Now possible to start node with persistent store
+* Ignite.setActive method added to C++ API
+
 Apache Ignite In-Memory Data Fabric 2.1
 ---------------------------------------
 Ignite:
