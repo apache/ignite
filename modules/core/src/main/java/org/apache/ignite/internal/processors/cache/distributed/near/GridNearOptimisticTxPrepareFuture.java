@@ -304,7 +304,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
 
         if (super.onDone(tx, err0)) {
             // Don't forget to clean up.
-            cctx.mvcc().removeMvccFuture(this);
+            cctx.mvcc().removeVersionedFuture(this);
 
             return true;
         }

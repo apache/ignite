@@ -51,7 +51,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
-import org.apache.ignite.internal.processors.cache.GridCacheMvccFuture;
+import org.apache.ignite.internal.processors.cache.GridCacheVersionedFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -104,7 +104,7 @@ import static org.apache.ignite.transactions.TransactionState.PREPARED;
  */
 @SuppressWarnings("unchecked")
 public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<IgniteInternalTx, GridNearTxPrepareResponse>
-    implements GridCacheMvccFuture<GridNearTxPrepareResponse>, IgniteDiagnosticAware {
+    implements GridCacheVersionedFuture<GridNearTxPrepareResponse>, IgniteDiagnosticAware {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -977,7 +977,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
 
         if (super.onDone(res, err)) {
             // Don't forget to clean up.
-            cctx.mvcc().removeMvccFuture(this);
+            cctx.mvcc().removeVersionedFuture(this);
 
             if (timeoutObj != null)
                 cctx.time().removeTimeoutObject(timeoutObj);
