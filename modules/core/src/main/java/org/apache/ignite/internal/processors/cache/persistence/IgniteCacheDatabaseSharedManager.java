@@ -65,6 +65,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.configuration.MemoryConfiguration.DFLT_MEMORY_POLICY_INITIAL_SIZE;
 import static org.apache.ignite.configuration.MemoryConfiguration.DFLT_MEM_PLC_DEFAULT_NAME;
+import static org.apache.ignite.configuration.MemoryConfiguration.DFLT_PAGE_SIZE;
 
 /**
  *
@@ -350,6 +351,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @param memCfg configuration to validate.
      */
     private void validateConfiguration(MemoryConfiguration memCfg) throws IgniteCheckedException {
+        checkPageSize(memCfg);
+
         MemoryPolicyConfiguration[] plcCfgs = memCfg.getMemoryPolicies();
 
         Set<String> plcNames = (plcCfgs != null) ? U.<String>newHashSet(plcCfgs.length) : new HashSet<String>(0);
@@ -378,6 +381,14 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
             memCfg.getDefaultMemoryPolicySize(),
             plcNames
         );
+    }
+
+    /**
+     * @param memCfg Memory config.
+     */
+    protected void checkPageSize(MemoryConfiguration memCfg) {
+        if (memCfg.getPageSize() == 0)
+            memCfg.setPageSize(DFLT_PAGE_SIZE);
     }
 
     /**

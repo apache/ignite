@@ -10057,6 +10057,47 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * @param path Path.
+     * @param name Name.
+     */
+    public static Path searchFileRecursively(Path path, @NotNull final String name) throws IgniteCheckedException {
+        final AtomicReference<Path> res = new AtomicReference<>();
+
+        try {
+            Files.walkFileTree(path, new SimpleFileVisitor<Path>() {
+                @Override public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
+                    if (name.equals(file.getFileName().toString())) {
+                        res.set(file);
+
+                        return FileVisitResult.TERMINATE;
+                    }
+
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override public FileVisitResult visitFileFailed(Path file, IOException exc) {
+                    U.error(null, "file skipped during recursive search - " + file, exc);
+
+                    // Ignoring.
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override public FileVisitResult postVisitDirectory(Path dir, IOException exc) {
+                    if (exc != null)
+                        U.error(null, "error during recursive search - " + dir, exc);
+
+                    // Ignoring.
+                    return FileVisitResult.CONTINUE;
+                }
+            });
+        } catch (IOException e) {
+            throw new IgniteCheckedException("walkFileTree will not throw IOException if the FileVisitor does not");
+        }
+
+        return res.get();
+    }
+
+    /**
      * Returns {@link GridIntIterator} for range of primitive integers.
      * @param start Start.
      * @param cnt Count.

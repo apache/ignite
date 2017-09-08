@@ -48,7 +48,7 @@ public class FilePageStore implements PageStore {
     public static final int VERSION = 1;
 
     /** Allocated field offset. */
-    static final int HEADER_SIZE = 8/*SIGNATURE*/ + 4/*VERSION*/ + 1/*type*/ + 4/*page size*/;
+    public static final int HEADER_SIZE = 8/*SIGNATURE*/ + 4/*VERSION*/ + 1/*type*/ + 4/*page size*/;
 
     /** */
     private final File cfgFile;
