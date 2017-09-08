@@ -63,6 +63,7 @@ import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.cache.query.annotations.QueryTextField;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
+import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
@@ -146,6 +147,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         c.setDiscoverySpi(new TcpDiscoverySpi().setForceServerMode(true).setIpFinder(ipFinder));
+        c.setBinaryConfiguration(new BinaryConfiguration().setExternalizableBinary(false));
 
         if (igniteInstanceName.startsWith("client"))
             c.setClientMode(true);

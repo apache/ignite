@@ -246,8 +246,9 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      *
      * @param userType User type flag.
      * @param registered Whether type is registered.
+     * @param internal Whether object is internal cache key.
      */
-    public void postWrite(boolean userType, boolean registered) {
+    public void postWrite(boolean userType, boolean registered, boolean internal) {
         short flags;
         boolean useCompactFooter;
 
@@ -265,6 +266,9 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
             flags = 0;
             useCompactFooter = false;
         }
+
+        if (internal)
+            flags |= BinaryUtils.FLAG_INTERNAL;
 
         int finalSchemaId;
         int offset;

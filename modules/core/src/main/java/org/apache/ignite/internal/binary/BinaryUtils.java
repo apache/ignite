@@ -132,6 +132,9 @@ public class BinaryUtils {
     @SuppressWarnings("unused")
     public static final short FLAG_CUSTOM_DOTNET_TYPE = 0x0040;
 
+    /** Flag indicating that object is internal cache key. */
+    public static final short FLAG_INTERNAL = 0x0080;
+
     /** Offset which fits into 1 byte. */
     public static final int OFFSET_1 = 1;
 
@@ -1781,27 +1784,6 @@ public class BinaryUtils {
     }
 
     /**
-     * Read Externalizable object.
-     *
-     * @return Result.
-     */
-    public static Object doReadExternalizable(BinaryInputStream in, BinaryContext ctx, @Nullable ClassLoader clsLdr) {
-        BinaryReaderExImpl reader = new BinaryReaderExImpl(ctx,
-            in,
-            clsLdr,
-            null,
-            true);
-
-        Object obj0 = reader.deserialize();
-
-        BinaryClassDescriptor desc = reader.descriptor();
-
-        assert desc != null;
-
-        return obj0;
-    }
-
-    /**
      * Read object serialized using optimized marshaller.
      *
      * @return Result.
@@ -1907,12 +1889,6 @@ public class BinaryUtils {
                 handles.setHandle(po, start);
 
                 return po;
-            }
-
-            case GridBinaryMarshaller.EXTERNALIZABLE: {
-                in.position(start);
-
-                return doReadExternalizable(in, ctx, ldr);
             }
 
             case GridBinaryMarshaller.BYTE:

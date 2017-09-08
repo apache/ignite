@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
-import java.io.Externalizable;
 import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
 import java.util.Collection;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ThreadLocalRandom;
@@ -415,19 +415,12 @@ public class TxDeadlockDetectionTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private static class TestKey implements Externalizable {
+    private static class TestKey implements Serializable {
         /** Fail request. */
         private static volatile boolean failSer = false;
 
         /** Id. */
         private int id;
-
-        /**
-         * Default constructor (required by Externalizable).
-         */
-        public TestKey() {
-            // No-op.
-        }
 
         /**
          * @param id Id.
@@ -436,13 +429,17 @@ public class TxDeadlockDetectionTest extends GridCommonAbstractTest {
             this.id = id;
         }
 
-        /** {@inheritDoc} */
-        @Override public void writeExternal(ObjectOutput out) throws IOException {
+        /**
+         * @param out Object output stream.
+         */
+        private void writeObject(ObjectOutputStream out) throws IOException {
             out.writeInt(id);
         }
 
-        /** {@inheritDoc} */
-        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        /**
+         * @param in Object input stream.
+         */
+        private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
             if (failSer) {
                 TestCommunicationSpi.failCls = null;
                 failSer = false;

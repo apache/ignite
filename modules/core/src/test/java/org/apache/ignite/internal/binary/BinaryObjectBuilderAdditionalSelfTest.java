@@ -1536,25 +1536,36 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
 
         BinaryObject extObj = builder.setField("extVal", exp).setField("extArr", expArr).build();
 
-        assertEquals(exp, extObj.field("extVal"));
-        Assert.assertArrayEquals(expArr, (Object[])extObj.field("extArr"));
+        assertEquals(exp, ((BinaryObject)extObj.field("extVal")).deserialize());
+        Assert.assertArrayEquals(expArr, deserializeBinaryObjectArray((Object[])extObj.field("extArr")));
 
         builder = extObj.toBuilder();
 
         extObj = builder.setField("intVal", 10).build();
 
-        assertEquals(exp, extObj.field("extVal"));
-        Assert.assertArrayEquals(expArr, (Object[])extObj.field("extArr"));
+        assertEquals(exp, ((BinaryObject)extObj.field("extVal")).deserialize());
+        Assert.assertArrayEquals(expArr, deserializeBinaryObjectArray((Object[])extObj.field("extArr")));
         assertEquals(Integer.valueOf(10), extObj.field("intVal"));
 
         builder = extObj.toBuilder();
 
         extObj = builder.setField("strVal", "some string").build();
 
-        assertEquals(exp, extObj.field("extVal"));
-        Assert.assertArrayEquals(expArr, (Object[])extObj.field("extArr"));
+        assertEquals(exp, ((BinaryObject)extObj.field("extVal")).deserialize());
+        Assert.assertArrayEquals(expArr, deserializeBinaryObjectArray((Object[])extObj.field("extArr")));
         assertEquals(Integer.valueOf(10), extObj.field("intVal"));
         assertEquals("some string", extObj.field("strVal"));
+    }
+
+    /**
+     * Deserialize each element of binary objects array.
+     */
+    private Object[] deserializeBinaryObjectArray(Object[] arr){
+        for (int i = 0; i < arr.length; i++) {
+            arr[i] = ((BinaryObject)arr[i]).deserialize();
+        }
+
+        return arr;
     }
 
     /**

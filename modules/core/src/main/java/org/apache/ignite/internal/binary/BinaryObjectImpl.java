@@ -81,7 +81,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
      * For {@link Externalizable}.
      */
     public BinaryObjectImpl() {
-        // No-op.
+        ctx = GridBinaryMarshaller.threadLocalContext();
     }
 
     /**
@@ -131,7 +131,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
 
     /** {@inheritDoc} */
     @Override public boolean internal() {
-        return false;
+        return isFlagSet(BinaryUtils.FLAG_INTERNAL);
     }
 
     /** {@inheritDoc} */
@@ -597,11 +597,6 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
 
             case GridBinaryMarshaller.OBJ:
                 totalLen = BinaryPrimitives.readInt(arr, fieldPos + GridBinaryMarshaller.TOTAL_LEN_POS);
-
-                break;
-
-            case GridBinaryMarshaller.EXTERNALIZABLE:
-                totalLen = BinaryPrimitives.readInt(arr, fieldPos + 1);
 
                 break;
 

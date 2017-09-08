@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.rebalancing;
 
-import java.io.Externalizable;
 import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
@@ -48,7 +48,7 @@ public class GridCacheRebalancingUnmarshallingFailedSelfTest extends GridCommonA
     protected static AtomicInteger readCnt = new AtomicInteger();
 
     /** Test key 1. */
-    private static class TestKey implements Externalizable {
+    private static class TestKey implements Serializable {
         /** Field. */
         @QuerySqlField(index = true)
         private String field;
@@ -58,11 +58,6 @@ public class GridCacheRebalancingUnmarshallingFailedSelfTest extends GridCommonA
          */
         public TestKey(String field) {
             this.field = field;
-        }
-
-        /** Test key 1. */
-        public TestKey() {
-            // No-op.
         }
 
         /** {@inheritDoc} */
@@ -82,14 +77,18 @@ public class GridCacheRebalancingUnmarshallingFailedSelfTest extends GridCommonA
             return field != null ? field.hashCode() : 0;
         }
 
-        /** {@inheritDoc} */
-        @Override public void writeExternal(ObjectOutput out) throws IOException {
-            out.writeObject(field);
+        /**
+         * @param s Object output stream.
+         */
+        private void writeObject(ObjectOutputStream s) throws IOException {
+            s.writeObject(field);
         }
 
-        /** {@inheritDoc} */
-        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            field = (String)in.readObject();
+        /**
+         * @param s Object input stream.
+         */
+        private void readObject(ObjectInputStream s) throws IOException, ClassNotFoundException {
+            field = (String)s.readObject();
 
             Thread cur = Thread.currentThread();
 

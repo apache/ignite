@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.io.Externalizable;
 import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.CacheException;
@@ -198,17 +198,10 @@ public class IgniteCacheP2pUnmarshallingErrorTest extends IgniteCacheAbstractTes
     /**
      * Test key.
      */
-    protected static class TestKey implements Externalizable {
+    protected static class TestKey implements Serializable {
         /** Field. */
         @QuerySqlField(index = true)
         private String field;
-
-        /**
-         * Required by {@link Externalizable}.
-         */
-        public TestKey() {
-            // No-op.
-        }
 
         /**
          * @param field Test key 1.
@@ -234,13 +227,17 @@ public class IgniteCacheP2pUnmarshallingErrorTest extends IgniteCacheAbstractTes
             return field != null ? field.hashCode() : 0;
         }
 
-        /** {@inheritDoc} */
-        @Override public void writeExternal(ObjectOutput out) throws IOException {
+        /**
+         * @param out Object output stream.
+         */
+        private void writeObject(ObjectOutputStream out) throws IOException {
             out.writeObject(field);
         }
 
-        /** {@inheritDoc} */
-        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        /**
+         * @param in Object input stream.
+         */
+        private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
             field = (String)in.readObject();
 
             if (readCnt.decrementAndGet() <= 0)
@@ -251,21 +248,18 @@ public class IgniteCacheP2pUnmarshallingErrorTest extends IgniteCacheAbstractTes
     /**
      * Test value.
      */
-    protected static class TestValue implements Externalizable {
+    protected static class TestValue implements Serializable {
         /**
-         * Required by {@link Externalizable}.
+         * @param out Object output stream.
          */
-        public TestValue() {
+        private void writeObject(ObjectOutputStream out) throws IOException {
             // No-op.
         }
 
-        /** {@inheritDoc} */
-        @Override public void writeExternal(ObjectOutput out) throws IOException {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        /**
+         * @param in Object input stream.
+         */
+        private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
             if (valReadCnt.decrementAndGet() <= 0)
                 throw new IOException("Class can not be unmarshalled.");
         }

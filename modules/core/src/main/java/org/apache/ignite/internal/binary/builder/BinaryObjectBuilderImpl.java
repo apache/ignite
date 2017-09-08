@@ -334,7 +334,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
             }
 
             //noinspection NumberEquality
-            writer.postWrite(true, registeredType);
+            writer.postWrite(true, registeredType, false);
 
             // Update metadata if needed.
             int schemaId = writer.schemaId();

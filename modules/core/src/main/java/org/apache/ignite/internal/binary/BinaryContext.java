@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.binary;
 
+import java.io.Externalizable;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -256,6 +257,9 @@ public class BinaryContext {
     /** Compact footer flag. */
     private boolean compactFooter;
 
+    /** Externalizable binary flag. */
+    private boolean externalizableBinary;
+
     /** Object schemas. */
     private volatile Map<Integer, BinarySchemaRegistry> schemas;
 
@@ -377,11 +381,14 @@ public class BinaryContext {
             if (BinaryUtils.wrapTrees() && (cls == TreeMap.class || cls == TreeSet.class))
                 return false;
 
+            if (Externalizable.class.isAssignableFrom(cls) && isExternalizableBinary())
+                return false;
+
             return marshCtx.isSystemType(cls.getName()) || serializerForClass(cls) == null ||
                 QueryUtils.isGeometryClass(cls);
         }
         else
-            return desc.useOptimizedMarshaller() || desc.useCustomSerialization();
+            return desc.useOptimizedMarshaller();
     }
 
     /**
@@ -421,6 +428,7 @@ public class BinaryContext {
         );
 
         compactFooter = binaryCfg.isCompactFooter();
+        externalizableBinary = binaryCfg.isExternalizableBinary();
     }
 
     /**
@@ -1309,6 +1317,13 @@ public class BinaryContext {
      */
     public boolean isCompactFooter() {
         return compactFooter;
+    }
+
+    /**
+     * @return Whether the Externalizable objects should be marshal through Binary marshaller.
+     */
+    public boolean isExternalizableBinary() {
+        return externalizableBinary;
     }
 
     /**

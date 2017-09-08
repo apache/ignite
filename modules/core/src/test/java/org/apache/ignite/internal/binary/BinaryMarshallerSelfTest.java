@@ -692,7 +692,9 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         assertTrue(builder.build().hasField("simpl"));
 
-        assertEquals(obj.simpl, builder.getField("simpl"));
+        BinaryObjectBuilderImpl simpl = builder.getField("simpl");
+
+        assertEquals(obj.simpl, simpl.build().deserialize());
     }
 
     /**
@@ -714,15 +716,13 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         BinaryObject obj2 = builder.build();
 
-        assertEquals(map, obj2.field("simpl"));
-
-        assertEquals(map, obj2.toBuilder().getField("simpl"));
+        assertEquals(map.get(1), ((BinaryObject)((HashMap)obj2.field("simpl")).get(1)).deserialize());
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testwriteFieldByOrderWithExternalizable() throws Exception {
+    public void testWriteFieldByOrderWithExternalizable() throws Exception {
         BinaryMarshaller marsh = binaryMarshaller();
 
         SimpleEnclosingObject obj = new SimpleEnclosingObject();

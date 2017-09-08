@@ -166,9 +166,6 @@ public class GridBinaryMarshaller {
     public static final byte OBJ = (byte)103;
 
     /** */
-    public static final byte EXTERNALIZABLE = (byte)104;
-
-    /** */
     public static final byte USER_SET = -1;
 
     /** */
@@ -230,9 +227,6 @@ public class GridBinaryMarshaller {
 
     /** */
     public static final byte DFLT_HDR_LEN = 24;
-
-    /** */
-    public static final byte EXTERNALIZABLE_HDR_LEN = 9;
 
     /** */
     private final BinaryContext ctx;

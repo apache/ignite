@@ -106,6 +106,13 @@ public class BinarySerializationQuerySelfTest extends GridCommonAbstractTest {
 
             cfg.setBinaryConfiguration(binCfg);
         }
+        else {
+            BinaryConfiguration binCfg = new BinaryConfiguration();
+
+            binCfg.setExternalizableBinary(false);
+
+            cfg.setBinaryConfiguration(binCfg);
+        }
 
         CacheConfiguration cacheCfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 

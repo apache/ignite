@@ -42,9 +42,10 @@ import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryReflectiveSerializer;
 import org.apache.ignite.binary.BinarySerializer;
 import org.apache.ignite.binary.Binarylizable;
-import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
+import org.apache.ignite.cache.affinity.AffinityKey;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
+import org.apache.ignite.internal.processors.cache.GridCacheInternal;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -82,6 +83,9 @@ public class BinaryClassDescriptor {
 
     /** */
     private final boolean userType;
+
+    /** */
+    private final boolean internal;
 
     /** */
     private final int typeId;
@@ -167,9 +171,9 @@ public class BinaryClassDescriptor {
 
         // If serializer is not defined at this point, then we have to use OptimizedMarshaller.
         // But if class represents the Externalizable, then we have to use BinaryMarshaller.
-        if (serializer == null || isGeometryClass(cls)) {
+        if ((serializer == null || isGeometryClass(cls)) && !AffinityKey.class.isAssignableFrom(cls)) {
             useCustomSerialization = Externalizable.class.isAssignableFrom(cls);
-            useOptMarshaller = !useCustomSerialization;
+            useOptMarshaller = !useCustomSerialization || !ctx.isExternalizableBinary();
         }
         else {
             useOptMarshaller = false;
@@ -382,6 +386,8 @@ public class BinaryClassDescriptor {
         catch (IOException e) {
             throw new BinaryObjectException("Failed to compute serialVersionUID [typeName=" + typeName + ']', e);
         }
+
+        internal = GridCacheInternal.class.isAssignableFrom(cls);
     }
 
     /**
@@ -808,37 +814,26 @@ public class BinaryClassDescriptor {
                 break;
 
             case EXTERNALIZABLE:
-                if (writer.tryWriteAsHandle(obj))
-                    break;
+                if (preWrite(writer, obj)) {
+                    try {
+                        writer.rawWriter();
 
-                BinaryOutputStream out = writer.out();
+                        writer.writeShort(checksum);
 
-                int start = out.position();
+                        try {
+                            ((Externalizable)obj).writeExternal(writer);
+                        }
+                        catch (IOException e) {
+                            throw new BinaryObjectException("Failed to serialize externalizable object [typeName=" + typeName + ']', e);
+                        }
 
-                out.position(start + GridBinaryMarshaller.EXTERNALIZABLE_HDR_LEN);
-
-                if (!registered)
-                    writer.doWriteString(cls.getName());
-
-                writer.writeShort(checksum);
-
-                try {
-                    ((Externalizable)obj).writeExternal(writer);
+                        postWrite(writer);
+                        postWriteHashCode(writer, obj);
+                    }
+                    finally {
+                        writer.popSchema();
+                    }
                 }
-                catch (IOException e) {
-                    throw new BinaryObjectException("Failed to serialize externalizable object [typeName=" + typeName + ']', e);
-                }
-
-                // Actual write.
-                int retPos = out.position();
-
-                out.position(start);
-
-                out.unsafeWriteByte(GridBinaryMarshaller.EXTERNALIZABLE);
-                out.unsafeWriteInt(retPos - start);
-                out.unsafeWriteInt(registered ? typeId : GridBinaryMarshaller.UNREGISTERED_TYPE_ID);
-
-                out.position(retPos);
 
                 break;
 
@@ -983,7 +978,7 @@ public class BinaryClassDescriptor {
      * @param writer Writer.
      */
     private void postWrite(BinaryWriterExImpl writer) {
-        writer.postWrite(userType, registered);
+        writer.postWrite(userType, registered, internal);
     }
 
     /**

@@ -33,6 +33,9 @@ public class BinaryConfiguration {
     /** Default compact footer flag setting. */
     public static final boolean DFLT_COMPACT_FOOTER = true;
 
+    /** Default compact footer flag setting. */
+    public static final boolean DFLT_EXTERNALIZABLE_BINARY = true;
+
     /** ID mapper. */
     private BinaryIdMapper idMapper;
 
@@ -47,6 +50,9 @@ public class BinaryConfiguration {
 
     /** Compact footer flag. */
     private boolean compactFooter = DFLT_COMPACT_FOOTER;
+
+    /** Flag indicating that the Externalizable objects marshal through {@code BinaryMarshaller}. */
+    private boolean externalizableBinary = DFLT_EXTERNALIZABLE_BINARY;
 
     /**
      * Sets class names of binary objects explicitly.
@@ -174,6 +180,38 @@ public class BinaryConfiguration {
      */
     public BinaryConfiguration setCompactFooter(boolean compactFooter) {
         this.compactFooter = compactFooter;
+
+        return this;
+    }
+
+    /**
+     * Get whether to write the Externalizable objects through {@code BinaryMarshaller}. When enabled, Ignite will
+     * marshal the Externalizable object through BinaryMarshaller. Unmarshalling return Binary object.
+     * This increases serialization performance but disabled access by fields in queries.
+     *
+     * <p>
+     * <b>WARNING!</b> This mode should be disabled when already serialized data can be taken from some external
+     * sources (e.g. cache store which stores data in binary form, data center replication, etc.). Otherwise binary
+     * objects without any associated metadata could appear in the cluster and Ignite will not be able to deserialize
+     * it.
+     * <p>
+     * Defaults to {@link #DFLT_EXTERNALIZABLE_BINARY}.
+     *
+     * @return Whether to marshal the Externalizable objects through {@code BinaryMarshaller}.
+     */
+    public boolean isExternalizableBinary() {
+        return externalizableBinary;
+    }
+
+    /**
+     * Set whether to marshal the Externalizable objects through {@code BinaryMarshaller}.
+     * See {@link #isExternalizableBinary()} for more info.
+     *
+     * @param externalizableBinary Whether to marshal the Externalizable objects through {@code BinaryMarshaller}.
+     * @return {@code this} for chaining.
+     */
+    public BinaryConfiguration setExternalizableBinary(boolean externalizableBinary) {
+        this.externalizableBinary = externalizableBinary;
 
         return this;
     }
