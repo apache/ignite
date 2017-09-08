@@ -45,9 +45,6 @@ public class CacheQueryPartitionInfo {
     private final String cacheName;
 
     /** */
-    private final String schemaName;
-
-    /** */
     private final String tableName;
 
     /** */
@@ -59,18 +56,16 @@ public class CacheQueryPartitionInfo {
     /**
      * @param partId Partition id, or -1 if parameter binding required.
      * @param cacheName Cache name required for partition calculation.
-     * @param schemaName Tables schema name for proper type conversion.
      * @param tableName Table name required for proper type conversion.
      * @param dataType Required data type id for the query parameter.
      * @param paramIdx Query parameter index required for partition calculation.
      */
-    public CacheQueryPartitionInfo(int partId, String cacheName, String schemaName, String tableName, int dataType, int paramIdx) {
+    public CacheQueryPartitionInfo(int partId, String cacheName, String tableName, int dataType, int paramIdx) {
         // In case partition is not known, both cacheName and tableName must be provided.
         assert (partId >= 0) ^ ((cacheName != null) && (tableName != null));
 
         this.partId = partId;
         this.cacheName = cacheName;
-        this.schemaName = schemaName;
         this.tableName = tableName;
         this.dataType = dataType;
         this.paramIdx = paramIdx;
@@ -88,13 +83,6 @@ public class CacheQueryPartitionInfo {
      */
     public String cacheName() {
         return cacheName;
-    }
-
-    /**
-     * @return Schema name.
-     */
-    public String schemaName() {
-        return schemaName;
     }
 
     /**
