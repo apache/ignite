@@ -223,13 +223,21 @@ public class OdbcRequestHandler implements SqlListenerRequestHandler {
             if (curLst.size() > 1)
                 throw new IgniteSQLException("Multiple statements queries are not supported");
 
-            QueryCursor qryCur = curLst.get(0);
+            QueryCursorImpl<List<?>> qryCur = (QueryCursorImpl<List<?>>)curLst.get(0);
 
-            qryCursors.put(qryId, new IgniteBiTuple<QueryCursor, Iterator>(qryCur, null));
+            long rowsAffected = 0;
+
+            if (!qryCur.isQuery()) {
+                rowsAffected = getRowsAffected(qryCur);
+
+                qryCur.close();
+            }
+            else
+                qryCursors.put(qryId, new IgniteBiTuple<QueryCursor, Iterator>(qryCur, null));
 
             List<?> fieldsMeta = ((QueryCursorImpl) qryCur).fieldsMeta();
 
-            OdbcQueryExecuteResult res = new OdbcQueryExecuteResult(qryId, convertMetadata(fieldsMeta));
+            OdbcQueryExecuteResult res = new OdbcQueryExecuteResult(qryId, convertMetadata(fieldsMeta), rowsAffected);
 
             return new OdbcResponse(res);
         }
