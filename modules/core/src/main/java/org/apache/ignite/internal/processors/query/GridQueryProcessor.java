@@ -2591,16 +2591,14 @@ private IgniteInternalFuture<Object> rebuildIndexesFromHash(@Nullable final Stri
      * Performs validation of provided key and value against configured constraints.
      * Throws runtime exception if validation fails.
      *
-     * @param cacheName Name of the cache.
+     * @param coctx Cache object context.
      * @param key Key.
      * @param val Value.
      * @throws IgniteCheckedException, If error happens.
      */
-    public void validateKeyAndValue(String cacheName, KeyCacheObject key, CacheObject val)
+    public void validateKeyAndValue(CacheObjectContext coctx, KeyCacheObject key, CacheObject val)
         throws IgniteCheckedException {
-        CacheObjectContext coctx = cacheObjectContext(cacheName);
-
-        QueryTypeDescriptorImpl desc = typeByValue(cacheName, coctx, key, val, false);
+        QueryTypeDescriptorImpl desc = typeByValue(coctx.cacheName(), coctx, key, val, false);
 
         if (desc == null)
             return;
