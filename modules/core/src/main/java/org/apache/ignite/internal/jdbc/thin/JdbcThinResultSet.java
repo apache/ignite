@@ -236,10 +236,10 @@ public class JdbcThinResultSet implements ResultSet {
 
     /** {@inheritDoc} */
     @Override public void close() throws SQLException {
-        if (closeStmt)
-            stmt.close();
-
         close0();
+
+        if (closeStmt)
+            stmt.closeIfAllResultsClosed();
     }
 
     /**

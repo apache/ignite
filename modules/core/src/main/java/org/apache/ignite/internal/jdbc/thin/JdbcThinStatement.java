@@ -645,4 +645,24 @@ public class JdbcThinStatement implements Statement {
         if (isClosed())
             throw new SQLException("Statement is closed.");
     }
+
+    /**
+     * Used by statement on closeOnCompletion mode.
+     * @throws SQLException On error.
+     */
+    void closeIfAllResultsClosed() throws SQLException {
+        if (isClosed())
+            return;
+
+        boolean allRsClosed = true;
+        if (resultSets != null) {
+            for (JdbcThinResultSet rs : resultSets) {
+                if (!rs.isClosed())
+                    allRsClosed = false;
+            }
+        }
+
+        if (allRsClosed)
+            close();
+    }
 }

@@ -445,12 +445,16 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
 
         int stmtCnt = 10;
 
-        StringBuilder sql = new StringBuilder("create table test(ID int primary key, NAME varchar(20)); ");
+        StringBuilder sql = new StringBuilder("drop table if exists test; create table test(ID int primary key, NAME varchar(20)); ");
 
         for (int i = 0; i < stmtCnt; ++i)
             sql.append("insert into test (ID, NAME) values (" + i + ", 'name_" + i +"'); ");
 
         assert !stmt.execute(sql.toString());
+
+        // DROP TABLE statement
+        assert stmt.getResultSet() == null;
+        assert stmt.getUpdateCount() == 0;
 
         // CREATE TABLE statement
         assert stmt.getResultSet() == null;
@@ -474,7 +478,7 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
 
         int stmtCnt = 10;
 
-        StringBuilder sql = new StringBuilder("create table test(ID int primary key, NAME varchar(20)); ");
+        StringBuilder sql = new StringBuilder("drop table if exists test; create table test(ID int primary key, NAME varchar(20)); ");
 
         for (int i = 0; i < stmtCnt; ++i) {
             if (i % 2 == 0)
@@ -484,6 +488,10 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
         }
 
         assert !stmt.execute(sql.toString());
+
+        // DROP TABLE statement
+        assert stmt.getResultSet() == null;
+        assert stmt.getUpdateCount() == 0;
 
         // CREATE TABLE statement
         assert stmt.getResultSet() == null;
