@@ -174,8 +174,8 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             foreach (var pair in vals)
             {
-                writer.Write(pair.Key);
-                writer.Write(pair.Value);
+                writer.WriteObjectDetached(pair.Key);
+                writer.WriteObjectDetached(pair.Value);
 
                 cnt++;
             }

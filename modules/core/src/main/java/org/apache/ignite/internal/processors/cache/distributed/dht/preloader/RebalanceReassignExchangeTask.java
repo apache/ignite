@@ -35,6 +35,11 @@ public class RebalanceReassignExchangeTask implements CachePartitionExchangeWork
         this.exchId = exchId;
     }
 
+    /** {@inheritDoc} */
+    @Override public boolean skipForExchangeMerge() {
+        return true;
+    }
+
     /**
      * @return Exchange ID.
      */

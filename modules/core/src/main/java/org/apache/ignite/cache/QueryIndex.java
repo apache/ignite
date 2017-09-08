@@ -38,6 +38,9 @@ public class QueryIndex implements Serializable {
     /** */
     private static final QueryIndexType DFLT_IDX_TYP = QueryIndexType.SORTED;
 
+    /** Default index inline size. */
+    public static final int DFLT_INLINE_SIZE = -1;
+
     /** Index name. */
     private String name;
 
@@ -49,7 +52,7 @@ public class QueryIndex implements Serializable {
     private QueryIndexType type = DFLT_IDX_TYP;
 
     /** */
-    private int inlineSize = -1;
+    private int inlineSize = DFLT_INLINE_SIZE;
 
     /**
      * Creates an empty index. Should be populated via setters.
@@ -261,9 +264,12 @@ public class QueryIndex implements Serializable {
      * Sets inline size.
      *
      * @param inlineSize Inline size.
+     * @return {@code this} for chaining.
      */
-    public void setInlineSize(int inlineSize) {
+    public QueryIndex setInlineSize(int inlineSize) {
         this.inlineSize = inlineSize;
+
+        return this;
     }
 
     /** {@inheritDoc} */

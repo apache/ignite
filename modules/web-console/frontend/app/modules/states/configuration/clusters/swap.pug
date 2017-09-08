@@ -27,7 +27,7 @@ include /app/helpers/jade/mixins
         label Swap
         ignite-form-field-tooltip.tipLabel
             | Settings for overflow data to disk if it cannot fit in memory#[br]
-            | #[a(href="https://apacheignite.readme.io/docs/off-heap-memory#swap-space" target="_blank") More info]
+            | #[a(href="https://apacheignite.readme.io/v1.9/docs/off-heap-memory#swap-space" target="_blank") More info]
         ignite-form-revert
     .panel-collapse(role='tabpanel' bs-collapse-target id=`${form}`)
         .panel-body(ng-if=`$ctrl.available(["1.0.0", "2.0.0"]) && ui.isPanelLoaded('${form}')`)

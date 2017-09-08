@@ -30,7 +30,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -43,9 +42,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.zip.CRC32;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteException;
@@ -55,6 +52,8 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.MemoryConfiguration;
+import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.ClusterMetricsSnapshot;
@@ -64,7 +63,6 @@ import org.apache.ignite.internal.GridNodeOrderComparator;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
@@ -76,6 +74,7 @@ import org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
@@ -83,6 +82,7 @@ import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
 import org.apache.ignite.internal.processors.jobmetrics.GridJobMetrics;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
+import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -140,7 +140,9 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_LATE_AFFINITY
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_BINARY_STRING_SER_VER_2;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_DFLT_SUID;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_OFFHEAP_SIZE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PEER_CLASSLOADING;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PHY_RAM;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_COMPATIBILITY_MODE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SERVICES_COMPATIBILITY_MODE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_USER_NAME;
@@ -205,7 +207,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     private IgniteThread segChkThread;
 
     /** Last logged topology. */
-    private final AtomicLong lastLoggedTop = new AtomicLong();
+    private final GridAtomicLong lastLoggedTop = new GridAtomicLong();
 
     /** Local node. */
     private ClusterNode locNode;
@@ -484,7 +486,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             // No-op.
         }
 
-        ctx.addNodeAttribute(IgniteNodeAttributes.ATTR_PHY_RAM, totSysMemory);
+        ctx.addNodeAttribute(ATTR_PHY_RAM, totSysMemory);
+        ctx.addNodeAttribute(ATTR_OFFHEAP_SIZE, requiredOffheap());
 
         DiscoverySpi spi = getSpi();
 
@@ -620,7 +623,10 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 ChangeGlobalStateFinishMessage stateFinishMsg = null;
 
                 if (locJoinEvt) {
-                    discoCache = createDiscoCache(ctx.state().clusterState(), locNode, topSnapshot);
+                    discoCache = createDiscoCache(new AffinityTopologyVersion(topVer, minorTopVer),
+                        ctx.state().clusterState(),
+                        locNode,
+                        topSnapshot);
 
                     transitionWaitFut = ctx.state().onLocalJoin(discoCache);
                 }
@@ -643,7 +649,10 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     else if (customMsg instanceof ChangeGlobalStateFinishMessage) {
                         ctx.state().onStateFinishMessage((ChangeGlobalStateFinishMessage)customMsg);
 
-                        discoCache = createDiscoCache(ctx.state().clusterState(), locNode, topSnapshot);
+                        discoCache = createDiscoCache(topSnap.get().topVer,
+                            ctx.state().clusterState(),
+                            locNode,
+                            topSnapshot);
 
                         topSnap.set(new Snapshot(topSnap.get().topVer, discoCache));
 
@@ -690,8 +699,12 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 // There is no race possible between history maintenance and concurrent discovery
                 // event notifications, since SPI notifies manager about all events from this listener.
                 if (verChanged) {
-                    if (discoCache == null)
-                        discoCache = createDiscoCache(ctx.state().clusterState(), locNode, topSnapshot);
+                    if (discoCache == null) {
+                        discoCache = createDiscoCache(nextTopVer,
+                            ctx.state().clusterState(),
+                            locNode,
+                            topSnapshot);
+                    }
 
                     discoCacheHist.put(nextTopVer, discoCache);
 
@@ -762,7 +775,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     topHist.clear();
 
                     topSnap.set(new Snapshot(AffinityTopologyVersion.ZERO,
-                        createDiscoCache(ctx.state().clusterState(), locNode, Collections.<ClusterNode>emptySet())));
+                        createDiscoCache(AffinityTopologyVersion.ZERO, ctx.state().clusterState(), locNode, Collections.<ClusterNode>emptySet())));
                 }
                 else if (type == EVT_CLIENT_NODE_RECONNECTED) {
                     assert locNode.isClient() : locNode;
@@ -880,8 +893,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         locNode = spi.getLocalNode();
 
         checkAttributes(discoCache().remoteNodes());
-
-        ctx.service().initCompatibilityMode(discoCache().remoteNodes());
 
         // Start discovery worker.
         new IgniteThread(discoWrk).start();
@@ -1449,11 +1460,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         Collection<ClusterNode> allNodes = discoCache.allNodes();
 
-        long hash = topologyHash(allNodes);
-
         // Prevent ack-ing topology for the same topology.
         // Can happen only during node startup.
-        if (throttle && lastLoggedTop.getAndSet(hash) == hash)
+        if (throttle && !lastLoggedTop.setIfGreater(topVer))
             return;
 
         int totalCpus = cpus(allNodes);
@@ -1474,8 +1483,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 (ctx.igniteInstanceName() == null ? "default" : ctx.igniteInstanceName()) + U.nl() +
                 ">>> Number of server nodes: " + srvNodes.size() + U.nl() +
                 ">>> Number of client nodes: " + clientNodes.size() + U.nl() +
-                (discoOrdered ? ">>> Topology version: " + topVer + U.nl() : "") +
-                ">>> Topology hash: 0x" + Long.toHexString(hash).toUpperCase() + U.nl();
+                (discoOrdered ? ">>> Topology version: " + topVer + U.nl() : "");
 
             dbg += ">>> Local: " +
                 locNode.id().toString().toUpperCase() + ", " +
@@ -1507,6 +1515,46 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         }
         else if (log.isInfoEnabled())
             log.info(topologySnapshotMessage(topVer, srvNodes.size(), clientNodes.size(), totalCpus, heap));
+    }
+
+    /**
+     * @return Required offheap memory in bytes.
+     */
+    private long requiredOffheap() {
+        if(ctx.config().isClientMode())
+            return 0;
+
+        MemoryConfiguration memCfg = ctx.config().getMemoryConfiguration();
+
+        assert memCfg != null;
+
+        long res = memCfg.getSystemCacheMaxSize();
+
+        // Add memory policies.
+        MemoryPolicyConfiguration[] memPlcCfgs = memCfg.getMemoryPolicies();
+
+        if (memPlcCfgs != null) {
+            String dfltMemPlcName = memCfg.getDefaultMemoryPolicyName();
+
+            boolean customDflt = false;
+
+            for (MemoryPolicyConfiguration memPlcCfg : memPlcCfgs) {
+                if(F.eq(dfltMemPlcName, memPlcCfg.getName()))
+                    customDflt = true;
+
+                res += memPlcCfg.getMaxSize();
+            }
+
+            if(!customDflt)
+                res += memCfg.getDefaultMemoryPolicySize();
+        }
+        else
+            res += memCfg.getDefaultMemoryPolicySize();
+
+        // Add persistence (if any).
+        res += GridCacheDatabaseSharedManager.checkpointBufferSize(ctx.config());
+
+        return res;
     }
 
     /**
@@ -1686,35 +1734,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     }
 
     /**
-     * Gets topology hash for given set of nodes.
-     *
-     * @param nodes Subset of grid nodes for hashing.
-     * @return Hash for given topology.
-     */
-    public long topologyHash(Iterable<? extends ClusterNode> nodes) {
-        assert nodes != null;
-
-        Iterator<? extends ClusterNode> iter = nodes.iterator();
-
-        if (!iter.hasNext())
-            return 0; // Special case.
-
-        List<String> uids = new ArrayList<>();
-
-        for (ClusterNode node : nodes)
-            uids.add(node.id().toString());
-
-        Collections.sort(uids);
-
-        CRC32 hash = new CRC32();
-
-        for (String uuid : uids)
-            hash.update(uuid.getBytes());
-
-        return hash.getValue();
-    }
-
-    /**
      * Gets future that will be completed when current topology version becomes greater or equal to argument passed.
      *
      * @param awaitVer Topology version to await.
@@ -1826,42 +1845,21 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     }
 
     /**
-     * Gets cache nodes for cache with given ID.
-     *
-     * @param cacheId Cache ID.
-     * @param topVer Topology version.
-     * @return Collection of cache nodes.
-     */
-    public Collection<ClusterNode> cacheNodes(int cacheId, AffinityTopologyVersion topVer) {
-        return resolveDiscoCache(cacheId, topVer).cacheNodes(cacheId);
-    }
-
-    /**
-     * Gets all nodes with at least one cache configured.
-     *
-     * @param topVer Topology version.
-     * @return Collection of cache nodes.
-     */
-    public Collection<ClusterNode> cacheNodes(AffinityTopologyVersion topVer) {
-        return resolveDiscoCache(CU.cacheId(null), topVer).allNodesWithCaches();
-    }
-
-    /**
      * Gets cache remote nodes for cache with given name.
      *
      * @param topVer Topology version.
      * @return Collection of cache nodes.
      */
-    public Collection<ClusterNode> remoteCacheNodes(AffinityTopologyVersion topVer) {
-        return resolveDiscoCache(CU.cacheId(null), topVer).remoteNodesWithCaches();
+    public Collection<ClusterNode> remoteAliveNodesWithCaches(AffinityTopologyVersion topVer) {
+        return resolveDiscoCache(CU.cacheId(null), topVer).remoteAliveNodesWithCaches();
     }
 
     /**
      * @param topVer Topology version (maximum allowed node order).
      * @return Oldest alive server nodes with at least one cache configured.
      */
-    @Nullable public ClusterNode oldestAliveCacheServerNode(AffinityTopologyVersion topVer) {
-        return resolveDiscoCache(CU.cacheId(null), topVer).oldestAliveServerNodeWithCache();
+    @Nullable public ClusterNode oldestAliveServerNode(AffinityTopologyVersion topVer) {
+        return resolveDiscoCache(CU.cacheId(null), topVer).oldestAliveServerNode();
     }
 
     /**
@@ -2180,12 +2178,15 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     /**
      * Called from discovery thread.
      *
+     * @param topVer Topology version.
      * @param state Current state.
      * @param loc Local node.
      * @param topSnapshot Topology snapshot.
      * @return Newly created discovery cache.
      */
-    @NotNull private DiscoCache createDiscoCache(DiscoveryDataClusterState state,
+    @NotNull private DiscoCache createDiscoCache(
+        AffinityTopologyVersion topVer,
+        DiscoveryDataClusterState state,
         ClusterNode loc,
         Collection<ClusterNode> topSnapshot) {
         HashSet<UUID> alives = U.newHashSet(topSnapshot.size());
@@ -2221,9 +2222,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         Map<Integer, List<ClusterNode>> allCacheNodes = U.newHashMap(allNodes.size());
         Map<Integer, List<ClusterNode>> cacheGrpAffNodes = U.newHashMap(allNodes.size());
 
-        Set<ClusterNode> allNodesWithCaches = new TreeSet<>(GridNodeOrderComparator.INSTANCE);
         Set<ClusterNode> rmtNodesWithCaches = new TreeSet<>(GridNodeOrderComparator.INSTANCE);
-        Set<ClusterNode> srvNodesWithCaches = new TreeSet<>(GridNodeOrderComparator.INSTANCE);
 
         for (ClusterNode node : allNodes) {
             assert node.order() != 0 : "Invalid node order [locNode=" + loc + ", node=" + node + ']';
@@ -2248,11 +2247,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 CachePredicate filter = entry.getValue();
 
                 if (filter.cacheNode(node)) {
-                    allNodesWithCaches.add(node);
-
-                    if(!CU.clientNode(node))
-                        srvNodesWithCaches.add(node);
-
                     if (!node.isLocal())
                         rmtNodesWithCaches.add(node);
 
@@ -2262,14 +2256,13 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         }
 
         return new DiscoCache(
+            topVer,
             state,
             loc,
             Collections.unmodifiableList(rmtNodes),
             Collections.unmodifiableList(allNodes),
             Collections.unmodifiableList(srvNodes),
             Collections.unmodifiableList(daemonNodes),
-            U.sealList(srvNodesWithCaches),
-            U.sealList(allNodesWithCaches),
             U.sealList(rmtNodesWithCaches),
             Collections.unmodifiableMap(allCacheNodes),
             Collections.unmodifiableMap(cacheGrpAffNodes),
@@ -2404,7 +2397,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                         discoWrk.addEvent(EVT_NODE_SEGMENTED,
                             AffinityTopologyVersion.NONE,
                             node,
-                            createDiscoCache(null, node, empty),
+                            createDiscoCache(AffinityTopologyVersion.NONE, null, node, empty),
                             empty,
                             null);
 

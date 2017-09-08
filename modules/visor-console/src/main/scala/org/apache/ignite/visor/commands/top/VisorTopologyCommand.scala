@@ -48,6 +48,8 @@ import scala.util.control.Breaks._
  * ====Specification====
  * {{{
  *     top "{-c1=e1<num> -c2=e2<num> ... -ck=ek<num>} {-h=<host1> ... -h=<hostk>} {-a}"
+ *     top -activate
+ *     top -deactivate
  * }}}
  *
  * ====Arguments====
@@ -87,6 +89,10 @@ import scala.util.control.Breaks._
  *     -a
  *         This defines whether to show a separate table of nodes
  *         with detail per-node information.
+ *     -activate
+ *         Activate cluster.
+ *     -deactivate
+ *         Deactivate cluster.
  * }}}
  *
  * ====Examples====
@@ -99,6 +105,10 @@ import scala.util.control.Breaks._
  *         Prints topology for provided hosts.
  *     top
  *         Prints full topology.
+ *     top -activate
+ *         Activate cluster.
+ *     top -deactivate
+ *         Deactivate cluster.
  * }}}
  */
 class VisorTopologyCommand extends VisorConsoleCommand {
@@ -140,47 +150,53 @@ class VisorTopologyCommand extends VisorConsoleCommand {
         else {
             val argLst = parseArgs(args)
 
-            val hosts = argLst.filter(_._1 == "h").map((a: Arg) =>
-                try
-                    InetAddress.getByName(a._2).getHostAddress
-                catch {
-                    case e: UnknownHostException => scold("Unknown host: " + a._2).^^
+            if (hasArgFlag("activate", argLst))
+                ignite.active(true)
+            else if (hasArgFlag("deactivate", argLst))
+                ignite.active(false)
+            else {
+                val hosts = argLst.filter(_._1 == "h").map((a: Arg) =>
+                    try
+                        InetAddress.getByName(a._2).getHostAddress
+                    catch {
+                        case e: UnknownHostException => scold("Unknown host: " + a._2).^^
 
-                    "" // Never happens.
-                }
-            ).filter(!_.isEmpty).toSet
-
-            val all = hasArgFlag("a", argLst)
-
-            var f: NodeFilter = (ClusterNode) => true
-
-            try {
-                argLst foreach (arg => {
-                    val (n, v) = arg
-
-                    n match {
-                        case "cc" if v != null => f = make(v, f, _.metrics.getTotalCpus)
-                        case "cl" if v != null => f = make(v, f, (n: ClusterNode) =>
-                            (n.metrics.getCurrentCpuLoad * 100).toLong)
-                        case "aj" if v != null => f = make(v, f, _.metrics.getCurrentActiveJobs)
-                        case "cj" if v != null => f = make(v, f, _.metrics.getCurrentCancelledJobs)
-                        case "tc" if v != null => f = make(v, f, _.metrics.getCurrentThreadCount)
-                        case "ut" if v != null => f = make(v, f, _.metrics.getUpTime)
-                        case "je" if v != null => f = make(v, f, _.metrics.getCurrentJobExecuteTime)
-                        case "jw" if v != null => f = make(v, f, _.metrics.getCurrentJobWaitTime)
-                        case "wj" if v != null => f = make(v, f, _.metrics.getCurrentWaitingJobs)
-                        case "rj" if v != null => f = make(v, f, _.metrics.getCurrentRejectedJobs)
-                        case "hu" if v != null => f = make(v, f, _.metrics.getHeapMemoryUsed)
-                        case "hm" if v != null => f = make(v, f, _.metrics.getHeapMemoryMaximum)
-                        case _ => ()
+                            "" // Never happens.
                     }
-                })
+                ).filter(!_.isEmpty).toSet
 
-                show(n => f(n), hosts, all)
-            }
-            catch {
-                case e: NumberFormatException => scold(e)
-                case e: IgniteException => scold(e)
+                val all = hasArgFlag("a", argLst)
+
+                var f: NodeFilter = (ClusterNode) => true
+
+                try {
+                    argLst foreach (arg => {
+                        val (n, v) = arg
+
+                        n match {
+                            case "cc" if v != null => f = make(v, f, _.metrics.getTotalCpus)
+                            case "cl" if v != null => f = make(v, f, (n: ClusterNode) =>
+                                (n.metrics.getCurrentCpuLoad * 100).toLong)
+                            case "aj" if v != null => f = make(v, f, _.metrics.getCurrentActiveJobs)
+                            case "cj" if v != null => f = make(v, f, _.metrics.getCurrentCancelledJobs)
+                            case "tc" if v != null => f = make(v, f, _.metrics.getCurrentThreadCount)
+                            case "ut" if v != null => f = make(v, f, _.metrics.getUpTime)
+                            case "je" if v != null => f = make(v, f, _.metrics.getCurrentJobExecuteTime)
+                            case "jw" if v != null => f = make(v, f, _.metrics.getCurrentJobWaitTime)
+                            case "wj" if v != null => f = make(v, f, _.metrics.getCurrentWaitingJobs)
+                            case "rj" if v != null => f = make(v, f, _.metrics.getCurrentRejectedJobs)
+                            case "hu" if v != null => f = make(v, f, _.metrics.getHeapMemoryUsed)
+                            case "hm" if v != null => f = make(v, f, _.metrics.getHeapMemoryMaximum)
+                            case _ => ()
+                        }
+                    })
+
+                    show(n => f(n), hosts, all)
+                }
+                catch {
+                    case e: NumberFormatException => scold(e)
+                    case e: IgniteException => scold(e)
+                }
             }
         }
     }
@@ -322,6 +338,7 @@ class VisorTopologyCommand extends VisorConsoleCommand {
 
         val sumT = VisorTextTable()
 
+        sumT += ("Active", ignite.active)
         sumT += ("Total hosts", U.neighborhood(nodes).size)
         sumT += ("Total nodes", m.getTotalNodes)
         sumT += ("Total CPUs", m.getTotalCpus)
@@ -348,7 +365,9 @@ object VisorTopologyCommand {
         name = "top",
         shortInfo = "Prints current topology.",
         spec = List(
-            "top {-c1=e1<num> -c2=e2<num> ... -ck=ek<num>} {-h=<host1> ... -h=<hostk>} {-a}"
+            "top {-c1=e1<num> -c2=e2<num> ... -ck=ek<num>} {-h=<host1> ... -h=<hostk>} {-a}",
+            "top -activate",
+            "top -deactivate"
         ),
         args = List(
             "-ck=ek<num>" -> List(
@@ -388,6 +407,12 @@ object VisorTopologyCommand {
             "-a" -> List(
                 "This defines whether to show a separate table of nodes",
                 "with detail per-node information."
+            ),
+            "-activate" -> List(
+                "Activate cluster."
+            ),
+            "-deactivate" -> List(
+                "Deactivate cluster."
             )
         ),
         examples = List(
@@ -398,7 +423,11 @@ object VisorTopologyCommand {
             "top -h=10.34.2.122 -h=10.65.3.11" ->
                 "Prints topology for provided hosts.",
             "top" ->
-                "Prints full topology."
+                "Prints full topology.",
+            "top -activate" ->
+                "Activate cluster.",
+            "top -deactivate" ->
+                "Deactivate cluster."
         ),
         emptyArgs = cmd.top,
         withArgs = cmd.top

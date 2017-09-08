@@ -57,6 +57,8 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.net.ssl.SSLException;
+import javax.net.ssl.SSLServerSocket;
+import javax.net.ssl.SSLSocket;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -1804,6 +1806,22 @@ class ServerImpl extends TcpDiscoveryImpl {
     }
 
     /**
+     * Trying get node in any state (visible or not)
+     * @param nodeId Node id.
+     */
+    ClusterNode getNode0(UUID nodeId) {
+        assert nodeId != null;
+
+        UUID locNodeId0 = getLocalNodeId();
+
+        if (locNodeId0 != null && locNodeId0.equals(nodeId))
+            // Return local node directly.
+            return locNode;
+
+        return ring.node(nodeId);
+    }
+
+    /**
      * Thread that cleans IP finder and keeps it in the correct state, unregistering
      * addresses of the nodes that has left the topology.
      * <p>
@@ -3516,7 +3534,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                                 try {
                                     trySendMessageDirectly(node,
-                                        new TcpDiscoveryCheckFailedMessage(locNodeId, err.sendMessage()));
+                                        new TcpDiscoveryCheckFailedMessage(err.nodeId(), err.sendMessage()));
                                 }
                                 catch (IgniteSpiException e) {
                                     if (log.isDebugEnabled())
@@ -5561,8 +5579,14 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             for (port = spi.locPort; port <= lastPort; port++) {
                 try {
-                    if (spi.isSslEnabled())
-                        srvrSock = spi.sslSrvSockFactory.createServerSocket(port, 0, spi.locHost);
+                    if (spi.isSslEnabled()) {
+                        SSLServerSocket sslSock = (SSLServerSocket)spi.sslSrvSockFactory
+                            .createServerSocket(port, 0, spi.locHost);
+
+                        sslSock.setNeedClientAuth(true);
+
+                        srvrSock = sslSock;
+                    }
                     else
                         srvrSock = new ServerSocket(port, 0, spi.locHost);
 
@@ -5769,7 +5793,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                             spi.writeToSocket(sock, res, timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
 
-                            sock.shutdownOutput();
+                            if (!(sock instanceof SSLSocket))
+                                sock.shutdownOutput();
 
                             if (log.isInfoEnabled())
                                 log.info("Finished writing ping response " + "[rmtNodeId=" + msg.creatorNodeId() +
@@ -6047,6 +6072,20 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 }
                                 else {
                                     ignored = true;
+
+                                    ClientMessageWorker worker = clientMsgWorkers.get(msg.creatorNodeId());
+
+                                    if (worker != null) {
+                                        msg.verify(getLocalNodeId());
+
+                                        worker.addMessage(msg);
+                                    }
+                                    else {
+                                        if (log.isDebugEnabled()) {
+                                            log.debug("Failed to find client message worker " +
+                                                "[clientNode=" + msg.creatorNodeId() + ']');
+                                        }
+                                    }
 
                                     state = spiState;
                                 }
