@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.platform.client;
 
-import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.processors.odbc.SqlListenerRequest;
 import org.apache.ignite.internal.processors.odbc.SqlListenerRequestHandler;
@@ -35,7 +34,7 @@ public class ClientRequestHandler implements SqlListenerRequestHandler {
      *
      * @param ctx Kernal context.
      */
-    public ClientRequestHandler(ClientConnectionContext ctx) {
+    ClientRequestHandler(ClientConnectionContext ctx) {
         assert ctx != null;
 
         this.ctx = ctx;
