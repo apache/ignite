@@ -363,6 +363,7 @@ public class GridCacheSqlQuery implements Message {
 
     /**
      * @param hasSubQries Flag indicating that query contains sub-queries.
+     *
      * @return {@code this}.
      */
     public GridCacheSqlQuery hasSubQueries(boolean hasSubQries) {
