@@ -91,7 +91,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     protected MemoryPolicy dfltMemPlc;
 
     /** */
-    private Map<String, FreeListImpl> freeListMap;
+    protected Map<String, FreeListImpl> freeListMap;
 
     /** */
     private FreeListImpl dfltFreeList;

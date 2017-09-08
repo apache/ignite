@@ -862,7 +862,7 @@ public class CacheGroupContext {
         else
             preldr = new GridCachePreloaderAdapter(this);
 
-        if (ctx.kernalContext().config().getPersistentStoreConfiguration() != null) {
+        if (ctx.kernalContext().config().getPersistentStoreConfiguration() != null && memPlc.config().isPersistenceEnabled()) {
             try {
                 offheapMgr = new GridCacheOffheapManager();
             }

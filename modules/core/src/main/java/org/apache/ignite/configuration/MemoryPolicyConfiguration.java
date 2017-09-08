@@ -121,6 +121,11 @@ public final class MemoryPolicyConfiguration implements Serializable {
     private long rateTimeInterval = DFLT_RATE_TIME_INTERVAL_MILLIS;
 
     /**
+     * Flag to enable Ignite Native Persistence.
+     */
+    private boolean persistenceEnabled = true;
+
+    /**
      * Gets memory policy name.
      *
      * @return Memory policy name.
@@ -309,6 +314,24 @@ public final class MemoryPolicyConfiguration implements Serializable {
         this.metricsEnabled = metricsEnabled;
 
         return this;
+    }
+
+    /**
+     * Gets whether Ignite Native Persistence is enabled for this memory policy.
+     *
+     * @return Persistence enabled flag.
+     */
+    public boolean isPersistenceEnabled() {
+        return persistenceEnabled;
+    }
+
+    /**
+     * Sets persistence enabled flag.
+     *
+     * @param persistenceEnabled Persistence enabled flag.
+     */
+    public void setPersistenceEnabled(boolean persistenceEnabled) {
+        this.persistenceEnabled = persistenceEnabled;
     }
 
     /**
