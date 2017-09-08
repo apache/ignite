@@ -23,8 +23,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.QueryIndexType;
@@ -106,7 +106,7 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     private volatile boolean obsolete;
 
     /** */
-    private Set<GridQueryProperty> validateProps;
+    private List<GridQueryProperty> validateProps;
 
     /**
      * Constructor.
@@ -376,7 +376,7 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
 
         if (prop.notNull()) {
             if (validateProps == null)
-                validateProps = new HashSet<>();
+                validateProps = new ArrayList<>();
 
             validateProps.add(prop);
         }
@@ -490,7 +490,11 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
         if (validateProps == null)
             return;
 
-        for (GridQueryProperty prop : validateProps) {
+        final int size = validateProps.size();
+
+        for (int idx = 0; idx < size; ++idx) {
+            GridQueryProperty prop = validateProps.get(idx);
+
             if (prop.value(key, val) == null)
                 throw new IgniteSQLException("Null value is not allowed for field '" + prop.name() + "'",
                     IgniteQueryErrorCode.NULL_VALUE);
