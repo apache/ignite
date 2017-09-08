@@ -107,7 +107,7 @@ public class AffinityDistributionPrintLogTest extends GridCommonAbstractTest {
     public void testDistributionCalculationForThreePartitionsNotIdealMessage() throws Exception {
         parts = 3;
 
-        String log = print(false, 0.0, 1);
+        String log = print(true, 0.0, 1);
 
         assertTrue(log.contains(CHECK_MESSAGE));
     }
@@ -116,7 +116,7 @@ public class AffinityDistributionPrintLogTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testDistributionCalculationNotIdealMessage() throws Exception {
-        String log = print(true, 0.01,2);
+        String log = print(false, 0.01,2);
 
         assertTrue(log.contains(CHECK_MESSAGE));
     }
@@ -125,7 +125,7 @@ public class AffinityDistributionPrintLogTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testDistributionCalculationIdeal() throws Exception {
-        String log = print(true, 0.5, 2);
+        String log = print(false, 0.5, 2);
 
         assertFalse(log.contains(CHECK_MESSAGE));
     }
@@ -134,7 +134,7 @@ public class AffinityDistributionPrintLogTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testDistributionCalculationDflt() throws Exception {
-        String log = print(false, 0, 2);
+        String log = print(true, 0, 2);
 
         assertFalse(log.contains(CHECK_MESSAGE));
     }
@@ -147,7 +147,7 @@ public class AffinityDistributionPrintLogTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public String print(boolean useDfltPartDistributionThreshold, double partDistributionThreshold, int nodeCnt) throws Exception {
-        if (useDfltPartDistributionThreshold)
+        if (!useDfltPartDistributionThreshold)
             System.setProperty(IgniteSystemProperties.IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD, String.valueOf(partDistributionThreshold));
 
         Ignite ignite = startGrids(nodeCnt);
