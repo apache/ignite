@@ -36,8 +36,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
@@ -736,11 +734,16 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      */
     private void ensureClientCachesStarted() {
         GridCacheProcessor cacheProcessor = cctx.cache();
-        List<CacheConfiguration> notStartedCacheConfigs = Stream.of(cctx.gridConfig().getCacheConfiguration())
-            .filter(cCfg -> !cacheProcessor.cacheNames().contains(cCfg.getName()))
-            .collect(Collectors.toList());
+        List<CacheConfiguration> notStartedCacheConfigs = new ArrayList<>();
+        for (CacheConfiguration cCfg : cctx.gridConfig().getCacheConfiguration()) {
+            if (!cacheProcessor.cacheNames().contains(cCfg.getName())) {
+                notStartedCacheConfigs.add(cCfg);
+            }
+        }
 
-        cacheProcessor.dynamicStartCaches(notStartedCacheConfigs, false, false);
+        if (!notStartedCacheConfigs.isEmpty()) {
+            cacheProcessor.dynamicStartCaches(notStartedCacheConfigs, false, false);
+        }
     }
 
     /**
