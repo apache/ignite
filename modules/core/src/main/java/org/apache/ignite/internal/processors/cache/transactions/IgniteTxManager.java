@@ -49,7 +49,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedExceptio
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
-import org.apache.ignite.internal.processors.cache.GridCacheMvccFuture;
+import org.apache.ignite.internal.processors.cache.GridCacheVersionedFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheReturnCompletableWrapper;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.GridDeferredAckMessageSender;
@@ -2187,10 +2187,10 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     private IgniteInternalFuture mvccFuture(IgniteInternalTx tx, Class<? extends IgniteInternalFuture> cls) {
         assert tx instanceof GridNearTxLocal : tx;
 
-        Collection<GridCacheMvccFuture<?>> futs = cctx.mvcc().mvccFutures(tx.nearXidVersion());
+        Collection<GridCacheVersionedFuture<?>> futs = cctx.mvcc().futuresForVersion(tx.nearXidVersion());
 
         if (futs != null) {
-            for (GridCacheMvccFuture<?> fut : futs) {
+            for (GridCacheVersionedFuture<?> fut : futs) {
                 if (fut.getClass().equals(cls))
                     return fut;
             }

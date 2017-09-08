@@ -576,6 +576,15 @@ namespace ignite
                 return meta;
             }
 
+            /**
+             * Get affected rows number.
+             * @return Number of rows affected by the query.
+             */
+            int64_t GetAffectedRows()
+            {
+                return affectedRows;
+            }
+
         private:
             /**
              * Read response using provided reader.
@@ -588,6 +597,9 @@ namespace ignite
 
             /** Columns metadata. */
             meta::ColumnMetaVector meta;
+
+            /** Number of affected rows. */
+            int64_t affectedRows;
         };
 
         /**

@@ -50,6 +50,9 @@ import static java.sql.RowIdLifetime.ROWID_UNSUPPORTED;
  * JDBC database metadata implementation.
  */
 public class JdbcDatabaseMetadata implements DatabaseMetaData {
+    /** Driver name. */
+    public static final String DRIVER_NAME = "Apache Ignite JDBC Driver";
+
     /** Connection. */
     private final JdbcConnection conn;
 
@@ -133,7 +136,7 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
 
     /** {@inheritDoc} */
     @Override public String getDriverName() {
-        return "Ignite JDBC Driver";
+        return DRIVER_NAME;
     }
 
     /** {@inheritDoc} */
