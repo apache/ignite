@@ -853,13 +853,13 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         GridCacheAffinityManager aff = ignite0.context().cache().internalCache(null).context().affinity();
 
-        List<ClusterNode> nodes1 = aff.nodes(key1, topVer1);
-        List<ClusterNode> nodes2 = aff.nodes(key1, topVer2);
+        List<ClusterNode> nodes1 = aff.nodesByKey(key1, topVer1);
+        List<ClusterNode> nodes2 = aff.nodesByKey(key1, topVer2);
 
         assertEquals(nodes1, nodes2);
 
-        nodes1 = aff.nodes(key2, topVer1);
-        nodes2 = aff.nodes(key2, topVer2);
+        nodes1 = aff.nodesByKey(key2, topVer1);
+        nodes2 = aff.nodesByKey(key2, topVer2);
 
         assertFalse(nodes1.get(0).equals(nodes2.get(0)));
 

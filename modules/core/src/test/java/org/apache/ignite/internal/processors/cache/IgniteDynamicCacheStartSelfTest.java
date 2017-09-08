@@ -31,6 +31,7 @@ import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheExistsException;
 import org.apache.ignite.cache.CacheMode;
@@ -142,6 +143,20 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
      */
     @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        if(grid(0).cache(DYNAMIC_CACHE_NAME)!=null)
+            grid(0).destroyCache(DYNAMIC_CACHE_NAME);
+
+        while(Ignition.allGrids().size() > nodeCount()) {
+            stopGrid(nodeCount());
+        }
     }
 
     /**

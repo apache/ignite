@@ -23,6 +23,7 @@ import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.processors.hadoop.HadoopTestClassLoader;
+import org.apache.ignite.internal.processors.hadoop.impl.HadoopTeraSortTest;
 import org.apache.ignite.internal.processors.hadoop.impl.client.HadoopClientProtocolEmbeddedSelfTest;
 import org.apache.ignite.internal.processors.hadoop.impl.client.HadoopClientProtocolMultipleServersSelfTest;
 import org.apache.ignite.internal.processors.hadoop.impl.client.HadoopClientProtocolSelfTest;
@@ -122,6 +123,8 @@ public class IgniteHadoopTestSuite extends TestSuite {
         suite.addTest(new TestSuite(ldr.loadClass(ChainedUserNameMapperSelfTest.class.getName())));
 
         suite.addTest(new TestSuite(ldr.loadClass(KerberosHadoopFileSystemFactorySelfTest.class.getName())));
+
+        suite.addTest(new TestSuite(ldr.loadClass(HadoopTeraSortTest.class.getName())));
 
         suite.addTest(new TestSuite(ldr.loadClass(HadoopSnappyTest.class.getName())));
         suite.addTest(new TestSuite(ldr.loadClass(HadoopSnappyFullMapReduceTest.class.getName())));

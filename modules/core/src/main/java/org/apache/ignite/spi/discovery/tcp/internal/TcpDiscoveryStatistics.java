@@ -28,6 +28,8 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCustomEventMessage;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddFinishedMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddedMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeFailedMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeLeftMessage;
@@ -314,10 +316,14 @@ public class TcpDiscoveryStatistics {
      */
     public synchronized void onMessageSent(TcpDiscoveryAbstractMessage msg, long time, long ackTime) {
         assert msg != null;
-        assert time >= 0 : time;
+
+        if (time < 0)
+            time = 0;
 
         if (crdSinceTs.get() > 0 &&
+            (msg instanceof TcpDiscoveryCustomEventMessage) ||
             (msg instanceof TcpDiscoveryNodeAddedMessage) ||
+            (msg instanceof TcpDiscoveryNodeAddFinishedMessage) ||
             (msg instanceof TcpDiscoveryNodeLeftMessage) ||
             (msg instanceof TcpDiscoveryNodeFailedMessage)) {
             ringMsgsSndTs.put(msg.id(), U.currentTimeMillis());
@@ -431,7 +437,8 @@ public class TcpDiscoveryStatistics {
      * @param initTime Time socket was initialized in.
      */
     public synchronized void onServerSocketInitialized(long initTime) {
-        assert initTime >= 0;
+        if (initTime < 0)
+            initTime = 0;
 
         if (maxSrvSockInitTime < initTime)
             maxSrvSockInitTime = initTime;
@@ -443,7 +450,8 @@ public class TcpDiscoveryStatistics {
      * @param initTime Time socket was initialized in.
      */
     public synchronized void onClientSocketInitialized(long initTime) {
-        assert initTime >= 0;
+        if (initTime < 0)
+            initTime = 0;
 
         clientSockCreatedCnt++;
 
