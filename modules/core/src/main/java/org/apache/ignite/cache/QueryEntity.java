@@ -364,7 +364,7 @@ public class QueryEntity implements Serializable {
      *
      * @return Set of names of fields that must have non-null values.
      */
-    public Set<String> getNotNullFields() {
+    @Nullable public Set<String> getNotNullFields() {
         return notNullFields;
     }
 
@@ -374,7 +374,7 @@ public class QueryEntity implements Serializable {
      * @param notNullFields Set of names of fields that must have non-null values.
      * @return {@code this} for chaining.
      */
-    public QueryEntity setNotNullFields(Set<String> notNullFields) {
+    public QueryEntity setNotNullFields(@Nullable Set<String> notNullFields) {
         this.notNullFields = notNullFields;
 
         return this;
