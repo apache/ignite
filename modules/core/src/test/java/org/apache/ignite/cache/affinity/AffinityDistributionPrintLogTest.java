@@ -45,10 +45,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  *
  */
 public class AffinityDistributionPrintLogTest extends GridCommonAbstractTest {
-    /** Logger. */
-    @LoggerResource
-    private IgniteLogger log;
-
     /** */
     private int parts = 1024;
 
@@ -144,14 +140,14 @@ public class AffinityDistributionPrintLogTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param dflt Use default IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD.
+     * @param useDfltPartDistributionThreshold Use default IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD.
      * @param percent Value of IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD for setting.
      * @param nodeCnt Node count.
      * @return Intercepted log.
      * @throws Exception If failed.
      */
-    public String print(boolean dflt, double percent, int nodeCnt) throws Exception {
-        if (dflt)
+    public String print(boolean useDfltPartDistributionThreshold, double percent, int nodeCnt) throws Exception {
+        if (useDfltPartDistributionThreshold)
             System.setProperty(IgniteSystemProperties.IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD, String.valueOf(percent));
 
         Ignite ignite = startGrids(nodeCnt);
