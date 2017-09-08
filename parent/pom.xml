@@ -799,12 +799,18 @@
                                         <exclude>**/*.sql</exclude><!--sql files-->
                                         <exclude>**/*README*.txt</exclude><!--readme files-->
                                         <exclude>**/*README*.md</exclude><!--readme files-->
+                                        <exclude>**/*index*.md</exclude><!--readme files-->
                                         <exclude>**/*.timestamp</exclude><!--tmp-files-->
                                         <exclude>**/*.iml</exclude><!--IDEA files-->
                                         <exclude>**/pom-installed.xml</exclude><!--tmp-files-->
                                         <exclude>**/keystore/*.jks</exclude><!--bin-files-->
                                         <exclude>**/keystore/*.pem</exclude><!--auto generated files-->
                                         <exclude>**/keystore/*.pfx</exclude><!--bin-files-->
+                                        <exclude>**/keystore/ca/*.jks</exclude><!--bin-files-->
+                                        <exclude>**/keystore/ca/*.key</exclude><!--bin-files-->
+                                        <exclude>**/keystore/ca/*.txt</exclude><!--auto generated files-->
+                                        <exclude>**/keystore/ca/*.txt.attr</exclude><!--auto generated files-->
+                                        <exclude>**/keystore/ca/*serial</exclude><!--auto generated files-->
                                         <exclude>**/META-INF/services/**</exclude> <!-- Interface mappings: cannot be changed -->
                                         <!--special excludes-->
                                         <exclude>idea/ignite_codeStyle.xml</exclude>

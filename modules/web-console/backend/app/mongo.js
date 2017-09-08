@@ -1041,7 +1041,10 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
                 value: Number,
                 unit: Number
             },
-            qryType: String
+            qryType: String,
+            nonCollocatedJoins: {type: Boolean, default: false},
+            enforceJoinOrder: {type: Boolean, default: false},
+            lazy: {type: Boolean, default: false}
         }]
     });
 
