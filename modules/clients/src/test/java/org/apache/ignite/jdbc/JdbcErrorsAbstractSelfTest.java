@@ -77,6 +77,16 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
      */
     public void testDmlErrors() throws SQLException {
         checkErrorState("INSERT INTO \"test\".INTEGER(_key, _val) values(1, null)", "22004");
+
+        checkErrorState("INSERT INTO \"test\".INTEGER(_key, _val) values(1, 'zzz')", "22004");
+    }
+
+    /**
+     * Test error code for the case when user attempts to refer a future currently unsupported.
+     * @throws SQLException if failed.
+     */
+    public void testUnsupportedSql() throws SQLException {
+        checkErrorState("ALTER TABLE \"test\".Integer DROP COLUMN _key", "0A000");
     }
 
     /**
@@ -92,21 +102,57 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
      * @throws SQLException if failed.
      */
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
-    private void checkErrorState(String sql, String expState) throws SQLException {
-        try (Connection conn = getConnection()) {
-            try (final PreparedStatement stmt = conn.prepareStatement(sql)) {
-                SQLException ex = (SQLException)GridTestUtils.assertThrows(null, new IgniteCallable<Void>() {
-                    @Override public Void call() throws Exception {
-                        stmt.execute();
-
-                        fail();
-
-                        return null;
-                    }
-                }, SQLException.class, null);
-
-                assertEquals(expState, ex.getSQLState());
+    private void checkErrorState(final String sql, String expState) throws SQLException {
+        checkErrorState(new ConnClosure() {
+            @Override public void run(Connection conn) throws Exception {
+                try (final PreparedStatement stmt = conn.prepareStatement(sql)) {
+                    stmt.execute();
+                }
             }
-        }
+        }, expState);
+    }
+
+    /**
+     * Test that running given closure yields expected SQLSTATE code.
+     * @param clo closure.
+     * @param expState expected SQLSTATE code.
+     * @throws SQLException if failed.
+     */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    protected void checkErrorState(final ConnClosure clo, String expState) throws SQLException {
+        checkErrorState(new IgniteCallable<Void>() {
+            @Override public Void call() throws Exception {
+                try (final Connection conn = getConnection()) {
+                    clo.run(conn);
+
+                    fail();
+
+                    return null;
+                }
+            }
+        }, expState);
+    }
+
+    /**
+     * Test that running given closure yields expected SQLSTATE code.
+     * @param clo closure.
+     * @param expState expected SQLSTATE code.
+     * @throws SQLException if failed.
+     */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    protected void checkErrorState(final IgniteCallable<Void> clo, String expState) throws SQLException {
+        SQLException ex = (SQLException)GridTestUtils.assertThrows(null, clo, SQLException.class, null);
+
+        assertEquals(expState, ex.getSQLState());
+    }
+
+    /**
+     * Runnable that accepts a {@link Connection} and can throw an exception.
+     */
+    protected interface ConnClosure {
+        /**
+         * @throws Exception On error.
+         */
+        void run(Connection conn) throws Exception;
     }
 }
