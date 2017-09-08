@@ -48,6 +48,9 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public class TxDeadlockCauseTest extends GridCommonAbstractTest {
     /** */
+    private static final String DEFAULT_CACHE_NAME = "myCache";
+
+    /** */
     private CacheConfiguration ccfg;
 
     /** {@inheritDoc} */
@@ -62,18 +65,6 @@ public class TxDeadlockCauseTest extends GridCommonAbstractTest {
 
             cfg.setDiscoverySpi(discoSpi);
         }
-
-        MemoryConfiguration memCfg = new MemoryConfiguration();
-
-        MemoryPolicyConfiguration plc = new MemoryPolicyConfiguration();
-
-        plc.setName("dfltPlc");
-        plc.setMaxSize(100L * 1024 * 1024);
-
-        memCfg.setDefaultMemoryPolicyName("dfltPlc");
-        memCfg.setMemoryPolicies(plc);
-
-        cfg.setMemoryConfiguration(memCfg);
 
         CacheConfiguration ccfg0 = ccfg == null ? new CacheConfiguration(DEFAULT_CACHE_NAME)
                 .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL) : ccfg;
