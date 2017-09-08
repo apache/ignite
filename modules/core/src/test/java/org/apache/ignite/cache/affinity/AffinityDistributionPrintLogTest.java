@@ -141,14 +141,14 @@ public class AffinityDistributionPrintLogTest extends GridCommonAbstractTest {
 
     /**
      * @param useDfltPartDistributionThreshold Use default IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD.
-     * @param percent Value of IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD for setting.
+     * @param partDistributionThreshold Value of IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD for setting.
      * @param nodeCnt Node count.
      * @return Intercepted log.
      * @throws Exception If failed.
      */
-    public String print(boolean useDfltPartDistributionThreshold, double percent, int nodeCnt) throws Exception {
+    public String print(boolean useDfltPartDistributionThreshold, double partDistributionThreshold, int nodeCnt) throws Exception {
         if (useDfltPartDistributionThreshold)
-            System.setProperty(IgniteSystemProperties.IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD, String.valueOf(percent));
+            System.setProperty(IgniteSystemProperties.IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD, String.valueOf(partDistributionThreshold));
 
         Ignite ignite = startGrids(nodeCnt);
 
