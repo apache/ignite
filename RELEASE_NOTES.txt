@@ -1,6 +1,12 @@
 Apache Ignite Release Notes
 ===========================
 
+Apache Ignite In-Memory Data Fabric 2.2
+---------------------------------------
+Ignite:
+* Checkpointing algorithm optimized
+* Default max memory size changed from 80% to 20%
+
 Apache Ignite In-Memory Data Fabric 2.1
 ---------------------------------------
 Ignite:
