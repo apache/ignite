@@ -1314,6 +1314,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         String remainingSql = sqlQry;
 
         while (remainingSql != null) {
+            args = null;
             GridCacheTwoStepQuery twoStepQry = null;
             List<GridQueryFieldMetadata> meta;
 
@@ -1371,13 +1372,16 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                     int paramsCnt = prepared.getParameters().size();
 
-                    if (argsOrig != null && paramsCnt > 0) {
+                    if (paramsCnt > 0) {
+                        if (argsOrig == null || argsOrig.length < firstArg + paramsCnt) {
+                            throw new IgniteException("Invalid number of query parameters. " +
+                                "Cannot find " + (argsOrig.length + 1 - firstArg) + " parameter.");
+                        }
+
                         args = Arrays.copyOfRange(argsOrig, firstArg, firstArg + paramsCnt);
 
                         firstArg += paramsCnt;
                     }
-                    else
-                        args = null;
 
                     cachedQryKey = new H2TwoStepCachedQueryKey(schemaName, sqlQry, grpByCollocated,
                         distributedJoins, enforceJoinOrder, qry.isLocal());
