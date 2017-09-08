@@ -17,6 +17,12 @@
 
 package org.apache.ignite.internal.processors.query;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -24,13 +30,6 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
 
 /**
  * Descriptor of type.
@@ -42,12 +41,15 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     /** */
     private String name;
 
+    /** Schema name. */
+    private String schemaName;
+
     /** */
     private String tblName;
 
     /** Value field names and types with preserved order. */
     @GridToStringInclude
-    private final Map<String, Class<?>> fields = new LinkedHashMap<>();
+    private final LinkedHashMap<String, Class<?>> fields = new LinkedHashMap<>();
 
     /** */
     @GridToStringExclude
@@ -120,6 +122,11 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
         return name;
     }
 
+    /** {@inheritDoc} */
+    @Override public String schemaName() {
+        return schemaName;
+    }
+
     /**
      * Sets type name.
      *
@@ -147,7 +154,7 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     }
 
     /** {@inheritDoc} */
-    @Override public Map<String, Class<?>> fields() {
+    @Override public LinkedHashMap<String, Class<?>> fields() {
         return fields;
     }
 
@@ -361,6 +368,13 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
             throw new IgniteCheckedException("Property with upper cased name '" + name + "' already exists.");
 
         fields.put(name, prop.type());
+    }
+
+    /**
+     * @param schemaName Schema name.
+     */
+    public void schemaName(String schemaName) {
+        this.schemaName = schemaName;
     }
 
     /** {@inheritDoc} */

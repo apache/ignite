@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.binary;
 
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -114,9 +113,10 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     @GridToStringExclude
     private IgniteBinary binaries;
 
-    /** Listener removes all registered binary schemas after the local client reconnected. */
+    /** Listener removes all registered binary schemas and user type descriptors after the local client reconnected. */
     private final GridLocalEventListener clientDisconLsnr = new GridLocalEventListener() {
         @Override public void onEvent(Event evt) {
+            binaryContext().unregisterUserTypeDescriptors();
             binaryContext().unregisterBinarySchemas();
 
             metadataLocCache.clear();
@@ -440,6 +440,22 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
         catch (IgniteCheckedException e) {
             throw new BinaryObjectException("Failed to update meta data for type: " + newMeta.typeName(), e);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void addMetaLocally(int typeId, BinaryType newMeta) throws BinaryObjectException {
+        assert newMeta != null;
+        assert newMeta instanceof BinaryTypeImpl;
+
+        BinaryMetadata newMeta0 = ((BinaryTypeImpl)newMeta).metadata();
+
+        BinaryMetadataHolder metaHolder = metadataLocCache.get(typeId);
+
+        BinaryMetadata oldMeta = metaHolder != null ? metaHolder.metadata() : null;
+
+        BinaryMetadata mergedMeta = BinaryUtils.mergeMetadata(oldMeta, newMeta0);
+
+        metadataLocCache.put(typeId, new BinaryMetadataHolder(mergedMeta, 0, 0));
     }
 
     /** {@inheritDoc} */

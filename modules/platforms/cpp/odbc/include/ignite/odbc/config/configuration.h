@@ -79,6 +79,9 @@ namespace ignite
 
                     /** Connection attribute keyword for collocated attribute. */
                     static const std::string collocated;
+
+                    /** Connection attribute keyword for lazy attribute. */
+                    static const std::string lazy;
                 };
 
                 /** Default values for configuration. */
@@ -119,6 +122,9 @@ namespace ignite
 
                     /** Default value for collocated attribute. */
                     static const bool collocated;
+
+                    /** Default value for lazy attribute. */
+                    static const bool lazy;
                 };
 
                 /**
@@ -355,6 +361,26 @@ namespace ignite
                 void SetCollocated(bool val)
                 {
                     SetBoolValue(Key::collocated, val);
+                }
+
+                /**
+                 * Check lazy flag.
+                 *
+                 * @return True if lazy is enabled.
+                 */
+                bool IsLazy() const
+                {
+                    return GetBoolValue(Key::lazy, DefaultValue::lazy);
+                }
+
+                /**
+                 * Set lazy.
+                 *
+                 * @param val Value to set.
+                 */
+                void SetLazy(bool val)
+                {
+                    SetBoolValue(Key::lazy, val);
                 }
 
                 /**
