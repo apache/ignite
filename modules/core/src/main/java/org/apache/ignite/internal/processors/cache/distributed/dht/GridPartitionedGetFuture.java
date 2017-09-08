@@ -41,7 +41,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedExceptio
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorVersion;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetResponse;
@@ -82,7 +82,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
     private ClusterNode mvccCrd;
 
     /** */
-    private MvccQueryVersion mvccVer;
+    private MvccCoordinatorVersion mvccVer;
 
     /**
      * @param cctx Context.
@@ -162,11 +162,10 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                 return;
             }
 
-            IgniteInternalFuture<MvccQueryVersion> cntrFut = cctx.shared().coordinators().requestQueryCounter(mvccCrd,
-                topVer.topologyVersion());
+            IgniteInternalFuture<MvccCoordinatorVersion> cntrFut = cctx.shared().coordinators().requestQueryCounter(mvccCrd);
 
-            cntrFut.listen(new IgniteInClosure<IgniteInternalFuture<MvccQueryVersion>>() {
-                @Override public void apply(IgniteInternalFuture<MvccQueryVersion> fut) {
+            cntrFut.listen(new IgniteInClosure<IgniteInternalFuture<MvccCoordinatorVersion>>() {
+                @Override public void apply(IgniteInternalFuture<MvccCoordinatorVersion> fut) {
                     try {
                         mvccVer = fut.get();
 

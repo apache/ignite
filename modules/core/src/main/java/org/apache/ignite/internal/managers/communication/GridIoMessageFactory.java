@@ -102,14 +102,13 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFi
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearUnlockRequest;
-import org.apache.ignite.internal.processors.cache.mvcc.CoordinatorQueryVersionResponse;
-import org.apache.ignite.internal.processors.cache.mvcc.CoordinatorTxCounterResponse;
 import org.apache.ignite.internal.processors.cache.mvcc.CoordinatorQueryAckRequest;
 import org.apache.ignite.internal.processors.cache.mvcc.CoordinatorQueryVersionRequest;
 import org.apache.ignite.internal.processors.cache.mvcc.CoordinatorTxAckRequest;
 import org.apache.ignite.internal.processors.cache.mvcc.CoordinatorTxAckResponse;
 import org.apache.ignite.internal.processors.cache.mvcc.CoordinatorTxCounterRequest;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccUpdateVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorVersionResponse;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccCounter;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryRequest;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryResponse;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
@@ -145,11 +144,11 @@ import org.apache.ignite.internal.processors.igfs.IgfsFragmentizerResponse;
 import org.apache.ignite.internal.processors.igfs.IgfsSyncMessage;
 import org.apache.ignite.internal.processors.marshaller.MissingMappingRequestMessage;
 import org.apache.ignite.internal.processors.marshaller.MissingMappingResponseMessage;
-import org.apache.ignite.internal.processors.query.schema.message.SchemaOperationStatusMessage;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryCancelRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryFailResponse;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageResponse;
+import org.apache.ignite.internal.processors.query.schema.message.SchemaOperationStatusMessage;
 import org.apache.ignite.internal.processors.rest.handlers.task.GridTaskResultRequest;
 import org.apache.ignite.internal.processors.rest.handlers.task.GridTaskResultResponse;
 import org.apache.ignite.internal.util.GridByteArrayList;
@@ -888,12 +887,7 @@ public class GridIoMessageFactory implements MessageFactory {
 
                 break;
 
-            case 130:
-                msg = new CoordinatorTxCounterResponse();
-
-                break;
-
-            case 131:
+            case 131: // TODO IGNITE-3478 fix constants.
                 msg = new CoordinatorTxAckRequest();
 
                 break;
@@ -914,12 +908,12 @@ public class GridIoMessageFactory implements MessageFactory {
                 break;
 
             case 135:
-                msg = new MvccUpdateVersion();
+                msg = new MvccCounter();
 
                 return msg;
 
             case 136:
-                msg = new CoordinatorQueryVersionResponse();
+                msg = new MvccCoordinatorVersionResponse();
 
                 return msg;
 

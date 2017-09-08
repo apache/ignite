@@ -347,7 +347,7 @@ public class MvccTestApp2 {
                 thread.start();
             }
 
-            long endTime = System.currentTimeMillis() + 2_000;
+            long endTime = System.currentTimeMillis() + 60_000;
 
             while (!stop.get()) {
                 Thread.sleep(1000);
@@ -609,7 +609,7 @@ public class MvccTestApp2 {
 //                newVals.put(from, null);
 //                newVals.put(to, fromVal + toVal);
 //
-//                MvccUpdateVersion mvccVer = new MvccUpdateVersion(cntr, txId);
+//                MvccCounter mvccVer = new MvccCounter(cntr, txId);
 //
 //                if (DEBUG_LOG) {
 //                    TestDebugLog.msgs.add(new TestDebugLog.Msg6("remove", txId, from, fromVal, to, toVal, cntr));
@@ -1124,7 +1124,7 @@ public class MvccTestApp2 {
         }
 
         Collection<TxId> waitTxsAck(Object key, Collection<TxId> activeTxs) {
-            if (!F.isEmpty(activeTxs))
+            if (F.isEmpty(activeTxs))
                 return null;
 
             List<MvccValue> list = mvccIdx.get(key);

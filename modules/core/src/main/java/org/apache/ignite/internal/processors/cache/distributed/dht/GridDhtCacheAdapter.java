@@ -67,7 +67,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetR
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetResponse;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheEntryFilter;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
@@ -777,7 +777,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         boolean skipVals,
         boolean canRemap,
         boolean recovery,
-        MvccQueryVersion mvccVer
+        MvccCoordinatorVersion mvccVer
     ) {
         return getAllAsync0(keys,
             readerArgs,
@@ -819,7 +819,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         @Nullable IgniteCacheExpiryPolicy expiry,
         boolean skipVals,
         boolean recovery,
-        MvccQueryVersion mvccVer
+        MvccCoordinatorVersion mvccVer
     ) {
         GridDhtGetFuture<K, V> fut = new GridDhtGetFuture<>(ctx,
             msgId,

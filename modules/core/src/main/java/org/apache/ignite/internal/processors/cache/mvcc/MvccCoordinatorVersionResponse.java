@@ -18,88 +18,83 @@
 package org.apache.ignite.internal.processors.cache.mvcc;
 
 import java.nio.ByteBuffer;
+import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
+import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
-import org.jetbrains.annotations.NotNull;
 
 /**
  *
  */
-public class MvccUpdateVersion implements Comparable<MvccUpdateVersion>, Message {
+public class MvccCoordinatorVersionResponse implements MvccCoordinatorMessage, MvccCoordinatorVersion {
     /** */
-    public static final long COUNTER_NA = 0L;
+    private static final long serialVersionUID = 0L;
 
     /** */
-    private long topVer;
+    private long futId;
+
+    /** */
+    private long crdVer;
 
     /** */
     private long cntr;
 
+    /** */
+    private GridLongList txs; // TODO IGNITE-3478 (do not send on backups?)
+
+    /** */
+    private long cleanupVer;
+
     /**
-     *
+     * Required by {@link GridIoMessageFactory}.
      */
-    public MvccUpdateVersion() {
+    public MvccCoordinatorVersionResponse() {
         // No-op.
     }
 
     /**
-     * @param topVer Topology version.
-     * @param cntr Coordinator counter.
+     * @param cntr Counter.
+     * @param futId Future ID.
      */
-    public MvccUpdateVersion(long topVer, long cntr) {
-        assert topVer > 0 : topVer;
-        assert cntr != COUNTER_NA;
-
-        this.topVer = topVer;
+    MvccCoordinatorVersionResponse(long futId, long crdVer, long cntr, GridLongList txs, long cleanupVer) {
+        this.futId = futId;
+        this.crdVer = crdVer;
         this.cntr = cntr;
+        this.txs = txs;
+        this.cleanupVer = cleanupVer;
     }
 
     /** {@inheritDoc} */
-    @Override public int compareTo(@NotNull MvccUpdateVersion other) {
-        int cmp = Long.compare(topVer, other.topVer);
-
-        if (cmp != 0)
-            return cmp;
-
-        return Long.compare(cntr, other.cntr);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean equals(Object o) {
-        if (this == o)
-            return true;
-
-        if (o == null || getClass() != o.getClass())
-            return false;
-
-        MvccUpdateVersion that = (MvccUpdateVersion) o;
-
-        return topVer == that.topVer && cntr == that.cntr;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int hashCode() {
-        int res = (int) (topVer ^ (topVer >>> 32));
-
-        res = 31 * res + (int) (cntr ^ (cntr >>> 32));
-
-        return res;
+    @Override public boolean waitForCoordinatorInit() {
+        return false;
     }
 
     /**
-     * @return Coordinators topology version.
+     * @return Future ID.
      */
-    public long topologyVersion() {
-        return topVer;
+    public long futureId() {
+        return futId;
     }
 
-    /**
-     * @return Counters.
-     */
+    /** {@inheritDoc} */
+    @Override public long cleanupVersion() {
+        return cleanupVer;
+    }
+
+    /** {@inheritDoc} */
     public long counter() {
         return cntr;
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridLongList activeTransactions() {
+        return txs;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long coordinatorVersion() {
+        return crdVer;
     }
 
     /** {@inheritDoc} */
@@ -115,13 +110,31 @@ public class MvccUpdateVersion implements Comparable<MvccUpdateVersion>, Message
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeLong("cntr", cntr))
+                if (!writer.writeLong("cleanupVer", cleanupVer))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeLong("topVer", topVer))
+                if (!writer.writeLong("cntr", cntr))
+                    return false;
+
+                writer.incrementState();
+
+            case 2:
+                if (!writer.writeLong("crdVer", crdVer))
+                    return false;
+
+                writer.incrementState();
+
+            case 3:
+                if (!writer.writeLong("futId", futId))
+                    return false;
+
+                writer.incrementState();
+
+            case 4:
+                if (!writer.writeMessage("txs", txs))
                     return false;
 
                 writer.incrementState();
@@ -140,7 +153,7 @@ public class MvccUpdateVersion implements Comparable<MvccUpdateVersion>, Message
 
         switch (reader.state()) {
             case 0:
-                cntr = reader.readLong("cntr");
+                cleanupVer = reader.readLong("cleanupVer");
 
                 if (!reader.isLastRead())
                     return false;
@@ -148,7 +161,31 @@ public class MvccUpdateVersion implements Comparable<MvccUpdateVersion>, Message
                 reader.incrementState();
 
             case 1:
-                topVer = reader.readLong("topVer");
+                cntr = reader.readLong("cntr");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 2:
+                crdVer = reader.readLong("crdVer");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 3:
+                futId = reader.readLong("futId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 4:
+                txs = reader.readMessage("txs");
 
                 if (!reader.isLastRead())
                     return false;
@@ -157,17 +194,17 @@ public class MvccUpdateVersion implements Comparable<MvccUpdateVersion>, Message
 
         }
 
-        return reader.afterMessageRead(MvccUpdateVersion.class);
+        return reader.afterMessageRead(MvccCoordinatorVersionResponse.class);
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 135;
+        return 136;
     }
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 2;
+        return 5;
     }
 
     /** {@inheritDoc} */
@@ -177,6 +214,6 @@ public class MvccUpdateVersion implements Comparable<MvccUpdateVersion>, Message
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(MvccUpdateVersion.class, this);
+        return S.toString(MvccCoordinatorVersionResponse.class, this);
     }
 }

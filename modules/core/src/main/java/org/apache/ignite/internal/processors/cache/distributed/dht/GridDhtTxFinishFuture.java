@@ -35,7 +35,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheCompoundIdentityFutu
 import org.apache.ignite.internal.processors.cache.GridCacheFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccUpdateVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.CacheCoordinatorsSharedManager;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -349,7 +349,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                 tx.activeCachesDeploymentEnabled(),
                 false,
                 false,
-                MvccUpdateVersion.COUNTER_NA);
+                null);
 
             try {
                 cctx.io().send(n, req, tx.ioPolicy());
@@ -397,7 +397,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
         if (tx.onePhaseCommit())
             return false;
 
-        assert !commit || !tx.txState().mvccEnabled(cctx) || tx.mvccCoordinatorCounter() != MvccUpdateVersion.COUNTER_NA;
+        assert !commit || !tx.txState().mvccEnabled(cctx) || tx.mvccCoordinatorVersion() != null;
 
         boolean sync = tx.syncMode() == FULL_SYNC;
 
@@ -455,7 +455,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                 updCntrs,
                 false,
                 false,
-                tx.mvccCoordinatorCounter());
+                tx.mvccCoordinatorVersion());
 
             req.writeVersion(tx.writeVersion() != null ? tx.writeVersion() : tx.xidVersion());
 
@@ -525,7 +525,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                     tx.activeCachesDeploymentEnabled(),
                     false,
                     false,
-                    tx.mvccCoordinatorCounter());
+                    tx.mvccCoordinatorVersion());
 
                 req.writeVersion(tx.writeVersion());
 

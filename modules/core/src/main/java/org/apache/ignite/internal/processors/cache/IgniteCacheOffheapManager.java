@@ -21,7 +21,7 @@ import java.util.Map;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorVersion;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.RootPage;
 import org.apache.ignite.internal.processors.cache.persistence.RowStore;
@@ -115,7 +115,7 @@ public interface IgniteCacheOffheapManager {
      * @return Cached row, if available, null otherwise.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public CacheDataRow mvccRead(GridCacheContext cctx, KeyCacheObject key, MvccQueryVersion ver)
+    @Nullable public CacheDataRow mvccRead(GridCacheContext cctx, KeyCacheObject key, MvccCoordinatorVersion ver)
         throws IgniteCheckedException;
 
     /**
@@ -176,8 +176,7 @@ public interface IgniteCacheOffheapManager {
     public void mvccUpdate(GridCacheMapEntry entry,
         CacheObject val,
         GridCacheVersion ver,
-        long topVer,
-        long mvccCntr) throws IgniteCheckedException;
+        MvccCoordinatorVersion mvccVer) throws IgniteCheckedException;
 
     /**
      * @param cctx Cache context.
@@ -472,8 +471,7 @@ public interface IgniteCacheOffheapManager {
             KeyCacheObject key,
             CacheObject val,
             GridCacheVersion ver,
-            long topVer,
-            long mvccCntr) throws IgniteCheckedException;
+            MvccCoordinatorVersion mvccVer) throws IgniteCheckedException;
 
         /**
          * @param cctx Cache context.
@@ -512,7 +510,7 @@ public interface IgniteCacheOffheapManager {
          * @return Data row.
          * @throws IgniteCheckedException If failed.
          */
-        public CacheDataRow mvccFind(GridCacheContext cctx, KeyCacheObject key, MvccQueryVersion ver)
+        public CacheDataRow mvccFind(GridCacheContext cctx, KeyCacheObject key, MvccCoordinatorVersion ver)
             throws IgniteCheckedException;
 
         /**

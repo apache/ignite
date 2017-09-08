@@ -42,7 +42,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishResponse;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccUpdateVersion;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -393,7 +392,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
     @SuppressWarnings("ForLoopReplaceableByForEach")
     /** {@inheritDoc} */
     public void finish(boolean commit) {
-        if (!commit && tx.mvccCoordinatorCounter() != MvccUpdateVersion.COUNTER_NA) {
+        if (!commit && tx.mvccCoordinatorVersion() != null) {
             ClusterNode crd = cctx.coordinators().coordinator(tx.topologyVersion());
 
             assert crd != null;
@@ -725,7 +724,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
             tx.size(),
             tx.subjectId(),
             tx.taskNameHash(),
-            tx.mvccCoordinatorCounter(),
+            tx.mvccCoordinatorVersion(),
             tx.activeCachesDeploymentEnabled()
         );
 
@@ -861,7 +860,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
             tx.activeCachesDeploymentEnabled(),
             !waitRemoteTxs && (tx.needReturnValue() && tx.implicit()),
             waitRemoteTxs,
-            MvccUpdateVersion.COUNTER_NA);
+            null);
 
         finishReq.checkCommitted(true);
 

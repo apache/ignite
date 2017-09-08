@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.cache.tree;
 
 import org.apache.ignite.internal.pagemem.PageUtils;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccUpdateVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.CacheCoordinatorsSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersions;
 
 /**
@@ -59,6 +59,6 @@ public final class CacheIdAwareDataInnerIO extends AbstractDataInnerIO {
 
     /** {@inheritDoc} */
     @Override public long getMvccUpdateCounter(long pageAddr, int idx) {
-        return MvccUpdateVersion.COUNTER_NA;
+        return CacheCoordinatorsSharedManager.COUNTER_NA;
     }
 }

@@ -17,29 +17,30 @@
 
 package org.apache.ignite.internal.processors.cache.mvcc;
 
-import java.util.List;
+import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  *
  */
-public interface MvccQueryVersion extends Message {
+public interface MvccCoordinatorVersion extends Message {
     /**
      * @return Active transactions.
      */
-    public List<MvccUpdateVersion> activeTransactions();
+    public GridLongList activeTransactions();
 
     /**
-     * @return Topology version.
+     * @return Coordinator version.
      */
-    public long topologyVersion();
+    public long coordinatorVersion();
 
     /**
-     * @param topVer Topology version.
+     * @return Cleanup version.
      */
-    public void topologyVersion(long topVer);
+    public long cleanupVersion();
 
     /**
      * @return Counter.
      */
-    public long counter();}
+    public long counter();
+}

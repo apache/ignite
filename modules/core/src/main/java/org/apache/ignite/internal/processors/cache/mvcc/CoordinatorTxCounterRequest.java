@@ -21,14 +21,13 @@ import java.nio.ByteBuffer;
 import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  *
  */
-public class CoordinatorTxCounterRequest implements Message {
+public class CoordinatorTxCounterRequest implements MvccCoordinatorMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -58,6 +57,11 @@ public class CoordinatorTxCounterRequest implements Message {
         this.futId = futId;
         this.txId = txId;
         this.topVer = topVer;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean waitForCoordinatorInit() {
+        return true;
     }
 
     public long topologyVersion() {

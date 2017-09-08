@@ -50,7 +50,7 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorVersion;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeListImpl;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
@@ -1251,11 +1251,10 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             KeyCacheObject key,
             CacheObject val,
             GridCacheVersion ver,
-            long topVer,
-            long mvccCntr) throws IgniteCheckedException {
+            MvccCoordinatorVersion mvccVer) throws IgniteCheckedException {
             CacheDataStore delegate = init0(false);
 
-            delegate.mvccUpdate(cctx, key, val, ver, topVer, mvccCntr);
+            delegate.mvccUpdate(cctx, key, val, ver, mvccVer);
         }
 
         /** {@inheritDoc} */
@@ -1305,7 +1304,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
 
         /** {@inheritDoc} */
-        @Override public CacheDataRow mvccFind(GridCacheContext cctx, KeyCacheObject key, MvccQueryVersion mvccVer)
+        @Override public CacheDataRow mvccFind(GridCacheContext cctx, KeyCacheObject key, MvccCoordinatorVersion mvccVer)
             throws IgniteCheckedException {
             CacheDataStore delegate = init0(true);
 

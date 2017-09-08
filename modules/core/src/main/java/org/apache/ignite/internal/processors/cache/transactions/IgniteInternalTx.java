@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedExceptio
 import org.apache.ignite.internal.processors.cache.GridCacheFilterFailedException;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.lang.GridTuple;
@@ -636,7 +637,7 @@ public interface IgniteInternalTx {
     public void commitError(Throwable e);
 
     /**
-     * @param mvccCrdCntr Update counter assigned by MVCC coordinator.
+     * @param mvccVer Version.
      */
-    public void mvccCoordinatorCounter(long mvccCrdCntr);
+    public void mvccCoordinatorVersion(MvccCoordinatorVersion mvccVer);
 }

@@ -24,7 +24,7 @@ import java.util.UUID;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxFinishRequest;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccUpdateVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.lang.IgniteUuid;
@@ -44,7 +44,7 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
     private int miniId;
 
     /** */
-    private long mvccCrdCntr = MvccUpdateVersion.COUNTER_NA;
+    private MvccCoordinatorVersion mvccVer;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -91,7 +91,7 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
         int txSize,
         @Nullable UUID subjId,
         int taskNameHash,
-        long mvccCrdCntr,
+        MvccCoordinatorVersion mvccVer,
         boolean addDepInfo) {
         super(
             xidVer,
@@ -116,14 +116,14 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
         explicitLock(explicitLock);
         storeEnabled(storeEnabled);
 
-        this.mvccCrdCntr = mvccCrdCntr;
+        this.mvccVer = mvccVer;
     }
 
     /**
      * @return Counter.
      */
-    public long mvccCoordinatorCounter() {
-        return mvccCrdCntr;
+    public MvccCoordinatorVersion mvccCoordinatorVersion() {
+        return mvccVer;
     }
 
     /**
@@ -192,7 +192,7 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
                 writer.incrementState();
 
             case 22:
-                if (!writer.writeLong("mvccCrdCntr", mvccCrdCntr))
+                if (!writer.writeMessage("mvccVer", mvccVer))
                     return false;
 
                 writer.incrementState();
@@ -222,7 +222,7 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
                 reader.incrementState();
 
             case 22:
-                mvccCrdCntr = reader.readLong("mvccCrdCntr");
+                mvccVer = reader.readMessage("mvccVer");
 
                 if (!reader.isLastRead())
                     return false;

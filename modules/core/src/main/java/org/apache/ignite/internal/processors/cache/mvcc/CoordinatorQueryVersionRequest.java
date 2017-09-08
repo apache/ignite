@@ -20,14 +20,13 @@ package org.apache.ignite.internal.processors.cache.mvcc;
 import java.nio.ByteBuffer;
 import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  *
  */
-public class CoordinatorQueryVersionRequest implements Message {
+public class CoordinatorQueryVersionRequest implements MvccCoordinatorMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -46,6 +45,11 @@ public class CoordinatorQueryVersionRequest implements Message {
      */
     CoordinatorQueryVersionRequest(long futId) {
         this.futId = futId;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean waitForCoordinatorInit() {
+        return true;
     }
 
     /**

@@ -849,7 +849,7 @@ public class CacheMvccTransactionsTest extends GridCommonAbstractTest {
 
             assertTrue(activeTxs.isEmpty());
 
-            Map cntrFuts = GridTestUtils.getFieldValue(crd, "cntrFuts");
+            Map cntrFuts = GridTestUtils.getFieldValue(crd, "verFuts");
 
             assertTrue(cntrFuts.isEmpty());
 

@@ -46,8 +46,8 @@ import org.apache.ignite.internal.processors.cache.extras.GridCacheEntryExtras;
 import org.apache.ignite.internal.processors.cache.extras.GridCacheMvccEntryExtras;
 import org.apache.ignite.internal.processors.cache.extras.GridCacheObsoleteEntryExtras;
 import org.apache.ignite.internal.processors.cache.extras.GridCacheTtlEntryExtras;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryVersion;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccUpdateVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.CacheCoordinatorsSharedManager;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorVersion;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.MemoryPolicy;
@@ -468,7 +468,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         String taskName,
         @Nullable IgniteCacheExpiryPolicy expirePlc,
         boolean keepBinary,
-        MvccQueryVersion mvccVer)
+        MvccCoordinatorVersion mvccVer)
         throws IgniteCheckedException, GridCacheEntryRemovedException {
         return (CacheObject)innerGet0(
             ver,
@@ -494,7 +494,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         String taskName,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean keepBinary,
-        MvccQueryVersion mvccVer,
+        MvccCoordinatorVersion mvccVer,
         @Nullable ReaderArguments readerArgs) throws IgniteCheckedException, GridCacheEntryRemovedException {
         return (EntryGetResult)innerGet0(
             /*ver*/null,
@@ -524,7 +524,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         String taskName,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean keepBinary,
-        MvccQueryVersion mvccVer,
+        MvccCoordinatorVersion mvccVer,
         @Nullable ReaderArguments readerArgs)
         throws IgniteCheckedException, GridCacheEntryRemovedException {
         return (EntryGetResult)innerGet0(
@@ -559,7 +559,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         boolean retVer,
         boolean keepBinary,
         boolean reserveForLoad,
-        MvccQueryVersion mvccVer,
+        MvccCoordinatorVersion mvccVer,
         @Nullable ReaderArguments readerArgs
     ) throws IgniteCheckedException, GridCacheEntryRemovedException {
         assert !(retVer && readThrough);
@@ -910,7 +910,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         String taskName,
         @Nullable GridCacheVersion dhtVer,
         @Nullable Long updateCntr,
-        long mvccCntr
+        @Nullable MvccCoordinatorVersion mvccVer
     ) throws IgniteCheckedException, GridCacheEntryRemovedException {
         CacheObject old;
 
@@ -1008,9 +1008,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             assert val != null;
 
             if (cctx.mvccEnabled()) {
-                assert mvccCntr != MvccUpdateVersion.COUNTER_NA;
+                assert mvccVer != null;
 
-                cctx.offheap().mvccUpdate(this, val, newVer, topVer.topologyVersion(), mvccCntr);
+                cctx.offheap().mvccUpdate(this, val, newVer, mvccVer);
             }
             else
                 storeValue(val, expireTime, newVer, null);
@@ -1111,7 +1111,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         String taskName,
         @Nullable GridCacheVersion dhtVer,
         @Nullable Long updateCntr,
-        long mvccCntr
+        @Nullable MvccCoordinatorVersion mvccVer
     ) throws IgniteCheckedException, GridCacheEntryRemovedException {
         assert cctx.transactional();
 
