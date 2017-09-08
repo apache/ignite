@@ -38,6 +38,12 @@ public class ClientConnectionContext implements SqlListenerConnectionContext {
     /** Request handler. */
     private final ClientRequestHandler handler;
 
+    /** Handle registry. */
+    private final HandleRegistry handleRegistry = new HandleRegistry();
+
+    /** Kernal context. */
+    private final GridKernalContext kernalCtx;
+
     /**
      * Ctor.
      *
@@ -46,8 +52,28 @@ public class ClientConnectionContext implements SqlListenerConnectionContext {
     public ClientConnectionContext(GridKernalContext ctx) {
         assert ctx != null;
 
+        kernalCtx = ctx;
+
         parser = new ClientMessageParser(ctx);
-        handler = new ClientRequestHandler(ctx);
+        handler = new ClientRequestHandler(this);
+    }
+
+    /**
+     * Gets the handle registry.
+     *
+     * @return Handle registry.
+     */
+    public HandleRegistry handleRegistry() {
+        return handleRegistry;
+    }
+
+    /**
+     * Gets the kernal context.
+     *
+     * @return Kernal context.
+     */
+    public GridKernalContext kernalContext() {
+        return kernalCtx;
     }
 
     /** {@inheritDoc} */

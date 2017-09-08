@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,33 +15,34 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.platform.client;
+namespace Apache.Ignite.Core.Tests.Client.Cache
+{
+    /// <summary>
+    /// Test person.
+    /// </summary>
+    public class Person
+    {
+        /// <summary>
+        /// Gets or sets the identifier.
+        /// </summary>
+        public int Id { get; set; }
 
-import org.apache.ignite.internal.binary.BinaryRawWriterEx;
-import org.apache.ignite.internal.processors.odbc.SqlListenerResponse;
+        /// <summary>
+        /// Gets or sets the name.
+        /// </summary>
+        public string Name { get; set; }
 
-/**
- * Thin client response.
- */
-public class ClientResponse extends SqlListenerResponse {
-    /** Request id. */
-    private final int requestId;
-
-    /**
-     * Ctor.
-     *
-     * @param requestId Request id.
-     */
-    public ClientResponse(int requestId) {
-        super(STATUS_SUCCESS, null);
-
-        this.requestId = requestId;
+        /// <summary>
+        /// Gets or sets the parent.
+        /// </summary>
+        public Person Parent { get;set; }
     }
 
-    /**
-     * Encodes the response data.
-     */
-    public void encode(BinaryRawWriterEx writer) {
-        writer.writeInt(requestId);
+    /// <summary>
+    /// Test person 2.
+    /// </summary>
+    public class Person2 : Person
+    {
+        // No-op.
     }
 }

@@ -158,7 +158,11 @@ namespace Apache.Ignite.Core.Impl.Client
                     
                     buf = new byte[size];
                     received = sock.Receive(buf);
-                    Debug.Assert(received == buf.Length);
+
+                    while (received < size)
+                    {
+                        received += sock.Receive(buf, received, size - received, SocketFlags.None);
+                    }
 
                     return buf;
                 }

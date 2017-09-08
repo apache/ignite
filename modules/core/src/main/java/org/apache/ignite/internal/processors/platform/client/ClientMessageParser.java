@@ -18,9 +18,9 @@
 package org.apache.ignite.internal.processors.platform.client;
 
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
@@ -35,6 +35,10 @@ import org.apache.ignite.internal.processors.platform.client.binary.ClientPutBin
 import org.apache.ignite.internal.processors.platform.client.binary.ClientRegisterBinaryTypeNameRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheGetRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCachePutRequest;
+import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheQueryCursorCloseRequest;
+import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheQueryCursorGetAllRequest;
+import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheQueryCursorGetNextPageRequest;
+import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheScanQueryRequest;
 
 /**
  * Thin client message parser.
@@ -58,6 +62,18 @@ public class ClientMessageParser implements SqlListenerMessageParser {
     /** */
     private static final short OP_PUT_BINARY_TYPES = 6;
 
+    /** */
+    private static final short OP_QUERY_SCAN = 7;
+
+    /** */
+    private static final short OP_QUERY_CURSOR_GET_ALL = 8;
+
+    /** */
+    private static final short OP_QUERY_CURSOR_GET_PAGE = 9;
+
+    /** */
+    private static final short OP_QUERY_CURSOR_CLOSE = 10;
+
     /** Marshaller. */
     private final GridBinaryMarshaller marsh;
 
@@ -66,7 +82,7 @@ public class ClientMessageParser implements SqlListenerMessageParser {
      *
      * @param ctx Kernal context.
      */
-    public ClientMessageParser(GridKernalContext ctx) {
+    ClientMessageParser(GridKernalContext ctx) {
         assert ctx != null;
 
         CacheObjectBinaryProcessorImpl cacheObjProc = (CacheObjectBinaryProcessorImpl)ctx.cacheObjects();
@@ -100,6 +116,18 @@ public class ClientMessageParser implements SqlListenerMessageParser {
 
             case OP_PUT_BINARY_TYPES:
                 return new ClientPutBinaryTypesRequest(reader);
+
+            case OP_QUERY_SCAN:
+                return new ClientCacheScanQueryRequest(reader);
+
+            case OP_QUERY_CURSOR_GET_ALL:
+                return new ClientCacheQueryCursorGetAllRequest(reader);
+
+            case OP_QUERY_CURSOR_GET_PAGE:
+                return new ClientCacheQueryCursorGetNextPageRequest(reader);
+
+            case OP_QUERY_CURSOR_CLOSE:
+                return new ClientCacheQueryCursorCloseRequest(reader);
         }
 
         throw new IgniteException("Invalid operation: " + opCode);
@@ -109,10 +137,10 @@ public class ClientMessageParser implements SqlListenerMessageParser {
     @Override public byte[] encode(SqlListenerResponse resp) {
         BinaryHeapOutputStream outStream = new BinaryHeapOutputStream(32);
 
-        BinaryRawWriter writer = marsh.writer(outStream);
+        BinaryRawWriterEx writer = marsh.writer(outStream);
 
         ((ClientResponse)resp).encode(writer);
 
-        return outStream.array();
+        return outStream.arrayCopy();
     }
 }

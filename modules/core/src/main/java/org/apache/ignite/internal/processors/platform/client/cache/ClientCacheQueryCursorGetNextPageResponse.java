@@ -15,33 +15,56 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.platform.client.binary;
+package org.apache.ignite.internal.processors.platform.client.cache;
 
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 
+import javax.cache.Cache;
+import java.util.Iterator;
+
 /**
- * Type name response.
+ * Query cursor next page response.
  */
-public class ClientGetBinaryTypeNameResponse extends ClientResponse {
-    /** Type name. */
-    private final String typeName;
+class ClientCacheQueryCursorGetNextPageResponse extends ClientResponse {
+    /** Cursor. */
+    private final ClientCacheQueryCursor<Cache.Entry> cursor;
 
     /**
      * Ctor.
      *
      * @param requestId Request id.
+     * @param cursor Cursor.
      */
-    ClientGetBinaryTypeNameResponse(int requestId, String typeName) {
+    ClientCacheQueryCursorGetNextPageResponse(int requestId, ClientCacheQueryCursor<Cache.Entry> cursor) {
         super(requestId);
 
-        this.typeName = typeName;
+        assert cursor != null;
+
+        this.cursor = cursor;
     }
 
     /** {@inheritDoc} */
     @Override public void encode(BinaryRawWriterEx writer) {
         super.encode(writer);
 
-        writer.writeString(typeName);
+        Iterator<Cache.Entry> iter = cursor.iterator();
+
+        int pageSize = cursor.pageSize();
+        int cntPos = writer.reserveInt();
+        int cnt = 0;
+
+        while (cnt < pageSize && iter.hasNext()) {
+            Cache.Entry e = iter.next();
+
+            writer.writeObjectDetached(e.getKey());
+            writer.writeObjectDetached(e.getValue());
+
+            cnt++;
+        }
+
+        writer.writeInt(cntPos, cnt);
     }
 }

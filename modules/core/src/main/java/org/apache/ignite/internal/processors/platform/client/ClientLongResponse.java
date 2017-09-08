@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,34 +15,32 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Tests.Client
-{
-    /// <summary>
-    /// Test person.
-    /// </summary>
-    public class Person
-    {
-        /// <summary>
-        /// Gets or sets the identifier.
-        /// </summary>
-        public int Id { get; set; }
+package org.apache.ignite.internal.processors.platform.client;
 
-        /// <summary>
-        /// Gets or sets the name.
-        /// </summary>
-        public string Name { get; set; }
+import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 
-        /// <summary>
-        /// Gets or sets the parent.
-        /// </summary>
-        public Person Parent { get;set; }
+/**
+ * Single long value response.
+ */
+public class ClientLongResponse extends ClientResponse {
+    /** Value. */
+    private final long val;
+
+    /**
+     * Ctor.
+     *
+     * @param requestId Request id.
+     */
+    public ClientLongResponse(int requestId, long val) {
+        super(requestId);
+
+        this.val = val;
     }
 
-    /// <summary>
-    /// Test person 2.
-    /// </summary>
-    public class Person2 : Person
-    {
-        // No-op.
+    /** {@inheritDoc} */
+    @Override public void encode(BinaryRawWriterEx writer) {
+        super.encode(writer);
+
+        writer.writeLong(val);
     }
 }

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Tests.Client
+namespace Apache.Ignite.Core.Tests.Client.Cache
 {
     using System;
     using System.Collections.Concurrent;
@@ -30,29 +30,8 @@ namespace Apache.Ignite.Core.Tests.Client
     /// <summary>
     /// Thin client cache test.
     /// </summary>
-    public sealed class CacheTest
+    public sealed class CacheTest : ClientTestBase
     {
-        /** Cache name. */
-        private const string CacheName = "cache";
-
-        /// <summary>
-        /// Fixture tear down.
-        /// </summary>
-        [TestFixtureSetUp]
-        public void FixtureSetUp()
-        {
-            Ignition.Start(TestUtils.GetTestConfiguration());
-        }
-
-        /// <summary>
-        /// Fixture tear down.
-        /// </summary>
-        [TestFixtureTearDown]
-        public void FixtureTearDown()
-        {
-            Ignition.StopAll(true);
-        }
-
         /// <summary>
         /// Tests the cache put / get with primitive data types.
         /// </summary>
@@ -169,30 +148,6 @@ namespace Apache.Ignite.Core.Tests.Client
                 Environment.ProcessorCount, 5);
 
             clients.ToList().ForEach(x => x.Value.Dispose());
-        }
-
-        /// <summary>
-        /// Gets the cache.
-        /// </summary>
-        private static ICache<int, T> GetCache<T>()
-        {
-            return Ignition.GetIgnite().GetOrCreateCache<int, T>(CacheName);
-        }
-
-        /// <summary>
-        /// Gets the client.
-        /// </summary>
-        private static IIgnite GetClient()
-        {
-            return Ignition.GetClient(GetClientConfiguration());
-        }
-
-        /// <summary>
-        /// Gets the client configuration.
-        /// </summary>
-        private static IgniteClientConfiguration GetClientConfiguration()
-        {
-            return new IgniteClientConfiguration();
         }
     }
 }

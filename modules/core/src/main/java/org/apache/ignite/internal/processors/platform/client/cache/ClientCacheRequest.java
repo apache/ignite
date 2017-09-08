@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.platform.client.cache;
 
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryRawReader;
-import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 
 /**
@@ -47,9 +47,9 @@ class ClientCacheRequest extends ClientRequest {
      * @param ctx Kernal context.
      * @return Cache.
      */
-    protected IgniteCache getCache(GridKernalContext ctx) {
-        String cacheName = ctx.cache().context().cacheContext(cacheId).cache().name();
+    protected IgniteCache getCache(ClientConnectionContext ctx) {
+        String cacheName = ctx.kernalContext().cache().context().cacheContext(cacheId).cache().name();
 
-        return ctx.grid().cache(cacheName).withKeepBinary();
+        return ctx.kernalContext().grid().cache(cacheName).withKeepBinary();
     }
 }

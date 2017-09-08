@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,33 +15,29 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.platform.client;
+using System.Collections.Generic;
 
-import org.apache.ignite.internal.binary.BinaryRawWriterEx;
-import org.apache.ignite.internal.processors.odbc.SqlListenerResponse;
+namespace Apache.Ignite.Core.Impl.Cache.Client
+{
+    using Apache.Ignite.Core.Impl.Client;
 
-/**
- * Thin client response.
- */
-public class ClientResponse extends SqlListenerResponse {
-    /** Request id. */
-    private final int requestId;
+    /// <summary>
+    /// Client query type mapper.
+    /// </summary>
+    internal class ClientQueryType
+    {
+        private static readonly Dictionary<CacheOp, ClientOp> QueryTypes = new Dictionary<CacheOp, ClientOp>
+        {
+            {CacheOp.QryScan, ClientOp.QueryScan}
+        };
 
-    /**
-     * Ctor.
-     *
-     * @param requestId Request id.
-     */
-    public ClientResponse(int requestId) {
-        super(STATUS_SUCCESS, null);
-
-        this.requestId = requestId;
-    }
-
-    /**
-     * Encodes the response data.
-     */
-    public void encode(BinaryRawWriterEx writer) {
-        writer.writeInt(requestId);
+        /// <summary>
+        /// Gets the client op.
+        /// </summary>
+        public static ClientOp? GetClientOp(CacheOp cacheOp)
+        {
+            ClientOp res;
+            return QueryTypes.TryGetValue(cacheOp, out res) ? (ClientOp?) res : null;
+        }
     }
 }

@@ -27,15 +27,15 @@ import org.apache.ignite.internal.processors.odbc.SqlListenerResponse;
  * Thin client request handler.
  */
 public class ClientRequestHandler implements SqlListenerRequestHandler {
-    /** Kernal context. */
-    private final GridKernalContext ctx;
+    /** Client context. */
+    private final ClientConnectionContext ctx;
 
     /**
      * Ctor.
      *
      * @param ctx Kernal context.
      */
-    public ClientRequestHandler(GridKernalContext ctx) {
+    public ClientRequestHandler(ClientConnectionContext ctx) {
         assert ctx != null;
 
         this.ctx = ctx;

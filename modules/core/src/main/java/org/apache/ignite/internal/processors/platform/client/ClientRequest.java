@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.platform.client;
 
 import org.apache.ignite.binary.BinaryRawReader;
-import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.odbc.SqlListenerRequest;
 
 /**
@@ -51,7 +50,7 @@ public class ClientRequest extends SqlListenerRequest {
      *
      * @return Response.
      */
-    public ClientResponse process(GridKernalContext ctx) {
+    public ClientResponse process(ClientConnectionContext ctx) {
         return new ClientResponse(requestId);
     }
 }

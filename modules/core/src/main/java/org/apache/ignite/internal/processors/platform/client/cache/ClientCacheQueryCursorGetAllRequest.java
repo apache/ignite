@@ -15,42 +15,37 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.platform.client.binary;
+package org.apache.ignite.internal.processors.platform.client.cache;
 
 import org.apache.ignite.binary.BinaryRawReader;
-import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
-import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
+
+import javax.cache.Cache;
 
 /**
- * Binary type schema request.
+ * QueryCursor.getAll request.
  */
-public class ClientGetBinaryTypeSchemaRequest extends ClientRequest {
-    /** Type id. */
-    private final int typeId;
-
-    /** Schema id. */
-    private final int schemaId;
+public class ClientCacheQueryCursorGetAllRequest extends ClientRequest {
+    /** Cursor id. */
+    private final long cursorId;
 
     /**
      * Ctor.
      *
      * @param reader Reader.
      */
-    public ClientGetBinaryTypeSchemaRequest(BinaryRawReader reader) {
+    public ClientCacheQueryCursorGetAllRequest(BinaryRawReader reader) {
         super(reader);
 
-        typeId = reader.readInt();
-        schemaId = reader.readInt();
+        cursorId = reader.readLong();
     }
 
     /** {@inheritDoc} */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
-        int[] schema = PlatformUtils.getSchema((CacheObjectBinaryProcessorImpl)ctx.kernalContext().cacheObjects(),
-                typeId, schemaId);
+        ClientCacheQueryCursor<Cache.Entry> cur = ctx.handleRegistry().get(cursorId);
 
-        return new ClientGetBinaryTypeSchemaResponse(getRequestId(), schema);
+        return new ClientCacheQueryCursorGetAllResponse(getRequestId(), cur);
     }
 }

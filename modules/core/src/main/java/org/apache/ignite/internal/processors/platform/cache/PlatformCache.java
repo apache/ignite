@@ -1362,10 +1362,15 @@ public class PlatformCache extends PlatformAbstractTarget {
 
         qry.setPartition(part);
 
-        Object pred = reader.readObjectDetached();
+        byte predCode = reader.readByte();
 
-        if (pred != null)
+        if (predCode != 0) {
+            Object pred = reader.readObjectDetached();
+
+            assert pred != null;
+
             qry.setFilter(platformCtx.createCacheEntryFilter(pred, 0));
+        }
 
         qry.setLocal(loc);
 

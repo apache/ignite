@@ -70,19 +70,22 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
         /** <inheritdoc /> */
         public IList<T> GetAll()
         {
-            ThrowIfDisposed();
+            if (_getAllCalled)
+                throw new InvalidOperationException("Failed to get all entries because GetAll() " +
+                                                    "method has already been called.");
 
             if (_iterCalled)
-                throw new InvalidOperationException("Failed to get all entries because GetEnumerator() " + 
-                    "method has already been called.");
+                throw new InvalidOperationException("Failed to get all entries because GetEnumerator() " +
+                                                    "method has already been called.");
 
-            if (_getAllCalled)
-                throw new InvalidOperationException("Failed to get all entries because GetAll() " + 
-                    "method has already been called.");
+            ThrowIfDisposed();
 
             var res = GetAllInternal();
 
             _getAllCalled = true;
+
+            // GetAll renders cursor unusable, dispose it.
+            Dispose();
 
             return res;
         }
@@ -92,7 +95,11 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
         /** <inheritdoc /> */
         public IEnumerator<T> GetEnumerator()
         {
-            ThrowIfDisposed();
+            if (_getAllCalled)
+            {
+                throw new InvalidOperationException("Failed to get enumerator entries because " +
+                                                    "GetAll() method has already been called.");
+            }
 
             if (_iterCalled)
             {
@@ -100,11 +107,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
                                                     "GetEnumerator() method has already been called.");
             }
 
-            if (_getAllCalled)
-            {
-                throw new InvalidOperationException("Failed to get enumerator entries because " +
-                                                    "GetAll() method has already been called.");
-            }
+            ThrowIfDisposed();
 
             InitIterator();
 

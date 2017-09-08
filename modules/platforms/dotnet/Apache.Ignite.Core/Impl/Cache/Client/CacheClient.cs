@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Impl.Cache
+namespace Apache.Ignite.Core.Impl.Cache.Client
 {
     using System;
     using System.Collections;
@@ -31,6 +31,7 @@ namespace Apache.Ignite.Core.Impl.Cache
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
+    using Apache.Ignite.Core.Impl.Cache.Client.Query;
     using Apache.Ignite.Core.Impl.Client;
     using Apache.Ignite.Core.Impl.Common;
     using BinaryWriter = Apache.Ignite.Core.Impl.Binary.BinaryWriter;
@@ -71,7 +72,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public IEnumerator<ICacheEntry<TK, TV>> GetEnumerator()
         {
-            throw new NotImplementedException();
+            throw IgniteClient.GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
@@ -89,115 +90,115 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public IIgnite Ignite
         {
-            get { throw new NotImplementedException(); }
+            get { throw IgniteClient.GetClientNotSupportedException(); }
         }
 
         /** <inheritDoc /> */
         public CacheConfiguration GetConfiguration()
         {
-            throw new NotImplementedException();
+            throw IgniteClient.GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public bool IsEmpty()
         {
-            throw new NotImplementedException();
+            throw IgniteClient.GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public bool IsKeepBinary
         {
-            get { throw new NotImplementedException(); }
+            get { throw IgniteClient.GetClientNotSupportedException(); }
         }
 
         /** <inheritDoc /> */
         public ICache<TK, TV> WithSkipStore()
         {
-            throw new NotImplementedException();
+            throw IgniteClient.GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public ICache<TK, TV> WithExpiryPolicy(IExpiryPolicy plc)
         {
-            throw new NotImplementedException();
+            throw IgniteClient.GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public ICache<TK1, TV1> WithKeepBinary<TK1, TV1>()
         {
-            throw new NotImplementedException();
+            throw IgniteClient.GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public void LoadCache(ICacheEntryFilter<TK, TV> p, params object[] args)
         {
-            throw new NotImplementedException();
+            throw IgniteClient.GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public Task LoadCacheAsync(ICacheEntryFilter<TK, TV> p, params object[] args)
         {
-            throw new NotImplementedException();
+            throw IgniteClient.GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public void LocalLoadCache(ICacheEntryFilter<TK, TV> p, params object[] args)
         {
-            throw new NotImplementedException();
+            throw IgniteClient.GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public Task LocalLoadCacheAsync(ICacheEntryFilter<TK, TV> p, params object[] args)
         {
-            throw new NotImplementedException();
+            throw IgniteClient.GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public void LoadAll(IEnumerable<TK> keys, bool replaceExistingValues)
         {
-            throw new NotImplementedException();
+            throw IgniteClient.GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public Task LoadAllAsync(IEnumerable<TK> keys, bool replaceExistingValues)
         {
-            throw new NotImplementedException();
+            throw IgniteClient.GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public bool ContainsKey(TK key)
         {
-            throw new NotImplementedException();
+            throw IgniteClient.GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public Task<bool> ContainsKeyAsync(TK key)
         {
-            throw new NotImplementedException();
+            throw IgniteClient.GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public bool ContainsKeys(IEnumerable<TK> keys)
         {
-            throw new NotImplementedException();
+            throw IgniteClient.GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public Task<bool> ContainsKeysAsync(IEnumerable<TK> keys)
         {
-            throw new NotImplementedException();
+            throw IgniteClient.GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public TV LocalPeek(TK key, params CachePeekMode[] modes)
         {
-            throw new NotImplementedException();
+            throw IgniteClient.GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public bool TryLocalPeek(TK key, out TV value, params CachePeekMode[] modes)
         {
-            throw new NotImplementedException();
+            throw IgniteClient.GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
@@ -218,31 +219,31 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public Task<TV> GetAsync(TK key)
         {
-            throw new NotImplementedException();
+            throw IgniteClient.GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public bool TryGet(TK key, out TV value)
         {
-            throw new NotImplementedException();
+            throw IgniteClient.GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public Task<CacheResult<TV>> TryGetAsync(TK key)
         {
-            throw new NotImplementedException();
+            throw IgniteClient.GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public ICollection<ICacheEntry<TK, TV>> GetAll(IEnumerable<TK> keys)
         {
-            throw new NotImplementedException();
+            throw IgniteClient.GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public Task<ICollection<ICacheEntry<TK, TV>>> GetAllAsync(IEnumerable<TK> keys)
         {
-            throw new NotImplementedException();
+            throw IgniteClient.GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
@@ -261,337 +262,350 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public Task PutAsync(TK key, TV val)
         {
-            throw new NotImplementedException();
+            throw IgniteClient.GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public CacheResult<TV> GetAndPut(TK key, TV val)
         {
-            throw new NotImplementedException();
+            throw IgniteClient.GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public Task<CacheResult<TV>> GetAndPutAsync(TK key, TV val)
         {
-            throw new NotImplementedException();
+            throw IgniteClient.GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public CacheResult<TV> GetAndReplace(TK key, TV val)
         {
-            throw new NotImplementedException();
+            throw IgniteClient.GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public Task<CacheResult<TV>> GetAndReplaceAsync(TK key, TV val)
         {
-            throw new NotImplementedException();
+            throw IgniteClient.GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public CacheResult<TV> GetAndRemove(TK key)
         {
-            throw new NotImplementedException();
+            throw IgniteClient.GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public Task<CacheResult<TV>> GetAndRemoveAsync(TK key)
         {
-            throw new NotImplementedException();
+            throw IgniteClient.GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public bool PutIfAbsent(TK key, TV val)
         {
-            throw new NotImplementedException();
+            throw IgniteClient.GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public Task<bool> PutIfAbsentAsync(TK key, TV val)
         {
-            throw new NotImplementedException();
+            throw IgniteClient.GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public CacheResult<TV> GetAndPutIfAbsent(TK key, TV val)
         {
-            throw new NotImplementedException();
+            throw IgniteClient.GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public Task<CacheResult<TV>> GetAndPutIfAbsentAsync(TK key, TV val)
         {
-            throw new NotImplementedException();
+            throw IgniteClient.GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public bool Replace(TK key, TV val)
         {
-            throw new NotImplementedException();
+            throw IgniteClient.GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public Task<bool> ReplaceAsync(TK key, TV val)
         {
-            throw new NotImplementedException();
+            throw IgniteClient.GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public bool Replace(TK key, TV oldVal, TV newVal)
         {
-            throw new NotImplementedException();
+            throw IgniteClient.GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public Task<bool> ReplaceAsync(TK key, TV oldVal, TV newVal)
         {
-            throw new NotImplementedException();
+            throw IgniteClient.GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public void PutAll(IEnumerable<KeyValuePair<TK, TV>> vals)
         {
-            throw new NotImplementedException();
+            throw IgniteClient.GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public Task PutAllAsync(IEnumerable<KeyValuePair<TK, TV>> vals)
         {
-            throw new NotImplementedException();
+            throw IgniteClient.GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public void LocalEvict(IEnumerable<TK> keys)
         {
-            throw new NotImplementedException();
+            throw IgniteClient.GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public void Clear()
         {
-            throw new NotImplementedException();
+            throw IgniteClient.GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public Task ClearAsync()
         {
-            throw new NotImplementedException();
+            throw IgniteClient.GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public void Clear(TK key)
         {
-            throw new NotImplementedException();
+            throw IgniteClient.GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public Task ClearAsync(TK key)
         {
-            throw new NotImplementedException();
+            throw IgniteClient.GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public void ClearAll(IEnumerable<TK> keys)
         {
-            throw new NotImplementedException();
+            throw IgniteClient.GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public Task ClearAllAsync(IEnumerable<TK> keys)
         {
-            throw new NotImplementedException();
+            throw IgniteClient.GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public void LocalClear(TK key)
         {
-            throw new NotImplementedException();
+            throw IgniteClient.GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public void LocalClearAll(IEnumerable<TK> keys)
         {
-            throw new NotImplementedException();
+            throw IgniteClient.GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public bool Remove(TK key)
         {
-            throw new NotImplementedException();
+            throw IgniteClient.GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public Task<bool> RemoveAsync(TK key)
         {
-            throw new NotImplementedException();
+            throw IgniteClient.GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public bool Remove(TK key, TV val)
         {
-            throw new NotImplementedException();
+            throw IgniteClient.GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public Task<bool> RemoveAsync(TK key, TV val)
         {
-            throw new NotImplementedException();
+            throw IgniteClient.GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public void RemoveAll(IEnumerable<TK> keys)
         {
-            throw new NotImplementedException();
+            throw IgniteClient.GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public Task RemoveAllAsync(IEnumerable<TK> keys)
         {
-            throw new NotImplementedException();
+            throw IgniteClient.GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public void RemoveAll()
         {
-            throw new NotImplementedException();
+            throw IgniteClient.GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public Task RemoveAllAsync()
         {
-            throw new NotImplementedException();
+            throw IgniteClient.GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public int GetLocalSize(params CachePeekMode[] modes)
         {
-            throw new NotImplementedException();
+            throw IgniteClient.GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public int GetSize(params CachePeekMode[] modes)
         {
-            throw new NotImplementedException();
+            throw IgniteClient.GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public Task<int> GetSizeAsync(params CachePeekMode[] modes)
         {
-            throw new NotImplementedException();
+            throw IgniteClient.GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public IQueryCursor<ICacheEntry<TK, TV>> Query(QueryBase qry)
         {
-            throw new NotImplementedException();
+            IgniteArgumentCheck.NotNull(qry, "qry");
+
+            var opId = ClientQueryType.GetClientOp(qry.OpId);
+
+            if (opId == null)
+            {
+                throw IgniteClient.GetClientNotSupportedException();
+            }
+
+            // Filter is a binary object for all platforms.
+            // For .NET it is a CacheEntryFilterHolder with a predefined id (BinaryTypeId.CacheEntryPredicateHolder).
+            var cursorId = DoOutInOp(opId.Value, w => qry.Write(w, false), s => s.ReadLong());
+
+            return new ClientQueryCursor<TK, TV>(_ignite, cursorId, false);
         }
 
         /** <inheritDoc /> */
         public IQueryCursor<IList> QueryFields(SqlFieldsQuery qry)
         {
-            throw new NotImplementedException();
+            throw IgniteClient.GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public IContinuousQueryHandle QueryContinuous(ContinuousQuery<TK, TV> qry)
         {
-            throw new NotImplementedException();
+            throw IgniteClient.GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public IContinuousQueryHandle<ICacheEntry<TK, TV>> QueryContinuous(ContinuousQuery<TK, TV> qry, QueryBase initialQry)
         {
-            throw new NotImplementedException();
+            throw IgniteClient.GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public IEnumerable<ICacheEntry<TK, TV>> GetLocalEntries(params CachePeekMode[] peekModes)
         {
-            throw new NotImplementedException();
+            throw IgniteClient.GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public TRes Invoke<TArg, TRes>(TK key, ICacheEntryProcessor<TK, TV, TArg, TRes> processor, TArg arg)
         {
-            throw new NotImplementedException();
+            throw IgniteClient.GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public Task<TRes> InvokeAsync<TArg, TRes>(TK key, ICacheEntryProcessor<TK, TV, TArg, TRes> processor, TArg arg)
         {
-            throw new NotImplementedException();
+            throw IgniteClient.GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public ICollection<ICacheEntryProcessorResult<TK, TRes>> InvokeAll<TArg, TRes>(IEnumerable<TK> keys, ICacheEntryProcessor<TK, TV, TArg, TRes> processor, TArg arg)
         {
-            throw new NotImplementedException();
+            throw IgniteClient.GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public Task<ICollection<ICacheEntryProcessorResult<TK, TRes>>> InvokeAllAsync<TArg, TRes>(IEnumerable<TK> keys, ICacheEntryProcessor<TK, TV, TArg, TRes> processor, TArg arg)
         {
-            throw new NotImplementedException();
+            throw IgniteClient.GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public ICacheLock Lock(TK key)
         {
-            throw new NotImplementedException();
+            throw IgniteClient.GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public ICacheLock LockAll(IEnumerable<TK> keys)
         {
-            throw new NotImplementedException();
+            throw IgniteClient.GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public bool IsLocalLocked(TK key, bool byCurrentThread)
         {
-            throw new NotImplementedException();
+            throw IgniteClient.GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public ICacheMetrics GetMetrics()
         {
-            throw new NotImplementedException();
+            throw IgniteClient.GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public ICacheMetrics GetMetrics(IClusterGroup clusterGroup)
         {
-            throw new NotImplementedException();
+            throw IgniteClient.GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public ICacheMetrics GetLocalMetrics()
         {
-            throw new NotImplementedException();
+            throw IgniteClient.GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public Task Rebalance()
         {
-            throw new NotImplementedException();
+            throw IgniteClient.GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public ICache<TK, TV> WithNoRetries()
         {
-            throw new NotImplementedException();
+            throw IgniteClient.GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public ICache<TK, TV> WithPartitionRecover()
         {
-            throw new NotImplementedException();
+            throw IgniteClient.GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public ICollection<int> GetLostPartitions()
         {
-            throw new NotImplementedException();
+            throw IgniteClient.GetClientNotSupportedException();
         }
 
         /// <summary>
