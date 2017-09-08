@@ -1825,7 +1825,7 @@ public class GridCacheContext<K, V> implements Externalizable {
             ctx.query().validateKeyAndValue(cacheObjCtx, key, val);
         }
         catch (RuntimeException e) {
-            throw new IgniteCheckedException("Failed to validate key and/or value for SQL constraints.", e);
+            throw U.cast(e);
         }
     }
 
