@@ -1122,7 +1122,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         assert res != null;
 
         GridDhtColocatedLockFuture fut = (GridDhtColocatedLockFuture)ctx.mvcc().
-            <Boolean>mvccFuture(res.version(), res.futureId());
+            <Boolean>versionedFuture(res.version(), res.futureId());
 
         if (fut != null)
             fut.onResult(nodeId, res);

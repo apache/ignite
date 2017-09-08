@@ -17,21 +17,35 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheEntry;
 
 /**
- * Distributed future aware of MVCC locking.
+ * Lock and Unlock callbacks.
  */
-public interface GridCacheMvccFuture<T> extends GridCacheFuture<T> {
+public interface GridCacheLockCallback {
     /**
-     * @return Future version.
+     * Called when entry gets a first candidate. This call
+     * happens within entry internal synchronization.
+     *
+     * @param entry Entry.
      */
-    public GridCacheVersion version();
+    public void onLocked(GridDistributedCacheEntry entry);
 
     /**
-     * @param entry Entry which received new owner.
-     * @param owner Owner.
-     * @return {@code True} if future cares about this entry.
+     * Called when entry lock ownership changes. This call
+     * happens outside of synchronization so external callbacks
+     * can be made from this call.
+     *
+     * @param entry Entry.
+     * @param owner Current owner.
      */
-    public boolean onOwnerChanged(GridCacheEntryEx entry, GridCacheMvccCandidate owner);
+    public void onOwnerChanged(GridCacheEntryEx entry, GridCacheMvccCandidate owner);
+
+    /**
+     * Called when entry has no more candidates. This call happens
+     * within entry internal synchronization.
+     *
+     * @param entry Entry
+     */
+    public void onFreed(GridDistributedCacheEntry entry);
 }
