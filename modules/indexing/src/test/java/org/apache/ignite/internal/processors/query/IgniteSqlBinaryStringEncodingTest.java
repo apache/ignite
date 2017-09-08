@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.internal.processors.query;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -26,24 +26,24 @@ import java.util.List;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.query.QueryCursor;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.processors.cache.CacheBinaryStringEncodingPersistenceTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.binary.BinaryStringEncoding.ENC_NAME_WINDOWS_1251;
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
- * Persistence tests for data with custom binary string encoding.
+ * SQL tests for data with custom binary string encoding.
  */
-public class CacheBinaryStringEncodingPersistenceTest extends GridCommonAbstractTest {
+public class IgniteSqlBinaryStringEncodingTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
@@ -58,8 +58,6 @@ public class CacheBinaryStringEncodingPersistenceTest extends GridCommonAbstract
 
         cfg.setClientMode(false);
 
-        cfg.setPersistentStoreConfiguration(new PersistentStoreConfiguration());
-
         QueryEntity entity = new QueryEntity();
 
         entity.setKeyType(Integer.class.getName());
@@ -72,10 +70,7 @@ public class CacheBinaryStringEncodingPersistenceTest extends GridCommonAbstract
         entity.setFields(fields);
 
         cfg.setCacheConfiguration(
-            new CacheConfiguration<Integer, City>(CACHE_NAME)
-                .setBackups(1)
-                .setAtomicityMode(TRANSACTIONAL)
-                .setWriteSynchronizationMode(FULL_SYNC)
+            new CacheConfiguration<Integer, CacheBinaryStringEncodingPersistenceTest.City>(CACHE_NAME)
                 .setQueryEntities(Collections.singletonList(entity))
         );
 
@@ -92,61 +87,48 @@ public class CacheBinaryStringEncodingPersistenceTest extends GridCommonAbstract
         return cfg.setMarshaller(new BinaryMarshaller());
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
-        stopAllGrids();
-
-        super.afterTest();
-    }
-
     /** */
     public void testReversiblePersistAndRestore() throws Exception {
         List<String> names = Arrays.asList("Новгород", "Chicago");
 
-        assertEqualsCollections(names, persistAndRestore(names));
+        assertEqualsCollections(names, putThenGet(names));
     }
 
     /** */
     public void testIrreversiblePersistAndRestore() throws Exception {
         List<String> names = Arrays.asList("Düsseldorf", "北京市");
 
-        for (Iterator<String> iter1 = names.iterator(), iter2 = persistAndRestore(names).iterator(); iter1.hasNext();)
+        for (Iterator<String> iter1 = names.iterator(), iter2 = putThenGet(names).iterator(); iter1.hasNext();)
             assertFalse(iter1.next().equals(iter2.next()));
     }
 
     /** */
-    private List<String> persistAndRestore(List<String> cityNames) throws Exception {
-        Ignite ignite = startGrid(0);
+    private List<String> putThenGet(List<String> cityNames) throws Exception {
+        try {
+            Ignite ignite = startGrid(0);
 
-        ignite.active(true);
+            IgniteCache<Integer, CacheBinaryStringEncodingPersistenceTest.City> cache = ignite.cache(CACHE_NAME);
 
-        IgniteCache<Integer, City> cache = ignite.cache(CACHE_NAME);
+            for (int i = 0; i < cityNames.size(); i++)
+                cache.query(new SqlFieldsQuery("insert into City (_key, _val) values (?, ?)")
+                    .setArgs(i, new City(i, cityNames.get(i))));
 
-        for (int i = 0; i < cityNames.size(); i++)
-            cache.put(i, new City(i, cityNames.get(i)));
+            List<String> result = new ArrayList<>(0);
 
-        ignite.close();
+            QueryCursor<List<?>> cur = cache.query(new SqlFieldsQuery("select id, name from City"));
 
-        ignite = startGrid(0);
+            for (List<?> rec : cur) {
+                assertEquals(2, rec.size());
 
-        ignite.active(true);
+                assertTrue(rec.get(1) instanceof String);
 
-        cache = ignite.cache(CACHE_NAME);
+                result.add((String)rec.get(1));
+            }
 
-        List<String> result = new ArrayList<>(0);
-
-        for (int i = 0; i < cityNames.size(); i++) {
-            City city = cache.get(i);
-
-            assertNotNull(city);
-            assertNotNull(city.name());
-
-            result.add(city.name());
+            return result;
+        } finally {
+            stopAllGrids();
         }
-
-        cache.clear();
-
-        return result;
     }
 
     public static class City {
