@@ -403,7 +403,7 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
     public void testVersions() throws Exception {
         try (Connection conn = DriverManager.getConnection(BASE_URL)) {
             assertEquals("Apache Ignite", conn.getMetaData().getDatabaseProductName());
-            assertEquals("Ignite JDBC Driver", conn.getMetaData().getDriverName());
+            assertEquals(JdbcDatabaseMetadata.DRIVER_NAME, conn.getMetaData().getDriverName());
             assertEquals(IgniteVersionUtils.VER.toString(), conn.getMetaData().getDatabaseProductVersion());
             assertEquals(IgniteVersionUtils.VER.toString(), conn.getMetaData().getDriverVersion());
             assertEquals(IgniteVersionUtils.VER.major(), conn.getMetaData().getDatabaseMajorVersion());

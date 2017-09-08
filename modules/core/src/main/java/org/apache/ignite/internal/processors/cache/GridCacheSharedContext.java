@@ -162,6 +162,9 @@ public class GridCacheSharedContext<K, V> {
     /** Concurrent DHT atomic updates counters. */
     private AtomicIntegerArray dhtAtomicUpdCnt;
 
+    /** Rebalance enabled flag. */
+    private boolean rebalanceEnabled = true;
+
     /** */
     private final List<IgniteChangeGlobalStateSupport> stateAwareMgrs;
 
@@ -321,6 +324,23 @@ public class GridCacheSharedContext<K, V> {
      */
     public IgniteLogger txRecoveryMessageLogger() {
         return txRecoveryMsgLog;
+    }
+
+    /**
+     * @return rebalance enabled flag.
+     */
+    public boolean isRebalanceEnabled() {
+        return this.rebalanceEnabled;
+    }
+
+    /**
+     * @param rebalanceEnabled rebalance enabled flag.
+     */
+    public void rebalanceEnabled(boolean rebalanceEnabled) {
+        this.rebalanceEnabled = rebalanceEnabled;
+
+        if (rebalanceEnabled)
+            cache().enableRebalance();
     }
 
     /**

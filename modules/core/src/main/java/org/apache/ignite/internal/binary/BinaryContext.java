@@ -1367,6 +1367,20 @@ public class BinaryContext {
     }
 
     /**
+     * Unregisters the user types descriptors.
+     **/
+    public void unregisterUserTypeDescriptors() {
+        Iterator<Map.Entry<Class<?>, BinaryClassDescriptor>> it = descByCls.entrySet().iterator();
+
+        while (it.hasNext()) {
+            Map.Entry<Class<?>, BinaryClassDescriptor> e = it.next();
+
+            if (e.getValue().userType())
+                it.remove();
+        }
+    }
+
+    /**
      * Returns instance of {@link OptimizedMarshaller}.
      *
      * @return Optimized marshaller.
