@@ -1512,12 +1512,17 @@ public class GridSqlQuerySplitter {
         }
 
         // -- SUB-QUERIES
-        boolean hasSubQueries = hasSubQueries(mapQry.where());
+        boolean hasSubQueries = hasSubQueries(mapQry.where()) || hasSubQueries(mapQry.from());
 
-        hasSubQueries |= hasSubQueries(mapQry.from());
+        if (!hasSubQueries) {
+            for (int i = 0; i < mapQry.columns(false).size(); i++) {
+                if (hasSubQueries(mapQry.column(i))) {
+                    hasSubQueries = true;
 
-        for (int i = 0; i < mapQry.columns(false).size(); i++)
-            hasSubQueries |= hasSubQueries(mapQry.column(i));
+                    break;
+                }
+            }
+        }
 
         // Replace the given select with generated reduce query in the parent.
         prnt.child(childIdx, rdcQry);
