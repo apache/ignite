@@ -220,7 +220,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             plc,
             concurrency,
             isolation,
-            timeout == 0 ? 0 : Math.max(100, timeout),
+            timeout,
             false,
             storeEnabled,
             false,
@@ -230,7 +230,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
         mappings = implicitSingle ? new IgniteTxMappingsSingleImpl() : new IgniteTxMappingsImpl();
 
-        if (this.timeout > 0)
+        if (this.timeout() > 0 && !implicit())
             cctx.time().addTimeoutObject(this);
 
         initResult();
@@ -3151,7 +3151,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             // Prepare was called explicitly.
             return fut;
 
-        if (timeout() > 0)
+        if (timeout() > 0 && !implicit())
             cctx.time().removeTimeoutObject(this);
 
         mapExplicitLocks();
@@ -3266,7 +3266,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         if (log.isDebugEnabled())
             log.debug("Rolling back near tx: " + this);
 
-        if (remainingTime() > 0)
+        if (remainingTime() > 0 && !implicit())
             cctx.time().removeTimeoutObject(this);
 
         if (fastFinish()) {
@@ -3701,7 +3701,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         if (state != ROLLING_BACK && state != ROLLED_BACK && state != COMMITTING && state != COMMITTED)
             rollback();
 
-        cctx.tm().onLocalClose(threadId(), this);
+        cctx.tm().onLocalClose();
 
         synchronized (this) {
             try {
@@ -4003,14 +4003,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             ((GridFutureAdapter)fut).ignoreInterrupts();
 
         return fut;
-    }
-
-    /**
-     * @param threadId new owner of transaction.
-     * @throws IgniteCheckedException if method executed not in the middle of resume or suspend.
-     */
-    public void threadId(long threadId) {
-        this.threadId = threadId;
     }
 
     /**

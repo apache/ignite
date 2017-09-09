@@ -155,8 +155,7 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
         try {
             GridNearTxLocal tx = cctx.tm().userTx(sysCacheCtx);
 
-            // Allow to start new transaction if previous transaction was rolled back by timeout.
-            if (tx != null && !(tx.state() == TransactionState.ROLLED_BACK && tx.timedOut()))
+            if (tx != null)
                 throw new IllegalStateException("Failed to start new transaction " +
                     "(current thread already has a transaction): " + tx);
 

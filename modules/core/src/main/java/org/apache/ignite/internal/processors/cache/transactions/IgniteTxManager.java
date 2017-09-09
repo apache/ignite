@@ -148,8 +148,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     /** Topology version should be used when mapping internal tx. */
     private final ThreadLocal<AffinityTopologyVersion> txTop = new ThreadLocal<>();
 
-    /** Per-thread transaction map. */
-    private final ConcurrentMap<Long, IgniteInternalTx> threadMap = newMap();
+    /** User transaction. */
+    private final static ThreadLocal<IgniteInternalTx> userTx = new ThreadLocal<>();
 
     /** Per-thread system transaction map. */
     private final ConcurrentMap<TxThreadKey, IgniteInternalTx> sysThreadMap = newMap();
@@ -282,19 +282,17 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @param cacheId Cache ID.
      */
     public void rollbackTransactionsForCache(int cacheId) {
-        rollbackTransactionsForCache(cacheId, nearIdMap);
+        rollbackTransactionsForCache(cacheId, nearIdMap.values());
 
-        rollbackTransactionsForCache(cacheId, threadMap);
+        rollbackTransactionsForCache(cacheId, Collections.singleton(userTx.get()));
     }
 
     /**
      * @param cacheId Cache ID.
      * @param txMap Transactions map.
      */
-    private void rollbackTransactionsForCache(int cacheId, ConcurrentMap<?, IgniteInternalTx> txMap) {
-        for (Map.Entry<?, IgniteInternalTx> e : txMap.entrySet()) {
-            IgniteInternalTx tx = e.getValue();
-
+    private void rollbackTransactionsForCache(int cacheId, Collection<IgniteInternalTx> txMap) {
+        for (IgniteInternalTx tx : txMap) {
             for (IgniteTxEntry entry : tx.allEntries()) {
                 if (entry.cacheId() == cacheId) {
                     rollbackTx(tx);
@@ -309,8 +307,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     @Override public void onDisconnected(IgniteFuture reconnectFut) {
         txFinishSync.onDisconnected(reconnectFut);
 
-        for (Map.Entry<Long, IgniteInternalTx> e : threadMap.entrySet())
-            rollbackTx(e.getValue());
+        for (IgniteInternalTx tx : activeTransactions())
+            rollbackTx(tx);
 
         IgniteClientDisconnectedException err =
             new IgniteClientDisconnectedException(reconnectFut, "Client node disconnected.");
@@ -369,8 +367,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     @Override public void printMemoryStats() {
         X.println(">>> ");
         X.println(">>> Transaction manager memory stats [igniteInstanceName=" + cctx.igniteInstanceName() + ']');
-        X.println(">>>   threadMapSize: " + threadMap.size());
-        X.println(">>>   idMap [size=" + idMap.size() + ']');
+        X.println(">>>   activeSize [size=" + activeTransactions().size() + ']');
         X.println(">>>   completedVersSortedSize: " + completedVersSorted.size());
         X.println(">>>   completedVersHashMapSize: " + completedVersHashMap.sizex());
     }
@@ -379,7 +376,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @return Thread map size.
      */
     public int threadMapSize() {
-        return threadMap.size();
+        return 0;
     }
 
     /**
@@ -488,7 +485,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             // and overwrite local transaction.
             if (tx.local() && !tx.dht()) {
                 if (cacheCtx == null || !cacheCtx.systemTx())
-                    threadMap.put(tx.threadId(), tx);
+                    userTx.set(tx);
                 else
                     sysThreadMap.put(new TxThreadKey(tx.threadId(), cacheCtx.cacheId()), tx);
             }
@@ -665,7 +662,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @return Not null topology version if current thread holds lock preventing topology change.
      */
     @Nullable public AffinityTopologyVersion lockedTopologyVersion(long threadId, IgniteInternalTx ignore) {
-        IgniteInternalTx tx = threadMap.get(threadId);
+        IgniteInternalTx tx = userTx.get();
 
         if (tx != null) {
             AffinityTopologyVersion topVer = tx.topologyVersionSnapshot();
@@ -772,7 +769,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     @SuppressWarnings({"unchecked"})
     private <T> T tx(GridCacheContext cctx, long threadId) {
         if (cctx == null || !cctx.systemTx())
-            return (T)threadMap.get(threadId);
+            return (T) userTx.get();
 
         TxThreadKey key = new TxThreadKey(threadId, cctx.cacheId());
 
@@ -1421,26 +1418,19 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @param tx Transaction to clear.
      */
     private void clearThreadMap(IgniteInternalTx tx) {
-        if (tx.local() && !tx.dht()) {
-            if (!tx.system()) {
-                /** Timed out local transactions are cleared in {@link #onLocalClose}. */
-                if (!tx.timedOut() || !tx.pessimistic())
-                    threadMap.remove(tx.threadId(), tx);
-            }
+        if (tx.local() && !tx.dht() && tx.system()) {
+            Integer cacheId = tx.txState().firstCacheId();
+
+            if (cacheId != null)
+                sysThreadMap.remove(new TxThreadKey(tx.threadId(), cacheId), tx);
             else {
-                Integer cacheId = tx.txState().firstCacheId();
+                for (Iterator<IgniteInternalTx> it = sysThreadMap.values().iterator(); it.hasNext(); ) {
+                    IgniteInternalTx txx = it.next();
 
-                if (cacheId != null)
-                    sysThreadMap.remove(new TxThreadKey(tx.threadId(), cacheId), tx);
-                else {
-                    for (Iterator<IgniteInternalTx> it = sysThreadMap.values().iterator(); it.hasNext(); ) {
-                        IgniteInternalTx txx = it.next();
+                    if (tx == txx) {
+                        it.remove();
 
-                        if (tx == txx) {
-                            it.remove();
-
-                            break;
-                        }
+                        break;
                     }
                 }
             }
@@ -2279,7 +2269,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      */
     public void resumeTx(GridNearTxLocal tx) throws IgniteCheckedException {
         assert tx != null && !tx.system() : tx;
-        assert !threadMap.containsValue(tx) : tx;
         assert !transactionMap(tx).containsValue(tx) : tx;
         assert !haveSystemTxForThread(Thread.currentThread().getId());
 
@@ -2288,15 +2277,13 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 + "[expected=" + SUSPENDED + ", actual=" + tx.state() + ']');
         }
 
-        long threadId = Thread.currentThread().getId();
+        if (userTx.get() != null)
+            throw new IgniteCheckedException("Thread already has started transaction.");
 
-        if (threadMap.putIfAbsent(threadId, tx) != null)
-            throw new IgniteCheckedException("Thread already start a transaction.");
+        userTx.set(tx);
 
         if (transactionMap(tx).putIfAbsent(tx.xidVersion(), tx) != null)
-            throw new IgniteCheckedException("Thread already start a transaction.");
-
-        tx.threadId(threadId);
+            throw new IgniteCheckedException("Thread already has started transaction.");
     }
 
     /**
@@ -2317,13 +2304,9 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         return false;
     }
 
-    /**
-     * Callback for closing local transaction.
-     * @param threadId Thread ID.
-     * @param tx Local transaction.
-     */
-    public void onLocalClose(long threadId, GridNearTxLocal tx) {
-        threadMap.remove(threadId, tx);
+    /** */
+    public void onLocalClose() {
+        userTx.set(null);
     }
 
     /**
