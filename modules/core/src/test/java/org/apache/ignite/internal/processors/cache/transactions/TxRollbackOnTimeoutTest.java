@@ -30,11 +30,13 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.GridConcurrentSkipListSet;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionTimeoutException;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -209,10 +211,20 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
         IgniteEx client = (IgniteEx)startGrid("client");
 
         for (int i = 0; i < 5; i++)
-            testTimeoutRemoval(grid(0), i);
+            testTimeoutRemoval0(grid(0), i, TX_TIMEOUT);
 
         for (int i = 0; i < 5; i++)
-            testTimeoutRemoval(client, i);
+            testTimeoutRemoval0(client, i, TX_TIMEOUT);
+
+        for (int i = 0; i < 5; i++)
+            testTimeoutRemoval0(grid(0), i, 1);
+
+        for (int i = 0; i < 5; i++)
+            testTimeoutRemoval0(client, i, 1);
+
+        // Repeat with more iterations to make sure everything is cleared.
+        for (int i = 0; i < 500; i++)
+            testTimeoutRemoval0(client, 2, 1);
     }
 
     /**
@@ -220,10 +232,10 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
      * @param mode Test mode.
      * @throws Exception If failed.
      */
-    private void testTimeoutRemoval(IgniteEx near, int mode) throws Exception {
+    private void testTimeoutRemoval0(IgniteEx near, int mode, long timeout) throws Exception {
         GridTimeoutProcessor timeProc = near.context().cache().context().time();
 
-        try (Transaction tx = near.transactions().txStart()) {
+        try (Transaction tx = near.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, timeout, 1)) {
             near.cache(CACHE_NAME).put(1, 1);
 
             switch (mode) {
@@ -250,11 +262,18 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
                     fail();
             }
         }
+        catch (TransactionTimeoutException e) {
+            // No-op.
+        }
+        catch (CacheException e) {
+            assertTrue("Only timeout exception is possible", X.hasCause(e, TransactionTimeoutException.class));
+        }
 
         GridConcurrentSkipListSet set = U.field(timeProc, "timeoutObjs");
 
         for (Object obj : set)
-            assertFalse("Not remove for mode: " + mode, obj.getClass().isAssignableFrom(GridNearTxLocal.class));
+            assertFalse("Not remove for mode=" + mode + " and timeout=" + timeout,
+                    obj.getClass().isAssignableFrom(GridNearTxLocal.class));
     }
 
     /**

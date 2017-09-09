@@ -3266,9 +3266,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         if (log.isDebugEnabled())
             log.debug("Rolling back near tx: " + this);
 
-        if (remainingTime() > 0 && !implicit())
-            cctx.time().removeTimeoutObject(this);
-
         if (fastFinish()) {
             state(PREPARING);
             state(PREPARED);
@@ -3696,6 +3693,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
     /** {@inheritDoc} */
     @Override public void close() throws IgniteCheckedException {
+        if (timeout() > 0 && !implicit())
+            cctx.time().removeTimeoutObject(this);
+
         TransactionState state = state();
 
         if (state != ROLLING_BACK && state != ROLLED_BACK && state != COMMITTING && state != COMMITTED)
