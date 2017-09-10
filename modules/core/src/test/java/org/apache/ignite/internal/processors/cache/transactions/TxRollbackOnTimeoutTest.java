@@ -18,17 +18,18 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.locks.LockSupport;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
-import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.GridConcurrentSkipListSet;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -36,6 +37,8 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionTimeoutException;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -47,7 +50,10 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  */
 public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
     /** */
-    private static final long TX_TIMEOUT = 3_000L;
+    private static final long TX_TIMEOUT_MIN = 1;
+
+    /** */
+    private static final long TX_TIMEOUT = 300;
 
     /** */
     private static final String CACHE_NAME = "test";
@@ -217,24 +223,62 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
             testTimeoutRemoval0(client, i, TX_TIMEOUT);
 
         for (int i = 0; i < 5; i++)
-            testTimeoutRemoval0(grid(0), i, 1);
+            testTimeoutRemoval0(grid(0), i, TX_TIMEOUT_MIN);
 
         for (int i = 0; i < 5; i++)
-            testTimeoutRemoval0(client, i, 1);
+            testTimeoutRemoval0(client, i, TX_TIMEOUT_MIN);
 
         // Repeat with more iterations to make sure everything is cleared.
         for (int i = 0; i < 500; i++)
-            testTimeoutRemoval0(client, 2, 1);
+            testTimeoutRemoval0(client, 2, TX_TIMEOUT_MIN);
+    }
+
+    /**
+     * Tests timeouts in all tx configurations.
+     *
+     * @throws Exception If failed.
+     */
+    public void testSimple() throws Exception {
+        for (TransactionConcurrency concurrency : TransactionConcurrency.values())
+            for (TransactionIsolation isolation : TransactionIsolation.values())
+                testSimple0(concurrency, isolation);
+    }
+
+    /**
+     * @param concurrency Concurrency.
+     * @param isolation Isolation.
+     *
+     * @throws Exception If failed.
+     */
+    private void testSimple0(TransactionConcurrency concurrency, TransactionIsolation isolation) throws Exception {
+        Ignite near = grid(0);
+
+        final int key = 1, val = 1;
+
+        try (Transaction tx = near.transactions().txStart(concurrency, isolation, TX_TIMEOUT, 1)) {
+            near.cache(CACHE_NAME).put(key, val);
+
+            U.sleep(TX_TIMEOUT * 3);
+
+            try {
+                tx.commit();
+
+                fail("Tx must timeout");
+            } catch (IgniteException e) {
+                assertTrue("Expected timeout exception", X.hasCause(e, TransactionTimeoutException.class));
+            }
+        }
+
+        assertFalse("Must be removed by rollback on timeout", near.cache(CACHE_NAME).containsKey(key));
     }
 
     /**
      * @param near Node.
      * @param mode Test mode.
+     *
      * @throws Exception If failed.
      */
     private void testTimeoutRemoval0(IgniteEx near, int mode, long timeout) throws Exception {
-        GridTimeoutProcessor timeProc = near.context().cache().context().time();
-
         try (Transaction tx = near.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, timeout, 1)) {
             near.cache(CACHE_NAME).put(1, 1);
 
@@ -269,7 +313,7 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
             assertTrue("Only timeout exception is possible", X.hasCause(e, TransactionTimeoutException.class));
         }
 
-        GridConcurrentSkipListSet set = U.field(timeProc, "timeoutObjs");
+        GridConcurrentSkipListSet set = U.field(near.context().cache().context().time(), "timeoutObjs");
 
         for (Object obj : set)
             assertFalse("Not remove for mode=" + mode + " and timeout=" + timeout,
