@@ -282,9 +282,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @param cacheId Cache ID.
      */
     public void rollbackTransactionsForCache(int cacheId) {
-        rollbackTransactionsForCache(cacheId, nearIdMap.values());
-
-        rollbackTransactionsForCache(cacheId, Collections.singleton(userTx.get()));
+        rollbackTransactionsForCache(cacheId, activeTransactions());
     }
 
     /**
@@ -2278,12 +2276,12 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         }
 
         if (userTx.get() != null)
-            throw new IgniteCheckedException("Thread already has started transaction.");
+            throw new IgniteCheckedException("Thread already has active transaction.");
 
         userTx.set(tx);
 
         if (transactionMap(tx).putIfAbsent(tx.xidVersion(), tx) != null)
-            throw new IgniteCheckedException("Thread already has started transaction.");
+            throw new IgniteCheckedException("Thread already has active transaction.");
     }
 
     /**
@@ -2305,7 +2303,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     }
 
     /** */
-    public void onLocalClose() {
+    public void resetUserTx() {
         userTx.set(null);
     }
 

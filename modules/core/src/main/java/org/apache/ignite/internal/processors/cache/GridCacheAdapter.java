@@ -4035,7 +4035,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         GridNearTxLocal tx = ctx.tm().threadLocalTx(ctx);
 
         if (tx != null && tx.state() == TransactionState.ROLLED_BACK && tx.timedOut())
-            throw new IgniteTxTimeoutCheckedException("Previous transaction was rolled back by timeout. " +
+            throw new IgniteTxTimeoutCheckedException("Previous transaction was rolled back due to timeout. " +
                 "Please start new transaction and retry an operation.");
 
         if (tx == null || tx.implicit()) {

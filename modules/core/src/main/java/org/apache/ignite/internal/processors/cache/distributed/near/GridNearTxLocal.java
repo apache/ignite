@@ -3151,9 +3151,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             // Prepare was called explicitly.
             return fut;
 
-        if (timeout() > 0 && !implicit())
-            cctx.time().removeTimeoutObject(this);
-
         mapExplicitLocks();
 
         fut.prepare();
@@ -3701,7 +3698,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         if (state != ROLLING_BACK && state != ROLLED_BACK && state != COMMITTING && state != COMMITTED)
             rollback();
 
-        cctx.tm().onLocalClose();
+        if (!system())
+            cctx.tm().resetUserTx();
 
         synchronized (this) {
             try {

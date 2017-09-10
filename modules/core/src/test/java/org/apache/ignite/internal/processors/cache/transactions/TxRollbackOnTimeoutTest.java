@@ -18,12 +18,10 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.locks.LockSupport;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
@@ -50,10 +48,13 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  */
 public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
     /** */
-    private static final long TX_TIMEOUT_MIN = 1;
+    private static final long TX_MIN_TIMEOUT = 1;
 
     /** */
     private static final long TX_TIMEOUT = 300;
+
+    /** */
+    private static final long TX_DEFAULT_TIMEOUT = 3_000;
 
     /** */
     private static final String CACHE_NAME = "test";
@@ -79,7 +80,7 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
         TransactionConfiguration txCfg = new TransactionConfiguration();
-        txCfg.setDefaultTxTimeout(TX_TIMEOUT);
+        txCfg.setDefaultTxTimeout(TX_DEFAULT_TIMEOUT);
 
         cfg.setTransactionConfiguration(txCfg);
 
@@ -223,14 +224,14 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
             testTimeoutRemoval0(client, i, TX_TIMEOUT);
 
         for (int i = 0; i < 5; i++)
-            testTimeoutRemoval0(grid(0), i, TX_TIMEOUT_MIN);
+            testTimeoutRemoval0(grid(0), i, TX_MIN_TIMEOUT);
 
         for (int i = 0; i < 5; i++)
-            testTimeoutRemoval0(client, i, TX_TIMEOUT_MIN);
+            testTimeoutRemoval0(client, i, TX_MIN_TIMEOUT);
 
         // Repeat with more iterations to make sure everything is cleared.
         for (int i = 0; i < 500; i++)
-            testTimeoutRemoval0(client, 2, TX_TIMEOUT_MIN);
+            testTimeoutRemoval0(client, 2, TX_MIN_TIMEOUT);
     }
 
     /**
