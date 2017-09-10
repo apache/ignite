@@ -434,12 +434,12 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         Object... invokeArgs
     ) {
         return (IgniteInternalFuture<GridCacheReturn>)putAllAsync0(cacheCtx,
-            entryTopVer,
-            null,
-            map,
-            invokeArgs,
-            null,
-            true);
+                entryTopVer,
+                null,
+                map,
+                invokeArgs,
+                null,
+                true);
     }
 
     /**
@@ -458,12 +458,12 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         });
 
         return this.<Object, Object>putAllAsync0(cacheCtx,
-            null,
-            map,
-            null,
-            null,
-            drMap,
-            false);
+                null,
+                map,
+                null,
+                null,
+                drMap,
+                false);
     }
 
     /**
@@ -2486,8 +2486,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                         processLoaded(map, keys, needVer, c);
 
                         return null;
-                    }
-                    catch (Exception e) {
+                    } catch (Exception e) {
                         setRollbackOnly();
 
                         throw new GridClosureException(e);
@@ -2845,7 +2844,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
         if (log.isDebugEnabled())
             log.debug("Added mappings to transaction [locId=" + cctx.localNodeId() + ", key=" + key + ", node=" + node +
-                ", tx=" + this + ']');
+                    ", tx=" + this + ']');
     }
 
     /**
@@ -3151,6 +3150,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             // Prepare was called explicitly.
             return fut;
 
+        removeTimeoutHandler();
+
         mapExplicitLocks();
 
         fut.prepare();
@@ -3224,15 +3225,13 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     prepareFut.get();
 
                     fut0.finish(true);
-                }
-                catch (Error | RuntimeException e) {
+                } catch (Error | RuntimeException e) {
                     COMMIT_ERR_UPD.compareAndSet(GridNearTxLocal.this, null, e);
 
                     fut0.finish(false);
 
                     throw e;
-                }
-                catch (IgniteCheckedException e) {
+                } catch (IgniteCheckedException e) {
                     COMMIT_ERR_UPD.compareAndSet(GridNearTxLocal.this, null, e);
 
                     if (!(e instanceof NodeStoppingException))
@@ -3263,6 +3262,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         if (log.isDebugEnabled())
             log.debug("Rolling back near tx: " + this);
 
+        removeTimeoutHandler();
+
         if (fastFinish()) {
             state(PREPARING);
             state(PREPARED);
@@ -3274,6 +3275,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
             return new GridFinishedFuture<>((IgniteInternalTx)this);
         }
+
+        if (timedOut())
+            cctx.tm().markTimedOut(this);
 
         GridNearTxFinishFuture fut = rollbackFut;
 
@@ -3516,7 +3520,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     }
                     catch (IgniteCheckedException e) {
                         log.debug("Failed to prepare transaction during rollback (will ignore) [tx=" + this + ", msg=" +
-                            e.getMessage() + ']');
+                                e.getMessage() + ']');
                     }
 
                     fut.finish(false);
@@ -3690,16 +3694,10 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
     /** {@inheritDoc} */
     @Override public void close() throws IgniteCheckedException {
-        if (timeout() > 0 && !implicit())
-            cctx.time().removeTimeoutObject(this);
-
         TransactionState state = state();
 
         if (state != ROLLING_BACK && state != ROLLED_BACK && state != COMMITTING && state != COMMITTED)
             rollback();
-
-        if (!system())
-            cctx.tm().resetUserTx();
 
         synchronized (this) {
             try {
@@ -4004,6 +4002,42 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     }
 
     /**
+     * @param threadId new owner of transaction.
+     */
+    public void threadId(long threadId) {
+        this.threadId = threadId;
+    }
+
+    /**
+     * Removes timeout handler used for eager rollbacks on timeouts.
+     */
+    private void removeTimeoutHandler() {
+        if (timeout() > 0 && !implicit() && !timedOut())
+            cctx.time().removeTimeoutObject(this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteUuid timeoutId() {
+        return xid();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long endTime() {
+        return startTime() + timeout();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onTimeout() {
+        if (state(MARKED_ROLLBACK, true)) {
+            cctx.kernalContext().closure().runLocalSafe(new Runnable() {
+                @Override public void run() {
+                    rollbackNearTxLocalAsync();
+                }
+            });
+        }
+    }
+
+    /**
      * Post-lock closure.
      *
      * @param <T> Return type.
@@ -4045,27 +4079,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
          * @throws IgniteCheckedException If failed.
          */
         abstract T finish(T t) throws IgniteCheckedException;
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteUuid timeoutId() {
-        return xid();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long endTime() {
-        return startTime() + timeout();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onTimeout() {
-        if (state(MARKED_ROLLBACK, true)) {
-            cctx.kernalContext().closure().runLocalSafe(new Runnable() {
-                @Override public void run() {
-                    rollbackNearTxLocalAsync();
-                }
-            });
-        }
     }
 
     /** {@inheritDoc} */

@@ -197,6 +197,8 @@ public class IgniteTxConfigCacheSelfTest extends GridCommonAbstractTest {
             assert e.getCause() instanceof TransactionTimeoutException;
         }
 
+        assertNull(ignite.transactions().tx());
+
         assert !cache.containsKey("key0");
         assert !cache.containsKey("key");
 

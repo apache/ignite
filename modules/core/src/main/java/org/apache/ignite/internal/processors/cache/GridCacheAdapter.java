@@ -139,7 +139,6 @@ import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
-import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.LongAdder8;
 
@@ -4032,11 +4031,11 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         awaitLastFut();
 
-        GridNearTxLocal tx = ctx.tm().threadLocalTx(ctx);
-
-        if (tx != null && tx.state() == TransactionState.ROLLED_BACK && tx.timedOut())
+        if (ctx.tm().isTimedOutThread(Thread.currentThread().getId()))
             throw new IgniteTxTimeoutCheckedException("Previous transaction was rolled back due to timeout. " +
-                "Please start new transaction and retry an operation.");
+                    "Please start new transaction and retry an operation.");
+
+        GridNearTxLocal tx = ctx.tm().threadLocalTx(ctx);
 
         if (tx == null || tx.implicit()) {
             TransactionConfiguration tCfg = CU.transactionConfiguration(ctx, ctx.kernalContext().config());
