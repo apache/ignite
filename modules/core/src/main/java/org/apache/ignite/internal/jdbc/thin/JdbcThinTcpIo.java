@@ -66,11 +66,11 @@ import org.apache.ignite.lang.IgniteProductVersion;
  * JDBC IO layer implementation based on blocking IPC streams.
  */
 public class JdbcThinTcpIo {
-    /** Version 2.1.0. */
-    private static final SqlListenerProtocolVersion VER_2_1_0 = SqlListenerProtocolVersion.create(2, 1, 0);
-
     /** Current version. */
     private static final SqlListenerProtocolVersion CURRENT_VER = SqlListenerProtocolVersion.create(2, 1, 5);
+
+    /** Version 2.1.0. */
+    private static final SqlListenerProtocolVersion VER_2_1_0 = SqlListenerProtocolVersion.create(2, 1, 0);
 
     /** Initial output stream capacity for handshake. */
     private static final int HANDSHAKE_MSG_SIZE = 13;

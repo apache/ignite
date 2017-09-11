@@ -51,7 +51,6 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
     /** Expected statement type. */
     private JdbcStatementType stmtType;
 
-
     /**
      */
     JdbcQueryExecuteRequest() {
