@@ -1016,7 +1016,7 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void testStatementTypeMistmatchSelect() throws Exception {
+    public void testStatementTypeMismatchSelect() throws Exception {
         GridTestUtils.assertThrows(log,
             new Callable<Object>() {
                 @Override public Object call() throws Exception {
@@ -1034,7 +1034,7 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void testStatementTypeMistmatchUpdate() throws Exception {
+    public void testStatementTypeMismatchUpdate() throws Exception {
         GridTestUtils.assertThrows(log,
             new Callable<Object>() {
                 @Override public Object call() throws Exception {
