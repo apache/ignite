@@ -28,7 +28,13 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
+/**
+ *
+ */
 public class ConcurrentCacheStartTest extends GridCommonAbstractTest {
+    /**
+     * @throws Exception If failed.
+     */
     public void test() throws Exception {
         try {
             final IgniteEx ignite = (IgniteEx) startGrids(4);
@@ -47,9 +53,6 @@ public class ConcurrentCacheStartTest extends GridCommonAbstractTest {
                                 false,
                                 false
                             ).get();
-
-                            if (ignite.context().cache().cache(cacheName) == null)
-                                System.out.println("???");
 
                             assertNotNull(ignite.context().cache().cache(cacheName));
                         }
