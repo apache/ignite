@@ -59,7 +59,6 @@ import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.META_S
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.META_TABLES;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.QRY_CLOSE;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.QRY_EXEC;
-import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.QRY_EXEC_V2;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.QRY_FETCH;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.QRY_META;
 
@@ -146,7 +145,6 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
 
         try {
             switch (req.type()) {
-                case QRY_EXEC_V2:
                 case QRY_EXEC:
                     return executeQuery((JdbcQueryExecuteRequest)req);
 
@@ -229,32 +227,26 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
 
             SqlFieldsQuery qry;
 
-            if (req instanceof JdbcQueryExecuteRequestV2) {
-                JdbcQueryExecuteRequestV2 reqV2 = (JdbcQueryExecuteRequestV2)req;
+            switch(req.expectedStatementType()) {
+                case ANY_STATEMENT_TYPE:
+                    qry = new SqlFieldsQuery(sql);
 
-                switch(reqV2.expectedStatementType()) {
-                    case ANY_STATEMENT_TYPE:
-                        qry = new SqlFieldsQuery(sql);
+                    break;
 
-                        break;
+                case SELECT_STATEMENT_TYPE:
+                    qry = new JdbcSqlFieldsQuery(sql, true);
 
-                    case SELECT_STATEMENT_TYPE:
-                        qry = new JdbcSqlFieldsQuery(sql, true);
+                    break;
 
-                        break;
+                case UPDATE_STMT_TYPE:
+                    qry = new JdbcSqlFieldsQuery(sql, false);
 
-                    case UPDATE_STMT_TYPE:
-                        qry = new JdbcSqlFieldsQuery(sql, false);
+                    break;
 
-                        break;
-
-                    default:
-                        throw new IgniteException("Unknown value of the expected statement type: "
-                            + reqV2.expectedStatementType());
-                }
+                default:
+                    throw new IgniteException("Unknown value of the expected statement type: "
+                        + req.expectedStatementType());
             }
-            else
-                qry = new SqlFieldsQuery(sql);
 
             qry.setArgs(req.arguments());
 

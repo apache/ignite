@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.odbc.jdbc;
 
+import java.io.IOException;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
@@ -47,6 +48,10 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
     @GridToStringInclude(sensitive = true)
     private Object[] args;
 
+    /** Expected statement type. */
+    private JdbcStatementType stmtType;
+
+
     /**
      */
     JdbcQueryExecuteRequest() {
@@ -54,20 +59,14 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
     }
 
     /**
-     * @param type Request type.
-     */
-    JdbcQueryExecuteRequest(byte type) {
-        super(type);
-    }
-
-    /**
+     * @param stmtType Expected statement type.
      * @param schemaName Cache name.
      * @param pageSize Fetch size.
      * @param maxRows Max rows.
      * @param sqlQry SQL query.
      * @param args Arguments list.
      */
-    public JdbcQueryExecuteRequest(String schemaName, int pageSize, int maxRows, String sqlQry,
+    public JdbcQueryExecuteRequest(JdbcStatementType stmtType, String schemaName, int pageSize, int maxRows, String sqlQry,
         Object[] args) {
         super(QRY_EXEC);
 
@@ -76,25 +75,7 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
         this.maxRows = maxRows;
         this.sqlQry = sqlQry;
         this.args = args;
-    }
-
-    /**
-     * @param type Request type.
-     * @param schemaName Cache name.
-     * @param pageSize Fetch size.
-     * @param maxRows Max rows.
-     * @param sqlQry SQL query.
-     * @param args Arguments list.
-     */
-    public JdbcQueryExecuteRequest(byte type, String schemaName, int pageSize, int maxRows, String sqlQry,
-        Object[] args) {
-        super(type);
-
-        this.schemaName = F.isEmpty(schemaName) ? null : schemaName;
-        this.pageSize = pageSize;
-        this.maxRows = maxRows;
-        this.sqlQry = sqlQry;
-        this.args = args;
+        this.stmtType = stmtType;
     }
 
     /**
@@ -132,6 +113,14 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
         return schemaName;
     }
 
+    /**
+     * @return Boolean query flag {@code true} in case SELECT statement is expected,
+     * {@code false} in case DML/DDL statement is expected, {@code null} any statement type is expected.
+     */
+    public JdbcStatementType expectedStatementType() {
+        return stmtType;
+    }
+
     /** {@inheritDoc} */
     @Override public void writeBinary(BinaryWriterExImpl writer) throws BinaryObjectException {
         super.writeBinary(writer);
@@ -147,6 +136,8 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
             for (Object arg : args)
                 SqlListenerUtils.writeObject(writer, arg, false);
         }
+
+        writer.writeByte((byte)stmtType.ordinal());
     }
 
     /** {@inheritDoc} */
@@ -164,6 +155,16 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
 
         for (int i = 0; i < argsNum; ++i)
             args[i] = SqlListenerUtils.readObject(reader, false);
+
+        try {
+            if (reader.available() > 0)
+                stmtType = JdbcStatementType.values()[reader.readByte()];
+            else
+                stmtType = JdbcStatementType.ANY_STATEMENT_TYPE;
+        }
+        catch (IOException e) {
+            throw new BinaryObjectException(e);
+        }
     }
 
     /** {@inheritDoc} */

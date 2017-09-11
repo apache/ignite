@@ -60,8 +60,6 @@ public class JdbcRequest extends SqlListenerRequest implements JdbcRawBinaryliza
     /** Get schemas metadata request. */
     static final byte META_SCHEMAS = 12;
 
-    /** Execute sql query request. */
-    static final byte QRY_EXEC_V2 = 13;
 
     /** Request type. */
     private byte type;
@@ -153,11 +151,6 @@ public class JdbcRequest extends SqlListenerRequest implements JdbcRawBinaryliza
 
             case META_SCHEMAS:
                 req = new JdbcMetaSchemasRequest();
-
-                break;
-
-            case QRY_EXEC_V2:
-                req = new JdbcQueryExecuteRequestV2();
 
                 break;
 

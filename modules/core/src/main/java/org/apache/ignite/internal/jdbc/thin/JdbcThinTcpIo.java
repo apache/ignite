@@ -49,7 +49,6 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaTablesResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQuery;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryCloseRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteRequest;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteRequestV2;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryFetchRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryFetchResult;
@@ -70,11 +69,8 @@ public class JdbcThinTcpIo {
     /** Version 2.1.0. */
     private static final SqlListenerProtocolVersion VER_2_1_0 = SqlListenerProtocolVersion.create(2, 1, 0);
 
-    /** Version 2.1.5. */
-    private static final SqlListenerProtocolVersion VER_2_1_5 = SqlListenerProtocolVersion.create(2, 1, 5);
-
     /** Current version. */
-    private static final SqlListenerProtocolVersion CURRENT_VER = VER_2_1_5;
+    private static final SqlListenerProtocolVersion CURRENT_VER = SqlListenerProtocolVersion.create(2, 1, 5);
 
     /** Initial output stream capacity for handshake. */
     private static final int HANDSHAKE_MSG_SIZE = 13;
@@ -333,12 +329,8 @@ public class JdbcThinTcpIo {
     public JdbcQueryExecuteResult queryExecute(JdbcStatementType stmtType, String cache, int fetchSize, int maxRows,
         String sql, List<Object> args)
         throws IOException, IgniteCheckedException {
-        if (srvProtocolVer.compareTo(VER_2_1_5) >= 0)
-            return sendRequest(new JdbcQueryExecuteRequestV2(stmtType, cache, fetchSize, maxRows, sql,
-                args == null ? null : args.toArray(new Object[args.size()])), DYNAMIC_SIZE_MSG_CAP);
-        else
-            return sendRequest(new JdbcQueryExecuteRequest(cache, fetchSize, maxRows, sql,
-                args == null ? null : args.toArray(new Object[args.size()])), DYNAMIC_SIZE_MSG_CAP);
+        return sendRequest(new JdbcQueryExecuteRequest(stmtType, cache, fetchSize, maxRows, sql,
+            args == null ? null : args.toArray(new Object[args.size()])), DYNAMIC_SIZE_MSG_CAP);
     }
 
     /**
