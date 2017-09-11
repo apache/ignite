@@ -17,22 +17,24 @@
 
 package org.apache.ignite.internal.processors.platform.client.cache;
 
+import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
 
+import javax.cache.Cache;
 import java.util.Iterator;
 
 /**
  * Query cursor holder.
   */
-class ClientCacheQueryCursor<T> {
+class ClientCacheQueryCursor {
     /** Cursor. */
-    private final QueryCursorEx<T> cursor;
+    private final QueryCursorEx<Cache.Entry> cursor;
 
     /** Page size. */
     private final int pageSize;
 
     /** Iterator. */
-    private Iterator<T> iterator;
+    private Iterator<Cache.Entry> iterator;
 
     /**
      * Ctor.
@@ -40,7 +42,7 @@ class ClientCacheQueryCursor<T> {
      * @param cursor Cursor.
      * @param pageSize Page size.
      */
-    ClientCacheQueryCursor(QueryCursorEx<T> cursor, int pageSize) {
+    ClientCacheQueryCursor(QueryCursorEx<Cache.Entry> cursor, int pageSize) {
         assert cursor != null;
         assert pageSize > 0;
 
@@ -49,21 +51,26 @@ class ClientCacheQueryCursor<T> {
     }
 
     /**
-     * Gets the cursor.
+     * Writes next page to the writer.
      *
-     * @return Cursor.
+     * @param writer Writer.
      */
-    public QueryCursorEx<T> cursor() {
-        return cursor;
-    }
+    void writePage(BinaryRawWriterEx writer) {
+        Iterator<Cache.Entry> iter = iterator();
 
-    /**
-     * Gets the page size.
-     *
-     * @return Page size.
-     */
-    public int pageSize() {
-        return pageSize;
+        int cntPos = writer.reserveInt();
+        int cnt = 0;
+
+        while (cnt < pageSize && iter.hasNext()) {
+            Cache.Entry e = iter.next();
+
+            writer.writeObjectDetached(e.getKey());
+            writer.writeObjectDetached(e.getValue());
+
+            cnt++;
+        }
+
+        writer.writeInt(cntPos, cnt);
     }
 
     /**
@@ -71,7 +78,7 @@ class ClientCacheQueryCursor<T> {
      *
      * @return Iterator.
      */
-    public Iterator<T> iterator() {
+    private Iterator<Cache.Entry> iterator() {
         if (iterator == null) {
             iterator = cursor.iterator();
         }

@@ -28,7 +28,7 @@ import java.util.Iterator;
  */
 class ClientCacheQueryScanCursorGetNextPageResponse extends ClientResponse {
     /** Cursor. */
-    private final ClientCacheQueryCursor<Cache.Entry> cursor;
+    private final ClientCacheQueryCursor cursor;
 
     /**
      * Ctor.
@@ -36,7 +36,7 @@ class ClientCacheQueryScanCursorGetNextPageResponse extends ClientResponse {
      * @param requestId Request id.
      * @param cursor Cursor.
      */
-    ClientCacheQueryScanCursorGetNextPageResponse(int requestId, ClientCacheQueryCursor<Cache.Entry> cursor) {
+    ClientCacheQueryScanCursorGetNextPageResponse(int requestId, ClientCacheQueryCursor cursor) {
         super(requestId);
 
         assert cursor != null;
@@ -48,21 +48,6 @@ class ClientCacheQueryScanCursorGetNextPageResponse extends ClientResponse {
     @Override public void encode(BinaryRawWriterEx writer) {
         super.encode(writer);
 
-        Iterator<Cache.Entry> iter = cursor.iterator();
-
-        int pageSize = cursor.pageSize();
-        int cntPos = writer.reserveInt();
-        int cnt = 0;
-
-        while (cnt < pageSize && iter.hasNext()) {
-            Cache.Entry e = iter.next();
-
-            writer.writeObjectDetached(e.getKey());
-            writer.writeObjectDetached(e.getValue());
-
-            cnt++;
-        }
-
-        writer.writeInt(cntPos, cnt);
+        cursor.writePage(writer);
     }
 }

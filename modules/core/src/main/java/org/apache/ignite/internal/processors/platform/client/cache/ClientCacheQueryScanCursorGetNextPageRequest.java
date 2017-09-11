@@ -44,7 +44,7 @@ public class ClientCacheQueryScanCursorGetNextPageRequest extends ClientRequest 
 
     /** {@inheritDoc} */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
-        ClientCacheQueryCursor<Cache.Entry> cur = ctx.handleRegistry().get(cursorId);
+        ClientCacheQueryCursor cur = ctx.handleRegistry().get(cursorId);
 
         return new ClientCacheQueryScanCursorGetNextPageResponse(getRequestId(), cur);
     }

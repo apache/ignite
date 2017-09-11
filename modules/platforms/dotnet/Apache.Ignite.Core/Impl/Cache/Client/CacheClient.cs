@@ -513,7 +513,8 @@ namespace Apache.Ignite.Core.Impl.Cache.Client
         }
 
         /** <inheritDoc /> */
-        public IContinuousQueryHandle<ICacheEntry<TK, TV>> QueryContinuous(ContinuousQuery<TK, TV> qry, QueryBase initialQry)
+        public IContinuousQueryHandle<ICacheEntry<TK, TV>> QueryContinuous(ContinuousQuery<TK, TV> qry, 
+            QueryBase initialQry)
         {
             throw IgniteClient.GetClientNotSupportedException();
         }
@@ -537,13 +538,15 @@ namespace Apache.Ignite.Core.Impl.Cache.Client
         }
 
         /** <inheritDoc /> */
-        public ICollection<ICacheEntryProcessorResult<TK, TRes>> InvokeAll<TArg, TRes>(IEnumerable<TK> keys, ICacheEntryProcessor<TK, TV, TArg, TRes> processor, TArg arg)
+        public ICollection<ICacheEntryProcessorResult<TK, TRes>> InvokeAll<TArg, TRes>(IEnumerable<TK> keys, 
+            ICacheEntryProcessor<TK, TV, TArg, TRes> processor, TArg arg)
         {
             throw IgniteClient.GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
-        public Task<ICollection<ICacheEntryProcessorResult<TK, TRes>>> InvokeAllAsync<TArg, TRes>(IEnumerable<TK> keys, ICacheEntryProcessor<TK, TV, TArg, TRes> processor, TArg arg)
+        public Task<ICollection<ICacheEntryProcessorResult<TK, TRes>>> InvokeAllAsync<TArg, TRes>(
+            IEnumerable<TK> keys, ICacheEntryProcessor<TK, TV, TArg, TRes> processor, TArg arg)
         {
             throw IgniteClient.GetClientNotSupportedException();
         }
