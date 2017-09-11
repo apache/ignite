@@ -51,22 +51,19 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 
                 var query = new ScanQuery<int, Person>();
 
-                // GetAll.
+                // GetAll is not supported.
                 var cursor = clientCache.Query(query);
-                var res = cursor.GetAll().Select(x => x.Value.Name).OrderBy(x => x).ToArray();
-                Assert.AreEqual(cache.Select(x => x.Value.Name).OrderBy(x => x).ToArray(), res);
-
-                // Calling GetAll twice is not allowed.
-                Assert.Throws<InvalidOperationException>(() => cursor.GetAll());
+                Assert.Throws<NotSupportedException>(() => cursor.GetAll());
 
                 // Iterator.
                 using (cursor = clientCache.Query(query))
                 {
-                    res = cursor.Select(x => x.Value.Name).OrderBy(x => x).ToArray();
+                    var res = cursor.Select(x => x.Value.Name).OrderBy(x => x).ToArray();
                     Assert.AreEqual(cache.Select(x => x.Value.Name).OrderBy(x => x).ToArray(), res);
 
-                    // Can't use GetAll after using iterator.
-                    Assert.Throws<InvalidOperationException>(() => cursor.GetAll());
+                    // Can't iterate twice.
+                    // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
+                    Assert.Throws<InvalidOperationException>(() => cursor.ToArray());
                 }
 
                 // Partial iterator.
@@ -78,7 +75,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 
                 // Local.
                 query.Local = true;
-                var localRes = clientCache.Query(query).GetAll();
+                var localRes = clientCache.Query(query).ToList();
                 Assert.Less(localRes.Count, cache.GetSize());
             }
         }
@@ -96,17 +93,16 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 var clientCache = client.GetCache<int, Person>(CacheName);
 
                 // One result.
-                var single = clientCache.Query(new ScanQuery<int, Person>(new PersonFilter(x => x.Id == 3)))
-                    .GetAll().Single();
+                var single = clientCache.Query(new ScanQuery<int, Person>(new PersonFilter(x => x.Id == 3))).Single();
                 Assert.AreEqual(3, single.Key);
 
                 // Multiple results.
                 var res = clientCache.Query(new ScanQuery<int, Person>(new PersonFilter(x => x.Name.Length == 1)))
-                    .GetAll();
+                    .ToList();
                 Assert.AreEqual(9, res.Count);
 
                 // No results.
-                res = clientCache.Query(new ScanQuery<int, Person>(new PersonFilter(x => x == null))).GetAll();
+                res = clientCache.Query(new ScanQuery<int, Person>(new PersonFilter(x => x == null))).ToList();
                 Assert.AreEqual(0, res.Count);
             }
         }
