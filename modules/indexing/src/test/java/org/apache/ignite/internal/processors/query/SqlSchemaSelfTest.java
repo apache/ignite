@@ -218,7 +218,7 @@ public class SqlSchemaSelfTest extends GridCommonAbstractTest {
 
         assertEquals(1, node.context().query().querySqlFieldsNoCache(
             new SqlFieldsQuery("SELECT id, name, orgId FROM TEST.Person where (id = ?)").setArgs(1L), false
-        ).getAll().size());
+        ).get(0).getAll().size());
     }
 
     /**
