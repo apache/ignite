@@ -33,16 +33,12 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOffheap;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowFactory;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueCacheObject;
-import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeGuard;
-import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.h2.message.DbException;
-import org.h2.mvstore.cache.CacheLongKeyLIRS;
 import org.h2.result.SearchRow;
 import org.h2.result.SimpleRow;
 import org.h2.util.LocalDateTimeUtils;
@@ -66,13 +62,12 @@ import org.h2.value.ValueString;
 import org.h2.value.ValueTime;
 import org.h2.value.ValueTimestamp;
 import org.h2.value.ValueUuid;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.query.h2.opt.GridH2AbstractKeyValueRow.DEFAULT_COLUMNS_COUNT;
-import static org.apache.ignite.internal.processors.query.h2.opt.GridH2AbstractKeyValueRow.KEY_COL;
-import static org.apache.ignite.internal.processors.query.h2.opt.GridH2AbstractKeyValueRow.VAL_COL;
-import static org.apache.ignite.internal.processors.query.h2.opt.GridH2AbstractKeyValueRow.VER_COL;
+import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.DEFAULT_COLUMNS_COUNT;
+import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.KEY_COL;
+import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.VAL_COL;
+import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.VER_COL;
 
 /**
  * Row descriptor.
@@ -100,12 +95,6 @@ public class H2RowDescriptor implements GridH2RowDescriptor {
     private final int valType;
 
     /** */
-    private final H2Schema schema;
-
-    /** */
-    private final GridUnsafeGuard guard;
-
-    /** */
     private volatile GridQueryProperty[] props;
 
     /** Id of user-defined key column */
@@ -120,18 +109,13 @@ public class H2RowDescriptor implements GridH2RowDescriptor {
      * @param idx Indexing.
      * @param tbl Table.
      * @param type Type descriptor.
-     * @param schema Schema.
      */
-    H2RowDescriptor(IgniteH2Indexing idx, H2TableDescriptor tbl, GridQueryTypeDescriptor type, H2Schema schema) {
+    H2RowDescriptor(IgniteH2Indexing idx, H2TableDescriptor tbl, GridQueryTypeDescriptor type) {
         assert type != null;
-        assert schema != null;
 
         this.idx = idx;
         this.tbl = tbl;
         this.type = type;
-        this.schema = schema;
-
-        guard = schema.offheap() == null ? null : new GridUnsafeGuard();
 
         keyType = DataType.getTypeFromClass(type.keyClass());
         valType = DataType.getTypeFromClass(type.valueClass());
@@ -189,30 +173,6 @@ public class H2RowDescriptor implements GridH2RowDescriptor {
     /** {@inheritDoc} */
     @Override public GridCacheContext<?, ?> context() {
         return tbl.cache();
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridUnsafeGuard guard() {
-        return guard;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void cache(GridH2Row row) {
-        long ptr = row.pointer();
-
-        assert ptr > 0 : ptr;
-
-        rowCache().put(ptr, row);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void uncache(long ptr) {
-        rowCache().remove(ptr);
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridUnsafeMemory memory() {
-        return schema.offheap();
     }
 
     /** {@inheritDoc} */
@@ -305,9 +265,7 @@ public class H2RowDescriptor implements GridH2RowDescriptor {
             if (val == null) // Only can happen for remove operation, can create simple search row.
                 row = GridH2RowFactory.create(wrap(key, keyType));
             else
-                row = schema.offheap() == null ?
-                    new GridH2KeyValueRowOnheap(this, key, keyType, val, valType, ver, expirationTime) :
-                    new GridH2KeyValueRowOffheap(this, key, keyType, val, valType, ver, expirationTime);
+                row = new GridH2KeyValueRowOnheap(this, key, keyType, val, valType, ver, expirationTime);
         }
         catch (ClassCastException e) {
             throw new IgniteCheckedException("Failed to convert key to SQL type. " +
@@ -362,24 +320,6 @@ public class H2RowDescriptor implements GridH2RowDescriptor {
     /** {@inheritDoc} */
     @Override public boolean isColumnKeyProperty(int col) {
         return props[col].key();
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridH2KeyValueRowOffheap createPointer(long ptr) {
-        GridH2KeyValueRowOffheap row = (GridH2KeyValueRowOffheap)rowCache().get(ptr);
-
-        if (row != null) {
-            assert row.pointer() == ptr : ptr + " " + row.pointer();
-
-            return row;
-        }
-
-        return new GridH2KeyValueRowOffheap(this, ptr);
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridH2Row cachedRow(long link) {
-        return rowCache().get(link);
     }
 
     /** {@inheritDoc} */
@@ -487,12 +427,5 @@ public class H2RowDescriptor implements GridH2RowDescriptor {
         }
 
         return colId;
-    }
-
-    /**
-     * @return Row cache.
-     */
-    @NotNull private CacheLongKeyLIRS<GridH2Row> rowCache() {
-        throw new UnsupportedOperationException(); // TODO: Unused for not.
     }
 }
