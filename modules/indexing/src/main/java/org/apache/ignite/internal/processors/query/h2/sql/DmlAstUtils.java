@@ -64,11 +64,10 @@ public final class DmlAstUtils {
      * @param cols Columns to insert values into.
      * @param rows Rows to create pseudo-SELECT upon.
      * @param subQry Subquery to use rather than rows.
-     * @param desc Row descriptor.
      * @return Subquery or pseudo-SELECT to evaluate inserted expressions.
      */
     public static GridSqlQuery selectForInsertOrMerge(GridSqlColumn[] cols, List<GridSqlElement[]> rows,
-        GridSqlQuery subQry, GridH2RowDescriptor desc) {
+        GridSqlQuery subQry) {
         if (!F.isEmpty(rows)) {
             assert !F.isEmpty(cols);
 
