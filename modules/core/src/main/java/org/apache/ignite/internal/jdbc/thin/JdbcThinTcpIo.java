@@ -320,23 +320,6 @@ public class JdbcThinTcpIo {
     }
 
     /**
-     * @param cache Cache name.
-     * @param fetchSize Fetch size.
-     * @param maxRows Max rows.
-     * @param sql SQL statement.
-     * @param args Query parameters.
-     * @return Execute query results.
-     * @throws IOException On error.
-     * @throws IgniteCheckedException On error.
-     */
-    public JdbcQueryExecuteResult queryExecute(String cache, int fetchSize, int maxRows,
-        String sql, List<Object> args)
-        throws IOException, IgniteCheckedException {
-        return sendRequest(new JdbcQueryExecuteRequest(cache, fetchSize, maxRows, sql,
-            args == null ? null : args.toArray(new Object[args.size()])), DYNAMIC_SIZE_MSG_CAP);
-    }
-
-    /**
      * @param stmtType Expected statement type.
      * @param cache Cache name.
      * @param fetchSize Fetch size.
