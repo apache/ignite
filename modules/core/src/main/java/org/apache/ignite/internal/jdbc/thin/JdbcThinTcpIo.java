@@ -137,6 +137,9 @@ public class JdbcThinTcpIo {
     /** Ignite server version. */
     private IgniteProductVersion igniteVer;
 
+    /** Ignite server protocol version. */
+    private SqlListenerProtocolVersion srvProtocolVer;
+
     /**
      * Constructor.
      *
@@ -243,6 +246,8 @@ public class JdbcThinTcpIo {
             }
             else
                 igniteVer = new IgniteProductVersion((byte)2, (byte)0, (byte)0, "Unknown", 0L, null);
+
+            srvProtocolVer = CURRENT_VER;
         }
         else {
             short maj = reader.readShort();
@@ -251,13 +256,13 @@ public class JdbcThinTcpIo {
 
             String err = reader.readString();
 
-            SqlListenerProtocolVersion ver = SqlListenerProtocolVersion.create(maj, min, maintenance);
+            srvProtocolVer = SqlListenerProtocolVersion.create(maj, min, maintenance);
 
-            if (VER_2_1_0.equals(ver))
+            if (VER_2_1_0.equals(srvProtocolVer))
                 handshake_2_1_0();
             else {
                 throw new IgniteCheckedException("Handshake failed [driverProtocolVer=" + CURRENT_VER +
-                    ", remoteNodeProtocolVer=" + ver + ", err=" + err + ']');
+                    ", remoteNodeProtocolVer=" + srvProtocolVer + ", err=" + err + ']');
             }
         }
     }
