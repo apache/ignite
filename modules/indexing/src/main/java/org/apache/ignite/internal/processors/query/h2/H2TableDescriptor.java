@@ -200,7 +200,6 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
 
         // Add primary key index.
         Index pkIdx = idx.createSortedIndex(
-            schema,
             "_key_PK",
             tbl,
             true,
@@ -251,7 +250,7 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
 
         // Add explicit affinity key index if nothing alike was found.
         if (affCol != null && !affIdxFound) {
-            idxs.add(idx.createSortedIndex(schema, "AFFINITY_KEY", tbl, false,
+            idxs.add(idx.createSortedIndex("AFFINITY_KEY", tbl, false,
                 H2Utils.treeIndexColumns(desc, new ArrayList<IndexColumn>(2), affCol, keyCol), -1));
         }
 
@@ -301,7 +300,7 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
         if (idxDesc.type() == QueryIndexType.SORTED) {
             cols = H2Utils.treeIndexColumns(desc, cols, keyCol, affCol);
 
-            return idx.createSortedIndex(schema, idxDesc.name(), tbl, false, cols, idxDesc.inlineSize());
+            return idx.createSortedIndex(idxDesc.name(), tbl, false, cols, idxDesc.inlineSize());
         }
         else if (idxDesc.type() == QueryIndexType.GEOSPATIAL)
             return H2Utils.createSpatialIndex(tbl, idxDesc.name(), cols.toArray(new IndexColumn[cols.size()]));

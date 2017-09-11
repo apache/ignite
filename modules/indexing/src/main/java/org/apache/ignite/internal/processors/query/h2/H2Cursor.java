@@ -50,13 +50,6 @@ public class H2Cursor implements Cursor {
         this.filter = filter;
     }
 
-    /**
-     * @param cursor Cursor.
-     */
-    public H2Cursor(GridCursor<GridH2Row> cursor) {
-        this(cursor, null);
-    }
-
     /** {@inheritDoc} */
     @Override public Row get() {
         try {

@@ -156,6 +156,7 @@ public class GridLuceneIndex implements AutoCloseable {
      * @param expires Expiration time.
      * @throws IgniteCheckedException If failed.
      */
+    @SuppressWarnings("ConstantConditions")
     public void store(CacheObject k, CacheObject v, GridCacheVersion ver, long expires) throws IgniteCheckedException {
         CacheObjectContext coctx = objectContext();
 

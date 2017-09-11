@@ -38,7 +38,6 @@ import org.apache.ignite.internal.processors.query.h2.H2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.database.H2RowFactory;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.h2.command.ddl.CreateTableData;
 import org.h2.engine.DbObject;
 import org.h2.engine.Session;
@@ -426,27 +425,6 @@ public class GridH2Table extends TableBase {
     }
 
     /**
-     * @param key Key to read.
-     * @return Read value.
-     * @throws IgniteCheckedException If failed.
-     */
-    public IgniteBiTuple<CacheObject, GridCacheVersion> read(
-        GridCacheContext cctx,
-        KeyCacheObject key,
-        int partId
-    ) throws IgniteCheckedException {
-        assert desc != null;
-
-        GridH2Row row = desc.createRow(key, partId, null, null, 0);
-
-        GridH2IndexBase primaryIdx = pk();
-
-        GridH2Row res = primaryIdx.findOne(row);
-
-        return res != null ? F.t(res.val, res.ver) : null;
-    }
-
-    /**
      * Gets index by index.
      *
      * @param idx Index in list.
@@ -818,13 +796,6 @@ public class GridH2Table extends TableBase {
         idxs.add(this.idxs.get(0));
         idxs.add(this.idxs.get(1));
 
-        return idxs;
-    }
-
-    /**
-     * @return All indexes, even marked for rebuild.
-     */
-    public ArrayList<Index> getAllIndexes() {
         return idxs;
     }
 
