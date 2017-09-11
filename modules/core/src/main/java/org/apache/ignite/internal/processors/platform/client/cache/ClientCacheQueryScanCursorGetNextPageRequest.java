@@ -22,8 +22,6 @@ import org.apache.ignite.internal.processors.platform.client.ClientConnectionCon
 import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 
-import javax.cache.Cache;
-
 /**
  * Query cursor next page request.
  */

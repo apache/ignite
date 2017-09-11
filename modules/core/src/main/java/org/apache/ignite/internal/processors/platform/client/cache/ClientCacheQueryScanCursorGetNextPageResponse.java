@@ -20,9 +20,6 @@ package org.apache.ignite.internal.processors.platform.client.cache;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 
-import javax.cache.Cache;
-import java.util.Iterator;
-
 /**
  * Query cursor next page response.
  */
