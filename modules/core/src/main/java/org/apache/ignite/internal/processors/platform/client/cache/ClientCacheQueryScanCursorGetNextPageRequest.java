@@ -25,9 +25,9 @@ import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 import javax.cache.Cache;
 
 /**
- * QueryCursor.getAll request.
+ * Query cursor next page request.
  */
-public class ClientCacheQueryCursorGetAllRequest extends ClientRequest {
+public class ClientCacheQueryScanCursorGetNextPageRequest extends ClientRequest {
     /** Cursor id. */
     private final long cursorId;
 
@@ -36,7 +36,7 @@ public class ClientCacheQueryCursorGetAllRequest extends ClientRequest {
      *
      * @param reader Reader.
      */
-    public ClientCacheQueryCursorGetAllRequest(BinaryRawReader reader) {
+    public ClientCacheQueryScanCursorGetNextPageRequest(BinaryRawReader reader) {
         super(reader);
 
         cursorId = reader.readLong();
@@ -46,6 +46,6 @@ public class ClientCacheQueryCursorGetAllRequest extends ClientRequest {
     @Override public ClientResponse process(ClientConnectionContext ctx) {
         ClientCacheQueryCursor<Cache.Entry> cur = ctx.handleRegistry().get(cursorId);
 
-        return new ClientCacheQueryCursorGetAllResponse(getRequestId(), cur);
+        return new ClientCacheQueryScanCursorGetNextPageResponse(getRequestId(), cur);
     }
 }

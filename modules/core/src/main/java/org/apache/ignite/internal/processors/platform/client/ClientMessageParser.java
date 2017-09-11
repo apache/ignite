@@ -36,8 +36,7 @@ import org.apache.ignite.internal.processors.platform.client.binary.ClientRegist
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheGetRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCachePutRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheQueryCursorCloseRequest;
-import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheQueryCursorGetAllRequest;
-import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheQueryCursorGetNextPageRequest;
+import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheQueryScanCursorGetNextPageRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheScanQueryRequest;
 
 /**
@@ -66,13 +65,10 @@ public class ClientMessageParser implements SqlListenerMessageParser {
     private static final short OP_QUERY_SCAN = 7;
 
     /** */
-    private static final short OP_QUERY_CURSOR_GET_ALL = 8;
+    private static final short OP_QUERY_SCAN_CURSOR_GET_PAGE = 8;
 
     /** */
-    private static final short OP_QUERY_CURSOR_GET_PAGE = 9;
-
-    /** */
-    private static final short OP_QUERY_CURSOR_CLOSE = 10;
+    private static final short OP_QUERY_SCAN_CURSOR_CLOSE = 9;
 
     /** Marshaller. */
     private final GridBinaryMarshaller marsh;
@@ -120,13 +116,10 @@ public class ClientMessageParser implements SqlListenerMessageParser {
             case OP_QUERY_SCAN:
                 return new ClientCacheScanQueryRequest(reader);
 
-            case OP_QUERY_CURSOR_GET_ALL:
-                return new ClientCacheQueryCursorGetAllRequest(reader);
+            case OP_QUERY_SCAN_CURSOR_GET_PAGE:
+                return new ClientCacheQueryScanCursorGetNextPageRequest(reader);
 
-            case OP_QUERY_CURSOR_GET_PAGE:
-                return new ClientCacheQueryCursorGetNextPageRequest(reader);
-
-            case OP_QUERY_CURSOR_CLOSE:
+            case OP_QUERY_SCAN_CURSOR_CLOSE:
                 return new ClientCacheQueryCursorCloseRequest(reader);
         }
 

@@ -26,7 +26,7 @@ import java.util.Iterator;
 /**
  * Query cursor next page response.
  */
-class ClientCacheQueryCursorGetNextPageResponse extends ClientResponse {
+class ClientCacheQueryScanCursorGetNextPageResponse extends ClientResponse {
     /** Cursor. */
     private final ClientCacheQueryCursor<Cache.Entry> cursor;
 
@@ -36,7 +36,7 @@ class ClientCacheQueryCursorGetNextPageResponse extends ClientResponse {
      * @param requestId Request id.
      * @param cursor Cursor.
      */
-    ClientCacheQueryCursorGetNextPageResponse(int requestId, ClientCacheQueryCursor<Cache.Entry> cursor) {
+    ClientCacheQueryScanCursorGetNextPageResponse(int requestId, ClientCacheQueryCursor<Cache.Entry> cursor) {
         super(requestId);
 
         assert cursor != null;

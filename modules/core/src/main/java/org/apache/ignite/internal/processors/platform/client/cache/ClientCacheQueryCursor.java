@@ -24,7 +24,7 @@ import java.util.Iterator;
 /**
  * Query cursor holder.
   */
-public class ClientCacheQueryCursor<T> {
+class ClientCacheQueryCursor<T> {
     /** Cursor. */
     private final QueryCursorEx<T> cursor;
 

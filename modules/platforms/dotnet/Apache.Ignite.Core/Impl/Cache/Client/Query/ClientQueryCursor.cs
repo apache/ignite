@@ -56,9 +56,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Client.Query
         /** <inheritdoc /> */
         protected override IList<ICacheEntry<TK, TV>> GetAllInternal()
         {
-            return _ignite.Socket.DoOutInOp(ClientOp.QueryCursorGetAll, 
-                w => w.WriteLong(_cursorId), 
-                s => ConvertGetAll(s));
+            throw IgniteClient.GetClientNotSupportedException("Use IQueryCursor.ToList extension method instead.");
         }
 
         /** <inheritdoc /> */
@@ -70,7 +68,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Client.Query
         /** <inheritdoc /> */
         protected override ICacheEntry<TK, TV>[] GetBatch()
         {
-            return _ignite.Socket.DoOutInOp(ClientOp.QueryCursorGetPage,
+            return _ignite.Socket.DoOutInOp(ClientOp.QueryScanCursorGetPage,
                 w => w.WriteLong(_cursorId),
                 s => ConvertGetBatch(s));
         }
@@ -80,7 +78,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Client.Query
         {
             try
             {
-                _ignite.Socket.DoOutInOp<object>(ClientOp.QueryCursorClose, w => w.WriteLong(_cursorId), null);
+                _ignite.Socket.DoOutInOp<object>(ClientOp.QueryScanCursorClose, w => w.WriteLong(_cursorId), null);
             }
             finally
             {
