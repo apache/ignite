@@ -115,4 +115,9 @@ public class JdbcConnectionContext implements SqlListenerConnectionContext {
     @Override public SqlListenerMessageParser parser() {
         return parser;
     }
+
+    /** {@inheritDoc} */
+    @Override public void onDisconnected() {
+        // No-op.
+    }
 }

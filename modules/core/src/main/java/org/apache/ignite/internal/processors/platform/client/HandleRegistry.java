@@ -54,6 +54,7 @@ public class HandleRegistry {
      * @param <T> Object type.
      * @return Object.
      */
+    @SuppressWarnings("unchecked")
     public <T> T get(long hnd) {
         Object obj = handles.get(hnd);
 
@@ -74,6 +75,23 @@ public class HandleRegistry {
 
         if (obj == null) {
             throw new IgniteException("Failed to find client object with id: " + hnd);
+        }
+    }
+
+    /**
+     * Cleans all handles and closes all AutoCloseables.
+     */
+    public void clean() {
+        for (Map.Entry e : handles.entrySet()) {
+            Object val = e.getValue();
+
+            if (val instanceof AutoCloseable) {
+                try {
+                    ((AutoCloseable)val).close();
+                } catch (Exception ex) {
+                    throw new IgniteException(ex);
+                }
+            }
         }
     }
 }
