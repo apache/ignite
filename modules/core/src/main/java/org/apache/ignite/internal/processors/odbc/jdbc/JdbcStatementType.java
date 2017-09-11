@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.odbc.jdbc;
 
 /**
- * JDBC statement typeSQL query with parameters.
+ * JDBC statement type.
  */
 public enum JdbcStatementType {
     /** Any statement type. */
@@ -27,6 +27,6 @@ public enum JdbcStatementType {
     /** Select statement type. */
     SELECT_STATEMENT_TYPE,
 
-    /** DNL / DDL statement type. */
+    /** DML / DDL statement type. */
     UPDATE_STMT_TYPE;
 }

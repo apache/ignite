@@ -228,6 +228,7 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
             String sql = req.sqlQuery();
 
             SqlFieldsQuery qry;
+
             if (req instanceof JdbcQueryExecuteRequestV2) {
                 JdbcQueryExecuteRequestV2 reqV2 = (JdbcQueryExecuteRequestV2)req;
 
