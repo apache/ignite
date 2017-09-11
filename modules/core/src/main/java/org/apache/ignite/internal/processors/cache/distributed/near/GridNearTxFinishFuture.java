@@ -47,6 +47,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
+import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.C1;
@@ -414,6 +415,18 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
 
         try {
             if (tx.localFinish(commit) || (!commit && tx.state() == UNKNOWN)) {
+                GridLongList waitTxs = tx.mvccWaitTransactions();
+
+                if (waitTxs != null) {
+                    ClusterNode crd = cctx.coordinators().coordinator(tx.topologyVersion());
+
+                    assert crd != null;
+
+                    IgniteInternalFuture fut = cctx.coordinators().waitTxsFuture(crd, waitTxs);
+
+                    add(fut);
+                }
+
                 if ((tx.onePhaseCommit() && needFinishOnePhase(commit)) || (!tx.onePhaseCommit() && mappings != null)) {
                     if (mappings.single()) {
                         GridDistributedTxMapping mapping = mappings.singleMapping();

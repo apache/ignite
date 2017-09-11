@@ -61,6 +61,7 @@ import org.apache.ignite.internal.processors.dr.GridDrType;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
+import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.GridTuple;
@@ -148,6 +149,9 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
     /** */
     protected CacheWriteSynchronizationMode syncMode;
 
+    /** */
+    private GridLongList mvccWaitTxs;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -206,6 +210,10 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         minVer = xidVer;
 
         txState = implicitSingle ? new IgniteTxImplicitSingleStateImpl() : new IgniteTxStateImpl();
+    }
+
+    public GridLongList mvccWaitTransactions() {
+        return mvccWaitTxs;
     }
 
     /**
@@ -472,7 +480,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
     /** {@inheritDoc} */
     @SuppressWarnings({"CatchGenericClass"})
-    @Override public void userCommit() throws IgniteCheckedException {
+    @Override public final void userCommit() throws IgniteCheckedException {
         TransactionState state = state();
 
         if (state != COMMITTING) {
@@ -689,8 +697,18 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                             null,
                                             mvccVer);
 
-                                        if (updRes.success())
+                                        if (updRes.success()) {
                                             txEntry.updateCounter(updRes.updatePartitionCounter());
+
+                                            GridLongList waitTxs = updRes.mvccWaitTransactions();
+
+                                            if (waitTxs != null) {
+                                                if (this.mvccWaitTxs == null)
+                                                    this.mvccWaitTxs = waitTxs;
+                                                else
+                                                    this.mvccWaitTxs.addAll(waitTxs);
+                                            }
+                                        }
 
                                         if (nearCached != null && updRes.success()) {
                                             nearCached.innerSet(

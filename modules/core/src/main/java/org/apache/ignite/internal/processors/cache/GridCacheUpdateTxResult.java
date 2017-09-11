@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
@@ -28,34 +28,30 @@ public class GridCacheUpdateTxResult {
     /** Success flag.*/
     private final boolean success;
 
-    /** Old value. */
-    @GridToStringInclude
-    private final CacheObject oldVal;
-
     /** Partition idx. */
     private long updateCntr;
+
+    /** */
+    private GridLongList mvccWaitTxs;
 
     /**
      * Constructor.
      *
      * @param success Success flag.
-     * @param oldVal Old value (if any),
      */
-    GridCacheUpdateTxResult(boolean success, @Nullable CacheObject oldVal) {
+    GridCacheUpdateTxResult(boolean success) {
         this.success = success;
-        this.oldVal = oldVal;
     }
 
     /**
      * Constructor.
      *
      * @param success Success flag.
-     * @param oldVal Old value (if any),
      */
-    GridCacheUpdateTxResult(boolean success, @Nullable CacheObject oldVal, long updateCntr) {
+    GridCacheUpdateTxResult(boolean success, long updateCntr, @Nullable GridLongList mvccWaitTxs) {
         this.success = success;
-        this.oldVal = oldVal;
         this.updateCntr = updateCntr;
+        this.mvccWaitTxs = mvccWaitTxs;
     }
 
     /**
@@ -75,8 +71,8 @@ public class GridCacheUpdateTxResult {
     /**
      * @return Old value.
      */
-    @Nullable public CacheObject oldValue() {
-        return oldVal;
+    @Nullable public GridLongList mvccWaitTransactions() {
+        return mvccWaitTxs;
     }
 
     /** {@inheritDoc} */

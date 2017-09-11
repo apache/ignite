@@ -463,8 +463,11 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         @Nullable Long updateCntr,
         MvccCoordinatorVersion mvccVer
     )
-        throws IgniteCheckedException, GridCacheEntryRemovedException {
-        return new GridCacheUpdateTxResult(true, rawPut(val, ttl));
+        throws IgniteCheckedException, GridCacheEntryRemovedException
+    {
+        rawPut(val, ttl);
+
+        return new GridCacheUpdateTxResult(true);
     }
 
     /** {@inheritDoc} */
@@ -547,11 +550,9 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         ) throws IgniteCheckedException, GridCacheEntryRemovedException {
         obsoleteVer = ver;
 
-        CacheObject old = val;
-
         val = null;
 
-        return new GridCacheUpdateTxResult(true, old);
+        return new GridCacheUpdateTxResult(true);
     }
 
     /** @inheritDoc */

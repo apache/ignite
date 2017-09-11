@@ -388,7 +388,7 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
      * @param nodeId Sender node ID.
      * @param msg Message.
      */
-    private void processCoordinatorTxAckResponse(UUID nodeId, CoordinatorFutureResponse msg) {
+    private void processCoordinatorAckResponse(UUID nodeId, CoordinatorFutureResponse msg) {
         WaitAckFuture fut = ackFuts.remove(msg.futureId());
 
         if (fut != null)
@@ -706,7 +706,7 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
             else if (msg instanceof CoordinatorTxAckRequest)
                 processCoordinatorTxAckRequest(nodeId, (CoordinatorTxAckRequest)msg);
             else if (msg instanceof CoordinatorFutureResponse)
-                processCoordinatorTxAckResponse(nodeId, (CoordinatorFutureResponse)msg);
+                processCoordinatorAckResponse(nodeId, (CoordinatorFutureResponse)msg);
             else if (msg instanceof CoordinatorQueryAckRequest)
                 processCoordinatorQueryAckRequest((CoordinatorQueryAckRequest)msg);
             else if (msg instanceof CoordinatorQueryVersionRequest)
