@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.wal.reader;
 
+import java.io.File;
 import java.lang.reflect.Field;
 import java.util.Iterator;
 import java.util.List;
@@ -45,6 +46,7 @@ import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
 import org.apache.ignite.internal.managers.loadbalancer.GridLoadBalancerManager;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
+import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
 import org.apache.ignite.internal.processors.cluster.ClusterProcessor;
@@ -88,17 +90,28 @@ import org.jetbrains.annotations.Nullable;
  * Dummy grid kernal context
  */
 public class StandaloneGridKernalContext implements GridKernalContext {
+    /** Config for fake Ignite instance. */
     private final IgniteConfiguration cfg;
-    /** */
+
+    /** Logger */
     private IgniteLogger log;
 
-    /** */
+    /** Empty plugin processor */
     private IgnitePluginProcessor pluginProc;
 
     /**
-     * @param log Logger.
+     * Cache object processor. Used for converting cache objects and keys into binary objects. Null means there is no
+     * convert is configured. All entries in this case will be lazy data entries.
      */
-    public StandaloneGridKernalContext(IgniteLogger log) {
+    @Nullable private IgniteCacheObjectProcessor cacheObjProcessor;
+
+    /**
+     * @param log Logger.
+     * @param binaryMetadataFileStoreDir folder specifying location of metadata File Store. {@code null} means no
+     * specific folder is configured. <br>
+     */
+    public StandaloneGridKernalContext(IgniteLogger log,
+        @Nullable final File binaryMetadataFileStoreDir) throws IgniteCheckedException {
         this.log = log;
 
         try {
@@ -110,7 +123,29 @@ public class StandaloneGridKernalContext implements GridKernalContext {
         }
 
         this.cfg = prepareIgniteConfiguration();
+        this.cacheObjProcessor = binaryMetadataFileStoreDir != null ? binaryProcessor(this, binaryMetadataFileStoreDir) : null;
 
+    }
+
+    /**
+     * Creates binary processor which allows to convert WAL records into objects
+     *
+     * @param ctx kernal context
+     * @param binaryMetadataFileStoreDir folder specifying location of metadata File Store
+     *
+     * {@code null} means no specific folder is configured. <br> In this case folder for metadata is composed from work
+     * directory and consistentId
+     * @return Cache object processor able to restore data records content into binary objects
+     * @throws IgniteCheckedException Throws in case of initialization errors.
+     */
+    private IgniteCacheObjectProcessor binaryProcessor(
+        final GridKernalContext ctx,
+        final File binaryMetadataFileStoreDir) throws IgniteCheckedException {
+
+        final CacheObjectBinaryProcessorImpl processor = new CacheObjectBinaryProcessorImpl(ctx);
+        processor.setBinaryMetadataFileStoreDir(binaryMetadataFileStoreDir);
+        processor.start();
+        return processor;
     }
 
     /**
@@ -314,7 +349,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
     /** {@inheritDoc} */
     @Override public IgniteCacheObjectProcessor cacheObjects() {
-        return null;
+        return cacheObjProcessor;
     }
 
     /** {@inheritDoc} */
@@ -393,7 +428,8 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     }
 
     /** {@inheritDoc} */
-    @Override public void markSegmented() { }
+    @Override public void markSegmented() {
+    }
 
     /** {@inheritDoc} */
     @Override public boolean segmented() {
@@ -401,7 +437,8 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     }
 
     /** {@inheritDoc} */
-    @Override public void printMemoryStats() { }
+    @Override public void printMemoryStats() {
+    }
 
     /** {@inheritDoc} */
     @Override public boolean isDaemon() {

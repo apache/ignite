@@ -28,8 +28,15 @@ import java.util.Collections;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
+import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
+import org.apache.ignite.internal.pagemem.wal.record.LazyDataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
+import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.AbstractWalRecordsIterator;
@@ -39,6 +46,7 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointe
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentEofException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer;
+import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -82,14 +90,15 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
      *
      * @param walFilesDir Wal files directory. Should already contain node consistent ID as subfolder
      * @param log Logger.
-     * @param sharedCtx Shared context.
+     * @param sharedCtx Shared context. Cache processor is to be configured if Cache Object Key & Data Entry is
+     * required.
      * @param ioFactory File I/O factory.
      */
     StandaloneWalRecordsIterator(
-        @NotNull File walFilesDir,
-        @NotNull IgniteLogger log,
-        @NotNull GridCacheSharedContext sharedCtx,
-        @NotNull FileIOFactory ioFactory) throws IgniteCheckedException {
+        @NotNull final File walFilesDir,
+        @NotNull final IgniteLogger log,
+        @NotNull final GridCacheSharedContext sharedCtx,
+        @NotNull final FileIOFactory ioFactory) throws IgniteCheckedException {
         super(log,
             sharedCtx,
             new RecordV1Serializer(sharedCtx, true),
@@ -103,22 +112,24 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
      * Creates iterator in file-by-file iteration mode. Directory
      *
      * @param log Logger.
-     * @param sharedCtx Shared context.
+     * @param sharedCtx Shared context. Cache processor is to be configured if Cache Object Key & Data Entry is
+     * required.
      * @param ioFactory File I/O factory.
      * @param workDir Work directory is scanned, false - archive
      * @param walFiles Wal files.
      */
     StandaloneWalRecordsIterator(
-            @NotNull IgniteLogger log,
-            @NotNull GridCacheSharedContext sharedCtx,
-            @NotNull FileIOFactory ioFactory,
-            boolean workDir,
-            @NotNull File... walFiles) throws IgniteCheckedException {
+        @NotNull final IgniteLogger log,
+        @NotNull final GridCacheSharedContext sharedCtx,
+        @NotNull final FileIOFactory ioFactory,
+        final boolean workDir,
+        @NotNull final File... walFiles) throws IgniteCheckedException {
         super(log,
             sharedCtx,
             new RecordV1Serializer(sharedCtx),
             ioFactory,
             BUF_SIZE);
+
         this.workDir = workDir;
         init(null, workDir, walFiles);
         advance();
@@ -241,6 +252,56 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
 
             return null;
         }
+    }
+
+    /** {@inheritDoc} */
+    @NotNull @Override protected WALRecord postProcessRecord(@NotNull final WALRecord rec) {
+        final GridKernalContext kernalCtx = sharedCtx.kernalContext();
+        final IgniteCacheObjectProcessor processor = kernalCtx.cacheObjects();
+
+        if (processor != null && rec.type() == WALRecord.RecordType.DATA_RECORD) {
+            final CacheObjectContext fakeCacheObjCtx = new CacheObjectContext(kernalCtx,
+                null, null, false, false, false);
+
+            try {
+                final DataRecord dataRec = (DataRecord)rec;
+                final List<DataEntry> entries = dataRec.writeEntries();
+                final List<DataEntry> postProcessedEntries = new ArrayList<>(entries.size());
+
+                for (DataEntry dataEntry : entries) {
+                    if (dataEntry instanceof LazyDataEntry) {
+                        final LazyDataEntry lazyDataEntry = (LazyDataEntry)dataEntry;
+
+                        final KeyCacheObject key = processor.toKeyCacheObject(fakeCacheObjCtx,
+                            lazyDataEntry.getKeyType(),
+                            lazyDataEntry.getKeyBytes());
+                        final CacheObject val = processor.toCacheObject(fakeCacheObjCtx,
+                            lazyDataEntry.getValType(),
+                            lazyDataEntry.getValBytes());
+
+                        final DataEntry postProcessedEntry = new DataEntry(
+                            dataEntry.cacheId(),
+                            key,
+                            val,
+                            dataEntry.op(),
+                            dataEntry.nearXidVersion(),
+                            dataEntry.writeVersion(),
+                            dataEntry.expireTime(),
+                            dataEntry.partitionId(),
+                            dataEntry.partitionCounter());
+
+                        postProcessedEntries.add(postProcessedEntry);
+                    }
+                    else
+                        postProcessedEntries.add(dataEntry);
+                }
+                return new DataRecord(postProcessedEntries);
+            }
+            catch (Exception e) {
+                log.error("Failed to perform post processing for data record ", e);
+            }
+        }
+        return super.postProcessRecord(rec);
     }
 
     /** {@inheritDoc} */

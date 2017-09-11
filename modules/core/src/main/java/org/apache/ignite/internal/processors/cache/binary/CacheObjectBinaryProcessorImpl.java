@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.binary;
 
+import java.io.File;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collection;
@@ -114,7 +115,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
      * {@code null} means no specific folder is configured. <br>
      * In this case folder for metadata is composed from work directory and consistentId <br>
      */
-    @Nullable private String binaryMetadataFileStoreDir;
+    @Nullable private File binaryMetadataFileStoreDir;
 
     /** */
     @GridToStringExclude
@@ -918,7 +919,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
      * Sets path to binary metadata store configured by user, should include binary_meta and consistentId
      * @param binaryMetadataFileStoreDir path to binary_meta
      */
-    public void setBinaryMetadataFileStoreDir(@Nullable String binaryMetadataFileStoreDir) {
+    public void setBinaryMetadataFileStoreDir(@Nullable File binaryMetadataFileStoreDir) {
         this.binaryMetadataFileStoreDir = binaryMetadataFileStoreDir;
     }
 }

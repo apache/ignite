@@ -56,7 +56,7 @@ class BinaryMetadataFileStore {
         final ConcurrentMap<Integer, BinaryMetadataHolder> metadataLocCache,
         final GridKernalContext ctx,
         final IgniteLogger log,
-        @Nullable final String binaryMetadataFileStoreDir) throws IgniteCheckedException {
+        @Nullable final File binaryMetadataFileStoreDir) throws IgniteCheckedException {
 
         this.metadataLocCache = metadataLocCache;
         this.ctx = ctx;
@@ -66,7 +66,7 @@ class BinaryMetadataFileStore {
             return;
 
         if (binaryMetadataFileStoreDir != null)
-            workDir = new File(binaryMetadataFileStoreDir);
+            workDir = binaryMetadataFileStoreDir;
         else {
             String consId = U.maskForFileName(ctx.discovery().consistentId().toString());
 

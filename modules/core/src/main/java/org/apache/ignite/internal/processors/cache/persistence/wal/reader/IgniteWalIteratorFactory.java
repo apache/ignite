@@ -25,10 +25,9 @@ import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
-import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Factory for creating iterator over WAL files
@@ -36,20 +35,51 @@ import org.jetbrains.annotations.NotNull;
 public class IgniteWalIteratorFactory {
     /** Logger. */
     private final IgniteLogger log;
+
     /** Page size, in standalone iterator mode this value can't be taken from memory configuration. */
     private final int pageSize;
+
+    /**
+     * Folder specifying location of metadata File Store. {@code null} means no specific folder is configured. <br>
+     * This folder should be specified for converting data entries into BinaryObjects
+     */
+    @Nullable private File binaryMetadataFileStoreDir;
+
     /** Factory to provide I/O interfaces for read/write operations with files */
     private final FileIOFactory ioFactory;
 
     /**
      * Creates WAL files iterator factory.
+     * WAL iterator supports automatic converting from CacheObjects and KeyCacheObject into BinaryObjects
+     *
+     * @param log Logger.
+     * @param pageSize Page size which was used in Ignite Persistent Data store to read WAL from, size is validated
+     * according its boundaries.
+     * @param binaryMetadataFileStoreDir folder specifying location of metadata File Store. Should include "binary_meta"
+     * subfolder and consistent ID subfolder. Note Consistent ID should be already masked and should not contain
+     * special symbols. Providing {@code null} means no specific folder is configured. <br>
+     */
+    public IgniteWalIteratorFactory(
+        @NotNull final IgniteLogger log,
+        final int pageSize,
+        @Nullable final File binaryMetadataFileStoreDir) {
+
+        this.log = log;
+        this.pageSize = pageSize;
+        this.binaryMetadataFileStoreDir = binaryMetadataFileStoreDir;
+        this.ioFactory = new PersistentStoreConfiguration().getFileIOFactory();
+        new MemoryConfiguration().setPageSize(pageSize); // just for validate
+    }
+
+    /**
+     * Creates WAL files iterator factory. This constructor does not allow WAL iterators access to data entries key and value.
      *
      * @param log Logger.
      * @param ioFactory Custom factory for non-standard file API to be used in WAL reading.
      * @param pageSize Page size which was used in Ignite Persistent Data store to read WAL from, size is validated
      * according its boundaries.
      */
-    public IgniteWalIteratorFactory(@NotNull IgniteLogger log, @NotNull FileIOFactory ioFactory, int pageSize) {
+    public IgniteWalIteratorFactory(@NotNull final IgniteLogger log, @NotNull final FileIOFactory ioFactory, int pageSize) {
         this.log = log;
         this.pageSize = pageSize;
         this.ioFactory = ioFactory;
@@ -57,7 +87,8 @@ public class IgniteWalIteratorFactory {
     }
 
     /**
-     * Creates WAL files iterator factory
+     * Creates WAL files iterator factory. This constructor does not allow WAL iterators access to data entries key and
+     * value.
      *
      * @param log Logger.
      * @param pageSize Page size which was used in Ignite Persistent Data store to read WAL from, size is validated
@@ -73,11 +104,13 @@ public class IgniteWalIteratorFactory {
      * This mode does not support work directory scan because work directory contains unpredictable number in file name.
      * Such file may broke iteration.
      *
-     * @param walDirWithConsistentId directory with WAL files. Should already contain node consistent ID as subfolder
+     * @param walDirWithConsistentId directory with WAL files. Should already contain node consistent ID as subfolder.
+     * Note: 'Consistent ID'-based subfolder name (if any) should not contain special symbols.
      * @return closable WAL records iterator, should be closed when non needed
      * @throws IgniteCheckedException if failed to read folder
      */
-    public WALIterator iteratorArchiveDirectory(@NotNull final File walDirWithConsistentId) throws IgniteCheckedException {
+    public WALIterator iteratorArchiveDirectory(
+        @NotNull final File walDirWithConsistentId) throws IgniteCheckedException {
         return new StandaloneWalRecordsIterator(walDirWithConsistentId, log, prepareSharedCtx(), ioFactory);
     }
 
@@ -85,11 +118,16 @@ public class IgniteWalIteratorFactory {
      * Creates iterator for file by file scan mode.
      * This method may be used only for archive folder (not for work).
      * In this mode only provided WAL segments will be scanned. New WAL files created during iteration will be ignored
-     * @param files files to scan. Order it not important, but is significant to provide all segments without omissions
+     *
+     * @param files files to scan. Order is not important, but it is significant to provide all segments without omissions.
+     * Parameter should contain direct file links to '.wal' files from archive directory.
+     * 'Consistent ID'-based subfolder name (if any) should not contain special symbols.
+     * Special symbols should be already masked.
+     *
      * @return closable WAL records iterator, should be closed when non needed
      * @throws IgniteCheckedException if failed to read files
      */
-    public WALIterator iteratorArchiveFiles(@NotNull final File ...files) throws IgniteCheckedException {
+    public WALIterator iteratorArchiveFiles(@NotNull final File... files) throws IgniteCheckedException {
         return new StandaloneWalRecordsIterator(log, prepareSharedCtx(), ioFactory, false, files);
     }
 
@@ -97,19 +135,24 @@ public class IgniteWalIteratorFactory {
      * Creates iterator for file by file scan mode.
      * This method may be used for work folder, file indexes are scanned from the file context.
      * In this mode only provided WAL segments will be scanned. New WAL files created during iteration will be ignored.
-     * @param files files to scan. Order it not important, but is significant to provide all segments without omissions
+     *
+     * @param files files to scan. Order is not important, but it is significant to provide all segments without omissions.
+     * Parameter should contain direct file links to '.wal' files from work directory.
+     * 'Consistent ID'-based subfolder name (if any) should not contain special symbols.
+     * Special symbols should be already masked.
+     *
      * @return closable WAL records iterator, should be closed when non needed
      * @throws IgniteCheckedException if failed to read files
      */
-    public WALIterator iteratorWorkFiles(@NotNull final File ...files) throws IgniteCheckedException {
+    public WALIterator iteratorWorkFiles(@NotNull final File... files) throws IgniteCheckedException {
         return new StandaloneWalRecordsIterator(log, prepareSharedCtx(), ioFactory, true, files);
     }
 
     /**
      * @return fake shared context required for create minimal services for record reading
      */
-    @NotNull private GridCacheSharedContext prepareSharedCtx() {
-        final GridKernalContext kernalCtx = new StandaloneGridKernalContext(log);
+    @NotNull private GridCacheSharedContext prepareSharedCtx() throws IgniteCheckedException {
+        final GridKernalContext kernalCtx = new StandaloneGridKernalContext(log, binaryMetadataFileStoreDir);
 
         final StandaloneIgniteCacheDatabaseSharedManager dbMgr = new StandaloneIgniteCacheDatabaseSharedManager();
 
@@ -120,21 +163,5 @@ public class IgniteWalIteratorFactory {
             null, null, dbMgr, null,
             null, null, null, null,
             null, null, null);
-    }
-
-    /**
-     * @param binaryMetadataFileStoreDir folder specifying location of metadata File Store
-     *
-     * {@code null} means no specific folder is configured. <br>
-     * In this case folder for metadata is composed from work directory and consistentId
-     * @return Cache object processor able to restore data records content into binary objects
-     * @throws IgniteCheckedException Throws in case of initialization errors.
-     */
-    public IgniteCacheObjectProcessor binaryProcessor(final String binaryMetadataFileStoreDir) throws IgniteCheckedException {
-        final GridKernalContext ctx = new StandaloneGridKernalContext(log);
-        final CacheObjectBinaryProcessorImpl processor = new CacheObjectBinaryProcessorImpl(ctx);
-        processor.setBinaryMetadataFileStoreDir(binaryMetadataFileStoreDir);
-        processor.start();
-        return processor;
     }
 }
