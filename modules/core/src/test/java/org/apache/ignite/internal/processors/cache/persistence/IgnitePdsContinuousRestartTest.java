@@ -56,7 +56,7 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
     public static final String CACHE_NAME = "cache1";
 
     /** Checkpoint delay. */
-    private volatile int checkpointDelay = -1;
+    protected volatile int checkpointDelay = -1;
 
     /** */
     private boolean cancel = false;
@@ -244,7 +244,7 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
 
         startGrids(GRID_CNT);
 
-        final Ignite load = ignite(0);
+        final Ignite load = ignite(GRID_CNT-1);
 
         load.active(true);
 
@@ -281,7 +281,7 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
         Random rnd = ThreadLocalRandom.current();
 
         while (System.currentTimeMillis() < end) {
-            int idx = rnd.nextInt(GRID_CNT - 1) + 1;
+            int idx = rnd.nextInt(GRID_CNT - 1);
 
             stopGrid(idx, cancel);
 
