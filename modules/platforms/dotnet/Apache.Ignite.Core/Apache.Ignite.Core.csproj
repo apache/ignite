@@ -101,6 +101,7 @@
     <Compile Include="Common\ExceptionFactory.cs" />
     <Compile Include="Configuration\Package-Info.cs" />
     <Compile Include="Impl\Binary\BinaryTypeId.cs" />
+    <Compile Include="Impl\Cache\Client\CacheFlags.cs" />
     <Compile Include="Impl\Cache\Client\Query\ClientQueryCursor.cs" />
     <Compile Include="Impl\Cache\Query\PlatformQueryQursorBase.cs" />
     <Compile Include="Impl\Binary\BinaryProcessorClient.cs" />

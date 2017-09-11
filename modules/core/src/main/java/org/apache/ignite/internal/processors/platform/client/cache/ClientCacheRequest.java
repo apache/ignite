@@ -26,8 +26,14 @@ import org.apache.ignite.internal.processors.platform.client.ClientRequest;
  * Cache get request.
  */
 class ClientCacheRequest extends ClientRequest {
-    /** */
+    /** Flag: keep binary. */
+    private static final byte FLAG_KEEP_BINARY = 1;
+
+    /** Cache id. */
     private final int cacheId;
+
+    /** Flags. */
+    private final byte flags;
 
     /**
      * Ctor.
@@ -38,7 +44,7 @@ class ClientCacheRequest extends ClientRequest {
         super(reader);
 
         cacheId = reader.readInt();
-        reader.readByte();  // Flags (skipStore, etc);
+        flags = reader.readByte();  // Flags (skipStore, etc);
     }
 
     /**
@@ -50,6 +56,12 @@ class ClientCacheRequest extends ClientRequest {
     protected IgniteCache getCache(ClientConnectionContext ctx) {
         String cacheName = ctx.kernalContext().cache().context().cacheContext(cacheId).cache().name();
 
-        return ctx.kernalContext().grid().cache(cacheName).withKeepBinary();
+        IgniteCache<Object, Object> cache = ctx.kernalContext().grid().cache(cacheName);
+
+        if ((flags & FLAG_KEEP_BINARY) == FLAG_KEEP_BINARY) {
+            cache = cache.withKeepBinary();
+        }
+
+        return cache;
     }
 }

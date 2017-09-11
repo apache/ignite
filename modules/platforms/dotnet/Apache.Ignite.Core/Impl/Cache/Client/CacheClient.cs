@@ -619,7 +619,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Client
             return _ignite.Socket.DoOutInOp(opId, stream =>
             {
                 stream.WriteInt(_id);
-                stream.WriteByte(0);  // Flags (skipStore, etc).
+                stream.WriteByte((byte) CacheFlags.KeepBinary);  // Flags (skipStore, etc).
 
                 if (writeAction != null)
                 {
