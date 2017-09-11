@@ -121,23 +121,6 @@ public class H2PkHashIndex extends GridH2IndexBase {
     }
 
     /** {@inheritDoc} */
-    @Override public GridH2Row findOne(GridH2Row row) {
-        try {
-            for (IgniteCacheOffheapManager.CacheDataStore store : cctx.offheap().cacheDataStores()) {
-                CacheDataRow found = store.find(cctx, row.key);
-
-                if (found != null)
-                    tbl.rowDescriptor().createRow(row.key(), row.partition(), row.value(), row.version(), 0);
-            }
-
-            return null;
-        }
-        catch (IgniteCheckedException e) {
-            throw DbException.convert(e);
-        }
-    }
-
-    /** {@inheritDoc} */
     @SuppressWarnings("StatementWithEmptyBody")
     @Override public GridH2Row put(GridH2Row row) {
         // Should not be called directly. Rows are inserted into underlying cache data stores.

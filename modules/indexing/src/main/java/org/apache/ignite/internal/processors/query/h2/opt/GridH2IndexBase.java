@@ -206,14 +206,6 @@ public abstract class GridH2IndexBase extends BaseIndex {
     }
 
     /**
-     * Finds a single row by the given row.
-     *
-     * @param row Search row.
-     * @return Search result.
-     */
-    public abstract GridH2Row findOne(GridH2Row row);
-
-    /**
      * @param ses Session.
      */
     private static void clearViewIndexCache(Session ses) {

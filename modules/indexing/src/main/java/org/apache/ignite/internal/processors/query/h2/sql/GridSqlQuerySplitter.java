@@ -1738,9 +1738,6 @@ public class GridSqlQuerySplitter {
             normalizeExpression(from, 2);
         }
         else if (from instanceof GridSqlFunction) {
-            // TODO generate filtering function around the given function
-            // TODO SYSTEM_RANGE is a special case, it can not be wrapped
-
             // In case of alias parent we need to replace the alias itself.
             if (!prntAlias)
                 generateUniqueAlias(prnt, childIdx);
