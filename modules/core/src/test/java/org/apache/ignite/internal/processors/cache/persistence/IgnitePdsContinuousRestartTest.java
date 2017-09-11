@@ -57,7 +57,7 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
     public static final String CACHE_NAME = "cache1";
 
     /** Checkpoint delay. */
-    private volatile int checkpointDelay = -1;
+    protected volatile int checkpointDelay = -1;
 
     /** */
     private boolean cancel = false;
