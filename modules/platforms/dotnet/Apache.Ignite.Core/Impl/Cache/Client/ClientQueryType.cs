@@ -24,8 +24,9 @@ namespace Apache.Ignite.Core.Impl.Cache.Client
     /// <summary>
     /// Client query type mapper.
     /// </summary>
-    internal class ClientQueryType
+    internal static class ClientQueryType
     {
+        /** Query types mapping. */
         private static readonly Dictionary<CacheOp, ClientOp> QueryTypes = new Dictionary<CacheOp, ClientOp>
         {
             {CacheOp.QryScan, ClientOp.QueryScan}
