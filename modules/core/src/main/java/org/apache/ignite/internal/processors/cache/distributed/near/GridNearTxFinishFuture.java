@@ -61,6 +61,7 @@ import org.apache.ignite.transactions.TransactionRollbackException;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.NOOP;
+import static org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx.FinalizationStatus.USER_FINISH;
 import static org.apache.ignite.transactions.TransactionState.UNKNOWN;
 
 /**
@@ -415,6 +416,13 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
         }
 
         try {
+            if (!tx.markFinalizing(USER_FINISH)) {
+                if (log.isDebugEnabled())
+                    log.debug("Will not finish transaction (it is handled by another thread): " + tx);
+
+                return;
+            }
+
             if (tx.localFinish(commit, clearThreadMap) || (!commit && tx.state() == UNKNOWN)) {
                 if ((tx.onePhaseCommit() && needFinishOnePhase(commit)) || (!tx.onePhaseCommit() && mappings != null)) {
                     if (mappings.single()) {
@@ -650,6 +658,13 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
         GridDistributedTxMapping locMapping = mappings.localMapping();
 
         if (locMapping != null) {
+            if (!tx.markFinalizing(USER_FINISH)) {
+                if (log.isDebugEnabled())
+                    log.debug("Will not finish transaction (it is handled by another thread): " + tx);
+
+                return;
+            }
+
             // No need to send messages as transaction was already committed on remote node.
             // Finish local mapping only as we need send commit message to backups.
             IgniteInternalFuture<IgniteInternalTx> fut = cctx.tm().txHandler().finishColocatedLocal(commit, tx);

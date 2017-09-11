@@ -3256,6 +3256,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      * @throws IgniteCheckedException If failed.
      */
     public void rollback() throws IgniteCheckedException {
+        if (isDone)
+            return;
+
         rollbackNearTxLocalAsync().get();
     }
 
