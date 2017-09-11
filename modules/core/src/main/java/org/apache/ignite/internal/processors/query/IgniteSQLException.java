@@ -41,13 +41,17 @@ public class IgniteSQLException extends IgniteException {
     /** Code to return as {@link SQLException#vendorCode} */
     private final int statusCode;
 
-    /** */
+    /**
+     * Constructor.
+     * @param msg Exception message.
+     */
     public IgniteSQLException(String msg) {
         this(msg, UNKNOWN, (String)null);
     }
 
     /**
-     * Minimalistic ctor accepting only {@link SQLException} as the cause.
+     * Constructor.
+     * @param cause Cause to throw this exception.
      */
     public IgniteSQLException(SQLException cause) {
         super(cause);
@@ -55,27 +59,55 @@ public class IgniteSQLException extends IgniteException {
         this.statusCode = UNKNOWN;
     }
 
-    /** */
+    /**
+     * Constructor.
+     * @param msg Exception message.
+     * @param cause Cause to throw this exception.
+     */
     public IgniteSQLException(String msg, @Nullable Throwable cause) {
         this(msg, UNKNOWN, cause);
     }
 
-    /** */
+    /**
+     * Constructor.
+     * @param msg Exception message.
+     * @param statusCode Ignite specific error code.
+     * @param cause Cause to throw this exception.
+     * @see IgniteQueryErrorCode
+     */
     public IgniteSQLException(String msg, int statusCode, @Nullable Throwable cause) {
         this(msg, statusCode, codeToSqlState(statusCode), cause);
     }
 
-    /** */
+    /**
+     * Constructor.
+     * @param msg Exception message.
+     * @param statusCode Ignite specific error code.
+     * @see IgniteQueryErrorCode
+     */
     public IgniteSQLException(String msg, int statusCode) {
         this(msg, statusCode, codeToSqlState(statusCode));
     }
 
-    /** */
+    /**
+     * Constructor.
+     * @param msg Exception message.
+     * @param statusCode Ignite specific error code.
+     * @param sqlState SQLSTATE standard code.
+     * @see IgniteQueryErrorCode
+     */
     public IgniteSQLException(String msg, int statusCode, String sqlState) {
         this(msg, statusCode, sqlState, null);
     }
 
-    /** */
+    /**
+     * Constructor.
+     * @param msg Exception message.
+     * @param statusCode Ignite specific error code.
+     * @param sqlState SQLSTATE standard code.
+     * @param cause Cause to throw this exception.
+     * @see IgniteQueryErrorCode
+     */
     private IgniteSQLException(String msg, int statusCode, String sqlState, @Nullable Throwable cause) {
         super(msg, cause);
         this.sqlState = sqlState;

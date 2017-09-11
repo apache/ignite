@@ -706,7 +706,7 @@ public class DmlStatementsProcessor {
             return H2Utils.convert(val, desc, type);
         }
         catch (Exception e) {
-            throw new IgniteSQLException("Value conversion failed.", IgniteQueryErrorCode.CACHE_NOT_FOUND, e);
+            throw new IgniteSQLException("Value conversion failed.", IgniteQueryErrorCode.CONVERSION_FAILED, e);
         }
     }
 
