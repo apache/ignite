@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence;
 
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -58,7 +59,9 @@ public class IgnitePdsContinuousRestartTestWithSharedGroupAndIndexes extends Ign
         ccfg2.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         ccfg2.setAffinity(new RendezvousAffinityFunction(false, 32));
         ccfg2.setIndexedTypes(Integer.class, Integer.class);
-        ccfg2.setBackups(2);
+        ccfg2.setBackups(1);
+
+        ccfg2.setRebalanceMode(CacheRebalanceMode.ASYNC);
 
         cfg.setCacheConfiguration(ccfg2);
 

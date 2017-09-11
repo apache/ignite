@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
+import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
@@ -63,7 +64,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.tree.io.Pa
 public abstract class PagesList extends DataStructure {
     /** */
     private static final int TRY_LOCK_ATTEMPTS =
-            IgniteSystemProperties.getInteger("IGNITE_PAGES_LIST_TRY_LOCK_ATTEMPTS", 10);
+        IgniteSystemProperties.getInteger("IGNITE_PAGES_LIST_TRY_LOCK_ATTEMPTS", 10);
 
     /** */
     private static final int MAX_STRIPES_PER_BUCKET =
@@ -181,7 +182,6 @@ public abstract class PagesList extends DataStructure {
                             assert nextId != pageId :
                                 "Loop detected [next=" + U.hexLong(nextId) + ", cur=" + U.hexLong(pageId) + ']';
 
-
                         }
                         finally {
                             readUnlock(pageId, page, pageAddr);
@@ -212,10 +212,11 @@ public abstract class PagesList extends DataStructure {
                         while (prevId != 0L) {
                             final long pageId = prevId;
                             final long page = acquirePage(pageId);
-                            try  {
+                            try {
                                 long pageAddr = readLock(pageId, page);
 
                                 assert pageAddr != 0L;
+                                assert PageIO.getVersion(pageAddr) > 0 : "Page corrupted: "+U.hexLong(pageId);
 
                                 try {
                                     PagesListNodeIO io = PagesListNodeIO.VERSIONS.forPage(pageAddr);
@@ -409,8 +410,8 @@ public abstract class PagesList extends DataStructure {
      *
      * @param bucket Bucket.
      * @param reuse {@code True} if possible to use reuse list.
-     * @throws IgniteCheckedException If failed.
      * @return Tail page ID.
+     * @throws IgniteCheckedException If failed.
      */
     private Stripe addStripe(int bucket, boolean reuse) throws IgniteCheckedException {
         long pageId = reuse ? allocatePage(null) : allocatePageNoReuse();
@@ -419,7 +420,7 @@ public abstract class PagesList extends DataStructure {
 
         Stripe stripe = new Stripe(pageId, true);
 
-        for (;;) {
+        for (; ; ) {
             Stripe[] old = getBucket(bucket);
             Stripe[] upd;
 
@@ -431,7 +432,7 @@ public abstract class PagesList extends DataStructure {
                 upd[len] = stripe;
             }
             else
-                upd = new Stripe[]{stripe};
+                upd = new Stripe[] {stripe};
 
             if (casBucket(bucket, old, upd))
                 return stripe;
@@ -447,7 +448,7 @@ public abstract class PagesList extends DataStructure {
     private boolean updateTail(int bucket, long oldTailId, long newTailId) {
         int idx = -1;
 
-        for (;;) {
+        for (; ; ) {
             Stripe[] tails = getBucket(bucket);
 
             // Tail must exist to be updated.
@@ -616,7 +617,7 @@ public abstract class PagesList extends DataStructure {
         throws IgniteCheckedException {
         assert bag == null ^ dataAddr == 0L;
 
-        for (int lockAttempt = 0; ;) {
+        for (int lockAttempt = 0; ; ) {
             Stripe stripe = getPageForPut(bucket);
 
             final long tailId = stripe.tailId;
@@ -718,7 +719,7 @@ public abstract class PagesList extends DataStructure {
      * @param dataAddr Data page address.
      * @param bucket Bucket index.
      * @throws IgniteCheckedException If failed.
-     * */
+     */
     private void handlePageFull(
         final long pageId,
         final long page,
@@ -1006,7 +1007,7 @@ public abstract class PagesList extends DataStructure {
      * @throws IgniteCheckedException If failed.
      */
     protected final long takeEmptyPage(int bucket, @Nullable IOVersions initIoVers) throws IgniteCheckedException {
-        for (int lockAttempt = 0; ;) {
+        for (int lockAttempt = 0; ; ) {
             Stripe stripe = getPageForTake(bucket);
 
             if (stripe == null)
@@ -1145,8 +1146,8 @@ public abstract class PagesList extends DataStructure {
      * @param dataAddr Data page address.
      * @param dataIO Data page IO.
      * @param bucket Bucket index.
-     * @throws IgniteCheckedException If failed.
      * @return {@code True} if page was removed.
+     * @throws IgniteCheckedException If failed.
      */
     protected final boolean removeDataPage(
         final long dataId,
@@ -1247,7 +1248,7 @@ public abstract class PagesList extends DataStructure {
         if (prevId != 0L) { // Cut tail if we have a previous page.
             Boolean ok = write(prevId, cutTail, null, bucket, FALSE);
 
-            assert ok == TRUE: ok;
+            assert ok == TRUE : ok;
         }
         else {
             // If we don't have a previous, then we are tail page of free list, just drop the stripe.
@@ -1277,7 +1278,7 @@ public abstract class PagesList extends DataStructure {
         assert nextId != 0; // We should do mergeNoNext then.
 
         // Lock all the pages in correct order (from next to previous) and do the merge in retry loop.
-        for (;;) {
+        for (; ; ) {
             final long curId = nextId;
             final long curPage = curId == 0L ? 0L : acquirePage(curId);
             try {
@@ -1374,6 +1375,7 @@ public abstract class PagesList extends DataStructure {
 
     /**
      * Link previous and next to each other.
+     *
      * @param prevId Previous Previous page ID.
      * @param pageId Page ID.
      * @param nextId Next page ID.

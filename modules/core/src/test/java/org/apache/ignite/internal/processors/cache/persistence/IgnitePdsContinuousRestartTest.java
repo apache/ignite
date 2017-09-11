@@ -22,13 +22,13 @@ import java.util.Random;
 import java.util.TreeMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -39,8 +39,11 @@ import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.discovery.tcp.TestTcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.util.TestTcpCommunicationSpi;
 
 /**
  *
@@ -54,6 +57,7 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
 
     /** */
     public static final String CACHE_NAME = "cache1";
+    public static final TcpDiscoveryVmIpFinder FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** Checkpoint delay. */
     protected volatile int checkpointDelay = -1;
@@ -97,7 +101,9 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
         ccfg1.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
         ccfg1.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         ccfg1.setAffinity(new RendezvousAffinityFunction(false, 128));
-        ccfg1.setBackups(2);
+        ccfg1.setBackups(1);
+        ccfg1.setRebalanceMode(CacheRebalanceMode.ASYNC);
+
 
         cfg.setCacheConfiguration(ccfg1);
 
@@ -107,7 +113,14 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
                 .setCheckpointingFrequency(checkpointDelay)
         );
 
+        cfg.setDiscoverySpi(new TestTcpDiscoverySpi().setIpFinder(FINDER));
+        cfg.setCommunicationSpi(new TestTcpCommunicationSpi());
+
         return cfg;
+    }
+
+    @Override protected long getTestTimeout() {
+        return 600_000;
     }
 
     /** {@inheritDoc} */
@@ -228,7 +241,14 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
      * @throws Exception if failed.
      */
     public void testRebalncingDuringLoad_10_500_8_16() throws Exception {
-        checkRebalancingDuringLoad(10, 500, 1, 16);
+        try {
+            checkRebalancingDuringLoad(10, 500, 1, 16);
+        }
+        catch (AssertionError e){
+            System.out.println();
+
+            throw e;
+        }
     }
 
     /**
@@ -276,12 +296,15 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
             }
         }, threads, "updater");
 
-        long end = System.currentTimeMillis() + 90_000;
+        long end = System.currentTimeMillis() + 300_000;
 
         Random rnd = ThreadLocalRandom.current();
 
-        while (System.currentTimeMillis() < end) {
+        while (System.currentTimeMillis() < end ) {
             int idx = rnd.nextInt(GRID_CNT - 1);
+
+            ((TestTcpCommunicationSpi)grid(idx).configuration().getCommunicationSpi()).stop();
+            ((TestTcpDiscoverySpi)grid(idx).configuration().getDiscoverySpi()).simulateNodeFailure();
 
             stopGrid(idx, cancel);
 
