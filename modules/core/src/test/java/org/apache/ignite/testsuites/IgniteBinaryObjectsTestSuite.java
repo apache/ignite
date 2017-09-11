@@ -33,6 +33,7 @@ import org.apache.ignite.internal.binary.BinaryFooterOffsetsOffheapSelfTest;
 import org.apache.ignite.internal.binary.BinaryMarshallerSelfTest;
 import org.apache.ignite.internal.binary.BinaryObjectBuilderAdditionalSelfTest;
 import org.apache.ignite.internal.binary.BinaryObjectBuilderDefaultMappersSelfTest;
+import org.apache.ignite.internal.binary.BinaryObjectBuilderEncodedStringSelfTest;
 import org.apache.ignite.internal.binary.BinaryObjectBuilderSimpleNameLowerCaseMappersSelfTest;
 import org.apache.ignite.internal.binary.BinaryObjectExceptionSelfTest;
 import org.apache.ignite.internal.binary.BinaryObjectToStringSelfTest;
@@ -102,6 +103,7 @@ public class IgniteBinaryObjectsTestSuite extends TestSuite {
         suite.addTestSuite(BinaryConfigurationCustomSerializerSelfTest.class);
         suite.addTestSuite(GridBinaryMarshallerCtxDisabledSelfTest.class);
         suite.addTestSuite(BinaryObjectBuilderDefaultMappersSelfTest.class);
+        suite.addTestSuite(BinaryObjectBuilderEncodedStringSelfTest.class);
         suite.addTestSuite(BinaryObjectBuilderSimpleNameLowerCaseMappersSelfTest.class);
         suite.addTestSuite(BinaryObjectBuilderAdditionalSelfTest.class);
         suite.addTestSuite(BinaryFieldsHeapSelfTest.class);
