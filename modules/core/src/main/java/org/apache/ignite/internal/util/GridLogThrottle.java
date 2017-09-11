@@ -52,15 +52,14 @@ public class GridLogThrottle {
     /** Scheduler. */
     private static final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
-    /** Future instance to stop Scheduler. */
-    private static ScheduledFuture scheduledFuture;
+    /** Timer to manage map cleaning. */
+    private static ScheduledFuture cleanUpOldEntriesTask;
 
     /**
-     * Sets system-wide log throttle timeout.
+     * Setup period map cleaning.
      */
-    public static void schedulerSetup() {
-
-        scheduledFuture = scheduler.scheduleAtFixedRate(new Runnable() {
+    public static void mapCleaningPeriodSetup() {
+        cleanUpOldEntriesTask = scheduler.scheduleAtFixedRate(new Runnable() {
             @Override public void run() {
                 cleanUpOldEntries();
             }
@@ -76,11 +75,11 @@ public class GridLogThrottle {
 
         throttleTimeout = timeout;
 
-        if (scheduledFuture != null) {
+        if (cleanUpOldEntriesTask != null) {
 
-            scheduledFuture.cancel(false);
+            cleanUpOldEntriesTask.cancel(false);
 
-            schedulerSetup();
+            mapCleaningPeriodSetup();
         }
     }
 
@@ -221,8 +220,8 @@ public class GridLogThrottle {
         @Nullable String shortMsg, LogLevel level, boolean quiet, boolean byMsg) {
         assert !F.isEmpty(longMsg);
 
-        if (scheduledFuture == null)
-            schedulerSetup();
+        if (cleanUpOldEntriesTask == null)
+            mapCleaningPeriodSetup();
 
         IgniteBiTuple<Class<? extends Throwable>, String> tup =
             e != null && !byMsg ? F.<Class<? extends Throwable>, String>t(e.getClass(), e.getMessage()) :
@@ -266,7 +265,7 @@ public class GridLogThrottle {
     }
 
     /**
-     * Method iterates though man and removes outdated entries (compares entry timestamp with current timestamp minus
+     * Method iterates though map and removes outdated entries (compares entry timestamp with current timestamp minus
      * timeout). It protects the map from causing memory leak.
      */
     private static void cleanUpOldEntries() {

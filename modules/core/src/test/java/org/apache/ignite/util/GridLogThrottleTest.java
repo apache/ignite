@@ -17,10 +17,8 @@
 
 package org.apache.ignite.util;
 
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
@@ -34,10 +32,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonTest;
  */
 @GridCommonTest(group = "Utils")
 public class GridLogThrottleTest extends GridCommonAbstractTest {
-
-    @LoggerResource
-    private IgniteLogger log;
-
     /** Constructor. */
     public GridLogThrottleTest() {
         super(false);
