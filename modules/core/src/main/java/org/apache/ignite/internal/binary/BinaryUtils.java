@@ -147,10 +147,6 @@ public class BinaryUtils {
     public static final boolean FIELDS_SORTED_ORDER =
         IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_BINARY_SORT_OBJECT_FIELDS);
 
-    /** Whether to write arrays lengths in varint encoding. */
-    public static final boolean USE_VARINT_ARRAY_LENGTH =
-        !IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_NO_VARINT_ARRAY_LENGTH);
-
     /** Field type names. */
     private static final String[] FIELD_TYPE_NAMES;
 
@@ -1202,83 +1198,101 @@ public class BinaryUtils {
     }
 
     /**
+     * @param in Input stream.
+     * @param varint Whether to read arrays lengths in varint encoding.
      * @return Value.
      */
-    public static byte[] doReadByteArray(BinaryInputStream in) {
-        int len = doReadArrayLength(in);
+    public static byte[] doReadByteArray(BinaryInputStream in, boolean varint) {
+        int len = doReadArrayLength(in, varint);
 
         return in.readByteArray(len);
     }
 
     /**
+     * @param in Input stream.
+     * @param varint Whether to read arrays lengths in varint encoding.
      * @return Value.
      */
-    public static boolean[] doReadBooleanArray(BinaryInputStream in) {
-        int len = doReadArrayLength(in);
+    public static boolean[] doReadBooleanArray(BinaryInputStream in, boolean varint) {
+        int len = doReadArrayLength(in, varint);
 
         return in.readBooleanArray(len);
     }
 
     /**
+     * @param in Input stream.
+     * @param varint Whether to read arrays lengths in varint encoding.
      * @return Value.
      */
-    public static short[] doReadShortArray(BinaryInputStream in) {
-        int len = doReadArrayLength(in);
+    public static short[] doReadShortArray(BinaryInputStream in, boolean varint) {
+        int len = doReadArrayLength(in, varint);
 
         return in.readShortArray(len);
     }
 
     /**
+     * @param in Input stream.
+     * @param varint Whether to read arrays lengths in varint encoding.
      * @return Value.
      */
-    public static char[] doReadCharArray(BinaryInputStream in) {
-        int len = doReadArrayLength(in);
+    public static char[] doReadCharArray(BinaryInputStream in, boolean varint) {
+        int len = doReadArrayLength(in, varint);
 
         return in.readCharArray(len);
     }
 
     /**
+     * @param in Input stream.
+     * @param varint Whether to read arrays lengths in varint encoding.
      * @return Value.
      */
-    public static int[] doReadIntArray(BinaryInputStream in) {
-        int len = doReadArrayLength(in);
+    public static int[] doReadIntArray(BinaryInputStream in, boolean varint) {
+        int len = doReadArrayLength(in, varint);
 
         return in.readIntArray(len);
     }
 
     /**
+     * @param in Input stream.
+     * @param varint Whether to read arrays lengths in varint encoding.
      * @return Value.
      */
-    public static long[] doReadLongArray(BinaryInputStream in) {
-        int len = doReadArrayLength(in);
+    public static long[] doReadLongArray(BinaryInputStream in, boolean varint) {
+        int len = doReadArrayLength(in, varint);
 
         return in.readLongArray(len);
     }
 
     /**
+     * @param in Input stream.
+     * @param varint Whether to read arrays lengths in varint encoding.
      * @return Value.
      */
-    public static float[] doReadFloatArray(BinaryInputStream in) {
-        int len = doReadArrayLength(in);
+    public static float[] doReadFloatArray(BinaryInputStream in, boolean varint) {
+        int len = doReadArrayLength(in, varint);
 
         return in.readFloatArray(len);
     }
 
     /**
+     * @param in Input stream.
+     * @param varint Whether to read arrays lengths in varint encoding.
      * @return Value.
      */
-    public static double[] doReadDoubleArray(BinaryInputStream in) {
-        int len = doReadArrayLength(in);
+    public static double[] doReadDoubleArray(BinaryInputStream in, boolean varint) {
+        int len = doReadArrayLength(in, varint);
 
         return in.readDoubleArray(len);
     }
 
     /**
+     * @param in Input stream.
+     * @param varint Whether to read arrays lengths in varint encoding.
      * @return Value.
      */
-    public static BigDecimal doReadDecimal(BinaryInputStream in) {
+    public static BigDecimal doReadDecimal(BinaryInputStream in, boolean varint) {
         int scale = in.readInt();
-        int magLen = doReadArrayLength(in);
+        int magLen = doReadArrayLength(in, varint);
         byte[] mag = in.readByteArray(magLen);
 
         boolean negative = mag[0] < 0;
@@ -1295,11 +1309,13 @@ public class BinaryUtils {
     }
 
     /**
+     * @param in Input stream.
+     * @param varint Whether to read arrays lengths in varint encoding.
      * @return Value.
      */
-    public static String doReadString(BinaryInputStream in) {
+    public static String doReadString(BinaryInputStream in, boolean varint) {
         if (!in.hasArray()) {
-            int len = doReadArrayLength(in);
+            int len = doReadArrayLength(in, varint);
             byte[] arr = in.readByteArray(len);
 
             if (USE_STR_SERIALIZATION_VER_2)
@@ -1308,7 +1324,7 @@ public class BinaryUtils {
                 return new String(arr, UTF_8);
         }
 
-        int strLen = doReadArrayLength(in);
+        int strLen = doReadArrayLength(in, varint);
 
         int pos = in.position();
 
@@ -1367,11 +1383,13 @@ public class BinaryUtils {
     }
 
     /**
+     * @param in Input stream.
+     * @param varint Whether to read arrays lengths in varint encoding.
      * @return Value.
-     * @throws BinaryObjectException In case of error.
+     * @throws BinaryObjectException In case of an error.
      */
-    public static BigDecimal[] doReadDecimalArray(BinaryInputStream in) throws BinaryObjectException {
-        int len = doReadArrayLength(in);
+    public static BigDecimal[] doReadDecimalArray(BinaryInputStream in, boolean varint) throws BinaryObjectException {
+        int len = doReadArrayLength(in, varint);
 
         BigDecimal[] arr = new BigDecimal[len];
 
@@ -1384,7 +1402,7 @@ public class BinaryUtils {
                 if (flag != GridBinaryMarshaller.DECIMAL)
                     throw new BinaryObjectException("Invalid flag value: " + flag);
 
-                arr[i] = doReadDecimal(in);
+                arr[i] = doReadDecimal(in, varint);
             }
         }
 
@@ -1392,11 +1410,13 @@ public class BinaryUtils {
     }
 
     /**
+     * @param in Input stream.
+     * @param varint Whether to read arrays lengths in varint encoding.
      * @return Value.
-     * @throws BinaryObjectException In case of error.
+     * @throws BinaryObjectException In case of an error.
      */
-    public static String[] doReadStringArray(BinaryInputStream in) throws BinaryObjectException {
-        int len = doReadArrayLength(in);
+    public static String[] doReadStringArray(BinaryInputStream in, boolean varint) throws BinaryObjectException {
+        int len = doReadArrayLength(in, varint);
 
         String[] arr = new String[len];
 
@@ -1409,7 +1429,7 @@ public class BinaryUtils {
                 if (flag != GridBinaryMarshaller.STRING)
                     throw new BinaryObjectException("Invalid flag value: " + flag);
 
-                arr[i] = doReadString(in);
+                arr[i] = doReadString(in, varint);
             }
         }
 
@@ -1417,11 +1437,13 @@ public class BinaryUtils {
     }
 
     /**
+     * @param in Input stream.
+     * @param varint Whether to read arrays lengths in varint encoding.
      * @return Value.
-     * @throws BinaryObjectException In case of error.
+     * @throws BinaryObjectException In case of an error.
      */
-    public static UUID[] doReadUuidArray(BinaryInputStream in) throws BinaryObjectException {
-        int len = doReadArrayLength(in);
+    public static UUID[] doReadUuidArray(BinaryInputStream in, boolean varint) throws BinaryObjectException {
+        int len = doReadArrayLength(in, varint);
 
         UUID[] arr = new UUID[len];
 
@@ -1442,11 +1464,13 @@ public class BinaryUtils {
     }
 
     /**
+     * @param in Input stream.
+     * @param varint Whether to read arrays lengths in varint encoding.
      * @return Value.
-     * @throws BinaryObjectException In case of error.
+     * @throws BinaryObjectException In case of an error.
      */
-    public static Date[] doReadDateArray(BinaryInputStream in) throws BinaryObjectException {
-        int len = doReadArrayLength(in);
+    public static Date[] doReadDateArray(BinaryInputStream in, boolean varint) throws BinaryObjectException {
+        int len = doReadArrayLength(in, varint);
 
         Date[] arr = new Date[len];
 
@@ -1467,11 +1491,13 @@ public class BinaryUtils {
     }
 
     /**
+     * @param in Input stream.
+     * @param varint Whether to read arrays lengths in varint encoding.
      * @return Value.
-     * @throws BinaryObjectException In case of error.
+     * @throws BinaryObjectException In case of an error.
      */
-    public static Timestamp[] doReadTimestampArray(BinaryInputStream in) throws BinaryObjectException {
-        int len = doReadArrayLength(in);
+    public static Timestamp[] doReadTimestampArray(BinaryInputStream in, boolean varint) throws BinaryObjectException {
+        int len = doReadArrayLength(in, varint);
 
         Timestamp[] arr = new Timestamp[len];
 
@@ -1492,11 +1518,13 @@ public class BinaryUtils {
     }
 
     /**
+     * @param in Input stream.
+     * @param varint Whether to read arrays lengths in varint encoding.
      * @return Value.
-     * @throws BinaryObjectException In case of error.
+     * @throws BinaryObjectException In case of an error.
      */
-    public static Time[] doReadTimeArray(BinaryInputStream in) throws BinaryObjectException {
-        int len = doReadArrayLength(in);
+    public static Time[] doReadTimeArray(BinaryInputStream in, boolean varint) throws BinaryObjectException {
+        int len = doReadArrayLength(in, varint);
 
         Time[] arr = new Time[len];
 
@@ -1577,7 +1605,7 @@ public class BinaryUtils {
         if (!deserialize) {
             // Skip class name at the stream.
             if (typeId == GridBinaryMarshaller.UNREGISTERED_TYPE_ID)
-                doReadClassName(in);
+                doReadClassName(in, ctx.isVarintArrayLength());
 
             return null;
         }
@@ -1602,18 +1630,19 @@ public class BinaryUtils {
     }
 
     /**
-     * Read plain type.
+     * Reads plain type.
      *
      * @param in Input stream.
+     * @param varint Whether to read arrays lengths in varint encoding.
      * @return Plain type.
      */
-    private static EnumType doReadEnumType(BinaryInputStream in) {
+    private static EnumType doReadEnumType(BinaryInputStream in, boolean varint) {
         int typeId = in.readInt();
 
         if (typeId != GridBinaryMarshaller.UNREGISTERED_TYPE_ID)
             return new EnumType(typeId, null);
         else {
-            String clsName = doReadClassName(in);
+            String clsName = doReadClassName(in, varint);
 
             return new EnumType(GridBinaryMarshaller.UNREGISTERED_TYPE_ID, clsName);
         }
@@ -1621,15 +1650,16 @@ public class BinaryUtils {
 
     /**
      * @param in Input stream.
+     * @param varint Whether to read arrays lengths in varint encoding.
      * @return Class name.
      */
-    public static String doReadClassName(BinaryInputStream in) {
+    public static String doReadClassName(BinaryInputStream in, boolean varint) {
         byte flag = in.readByte();
 
         if (flag != GridBinaryMarshaller.STRING)
             throw new BinaryObjectException("Failed to read class name [position=" + (in.position() - 1) + ']');
 
-        return doReadString(in);
+        return doReadString(in, varint);
     }
 
     /**
@@ -1647,7 +1677,7 @@ public class BinaryUtils {
         if (typeId != GridBinaryMarshaller.UNREGISTERED_TYPE_ID)
             cls = ctx.descriptorForTypeId(true, typeId, ldr, true).describedClass();
         else {
-            String clsName = doReadClassName(in);
+            String clsName = doReadClassName(in, ctx.isVarintArrayLength());
 
             try {
                 cls = U.forName(clsName, ldr);
@@ -1701,7 +1731,7 @@ public class BinaryUtils {
      * @return Enum.
      */
     public static BinaryEnumObjectImpl doReadBinaryEnum(BinaryInputStream in, BinaryContext ctx) {
-        return doReadBinaryEnum(in, ctx, doReadEnumType(in));
+        return doReadBinaryEnum(in, ctx, doReadEnumType(in, ctx.isVarintArrayLength()));
     }
 
     /**
@@ -1725,7 +1755,7 @@ public class BinaryUtils {
      * @return Enum array.
      */
     private static Object[] doReadBinaryEnumArray(BinaryInputStream in, BinaryContext ctx) {
-        int len = doReadArrayLength(in);
+        int len = doReadArrayLength(in, ctx.isVarintArrayLength());
 
         Object[] arr = (Object[])Array.newInstance(BinaryObject.class, len);
 
@@ -1735,7 +1765,7 @@ public class BinaryUtils {
             if (flag == GridBinaryMarshaller.NULL)
                 arr[i] = null;
             else
-                arr[i] = doReadBinaryEnum(in, ctx, doReadEnumType(in));
+                arr[i] = doReadBinaryEnum(in, ctx, doReadEnumType(in, ctx.isVarintArrayLength()));
         }
 
         return arr;
@@ -1764,7 +1794,7 @@ public class BinaryUtils {
      */
     public static Object[] doReadEnumArray(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr, Class<?> cls)
         throws BinaryObjectException {
-        int len = doReadArrayLength(in);
+        int len = doReadArrayLength(in, ctx.isVarintArrayLength());
 
         Object[] arr = (Object[])Array.newInstance(cls, len);
 
@@ -1913,10 +1943,10 @@ public class BinaryUtils {
                 return in.readBoolean();
 
             case GridBinaryMarshaller.DECIMAL:
-                return doReadDecimal(in);
+                return doReadDecimal(in, ctx.isVarintArrayLength());
 
             case GridBinaryMarshaller.STRING:
-                return doReadString(in);
+                return doReadString(in, ctx.isVarintArrayLength());
 
             case GridBinaryMarshaller.UUID:
                 return doReadUuid(in);
@@ -1931,46 +1961,46 @@ public class BinaryUtils {
                 return doReadTime(in);
 
             case GridBinaryMarshaller.BYTE_ARR:
-                return doReadByteArray(in);
+                return doReadByteArray(in, ctx.isVarintArrayLength());
 
             case GridBinaryMarshaller.SHORT_ARR:
-                return doReadShortArray(in);
+                return doReadShortArray(in, ctx.isVarintArrayLength());
 
             case GridBinaryMarshaller.INT_ARR:
-                return doReadIntArray(in);
+                return doReadIntArray(in, ctx.isVarintArrayLength());
 
             case GridBinaryMarshaller.LONG_ARR:
-                return doReadLongArray(in);
+                return doReadLongArray(in, ctx.isVarintArrayLength());
 
             case GridBinaryMarshaller.FLOAT_ARR:
-                return doReadFloatArray(in);
+                return doReadFloatArray(in, ctx.isVarintArrayLength());
 
             case GridBinaryMarshaller.DOUBLE_ARR:
-                return doReadDoubleArray(in);
+                return doReadDoubleArray(in, ctx.isVarintArrayLength());
 
             case GridBinaryMarshaller.CHAR_ARR:
-                return doReadCharArray(in);
+                return doReadCharArray(in, ctx.isVarintArrayLength());
 
             case GridBinaryMarshaller.BOOLEAN_ARR:
-                return doReadBooleanArray(in);
+                return doReadBooleanArray(in, ctx.isVarintArrayLength());
 
             case GridBinaryMarshaller.DECIMAL_ARR:
-                return doReadDecimalArray(in);
+                return doReadDecimalArray(in, ctx.isVarintArrayLength());
 
             case GridBinaryMarshaller.STRING_ARR:
-                return doReadStringArray(in);
+                return doReadStringArray(in, ctx.isVarintArrayLength());
 
             case GridBinaryMarshaller.UUID_ARR:
-                return doReadUuidArray(in);
+                return doReadUuidArray(in, ctx.isVarintArrayLength());
 
             case GridBinaryMarshaller.DATE_ARR:
-                return doReadDateArray(in);
+                return doReadDateArray(in, ctx.isVarintArrayLength());
 
             case GridBinaryMarshaller.TIMESTAMP_ARR:
-                return doReadTimestampArray(in);
+                return doReadTimestampArray(in, ctx.isVarintArrayLength());
 
             case GridBinaryMarshaller.TIME_ARR:
-                return doReadTimeArray(in);
+                return doReadTimeArray(in, ctx.isVarintArrayLength());
 
             case GridBinaryMarshaller.OBJ_ARR:
                 return doReadObjectArray(in, ctx, ldr, handles, false);
@@ -1986,10 +2016,10 @@ public class BinaryUtils {
 
             case GridBinaryMarshaller.ENUM:
             case GridBinaryMarshaller.BINARY_ENUM:
-                return doReadBinaryEnum(in, ctx, doReadEnumType(in));
+                return doReadBinaryEnum(in, ctx, doReadEnumType(in, ctx.isVarintArrayLength()));
 
             case GridBinaryMarshaller.ENUM_ARR:
-                doReadEnumType(in); // Simply skip this part as we do not need it.
+                doReadEnumType(in, ctx.isVarintArrayLength()); // Simply skip this part as we do not need it.
 
                 return doReadBinaryEnumArray(in, ctx);
 
@@ -2022,7 +2052,7 @@ public class BinaryUtils {
 
         Class compType = doReadClass(in, ctx, ldr, deserialize);
 
-        int len = doReadArrayLength(in);
+        int len = doReadArrayLength(in, ctx.isVarintArrayLength());
 
         Object[] arr = deserialize ? (Object[])Array.newInstance(compType, len) : new Object[len];
 
@@ -2525,114 +2555,117 @@ public class BinaryUtils {
     /**
      * Reads from {@link BinaryInputStream} value of length of an array,
      * which can be presented in default format or varint encoding.
-     * Reading method depends on the constant {@link #USE_VARINT_ARRAY_LENGTH}.
+     * Reading method depends on the {@param varint}.
      * <a href="https://developers.google.com/protocol-buffers/docs/encoding#varints">Varint encoding description.</a>
      *
      * If you need to know number of bytes which were used for storage of the read value,
-     * use the method {@link #sizeOfArrayLengthValue(int)}.
+     * use the method {@link #sizeOfArrayLengthValue(int, boolean)}.
      *
      * @param in BinaryInputStream.
+     * @param varint Whether to read arrays lengths in varint encoding.
      * @return Length of an array.
      */
-    public static int doReadArrayLength(BinaryInputStream in) {
-        if (!USE_VARINT_ARRAY_LENGTH)
-            return in.readInt();
+    public static int doReadArrayLength(BinaryInputStream in, boolean varint) {
+        if (varint)
+            return doReadUnsignedVarint(in);
 
-        return doReadUnsignedVarint(in);
+        return in.readInt();
     }
 
     /**
      * Reads from {@link BinaryBuilderReader} value of length of an array,
      * which can be presented in default format or varint encoding.
-     * Reading method depends on the constant {@link #USE_VARINT_ARRAY_LENGTH}.
      * <a href="https://developers.google.com/protocol-buffers/docs/encoding#varints">Varint encoding description.</a>
      *
      * If you need to know number of bytes which were used for storage of the read value,
-     * use the method {@link #sizeOfArrayLengthValue(int)}.
+     * use the method {@link #sizeOfArrayLengthValue(int, boolean)}.
      *
      * @param in BinaryBuilderReader.
      * @return Length of an array.
      */
     public static int doReadArrayLength(BinaryBuilderReader in) {
-        if (!USE_VARINT_ARRAY_LENGTH)
-            return in.readInt();
+        if (in.binaryContext().isVarintArrayLength())
+            return doReadUnsignedVarint(in);
 
-        return doReadUnsignedVarint(in);
+        return in.readInt();
     }
 
     /**
      * Reads from {@link ByteBuffer} value of length of an array,
      * which can be presented in default format or varint encoding.
-     * Reading method depends on the constant {@link #USE_VARINT_ARRAY_LENGTH}.
+     * Reading method depends on the {@param varint}.
      * <a href="https://developers.google.com/protocol-buffers/docs/encoding#varints">Varint encoding description.</a>
      *
      * If you need to know number of bytes which were used for storage of the read value,
-     * use the method {@link #sizeOfArrayLengthValue(int)}.
+     * use the method {@link #sizeOfArrayLengthValue(int, boolean)}.
      *
      * @param buf ByteBuffer.
+     * @param varint Whether to read arrays lengths in varint encoding.
      * @return Length of an array.
      */
-    public static int doReadArrayLength(ByteBuffer buf) {
-        if (!USE_VARINT_ARRAY_LENGTH)
-            return buf.getInt();
+    public static int doReadArrayLength(ByteBuffer buf, boolean varint) {
+        if (varint)
+            return doReadUnsignedVarint(buf);
 
-        return doReadUnsignedVarint(buf);
+        return buf.getInt();
     }
 
     /**
      * Reads value of length of an array, which can be presented in default format or varint encoding.
      * Starts reading from given offset.
-     * Reading method depends on the constant {@link #USE_VARINT_ARRAY_LENGTH}.
+     * Reading method depends on the {@param varint}.
      * <a href="https://developers.google.com/protocol-buffers/docs/encoding#varints">Varint encoding description.</a>
      *
      * If you need to know number of bytes which were used for storage of the read value,
-     * use the method {@link #sizeOfArrayLengthValue(int)}.
+     * use the method {@link #sizeOfArrayLengthValue(int, boolean)}.
      *
      * @param arr Bytes array.
      * @param off Offset.
+     * @param varint Whether to read arrays lengths in varint encoding.
      * @return Length of an array.
      */
-    public static int doReadArrayLength(byte[] arr, int off) {
-        if (!USE_VARINT_ARRAY_LENGTH)
-            return BinaryPrimitives.readInt(arr, off);
+    public static int doReadArrayLength(byte[] arr, int off, boolean varint) {
+        if (varint)
+            return doReadUnsignedVarint(arr, off);
 
-        return doReadUnsignedVarint(arr, off);
+        return BinaryPrimitives.readInt(arr, off);
     }
 
     /**
      * Reads value of length of an array, which can be presented in default format or varint encoding.
      * Starts reading from given offset.
-     * Reading method depends on the constant {@link #USE_VARINT_ARRAY_LENGTH}.
+     * Reading method depends on the {@param varint}.
      * <a href="https://developers.google.com/protocol-buffers/docs/encoding#varints">Varint encoding description.</a>
      *
      * If you need to know number of bytes which were used for storage of the read value,
-     * use the method {@link #sizeOfArrayLengthValue(int)}.
+     * use the method {@link #sizeOfArrayLengthValue(int, boolean)}.
      *
      * @param ptr Pointer.
      * @param off Offset.
+     * @param varint Whether to read arrays lengths in varint encoding.
      * @return Length of an array.
      */
-    public static int doReadArrayLength(long ptr, int off) {
-        if (!USE_VARINT_ARRAY_LENGTH)
-            return BinaryPrimitives.readInt(ptr, off);
+    public static int doReadArrayLength(long ptr, int off, boolean varint) {
+        if (varint)
+            return doReadUnsignedVarint(ptr, off);
 
-        return doReadUnsignedVarint(ptr, off);
+        return BinaryPrimitives.readInt(ptr, off);
     }
 
     /**
      * Returns the amount of bytes required to write length of an array,
      * which can be presented in default format or varint encoding.
      * <a href="https://developers.google.com/protocol-buffers/docs/encoding#varints">Varint encoding description.</a>
-     * It depends on the constant {@link #USE_VARINT_ARRAY_LENGTH}.
      *
      * @param len Array length.
+     * @param varint Whether to consider arrays lengths in varint encoding.
      * @return Amount of bytes.
      */
-    public static int sizeOfArrayLengthValue(int len) {
-        if (!USE_VARINT_ARRAY_LENGTH)
-            return 4;
+    public static int sizeOfArrayLengthValue(int len, boolean varint) {
+        if (varint)
+            return sizeInUnsignedVarint(len);
 
-        return sizeInUnsignedVarint(len);
+        return 4;
     }
 
     /**

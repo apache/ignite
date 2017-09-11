@@ -3613,6 +3613,13 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @return Whether to write arrays lengths in varint encoding.
+     */
+    protected boolean varintArrayLength() {
+        return false;
+    }
+
+    /**
      * @param marsh Marshaller.
      * @return Binary context.
      */
@@ -3680,6 +3687,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         bCfg.setIdMapper(mapper);
         bCfg.setSerializer(serializer);
         bCfg.setCompactFooter(compactFooter());
+        bCfg.setVarintArrayLength(varintArrayLength());
 
         bCfg.setTypeConfigurations(cfgs);
 

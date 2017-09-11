@@ -122,9 +122,9 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
         if (this.typeId == GridBinaryMarshaller.UNREGISTERED_TYPE_ID) {
             assert arr[off] == GridBinaryMarshaller.STRING;
 
-            int len = BinaryUtils.doReadArrayLength(arr, ++off);
+            int len = BinaryUtils.doReadArrayLength(arr, ++off, ctx.isVarintArrayLength());
 
-            off += BinaryUtils.sizeOfArrayLengthValue(len);
+            off += BinaryUtils.sizeOfArrayLengthValue(len, ctx.isVarintArrayLength());
 
             byte[] bytes = BinaryPrimitives.readByteArray(arr, off, len);
 

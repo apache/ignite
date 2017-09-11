@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.binary;
 
-import org.apache.ignite.IgniteSystemProperties;
-
 /**
  * {@inheritDoc}
  *
@@ -26,16 +24,7 @@ import org.apache.ignite.IgniteSystemProperties;
  */
 public class BinaryMarshallerIntArraysSizeTest extends BinaryMarshallerSelfTest {
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
-        System.setProperty(IgniteSystemProperties.IGNITE_NO_VARINT_ARRAY_LENGTH, "true");
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        System.clearProperty(IgniteSystemProperties.IGNITE_NO_VARINT_ARRAY_LENGTH);
+    @Override protected boolean varintArrayLength() {
+        return true;
     }
 }

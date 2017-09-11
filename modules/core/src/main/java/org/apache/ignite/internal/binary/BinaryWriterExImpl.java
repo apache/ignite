@@ -544,36 +544,36 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
     /**
      * Writes value of length of an array, which can be written in default format or varint encoding.
-     * Writing method depends on the constant {@link BinaryUtils#USE_VARINT_ARRAY_LENGTH}.
+     * Writing method depends on {@link #ctx#isVarintArrayLength()}.
      * <a href="https://developers.google.com/protocol-buffers/docs/encoding#varints">Varint encoding description.</a>
      *
      * If you need to know necessary number of bytes for writing,
-     * use the method {@link BinaryUtils#sizeOfArrayLengthValue(int)}.
+     * use the method {@link BinaryUtils#sizeOfArrayLengthValue(int, boolean)}.
      *
      * @param val Value to write.
      */
     public void doUnsafeWriteArrayLength(int val) {
-        if (!BinaryUtils.USE_VARINT_ARRAY_LENGTH)
-            out.unsafeWriteInt(val);
-        else
+        if (ctx.isVarintArrayLength())
             doUnsafeWriteUnsignedVarint(val);
+        else
+            out.unsafeWriteInt(val);
     }
 
     /**
      * Writes value of length of an array, which can be written in default format or varint encoding.
-     * Writing method depends on the constant {@link BinaryUtils#USE_VARINT_ARRAY_LENGTH}.
+     * Writing method depends on {@link #ctx#isVarintArrayLength()}.
      * <a href="https://developers.google.com/protocol-buffers/docs/encoding#varints">Varint encoding description.</a>
      *
      * If you need to know necessary number of bytes for writing,
-     * use the method {@link BinaryUtils#sizeOfArrayLengthValue(int)}.
+     * use the method {@link BinaryUtils#sizeOfArrayLengthValue(int, boolean)}.
      *
      * @param val Value to write.
      */
     public void doWriteArrayLength(int val) {
-        if (!BinaryUtils.USE_VARINT_ARRAY_LENGTH)
-            out.writeInt(val);
-        else
+        if (ctx.isVarintArrayLength())
             doWriteUnsignedVarint(val);
+        else
+            out.writeInt(val);
     }
 
     /**

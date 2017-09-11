@@ -256,6 +256,9 @@ public class BinaryContext {
     /** Compact footer flag. */
     private boolean compactFooter;
 
+    /** Whether to write arrays lengths in varint encoding. */
+    private boolean varintArrayLength = false;
+
     /** Object schemas. */
     private volatile Map<Integer, BinarySchemaRegistry> schemas;
 
@@ -421,6 +424,7 @@ public class BinaryContext {
         );
 
         compactFooter = binaryCfg.isCompactFooter();
+        varintArrayLength = binaryCfg.isVarintArrayLength();
     }
 
     /**
@@ -1309,6 +1313,16 @@ public class BinaryContext {
      */
     public boolean isCompactFooter() {
         return compactFooter;
+    }
+
+    /**
+     * Gets whether to write arrays lengths in varint encoding. When enabled, Ignite will write arrays lengths in varint
+     * encoding.
+     *
+     * @return Whether to write arrays lengths in varint encoding.
+     */
+    public boolean isVarintArrayLength() {
+        return varintArrayLength;
     }
 
     /**

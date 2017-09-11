@@ -182,20 +182,20 @@ public class BinarySerializedFieldComparator {
 
     /**
      * Reads value of length of an array, which can be presented in default format or varint encoding.
-     * Reading method depends whether this is offheap object and the constant {@link BinaryUtils#USE_VARINT_ARRAY_LENGTH}.
      * <a href="https://developers.google.com/protocol-buffers/docs/encoding#varints">Varint encoding description.</a>
      *
      * If you need to know number of bytes which were used for storage of the read value,
-     * use the method {@link BinaryUtils#sizeOfArrayLengthValue(int)}.
+     * use the method {@link BinaryUtils#sizeOfArrayLengthValue(int, boolean)}.
      *
      * @param off Offset.
+     * @param varint Whether to read arrays lengths in varint encoding.
      * @return Value of array's length.
      */
-    private int readArrayLength(int off) {
+    private int readArrayLength(int off, boolean varint) {
         if (offheap())
-            return BinaryUtils.doReadArrayLength(ptr, curFieldPos + off);
+            return BinaryUtils.doReadArrayLength(ptr, curFieldPos + off, varint);
         else
-            return BinaryUtils.doReadArrayLength(arr, curFieldPos + off);
+            return BinaryUtils.doReadArrayLength(arr, curFieldPos + off, varint);
     }
 
     /**
@@ -320,12 +320,12 @@ public class BinarySerializedFieldComparator {
      */
     private static boolean compareByteArrays(BinarySerializedFieldComparator c1, BinarySerializedFieldComparator c2,
                                              int off) {
-        int len = c1.readArrayLength(off);
+        int len = c1.readArrayLength(off, c1.obj.context().isVarintArrayLength());
 
-        if (len != c2.readArrayLength(off))
+        if (len != c2.readArrayLength(off, c2.obj.context().isVarintArrayLength()))
             return false;
         else {
-            off += BinaryUtils.sizeOfArrayLengthValue(len);
+            off += BinaryUtils.sizeOfArrayLengthValue(len, c1.obj.context().isVarintArrayLength());
 
             if (c1.offheap()) {
                 if (c2.offheap())
