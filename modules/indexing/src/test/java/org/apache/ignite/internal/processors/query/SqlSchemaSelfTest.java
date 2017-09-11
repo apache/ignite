@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal.processors.query;
 
+import java.util.Collections;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -186,6 +188,36 @@ public class SqlSchemaSelfTest extends GridCommonAbstractTest {
 
         assertEquals(1, cache.query(
             new SqlFieldsQuery("SELECT id, name, orgId FROM \"PUBLIC\".Person").setSchema(CACHE_PERSON_2)
+        ).getAll().size());
+    }
+
+    /**
+     * Test simple query.
+     *
+     * @throws Exception If failed.
+     */
+    public void testCustomSchemaName() throws Exception {
+        QueryEntity qe = new QueryEntity()
+            .setValueType(Person.class.getName())
+            .setKeyType(Long.class.getName())
+            .setValueFieldName("_value")
+            .setKeyFieldName("id")
+            .addQueryField("id", Long.class.getName(), null)
+            .addQueryField("_value", Person.class.getName(), null)
+            .addQueryField("name", String.class.getName(), null)
+            .addQueryField("orgId", Long.class.getName(), null);
+
+        qe.setTableName("Person");
+
+        IgniteCache<Long, Person> cache = node.createCache(new CacheConfiguration<Long, Person>()
+            .setName(CACHE_PERSON)
+            .setQueryEntities(Collections.singletonList(qe))
+            .setSqlSchema("TEST"));
+
+        cache.put(1L, new Person("Vasya", 2));
+
+        assertEquals(1, node.context().query().querySqlFieldsNoCache(
+            new SqlFieldsQuery("SELECT id, name, orgId FROM TEST.Person where (id = ?)").setArgs(1L), false
         ).getAll().size());
     }
 
