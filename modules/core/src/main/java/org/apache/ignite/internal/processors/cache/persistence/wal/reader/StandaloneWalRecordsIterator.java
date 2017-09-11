@@ -32,6 +32,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.LazyDataEntry;
+import org.apache.ignite.internal.pagemem.wal.record.UnwrapDataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
@@ -260,48 +261,66 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
         final IgniteCacheObjectProcessor processor = kernalCtx.cacheObjects();
 
         if (processor != null && rec.type() == WALRecord.RecordType.DATA_RECORD) {
-            final CacheObjectContext fakeCacheObjCtx = new CacheObjectContext(kernalCtx,
-                null, null, false, false, false);
+
 
             try {
-                final DataRecord dataRec = (DataRecord)rec;
-                final List<DataEntry> entries = dataRec.writeEntries();
-                final List<DataEntry> postProcessedEntries = new ArrayList<>(entries.size());
-
-                for (DataEntry dataEntry : entries) {
-                    if (dataEntry instanceof LazyDataEntry) {
-                        final LazyDataEntry lazyDataEntry = (LazyDataEntry)dataEntry;
-
-                        final KeyCacheObject key = processor.toKeyCacheObject(fakeCacheObjCtx,
-                            lazyDataEntry.getKeyType(),
-                            lazyDataEntry.getKeyBytes());
-                        final CacheObject val = processor.toCacheObject(fakeCacheObjCtx,
-                            lazyDataEntry.getValType(),
-                            lazyDataEntry.getValBytes());
-
-                        final DataEntry postProcessedEntry = new DataEntry(
-                            dataEntry.cacheId(),
-                            key,
-                            val,
-                            dataEntry.op(),
-                            dataEntry.nearXidVersion(),
-                            dataEntry.writeVersion(),
-                            dataEntry.expireTime(),
-                            dataEntry.partitionId(),
-                            dataEntry.partitionCounter());
-
-                        postProcessedEntries.add(postProcessedEntry);
-                    }
-                    else
-                        postProcessedEntries.add(dataEntry);
-                }
-                return new DataRecord(postProcessedEntries);
+                return postProcessDataRecord((DataRecord)rec, kernalCtx, processor);
             }
             catch (Exception e) {
                 log.error("Failed to perform post processing for data record ", e);
             }
         }
         return super.postProcessRecord(rec);
+    }
+
+    /**
+     * Performs post processing of lazy data record, converts it to unwrap record
+     *
+     * @param dataRec
+     * @param kernalCtx
+     * @param processor processor to convert binary form from WAL into CacheObject/BinaryObject
+     * @return post-processed record
+     * @throws IgniteCheckedException if failed
+     */
+    @NotNull private WALRecord postProcessDataRecord(
+        @NotNull final DataRecord dataRec,
+        final GridKernalContext kernalCtx,
+        final IgniteCacheObjectProcessor processor) throws IgniteCheckedException {
+        final CacheObjectContext fakeCacheObjCtx = new CacheObjectContext(kernalCtx,
+            null, null, false, false, false);
+
+        final List<DataEntry> entries = dataRec.writeEntries();
+        final List<DataEntry> postProcessedEntries = new ArrayList<>(entries.size());
+
+        for (DataEntry dataEntry : entries) {
+            if (dataEntry instanceof LazyDataEntry) {
+                final LazyDataEntry lazyDataEntry = (LazyDataEntry)dataEntry;
+
+                final KeyCacheObject key = processor.toKeyCacheObject(fakeCacheObjCtx,
+                    lazyDataEntry.getKeyType(),
+                    lazyDataEntry.getKeyBytes());
+                final CacheObject val = processor.toCacheObject(fakeCacheObjCtx,
+                    lazyDataEntry.getValType(),
+                    lazyDataEntry.getValBytes());
+
+                final DataEntry postProcessedEntry = new UnwrapDataEntry(
+                    dataEntry.cacheId(),
+                    key,
+                    val,
+                    dataEntry.op(),
+                    dataEntry.nearXidVersion(),
+                    dataEntry.writeVersion(),
+                    dataEntry.expireTime(),
+                    dataEntry.partitionId(),
+                    dataEntry.partitionCounter(),
+                    fakeCacheObjCtx);
+
+                postProcessedEntries.add(postProcessedEntry);
+            }
+            else
+                postProcessedEntries.add(dataEntry);
+        }
+        return new DataRecord(postProcessedEntries);
     }
 
     /** {@inheritDoc} */

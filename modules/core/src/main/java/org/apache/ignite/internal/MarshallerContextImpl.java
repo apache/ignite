@@ -18,8 +18,8 @@
 package org.apache.ignite.internal;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
 import java.util.AbstractMap;
@@ -37,6 +37,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
@@ -86,6 +87,12 @@ public class MarshallerContextImpl implements MarshallerContext {
 
     /** */
     private boolean clientNode;
+
+    /**
+     * Marshaller mapping file store directory. {@code null} used for standard folder, in this case folder is calculated
+     * from work directory. Non null value may be used to setup custom directory from outside
+     */
+    @Nullable private File marshallerMappingFileStoreDir;
 
     /**
      * Initializes context.
@@ -491,7 +498,10 @@ public class MarshallerContextImpl implements MarshallerContext {
         IgniteConfiguration cfg = ctx.config();
         String workDir = U.workDirectory(cfg.getWorkDirectory(), cfg.getIgniteHome());
 
-        fileStore = new MarshallerMappingFileStore(workDir, ctx.log(MarshallerMappingFileStore.class));
+        final IgniteLogger fileStoreLog = ctx.log(MarshallerMappingFileStore.class);
+        fileStore = marshallerMappingFileStoreDir==null?
+            new MarshallerMappingFileStore(workDir, fileStoreLog):
+            new MarshallerMappingFileStore(fileStoreLog, marshallerMappingFileStoreDir);
         this.transport = transport;
         closProc = ctx.closure();
         clientNode = ctx.clientNode();
@@ -534,6 +544,15 @@ public class MarshallerContextImpl implements MarshallerContext {
         }
 
         return res.entrySet().iterator();
+    }
+
+    /**
+     * Sets custom marhaller mapping files directory. Used for standalone WAL iteration
+     *
+     * @param marshallerMappingFileStoreDir directory with type name mappings
+     */
+    public void setMarshallerMappingFileStoreDir(File marshallerMappingFileStoreDir) {
+        this.marshallerMappingFileStoreDir = marshallerMappingFileStoreDir;
     }
 
     /**

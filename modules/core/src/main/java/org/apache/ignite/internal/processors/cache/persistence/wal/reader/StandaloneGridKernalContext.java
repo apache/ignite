@@ -79,7 +79,9 @@ import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
 import org.apache.ignite.internal.util.IgniteExceptionRegistry;
 import org.apache.ignite.internal.util.StripedExecutor;
+import org.apache.ignite.marshaller.AbstractMarshaller;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.marshaller.MarshallerContext;
 import org.apache.ignite.plugin.PluginNotFoundException;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
@@ -107,11 +109,15 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
     /**
      * @param log Logger.
-     * @param binaryMetadataFileStoreDir folder specifying location of metadata File Store. {@code null} means no
-     * specific folder is configured. <br>
+     * @param binaryMetadataFileStoreDir folder specifying location of metadata File Store.
+     * {@code null} means no specific folder is configured. <br>
+     *
+     * @param marshallerMappingFileStoreDir folder specifying location of marshaller mapping file store.
+     * {@code null} means no specific folder is configured. <br>
      */
-    public StandaloneGridKernalContext(IgniteLogger log,
-        @Nullable final File binaryMetadataFileStoreDir) throws IgniteCheckedException {
+    StandaloneGridKernalContext(IgniteLogger log,
+        @Nullable final File binaryMetadataFileStoreDir,
+        @Nullable final File marshallerMappingFileStoreDir) throws IgniteCheckedException {
         this.log = log;
 
         try {
@@ -125,6 +131,11 @@ public class StandaloneGridKernalContext implements GridKernalContext {
         this.cfg = prepareIgniteConfiguration();
         this.cacheObjProcessor = binaryMetadataFileStoreDir != null ? binaryProcessor(this, binaryMetadataFileStoreDir) : null;
 
+        MarshallerContext marshallerCtx = ((AbstractMarshaller)cfg.getMarshaller()).getContext();
+        MarshallerContextImpl ctx = (MarshallerContextImpl)marshallerCtx;
+        assert (marshallerMappingFileStoreDir != null) == (binaryMetadataFileStoreDir != null) : "Marshaller mapping and binary metadata should be both set";
+        ctx.setMarshallerMappingFileStoreDir(marshallerMappingFileStoreDir);
+        ctx.onMarshallerProcessorStarted(this, null);
     }
 
     /**

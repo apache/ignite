@@ -45,6 +45,14 @@ public class IgniteWalIteratorFactory {
      */
     @Nullable private File binaryMetadataFileStoreDir;
 
+
+    /**
+     * Folder specifying location of marshaller mapping file store. {@code null} means no specific folder is configured. <br>
+     * This folder should be specified for converting data entries into BinaryObjects
+     */
+    @Nullable private File marshallerMappingFileStoreDir;
+
+
     /** Factory to provide I/O interfaces for read/write operations with files */
     private final FileIOFactory ioFactory;
 
@@ -56,17 +64,21 @@ public class IgniteWalIteratorFactory {
      * @param pageSize Page size which was used in Ignite Persistent Data store to read WAL from, size is validated
      * according its boundaries.
      * @param binaryMetadataFileStoreDir folder specifying location of metadata File Store. Should include "binary_meta"
-     * subfolder and consistent ID subfolder. Note Consistent ID should be already masked and should not contain
-     * special symbols. Providing {@code null} means no specific folder is configured. <br>
+     * subfolder and consistent ID subfolder. Note Consistent ID should be already masked and should not contain special
+     * symbols. Providing {@code null} means no specific folder is configured. <br>
+     * @param marshallerMappingFileStoreDir Folder specifying location of marshaller mapping file store. Should include
+     * "marshaller" subfolder
      */
     public IgniteWalIteratorFactory(
         @NotNull final IgniteLogger log,
         final int pageSize,
-        @Nullable final File binaryMetadataFileStoreDir) {
+        @Nullable final File binaryMetadataFileStoreDir,
+        @Nullable final File marshallerMappingFileStoreDir) {
 
         this.log = log;
         this.pageSize = pageSize;
         this.binaryMetadataFileStoreDir = binaryMetadataFileStoreDir;
+        this.marshallerMappingFileStoreDir = marshallerMappingFileStoreDir;
         this.ioFactory = new PersistentStoreConfiguration().getFileIOFactory();
         new MemoryConfiguration().setPageSize(pageSize); // just for validate
     }
@@ -152,7 +164,7 @@ public class IgniteWalIteratorFactory {
      * @return fake shared context required for create minimal services for record reading
      */
     @NotNull private GridCacheSharedContext prepareSharedCtx() throws IgniteCheckedException {
-        final GridKernalContext kernalCtx = new StandaloneGridKernalContext(log, binaryMetadataFileStoreDir);
+        final GridKernalContext kernalCtx = new StandaloneGridKernalContext(log, binaryMetadataFileStoreDir, marshallerMappingFileStoreDir);
 
         final StandaloneIgniteCacheDatabaseSharedManager dbMgr = new StandaloneIgniteCacheDatabaseSharedManager();
 

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.db.wal.reader;
 
 import java.io.File;
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -34,7 +35,6 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
-import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
@@ -49,6 +49,7 @@ import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
+import org.apache.ignite.internal.pagemem.wal.record.UnwrapDataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -74,6 +75,9 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
     /** Cache name. */
     private static final String CACHE_NAME = "cache0";
+
+    /** additional cache for testing different combinations of types in WAL */
+    private static final String CACHE_ADDL_NAME = "cache1";
 
     /** Fill wal with some data before iterating. Should be true for non local run */
     private static final boolean fillWalBeforeTest = true;
@@ -203,8 +207,9 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         final File binaryMeta = U.resolveWorkDirectory(workDir, "binary_meta", false);
         final File binaryMetaWithConsId = new File(binaryMeta, consistentId);
+        final File marshaller = U.resolveWorkDirectory(workDir, "marshaller", false);
 
-        final IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory(log, PAGE_SIZE, binaryMetaWithConsId);
+        final IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory(log, PAGE_SIZE, binaryMetaWithConsId, marshaller);
         final int cntArchiveDir = iterateAndCount(factory.iteratorArchiveDirectory(walArchiveDirWithConsistentId));
 
         log.info("Total records loaded using directory : " + cntArchiveDir);
@@ -389,7 +394,6 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         stopGrid("node0");
         assert recordedAfterSleep;
     }
-
     /**
      * @throws Exception if failed.
      */
@@ -405,6 +409,16 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
             txPutDummyRecords(ignite0, cntEntries, txCnt);
 
+            final IgniteCache<Object, Object> addlCache = ignite0.getOrCreateCache(CACHE_ADDL_NAME);
+            addlCache.put("1", "2");
+            addlCache.put(1, 2);
+            addlCache.put(1L, 2L);
+            addlCache.put(TestEnum.A, "EnumAsKey");
+            addlCache.put("EnumAsValue", TestEnum.B);
+            addlCache.put(TestEnum.C, TestEnum.C);
+
+            addlCache.put("Serializable", new TestSerializable(42));
+
             consistentId = U.maskForFileName(ignite0.cluster().localNode().consistentId().toString());
 
             stopGrid("node0");
@@ -418,21 +432,29 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         final File binaryMeta = U.resolveWorkDirectory(workDir, "binary_meta", false);
         final File binaryMetaWithConsId = new File(binaryMeta, consistentId);
+        final File marshallerMapping = U.resolveWorkDirectory(workDir, "marshaller", false);
 
         final File walArchiveDirWithConsistentId = new File(walArchive, consistentId);
         final File walWorkDirWithConsistentId = new File(wal, consistentId);
 
-        final IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory(log, PAGE_SIZE, binaryMetaWithConsId);
+        final IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory(log, PAGE_SIZE,
+            binaryMetaWithConsId,
+            marshallerMapping);
         final File[] files = walArchiveDirWithConsistentId.listFiles(FileWriteAheadLogManager.WAL_SEGMENT_FILE_FILTER);
 
         assert files != null : "Can't iterate over files [" + walArchiveDirWithConsistentId + "] Directory is N/A";
         final WALIterator iter = factory.iteratorArchiveFiles(files);
         final Consumer<BinaryObject> objConsumer = new Consumer<BinaryObject>() {
             @Override public void accept(BinaryObject binaryObj) {
+                String binaryObjTypeName = binaryObj.type().typeName();
+                if (TestEnum.class.getName().equals(binaryObjTypeName))
+                    return;
+                if (TestSerializable.class.getName().equals(binaryObjTypeName))
+                    return;
+
+                assertEquals(IndexedObject.class.getName(), binaryObjTypeName);
                 assertEquals(binaryObj.field("iVal").toString(),
                     binaryObj.field("jVal").toString());
-
-                assertEquals(IndexedObject.class.getName(), binaryObj.type().typeName());
 
                 byte data[] = binaryObj.field("data");
                 for (byte datum : data) {
@@ -502,20 +524,32 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
                     for (DataEntry entry : entries) {
                         final GridCacheVersion globalTxId = entry.nearXidVersion();
 
-                        final CacheObject val = entry.value();
+                        if(entry instanceof UnwrapDataEntry) {
+                            UnwrapDataEntry unwrapDataEntry = (UnwrapDataEntry)entry;
+                            Object unwrappedKeyObj = unwrapDataEntry.unwrappedKey();
+                            Object unwrappedValueObj = unwrapDataEntry.unwrappedValue();
+                            log.info("//Entry operation " + entry.op() + "; cache Id" + entry.cacheId() + "; " +
+                                "under transaction: " + globalTxId + "" +
+                                //; entry " + entry +
+                                "; Key: " + unwrappedKeyObj +
+                                "; Value: " + unwrappedValueObj);
 
-                        final KeyCacheObject key = entry.key();
+                        } else {
+                            final CacheObject val = entry.value();
 
-                        log.info("//Entry operation " + entry.op() + "; cache Id" + entry.cacheId() + "; " +
-                            "under transaction: " + globalTxId + "; entry " + entry +
-                            "; Key: " + key +
-                            "; Value: " + val);
+                            final KeyCacheObject key = entry.key();
 
-                        if (val instanceof BinaryObject) {
-                            final BinaryObject binaryObj = (BinaryObject)val;
+                            log.info("//Entry operation " + entry.op() + "; cache Id" + entry.cacheId() + "; " +
+                                "under transaction: " + globalTxId + "; entry " + entry +
+                                "; Key: " + key +
+                                "; Value: " + val);
 
-                            if (dataEntryObjHnd != null)
-                                dataEntryObjHnd.accept(binaryObj);
+                            if (val instanceof BinaryObject) {
+                                final BinaryObject binaryObj = (BinaryObject)val;
+
+                                if (dataEntryObjHnd != null)
+                                    dataEntryObjHnd.accept(binaryObj);
+                            }
                         }
 
                         final Integer entriesUnderTx = entriesUnderTxFound.get(globalTxId);
@@ -598,6 +632,30 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(IgniteWalReaderTest.IndexedObject.class, this);
+        }
+    }
+
+    /** Enum for cover binaryObject enum save/load */
+    enum TestEnum {
+        /** */ A, /** */ B, /** */ C
+    }
+
+    /** Special class to test WAL reader resistance to Serializable interface */
+    static class TestSerializable implements Serializable {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** I value. */
+        int iVal;
+
+        public TestSerializable(int iVal) {
+            this.iVal = iVal;
+        }
+
+        @Override public String toString() {
+            return "TestSerializable{" +
+                "iVal=" + iVal +
+                '}';
         }
     }
 }
