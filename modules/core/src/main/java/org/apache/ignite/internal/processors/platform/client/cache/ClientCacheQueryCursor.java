@@ -74,6 +74,13 @@ class ClientCacheQueryCursor {
     }
 
     /**
+     * Closes the cursor.
+     */
+    void close() {
+        cursor.close();
+    }
+
+    /**
      * Gets the iterator.
      *
      * @return Iterator.

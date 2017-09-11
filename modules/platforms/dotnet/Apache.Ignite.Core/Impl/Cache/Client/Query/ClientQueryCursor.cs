@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Client.Query
     using System.Collections.Generic;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Cache.Query;
     using Apache.Ignite.Core.Impl.Client;
 
@@ -40,8 +41,10 @@ namespace Apache.Ignite.Core.Impl.Cache.Client.Query
         /// <param name="ignite">The ignite.</param>
         /// <param name="cursorId">The cursor identifier.</param>
         /// <param name="keepBinary">Keep binary flag.</param>
-        public ClientQueryCursor(IgniteClient ignite, long cursorId, bool keepBinary) 
-            : base(ignite.Marshaller, keepBinary)
+        /// <param name="initialBatchStream">Optional stream with initial batch.</param>
+        public ClientQueryCursor(IgniteClient ignite, long cursorId, bool keepBinary, 
+            IBinaryStream initialBatchStream) 
+            : base(ignite.Marshaller, keepBinary, initialBatchStream)
         {
             _ignite = ignite;
             _cursorId = cursorId;

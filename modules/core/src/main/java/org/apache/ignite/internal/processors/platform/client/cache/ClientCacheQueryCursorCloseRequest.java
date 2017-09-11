@@ -22,8 +22,6 @@ import org.apache.ignite.internal.processors.platform.client.ClientConnectionCon
 import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 
-import javax.cache.Cache;
-
 /**
  * Query cursor close request.
  */
@@ -44,9 +42,9 @@ public class ClientCacheQueryCursorCloseRequest extends ClientRequest {
 
     /** {@inheritDoc} */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
-        ClientCacheQueryCursor<Cache.Entry> cur = ctx.handleRegistry().get(cursorId);
+        ClientCacheQueryCursor cur = ctx.handleRegistry().get(cursorId);
 
-        cur.cursor().close();
+        cur.close();
         ctx.handleRegistry().release(cursorId);
 
         return new ClientResponse(getRequestId());

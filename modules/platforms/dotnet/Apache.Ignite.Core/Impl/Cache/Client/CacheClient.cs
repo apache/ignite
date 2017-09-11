@@ -495,9 +495,8 @@ namespace Apache.Ignite.Core.Impl.Cache.Client
 
             // Filter is a binary object for all platforms.
             // For .NET it is a CacheEntryFilterHolder with a predefined id (BinaryTypeId.CacheEntryPredicateHolder).
-            var cursorId = DoOutInOp(opId.Value, w => qry.Write(w, false), s => s.ReadLong());
-
-            return new ClientQueryCursor<TK, TV>(_ignite, cursorId, false);
+            return DoOutInOp(opId.Value, w => qry.Write(w, false), 
+                s => new ClientQueryCursor<TK, TV>(_ignite, s.ReadLong(), false, s));
         }
 
         /** <inheritDoc /> */

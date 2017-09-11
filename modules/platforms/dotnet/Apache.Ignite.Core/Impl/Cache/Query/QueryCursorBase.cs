@@ -59,14 +59,18 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
         /// </summary>
         /// <param name="marsh">Marshaller.</param>
         /// <param name="keepBinary">Keep binary flag.</param>
-        /// <param name="initialBatch">The initial batch.</param>
-        protected QueryCursorBase(Marshaller marsh, bool keepBinary, T[] initialBatch = null)
+        /// <param name="initialBatchStream">Optional stream with initial batch.</param>
+        protected QueryCursorBase(Marshaller marsh, bool keepBinary, IBinaryStream initialBatchStream = null)
         {
             Debug.Assert(marsh != null);
 
             _keepBinary = keepBinary;
             _marsh = marsh;
-            _batch = initialBatch;
+
+            if (initialBatchStream != null)
+            {
+                _batch = ConvertGetBatch(initialBatchStream);
+            }
         }
 
         /** <inheritdoc /> */
