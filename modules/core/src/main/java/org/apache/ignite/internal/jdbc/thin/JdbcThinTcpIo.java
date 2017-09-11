@@ -68,7 +68,7 @@ public class JdbcThinTcpIo {
     /** Current version. */
     private static final SqlListenerProtocolVersion CURRENT_VER = SqlListenerProtocolVersion.create(2, 1, 5);
 
-    /** Current version. */
+    /** Version 2.1.0. */
     private static final SqlListenerProtocolVersion VER_2_1_0 = SqlListenerProtocolVersion.create(2, 1, 0);
 
     /** Initial output stream capacity for handshake. */
