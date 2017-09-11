@@ -54,6 +54,13 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
     }
 
     /**
+     * @param type Request type.
+     */
+    JdbcQueryExecuteRequest(byte type) {
+        super(type);
+    }
+
+    /**
      * @param schemaName Cache name.
      * @param pageSize Fetch size.
      * @param maxRows Max rows.
@@ -63,6 +70,25 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
     public JdbcQueryExecuteRequest(String schemaName, int pageSize, int maxRows, String sqlQry,
         Object[] args) {
         super(QRY_EXEC);
+
+        this.schemaName = F.isEmpty(schemaName) ? null : schemaName;
+        this.pageSize = pageSize;
+        this.maxRows = maxRows;
+        this.sqlQry = sqlQry;
+        this.args = args;
+    }
+
+    /**
+     * @param type Request type.
+     * @param schemaName Cache name.
+     * @param pageSize Fetch size.
+     * @param maxRows Max rows.
+     * @param sqlQry SQL query.
+     * @param args Arguments list.
+     */
+    public JdbcQueryExecuteRequest(byte type, String schemaName, int pageSize, int maxRows, String sqlQry,
+        Object[] args) {
+        super(type);
 
         this.schemaName = F.isEmpty(schemaName) ? null : schemaName;
         this.pageSize = pageSize;

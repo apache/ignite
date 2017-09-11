@@ -29,12 +29,14 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.jdbc2.JdbcSqlFieldsQuery;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.odbc.SqlListenerRequest;
 import org.apache.ignite.internal.processors.odbc.SqlListenerRequestHandler;
@@ -57,6 +59,7 @@ import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.META_S
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.META_TABLES;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.QRY_CLOSE;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.QRY_EXEC;
+import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.QRY_EXEC_V2;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.QRY_FETCH;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.QRY_META;
 
@@ -143,6 +146,7 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
 
         try {
             switch (req.type()) {
+                case QRY_EXEC_V2:
                 case QRY_EXEC:
                     return executeQuery((JdbcQueryExecuteRequest)req);
 
@@ -223,7 +227,33 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
         try {
             String sql = req.sqlQuery();
 
-            SqlFieldsQuery qry = new SqlFieldsQuery(sql);
+            SqlFieldsQuery qry;
+            if (req instanceof JdbcQueryExecuteRequestV2) {
+                JdbcQueryExecuteRequestV2 reqV2 = (JdbcQueryExecuteRequestV2)req;
+
+                switch(reqV2.expectedStatementType()) {
+                    case ANY_STATEMENT_TYPE:
+                        qry = new SqlFieldsQuery(sql);
+
+                        break;
+
+                    case SELECT_STATEMENT_TYPE:
+                        qry = new JdbcSqlFieldsQuery(sql, true);
+
+                        break;
+
+                    case UPDATE_STMT_TYPE:
+                        qry = new JdbcSqlFieldsQuery(sql, false);
+
+                        break;
+
+                    default:
+                        throw new IgniteException("Unknown value of the expected statement type: "
+                            + reqV2.expectedStatementType());
+                }
+            }
+            else
+                qry = new SqlFieldsQuery(sql);
 
             qry.setArgs(req.arguments());
 
