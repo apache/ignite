@@ -27,6 +27,8 @@ import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.ml.math.impls.matrix.MatrixView;
 import org.apache.ignite.ml.math.impls.matrix.PivotedMatrixView;
 import org.apache.ignite.ml.math.impls.matrix.RandomMatrix;
+import org.apache.ignite.ml.math.impls.matrix.SparseBlockDistributedMatrix;
+import org.apache.ignite.ml.math.impls.matrix.SparseDistributedMatrix;
 import org.apache.ignite.ml.math.impls.matrix.SparseLocalOnHeapMatrix;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 
@@ -69,7 +71,7 @@ public class MatrixUtil {
      * @return Like matrix.
      */
     public static Matrix like(Matrix matrix, int rows, int cols) {
-        if (isCopyLikeSupport(matrix))
+        if (isCopyLikeSupport(matrix) || isDistributed(matrix))
             return new DenseLocalOnHeapMatrix(rows, cols);
         else
             return matrix.like(rows, cols);
@@ -83,10 +85,19 @@ public class MatrixUtil {
      * @return Like vector.
      */
     public static Vector likeVector(Matrix matrix, int crd) {
-        if (isCopyLikeSupport(matrix))
+        if (isCopyLikeSupport(matrix) || isDistributed(matrix))
             return new DenseLocalOnHeapVector(crd);
         else
             return matrix.likeVector(crd);
+    }
+
+    /**
+     * Check if a given matrix is distributed.
+     *
+     * @param matrix Matrix for like.
+     */
+    private static boolean isDistributed(Matrix matrix) {
+        return matrix instanceof SparseDistributedMatrix || matrix instanceof SparseBlockDistributedMatrix;
     }
 
     /**

@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Arrays;
-
 import org.apache.ignite.ml.math.MatrixStorage;
 import org.apache.ignite.ml.math.StorageConstants;
 import org.apache.ignite.ml.math.impls.storage.matrix.ArrayMatrixStorage;
@@ -111,6 +110,17 @@ class ExampleMatrixStorage implements MatrixStorage {
     /** {@inheritDoc} */
     @Override public int rowSize() {
         return rows;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int storageMode() {
+        // This value indicate that we store matrix data by rows.
+        return StorageConstants.ROW_STORAGE_MODE;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int accessMode() {
+        return StorageConstants.RANDOM_ACCESS_MODE;
     }
 
     /** {@inheritDoc} */
