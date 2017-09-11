@@ -102,7 +102,6 @@ import org.apache.ignite.internal.processors.platform.cache.PlatformCacheEntryFi
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
-import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.future.GridEmbeddedFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -4030,10 +4029,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         checkJta();
 
         awaitLastFut();
-
-        if (ctx.tm().isTimedOutThread(Thread.currentThread().getId()))
-            throw new IgniteTxTimeoutCheckedException("Previous transaction was rolled back due to timeout. " +
-                    "Please start new transaction and retry an operation.");
 
         GridNearTxLocal tx = ctx.tm().threadLocalTx(ctx);
 

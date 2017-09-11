@@ -2486,7 +2486,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                         processLoaded(map, keys, needVer, c);
 
                         return null;
-                    } catch (Exception e) {
+                    }
+                    catch (Exception e) {
                         setRollbackOnly();
 
                         throw new GridClosureException(e);
@@ -3225,13 +3226,15 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     prepareFut.get();
 
                     fut0.finish(true);
-                } catch (Error | RuntimeException e) {
+                }
+                catch (Error | RuntimeException e) {
                     COMMIT_ERR_UPD.compareAndSet(GridNearTxLocal.this, null, e);
 
                     fut0.finish(false);
 
                     throw e;
-                } catch (IgniteCheckedException e) {
+                }
+                catch (IgniteCheckedException e) {
                     COMMIT_ERR_UPD.compareAndSet(GridNearTxLocal.this, null, e);
 
                     if (!(e instanceof NodeStoppingException))
@@ -3275,9 +3278,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
             return new GridFinishedFuture<>((IgniteInternalTx)this);
         }
-
-        if (timedOut())
-            cctx.tm().markTimedOut(this);
 
         GridNearTxFinishFuture fut = rollbackFut;
 
@@ -3694,6 +3694,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
     /** {@inheritDoc} */
     @Override public void close() throws IgniteCheckedException {
+        // If tx was rolled back asynchronously by timeout, user tx will not be cleared.
+        cctx.tm().resetUserTx();
+
         TransactionState state = state();
 
         if (state != ROLLING_BACK && state != ROLLED_BACK && state != COMMITTING && state != COMMITTED)
