@@ -39,15 +39,7 @@ public abstract class CacheJdbcPojoStoreBinaryMarshallerAbstractSelfTest extends
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        BinaryConfiguration bCfg = cfg.getBinaryConfiguration();
-
-        if (bCfg == null) {
-            bCfg = new BinaryConfiguration();
-
-            cfg.setBinaryConfiguration(bCfg);
-        }
-
-        bCfg.setEncoding(stringEncoding());
+        cfg.setEncoding(stringEncoding());
 
         return cfg;
     }

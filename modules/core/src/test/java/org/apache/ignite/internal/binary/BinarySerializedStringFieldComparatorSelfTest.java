@@ -29,15 +29,7 @@ public class BinarySerializedStringFieldComparatorSelfTest extends BinarySeriali
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg =  super.getConfiguration(igniteInstanceName);
 
-        BinaryConfiguration bCfg = cfg.getBinaryConfiguration();
-
-        if (bCfg == null) {
-            bCfg = new BinaryConfiguration();
-
-            cfg.setBinaryConfiguration(bCfg);
-        }
-
-        bCfg.setEncoding(BinaryStringEncoding.ENC_NAME_WINDOWS_1251);
+        cfg.setEncoding(BinaryStringEncoding.ENC_NAME_WINDOWS_1251);
 
         cfg.setMarshaller(new BinaryMarshaller());
 

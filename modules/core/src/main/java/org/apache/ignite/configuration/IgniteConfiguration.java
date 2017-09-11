@@ -18,6 +18,7 @@
 package org.apache.ignite.configuration;
 
 import java.io.Serializable;
+import java.io.UnsupportedEncodingException;
 import java.lang.management.ManagementFactory;
 import java.util.Map;
 import java.util.UUID;
@@ -32,6 +33,7 @@ import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.binary.BinaryStringEncoding;
 import org.apache.ignite.cache.CacheKeyConfiguration;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.affinity.AffinityFunction;
@@ -74,7 +76,10 @@ import org.apache.ignite.spi.indexing.IndexingSpi;
 import org.apache.ignite.spi.loadbalancing.LoadBalancingSpi;
 import org.apache.ignite.spi.loadbalancing.roundrobin.RoundRobinLoadBalancingSpi;
 import org.apache.ignite.ssl.SslContextFactory;
+import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.binary.BinaryStringEncoding.ENC_NAME_WINDOWS_1251;
+import static org.apache.ignite.binary.BinaryStringEncoding.ENC_WINDOWS_1251;
 import static org.apache.ignite.plugin.segmentation.SegmentationPolicy.STOP;
 
 /**
@@ -470,6 +475,13 @@ public class IgniteConfiguration {
     private SqlConnectorConfiguration sqlConnCfg = new SqlConnectorConfiguration();
 
     /**
+     * Encoding for strings.
+     *
+     * @see BinaryStringEncoding
+     */
+    private Byte encoding;
+
+    /**
      * Creates valid grid configuration with all default values.
      */
     public IgniteConfiguration() {
@@ -575,6 +587,7 @@ public class IgniteConfiguration {
         utilityCachePoolSize = cfg.getUtilityCacheThreadPoolSize();
         waitForSegOnStart = cfg.isWaitForSegmentOnStart();
         warmupClos = cfg.getWarmupClosure();
+        encoding = cfg.getEncoding();
     }
 
     /**
@@ -2810,6 +2823,31 @@ public class IgniteConfiguration {
      */
     public SqlConnectorConfiguration getSqlConnectorConfiguration() {
         return sqlConnCfg;
+    }
+
+    /**
+     * Sets string encoding.
+     *
+     * @param encoding canonical encoding name, in terms of {@code java.nio} package.
+     * @return {@code this} for chaining.
+     * @throws UnsupportedEncodingException when encoding provided is not supported.
+     */
+    public IgniteConfiguration setEncoding(@Nullable String encoding) throws UnsupportedEncodingException {
+        if (encoding == null)
+            this.encoding = null;
+        else if (encoding.equals(ENC_NAME_WINDOWS_1251))
+            this.encoding = ENC_WINDOWS_1251;
+        else
+            throw new UnsupportedEncodingException();
+
+        return this;
+    }
+
+    /**
+     * @return encoding code.
+     */
+    @Nullable public Byte getEncoding() {
+        return encoding;
     }
 
     /** {@inheritDoc} */

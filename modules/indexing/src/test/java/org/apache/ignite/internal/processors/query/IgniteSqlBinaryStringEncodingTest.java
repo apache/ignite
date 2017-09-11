@@ -79,10 +79,9 @@ public class IgniteSqlBinaryStringEncodingTest extends GridCommonAbstractTest {
         if (bCfg == null)
             bCfg = new BinaryConfiguration();
 
-        cfg.setBinaryConfiguration(bCfg
-            .setEncoding(ENC_NAME_WINDOWS_1251)
-            .setCompactFooter(false)
-        );
+        cfg.setBinaryConfiguration(bCfg.setCompactFooter(false));
+
+        cfg.setEncoding(ENC_NAME_WINDOWS_1251);
 
         return cfg.setMarshaller(new BinaryMarshaller());
     }

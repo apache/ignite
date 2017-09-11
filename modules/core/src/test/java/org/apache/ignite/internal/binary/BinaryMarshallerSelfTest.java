@@ -54,7 +54,7 @@ import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
-import junit.framework.Assert;
+import org.junit.Assert;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
@@ -3705,7 +3705,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         if (stringEncoding != null) {
             try {
-                bCfg.setEncoding(stringEncoding);
+                iCfg.setEncoding(stringEncoding);
             } catch (UnsupportedEncodingException e) {
                 throw new IgniteCheckedException(e);
             }

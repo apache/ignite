@@ -79,15 +79,14 @@ public class CacheBinaryStringEncodingPersistenceTest extends GridCommonAbstract
                 .setQueryEntities(Collections.singletonList(entity))
         );
 
+        cfg.setEncoding(ENC_NAME_WINDOWS_1251);
+
         BinaryConfiguration bCfg = cfg.getBinaryConfiguration();
 
         if (bCfg == null)
             bCfg = new BinaryConfiguration();
 
-        cfg.setBinaryConfiguration(bCfg
-            .setEncoding(ENC_NAME_WINDOWS_1251)
-            .setCompactFooter(false)
-        );
+        cfg.setBinaryConfiguration(bCfg.setCompactFooter(false));
 
         return cfg.setMarshaller(new BinaryMarshaller());
     }

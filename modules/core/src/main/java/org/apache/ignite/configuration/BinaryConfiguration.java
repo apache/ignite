@@ -55,13 +55,6 @@ public class BinaryConfiguration {
     private boolean compactFooter = DFLT_COMPACT_FOOTER;
 
     /**
-     * Encoding for strings.
-     *
-     * @see BinaryStringEncoding
-     */
-    private Byte encoding;
-
-    /**
      * Sets class names of binary objects explicitly.
      *
      * @param clsNames Class names.
@@ -187,31 +180,6 @@ public class BinaryConfiguration {
      */
     public BinaryConfiguration setCompactFooter(boolean compactFooter) {
         this.compactFooter = compactFooter;
-
-        return this;
-    }
-
-    /**
-     * @return encoding code.
-     */
-    @Nullable public Byte getEncoding() {
-        return encoding;
-    }
-
-    /**
-     * Sets string encoding.
-     *
-     * @param encoding canonical encoding name, in terms of {@code java.nio} package.
-     * @return {@code this} for chaining.
-     * @throws UnsupportedEncodingException when encoding provided is not supported.
-     */
-    public BinaryConfiguration setEncoding(@Nullable String encoding) throws UnsupportedEncodingException {
-        if (encoding == null)
-            this.encoding = null;
-        else if (encoding.equals(ENC_NAME_WINDOWS_1251))
-            this.encoding = ENC_WINDOWS_1251;
-        else
-            throw new UnsupportedEncodingException();
 
         return this;
     }

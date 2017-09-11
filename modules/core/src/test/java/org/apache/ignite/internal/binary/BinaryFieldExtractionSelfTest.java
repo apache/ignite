@@ -41,13 +41,9 @@ public class BinaryFieldExtractionSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     protected BinaryMarshaller createMarshaller() throws Exception {
-        BinaryConfiguration bCfg = new BinaryConfiguration();
-
-        bCfg.setEncoding(ENC_NAME_WINDOWS_1251);
-
         IgniteConfiguration iCfg = new IgniteConfiguration();
 
-        iCfg.setBinaryConfiguration(bCfg);
+        iCfg.setEncoding(ENC_NAME_WINDOWS_1251);
 
         BinaryContext ctx = new BinaryContext(BinaryCachingMetadataHandler.create(), iCfg, log());
 

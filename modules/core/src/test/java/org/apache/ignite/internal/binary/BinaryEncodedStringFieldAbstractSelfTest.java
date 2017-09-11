@@ -50,9 +50,9 @@ public abstract class BinaryEncodedStringFieldAbstractSelfTest extends GridCommo
 
         bCfg.setTypeConfigurations(Collections.singletonList(new BinaryTypeConfiguration(TestObject.class.getName())));
 
-        bCfg.setEncoding(ENC_NAME_WINDOWS_1251);
-
         IgniteConfiguration iCfg = new IgniteConfiguration();
+
+        iCfg.setEncoding(ENC_NAME_WINDOWS_1251);
 
         iCfg.setBinaryConfiguration(bCfg);
 
