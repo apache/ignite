@@ -353,7 +353,7 @@ namespace ignite
                 {
                     SQLINTEGER *val = reinterpret_cast<SQLINTEGER*>(buf);
 
-                    *val = static_cast<SQLINTEGER>(connected ? SQL_CD_TRUE : SQL_CD_FALSE);
+                    *val = static_cast<SQLINTEGER>(connected ? SQL_CD_FALSE : SQL_CD_TRUE);
 
                     if (valueLen)
                         *valueLen = SQL_IS_INTEGER;
@@ -384,7 +384,7 @@ namespace ignite
             {
                 case SQL_ATTR_CONNECTION_DEAD:
                 {
-                    AddStatusRecord(SqlState::SHY105_INVALID_PARAMETER_TYPE, "Attribute can not be retrieved.");
+                    AddStatusRecord(SqlState::SHY092_OPTION_TYPE_OUT_OF_RANGE, "Attribute can not be retrieved.");
 
                     return SqlResult::AI_ERROR;
                 }
