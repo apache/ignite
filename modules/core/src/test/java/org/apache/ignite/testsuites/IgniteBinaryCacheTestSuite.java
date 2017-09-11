@@ -22,10 +22,8 @@ import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.CacheBinaryStringEncodingPersistenceTest;
 import org.apache.ignite.internal.processors.cache.GridCacheAffinityRoutingSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryMemorySizeSelfTest;
-import org.apache.ignite.internal.processors.cache.GridCacheMixedBinaryStringEncodingsTest;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccSelfTest;
 import org.apache.ignite.internal.processors.cache.binary.CacheKeepBinaryWithInterceptorTest;
-import org.apache.ignite.internal.processors.cache.expiry.IgniteCacheAtomicLocalExpiryPolicyTest;
 import org.apache.ignite.internal.processors.cache.binary.GridBinaryCacheEntryMemorySizeSelfTest;
 import org.apache.ignite.internal.processors.cache.binary.datastreaming.DataStreamProcessorBinarySelfTest;
 import org.apache.ignite.internal.processors.cache.binary.datastreaming.GridDataStreamerImplSelfTest;
@@ -36,6 +34,7 @@ import org.apache.ignite.internal.processors.cache.binary.distributed.dht.GridCa
 import org.apache.ignite.internal.processors.cache.binary.distributed.dht.GridCacheAtomicPartitionedOnlyBinaryMultithreadedSelfTest;
 import org.apache.ignite.internal.processors.cache.binary.distributed.dht.GridCacheBinariesNearPartitionedByteArrayValuesSelfTest;
 import org.apache.ignite.internal.processors.cache.binary.distributed.dht.GridCacheBinariesPartitionedOnlyByteArrayValuesSelfTest;
+import org.apache.ignite.internal.processors.cache.expiry.IgniteCacheAtomicLocalExpiryPolicyTest;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamProcessorSelfTest;
 
 /**
@@ -80,7 +79,6 @@ public class IgniteBinaryCacheTestSuite extends TestSuite {
         suite.addTestSuite(GridBinaryCacheEntryMemorySizeSelfTest.class);
         suite.addTestSuite(CacheKeepBinaryWithInterceptorTest.class);
 
-        suite.addTestSuite(GridCacheMixedBinaryStringEncodingsTest.class);
         suite.addTestSuite(CacheBinaryStringEncodingPersistenceTest.class);
 
         return suite;
