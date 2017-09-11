@@ -158,15 +158,6 @@ public class H2PkHashIndex extends GridH2IndexBase {
 
     /** {@inheritDoc} */
     @Override public double getCost(Session ses, int[] masks, TableFilter[] filters, int filter, SortOrder sortOrder, HashSet<Column> allColumnsSet) {
-        long rowCnt = getRowCountApproximation();
-
-        double baseCost = getCostRangeIndex(masks, rowCnt, filters, filter, sortOrder, false, allColumnsSet);
-
-        int mul = getDistributedMultiplier(ses, filters, filter);
-
-        // TODO : How to calculate cost?
-
-//        return mul * baseCost;
         return Double.MAX_VALUE;
     }
 
