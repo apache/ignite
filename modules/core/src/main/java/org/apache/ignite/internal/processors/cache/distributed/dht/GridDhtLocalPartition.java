@@ -553,7 +553,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * @return {@code true} if cas succeeds.
      */
     private boolean casState(long state, GridDhtPartitionState toState) {
-        if (ctx.database().persistenceEnabled()) {
+        if (ctx.database().persistenceEnabled() && grp.memoryPolicy().config().isPersistenceEnabled()) {
             synchronized (this) {
                 boolean update = this.state.compareAndSet(state, setPartState(state, toState));
 
