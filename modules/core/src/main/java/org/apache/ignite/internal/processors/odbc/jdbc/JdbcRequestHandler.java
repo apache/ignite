@@ -412,7 +412,7 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
                 if (q.sql() != null)
                     sql = q.sql();
 
-                SqlFieldsQuery qry = new SqlFieldsQuery(sql);
+                SqlFieldsQuery qry = new JdbcSqlFieldsQuery(sql, false);
 
                 qry.setArgs(q.args());
 
