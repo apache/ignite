@@ -427,9 +427,7 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
                 QueryCursorImpl<List<?>> qryCur = (QueryCursorImpl<List<?>>)ctx.query()
                     .querySqlFieldsNoCache(qry, true);
 
-                if (qryCur.isQuery())
-                    throw new IgniteCheckedException("Query produced result set [qry=" + q.sql() + ", args=" +
-                        Arrays.toString(q.args()) + ']');
+                assert !qryCur.isQuery() : "Query must not produced result set";
 
                 List<List<?>> items = qryCur.getAll();
 
