@@ -88,9 +88,10 @@ namespace ignite
              * @param enforceJoinOrder Enforce join order flag.
              * @param replicatedOnly Replicated only flag.
              * @param collocated Collocated flag.
+             * @param lazy Lazy flag.
              */
             HandshakeRequest(const ProtocolVersion& version, bool distributedJoins, bool enforceJoinOrder,
-                bool replicatedOnly, bool collocated);
+                bool replicatedOnly, bool collocated, bool lazy);
 
             /**
              * Destructor.
@@ -118,6 +119,9 @@ namespace ignite
 
             /** Collocated flag. */
             bool collocated;
+
+            /** Lazy flag. */
+            bool lazy;
         };
 
         /**
@@ -572,6 +576,15 @@ namespace ignite
                 return meta;
             }
 
+            /**
+             * Get affected rows number.
+             * @return Number of rows affected by the query.
+             */
+            int64_t GetAffectedRows()
+            {
+                return affectedRows;
+            }
+
         private:
             /**
              * Read response using provided reader.
@@ -584,6 +597,9 @@ namespace ignite
 
             /** Columns metadata. */
             meta::ColumnMetaVector meta;
+
+            /** Number of affected rows. */
+            int64_t affectedRows;
         };
 
         /**

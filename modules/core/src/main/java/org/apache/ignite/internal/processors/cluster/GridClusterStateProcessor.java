@@ -430,7 +430,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
 
         GridChangeGlobalStateFuture fut = stateChangeFut.get();
 
-        while (fut == null) {
+        while (fut == null || fut.isDone()) {
             fut = new GridChangeGlobalStateFuture(UUID.randomUUID(), activate, ctx);
 
             if (stateChangeFut.compareAndSet(null, fut)) {

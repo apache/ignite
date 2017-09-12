@@ -22,7 +22,7 @@ import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCa
 /**
  * Lock and Unlock callbacks.
  */
-public interface GridCacheMvccCallback {
+public interface GridCacheLockCallback {
     /**
      * Called when entry gets a first candidate. This call
      * happens within entry internal synchronization.

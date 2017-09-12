@@ -100,7 +100,7 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
      * @param subjId Subject ID.
      * @param taskNameHash Task name hash.
      * @param firstClientReq {@code True} if first optimistic tx prepare request sent from client node.
-     * @param {@code True} if it is safe for first client request to wait for topology future.
+     * @param allowWaitTopFut {@code True} if it is safe for first client request to wait for topology future.
      * @param addDepInfo Deployment info flag.
      */
     public GridNearTxPrepareRequest(
