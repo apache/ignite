@@ -79,9 +79,7 @@ import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
 import org.apache.ignite.internal.util.IgniteExceptionRegistry;
 import org.apache.ignite.internal.util.StripedExecutor;
-import org.apache.ignite.marshaller.AbstractMarshaller;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.marshaller.MarshallerContext;
 import org.apache.ignite.plugin.PluginNotFoundException;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
@@ -95,10 +93,10 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     /** Config for fake Ignite instance. */
     private final IgniteConfiguration cfg;
 
-    /** Logger */
+    /** Logger. */
     private IgniteLogger log;
 
-    /** Empty plugin processor */
+    /** Empty plugin processor. */
     private IgnitePluginProcessor pluginProc;
 
     /**
@@ -107,13 +105,17 @@ public class StandaloneGridKernalContext implements GridKernalContext {
      */
     @Nullable private IgniteCacheObjectProcessor cacheObjProcessor;
 
+    /** Marshaller context implementation. */
+    private MarshallerContextImpl marshallerContext;
+
     /**
      * @param log Logger.
      * @param binaryMetadataFileStoreDir folder specifying location of metadata File Store.
      * {@code null} means no specific folder is configured. <br>
      *
      * @param marshallerMappingFileStoreDir folder specifying location of marshaller mapping file store.
-     * {@code null} means no specific folder is configured. <br>
+     * {@code null} means no specific folder is configured.
+     * Providing {@code null} will disable unmarshall for non primitive objects, BinaryObjects will be provided <br>
      */
     StandaloneGridKernalContext(IgniteLogger log,
         @Nullable final File binaryMetadataFileStoreDir,
@@ -128,14 +130,14 @@ public class StandaloneGridKernalContext implements GridKernalContext {
             throw new IllegalStateException("Must not fail on empty providers list.", e);
         }
 
+        this.marshallerContext = new MarshallerContextImpl(null);
         this.cfg = prepareIgniteConfiguration();
         this.cacheObjProcessor = binaryMetadataFileStoreDir != null ? binaryProcessor(this, binaryMetadataFileStoreDir) : null;
 
-        MarshallerContext marshallerCtx = ((AbstractMarshaller)cfg.getMarshaller()).getContext();
-        MarshallerContextImpl ctx = (MarshallerContextImpl)marshallerCtx;
-        assert (marshallerMappingFileStoreDir != null) == (binaryMetadataFileStoreDir != null) : "Marshaller mapping and binary metadata should be both set";
-        ctx.setMarshallerMappingFileStoreDir(marshallerMappingFileStoreDir);
-        ctx.onMarshallerProcessorStarted(this, null);
+        if (marshallerMappingFileStoreDir != null) {
+            marshallerContext.setMarshallerMappingFileStoreDir(marshallerMappingFileStoreDir);
+            marshallerContext.onMarshallerProcessorStarted(this, null);
+        }
     }
 
     /**
@@ -174,7 +176,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
         PersistentStoreConfiguration pstCfg = new PersistentStoreConfiguration();
         cfg.setPersistentStoreConfiguration(pstCfg);
 
-        marshaller.setContext(new MarshallerContextImpl(null));
+        marshaller.setContext(marshallerContext);
 
         return cfg;
     }
@@ -390,12 +392,11 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
     /** {@inheritDoc} */
     @Override public GridDiscoveryManager discovery() {
-        final GridDiscoveryManager manager = new GridDiscoveryManager(this) {
+        return new GridDiscoveryManager(StandaloneGridKernalContext.this) {
             @Override public Object consistentId() {
                 return ""; // some non null value is required
             }
         };
-        return manager;
     }
 
     /** {@inheritDoc} */
@@ -578,7 +579,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
     /** {@inheritDoc} */
     @Override public MarshallerContextImpl marshallerContext() {
-        return null;
+        return marshallerContext;
     }
 
     /** {@inheritDoc} */

@@ -261,8 +261,6 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
         final IgniteCacheObjectProcessor processor = kernalCtx.cacheObjects();
 
         if (processor != null && rec.type() == WALRecord.RecordType.DATA_RECORD) {
-
-
             try {
                 return postProcessDataRecord((DataRecord)rec, kernalCtx, processor);
             }
@@ -274,13 +272,13 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
     }
 
     /**
-     * Performs post processing of lazy data record, converts it to unwrap record
+     * Performs post processing of lazy data record, converts it to unwrap record.
      *
-     * @param dataRec
-     * @param kernalCtx
-     * @param processor processor to convert binary form from WAL into CacheObject/BinaryObject
-     * @return post-processed record
-     * @throws IgniteCheckedException if failed
+     * @param dataRec data record to post process records.
+     * @param kernalCtx kernal context.
+     * @param processor processor to convert binary form from WAL into CacheObject/BinaryObject.
+     * @return post-processed record.
+     * @throws IgniteCheckedException if failed.
      */
     @NotNull private WALRecord postProcessDataRecord(
         @NotNull final DataRecord dataRec,
@@ -293,34 +291,58 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
         final List<DataEntry> postProcessedEntries = new ArrayList<>(entries.size());
 
         for (DataEntry dataEntry : entries) {
-            if (dataEntry instanceof LazyDataEntry) {
-                final LazyDataEntry lazyDataEntry = (LazyDataEntry)dataEntry;
+            final DataEntry postProcessedEntry = postProcessDataEntry(processor, fakeCacheObjCtx, dataEntry);
 
-                final KeyCacheObject key = processor.toKeyCacheObject(fakeCacheObjCtx,
-                    lazyDataEntry.getKeyType(),
-                    lazyDataEntry.getKeyBytes());
-                final CacheObject val = processor.toCacheObject(fakeCacheObjCtx,
-                    lazyDataEntry.getValType(),
-                    lazyDataEntry.getValBytes());
-
-                final DataEntry postProcessedEntry = new UnwrapDataEntry(
-                    dataEntry.cacheId(),
-                    key,
-                    val,
-                    dataEntry.op(),
-                    dataEntry.nearXidVersion(),
-                    dataEntry.writeVersion(),
-                    dataEntry.expireTime(),
-                    dataEntry.partitionId(),
-                    dataEntry.partitionCounter(),
-                    fakeCacheObjCtx);
-
-                postProcessedEntries.add(postProcessedEntry);
-            }
-            else
-                postProcessedEntries.add(dataEntry);
+            postProcessedEntries.add(postProcessedEntry);
         }
         return new DataRecord(postProcessedEntries);
+    }
+
+    /**
+     * Converts entry or lazy data entry into unwrapped entry
+     * @param processor cache object processor for de-serializing objects.
+     * @param fakeCacheObjCtx cache object context for de-serializing binary and unwrapping objects.
+     * @param dataEntry entry to process
+     * @return post precessed entry
+     * @throws IgniteCheckedException if failed
+     */
+    @NotNull
+    private DataEntry postProcessDataEntry(
+        final IgniteCacheObjectProcessor processor,
+        final CacheObjectContext fakeCacheObjCtx,
+        final DataEntry dataEntry) throws IgniteCheckedException {
+
+        final KeyCacheObject key;
+        final CacheObject val;
+        final File marshallerMappingFileStoreDir =
+            fakeCacheObjCtx.kernalContext().marshallerContext().getMarshallerMappingFileStoreDir();
+
+        if (dataEntry instanceof LazyDataEntry) {
+            final LazyDataEntry lazyDataEntry = (LazyDataEntry)dataEntry;
+            key = processor.toKeyCacheObject(fakeCacheObjCtx,
+                lazyDataEntry.getKeyType(),
+                lazyDataEntry.getKeyBytes());
+            val = processor.toCacheObject(fakeCacheObjCtx,
+                lazyDataEntry.getValType(),
+                lazyDataEntry.getValBytes());
+        }
+        else {
+            key = dataEntry.key();
+            val = dataEntry.value();
+        }
+
+        return new UnwrapDataEntry(
+            dataEntry.cacheId(),
+            key,
+            val,
+            dataEntry.op(),
+            dataEntry.nearXidVersion(),
+            dataEntry.writeVersion(),
+            dataEntry.expireTime(),
+            dataEntry.partitionId(),
+            dataEntry.partitionCounter(),
+            fakeCacheObjCtx,
+            marshallerMappingFileStoreDir == null);
     }
 
     /** {@inheritDoc} */

@@ -17,8 +17,9 @@
 
 package org.apache.ignite.internal.pagemem.wal.record;
 
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -27,7 +28,11 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
  * Data Entry for automatic unwrapping key and value from Data Entry
  */
 public class UnwrapDataEntry extends DataEntry {
-    private final CacheObjectContext cacheObjCtx;
+    /** Cache object value context. Context is used for unwrapping objects. */
+    private final CacheObjectValueContext cacheObjValCtx;
+
+    /** Keep binary. This flag disables converting of non primitive types (BinaryObjects) */
+    private boolean keepBinary;
 
     /**
      * @param cacheId Cache ID.
@@ -39,36 +44,75 @@ public class UnwrapDataEntry extends DataEntry {
      * @param expireTime Expire time.
      * @param partId Partition ID.
      * @param partCnt Partition counter.
-     * @param cacheObjCtx
+     * @param cacheObjValCtx cache object value context for unwrapping objects.
+     * @param keepBinary disable unwrapping for non primitive objects, Binary Objects would be returned instead
      */
-    public UnwrapDataEntry(int cacheId, KeyCacheObject key,
-        CacheObject val,
-        GridCacheOperation op,
-        GridCacheVersion nearXidVer,
-        GridCacheVersion writeVer, long expireTime, int partId,
-        long partCnt,
-        CacheObjectContext cacheObjCtx) {
+    public UnwrapDataEntry(
+        final int cacheId,
+        final KeyCacheObject key,
+        final CacheObject val,
+        final GridCacheOperation op,
+        final GridCacheVersion nearXidVer,
+        final GridCacheVersion writeVer,
+        final long expireTime,
+        final int partId,
+        final long partCnt,
+        final CacheObjectValueContext cacheObjValCtx,
+        final boolean keepBinary) {
         super(cacheId, key, val, op, nearXidVer, writeVer, expireTime, partId, partCnt);
-        this.cacheObjCtx = cacheObjCtx;
+        this.cacheObjValCtx = cacheObjValCtx;
+        this.keepBinary = keepBinary;
     }
 
     /**
      * Unwraps key value from cache key object into primitive boxed type or source class. If client classes were used
      * in key, call of this method requires classes to be available in classpath
      *
-     * @return Key which was placed into cache.
+     * @return Key which was placed into cache. Or null if failed
      */
     public Object unwrappedKey() {
-        return key().value(cacheObjCtx, false);
+        try {
+            if (keepBinary && key instanceof BinaryObject)
+                return key;
+            Object unwrapped = key.value(cacheObjValCtx, false);
+            if (unwrapped instanceof BinaryObject) {
+                if (keepBinary)
+                    return unwrapped;
+                unwrapped = ((BinaryObject)unwrapped).deserialize();
+            }
+            return unwrapped;
+        }
+        catch (Exception e) {
+            cacheObjValCtx.kernalContext().log(UnwrapDataEntry.class)
+                .error("Unable to convert key [" + key + "]", e);
+            return null;
+        }
     }
 
     /**
      * Unwraps value value from cache value object into primitive boxed type or source class. If client classes were
      * used in key, call of this method requires classes to be available in classpath
      *
-     * @return Value which was placed into cache.
+     * @return Value which was placed into cache. Or null if failed
      */
     public Object unwrappedValue() {
-        return value().value(cacheObjCtx, false);
+        try {
+            if (keepBinary && val instanceof BinaryObject)
+                return val;
+            return val.value(cacheObjValCtx, false);
+        }
+        catch (Exception e) {
+            cacheObjValCtx.kernalContext().log(UnwrapDataEntry.class)
+                .error("Unable to convert value [" + value() + "]", e);
+            return null;
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return getClass().getSimpleName() + "[k = " + unwrappedKey() + ", v = [ "
+            + unwrappedValue()
+            + "], super = ["
+            + super.toString() + "]]";
     }
 }

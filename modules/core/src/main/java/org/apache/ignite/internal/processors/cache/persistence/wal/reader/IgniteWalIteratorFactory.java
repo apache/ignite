@@ -48,7 +48,8 @@ public class IgniteWalIteratorFactory {
 
     /**
      * Folder specifying location of marshaller mapping file store. {@code null} means no specific folder is configured. <br>
-     * This folder should be specified for converting data entries into BinaryObjects
+     * This folder should be specified for converting data entries into BinaryObjects.
+     * Providing {@code null} will disable unmarshall for non primitive objects, BinaryObjects will be provided
      */
     @Nullable private File marshallerMappingFileStoreDir;
 
@@ -67,7 +68,8 @@ public class IgniteWalIteratorFactory {
      * subfolder and consistent ID subfolder. Note Consistent ID should be already masked and should not contain special
      * symbols. Providing {@code null} means no specific folder is configured. <br>
      * @param marshallerMappingFileStoreDir Folder specifying location of marshaller mapping file store. Should include
-     * "marshaller" subfolder
+     * "marshaller" subfolder. Providing {@code null} will disable unmarshall for non primitive objects,
+     * BinaryObjects will be provided
      */
     public IgniteWalIteratorFactory(
         @NotNull final IgniteLogger log,

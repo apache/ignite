@@ -17,15 +17,24 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.db.wal.reader;
 
+import java.io.Externalizable;
 import java.io.File;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.io.Serializable;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -48,6 +57,7 @@ import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
+import org.apache.ignite.internal.pagemem.wal.record.LazyDataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.UnwrapDataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
@@ -338,7 +348,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
      * @param recordsToWrite count
      * @param txCnt transactions to run. If number is less then records count, txCnt records will be written
      */
-    private void txPutDummyRecords(Ignite ignite, int recordsToWrite, int txCnt) {
+    private IgniteCache<Object, Object> txPutDummyRecords(Ignite ignite, int recordsToWrite, int txCnt) {
         IgniteCache<Object, Object> cache0 = ignite.cache(CACHE_NAME);
         int keysPerTx = recordsToWrite / txCnt;
         if (keysPerTx == 0)
@@ -351,6 +361,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
                 tx.commit();
             }
         }
+        return cache0;
     }
 
     /**
@@ -394,30 +405,44 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         stopGrid("node0");
         assert recordedAfterSleep;
     }
+
     /**
+     * Removes entry by key and value from map (java 8 map method copy)
+     *
+     * @param m map to remove from.
+     * @param key key to remove.
+     * @param val value to remove.
+     * @return true if remove was successful
+     */
+    private boolean remove(Map m, Object key, Object val) {
+        Object curVal = m.get(key);
+        if (!Objects.equals(curVal, val) ||
+            (curVal == null && !m.containsKey(key)))
+            return false;
+        m.remove(key);
+        return true;
+    }
+
+    /**
+     * Places records under transaction, checks its value using WAL
      * @throws Exception if failed.
      */
     public void testTxFillWalAndExtractDataRecords() throws Exception {
         final int cntEntries = 1000;
         final int txCnt = 100;
 
+        final Map<Object, Object> ctrlMap = new HashMap<>();
         final String consistentId;
         if (fillWalBeforeTest) {
             final Ignite ignite0 = startGrid("node0");
 
             ignite0.active(true);
 
-            txPutDummyRecords(ignite0, cntEntries, txCnt);
+            final IgniteCache<Object, Object> entries = txPutDummyRecords(ignite0, cntEntries, txCnt);
 
-            final IgniteCache<Object, Object> addlCache = ignite0.getOrCreateCache(CACHE_ADDL_NAME);
-            addlCache.put("1", "2");
-            addlCache.put(1, 2);
-            addlCache.put(1L, 2L);
-            addlCache.put(TestEnum.A, "EnumAsKey");
-            addlCache.put("EnumAsValue", TestEnum.B);
-            addlCache.put(TestEnum.C, TestEnum.C);
-
-            addlCache.put("Serializable", new TestSerializable(42));
+            for (Cache.Entry<Object, Object> next : entries) {
+                ctrlMap.put(next.getKey(), next.getValue());
+            }
 
             consistentId = U.maskForFileName(ignite0.cluster().localNode().consistentId().toString());
 
@@ -426,43 +451,69 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
             consistentId = "127_0_0_1_47500";
 
         final String workDir = U.defaultWorkDirectory();
-        final File db = U.resolveWorkDirectory(workDir, "db", false);
-        final File wal = new File(db, "wal");
-        final File walArchive = new File(wal, "archive");
-
         final File binaryMeta = U.resolveWorkDirectory(workDir, "binary_meta", false);
         final File binaryMetaWithConsId = new File(binaryMeta, consistentId);
         final File marshallerMapping = U.resolveWorkDirectory(workDir, "marshaller", false);
 
-        final File walArchiveDirWithConsistentId = new File(walArchive, consistentId);
-        final File walWorkDirWithConsistentId = new File(wal, consistentId);
-
-        final IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory(log, PAGE_SIZE,
+        final IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory(log,
+            PAGE_SIZE,
             binaryMetaWithConsId,
             marshallerMapping);
+
+        final BiConsumer<Object, Object> objConsumer = new BiConsumer<Object, Object>() {
+            @Override public void accept(Object key, Object val) {
+                boolean rmv = remove(ctrlMap, key, val);
+                if (!rmv)
+                    log.error("Unable to remove Key and value from control Map K:[" + key + "] V: [" + val + "]");
+
+                if (val instanceof IndexedObject) {
+                    IndexedObject indexedObj = (IndexedObject)val;
+                    assertEquals(indexedObj.iVal, indexedObj.jVal);
+                    assertEquals(indexedObj.iVal, key);
+                    for (byte datum : indexedObj.data) {
+                        assert datum >= 'A' && datum <= 'A' + 10;
+                    }
+                }
+            }
+        };
+        scanIterateAndCount(factory, workDir, consistentId, cntEntries, txCnt, objConsumer, null);
+
+        assert ctrlMap.isEmpty() : " Control Map is not empty after reading entries " + ctrlMap;
+    }
+
+    /**
+     * Scan WAL and WAL archive for logical records and its entries.
+     *
+     * @param factory WAL iterator factory.
+     * @param workDir Ignite work directory.
+     * @param consistentId consistent ID.
+     * @param expCntEntries minimum expected entries count to find.
+     * @param expTxCnt minimum expected transaction count to find.
+     * @param objConsumer object handler, called for each object found in logical data records.
+     * @param dataRecordHnd data handler record
+     * @throws IgniteCheckedException if failed.
+     */
+    private void scanIterateAndCount(
+        final IgniteWalIteratorFactory factory,
+        final String workDir,
+        final String consistentId,
+        final int expCntEntries,
+        final int expTxCnt,
+        @Nullable final BiConsumer<Object, Object> objConsumer,
+        @Nullable final Consumer<DataRecord> dataRecordHnd) throws IgniteCheckedException {
+
+        final File db = U.resolveWorkDirectory(workDir, "db", false);
+        final File wal = new File(db, "wal");
+        final File walArchive = new File(wal, "archive");
+
+        final File walArchiveDirWithConsistentId = new File(walArchive, consistentId);
+
         final File[] files = walArchiveDirWithConsistentId.listFiles(FileWriteAheadLogManager.WAL_SEGMENT_FILE_FILTER);
 
         assert files != null : "Can't iterate over files [" + walArchiveDirWithConsistentId + "] Directory is N/A";
         final WALIterator iter = factory.iteratorArchiveFiles(files);
-        final Consumer<BinaryObject> objConsumer = new Consumer<BinaryObject>() {
-            @Override public void accept(BinaryObject binaryObj) {
-                String binaryObjTypeName = binaryObj.type().typeName();
-                if (TestEnum.class.getName().equals(binaryObjTypeName))
-                    return;
-                if (TestSerializable.class.getName().equals(binaryObjTypeName))
-                    return;
 
-                assertEquals(IndexedObject.class.getName(), binaryObjTypeName);
-                assertEquals(binaryObj.field("iVal").toString(),
-                    binaryObj.field("jVal").toString());
-
-                byte data[] = binaryObj.field("data");
-                for (byte datum : data) {
-                    assert datum >= 'A' && datum <= 'A' + 10;
-                }
-            }
-        };
-        final Map<GridCacheVersion, Integer> cntArch = iterateAndCountDataRecord(iter, objConsumer);
+        final Map<GridCacheVersion, Integer> cntArch = iterateAndCountDataRecord(iter, objConsumer, dataRecordHnd);
 
         int txCntObservedArch = cntArch.size();
         if (cntArch.containsKey(null))
@@ -471,10 +522,11 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         log.info("Total tx found loaded using archive directory (file-by-file): " + txCntObservedArch);
 
+        final File walWorkDirWithConsistentId = new File(wal, consistentId);
         final File[] workFiles = walWorkDirWithConsistentId.listFiles(FileWriteAheadLogManager.WAL_SEGMENT_FILE_FILTER);
 
         final WALIterator tuples = factory.iteratorWorkFiles(workFiles);
-        final Map<GridCacheVersion, Integer> cntWork = iterateAndCountDataRecord(tuples, objConsumer);
+        final Map<GridCacheVersion, Integer> cntWork = iterateAndCountDataRecord(tuples, objConsumer, dataRecordHnd);
         int txCntObservedWork = cntWork.size();
         if (cntWork.containsKey(null))
             txCntObservedWork -= 1; // exclude non transactional updates
@@ -482,8 +534,125 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         final int entriesWork = valuesSum(cntWork.values());
         log.info("Archive directory: Tx found " + txCntObservedWork + " entries " + entriesWork);
 
-        assert entriesArch + entriesWork >= cntEntries;
-        assert txCntObservedWork + txCntObservedArch >= txCnt;
+        assert entriesArch + entriesWork >= expCntEntries;
+        assert txCntObservedWork + txCntObservedArch >= expTxCnt;
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    public void testFillWalWithDifferentTypes() throws Exception {
+        int cntEntries = 0;
+        final String consistentId;
+
+        final Map<Object, Object> ctrlMap = new HashMap<>();
+        final Collection<String> ctrlStringsToSearch = new HashSet<>();
+        if (fillWalBeforeTest) {
+            final Ignite ignite0 = startGrid("node0");
+            ignite0.active(true);
+
+            final IgniteCache<Object, Object> addlCache = ignite0.getOrCreateCache(CACHE_ADDL_NAME);
+            addlCache.put("1", "2");
+            addlCache.put(1, 2);
+            addlCache.put(1L, 2L);
+            addlCache.put(TestEnum.A, "Enum_As_Key");
+            addlCache.put("Enum_As_Value", TestEnum.B);
+            addlCache.put(TestEnum.C, TestEnum.C);
+
+            addlCache.put("Serializable", new TestSerializable(42));
+            addlCache.put(new TestSerializable(42), "Serializable_As_Key");
+            addlCache.put("Externalizable", new TestExternalizable(42));
+            addlCache.put(new TestExternalizable(42), "Externalizable_As_Key");
+            addlCache.put(292, new IndexedObject(292));
+
+            final String search1 = "SomeUnexpectedStringValueAsKeyToSearch";
+            ctrlStringsToSearch.add(search1);
+            addlCache.put(search1, "SearchKey");
+
+            final TestStringContainerToBePrinted val = new TestStringContainerToBePrinted("SomeTestStringContainerToBePrintedLongLine");
+            ctrlStringsToSearch.add(val.toString()); //will validate original toString() was called
+            addlCache.put("SearchValue", val);
+
+            final TestStringContainerToBePrinted key = new TestStringContainerToBePrinted("SomeTestStringContainerToBePrintedLongLine2");
+            ctrlStringsToSearch.add(key.toString()); //will validate original toString() was called
+            addlCache.put(key, "SearchKey");
+
+            cntEntries = addlCache.size();
+            for (Cache.Entry<Object, Object> next : addlCache) {
+                ctrlMap.put(next.getKey(), next.getValue());
+            }
+            consistentId = U.maskForFileName(ignite0.cluster().localNode().consistentId().toString());
+
+            stopGrid("node0");
+        } else
+            consistentId = "127_0_0_1_47500";
+
+        final String workDir = U.defaultWorkDirectory();
+
+        final File binaryMeta = U.resolveWorkDirectory(workDir, "binary_meta", false);
+        final File binaryMetaWithConsId = new File(binaryMeta, consistentId);
+        final File marshallerMapping = U.resolveWorkDirectory(workDir, "marshaller", false);
+
+        final IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory(log, PAGE_SIZE,
+            binaryMetaWithConsId,
+            marshallerMapping);
+        final BiConsumer<Object, Object> objConsumer = new BiConsumer<Object, Object>() {
+            @Override public void accept(Object key, Object val) {
+                log.info("K: [" + key + ", " +
+                    (key != null ? key.getClass().getName() : "?") + "]" +
+                    " V: [" + val + ", " +
+                    (val != null ? val.getClass().getName() : "?") + "]");
+                boolean rmv = remove(ctrlMap, key, val);
+                if (!rmv) {
+                    String msg = "Unable to remove pair from control map " + "K: [" + key + "] V: [" + val + "]";
+                    log.error(msg);
+                    throw  new RuntimeException(msg);
+                }
+
+                if (key.equals(1))
+                    log.info("Key 1 integer value found: " + val);
+
+                if (key.equals(1L))
+                    log.info("Key 1 long value found: " + val);
+
+                if (val instanceof BinaryObject) {
+                    BinaryObject binaryObj = (BinaryObject)val;
+                    String binaryObjTypeName = binaryObj.type().typeName();
+                    if (TestEnum.class.getName().equals(binaryObjTypeName))
+                        return;
+                    if (TestSerializable.class.getName().equals(binaryObjTypeName))
+                        return;
+
+                    assertEquals(IndexedObject.class.getName(), binaryObjTypeName);
+                    assertEquals(binaryObj.field("iVal").toString(),
+                        binaryObj.field("jVal").toString());
+
+                    byte data[] = binaryObj.field("data");
+                    for (byte datum : data) {
+                        assert datum >= 'A' && datum <= 'A' + 10;
+                    }
+                }
+            }
+        };
+
+        final Consumer<DataRecord> toStrChecker = new Consumer<DataRecord>() {
+            @Override public void accept(DataRecord record) {
+                String strRepresentation = record.toString();
+                for (Iterator<String> iter = ctrlStringsToSearch.iterator(); iter.hasNext(); ) {
+                    final String next = iter.next();
+                    if (strRepresentation.contains(next)) {
+                        iter.remove();
+                        break;
+                    }
+
+                }
+            }
+        };
+        scanIterateAndCount(factory, workDir, consistentId, cntEntries, 0, objConsumer, toStrChecker);
+
+        assert ctrlMap.isEmpty() : " Control Map is not empty after reading entries: " + ctrlMap;
+        assert ctrlStringsToSearch.isEmpty() : " Control Map for strings in entries is not empty after" +
+            " reading records: " + ctrlStringsToSearch;
     }
 
     /**
@@ -500,7 +669,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Iterates over data record, checks DataRecord and its entries, finds out all transactions in WAL
+     * Iterates over data records, checks each DataRecord and its entries, finds out all transactions in WAL
      *
      * @param walIter iterator to use
      * @return count of data records observed for each global TX ID. Contains null for non tx updates
@@ -508,7 +677,8 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
      */
     private Map<GridCacheVersion, Integer> iterateAndCountDataRecord(
         final WALIterator walIter,
-        @Nullable final Consumer<BinaryObject> dataEntryObjHnd) throws IgniteCheckedException {
+        @Nullable final BiConsumer<Object, Object> cacheObjHnd,
+        @Nullable final Consumer<DataRecord> dataRecordHnd) throws IgniteCheckedException {
 
         final Map<GridCacheVersion, Integer> entriesUnderTxFound = new HashMap<>();
 
@@ -519,41 +689,50 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
                 if (walRecord.type() == WALRecord.RecordType.DATA_RECORD && walRecord instanceof DataRecord) {
                     final DataRecord dataRecord = (DataRecord)walRecord;
+
+                    if (dataRecordHnd != null)
+                        dataRecordHnd.accept(dataRecord);
                     final List<DataEntry> entries = dataRecord.writeEntries();
 
                     for (DataEntry entry : entries) {
                         final GridCacheVersion globalTxId = entry.nearXidVersion();
-
-                        if(entry instanceof UnwrapDataEntry) {
+                        Object unwrappedKeyObj;
+                        Object unwrappedValObj;
+                        if (entry instanceof UnwrapDataEntry) {
                             UnwrapDataEntry unwrapDataEntry = (UnwrapDataEntry)entry;
-                            Object unwrappedKeyObj = unwrapDataEntry.unwrappedKey();
-                            Object unwrappedValueObj = unwrapDataEntry.unwrappedValue();
-                            log.info("//Entry operation " + entry.op() + "; cache Id" + entry.cacheId() + "; " +
-                                "under transaction: " + globalTxId + "" +
-                                //; entry " + entry +
-                                "; Key: " + unwrappedKeyObj +
-                                "; Value: " + unwrappedValueObj);
-
-                        } else {
+                            unwrappedKeyObj = unwrapDataEntry.unwrappedKey();
+                            unwrappedValObj = unwrapDataEntry.unwrappedValue();
+                        }
+                        else if (entry instanceof LazyDataEntry) {
+                            unwrappedKeyObj = null;
+                            unwrappedValObj = null;
+                            //can't check value
+                        }
+                        else {
                             final CacheObject val = entry.value();
 
-                            final KeyCacheObject key = entry.key();
+                            unwrappedValObj = val instanceof BinaryObject ? val : val.value(null, false);
 
-                            log.info("//Entry operation " + entry.op() + "; cache Id" + entry.cacheId() + "; " +
-                                "under transaction: " + globalTxId + "; entry " + entry +
-                                "; Key: " + key +
-                                "; Value: " + val);
+                            final CacheObject key = entry.key();
 
-                            if (val instanceof BinaryObject) {
-                                final BinaryObject binaryObj = (BinaryObject)val;
+                            unwrappedKeyObj = key instanceof BinaryObject ? key : key.value(null, false);
+                        }
+                        log.info("//Entry operation " + entry.op() + "; cache Id" + entry.cacheId() + "; " +
+                            "under transaction: " + globalTxId +
+                            //; entry " + entry +
+                            "; Key: " + unwrappedKeyObj +
+                            "; Value: " + unwrappedValObj);
 
-                                if (dataEntryObjHnd != null)
-                                    dataEntryObjHnd.accept(binaryObj);
+                        if (cacheObjHnd != null && unwrappedKeyObj != null || unwrappedValObj != null) {
+                            try {
+                                cacheObjHnd.accept(unwrappedKeyObj, unwrappedValObj);
+                            }
+                            catch (Exception e) {
+                                e.printStackTrace();
                             }
                         }
 
                         final Integer entriesUnderTx = entriesUnderTxFound.get(globalTxId);
-
                         entriesUnderTxFound.put(globalTxId, entriesUnderTx == null ? 1 : entriesUnderTx + 1);
                     }
                 }
@@ -582,6 +761,21 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
          */
         public void accept(T t);
     }
+
+    /**
+     * Represents an operation that accepts two input arguments and returns no
+     * result.
+     * @param <T>
+     */
+    private interface BiConsumer<T, U> {
+        /**
+         * Performs this operation on the given argument.
+         *
+         * @param t the input argument
+         */
+        public void accept(T t, U u);
+    }
+
 
     /** Test object for placing into grid in this test */
     private static class IndexedObject {
@@ -646,15 +840,131 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         private static final long serialVersionUID = 0L;
 
         /** I value. */
-        int iVal;
+        private int iVal;
 
-        public TestSerializable(int iVal) {
+        /**
+         * Creates test object
+         * @param iVal I value.
+         */
+        TestSerializable(int iVal) {
             this.iVal = iVal;
         }
 
+        /** {@inheritDoc} */
         @Override public String toString() {
             return "TestSerializable{" +
                 "iVal=" + iVal +
+                '}';
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            TestSerializable that = (TestSerializable)o;
+
+            return iVal == that.iVal;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return iVal;
+        }
+    }
+
+    /** Special class to test WAL reader resistance to Serializable interface */
+    static class TestExternalizable implements Externalizable {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** I value. */
+        private int iVal;
+
+        /** Noop ctor for unmarshalling */
+        public TestExternalizable() {
+
+        }
+
+        /**
+         * Creates test object with provided value
+         * @param iVal I value.
+         */
+        public TestExternalizable(int iVal) {
+            this.iVal = iVal;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return "TestExternalizable{" +
+                "iVal=" + iVal +
+                '}';
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            out.writeInt(iVal);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            iVal = in.readInt();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            TestExternalizable that = (TestExternalizable)o;
+
+            return iVal == that.iVal;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return iVal;
+        }
+    }
+
+    /** Container class to test toString of data records  */
+    static class TestStringContainerToBePrinted {
+        /** */
+        private String data;
+
+        /**
+         * Creates container
+         * @param data value to be searched in to String
+         */
+        public TestStringContainerToBePrinted(String data) {
+            this.data = data;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            TestStringContainerToBePrinted printed = (TestStringContainerToBePrinted)o;
+
+            return data != null ? data.equals(printed.data) : printed.data == null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return data != null ? data.hashCode() : 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return "TestStringContainerToBePrinted{" +
+                "data='" + data + '\'' +
                 '}';
         }
     }

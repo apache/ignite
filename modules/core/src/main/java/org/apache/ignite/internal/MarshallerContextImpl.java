@@ -499,8 +499,8 @@ public class MarshallerContextImpl implements MarshallerContext {
         String workDir = U.workDirectory(cfg.getWorkDirectory(), cfg.getIgniteHome());
 
         final IgniteLogger fileStoreLog = ctx.log(MarshallerMappingFileStore.class);
-        fileStore = marshallerMappingFileStoreDir==null?
-            new MarshallerMappingFileStore(workDir, fileStoreLog):
+        fileStore = marshallerMappingFileStoreDir == null ?
+            new MarshallerMappingFileStore(workDir, fileStoreLog) :
             new MarshallerMappingFileStore(fileStoreLog, marshallerMappingFileStoreDir);
         this.transport = transport;
         closProc = ctx.closure();
@@ -547,11 +547,18 @@ public class MarshallerContextImpl implements MarshallerContext {
     }
 
     /**
-     * Sets custom marhaller mapping files directory. Used for standalone WAL iteration
+     * @return custom marshaller mapping files directory. Used for standalone WAL iteration
+     */
+    @Nullable public File getMarshallerMappingFileStoreDir() {
+        return marshallerMappingFileStoreDir;
+    }
+
+    /**
+     * Sets custom marshaller mapping files directory. Used for standalone WAL iteration
      *
      * @param marshallerMappingFileStoreDir directory with type name mappings
      */
-    public void setMarshallerMappingFileStoreDir(File marshallerMappingFileStoreDir) {
+    public void setMarshallerMappingFileStoreDir(@Nullable final File marshallerMappingFileStoreDir) {
         this.marshallerMappingFileStoreDir = marshallerMappingFileStoreDir;
     }
 
