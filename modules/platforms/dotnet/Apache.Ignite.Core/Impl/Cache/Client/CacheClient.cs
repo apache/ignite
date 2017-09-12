@@ -42,7 +42,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Client
     internal class CacheClient<TK, TV> : ICache<TK, TV>
     {
         /** Scan query filter platform code: .NET filter. */
-        private const byte FilterPlatformDotnet = 1;
+        private const byte FilterPlatformDotnet = 2;
 
         /** Cache name. */
         private readonly string _name;

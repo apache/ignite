@@ -48,20 +48,40 @@ class ClientCacheRequest extends ClientRequest {
     }
 
     /**
-     * Gets the cache for current cache id.
+     * Gets the cache for current cache id, with binary mode enabled.
      *
      * @param ctx Kernal context.
      * @return Cache.
      */
     protected IgniteCache getCache(ClientConnectionContext ctx) {
-        String cacheName = ctx.kernalContext().cache().context().cacheContext(cacheId).cache().name();
+        return getRawCache(ctx).withKeepBinary();
+    }
 
-        IgniteCache<Object, Object> cache = ctx.kernalContext().grid().cache(cacheName);
+    /**
+     * Gets the cache for current cache id, with binary mode enabled if FLAG_KEEP_BINARY is set.
+     *
+     * @param ctx Kernal context.
+     * @return Cache.
+     */
+    protected IgniteCache getCacheWithBinaryFlag(ClientConnectionContext ctx) {
+        IgniteCache cache = getRawCache(ctx);
 
         if ((flags & FLAG_KEEP_BINARY) == FLAG_KEEP_BINARY) {
             cache = cache.withKeepBinary();
         }
 
         return cache;
+    }
+
+    /**
+     * Gets the cache for current cache id, ignoring any flags.
+     *
+     * @param ctx Kernal context.
+     * @return Cache.
+     */
+    private IgniteCache getRawCache(ClientConnectionContext ctx) {
+        String cacheName = ctx.kernalContext().cache().context().cacheContext(cacheId).cache().name();
+
+        return ctx.kernalContext().grid().cache(cacheName);
     }
 }

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.platform.client.cache;
 
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
@@ -32,8 +33,14 @@ import org.apache.ignite.lang.IgniteBiPredicate;
  */
 @SuppressWarnings("unchecked")
 public class ClientCacheScanQueryRequest extends ClientCacheRequest {
+    /** Java filter. */
+    private static final byte FILTER_PLATFORM_JAVA = 1;
+
     /** .NET filter. */
-    private static final byte FILTER_PLATFORM_DOTNET = 1;
+    private static final byte FILTER_PLATFORM_DOTNET = 2;
+
+    /** C++ filter. */
+    private static final byte FILTER_PLATFORM_CPP = 3;
 
     /** Local flag. */
     private final boolean local;
@@ -65,7 +72,9 @@ public class ClientCacheScanQueryRequest extends ClientCacheRequest {
                 filterObject = null;
                 break;
 
+            case FILTER_PLATFORM_JAVA:
             case FILTER_PLATFORM_DOTNET:
+            case FILTER_PLATFORM_CPP:
                 filterObject = reader.readObjectDetached();
                 break;
 
@@ -86,7 +95,7 @@ public class ClientCacheScanQueryRequest extends ClientCacheRequest {
                 .setPartition(partition)
                 .setFilter(createFilter(ctx));
 
-        QueryCursor cur = getCache(ctx).query(qry);
+        QueryCursor cur = getCacheWithBinaryFlag(ctx).query(qry);
 
         ClientCacheScanQueryCursor clientCur = new ClientCacheScanQueryCursor((QueryCursorEx) cur, pageSize);
 
@@ -106,12 +115,17 @@ public class ClientCacheScanQueryRequest extends ClientCacheRequest {
             return null;
         }
 
-        if (filterPlatform != FILTER_PLATFORM_DOTNET) {
-            throw new UnsupportedOperationException("Invalid client ScanQuery filter code: " + filterPlatform);
+        switch (filterPlatform) {
+            case FILTER_PLATFORM_JAVA:
+                return ((BinaryObject) filterObject).deserialize();
+
+            case FILTER_PLATFORM_DOTNET:
+                PlatformContext platformCtx = ctx.kernalContext().platform().context();
+
+                return platformCtx.createCacheEntryFilter(filterObject, 0);
+
+            default:
+                throw new UnsupportedOperationException("Invalid client ScanQuery filter code: " + filterPlatform);
         }
-
-        PlatformContext platformCtx = ctx.kernalContext().platform().context();
-
-        return platformCtx.createCacheEntryFilter(filterObject, 0);
     }
 }
