@@ -39,8 +39,16 @@ namespace Apache.Ignite.Core.Binary
         /// </summary>
         public const bool DefaultKeepDeserialized = true;
 
+        /// <summary>
+        /// Default <see cref="UseVarintArrayLength"/> setting.
+        /// </summary>
+        public const bool DefaultVarintArrayLengthFlag = false;
+
         /** Footer setting. */
         private bool? _compactFooter;
+
+        /** Varint array length setting. */
+        private bool? _useVarintArrayLength;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="BinaryConfiguration"/> class.
@@ -70,6 +78,7 @@ namespace Apache.Ignite.Core.Binary
             Types = cfg.Types == null ? null : cfg.Types.ToList();
 
             CompactFooter = cfg.CompactFooter;
+            UseVarintArrayLength = cfg.UseVarintArrayLength;
         }
 
         /// <summary>
@@ -132,6 +141,21 @@ namespace Apache.Ignite.Core.Binary
         {
             get { return _compactFooter ?? DefaultCompactFooter; }
             set { _compactFooter = value; }
+        }
+
+        /// <summary>
+        /// Gets whether to write arrays lengths in varint encoding. When enabled, Ignite will write arrays lengths in varint encoding.
+        /// <a href="https://developers.google.com/protocol-buffers/docs/encoding#varints">Varint encoding description.</a>
+        /// <para/>
+        /// <b>WARNING!</b> This mode should be disabled when already serialized data can be taken from some external
+        /// sources (e.g.cache store which stores data in binary form, data center replication, etc.). 
+        /// Otherwise binary objects without any associated metadata could could not be deserialized.
+        /// </summary>
+        [DefaultValue(DefaultVarintArrayLengthFlag)]
+        public bool UseVarintArrayLength
+        {
+            get { return _useVarintArrayLength ?? DefaultVarintArrayLengthFlag; }
+            set { _useVarintArrayLength = value; }
         }
 
         /// <summary>

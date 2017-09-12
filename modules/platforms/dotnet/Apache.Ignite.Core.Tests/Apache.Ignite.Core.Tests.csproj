@@ -71,11 +71,13 @@
   <ItemGroup>
     <Compile Include="Binary\BinaryBuilderSelfTestSimpleName.cs" />
     <Compile Include="Binary\BinaryDateTimeTest.cs" />
+    <Compile Include="Binary\BinaryEqualityComparerTestVarintArrayLengthMode.cs" />
     <Compile Include="Binary\BinaryEqualityComparerTest.cs" />
     <Compile Include="Binary\BinaryBuilderSelfTestDynamicRegistration.cs" />
     <Compile Include="Binary\BinaryFooterTest.cs" />
     <Compile Include="Binary\BinaryNameMapperTest.cs" />
     <Compile Include="Binary\BinaryReaderWriterTest.cs" />
+    <Compile Include="Binary\BinarySelfTestVarintArrayLengthMode.cs" />
     <Compile Include="Binary\BinarySelfTestSimpleName.cs" />
     <Compile Include="Binary\EnumsTestOnline.cs" />
     <Compile Include="Cache\PersistentStoreTest.cs" />

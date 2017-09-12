@@ -67,7 +67,8 @@ namespace Apache.Ignite.Core.Tests.Binary
             _marsh = new Marshaller(new BinaryConfiguration
             {
                 CompactFooter = GetCompactFooter(),
-                NameMapper = GetNameMapper()
+                NameMapper = GetNameMapper(),
+                UseVarintArrayLength = UseVarintArrayLength()
             });
         }
 
@@ -86,7 +87,15 @@ namespace Apache.Ignite.Core.Tests.Binary
         {
             return BinaryBasicNameMapper.FullNameInstance;
         }
-        
+
+        /// <summary>
+        /// Indicates whether to consider arrays lengths in varint encoding.
+        /// </summary>
+        protected virtual bool UseVarintArrayLength()
+        {
+            return false;
+        }
+
         /**
          * <summary>Check write of primitive boolean.</summary>
          */
@@ -2622,30 +2631,6 @@ namespace Apache.Ignite.Core.Tests.Binary
             {
                 return !left.Equals(right);
             }
-        }
-
-        /**
-         * <summary>Tests Ignite compatibility mode with versions that writing length of arrays in default format.</summary>
-         */
-        [Test]
-        public void TestNoVarintArrayLengthMode()
-        {
-            if (Environment.GetEnvironmentVariable(BinaryUtils.IgniteNoVarintArrayLength) != "true")
-            {
-                // Run "TestNoVarintArrayLengthMode" in a separate process with changed setting.
-                Environment.SetEnvironmentVariable(BinaryUtils.IgniteNoVarintArrayLength, "true");
-
-                TestUtils.RunTestInNewProcess(GetType().FullName, "TestNoVarintArrayLengthMode");
-            }
-        }
-
-        /**
-         * <summary>Test tear down.</summary>
-         */
-        [TearDown]
-        public void TearDown()
-        {
-            Environment.SetEnvironmentVariable(BinaryUtils.IgniteNoVarintArrayLength, null);
         }
     }
 }

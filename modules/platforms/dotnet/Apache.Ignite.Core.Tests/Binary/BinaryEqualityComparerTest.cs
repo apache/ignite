@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.Binary
 {
+    using System.Data;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
@@ -102,7 +103,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.IsFalse(BinaryArrayEqualityComparer.Equals(obj5, obj6));
 
             // BinaryObject.GetHashCode.
-            if (BinaryUtils.UseVarintArrayLenght)
+            if (UseVarintArrayLength())
             {
                 Assert.AreEqual(860484896, obj1.GetHashCode());
                 Assert.AreEqual(1207399917, obj2.GetHashCode());
@@ -122,7 +123,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual(obj1.GetHashCode(), obj5.GetHashCode());
 
             // Comparer.GetHashCode.
-            if (BinaryUtils.UseVarintArrayLenght)
+            if (UseVarintArrayLength())
             {
                 Assert.AreEqual(860484896, BinaryArrayEqualityComparer.GetHashCode(obj1));
                 Assert.AreEqual(1207399917, BinaryArrayEqualityComparer.GetHashCode(obj2));
@@ -149,11 +150,22 @@ namespace Apache.Ignite.Core.Tests.Binary
         }
 
         /// <summary>
+        /// Indicates whether to consider arrays lengths in varint encoding.
+        /// </summary>
+        protected virtual bool UseVarintArrayLength()
+        {
+            return false;
+        }
+
+        /// <summary>
         /// Gets the binary object.
         /// </summary>
-        private static IBinaryObject GetBinaryObject(int id, string name, int raw)
+        private IBinaryObject GetBinaryObject(int id, string name, int raw)
         {
-            var marsh = new Marshaller(new BinaryConfiguration(typeof(Foo)));
+            var cfg = new BinaryConfiguration(typeof(Foo));
+            cfg.UseVarintArrayLength = UseVarintArrayLength();
+
+            var marsh = new Marshaller(cfg);
 
             var bytes = marsh.Marshal(new Foo {Id = id, Name = name, Raw = raw});
 

@@ -79,6 +79,8 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             CompactFooter = _cfg.CompactFooter;
 
+            UseVarintArrayLength = _cfg.UseVarintArrayLength;
+
             if (_cfg.TypeConfigurations == null)
                 _cfg.TypeConfigurations = new List<BinaryTypeConfiguration>();
 
@@ -125,6 +127,11 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// Gets the compact footer flag.
         /// </summary>
         public bool CompactFooter { get; set; }
+
+        /// <summary>
+        /// Whether to consider arrays lengths in varint encoding.
+        /// </summary>
+        public bool UseVarintArrayLength { get; set; }
 
         /// <summary>
         /// Gets or sets a value indicating whether type registration is disabled.

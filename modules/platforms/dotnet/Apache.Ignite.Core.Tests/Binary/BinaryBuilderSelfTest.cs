@@ -616,7 +616,7 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             Assert.AreEqual(obj1, obj2);
 
-            if (BinaryUtils.UseVarintArrayLenght)
+            if (_marsh.UseVarintArrayLength)
             {
                 Assert.AreEqual(109523595, obj1.GetHashCode());
             }
