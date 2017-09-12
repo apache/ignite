@@ -28,13 +28,13 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.jdbc2.JdbcSqlFieldsQuery;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.odbc.SqlListenerRequest;
 import org.apache.ignite.internal.processors.odbc.SqlListenerRequestHandler;
@@ -223,7 +223,24 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
         try {
             String sql = req.sqlQuery();
 
-            SqlFieldsQuery qry = new SqlFieldsQuery(sql);
+            SqlFieldsQuery qry;
+
+            switch(req.expectedStatementType()) {
+                case ANY_STATEMENT_TYPE:
+                    qry = new SqlFieldsQuery(sql);
+
+                    break;
+
+                case SELECT_STATEMENT_TYPE:
+                    qry = new JdbcSqlFieldsQuery(sql, true);
+
+                    break;
+
+                default:
+                    assert req.expectedStatementType() == JdbcStatementType.UPDATE_STMT_TYPE;
+
+                    qry = new JdbcSqlFieldsQuery(sql, false);
+            }
 
             qry.setArgs(req.arguments());
 
@@ -389,7 +406,7 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
                 if (q.sql() != null)
                     sql = q.sql();
 
-                SqlFieldsQuery qry = new SqlFieldsQuery(sql);
+                SqlFieldsQuery qry = new JdbcSqlFieldsQuery(sql, false);
 
                 qry.setArgs(q.args());
 
@@ -404,9 +421,7 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
                 QueryCursorImpl<List<?>> qryCur = (QueryCursorImpl<List<?>>)ctx.query()
                     .querySqlFieldsNoCache(qry, true);
 
-                if (qryCur.isQuery())
-                    throw new IgniteCheckedException("Query produced result set [qry=" + q.sql() + ", args=" +
-                        Arrays.toString(q.args()) + ']');
+                assert !qryCur.isQuery();
 
                 List<List<?>> items = qryCur.getAll();
 
