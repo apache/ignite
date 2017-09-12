@@ -93,9 +93,8 @@ public class SqlListenerNioListener extends GridNioServerListenerAdapter<byte[]>
     @Override public void onDisconnected(GridNioSession ses, @Nullable Exception e) {
         SqlListenerConnectionContext connCtx = ses.meta(CONN_CTX_META_KEY);
 
-        if (connCtx != null) {
+        if (connCtx != null)
             connCtx.onDisconnected();
-        }
 
         if (log.isDebugEnabled()) {
             if (e == null)
