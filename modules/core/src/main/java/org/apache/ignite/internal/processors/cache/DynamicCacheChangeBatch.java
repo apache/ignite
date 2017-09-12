@@ -47,6 +47,9 @@ public class DynamicCacheChangeBatch implements DiscoveryCustomMessage {
     /** */
     private boolean clientReconnect;
 
+    /** */
+    private transient ExchangeActions exchangeActions;
+
     /**
      * @param reqs Requests.
      */
@@ -117,14 +120,23 @@ public class DynamicCacheChangeBatch implements DiscoveryCustomMessage {
      * @return {@code True} if request should trigger partition exchange.
      */
     public boolean exchangeNeeded() {
-        if (reqs != null) {
-            for (DynamicCacheChangeRequest req : reqs) {
-                if (req.exchangeNeeded())
-                    return true;
-            }
-        }
+        return exchangeActions != null;
+    }
 
-        return false;
+    /**
+     * @return Exchange actions.
+     */
+    public ExchangeActions exchangeActions() {
+        return exchangeActions;
+    }
+
+    /**
+     * @param exchangeActions New exchange actions.
+     */
+    public void exchangeActions(ExchangeActions exchangeActions) {
+        assert exchangeActions != null && !exchangeActions.empty() : exchangeActions;
+
+        this.exchangeActions = exchangeActions;
     }
 
     /** {@inheritDoc} */
