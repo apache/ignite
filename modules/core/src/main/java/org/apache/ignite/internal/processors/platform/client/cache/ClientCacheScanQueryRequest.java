@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.platform.client.cache;
 
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
@@ -24,8 +25,10 @@ import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
+import org.apache.ignite.internal.processors.platform.PlatformException;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
+import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.lang.IgniteBiPredicate;
 
 /**
@@ -121,6 +124,13 @@ public class ClientCacheScanQueryRequest extends ClientCacheRequest {
 
             case FILTER_PLATFORM_DOTNET:
                 PlatformContext platformCtx = ctx.kernalContext().platform().context();
+
+                String curPlatform = platformCtx.platform();
+
+                if (!PlatformUtils.PLATFORM_DOTNET.equals(curPlatform)) {
+                    throw new IgniteException("ScanQuery filter platform is " + PlatformUtils.PLATFORM_DOTNET +
+                            ", current platform is " + curPlatform);
+                }
 
                 return platformCtx.createCacheEntryFilter(filterObject, 0);
 
