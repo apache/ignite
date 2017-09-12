@@ -58,6 +58,7 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryMetadataResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResponse;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResult;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcStatementType;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.util.ipc.loopback.IpcClientTcpEndpoint;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -317,6 +318,7 @@ public class JdbcThinTcpIo {
     }
 
     /**
+     * @param stmtType Expected statement type.
      * @param cache Cache name.
      * @param fetchSize Fetch size.
      * @param maxRows Max rows.
@@ -326,10 +328,10 @@ public class JdbcThinTcpIo {
      * @throws IOException On error.
      * @throws IgniteCheckedException On error.
      */
-    public JdbcQueryExecuteResult queryExecute(String cache, int fetchSize, int maxRows,
+    public JdbcQueryExecuteResult queryExecute(JdbcStatementType stmtType, String cache, int fetchSize, int maxRows,
         String sql, List<Object> args)
         throws IOException, IgniteCheckedException {
-        return sendRequest(new JdbcQueryExecuteRequest(cache, fetchSize, maxRows, sql,
+        return sendRequest(new JdbcQueryExecuteRequest(stmtType, cache, fetchSize, maxRows, sql,
             args == null ? null : args.toArray(new Object[args.size()])), DYNAMIC_SIZE_MSG_CAP);
     }
 
