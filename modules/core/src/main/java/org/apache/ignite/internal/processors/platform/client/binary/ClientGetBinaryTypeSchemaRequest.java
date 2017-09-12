@@ -49,7 +49,7 @@ public class ClientGetBinaryTypeSchemaRequest extends ClientRequest {
     /** {@inheritDoc} */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
         int[] schema = PlatformUtils.getSchema((CacheObjectBinaryProcessorImpl)ctx.kernalContext().cacheObjects(),
-                typeId, schemaId);
+            typeId, schemaId);
 
         return new ClientGetBinaryTypeSchemaResponse(getRequestId(), schema);
     }

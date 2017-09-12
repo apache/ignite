@@ -57,7 +57,8 @@ public class ClientRegisterBinaryTypeNameRequest extends ClientRequest {
             boolean res = ctx.kernalContext().marshallerContext().registerClassName(platformId, typeId, typeName);
 
             return new ClientBooleanResponse(getRequestId(), res);
-        } catch (IgniteCheckedException e) {
+        }
+        catch (IgniteCheckedException e) {
             throw new IgniteException(e);
         }
     }
