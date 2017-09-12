@@ -41,6 +41,9 @@ namespace Apache.Ignite.Core.Impl.Cache.Client
     /// </summary>
     internal class CacheClient<TK, TV> : ICache<TK, TV>
     {
+        /** Scan query filter platform code: .NET filter. */
+        private const byte FilterPlatformDotnet = 1;
+
         /** Cache name. */
         private readonly string _name;
 
@@ -52,6 +55,9 @@ namespace Apache.Ignite.Core.Impl.Cache.Client
 
         /** Marshaller. */
         private readonly Marshaller _marsh;
+
+        /** Keep binary flag. */
+        private bool _keepBinary = false;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CacheClient{TK, TV}" /> class.
@@ -486,17 +492,17 @@ namespace Apache.Ignite.Core.Impl.Cache.Client
         {
             IgniteArgumentCheck.NotNull(qry, "qry");
 
-            var opId = ClientQueryType.GetClientOp(qry.OpId);
+            var scanQry = qry as ScanQuery<TK, TV>;
 
-            if (opId == null)
+            if (scanQry == null)
             {
-                throw IgniteClient.GetClientNotSupportedException();
+                throw IgniteClient.GetClientNotSupportedException(qry.ToString());
             }
 
             // Filter is a binary object for all platforms.
             // For .NET it is a CacheEntryFilterHolder with a predefined id (BinaryTypeId.CacheEntryPredicateHolder).
-            return DoOutInOp(opId.Value, w => qry.Write(w, false), 
-                s => new ClientQueryCursor<TK, TV>(_ignite, s.ReadLong(), false, s));
+            return DoOutInOp(ClientOp.QueryScan, w => WriteScanQuery(w, scanQry),
+                s => new ClientQueryCursor<TK, TV>(_ignite, s.ReadLong(), _keepBinary, s));
         }
 
         /** <inheritDoc /> */
@@ -663,6 +669,39 @@ namespace Apache.Ignite.Core.Impl.Cache.Client
         private static KeyNotFoundException GetKeyNotFoundException()
         {
             return new KeyNotFoundException("The given key was not present in the cache.");
+        }
+
+        /// <summary>
+        /// Writes the scan query.
+        /// </summary>
+        private void WriteScanQuery(BinaryWriter writer, ScanQuery<TK, TV> qry)
+        {
+            Debug.Assert(qry != null);
+            
+            if (qry.Filter == null)
+            {
+                writer.WriteByte(BinaryUtils.HdrNull);
+            }
+            else
+            {
+                writer.WriteByte(FilterPlatformDotnet);
+
+                var holder = new CacheEntryFilterHolder(qry.Filter, (key, val) => qry.Filter.Invoke(
+                    new CacheEntry<TK, TV>((TK)key, (TV)val)), writer.Marshaller, _keepBinary);
+
+                writer.WriteObject(holder);
+            }
+
+            writer.WriteInt(qry.PageSize);
+
+            writer.WriteBoolean(qry.Partition.HasValue);
+
+            if (qry.Partition.HasValue)
+            {
+                writer.WriteInt(qry.Partition.Value);
+            }
+
+            writer.WriteBoolean(qry.Local);
         }
     }
 }

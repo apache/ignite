@@ -25,12 +25,6 @@ namespace Apache.Ignite.Core.Cache.Query
     /// </summary>
     public class ScanQuery<TK, TV> : QueryBase
     {
-        /** Scan query filter platform code: no filter. */
-        private const byte FilterPlatformNone = 0;
-
-        /** Scan query filter platform code: .NET filter. */
-        private const byte FilterPlatformDotnet = 1;
-
         /// <summary>
         /// Initializes a new instance of the <see cref="ScanQuery{K, V}"/> class.
         /// </summary>
@@ -60,18 +54,12 @@ namespace Apache.Ignite.Core.Cache.Query
             writer.WriteBoolean(Partition.HasValue);
 
             if (Partition.HasValue)
-            {
                 writer.WriteInt(Partition.Value);
-            }
 
             if (Filter == null)
-            {
-                writer.WriteByte(FilterPlatformNone);
-            }
+                writer.WriteObject<CacheEntryFilterHolder>(null);
             else
             {
-                writer.WriteByte(FilterPlatformDotnet);
-
                 var holder = new CacheEntryFilterHolder(Filter, (key, val) => Filter.Invoke(
                     new CacheEntry<TK, TV>((TK) key, (TV) val)), writer.Marshaller, keepBinary);
 

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.platform.client.cache;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
@@ -31,9 +32,6 @@ import org.apache.ignite.lang.IgniteBiPredicate;
  */
 @SuppressWarnings("unchecked")
 public class ClientCacheScanQueryRequest extends ClientCacheRequest {
-    /** No filter. */
-    private static final byte FILTER_PLATFORM_NONE = 0;
-
     /** .NET filter. */
     private static final byte FILTER_PLATFORM_DOTNET = 1;
 
@@ -60,13 +58,10 @@ public class ClientCacheScanQueryRequest extends ClientCacheRequest {
     public ClientCacheScanQueryRequest(BinaryRawReaderEx reader) {
         super(reader);
 
-        local = reader.readBoolean();
-        pageSize = reader.readInt();
-        partition = reader.readBoolean() ? reader.readInt() : null;
         filterPlatform = reader.readByte();
 
         switch (filterPlatform) {
-            case FILTER_PLATFORM_NONE:
+            case GridBinaryMarshaller.NULL:
                 filterObject = null;
                 break;
 
@@ -77,6 +72,10 @@ public class ClientCacheScanQueryRequest extends ClientCacheRequest {
             default:
                 throw new UnsupportedOperationException("Invalid client ScanQuery filter code: " + filterPlatform);
         }
+
+        pageSize = reader.readInt();
+        partition = reader.readBoolean() ? reader.readInt() : null;
+        local = reader.readBoolean();
     }
 
     /** {@inheritDoc} */

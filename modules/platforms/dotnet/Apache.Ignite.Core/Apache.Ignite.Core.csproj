@@ -106,7 +106,6 @@
     <Compile Include="Impl\Cache\Query\PlatformQueryQursorBase.cs" />
     <Compile Include="Impl\Binary\BinaryProcessorClient.cs" />
     <Compile Include="Impl\Binary\IBinaryProcessor.cs" />
-    <Compile Include="Impl\Cache\Client\ClientQueryType.cs" />
     <Compile Include="Impl\IIgniteInternal.cs" />
     <Compile Include="Impl\Cache\Client\CacheClient.cs" />
     <Compile Include="Impl\Client\ClientOp.cs" />
