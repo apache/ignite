@@ -42,7 +42,7 @@ namespace Apache.Ignite.Core.Binary
         /// <summary>
         /// Default <see cref="UseVarintArrayLength"/> setting.
         /// </summary>
-        public const bool DefaultVarintArrayLengthFlag = false;
+        public const bool DefaultUseVarintArrayLength = false;
 
         /** Footer setting. */
         private bool? _compactFooter;
@@ -144,17 +144,17 @@ namespace Apache.Ignite.Core.Binary
         }
 
         /// <summary>
-        /// Gets whether to write arrays lengths in varint encoding. When enabled, Ignite will write arrays lengths in varint encoding.
+        /// Indicates whether to consider arrays lengths in varint encoding. When enabled, Ignite will consider arrays lengths in varint encoding.
         /// <a href="https://developers.google.com/protocol-buffers/docs/encoding#varints">Varint encoding description.</a>
         /// <para/>
         /// <b>WARNING!</b> This mode should be disabled when already serialized data can be taken from some external
         /// sources (e.g.cache store which stores data in binary form, data center replication, etc.). 
         /// Otherwise binary objects without any associated metadata could could not be deserialized.
         /// </summary>
-        [DefaultValue(DefaultVarintArrayLengthFlag)]
+        [DefaultValue(DefaultUseVarintArrayLength)]
         public bool UseVarintArrayLength
         {
-            get { return _useVarintArrayLength ?? DefaultVarintArrayLengthFlag; }
+            get { return _useVarintArrayLength ?? DefaultUseVarintArrayLength; }
             set { _useVarintArrayLength = value; }
         }
 
