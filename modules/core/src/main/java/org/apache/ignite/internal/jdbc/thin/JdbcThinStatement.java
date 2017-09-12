@@ -77,7 +77,7 @@ public class JdbcThinStatement implements Statement {
     /** Result sets. */
     protected List<JdbcThinResultSet> resultSets;
 
-    /** Current result. */
+    /** Current result index. */
     protected int curRes;
 
     /**
