@@ -3694,13 +3694,12 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
     /** {@inheritDoc} */
     @Override public void close() throws IgniteCheckedException {
-        // If tx was rolled back asynchronously by timeout, user tx will not be cleared.
-        cctx.tm().resetUserTx();
-
         TransactionState state = state();
 
         if (state != ROLLING_BACK && state != ROLLED_BACK && state != COMMITTING && state != COMMITTED)
             rollback();
+        else
+            cctx.tm().onLocalClose(this);
 
         synchronized (this) {
             try {

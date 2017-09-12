@@ -77,7 +77,8 @@ public interface IgniteTransactions {
      *
      * @param concurrency Concurrency.
      * @param isolation Isolation.
-     * @param timeout Timeout.
+     * @param timeout Timeout. See {@link TransactionConfiguration#setDefaultTxTimeout(long)}
+     * for additional info on transaction timeouts.
      * @param txSize Number of entries participating in transaction (may be approximate).
      * @return New transaction.
      * @throws IllegalStateException If transaction is already started by this thread.

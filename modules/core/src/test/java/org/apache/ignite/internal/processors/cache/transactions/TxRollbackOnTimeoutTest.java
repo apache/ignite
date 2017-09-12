@@ -38,6 +38,7 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionTimeoutException;
+import org.jsr166.ThreadLocalRandom8;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -217,21 +218,23 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
     public void testTimeoutRemoval() throws Exception {
         IgniteEx client = (IgniteEx)startGrid("client");
 
-        for (int i = 0; i < 5; i++)
+        int modesCnt = 5;
+
+        for (int i = 0; i < modesCnt; i++)
             testTimeoutRemoval0(grid(0), i, TX_TIMEOUT);
 
-        for (int i = 0; i < 5; i++)
+        for (int i = 0; i < modesCnt; i++)
             testTimeoutRemoval0(client, i, TX_TIMEOUT);
 
-        for (int i = 0; i < 5; i++)
+        for (int i = 0; i < modesCnt; i++)
             testTimeoutRemoval0(grid(0), i, TX_MIN_TIMEOUT);
 
-        for (int i = 0; i < 5; i++)
+        for (int i = 0; i < modesCnt; i++)
             testTimeoutRemoval0(client, i, TX_MIN_TIMEOUT);
 
         // Repeat with more iterations to make sure everything is cleared.
         for (int i = 0; i < 500; i++)
-            testTimeoutRemoval0(client, 2, TX_MIN_TIMEOUT);
+            testTimeoutRemoval0(client, ThreadLocalRandom8.current().nextInt(modesCnt), TX_MIN_TIMEOUT);
     }
 
     /**

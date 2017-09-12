@@ -154,7 +154,8 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
         try {
             GridNearTxLocal tx = cctx.tm().userTx(sysCacheCtx);
 
-            if (tx != null)
+            // Allow to override timed out transactions.
+            if (tx != null && !tx.timedOut())
                 throw new IllegalStateException("Failed to start new transaction " +
                     "(current thread already has a transaction): " + tx);
 
