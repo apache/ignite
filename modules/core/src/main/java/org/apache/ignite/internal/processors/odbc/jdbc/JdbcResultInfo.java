@@ -29,8 +29,11 @@ public class JdbcResultInfo implements JdbcRawBinarylizable {
     /** Query flag. */
     private boolean isQuery;
 
-    /** Update count or queryId. When isQuery == tue the member holds queryId, otherwise - update count. */
-    private long updCntOrQryId;
+    /** Update count. */
+    private long updCnt;
+
+    /** Query ID. */
+    private long qryId;
 
     /**
      * Default constructor is used for serialization.
@@ -41,11 +44,13 @@ public class JdbcResultInfo implements JdbcRawBinarylizable {
 
     /**
      * @param isQuery Query flag.
-     * @param updCntOrQryId Update count.
+     * @param updCnt Update count.
+     * @param qryId  Query ID.
      */
-    public JdbcResultInfo(boolean isQuery, long updCntOrQryId) {
+    public JdbcResultInfo(boolean isQuery, long updCnt, long qryId) {
         this.isQuery = isQuery;
-        this.updCntOrQryId= updCntOrQryId;
+        this.updCnt = updCnt;
+        this.qryId = qryId;
     }
 
     /**
@@ -59,26 +64,28 @@ public class JdbcResultInfo implements JdbcRawBinarylizable {
      * @return Query ID.
      */
     public long queryId() {
-        return isQuery ? updCntOrQryId : -1;
+        return qryId;
     }
 
     /**
      * @return Update count.
      */
     public long updateCount() {
-        return !isQuery ? updCntOrQryId : -1;
+        return updCnt;
     }
 
     /** {@inheritDoc} */
     @Override public void writeBinary(BinaryWriterExImpl writer) {
         writer.writeBoolean(isQuery);
-        writer.writeLong(updCntOrQryId);
+        writer.writeLong(updCnt);
+        writer.writeLong(qryId);
     }
 
     /** {@inheritDoc} */
     @Override public void readBinary(BinaryReaderExImpl reader) {
         isQuery = reader.readBoolean();
-        updCntOrQryId = reader.readLong();
+        updCnt = reader.readLong();
+        qryId = reader.readLong();
     }
 
     /** {@inheritDoc} */

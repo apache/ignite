@@ -65,9 +65,6 @@ import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.QRY_ME
  * JDBC request handler.
  */
 public class JdbcRequestHandler implements SqlListenerRequestHandler {
-    /** Multiple statements query supports since version 2.1.5. */
-    private static final SqlListenerProtocolVersion MULTIPLE_STMTS_SUPPORT_SINCE = SqlListenerProtocolVersion.create(2, 1, 5);
-
     /** Query ID sequence. */
     private static final AtomicLong QRY_ID_GEN = new AtomicLong();
 
@@ -272,7 +269,7 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
 
             qry.setSchema(schemaName);
 
-            List<FieldsQueryCursor<List<?>>> results = ctx.query().querySqlFieldsNoCache(qry, true);
+            List<FieldsQueryCursor<List<?>>> results = ctx.query().querySqlFieldsNoCache(qry, true, false);
 
             if (results.size() == 1) {
                 FieldsQueryCursor<List<?>> qryCur = results.get(0);
@@ -302,7 +299,7 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
                 return new JdbcResponse(res);
             }
             else {
-                if (protocolVer.compareTo(MULTIPLE_STMTS_SUPPORT_SINCE) < 0)
+                if (protocolVer.compareTo(JdbcConnectionContext.VER_2_1_5) < 0)
                     return new JdbcResponse(SqlListenerResponse.STATUS_FAILED,
                         "Multiple statements query is not supported.");
 
@@ -316,7 +313,7 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
                     JdbcResultInfo jdbcRes;
 
                     if (qryCur.isQuery()) {
-                        jdbcRes = new JdbcResultInfo(true, qryId);
+                        jdbcRes = new JdbcResultInfo(true, -1, qryId);
 
                         JdbcQueryCursor cur = new JdbcQueryCursor(qryId, req.pageSize(), req.maxRows(), (QueryCursorImpl)qryCur);
 
@@ -330,7 +327,7 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
                         }
                     }
                     else
-                        jdbcRes = new JdbcResultInfo(false, (Long)((List<?>)qryCur.getAll().get(0)).get(0));
+                        jdbcRes = new JdbcResultInfo(false, (Long)((List<?>)qryCur.getAll().get(0)).get(0), -1);
 
                     jdbcResults.add(jdbcRes);
                 }
@@ -470,7 +467,7 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
                 qry.setSchema(schemaName);
 
                 QueryCursorImpl<List<?>> qryCur = (QueryCursorImpl<List<?>>)ctx.query()
-                    .querySqlFieldsNoCache(qry, true).get(0);
+                    .querySqlFieldsNoCache(qry, true, true).get(0);
 
                 assert !qryCur.isQuery();
 

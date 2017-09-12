@@ -292,15 +292,13 @@ public abstract class DynamicColumnsAbstractTest extends GridCommonAbstractTest 
      */
     protected List<List<?>> run(Ignite node, String sql) {
         return ((IgniteEx)node).context().query()
-            .querySqlFieldsNoCache(new SqlFieldsQuery(sql).setSchema(QueryUtils.DFLT_SCHEMA), true)
-            .get(0).getAll();
+            .querySqlFieldsNoCache(new SqlFieldsQuery(sql).setSchema(QueryUtils.DFLT_SCHEMA), true).getAll();
     }
 
     /**
      * Execute SQL command and return resulting dataset.
      * @param cache Cache to initiate query from.
      * @param sql Statement.
-     * @param args Query parameters.
      * @return result.
      */
     protected List<List<?>> run(IgniteCache<?, ?> cache, String sql, Object... args) {
@@ -309,7 +307,6 @@ public abstract class DynamicColumnsAbstractTest extends GridCommonAbstractTest 
 
     /**
      * Run specified statement expected to throw {@code IgniteSqlException} with expected specified message.
-     * @param node Ignite node.
      * @param sql Statement.
      * @param msg Expected message.
      */

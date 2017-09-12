@@ -1246,12 +1246,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (qry.getTimeout() > 0)
             fqry.setTimeout(qry.getTimeout(), TimeUnit.MILLISECONDS);
 
-        List<FieldsQueryCursor<List<?>>> curLst = queryDistributedSqlFields(schemaName, fqry, keepBinary, null, mainCacheId);;
-
-        if (curLst.size() > 1)
-            throw new IgniteSQLException("Multiple statements queries are not supported");
-
-        final QueryCursor<List<?>> res = curLst.get(0);
+        final QueryCursor<List<?>> res = queryDistributedSqlFields(schemaName, fqry, keepBinary, null, mainCacheId, true).get(0);
 
         final Iterable<Cache.Entry<K, V>> converted = new Iterable<Cache.Entry<K, V>>() {
             @Override public Iterator<Cache.Entry<K, V>> iterator() {
@@ -1284,8 +1279,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public List<FieldsQueryCursor<List<?>>> queryDistributedSqlFields(String schemaName,
-        SqlFieldsQuery qry, boolean keepBinary, GridQueryCancel cancel, @Nullable Integer mainCacheId) {
+    @Override public List<FieldsQueryCursor<List<?>>> queryDistributedSqlFields(String schemaName, SqlFieldsQuery qry,
+        boolean keepBinary, GridQueryCancel cancel, @Nullable Integer mainCacheId, boolean failOnMultipleStmts) {
         Connection c = connectionForSchema(schemaName);
 
         final boolean enforceJoinOrder = qry.isEnforceJoinOrder();
@@ -1370,6 +1365,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                     // remaining == null if the query string contains single SQL statement.
                     remainingSql = prep.remainingSql();
+
+                    if (remainingSql != null && failOnMultipleStmts)
+                        throw new IgniteSQLException("Multiple statements queries are not supported");
 
                     sqlQry = prep.prepared().getSQL();
 
@@ -1478,9 +1476,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     twoStepQry.cacheIds(cacheIds);
                     twoStepQry.local(qry.isLocal());
                 }
-
-                if (stmt.getMetaData() == null)
-                    System.out.println("");
 
                 meta = H2Utils.meta(stmt.getMetaData());
             }

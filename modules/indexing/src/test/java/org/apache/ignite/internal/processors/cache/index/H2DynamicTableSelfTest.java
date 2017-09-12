@@ -660,12 +660,12 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
             personId2cityCode.put(i, cityCode);
 
             queryProcessor(client()).querySqlFieldsNoCache(new SqlFieldsQuery("insert into \"Person2\"(\"id\", " +
-                "\"city\") values (?, ?)").setArgs(i, cityName), true).get(0).getAll();
+                "\"city\") values (?, ?)").setArgs(i, cityName), true).getAll();
         }
 
         List<List<?>> res = queryProcessor(client()).querySqlFieldsNoCache(new SqlFieldsQuery("select \"id\", " +
             "c.\"code\" from \"Person2\" p left join \"City\" c on p.\"city\" = c.\"name\" where c.\"name\" " +
-            "is not null"), true).get(0).getAll();
+            "is not null"), true).getAll();
 
         assertEquals(100, res.size());
 

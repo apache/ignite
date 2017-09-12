@@ -314,20 +314,16 @@ public abstract class H2DynamicIndexingComplexTest extends DynamicIndexAbstractS
 
     /**
      * Run SQL statement on specified node.
-     * @param node Ignite node.
      * @param stmt Statement to run.
-     * @param args Query parameters
      * @return Run result.
      */
     private List<List<?>> executeSql(IgniteEx node, String stmt, Object... args) {
-        return node.context().query().querySqlFieldsNoCache(new SqlFieldsQuery(stmt).setArgs(args), true)
-            .get(0).getAll();
+        return node.context().query().querySqlFieldsNoCache(new SqlFieldsQuery(stmt).setArgs(args), true).getAll();
     }
 
     /**
      * Run SQL statement on default node.
      * @param stmt Statement to run.
-     * @param args Query parameters.
      * @return Run result.
      */
     private List<List<?>> executeSql(String stmt, Object... args) {
@@ -337,7 +333,6 @@ public abstract class H2DynamicIndexingComplexTest extends DynamicIndexAbstractS
     /**
      * Run SQL statement that is expected to return strictly one value (like COUNT(*)).
      * @param stmt Statement to run.
-     * @param args Query parameters.
      * @return Run result.
      */
     private Object executeSqlSingle(String stmt, Object... args) {

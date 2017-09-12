@@ -58,7 +58,7 @@ public class MultipleStatementsSqlQuerySelfTest extends GridCommonAbstractTest {
                 "select * from test;")
             .setSchema("PUBLIC");
 
-        List<FieldsQueryCursor<List<?>>> res = qryProc.querySqlFieldsNoCache(qry, true);
+        List<FieldsQueryCursor<List<?>>> res = qryProc.querySqlFieldsNoCache(qry, true, false);
 
         assert res.size() == 4 : "Unexpected cursors count: " + res.size();
 
@@ -104,7 +104,7 @@ public class MultipleStatementsSqlQuerySelfTest extends GridCommonAbstractTest {
             .setSchema("PUBLIC")
             .setArgs(1, "name_1", 2, "name2", 3, "name_3");
 
-        List<FieldsQueryCursor<List<?>>> res = qryProc.querySqlFieldsNoCache(qry, true);
+        List<FieldsQueryCursor<List<?>>> res = qryProc.querySqlFieldsNoCache(qry, true, false);
 
         assert res.size() == 4 : "Unexpected cursors count: " + res.size();
 
