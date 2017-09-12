@@ -105,7 +105,7 @@ public abstract class SqlListenerUtils {
                 return reader.readIntArray();
 
             case GridBinaryMarshaller.LONG_ARR:
-                return BinaryUtils.doReadLongArray(reader.in());
+                return reader.readLongArray();
 
             case GridBinaryMarshaller.FLOAT_ARR:
                 return reader.readFloatArray();
