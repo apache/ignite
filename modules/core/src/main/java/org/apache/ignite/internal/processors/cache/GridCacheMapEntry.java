@@ -1419,6 +1419,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                         updated0 = cctx.unwrapTemporary(entry.getValue());
 
                         updated = cctx.toCacheObject(updated0);
+
+                        if (updated != null) // no validation for remove case
+                            cctx.validateKeyAndValue(key, updated);
                     }
                     else
                         updated = old;
@@ -4164,6 +4167,26 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                         0);
 
                     return;
+                }
+                else if ((invokeRes == null || invokeRes.getValue() == null) && writeObj != null) {
+                    try {
+                        cctx.validateKeyAndValue(entry.key, (CacheObject)writeObj);
+                    }
+                    catch (Exception e) {
+                        initResultOnCancelUpdate(null, true);
+
+                        updateRes = new GridCacheUpdateAtomicResult(UpdateOutcome.INVOKE_NO_OP,
+                            oldVal,
+                            null,
+                            new IgniteBiTuple<>(null, e),
+                            CU.TTL_ETERNAL,
+                            CU.EXPIRE_TIME_ETERNAL,
+                            null,
+                            null,
+                            0);
+
+                        return;
+                    }
                 }
 
                 op = writeObj == null ? DELETE : UPDATE;
