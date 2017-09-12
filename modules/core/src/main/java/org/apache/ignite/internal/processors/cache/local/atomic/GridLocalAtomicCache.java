@@ -1058,6 +1058,8 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
                         Object updatedVal = null;
                         CacheInvokeResult invokeRes = null;
 
+                        boolean validation = false;
+
                         try {
                             Object computed = entryProcessor.process(invokeEntry, invokeArgs);
 
@@ -1067,11 +1069,23 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
 
                             if (computed != null)
                                 invokeRes = CacheInvokeResult.fromResult(ctx.unwrapTemporary(computed));
+
+                            if (invokeEntry.modified()) {
+                                validation = true;
+
+                                ctx.validateKeyAndValue(entry.key(), updated);
+                            }
                         }
                         catch (Exception e) {
                             invokeRes = CacheInvokeResult.fromError(e);
 
                             updated = old;
+
+                            if (validation) {
+                                invokeResMap.put((K)entry.key().value(ctx.cacheObjectContext(), false), invokeRes);
+
+                                continue;
+                            }
                         }
 
                         if (invokeRes != null)
@@ -1177,6 +1191,8 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
 
                             cacheVal = ctx.toCacheObject(ctx.unwrapTemporary(interceptorVal));
                         }
+
+                        ctx.validateKeyAndValue(entry.key(), cacheVal);
 
                         if (putMap == null) {
                             putMap = new LinkedHashMap<>(size, 1.0f);

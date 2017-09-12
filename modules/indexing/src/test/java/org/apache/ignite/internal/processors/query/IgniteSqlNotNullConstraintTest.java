@@ -37,6 +37,7 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
@@ -44,6 +45,8 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -51,6 +54,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.jetbrains.annotations.Nullable;
 
 /** */
 public class IgniteSqlNotNullConstraintTest extends GridCommonAbstractTest {
@@ -112,26 +116,29 @@ public class IgniteSqlNotNullConstraintTest extends GridCommonAbstractTest {
     private List<CacheConfiguration> cacheConfigurations() {
         List<CacheConfiguration> res = new ArrayList<>();
 
-        res.add(buildCacheConfiguration(CacheMode.LOCAL, CacheAtomicityMode.ATOMIC, false));
-        res.add(buildCacheConfiguration(CacheMode.LOCAL, CacheAtomicityMode.TRANSACTIONAL, false));
+        for (boolean wrt : new boolean[] { false, true}) {
+            res.add(buildCacheConfiguration(CacheMode.LOCAL, CacheAtomicityMode.ATOMIC, false, wrt));
+            res.add(buildCacheConfiguration(CacheMode.LOCAL, CacheAtomicityMode.TRANSACTIONAL, false, wrt));
 
-        res.add(buildCacheConfiguration(CacheMode.REPLICATED, CacheAtomicityMode.ATOMIC, false));
-        res.add(buildCacheConfiguration(CacheMode.REPLICATED, CacheAtomicityMode.TRANSACTIONAL, false));
+            res.add(buildCacheConfiguration(CacheMode.REPLICATED, CacheAtomicityMode.ATOMIC, false, wrt));
+            res.add(buildCacheConfiguration(CacheMode.REPLICATED, CacheAtomicityMode.TRANSACTIONAL, false, wrt));
 
-        res.add(buildCacheConfiguration(CacheMode.PARTITIONED, CacheAtomicityMode.ATOMIC, false));
-        res.add(buildCacheConfiguration(CacheMode.PARTITIONED, CacheAtomicityMode.ATOMIC, true));
-        res.add(buildCacheConfiguration(CacheMode.PARTITIONED, CacheAtomicityMode.TRANSACTIONAL, false));
-        res.add(buildCacheConfiguration(CacheMode.PARTITIONED, CacheAtomicityMode.TRANSACTIONAL, true));
+            res.add(buildCacheConfiguration(CacheMode.PARTITIONED, CacheAtomicityMode.ATOMIC, false, wrt));
+            res.add(buildCacheConfiguration(CacheMode.PARTITIONED, CacheAtomicityMode.ATOMIC, true, wrt));
+            res.add(buildCacheConfiguration(CacheMode.PARTITIONED, CacheAtomicityMode.TRANSACTIONAL, false, wrt));
+            res.add(buildCacheConfiguration(CacheMode.PARTITIONED, CacheAtomicityMode.TRANSACTIONAL, true, wrt));
+        }
 
         return res;
     }
 
     /** */
     private CacheConfiguration buildCacheConfiguration(CacheMode mode,
-        CacheAtomicityMode atomicityMode, boolean hasNear) {
+        CacheAtomicityMode atomicityMode, boolean hasNear, boolean writeThrough) {
 
         CacheConfiguration cfg = new CacheConfiguration(CACHE_PREFIX + "-" +
-            mode.name() + "-" + atomicityMode.name() + (hasNear?"-near":""));
+            mode.name() + "-" + atomicityMode.name() + (hasNear ? "-near" : "") +
+            (writeThrough ? "-writethrough" : ""));
 
         cfg.setCacheMode(mode);
         cfg.setAtomicityMode(atomicityMode);
@@ -145,6 +152,11 @@ public class IgniteSqlNotNullConstraintTest extends GridCommonAbstractTest {
 
         if (hasNear)
             cfg.setNearConfiguration(new NearCacheConfiguration().setNearStartSize(100));
+
+        if (writeThrough) {
+            cfg.setCacheStoreFactory(singletonFactory(new TestStore()));
+            cfg.setWriteThrough(true);
+        }
 
         return cfg;
     }
@@ -316,13 +328,19 @@ public class IgniteSqlNotNullConstraintTest extends GridCommonAbstractTest {
     public void testAtomicOrImplicitTxPutAll() throws Exception {
         executeWithAllCaches(new TestClosure() {
             @Override public void run() throws Exception {
-                GridTestUtils.assertThrowsAnyCause(log, new Callable<Object>() {
+                Throwable t = GridTestUtils.assertThrowsWithCause(new Callable<Object>() {
                     @Override public Object call() throws Exception {
                         cache.putAll(F.asMap(key1, okValue, key2, badValue));
 
                         return null;
                     }
-                }, IgniteCheckedException.class, ERR_MSG);
+                }, IgniteSQLException.class);
+
+                IgniteSQLException ex = X.cause(t, IgniteSQLException.class);
+
+                assertNotNull(ex);
+
+                assertTrue(ex.getMessage().contains(ERR_MSG));
 
                 assertEquals(isLocalAtomic() ? 1 : 0, cache.size());
             }
@@ -843,7 +861,7 @@ public class IgniteSqlNotNullConstraintTest extends GridCommonAbstractTest {
         log.info("Running test with node " + ignite.name() + ", cache " + cacheName);
 
         clo.key1 = 1;
-        clo.key2 = 2;
+        clo.key2 = 4;
 
         clo.run();
     }
@@ -898,8 +916,6 @@ public class IgniteSqlNotNullConstraintTest extends GridCommonAbstractTest {
         DynamicCacheDescriptor desc = node.context().cache().cacheDescriptor(cacheName);
 
         assertNotNull("Cache descriptor not found", desc);
-
-        //assertTrue(desc.sql() == F.eq(schemaName, QueryUtils.DFLT_SCHEMA));
 
         QuerySchema schema = desc.schema();
 
@@ -1015,5 +1031,30 @@ public class IgniteSqlNotNullConstraintTest extends GridCommonAbstractTest {
 
         /** */
         public abstract void run() throws Exception;
+    }
+
+    /**
+     * Test store.
+     */
+    private static class TestStore extends CacheStoreAdapter<Integer, Person> {
+        /** {@inheritDoc} */
+        @Override public void loadCache(IgniteBiInClosure<Integer, Person> clo, @Nullable Object... args) {
+            // No-op
+        }
+
+        /** {@inheritDoc} */
+        @Override public Person load(Integer key) {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void write(javax.cache.Cache.Entry<? extends Integer, ? extends Person> e) {
+            // No-op
+        }
+
+        /** {@inheritDoc} */
+        @Override public void delete(Object key) {
+            // No-op
+        }
     }
 }
