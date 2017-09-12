@@ -132,7 +132,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             var cache = Cache<int, int>(0);
 
-            return async ? cache : cache.WrapAsync();
+            return async ? cache.WrapAsync() : cache;
         }
 
         private ICache<TK, TV> Cache<TK, TV>(bool async = false)
