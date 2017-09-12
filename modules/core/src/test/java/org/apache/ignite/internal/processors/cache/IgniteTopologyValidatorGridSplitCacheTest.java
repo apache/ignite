@@ -31,8 +31,11 @@ import org.apache.ignite.configuration.TopologyValidator;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -269,14 +272,14 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends GridCommonAbstrac
             }).isEmpty())
                 return false;
 
-            IgniteKernal kernal = (IgniteKernal)ignite;
-
-            GridDhtPartitionsExchangeFuture curFut = kernal.context().cache().context().exchange().lastTopologyFuture();
-
-            long cacheTopVer = curFut.context().events().topologyVersion().topologyVersion();
+            GridKernalContext igniteContext = ((IgniteEx) ignite).context();
+            GridCacheSharedContext<Object, Object> cacheContext = igniteContext.cache().context();
+            GridCachePartitionExchangeManager<Object, Object> exchMgr = cacheContext.exchange();
+            AffinityTopologyVersion topVer = exchMgr.topologyVersion();
+            long cacheMajorTopVer = topVer.topologyVersion();
 
             if (hasSplit(nodes)) {
-                boolean resolved = activatorTopVer != 0 && cacheTopVer >= activatorTopVer;
+                boolean resolved = activatorTopVer != 0 && cacheMajorTopVer >= activatorTopVer;
 
                 if (!resolved)
                     log.info("Grid segmentation is detected, switching to inoperative state.");

@@ -1993,6 +1993,17 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     }
 
     /**
+     * Returns topology version of last initialized exchange.
+     * @return Version.
+     */
+    public AffinityTopologyVersion topologyVersion() {
+        GridDhtPartitionsExchangeFuture lastInitializedFut0 = lastInitializedFut;
+
+        return lastInitializedFut0 != null
+            ? lastInitializedFut0.exchangeId().topologyVersion() : AffinityTopologyVersion.NONE;
+    }
+
+    /**
      * Exchange future thread. All exchanges happen only by one thread and next
      * exchange will not start until previous one completes.
      */
