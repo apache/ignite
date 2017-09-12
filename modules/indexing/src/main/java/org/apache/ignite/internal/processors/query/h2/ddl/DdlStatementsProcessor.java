@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.h2.ddl;
 
-import java.sql.PreparedStatement;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -56,7 +55,6 @@ import org.h2.command.ddl.CreateIndex;
 import org.h2.command.ddl.CreateTable;
 import org.h2.command.ddl.DropIndex;
 import org.h2.command.ddl.DropTable;
-import org.h2.jdbc.JdbcPreparedStatement;
 import org.h2.table.Column;
 import org.h2.value.DataType;
 
