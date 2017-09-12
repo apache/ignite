@@ -288,7 +288,7 @@ public class QueryCommandHandler extends GridRestCommandHandlerAdapter {
 
                         ((SqlQuery)qry).setArgs(req.arguments());
 
-                        ((SqlQuery)qry).setDistributedJoins(req.distributedJoins());
+                        ((SqlQuery)qry).setNonCollocatedJoins(req.distributedJoins());
 
                         break;
 
@@ -297,7 +297,7 @@ public class QueryCommandHandler extends GridRestCommandHandlerAdapter {
 
                         ((SqlFieldsQuery)qry).setArgs(req.arguments());
 
-                        ((SqlFieldsQuery)qry).setDistributedJoins(req.distributedJoins());
+                        ((SqlFieldsQuery)qry).setNonCollocatedJoins(req.distributedJoins());
 
                         break;
 

@@ -208,7 +208,7 @@ public class IgniteCacheJoinQueryWithAffinityKeyTest extends GridCommonAbstractT
                 "where p.orgId = o._key and o._key=?");
         }
 
-        qry.setDistributedJoins(true);
+        qry.setNonCollocatedJoins(true);
 
         long total = 0;
 
@@ -233,7 +233,7 @@ public class IgniteCacheJoinQueryWithAffinityKeyTest extends GridCommonAbstractT
                 "from Organization o, Person p where p.orgId = o._key");
         }
 
-        qry2.setDistributedJoins(true);
+        qry2.setNonCollocatedJoins(true);
 
         List<List<Object>> res = cache.query(qry2).getAll();
 
@@ -260,7 +260,7 @@ public class IgniteCacheJoinQueryWithAffinityKeyTest extends GridCommonAbstractT
 
         SqlFieldsQuery qry1 = new SqlFieldsQuery(sql1);
 
-        qry1.setDistributedJoins(true);
+        qry1.setNonCollocatedJoins(true);
 
         String sql2;
 
@@ -275,7 +275,7 @@ public class IgniteCacheJoinQueryWithAffinityKeyTest extends GridCommonAbstractT
 
         SqlFieldsQuery qry2 = new SqlFieldsQuery(sql2);
 
-        qry2.setDistributedJoins(true);
+        qry2.setNonCollocatedJoins(true);
 
         Ignite ignite = (Ignite)cache.unwrap(Ignite.class);
 
@@ -324,7 +324,7 @@ public class IgniteCacheJoinQueryWithAffinityKeyTest extends GridCommonAbstractT
         }
 
         for (SqlFieldsQuery qry : qrys) {
-            qry.setDistributedJoins(true);
+            qry.setNonCollocatedJoins(true);
 
             List<List<Object>> res = cache.query(qry).getAll();
 

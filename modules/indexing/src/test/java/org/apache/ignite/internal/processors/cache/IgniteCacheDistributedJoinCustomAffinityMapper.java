@@ -202,7 +202,7 @@ public class IgniteCacheDistributedJoinCustomAffinityMapper extends GridCommonAb
         boolean enforceJoinOrder) {
         final SqlFieldsQuery qry = new SqlFieldsQuery(sql);
 
-        qry.setDistributedJoins(true);
+        qry.setNonCollocatedJoins(true);
         qry.setEnforceJoinOrder(enforceJoinOrder);
 
         Throwable err = GridTestUtils.assertThrows(log, new Callable<Void>() {

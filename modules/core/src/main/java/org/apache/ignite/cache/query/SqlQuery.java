@@ -52,7 +52,7 @@ public final class SqlQuery<K, V> extends Query<Cache.Entry<K, V>> {
     private int timeout;
 
     /** */
-    private boolean distributedJoins;
+    private boolean nonCollocatedJoins;
 
     /** */
     private boolean replicatedOnly;
@@ -212,25 +212,51 @@ public final class SqlQuery<K, V> extends Query<Cache.Entry<K, V>> {
      * Specify if distributed joins are enabled for this query.
      *
      * When disabled, join results will only contain colocated data (joins work locally).
-     * When enabled, joins work as expected, no matter how the data is distributed.
+     * When enabled, joins work as expected, no matter how the data is distributed.<br><br>
+     *
+     * The method is deprecated  due to the confusing naming (to be deleted in v3.0).
+     * Use instead {@link #setNonCollocatedJoins(boolean)} which returns same value.
      *
      * @param distributedJoins Distributed joins enabled.
      * @return {@code this} For chaining.
      */
+    @Deprecated
     public SqlQuery<K, V> setDistributedJoins(boolean distributedJoins) {
-        this.distributedJoins = distributedJoins;
+        this.nonCollocatedJoins = distributedJoins;
 
         return this;
     }
 
     /**
-     * Check if distributed joins are enabled for this query.
+     * Check if distributed joins are enabled for this query.<br><br>
+     *
+     * The method is deprecated  due to the confusing naming (to be deleted in v3.0).
+     * Use instead {@link #isNonCollocatedJoins()} which returns same value.
      *
      * @return {@code true} If distributed joins enabled.
      */
+    @Deprecated
     public boolean isDistributedJoins() {
-        return distributedJoins;
+        return nonCollocatedJoins;
     }
+
+    /**
+     * Specify if non collocated joins are enabled for this query.
+     *
+     * @param nonCollocatedJoins Non collocated joins enabled.
+     * @return {@code this} For chaining.
+     */
+    public SqlQuery<K, V> setNonCollocatedJoins(boolean nonCollocatedJoins) {
+        this.nonCollocatedJoins = nonCollocatedJoins;
+        return this;
+    }
+
+    /**
+     * Check if non collocated joins are enabled for this query.
+     *
+     * @return {@code true} If non collocated joins enabled.
+     */
+    public boolean isNonCollocatedJoins() { return nonCollocatedJoins; }
 
     /**
      * Specify if the query contains only replicated tables.

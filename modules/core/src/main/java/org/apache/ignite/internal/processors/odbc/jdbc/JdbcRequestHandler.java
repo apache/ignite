@@ -244,7 +244,7 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
 
             qry.setArgs(req.arguments());
 
-            qry.setDistributedJoins(distributedJoins);
+            qry.setNonCollocatedJoins(distributedJoins);
             qry.setEnforceJoinOrder(enforceJoinOrder);
             qry.setCollocated(collocated);
             qry.setReplicatedOnly(replicatedOnly);
@@ -410,7 +410,7 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
 
                 qry.setArgs(q.args());
 
-                qry.setDistributedJoins(distributedJoins);
+                qry.setNonCollocatedJoins(distributedJoins);
                 qry.setEnforceJoinOrder(enforceJoinOrder);
                 qry.setCollocated(collocated);
                 qry.setReplicatedOnly(replicatedOnly);

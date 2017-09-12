@@ -158,7 +158,7 @@ public class IgniteCacheDistributedJoinTest extends GridCommonAbstractTest {
 
         try (
             ResultSet rs1 = s.executeQuery(qry);
-            QueryCursor<List<?>> rs2 = c.query(new SqlFieldsQuery(qry).setDistributedJoins(true))
+            QueryCursor<List<?>> rs2 = c.query(new SqlFieldsQuery(qry).setNonCollocatedJoins(true))
         ) {
             Iterator<List<?>> iter = rs2.iterator();
 

@@ -81,7 +81,7 @@ public class IgniteCacheQueryStopOnCancelOrTimeoutDistributedJoinSelfTest extend
     /** */
     private void testQueryCancel(Ignite ignite, String cacheName, String sql, int timeoutUnits, TimeUnit timeUnit,
                            boolean timeout) throws Exception {
-        SqlFieldsQuery qry = new SqlFieldsQuery(sql).setDistributedJoins(true);
+        SqlFieldsQuery qry = new SqlFieldsQuery(sql).setNonCollocatedJoins(true);
 
         IgniteCache<Object, Object> cache = ignite.cache(cacheName);
 

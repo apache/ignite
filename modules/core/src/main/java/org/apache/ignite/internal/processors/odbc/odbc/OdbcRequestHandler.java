@@ -181,7 +181,7 @@ public class OdbcRequestHandler implements SqlListenerRequestHandler {
 
         qry.setArgs(args);
 
-        qry.setDistributedJoins(distributedJoins);
+        qry.setNonCollocatedJoins(distributedJoins);
         qry.setEnforceJoinOrder(enforceJoinOrder);
         qry.setReplicatedOnly(replicatedOnly);
         qry.setCollocated(collocated);

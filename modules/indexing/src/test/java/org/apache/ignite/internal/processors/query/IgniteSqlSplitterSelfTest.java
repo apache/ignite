@@ -790,7 +790,7 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
                 " where p.orgId = o._key and o._key=2";
 
             String plan = c1.query(new SqlFieldsQuery("explain " + select)
-                .setDistributedJoins(true).setEnforceJoinOrder(true))
+                .setNonCollocatedJoins(true).setEnforceJoinOrder(true))
                 .getAll().toString();
 
             X.println("Plan : " + plan);
@@ -798,13 +798,13 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
             assertEquals(2, StringUtils.countOccurrencesOf(plan, "batched"));
             assertEquals(2, StringUtils.countOccurrencesOf(plan, "batched:unicast"));
 
-            assertEquals(2, c1.query(new SqlFieldsQuery(select).setDistributedJoins(true)
+            assertEquals(2, c1.query(new SqlFieldsQuery(select).setNonCollocatedJoins(true)
                 .setEnforceJoinOrder(false)).getAll().size());
 
             select = "select * from (" + select + ")";
 
             plan = c1.query(new SqlFieldsQuery("explain " + select)
-                .setDistributedJoins(true).setEnforceJoinOrder(true))
+                .setNonCollocatedJoins(true).setEnforceJoinOrder(true))
                 .getAll().toString();
 
             X.println("Plan : " + plan);
@@ -812,7 +812,7 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
             assertEquals(2, StringUtils.countOccurrencesOf(plan, "batched"));
             assertEquals(2, StringUtils.countOccurrencesOf(plan, "batched:unicast"));
 
-            assertEquals(2, c1.query(new SqlFieldsQuery(select).setDistributedJoins(true)
+            assertEquals(2, c1.query(new SqlFieldsQuery(select).setNonCollocatedJoins(true)
                 .setEnforceJoinOrder(false)).getAll().size());
         }
         finally {
@@ -844,45 +844,45 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
                 " union select o.name n1, p.name n2 from \"org\".Organization o, \"pers\".Person2 p where p.orgId = o._key and o._key=2";
 
             String plan = (String)c1.query(new SqlFieldsQuery("explain " + select0)
-                .setDistributedJoins(true))
+                .setNonCollocatedJoins(true))
                 .getAll().get(0).get(0);
 
             X.println("Plan: " + plan);
 
             assertEquals(0, StringUtils.countOccurrencesOf(plan, "batched"));
-            assertEquals(2, c1.query(new SqlFieldsQuery(select0).setDistributedJoins(true)).getAll().size());
+            assertEquals(2, c1.query(new SqlFieldsQuery(select0).setNonCollocatedJoins(true)).getAll().size());
 
             String select = "select * from (" + select0 + ")";
 
             plan = (String)c1.query(new SqlFieldsQuery("explain " + select)
-                .setDistributedJoins(true))
+                .setNonCollocatedJoins(true))
                 .getAll().get(0).get(0);
 
             X.println("Plan : " + plan);
 
             assertEquals(0, StringUtils.countOccurrencesOf(plan, "batched"));
-            assertEquals(2, c1.query(new SqlFieldsQuery(select).setDistributedJoins(true)).getAll().size());
+            assertEquals(2, c1.query(new SqlFieldsQuery(select).setNonCollocatedJoins(true)).getAll().size());
 
             String select1 = "select o.name n1, p.name n2 from \"pers\".Person2 p, \"org\".Organization o where p.orgId = o._key and o._key=1" +
                 " union select * from (select o.name n1, p.name n2 from \"org\".Organization o, \"pers\".Person2 p where p.orgId = o._key and o._key=2)";
 
             plan = (String)c1.query(new SqlFieldsQuery("explain " + select1)
-                .setDistributedJoins(true)).getAll().get(0).get(0);
+                .setNonCollocatedJoins(true)).getAll().get(0).get(0);
 
             X.println("Plan: " + plan);
 
             assertEquals(0, StringUtils.countOccurrencesOf(plan, "batched"));
-            assertEquals(2, c1.query(new SqlFieldsQuery(select).setDistributedJoins(true)).getAll().size());
+            assertEquals(2, c1.query(new SqlFieldsQuery(select).setNonCollocatedJoins(true)).getAll().size());
 
             select = "select * from (" + select1 + ")";
 
             plan = (String)c1.query(new SqlFieldsQuery("explain " + select)
-                .setDistributedJoins(true)).getAll().get(0).get(0);
+                .setNonCollocatedJoins(true)).getAll().get(0).get(0);
 
             X.println("Plan : " + plan);
 
             assertEquals(0, StringUtils.countOccurrencesOf(plan, "batched"));
-            assertEquals(2, c1.query(new SqlFieldsQuery(select).setDistributedJoins(true)).getAll().size());
+            assertEquals(2, c1.query(new SqlFieldsQuery(select).setNonCollocatedJoins(true)).getAll().size());
         }
         finally {
             c1.destroy();
@@ -1411,7 +1411,7 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
 
             SqlFieldsQuery qry = new SqlFieldsQuery(select0);
 
-            qry.setDistributedJoins(true);
+            qry.setNonCollocatedJoins(true);
 
             List<List<?>> results = c1.query(qry).getAll();
 
@@ -1421,7 +1421,7 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
 
             qry = new SqlFieldsQuery(select0);
 
-            qry.setDistributedJoins(true);
+            qry.setNonCollocatedJoins(true);
 
             results = c1.query(qry).getAll();
 
@@ -1437,11 +1437,11 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
                 "where p.orgId = o.orgId";
 
             X.println("Plan: \n" +
-                c1.query(new SqlFieldsQuery("explain " + select0).setDistributedJoins(true)).getAll());
+                c1.query(new SqlFieldsQuery("explain " + select0).setNonCollocatedJoins(true)).getAll());
 
             qry = new SqlFieldsQuery(select0);
 
-            qry.setDistributedJoins(true);
+            qry.setNonCollocatedJoins(true);
 
             results = c1.query(qry).getAll();
 
@@ -1477,7 +1477,7 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
 
             final SqlFieldsQuery qry = new SqlFieldsQuery(select0);
 
-            qry.setDistributedJoins(true);
+            qry.setNonCollocatedJoins(true);
 
             GridTestUtils.assertThrows(log, new Callable<Void>() {
                 @Override public Void call() throws Exception {
@@ -1503,7 +1503,7 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
         boolean enforceJoinOrder) {
         final SqlFieldsQuery qry = new SqlFieldsQuery(sql);
 
-        qry.setDistributedJoins(true);
+        qry.setNonCollocatedJoins(true);
         qry.setEnforceJoinOrder(enforceJoinOrder);
 
         GridTestUtils.assertThrows(log, new Callable<Void>() {
@@ -1605,7 +1605,7 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
         SqlFieldsQuery qry,
         String... expText) {
         qry.setEnforceJoinOrder(enforceJoinOrder);
-        qry.setDistributedJoins(true);
+        qry.setNonCollocatedJoins(true);
 
         String plan = queryPlan(cache, qry);
 
@@ -1722,7 +1722,7 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
         String select = "select count(*) from \"org\".Organization o, \"pers\".Person2 p where p.orgId = o._key";
 
         String plan = (String)qryCache.query(new SqlFieldsQuery("explain " + select)
-            .setDistributedJoins(true).setEnforceJoinOrder(enforceJoinOrder).setPageSize(pageSize))
+            .setNonCollocatedJoins(true).setEnforceJoinOrder(enforceJoinOrder).setPageSize(pageSize))
             .getAll().get(0).get(0);
 
         X.println("Plan : " + plan);
@@ -1732,14 +1732,14 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
         else
             assertTrue(plan, plan.contains("batched:unicast"));
 
-        assertEquals((long)persons, qryCache.query(new SqlFieldsQuery(select).setDistributedJoins(true)
+        assertEquals((long)persons, qryCache.query(new SqlFieldsQuery(select).setNonCollocatedJoins(true)
             .setEnforceJoinOrder(enforceJoinOrder).setPageSize(pageSize)).getAll().get(0).get(0));
 
         c1.clear();
         c2.clear();
 
         assertEquals(0, c1.size(CachePeekMode.ALL));
-        assertEquals(0L, c1.query(new SqlFieldsQuery(select).setDistributedJoins(true)
+        assertEquals(0L, c1.query(new SqlFieldsQuery(select).setNonCollocatedJoins(true)
             .setEnforceJoinOrder(enforceJoinOrder).setPageSize(pageSize)).getAll().get(0).get(0));
     }
 

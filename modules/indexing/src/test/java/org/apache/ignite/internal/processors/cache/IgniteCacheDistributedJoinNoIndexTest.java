@@ -206,7 +206,7 @@ public class IgniteCacheDistributedJoinNoIndexTest extends GridCommonAbstractTes
             @Override public Void call() throws Exception {
                 SqlFieldsQuery qry = new SqlFieldsQuery(sql);
 
-                qry.setDistributedJoins(true);
+                qry.setNonCollocatedJoins(true);
 
                 cache.query(qry).getAll();
 
@@ -233,7 +233,7 @@ public class IgniteCacheDistributedJoinNoIndexTest extends GridCommonAbstractTes
         Object... args) {
         SqlFieldsQuery qry = new SqlFieldsQuery(sql);
 
-        qry.setDistributedJoins(true);
+        qry.setNonCollocatedJoins(true);
         qry.setArgs(args);
 
         log.info("Plan: " + queryPlan(cache, qry));

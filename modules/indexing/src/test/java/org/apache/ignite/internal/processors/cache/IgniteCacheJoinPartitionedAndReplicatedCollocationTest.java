@@ -340,7 +340,7 @@ public class IgniteCacheJoinPartitionedAndReplicatedCollocationTest extends Abst
         Object... args) throws Exception {
         String plan = (String)cache.query(new SqlFieldsQuery("explain " + sql)
             .setArgs(args)
-            .setDistributedJoins(true)
+            .setNonCollocatedJoins(true)
             .setEnforceJoinOrder(enforceJoinOrder))
             .getAll().get(0).get(0);
 

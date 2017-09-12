@@ -1682,7 +1682,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
             .setLocal(qry.isLocal())
             .setCollocated(qry.isCollocated())
             .setPageSize(qry.getPageSize())
-            .setDistributedJoins(qry.isDistributedJoins())
+            .setNonCollocatedJoins(qry.isNonCollocatedJoins())
             .setEnforceJoinOrder(qry.isEnforceJoinOrder()))
             .getAll().get(0).get(0);
     }

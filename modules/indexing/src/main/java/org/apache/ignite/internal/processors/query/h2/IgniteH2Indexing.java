@@ -1240,7 +1240,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         fqry.setArgs(qry.getArgs());
         fqry.setPageSize(qry.getPageSize());
-        fqry.setDistributedJoins(qry.isDistributedJoins());
+        fqry.setNonCollocatedJoins(qry.isNonCollocatedJoins());
         fqry.setPartitions(qry.getPartitions());
         fqry.setLocal(qry.isLocal());
 
@@ -1287,16 +1287,16 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         Connection c = connectionForSchema(schemaName);
 
         final boolean enforceJoinOrder = qry.isEnforceJoinOrder();
-        final boolean distributedJoins = qry.isDistributedJoins();
+        final boolean nonCollocatedJoins = qry.isNonCollocatedJoins();
         final boolean grpByCollocated = qry.isCollocated();
 
-        final DistributedJoinMode distributedJoinMode = distributedJoinMode(qry.isLocal(), distributedJoins);
+        final DistributedJoinMode distributedJoinMode = distributedJoinMode(qry.isLocal(), nonCollocatedJoins);
 
         GridCacheTwoStepQuery twoStepQry = null;
         List<GridQueryFieldMetadata> meta;
 
         final H2TwoStepCachedQueryKey cachedQryKey = new H2TwoStepCachedQueryKey(schemaName, sqlQry, grpByCollocated,
-            distributedJoins, enforceJoinOrder, qry.isLocal());
+            nonCollocatedJoins, enforceJoinOrder, qry.isLocal());
         H2TwoStepCachedQuery cachedQry = twoStepCache.get(cachedQryKey);
 
         if (cachedQry != null) {
@@ -1357,7 +1357,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                         bindParameters(stmt, F.asList(qry.getArgs()));
 
                         twoStepQry = GridSqlQuerySplitter.split((JdbcPreparedStatement)stmt, qry.getArgs(),
-                            grpByCollocated, distributedJoins, enforceJoinOrder, this);
+                            grpByCollocated, nonCollocatedJoins, enforceJoinOrder, this);
 
                         assert twoStepQry != null;
                     }
