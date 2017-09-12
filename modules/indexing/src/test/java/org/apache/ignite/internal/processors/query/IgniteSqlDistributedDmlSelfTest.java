@@ -96,11 +96,6 @@ public class IgniteSqlDistributedDmlSelfTest extends GridCommonAbstractTest {
 
         List<CacheConfiguration> ccfgs = new ArrayList<>();
 
-        CacheConfiguration ccfg = buildCacheConfiguration(gridName);
-
-        if (ccfg != null)
-            ccfgs.add(ccfg);
-
         ccfgs.add(buildCacheConfiguration(CACHE_ORG));
         ccfgs.add(buildCacheConfiguration(CACHE_PERSON));
         ccfgs.add(buildCacheConfiguration(CACHE_POSITION));
