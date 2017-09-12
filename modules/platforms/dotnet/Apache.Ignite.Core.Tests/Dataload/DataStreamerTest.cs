@@ -25,7 +25,6 @@ namespace Apache.Ignite.Core.Tests.Dataload
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Datastream;
-    using Apache.Ignite.Core.Tests.Binary;
     using NUnit.Framework;
 
     /// <summary>
@@ -182,7 +181,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
             obj1.Inner = obj2;
             obj2.Inner = obj1;
             obj3.Inner = obj1;
-            obj4.Inner = obj3;
+            obj4.Inner = new Container();
 
             using (var ldr = _grid.GetDataStreamer<int, Container>(CacheName))
             {
