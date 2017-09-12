@@ -116,6 +116,14 @@ public abstract class DynamicColumnsAbstractTest extends GridCommonAbstractTest 
                 assertEquals(col.name(), e.getKey());
 
                 assertEquals(col.typeName(), e.getValue());
+
+                if (!col.isNullable()) {
+                    assertNotNull(entity.getNotNullFields());
+
+                    assertTrue(entity.getNotNullFields().contains(col.name()));
+                }
+                else if (entity.getNotNullFields() != null)
+                    assertFalse(entity.getNotNullFields().contains(col.name()));
             }
         }
 
@@ -151,6 +159,8 @@ public abstract class DynamicColumnsAbstractTest extends GridCommonAbstractTest 
                 assertEquals(col.name(), e.getKey());
 
                 assertEquals(col.typeName(), e.getValue().getName());
+
+                assertTrue(col.isNullable() || desc.property(col.name()).notNull());
             }
         }
 
@@ -183,6 +193,8 @@ public abstract class DynamicColumnsAbstractTest extends GridCommonAbstractTest 
 
                 assertFalse(rowDesc.isKeyValueOrVersionColumn(i));
 
+                assertEquals(col.isNullable(), c.isNullable());
+
                 try {
                     assertEquals(DataType.getTypeFromClass(Class.forName(col.typeName())),
                         rowDesc.fieldType(i - GridH2AbstractKeyValueRow.DEFAULT_COLUMNS_COUNT));
@@ -213,7 +225,7 @@ public abstract class DynamicColumnsAbstractTest extends GridCommonAbstractTest 
      * @return New column with given name and type.
      */
     protected static QueryField c(String name, String typeName) {
-        return new QueryField(name, typeName);
+        return new QueryField(name, typeName, true);
     }
 
     /**
