@@ -30,7 +30,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  */
 public class JdbcQueryExecuteMultipleStatementsResult extends JdbcResult {
     /** Statements results. */
-    private List<JdbcStatementResults> results;
+    private List<JdbcResultInfo> results;
 
     /** Query result rows for the first query. */
     private List<List<Object>> items;
@@ -50,7 +50,7 @@ public class JdbcQueryExecuteMultipleStatementsResult extends JdbcResult {
      * @param items Query result rows for the first query.
      * @param last Flag indicating the query has no unfetched results for the first query.
      */
-    public JdbcQueryExecuteMultipleStatementsResult(List<JdbcStatementResults> results,
+    public JdbcQueryExecuteMultipleStatementsResult(List<JdbcResultInfo> results,
         List<List<Object>> items, boolean last) {
         super(QRY_EXEC_MULT);
         this.results = results;
@@ -61,7 +61,7 @@ public class JdbcQueryExecuteMultipleStatementsResult extends JdbcResult {
     /**
      * @return Update counts of query IDs.
      */
-    public List<JdbcStatementResults> results() {
+    public List<JdbcResultInfo> results() {
         return results;
     }
 
@@ -86,7 +86,7 @@ public class JdbcQueryExecuteMultipleStatementsResult extends JdbcResult {
         if (results != null && results.size() > 0) {
             writer.writeInt(results.size());
 
-            for (JdbcStatementResults r : results)
+            for (JdbcResultInfo r : results)
                 r.writeBinary(writer);
 
             if (results.get(0).isQuery()) {
@@ -111,7 +111,7 @@ public class JdbcQueryExecuteMultipleStatementsResult extends JdbcResult {
             results = new ArrayList<>(cnt);
 
             for (int i = 0; i < cnt; ++i) {
-                JdbcStatementResults r = new JdbcStatementResults();
+                JdbcResultInfo r = new JdbcResultInfo();
 
                 r.readBinary(reader);
 

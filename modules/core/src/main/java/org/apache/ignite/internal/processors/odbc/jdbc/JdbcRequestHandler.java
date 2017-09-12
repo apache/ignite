@@ -293,17 +293,17 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
                 return new JdbcResponse(res);
             }
             else {
-                List<JdbcStatementResults> jdbcResults = new ArrayList<>(results.size());
+                List<JdbcResultInfo> jdbcResults = new ArrayList<>(results.size());
                 List<List<Object>> items = null;
                 boolean last = true;
 
                 for (FieldsQueryCursor<List<?>> c : results) {
                     QueryCursorImpl qryCur = (QueryCursorImpl)c;
 
-                    JdbcStatementResults jdbcRes;
+                    JdbcResultInfo jdbcRes;
 
                     if (qryCur.isQuery()) {
-                        jdbcRes = new JdbcStatementResults(true, qryId);
+                        jdbcRes = new JdbcResultInfo(true, qryId);
 
                         JdbcQueryCursor cur = new JdbcQueryCursor(qryId, req.pageSize(), req.maxRows(), (QueryCursorImpl)qryCur);
 
@@ -317,7 +317,7 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
                         }
                     }
                     else
-                        jdbcRes = new JdbcStatementResults(false, (Long)((List<?>)qryCur.getAll().get(0)).get(0));
+                        jdbcRes = new JdbcResultInfo(false, (Long)((List<?>)qryCur.getAll().get(0)).get(0));
 
                     jdbcResults.add(jdbcRes);
                 }

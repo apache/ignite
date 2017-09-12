@@ -22,9 +22,10 @@ import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * JDBC multiple statements results.
+ * JDBC statement result information. Keeps statement type (SELECT or UPDATE) and
+ * queryId or update count (depends on statement type).
  */
-public class JdbcStatementResults implements JdbcRawBinarylizable {
+public class JdbcResultInfo implements JdbcRawBinarylizable {
     /** Query flag. */
     private boolean isQuery;
 
@@ -34,7 +35,7 @@ public class JdbcStatementResults implements JdbcRawBinarylizable {
     /**
      * Default constructor is used for serialization.
      */
-    JdbcStatementResults() {
+    JdbcResultInfo() {
         // No-op.
     }
 
@@ -43,7 +44,7 @@ public class JdbcStatementResults implements JdbcRawBinarylizable {
      * @param isQuery Query flag.
      * @param updCntOrQryId Update count.
      */
-    public JdbcStatementResults(boolean isQuery, long updCntOrQryId) {
+    public JdbcResultInfo(boolean isQuery, long updCntOrQryId) {
         this.isQuery = isQuery;
         this.updCntOrQryId= updCntOrQryId;
     }
@@ -83,6 +84,6 @@ public class JdbcStatementResults implements JdbcRawBinarylizable {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(JdbcStatementResults.class, this);
+        return S.toString(JdbcResultInfo.class, this);
     }
 }

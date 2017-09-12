@@ -37,7 +37,7 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteMultipleS
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcStatementType;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResult;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcStatementResults;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResultInfo;
 
 import static java.sql.ResultSet.CONCUR_READ_ONLY;
 import static java.sql.ResultSet.FETCH_FORWARD;
@@ -136,13 +136,13 @@ public class JdbcThinStatement implements Statement {
             else if (res0 instanceof JdbcQueryExecuteMultipleStatementsResult) {
                 JdbcQueryExecuteMultipleStatementsResult res = (JdbcQueryExecuteMultipleStatementsResult)res0;
 
-                List<JdbcStatementResults> resInfos = res.results();
+                List<JdbcResultInfo> resInfos = res.results();
 
                 resultSets = new ArrayList<>(resInfos.size());
 
                 boolean firstRes = true;
 
-                for(JdbcStatementResults rsInfo : resInfos) {
+                for(JdbcResultInfo rsInfo : resInfos) {
                     if (!rsInfo.isQuery()) {
                         resultSets.add(new JdbcThinResultSet(this, -1, pageSize,
                             true, Collections.<List<Object>>emptyList(), false,
