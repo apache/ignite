@@ -35,6 +35,7 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorVersion;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.util.GridBoundedConcurrentOrderedSet;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
@@ -278,7 +279,8 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 req.includeMetaData(),
                 req.keepBinary(),
                 req.subjectId(),
-                req.taskHash()
+                req.taskHash(),
+                req.mvccVersion()
             );
 
         return new GridCacheQueryInfo(
@@ -532,6 +534,22 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
 
             String clsName = qry.query().queryClassName();
 
+            // TODO IGNITE-3478.
+            final ClusterNode mvccCrd;
+            final MvccCoordinatorVersion mvccVer;
+
+            if (cctx.mvccEnabled()) {
+                mvccCrd = cctx.shared().coordinators().coordinator(cctx.shared().exchange().readyAffinityVersion());
+
+                IgniteInternalFuture<MvccCoordinatorVersion> fut0 = cctx.shared().coordinators().requestQueryCounter(mvccCrd);
+
+                mvccVer = fut0.get();
+            }
+            else {
+                mvccCrd = null;
+                mvccVer = null;
+            }
+
             final GridCacheQueryRequest req = new GridCacheQueryRequest(
                 cctx.cacheId(),
                 reqId,
@@ -552,6 +570,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 qry.query().subjectId(),
                 qry.query().taskHash(),
                 queryTopologyVersion(),
+                mvccVer,
                 // Force deployment anyway if scan query is used.
                 cctx.deploymentEnabled() || (qry.query().scanFilter() != null && cctx.gridDeploy().enabled()));
 
@@ -564,6 +583,9 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
             fut.listen(new CI1<IgniteInternalFuture<?>>() {
                 @Override public void apply(IgniteInternalFuture<?> fut) {
                     cctx.io().removeOrderedHandler(false, topic);
+
+                    if (mvccCrd != null)
+                        cctx.shared().coordinators().ackQueryDone(mvccCrd, mvccVer.counter());
                 }
             });
 
@@ -750,6 +772,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 qry.query().subjectId(),
                 qry.query().taskHash(),
                 queryTopologyVersion(),
+                null,
                 cctx.deploymentEnabled());
 
             addQueryFuture(req.id(), fut);

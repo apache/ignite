@@ -72,9 +72,13 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  * TODO IGNITE-3478: extend tests to use single/mutiple nodes, all tx types.
  */
+@SuppressWarnings("unchecked")
 public class CacheMvccTransactionsTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
+
+    /** */
+    private static final long DEFAULT_TEST_TIME = 30_000;
 
     /** */
     private static final int SRVS = 4;
@@ -99,6 +103,11 @@ public class CacheMvccTransactionsTest extends GridCommonAbstractTest {
         cfg.setClientMode(client);
 
         return cfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected long getTestTimeout() {
+        return DEFAULT_TEST_TIME + 60_000;
     }
 
     /** {@inheritDoc} */
@@ -305,7 +314,7 @@ public class CacheMvccTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testMyUpdatesAreVisible() throws Exception {
+    public void testThreadUpdatesAreVisibleForThisThread() throws Exception {
         final Ignite ignite = startGrid(0);
 
         final IgniteCache<Object, Object> cache = ignite.createCache(cacheConfiguration(PARTITIONED, FULL_SYNC, 0, 1));
@@ -446,7 +455,7 @@ public class CacheMvccTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testPartialCommitGetAll() throws Exception {
+    public void testPartialCommitResultNoVisible() throws Exception {
         testSpi = true;
 
         startGrids(2);
@@ -527,11 +536,37 @@ public class CacheMvccTransactionsTest extends GridCommonAbstractTest {
                 assertEquals(val, res.get(key1));
                 assertEquals(val, res.get(key2));
 
+                res = new HashMap<>();
+
+                for (IgniteCache.Entry<Object, Object> e : cache) {
+                    if (key1.equals(e.getKey()) || key2.equals(e.getKey())) {
+                        Object old = res.put(e.getKey(), e.getValue());
+
+                        assertNull(old);
+                    }
+                }
+
+                assertEquals(val, res.get(key1));
+                assertEquals(val, res.get(key2));
+
                 clientSpi.stopBlock(true);
 
                 fut.get();
 
                 res = cache.getAll(keys);
+
+                assertEquals(newVal, res.get(key1));
+                assertEquals(newVal, res.get(key2));
+
+                res = new HashMap<>();
+
+                for (IgniteCache.Entry<Object, Object> e : cache) {
+                    if (key1.equals(e.getKey()) || key2.equals(e.getKey())) {
+                        Object old = res.put(e.getKey(), e.getValue());
+
+                        assertNull(old);
+                    }
+                }
 
                 assertEquals(newVal, res.get(key1));
                 assertEquals(newVal, res.get(key2));
@@ -547,20 +582,61 @@ public class CacheMvccTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testPutAllGetAll() throws Exception {
-        final int RANGE = 20;
+    public void testPutAllGetAll_SingleNode() throws Exception {
+        putAllGetAll(1, 0, 0, 64);
+    }
 
-        final long time = 10_000;
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutAllGetAll_SingleNode_SinglePartition() throws Exception {
+        putAllGetAll(1, 0, 0, 1);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutAllGetAll_ClientServer_Backups0() throws Exception {
+        putAllGetAll(4, 2, 0, 64);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutAllGetAll_ClientServer_Backups1() throws Exception {
+        putAllGetAll(4, 2, 1, 64);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutAllGetAll_ClientServer_Backups2() throws Exception {
+        putAllGetAll(4, 2, 2, 64);
+    }
+
+    /**
+     * @param srvs Number of server nodes.
+     * @param clients Number of client nodes.
+     * @param cacheBackups Number of cache backups.
+     * @param cacheParts Number of cache partitions.
+     * @throws Exception If failed.
+     */
+    private void putAllGetAll(
+        final int srvs,
+        final int clients,
+        int cacheBackups,
+        int cacheParts
+    ) throws Exception
+    {
+        final int RANGE = 20;
 
         final int writers = 4;
 
         final int readers = 4;
 
-        GridInClosure3<Integer, IgniteCache<Object, Object>, AtomicBoolean> writer =
-            new GridInClosure3<Integer, IgniteCache<Object, Object>, AtomicBoolean>() {
-            @Override public void apply(Integer idx, IgniteCache<Object, Object> cache, AtomicBoolean stop) {
-                final IgniteTransactions txs = cache.unwrap(Ignite.class).transactions();
-
+        GridInClosure3<Integer, List<IgniteCache>, AtomicBoolean> writer =
+            new GridInClosure3<Integer, List<IgniteCache>, AtomicBoolean>() {
+            @Override public void apply(Integer idx, List<IgniteCache> caches, AtomicBoolean stop) {
                 ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
                 int min = idx * RANGE;
@@ -572,14 +648,36 @@ public class CacheMvccTransactionsTest extends GridCommonAbstractTest {
 
                 int v = idx * 1_000_000;
 
+                boolean updated = false;
+
                 while (!stop.get()) {
                     while (map.size() < RANGE)
                         map.put(rnd.nextInt(min, max), v);
 
+                    IgniteCache<Integer, Integer> cache = randomCache(caches, rnd);
+
+                    IgniteTransactions txs = cache.unwrap(Ignite.class).transactions();
+
                     try (Transaction tx = txs.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                        if (updated && rnd.nextBoolean()) {
+                            Map<Integer, Integer> res = cache.getAll(map.keySet());
+
+                            for (Integer k : map.keySet())
+                                assertEquals(v - 1, (Object)res.get(k));
+                        }
+
                         cache.putAll(map);
 
                         tx.commit();
+
+                        updated = true;
+                    }
+
+                    if (rnd.nextBoolean()) {
+                        Map<Integer, Integer> res = cache.getAll(map.keySet());
+
+                        for (Integer k : map.keySet())
+                            assertEquals(v, (Object)res.get(k));
                     }
 
                     map.clear();
@@ -591,17 +689,14 @@ public class CacheMvccTransactionsTest extends GridCommonAbstractTest {
             }
         };
 
-        GridInClosure3<Integer, IgniteCache<Object, Object>, AtomicBoolean> reader =
-            new GridInClosure3<Integer, IgniteCache<Object, Object>, AtomicBoolean>() {
-                @Override public void apply(Integer idx, IgniteCache<Object, Object> cache, AtomicBoolean stop) {
+        GridInClosure3<Integer, List<IgniteCache>, AtomicBoolean> reader =
+            new GridInClosure3<Integer, List<IgniteCache>, AtomicBoolean>() {
+                @Override public void apply(Integer idx, List<IgniteCache> caches, AtomicBoolean stop) {
                     ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
                     Set<Integer> keys = new LinkedHashSet<>();
 
-                    Map<Integer, Set<Integer>> uniqueReads = new HashMap<>();
-
-                    for (int i = 0; i < writers; i++)
-                        uniqueReads.put(i, new HashSet<Integer>());
+                    Map<Integer, Integer> readVals = new HashMap<>();
 
                     while (!stop.get()) {
                         int range = rnd.nextInt(0, writers);
@@ -612,22 +707,29 @@ public class CacheMvccTransactionsTest extends GridCommonAbstractTest {
                         while (keys.size() < RANGE)
                             keys.add(rnd.nextInt(min, max));
 
-                        Map<Object, Object> map = cache.getAll(keys);
+                        IgniteCache<Integer, Integer> cache = randomCache(caches, rnd);
+
+                        Map<Integer, Integer> map = cache.getAll(keys);
 
                         assertTrue("Invalid map size: " + map.size(),
                             map.isEmpty() || map.size() == RANGE);
 
                         Integer val0 = null;
 
-                        for (Map.Entry<Object, Object> e: map.entrySet()) {
-                            Object val = e.getValue();
+                        for (Map.Entry<Integer, Integer> e: map.entrySet()) {
+                            Integer val = e.getValue();
 
                             assertNotNull(val);
 
                             if (val0 == null) {
-                                uniqueReads.get(range).add((Integer)val);
+                                Integer readVal = readVals.get(range);
 
-                                val0 = (Integer)val;
+                                if (readVal != null)
+                                    assertTrue(readVal <= val);
+
+                                readVals.put(range, val);
+
+                                val0 = val;
                             }
                             else {
                                 if (!F.eq(val0, val)) {
@@ -640,26 +742,83 @@ public class CacheMvccTransactionsTest extends GridCommonAbstractTest {
 
                         keys.clear();
                     }
-
-                    info("Reader done, unique reads: ");
-
-                    for (Map.Entry<Integer, Set<Integer>> e : uniqueReads.entrySet())
-                        info("Range [idx=" + e.getKey() + ", uniqueReads=" + e.getValue().size() + ']');
                 }
             };
 
-        readWriteTest(time, writers, readers, null, writer, reader);
+        readWriteTest(srvs,
+            clients,
+            cacheBackups,
+            cacheParts,
+            writers,
+            readers,
+            DEFAULT_TEST_TIME,
+            null,
+            writer,
+            reader);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testAccountsTxGetAll() throws Exception {
+    public void testAccountsTxGetAll_SingleNode() throws Exception {
+        accountsTxGetAll(1, 0, 0, 64, ReadMode.GET_ALL);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testAccountsTxGetAll_SingleNode_SinglePartition() throws Exception {
+        accountsTxGetAll(1, 0, 0, 1, ReadMode.GET_ALL);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testAccountsTxGetAll_ClientServer_Backups0() throws Exception {
+        accountsTxGetAll(4, 2, 0, 64, ReadMode.GET_ALL);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testAccountsTxGetAll_ClientServer_Backups1() throws Exception {
+        accountsTxGetAll(4, 2, 1, 64, ReadMode.GET_ALL);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testAccountsTxGetAll_ClientServer_Backups2() throws Exception {
+        accountsTxGetAll(4, 2, 2, 64, ReadMode.GET_ALL);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testAccountsTxScan_SingleNode_SinglePartition() throws Exception {
+        accountsTxGetAll(1, 0, 0, 1, ReadMode.SCAN);
+    }
+
+    /**
+     * @param srvs Number of server nodes.
+     * @param clients Number of client nodes.
+     * @param cacheBackups Number of cache backups.
+     * @param cacheParts Number of cache partitions.
+     * @param readMode Read mode.
+     * @throws Exception If failed.
+     */
+    private void accountsTxGetAll(
+        final int srvs,
+        final int clients,
+        int cacheBackups,
+        int cacheParts,
+        final ReadMode readMode
+    )
+        throws Exception
+    {
         final int ACCOUNTS = 20;
 
         final int ACCOUNT_START_VAL = 1000;
-
-        final long time = 10_000;
 
         final int writers = 4;
 
@@ -669,10 +828,10 @@ public class CacheMvccTransactionsTest extends GridCommonAbstractTest {
             @Override public void apply(IgniteCache<Object, Object> cache) {
                 final IgniteTransactions txs = cache.unwrap(Ignite.class).transactions();
 
-                Map<Integer, Account> accounts = new HashMap<>();
+                Map<Integer, MvccTestAccount> accounts = new HashMap<>();
 
                 for (int i = 0; i < ACCOUNTS; i++)
-                    accounts.put(i, new Account(ACCOUNT_START_VAL));
+                    accounts.put(i, new MvccTestAccount(ACCOUNT_START_VAL, 1));
 
                 try (Transaction tx = txs.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                     cache.putAll(accounts);
@@ -682,16 +841,17 @@ public class CacheMvccTransactionsTest extends GridCommonAbstractTest {
             }
         };
 
-        GridInClosure3<Integer, IgniteCache<Object, Object>, AtomicBoolean> writer =
-            new GridInClosure3<Integer, IgniteCache<Object, Object>, AtomicBoolean>() {
-                @Override public void apply(Integer idx, IgniteCache<Object, Object> cache, AtomicBoolean stop) {
-                    final IgniteTransactions txs = cache.unwrap(Ignite.class).transactions();
-
+        GridInClosure3<Integer, List<IgniteCache>, AtomicBoolean> writer =
+            new GridInClosure3<Integer, List<IgniteCache>, AtomicBoolean>() {
+                @Override public void apply(Integer idx, List<IgniteCache> caches, AtomicBoolean stop) {
                     ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
                     int cnt = 0;
 
                     while (!stop.get()) {
+                        IgniteCache<Integer, MvccTestAccount> cache = randomCache(caches, rnd);
+                        IgniteTransactions txs = cache.unwrap(Ignite.class).transactions();
+
                         cnt++;
 
                         Integer id1 = rnd.nextInt(ACCOUNTS);
@@ -700,69 +860,111 @@ public class CacheMvccTransactionsTest extends GridCommonAbstractTest {
                         while (id1.equals(id2))
                             id2 = rnd.nextInt(ACCOUNTS);
 
+                        TreeSet<Integer> keys = new TreeSet<>();
+
+                        keys.add(id1);
+                        keys.add(id2);
+
+                        Integer cntr1;
+                        Integer cntr2;
+
                         try (Transaction tx = txs.txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                            Account a1;
-                            Account a2;
+                            MvccTestAccount a1;
+                            MvccTestAccount a2;
 
-                            TreeSet<Integer> keys = new TreeSet<>();
+                            Map<Integer, MvccTestAccount> accounts = cache.getAll(keys);
 
-                            keys.add(id1);
-                            keys.add(id2);
-
-                            Map<Object, Object> accounts = cache.getAll(keys);
-
-                            a1 = (Account)accounts.get(id1);
-                            a2 = (Account)accounts.get(id2);
+                            a1 = accounts.get(id1);
+                            a2 = accounts.get(id2);
 
                             assertNotNull(a1);
                             assertNotNull(a2);
 
-                            cache.put(id1, new Account(a1.val + 1));
-                            cache.put(id2, new Account(a2.val - 1));
+                            cntr1 = a1.updateCnt + 1;
+                            cntr2 = a2.updateCnt + 1;
+
+                            cache.put(id1, new MvccTestAccount(a1.val + 1, cntr1));
+                            cache.put(id2, new MvccTestAccount(a2.val - 1, cntr2));
 
                             tx.commit();
                         }
+
+                        Map<Integer, MvccTestAccount> accounts = cache.getAll(keys);
+
+                        MvccTestAccount a1 = accounts.get(id1);
+                        MvccTestAccount a2 = accounts.get(id2);
+
+                        assertNotNull(a1);
+                        assertNotNull(a2);
+
+                        assertTrue(a1.updateCnt >= cntr1);
+                        assertTrue(a2.updateCnt >= cntr2);
                     }
 
                     info("Writer finished, updates: " + cnt);
                 }
             };
 
-        GridInClosure3<Integer, IgniteCache<Object, Object>, AtomicBoolean> reader =
-            new GridInClosure3<Integer, IgniteCache<Object, Object>, AtomicBoolean>() {
-                @Override public void apply(Integer idx, IgniteCache<Object, Object> cache, AtomicBoolean stop) {
+        GridInClosure3<Integer, List<IgniteCache>, AtomicBoolean> reader =
+            new GridInClosure3<Integer, List<IgniteCache>, AtomicBoolean>() {
+                @Override public void apply(Integer idx, List<IgniteCache> caches, AtomicBoolean stop) {
                     ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
                     Set<Integer> keys = new LinkedHashSet<>();
+
+                    Map<Integer, Integer> lastUpdateCntrs = new HashMap<>();
 
                     while (!stop.get()) {
                         while (keys.size() < ACCOUNTS)
                             keys.add(rnd.nextInt(ACCOUNTS));
 
-                        Map<Object, Object> accounts = cache.getAll(keys);
+                        IgniteCache<Integer, MvccTestAccount> cache = randomCache(caches, rnd);
+
+                        Map<Integer, MvccTestAccount> accounts;
+
+                        if (readMode == ReadMode.SCAN) {
+                            accounts = new HashMap<>();
+
+                            for (IgniteCache.Entry<Integer, MvccTestAccount> e : cache) {
+                                MvccTestAccount old = accounts.put(e.getKey(), e.getValue());
+
+                                assertNull(old);
+                            }
+                        }
+                        else
+                            accounts = cache.getAll(keys);
 
                         assertEquals(ACCOUNTS, accounts.size());
 
                         int sum = 0;
 
                         for (int i = 0; i < ACCOUNTS; i++) {
-                            Account account = (Account)accounts.get(i);
+                            MvccTestAccount account = accounts.get(i);
 
                             assertNotNull(account);
 
                             sum += account.val;
+
+                            Integer cntr = lastUpdateCntrs.get(i);
+
+                            if (cntr != null)
+                                assertTrue(cntr <= account.updateCnt);
+
+                            lastUpdateCntrs.put(i, cntr);
                         }
 
                         assertEquals(ACCOUNTS * ACCOUNT_START_VAL, sum);
                     }
 
                     if (idx == 0) {
-                        Map<Object, Object> accounts = cache.getAll(keys);
+                        IgniteCache<Integer, MvccTestAccount> cache = randomCache(caches, rnd);
+
+                        Map<Integer, MvccTestAccount> accounts = cache.getAll(keys);
 
                         int sum = 0;
 
                         for (int i = 0; i < ACCOUNTS; i++) {
-                            Account account = (Account)accounts.get(i);
+                            MvccTestAccount account = accounts.get(i);
 
                             info("Account [id=" + i + ", val=" + account.val + ']');
 
@@ -774,10 +976,195 @@ public class CacheMvccTransactionsTest extends GridCommonAbstractTest {
                 }
             };
 
-        readWriteTest(time, writers, readers, init, writer, reader);
+        readWriteTest(srvs,
+            clients,
+            cacheBackups,
+            cacheParts,
+            writers,
+            readers,
+            DEFAULT_TEST_TIME,
+            init,
+            writer,
+            reader);
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testUpdate_N_Objects_SingleNode_SinglePartition() throws Exception {
+        int[] nValues = {3, 5, 10};
+
+        for (int n : nValues) {
+            updateNObjectsTest(n, 1, 0, 0, 1, 10_000);
+
+            afterTest();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testUpdate_N_Objects_SingleNode() throws Exception {
+        int[] nValues = {3, 5, 10};
+
+        for (int n : nValues) {
+            updateNObjectsTest(n, 1, 0, 0, 64, 10_000);
+
+            afterTest();
+        }
+    }
+
+    /**
+     * @param N Number of object to update in single transaction.
+     * @param srvs Number of server nodes.
+     * @param clients Number of client nodes.
+     * @param cacheBackups Number of cache backups.
+     * @param cacheParts Number of cache partitions.
+     * @param time Test time.
+     * @throws Exception If failed.
+     */
+    private void updateNObjectsTest(
+        final int N,
+        final int srvs,
+        final int clients,
+        int cacheBackups,
+        int cacheParts,
+        long time
+    )
+        throws Exception
+    {
+        final int TOTAL = 20;
+
+        assert N <= TOTAL;
+
+        info("updateNObjectsTest [n=" + N + ", total=" + TOTAL + ']');
+
+        final int writers = 4;
+
+        final int readers = 4;
+
+        final IgniteInClosure<IgniteCache<Object, Object>> init = new IgniteInClosure<IgniteCache<Object, Object>>() {
+            @Override public void apply(IgniteCache<Object, Object> cache) {
+                final IgniteTransactions txs = cache.unwrap(Ignite.class).transactions();
+
+                Map<Integer, Integer> vals = new HashMap<>();
+
+                for (int i = 0; i < TOTAL; i++)
+                    vals.put(i, N);
+
+                try (Transaction tx = txs.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                    cache.putAll(vals);
+
+                    tx.commit();
+                }
+            }
+        };
+
+        GridInClosure3<Integer, List<IgniteCache>, AtomicBoolean> writer =
+            new GridInClosure3<Integer, List<IgniteCache>, AtomicBoolean>() {
+                @Override public void apply(Integer idx, List<IgniteCache> caches, AtomicBoolean stop) {
+                    ThreadLocalRandom rnd = ThreadLocalRandom.current();
+
+                    int cnt = 0;
+
+                    while (!stop.get()) {
+                        IgniteCache<Integer, Integer> cache = randomCache(caches, rnd);
+                        IgniteTransactions txs = cache.unwrap(Ignite.class).transactions();
+
+                        TreeSet<Integer> keys = new TreeSet<>();
+
+                        while (keys.size() < N)
+                            keys.add(rnd.nextInt(TOTAL));
+
+                        try (Transaction tx = txs.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                            Map<Integer, Integer> curVals = cache.getAll(keys);
+
+                            assertEquals(N, curVals.size());
+
+                            Map<Integer, Integer> newVals = new HashMap<>();
+
+                            for (Map.Entry<Integer, Integer> e : curVals.entrySet())
+                                newVals.put(e.getKey(), e.getValue() + 1);
+
+                            cache.putAll(newVals);
+
+                            tx.commit();
+                        }
+
+                        cnt++;
+                    }
+
+                    info("Writer finished, updates: " + cnt);
+                }
+            };
+
+        GridInClosure3<Integer, List<IgniteCache>, AtomicBoolean> reader =
+            new GridInClosure3<Integer, List<IgniteCache>, AtomicBoolean>() {
+                @Override public void apply(Integer idx, List<IgniteCache> caches, AtomicBoolean stop) {
+                    ThreadLocalRandom rnd = ThreadLocalRandom.current();
+
+                    Set<Integer> keys = new LinkedHashSet<>();
+
+                    while (!stop.get()) {
+                        while (keys.size() < TOTAL)
+                            keys.add(rnd.nextInt(TOTAL));
+
+                        IgniteCache<Integer, Integer> cache = randomCache(caches, rnd);
+
+                        Map<Integer, Integer> vals = cache.getAll(keys);
+
+                        assertEquals(TOTAL, vals.size());
+
+                        int sum = 0;
+
+                        for (int i = 0; i < TOTAL; i++) {
+                            Integer val = vals.get(i);
+
+                            assertNotNull(val);
+
+                            sum += val;
+                        }
+
+                        assertTrue(sum % N == 0);
+                    }
+
+                    if (idx == 0) {
+                        IgniteCache<Integer, Integer> cache = randomCache(caches, rnd);
+
+                        Map<Integer, Integer> vals = cache.getAll(keys);
+
+                        int sum = 0;
+
+                        for (int i = 0; i < TOTAL; i++) {
+                            Integer val = vals.get(i);
+
+                            info("Value [id=" + i + ", val=" + val + ']');
+
+                            sum += val;
+                        }
+
+                        info("Sum [sum=" + sum + ", mod=" + sum % N + ']');
+                    }
+                }
+            };
+
+        readWriteTest(srvs,
+            clients,
+            cacheBackups,
+            cacheParts,
+            writers,
+            readers,
+            time,
+            init,
+            writer,
+            reader);
+    }
+
+    /**
+     * @param srvs Number of server nodes.
+     * @param clients Number of client nodes.
+     * @param cacheBackups Number of cache backups.
+     * @param cacheParts Number of cache partitions.
      * @param time Test time.
      * @param writers Number of writers.
      * @param readers Number of readers.
@@ -786,18 +1173,40 @@ public class CacheMvccTransactionsTest extends GridCommonAbstractTest {
      * @param reader Readers threads closure.
      * @throws Exception If failed.
      */
-    private void readWriteTest(final long time,
+    private void readWriteTest(
+        final int srvs,
+        final int clients,
+        int cacheBackups,
+        int cacheParts,
         final int writers,
         final int readers,
+        final long time,
         IgniteInClosure<IgniteCache<Object, Object>> init,
-        final GridInClosure3<Integer, IgniteCache<Object, Object>, AtomicBoolean> writer,
-        final GridInClosure3<Integer, IgniteCache<Object, Object>, AtomicBoolean> reader) throws Exception {
-        final Ignite ignite = startGrid(0);
+        final GridInClosure3<Integer, List<IgniteCache>, AtomicBoolean> writer,
+        final GridInClosure3<Integer, List<IgniteCache>, AtomicBoolean> reader) throws Exception {
+        Ignite srv0 = startGridsMultiThreaded(srvs);
 
-        final IgniteCache<Object, Object> cache = ignite.createCache(cacheConfiguration(PARTITIONED, FULL_SYNC, 0, 1));
+        if (clients > 0) {
+            client = true;
+
+            startGridsMultiThreaded(srvs, clients);
+        }
+
+        IgniteCache<Object, Object> cache = srv0.createCache(cacheConfiguration(PARTITIONED,
+            FULL_SYNC,
+            cacheBackups,
+            cacheParts));
 
         if (init != null)
             init.apply(cache);
+
+        final List<IgniteCache> caches = new ArrayList<>(srvs + clients);
+
+        for (int i = 0; i < srvs + clients; i++) {
+            Ignite node = grid(i);
+
+            caches.add(node.cache(cache.getName()));
+        }
 
         final long stopTime = U.currentTimeMillis() + time;
 
@@ -811,7 +1220,7 @@ public class CacheMvccTransactionsTest extends GridCommonAbstractTest {
                     try {
                         int idx = writerIdx.getAndIncrement();
 
-                        writer.apply(idx, cache, stop);
+                        writer.apply(idx, caches, stop);
                     }
                     catch (Throwable e) {
                         error("Unexpected error: " + e, e);
@@ -832,7 +1241,7 @@ public class CacheMvccTransactionsTest extends GridCommonAbstractTest {
                     try {
                         int idx = readerIdx.getAndIncrement();
 
-                        reader.apply(idx, cache, stop);
+                        reader.apply(idx, caches, stop);
                     }
                     catch (Throwable e) {
                         error("Unexpected error: " + e, e);
@@ -953,29 +1362,49 @@ public class CacheMvccTransactionsTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @param caches Caches.
+     * @param rnd Random.
+     * @return Random cache.
+     */
+    private static <K, V> IgniteCache<K, V> randomCache(List<IgniteCache> caches, ThreadLocalRandom rnd) {
+        return caches.size() > 1 ? caches.get(rnd.nextInt(caches.size())): caches.get(0);
+    }
+
+    /**
      *
      */
-    static class Account {
+    static class MvccTestAccount {
         /** */
         private final int val;
 
-        /**
-         * @param val Value.
-         */
-        public Account(int val) {
-            this.val = val;
-        }
+        /** */
+        private final int updateCnt;
 
         /**
-         * @return Value.
+         * @param val Value.
+         * @param updateCnt Updates counter.
          */
-        public int value() {
-            return val;
+        MvccTestAccount(int val, int updateCnt) {
+            assert updateCnt > 0;
+
+            this.val = val;
+            this.updateCnt = updateCnt;
         }
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(Account.class, this);
+            return S.toString(MvccTestAccount.class, this);
         }
+    }
+
+    /**
+     *
+     */
+    enum ReadMode {
+        /** */
+        GET_ALL,
+
+        /** */
+        SCAN
     }
 }

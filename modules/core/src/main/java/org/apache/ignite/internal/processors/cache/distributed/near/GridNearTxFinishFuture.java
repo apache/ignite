@@ -393,14 +393,6 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
     @SuppressWarnings("ForLoopReplaceableByForEach")
     /** {@inheritDoc} */
     public void finish(boolean commit) {
-        if (!commit && tx.mvccCoordinatorVersion() != null) {
-            ClusterNode crd = cctx.coordinators().coordinator(tx.topologyVersion());
-
-            assert crd != null;
-
-            cctx.coordinators().ackTxRollback(crd, tx.nearXidVersion());
-        }
-
         if (tx.onNeedCheckBackup()) {
             assert tx.onePhaseCommit();
 
@@ -411,6 +403,14 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
             markInitialized();
 
             return;
+        }
+
+        if (!commit && tx.mvccCoordinatorVersion() != null) {
+            ClusterNode crd = cctx.coordinators().coordinator(tx.topologyVersion());
+
+            assert crd != null;
+
+            cctx.coordinators().ackTxRollback(crd, tx.nearXidVersion());
         }
 
         try {
@@ -437,8 +437,11 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
                             finish(1, mapping, commit);
                         }
                     }
-                    else
+                    else {
+                        assert !hasFutures() || waitTxs != null : futures();
+
                         finish(mappings.mappings(), commit);
+                    }
                 }
 
                 markInitialized();
@@ -692,8 +695,6 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
      * @param commit Commit flag.
      */
     private void finish(Iterable<GridDistributedTxMapping> mappings, boolean commit) {
-        assert !hasFutures() : futures();
-
         int miniId = 0;
 
         // Create mini futures.

@@ -826,7 +826,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
 
         /** {@inheritDoc} */
-        @Override public long mvccUpdateCounter() {
+        @Override public long mvccCounter() {
             return 0; // TODO IGNITE-3478.
         }
 
@@ -1321,6 +1321,17 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
             if (delegate != null)
                 return delegate.cursor();
+
+            return EMPTY_CURSOR;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridCursor<? extends CacheDataRow> mvccCursor(MvccCoordinatorVersion ver)
+            throws IgniteCheckedException {
+            CacheDataStore delegate = init0(true);
+
+            if (delegate != null)
+                return delegate.mvccCursor(ver);
 
             return EMPTY_CURSOR;
         }

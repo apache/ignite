@@ -186,7 +186,7 @@ public abstract class GridH2Row implements GridSearchRowPointer, CacheDataRow, R
     }
 
     /** {@inheritDoc} */
-    @Override public long mvccUpdateCounter() {
+    @Override public long mvccCounter() {
         throw new UnsupportedOperationException();
     }
 }

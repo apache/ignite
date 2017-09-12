@@ -240,6 +240,8 @@ public interface IgniteCacheOffheapManager {
     public int onUndeploy(ClassLoader ldr);
 
     /**
+     * TODO IGNITE-3478, review usages, pass correct version.
+     *
      * @param cacheId Cache ID.
      * @param primary Primary entries flag.
      * @param backup Backup entries flag.
@@ -250,7 +252,8 @@ public interface IgniteCacheOffheapManager {
     public GridIterator<CacheDataRow> cacheIterator(int cacheId,
         boolean primary,
         boolean backup,
-        final AffinityTopologyVersion topVer)
+        AffinityTopologyVersion topVer,
+        @Nullable MvccCoordinatorVersion mvccVer)
         throws IgniteCheckedException;
 
     /**
@@ -527,6 +530,13 @@ public interface IgniteCacheOffheapManager {
          * @throws IgniteCheckedException If failed.
          */
         public GridCursor<? extends CacheDataRow> cursor() throws IgniteCheckedException;
+
+        /**
+         * @return Data cursor.
+         * @throws IgniteCheckedException If failed.
+         */
+        public GridCursor<? extends CacheDataRow> mvccCursor(MvccCoordinatorVersion ver)
+            throws IgniteCheckedException;
 
         /**
          * @param cacheId Cache ID.

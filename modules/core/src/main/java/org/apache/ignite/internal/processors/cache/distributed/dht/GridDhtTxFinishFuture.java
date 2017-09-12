@@ -302,6 +302,8 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
             IgniteInternalFuture fut = cctx.coordinators().waitTxsFuture(crd, waitTxs);
 
             add(fut);
+
+            sync = true;
         }
 
         markInitialized();

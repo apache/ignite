@@ -37,9 +37,6 @@ public class CoordinatorTxCounterRequest implements MvccCoordinatorMessage {
     /** */
     private GridCacheVersion txId;
 
-    /** */
-    private long topVer;
-
     /**
      * Required by {@link GridIoMessageFactory}.
      */
@@ -51,21 +48,16 @@ public class CoordinatorTxCounterRequest implements MvccCoordinatorMessage {
      * @param futId Future ID.
      * @param txId Transaction ID.
      */
-    CoordinatorTxCounterRequest(long futId, GridCacheVersion txId, long topVer) {
+    CoordinatorTxCounterRequest(long futId, GridCacheVersion txId) {
         assert txId != null;
 
         this.futId = futId;
         this.txId = txId;
-        this.topVer = topVer;
     }
 
     /** {@inheritDoc} */
     @Override public boolean waitForCoordinatorInit() {
         return true;
-    }
-
-    public long topologyVersion() {
-        return topVer;
     }
 
     /**
@@ -101,12 +93,6 @@ public class CoordinatorTxCounterRequest implements MvccCoordinatorMessage {
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeLong("topVer", topVer))
-                    return false;
-
-                writer.incrementState();
-
-            case 2:
                 if (!writer.writeMessage("txId", txId))
                     return false;
 
@@ -134,14 +120,6 @@ public class CoordinatorTxCounterRequest implements MvccCoordinatorMessage {
                 reader.incrementState();
 
             case 1:
-                topVer = reader.readLong("topVer");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 2:
                 txId = reader.readMessage("txId");
 
                 if (!reader.isLastRead())
@@ -161,7 +139,7 @@ public class CoordinatorTxCounterRequest implements MvccCoordinatorMessage {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 3;
+        return 2;
     }
 
     /** {@inheritDoc} */
