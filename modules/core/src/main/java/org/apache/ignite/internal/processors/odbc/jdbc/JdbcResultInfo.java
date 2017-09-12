@@ -29,7 +29,7 @@ public class JdbcResultInfo implements JdbcRawBinarylizable {
     /** Query flag. */
     private boolean isQuery;
 
-    /** Update count. */
+    /** Update count or queryId. When isQuery == tue the member holds queryId, otherwise - update count. */
     private long updCntOrQryId;
 
     /**
@@ -38,7 +38,6 @@ public class JdbcResultInfo implements JdbcRawBinarylizable {
     JdbcResultInfo() {
         // No-op.
     }
-
 
     /**
      * @param isQuery Query flag.
