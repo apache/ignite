@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
-
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.query.QueryCursor;
@@ -48,7 +47,13 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 
-import static org.apache.ignite.internal.processors.odbc.odbc.OdbcRequest.*;
+import static org.apache.ignite.internal.processors.odbc.odbc.OdbcRequest.META_COLS;
+import static org.apache.ignite.internal.processors.odbc.odbc.OdbcRequest.META_PARAMS;
+import static org.apache.ignite.internal.processors.odbc.odbc.OdbcRequest.META_TBLS;
+import static org.apache.ignite.internal.processors.odbc.odbc.OdbcRequest.QRY_CLOSE;
+import static org.apache.ignite.internal.processors.odbc.odbc.OdbcRequest.QRY_EXEC;
+import static org.apache.ignite.internal.processors.odbc.odbc.OdbcRequest.QRY_EXEC_BATCH;
+import static org.apache.ignite.internal.processors.odbc.odbc.OdbcRequest.QRY_FETCH;
 
 /**
  * SQL query handler.
@@ -84,6 +89,9 @@ public class OdbcRequestHandler implements SqlListenerRequestHandler {
     /** Collocated flag. */
     private final boolean collocated;
 
+    /** Lazy flag. */
+    private final boolean lazy;
+
     /**
      * Constructor.
      * @param ctx Context.
@@ -93,10 +101,11 @@ public class OdbcRequestHandler implements SqlListenerRequestHandler {
      * @param enforceJoinOrder Enforce join order flag.
      * @param replicatedOnly Replicated only flag.
      * @param collocated Collocated flag.
+     * @param lazy Lazy flag.
      */
     public OdbcRequestHandler(GridKernalContext ctx, GridSpinBusyLock busyLock, int maxCursors,
-                              boolean distributedJoins, boolean enforceJoinOrder, boolean replicatedOnly,
-                              boolean collocated) {
+        boolean distributedJoins, boolean enforceJoinOrder, boolean replicatedOnly,
+        boolean collocated, boolean lazy) {
         this.ctx = ctx;
         this.busyLock = busyLock;
         this.maxCursors = maxCursors;
@@ -104,6 +113,7 @@ public class OdbcRequestHandler implements SqlListenerRequestHandler {
         this.enforceJoinOrder = enforceJoinOrder;
         this.replicatedOnly = replicatedOnly;
         this.collocated = collocated;
+        this.lazy = lazy;
 
         log = ctx.log(getClass());
     }
@@ -160,6 +170,28 @@ public class OdbcRequestHandler implements SqlListenerRequestHandler {
     }
 
     /**
+     * Make query considering handler configuration.
+     * @param schema Schema.
+     * @param sql SQL request.
+     * @param args Arguments.
+     * @return Query instance.
+     */
+    private SqlFieldsQuery makeQuery(String schema, String sql, Object[] args) {
+        SqlFieldsQuery qry = new SqlFieldsQuery(sql);
+
+        qry.setArgs(args);
+
+        qry.setDistributedJoins(distributedJoins);
+        qry.setEnforceJoinOrder(enforceJoinOrder);
+        qry.setReplicatedOnly(replicatedOnly);
+        qry.setCollocated(collocated);
+        qry.setLazy(lazy);
+        qry.setSchema(schema);
+
+        return qry;
+    }
+
+    /**
      * {@link OdbcQueryExecuteRequest} command handler.
      *
      * @param req Execute query request.
@@ -182,23 +214,23 @@ public class OdbcRequestHandler implements SqlListenerRequestHandler {
                 log.debug("ODBC query parsed [reqId=" + req.requestId() + ", original=" + req.sqlQuery() +
                     ", parsed=" + sql + ']');
 
-            SqlFieldsQuery qry = new SqlFieldsQuery(sql);
+            SqlFieldsQuery qry = makeQuery(req.schema(), sql, req.arguments());
 
-            qry.setArgs(req.arguments());
+            QueryCursorImpl<List<?>> qryCur = (QueryCursorImpl<List<?>>)ctx.query().querySqlFieldsNoCache(qry, true);
 
-            qry.setDistributedJoins(distributedJoins);
-            qry.setEnforceJoinOrder(enforceJoinOrder);
-            qry.setReplicatedOnly(replicatedOnly);
-            qry.setCollocated(collocated);
-            qry.setSchema(req.schema());
+            long rowsAffected = 0;
 
-            QueryCursor qryCur = ctx.query().querySqlFieldsNoCache(qry, true);
+            if (!qryCur.isQuery()) {
+                rowsAffected = getRowsAffected(qryCur);
 
-            qryCursors.put(qryId, new IgniteBiTuple<QueryCursor, Iterator>(qryCur, null));
+                qryCur.close();
+            }
+            else
+                qryCursors.put(qryId, new IgniteBiTuple<QueryCursor, Iterator>(qryCur, null));
 
             List<?> fieldsMeta = ((QueryCursorImpl) qryCur).fieldsMeta();
 
-            OdbcQueryExecuteResult res = new OdbcQueryExecuteResult(qryId, convertMetadata(fieldsMeta));
+            OdbcQueryExecuteResult res = new OdbcQueryExecuteResult(qryId, convertMetadata(fieldsMeta), rowsAffected);
 
             return new OdbcResponse(res);
         }
@@ -228,11 +260,7 @@ public class OdbcRequestHandler implements SqlListenerRequestHandler {
                 log.debug("ODBC query parsed [reqId=" + req.requestId() + ", original=" + req.sqlQuery() +
                         ", parsed=" + sql + ']');
 
-            SqlFieldsQuery qry = new SqlFieldsQuery(sql);
-
-            qry.setDistributedJoins(distributedJoins);
-            qry.setEnforceJoinOrder(enforceJoinOrder);
-            qry.setSchema(req.schema());
+            SqlFieldsQuery qry = makeQuery(req.schema(), sql, req.arguments());
 
             Object[][] paramSet = req.arguments();
 
