@@ -203,7 +203,6 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         final File wal = new File(db, "wal");
         final File walArchive = new File(wal, "archive");
 
-
         final MockWalIteratorFactory mockItFactory = new MockWalIteratorFactory(log, PAGE_SIZE, consistentId, WAL_SEGMENTS);
         final WALIterator it = mockItFactory.iterator(wal, walArchive);
         final int cntUsingMockIter = iterateAndCount(it, false);
@@ -265,7 +264,6 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
      *
      * @param walIter iterator to count, will be closed
      * @param touchEntries access data within entries
-     *
      * @return count of records
      * @throws IgniteCheckedException if failed to iterate
      */
@@ -425,6 +423,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
     /**
      * Places records under transaction, checks its value using WAL
+     *
      * @throws Exception if failed.
      */
     public void testTxFillWalAndExtractDataRecords() throws Exception {
@@ -447,7 +446,8 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
             consistentId = U.maskForFileName(ignite0.cluster().localNode().consistentId().toString());
 
             stopGrid("node0");
-        } else
+        }
+        else
             consistentId = "127_0_0_1_47500";
 
         final String workDir = U.defaultWorkDirectory();
@@ -546,7 +546,9 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         final String consistentId;
 
         final Map<Object, Object> ctrlMap = new HashMap<>();
+        final Map<Object, Object> ctrlMapForBinaryObjects = new HashMap<>();
         final Collection<String> ctrlStringsToSearch = new HashSet<>();
+        final Collection<String> ctrlStringsForBinaryObjSearch = new HashSet<>();
         if (fillWalBeforeTest) {
             final Ignite ignite0 = startGrid("node0");
             ignite0.active(true);
@@ -567,24 +569,35 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
             final String search1 = "SomeUnexpectedStringValueAsKeyToSearch";
             ctrlStringsToSearch.add(search1);
+            ctrlStringsForBinaryObjSearch.add(search1);
             addlCache.put(search1, "SearchKey");
 
-            final TestStringContainerToBePrinted val = new TestStringContainerToBePrinted("SomeTestStringContainerToBePrintedLongLine");
+            String search2 = "SomeTestStringContainerToBePrintedLongLine";
+            final TestStringContainerToBePrinted val = new TestStringContainerToBePrinted(search2);
             ctrlStringsToSearch.add(val.toString()); //will validate original toString() was called
+            ctrlStringsForBinaryObjSearch.add(search2);
             addlCache.put("SearchValue", val);
 
-            final TestStringContainerToBePrinted key = new TestStringContainerToBePrinted("SomeTestStringContainerToBePrintedLongLine2");
+            String search3 = "SomeTestStringContainerToBePrintedLongLine2";
+            final TestStringContainerToBePrinted key = new TestStringContainerToBePrinted(search3);
             ctrlStringsToSearch.add(key.toString()); //will validate original toString() was called
+            ctrlStringsForBinaryObjSearch.add(search3); //validate only string itself
             addlCache.put(key, "SearchKey");
 
             cntEntries = addlCache.size();
             for (Cache.Entry<Object, Object> next : addlCache) {
                 ctrlMap.put(next.getKey(), next.getValue());
             }
+
+            for (Cache.Entry<Object, Object> next : addlCache) {
+                ctrlMapForBinaryObjects.put(next.getKey(), next.getValue());
+            }
+
             consistentId = U.maskForFileName(ignite0.cluster().localNode().consistentId().toString());
 
             stopGrid("node0");
-        } else
+        }
+        else
             consistentId = "127_0_0_1_47500";
 
         final String workDir = U.defaultWorkDirectory();
@@ -606,32 +619,8 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
                 if (!rmv) {
                     String msg = "Unable to remove pair from control map " + "K: [" + key + "] V: [" + val + "]";
                     log.error(msg);
-                    throw  new RuntimeException(msg);
                 }
-
-                if (key.equals(1))
-                    log.info("Key 1 integer value found: " + val);
-
-                if (key.equals(1L))
-                    log.info("Key 1 long value found: " + val);
-
-                if (val instanceof BinaryObject) {
-                    BinaryObject binaryObj = (BinaryObject)val;
-                    String binaryObjTypeName = binaryObj.type().typeName();
-                    if (TestEnum.class.getName().equals(binaryObjTypeName))
-                        return;
-                    if (TestSerializable.class.getName().equals(binaryObjTypeName))
-                        return;
-
-                    assertEquals(IndexedObject.class.getName(), binaryObjTypeName);
-                    assertEquals(binaryObj.field("iVal").toString(),
-                        binaryObj.field("jVal").toString());
-
-                    byte data[] = binaryObj.field("data");
-                    for (byte datum : data) {
-                        assert datum >= 'A' && datum <= 'A' + 10;
-                    }
-                }
+                assert !(val instanceof BinaryObject);
             }
         };
 
@@ -644,7 +633,6 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
                         iter.remove();
                         break;
                     }
-
                 }
             }
         };
@@ -653,6 +641,78 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         assert ctrlMap.isEmpty() : " Control Map is not empty after reading entries: " + ctrlMap;
         assert ctrlStringsToSearch.isEmpty() : " Control Map for strings in entries is not empty after" +
             " reading records: " + ctrlStringsToSearch;
+
+        //Validate same WAL log with flag binary objects only
+        final IgniteWalIteratorFactory keepBinFactory = new IgniteWalIteratorFactory(log, PAGE_SIZE,
+            binaryMetaWithConsId,
+            marshallerMapping,
+            true);
+        final BiConsumer<Object, Object> binObjConsumer = new BiConsumer<Object, Object>() {
+            @Override public void accept(Object key, Object val) {
+                log.info("K(KeepBinary): [" + key + ", " +
+                    (key != null ? key.getClass().getName() : "?") + "]" +
+                    " V(KeepBinary): [" + val + ", " +
+                    (val != null ? val.getClass().getName() : "?") + "]");
+                boolean rmv = remove(ctrlMapForBinaryObjects, key, val);
+                if (!rmv) {
+                    if (key instanceof BinaryObject) {
+                        BinaryObject keyBinObj = (BinaryObject)key;
+                        String binaryObjTypeName = keyBinObj.type().typeName();
+                        if (Objects.equals(TestStringContainerToBePrinted.class.getName(), binaryObjTypeName)) {
+                            String data = keyBinObj.field("data");
+                            rmv = ctrlMapForBinaryObjects.remove(new TestStringContainerToBePrinted(data)) != null;
+                        }
+                        else if (Objects.equals(TestSerializable.class.getName(), binaryObjTypeName)) {
+                            Integer iVal = keyBinObj.field("iVal");
+                            rmv = ctrlMapForBinaryObjects.remove(new TestSerializable(iVal)) != null;
+                        }
+                        else if (Objects.equals(TestEnum.class.getName(), binaryObjTypeName)) {
+                            TestEnum key1 = TestEnum.values()[keyBinObj.enumOrdinal()];
+                            rmv = ctrlMapForBinaryObjects.remove(key1) != null;
+                        }
+                    }
+                    else if (val instanceof BinaryObject) {
+                        //don't compare BO values, just remove by key
+                        rmv = ctrlMapForBinaryObjects.remove(key) != null;
+                    }
+                }
+                if (!rmv)
+                    log.error("Unable to remove pair from control map " + "K: [" + key + "] V: [" + val + "]");
+
+                if (val instanceof BinaryObject) {
+                    BinaryObject binaryObj = (BinaryObject)val;
+                    String binaryObjTypeName = binaryObj.type().typeName();
+                    if (Objects.equals(IndexedObject.class.getName(), binaryObjTypeName)) {
+                        assertEquals(binaryObj.field("iVal").toString(),
+                            binaryObj.field("jVal").toString());
+
+                        byte data[] = binaryObj.field("data");
+                        for (byte datum : data) {
+                            assert datum >= 'A' && datum <= 'A' + 10;
+                        }
+                    }
+                }
+            }
+        };
+
+        final Consumer<DataRecord> binObjToStringChecker = new Consumer<DataRecord>() {
+            @Override public void accept(DataRecord record) {
+                String strRepresentation = record.toString();
+                for (Iterator<String> iter = ctrlStringsForBinaryObjSearch.iterator(); iter.hasNext(); ) {
+                    final String next = iter.next();
+                    if (strRepresentation.contains(next)) {
+                        iter.remove();
+                        break;
+                    }
+                }
+            }
+        };
+        scanIterateAndCount(keepBinFactory, workDir, consistentId, cntEntries, 0, binObjConsumer, binObjToStringChecker);
+
+        assert ctrlMapForBinaryObjects.isEmpty() : " Control Map is not empty after reading entries: " + ctrlMapForBinaryObjects;
+        assert ctrlStringsForBinaryObjSearch.isEmpty() : " Control Map for strings in entries is not empty after" +
+            " reading records: " + ctrlStringsForBinaryObjSearch;
+
     }
 
     /**
@@ -723,14 +783,8 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
                             "; Key: " + unwrappedKeyObj +
                             "; Value: " + unwrappedValObj);
 
-                        if (cacheObjHnd != null && unwrappedKeyObj != null || unwrappedValObj != null) {
-                            try {
-                                cacheObjHnd.accept(unwrappedKeyObj, unwrappedValObj);
-                            }
-                            catch (Exception e) {
-                                e.printStackTrace();
-                            }
-                        }
+                        if (cacheObjHnd != null && unwrappedKeyObj != null || unwrappedValObj != null)
+                            cacheObjHnd.accept(unwrappedKeyObj, unwrappedValObj);
 
                         final Integer entriesUnderTx = entriesUnderTxFound.get(globalTxId);
                         entriesUnderTxFound.put(globalTxId, entriesUnderTx == null ? 1 : entriesUnderTx + 1);
@@ -751,6 +805,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
     /**
      * Represents an operation that accepts a single input argument and returns no
      * result.
+     *
      * @param <T>
      */
     private interface Consumer<T> {
@@ -765,6 +820,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
     /**
      * Represents an operation that accepts two input arguments and returns no
      * result.
+     *
      * @param <T>
      */
     private interface BiConsumer<T, U> {
@@ -775,7 +831,6 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
          */
         public void accept(T t, U u);
     }
-
 
     /** Test object for placing into grid in this test */
     private static class IndexedObject {
@@ -831,7 +886,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
     /** Enum for cover binaryObject enum save/load */
     enum TestEnum {
-        /** */ A, /** */ B, /** */ C
+        /** */A, /** */B, /** */C
     }
 
     /** Special class to test WAL reader resistance to Serializable interface */
@@ -844,6 +899,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         /**
          * Creates test object
+         *
          * @param iVal I value.
          */
         TestSerializable(int iVal) {
@@ -890,6 +946,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         /**
          * Creates test object with provided value
+         *
          * @param iVal I value.
          */
         public TestExternalizable(int iVal) {
@@ -931,13 +988,14 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         }
     }
 
-    /** Container class to test toString of data records  */
+    /** Container class to test toString of data records */
     static class TestStringContainerToBePrinted {
         /** */
         private String data;
 
         /**
          * Creates container
+         *
          * @param data value to be searched in to String
          */
         public TestStringContainerToBePrinted(String data) {

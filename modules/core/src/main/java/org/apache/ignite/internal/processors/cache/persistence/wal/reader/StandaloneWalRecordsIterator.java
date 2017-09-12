@@ -86,37 +86,44 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
      */
     private boolean workDir;
 
+    /** Keep binary. This flag disables converting of non primitive types (BinaryObjects) */
+    private boolean keepBinary;
+
     /**
      * Creates iterator in directory scan mode
-     *
-     * @param walFilesDir Wal files directory. Should already contain node consistent ID as subfolder
+     *  @param walFilesDir Wal files directory. Should already contain node consistent ID as subfolder
      * @param log Logger.
      * @param sharedCtx Shared context. Cache processor is to be configured if Cache Object Key & Data Entry is
-     * required.
+ * required.
      * @param ioFactory File I/O factory.
+     * @param keepBinary  Keep binary. This flag disables converting of non primitive types
+     * (BinaryObjects will be used instead)
      */
     StandaloneWalRecordsIterator(
         @NotNull final File walFilesDir,
         @NotNull final IgniteLogger log,
         @NotNull final GridCacheSharedContext sharedCtx,
-        @NotNull final FileIOFactory ioFactory) throws IgniteCheckedException {
+        @NotNull final FileIOFactory ioFactory,
+        final boolean keepBinary) throws IgniteCheckedException {
         super(log,
             sharedCtx,
             new RecordV1Serializer(sharedCtx, true),
             ioFactory,
             BUF_SIZE);
+        this.keepBinary = keepBinary;
         init(walFilesDir, false, null);
         advance();
     }
 
     /**
      * Creates iterator in file-by-file iteration mode. Directory
-     *
-     * @param log Logger.
+     *  @param log Logger.
      * @param sharedCtx Shared context. Cache processor is to be configured if Cache Object Key & Data Entry is
      * required.
      * @param ioFactory File I/O factory.
      * @param workDir Work directory is scanned, false - archive
+     * @param keepBinary Keep binary. This flag disables converting of non primitive types
+     * (BinaryObjects will be used instead)
      * @param walFiles Wal files.
      */
     StandaloneWalRecordsIterator(
@@ -124,6 +131,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
         @NotNull final GridCacheSharedContext sharedCtx,
         @NotNull final FileIOFactory ioFactory,
         final boolean workDir,
+        final boolean keepBinary,
         @NotNull final File... walFiles) throws IgniteCheckedException {
         super(log,
             sharedCtx,
@@ -132,6 +140,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
             BUF_SIZE);
 
         this.workDir = workDir;
+        this.keepBinary = keepBinary;
         init(null, workDir, walFiles);
         advance();
     }
@@ -342,7 +351,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
             dataEntry.partitionId(),
             dataEntry.partitionCounter(),
             fakeCacheObjCtx,
-            marshallerMappingFileStoreDir == null);
+            keepBinary || marshallerMappingFileStoreDir == null);
     }
 
     /** {@inheritDoc} */

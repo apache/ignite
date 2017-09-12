@@ -45,7 +45,6 @@ public class IgniteWalIteratorFactory {
      */
     @Nullable private File binaryMetadataFileStoreDir;
 
-
     /**
      * Folder specifying location of marshaller mapping file store. {@code null} means no specific folder is configured. <br>
      * This folder should be specified for converting data entries into BinaryObjects.
@@ -53,6 +52,8 @@ public class IgniteWalIteratorFactory {
      */
     @Nullable private File marshallerMappingFileStoreDir;
 
+    /** Keep binary. This flag disables converting of non primitive types (BinaryObjects) */
+    private boolean keepBinary;
 
     /** Factory to provide I/O interfaces for read/write operations with files */
     private final FileIOFactory ioFactory;
@@ -70,19 +71,43 @@ public class IgniteWalIteratorFactory {
      * @param marshallerMappingFileStoreDir Folder specifying location of marshaller mapping file store. Should include
      * "marshaller" subfolder. Providing {@code null} will disable unmarshall for non primitive objects,
      * BinaryObjects will be provided
+     * @param keepBinary {@code true} disables complex object unmarshall into source classes
+     */
+    public IgniteWalIteratorFactory(
+        @NotNull final IgniteLogger log,
+        final int pageSize,
+        @Nullable final File binaryMetadataFileStoreDir,
+        @Nullable final File marshallerMappingFileStoreDir,
+        final boolean keepBinary) {
+        this.log = log;
+        this.pageSize = pageSize;
+        this.binaryMetadataFileStoreDir = binaryMetadataFileStoreDir;
+        this.marshallerMappingFileStoreDir = marshallerMappingFileStoreDir;
+        this.keepBinary = keepBinary;
+        this.ioFactory = new PersistentStoreConfiguration().getFileIOFactory();
+        new MemoryConfiguration().setPageSize(pageSize); // just for validate
+    }
+
+    /**
+     * Creates WAL files iterator factory.
+     * WAL iterator supports automatic converting from CacheObjects and KeyCacheObject into BinaryObjects
+     *
+     * @param log Logger.
+     * @param pageSize Page size which was used in Ignite Persistent Data store to read WAL from, size is validated
+     * according its boundaries.
+     * @param binaryMetadataFileStoreDir folder specifying location of metadata File Store. Should include "binary_meta"
+     * subfolder and consistent ID subfolder. Note Consistent ID should be already masked and should not contain special
+     * symbols. Providing {@code null} means no specific folder is configured. <br>
+     * @param marshallerMappingFileStoreDir Folder specifying location of marshaller mapping file store. Should include
+     * "marshaller" subfolder. Providing {@code null} will disable unmarshall for non primitive objects, BinaryObjects
+     * will be provided
      */
     public IgniteWalIteratorFactory(
         @NotNull final IgniteLogger log,
         final int pageSize,
         @Nullable final File binaryMetadataFileStoreDir,
         @Nullable final File marshallerMappingFileStoreDir) {
-
-        this.log = log;
-        this.pageSize = pageSize;
-        this.binaryMetadataFileStoreDir = binaryMetadataFileStoreDir;
-        this.marshallerMappingFileStoreDir = marshallerMappingFileStoreDir;
-        this.ioFactory = new PersistentStoreConfiguration().getFileIOFactory();
-        new MemoryConfiguration().setPageSize(pageSize); // just for validate
+        this(log, pageSize, binaryMetadataFileStoreDir, marshallerMappingFileStoreDir, false);
     }
 
     /**
@@ -125,7 +150,7 @@ public class IgniteWalIteratorFactory {
      */
     public WALIterator iteratorArchiveDirectory(
         @NotNull final File walDirWithConsistentId) throws IgniteCheckedException {
-        return new StandaloneWalRecordsIterator(walDirWithConsistentId, log, prepareSharedCtx(), ioFactory);
+        return new StandaloneWalRecordsIterator(walDirWithConsistentId, log, prepareSharedCtx(), ioFactory, keepBinary);
     }
 
     /**
@@ -142,7 +167,7 @@ public class IgniteWalIteratorFactory {
      * @throws IgniteCheckedException if failed to read files
      */
     public WALIterator iteratorArchiveFiles(@NotNull final File... files) throws IgniteCheckedException {
-        return new StandaloneWalRecordsIterator(log, prepareSharedCtx(), ioFactory, false, files);
+        return new StandaloneWalRecordsIterator(log, prepareSharedCtx(), ioFactory, false, keepBinary, files);
     }
 
     /**
@@ -159,7 +184,7 @@ public class IgniteWalIteratorFactory {
      * @throws IgniteCheckedException if failed to read files
      */
     public WALIterator iteratorWorkFiles(@NotNull final File... files) throws IgniteCheckedException {
-        return new StandaloneWalRecordsIterator(log, prepareSharedCtx(), ioFactory, true, files);
+        return new StandaloneWalRecordsIterator(log, prepareSharedCtx(), ioFactory, true, keepBinary, files);
     }
 
     /**
