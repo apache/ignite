@@ -1301,9 +1301,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         H2TwoStepCachedQuery cachedQry = twoStepCache.get(cachedQryKey);
 
         if (cachedQry != null) {
-            if (qry instanceof JdbcSqlFieldsQuery && !((JdbcSqlFieldsQuery)qry).isQuery())
-                throw new IgniteSQLException("Given statement type does not match that declared by JDBC driver",
-                    IgniteQueryErrorCode.STMT_TYPE_MISMATCH);
+            checkQueryType(qry, true);
 
             GridCacheTwoStepQuery twoStepQry = cachedQry.query().copy();
             List<GridQueryFieldMetadata> meta = cachedQry.meta();
@@ -1395,9 +1393,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     cachedQry = twoStepCache.get(cachedQryKey);
 
                     if (cachedQry != null) {
-                        if (qry instanceof JdbcSqlFieldsQuery && !((JdbcSqlFieldsQuery)qry).isQuery())
-                            throw new IgniteSQLException("Given statement type does not match that declared by JDBC driver",
-                                IgniteQueryErrorCode.STMT_TYPE_MISMATCH);
+                        checkQueryType(qry, true);
 
                         twoStepQry = cachedQry.query().copy();
                         meta = cachedQry.meta();
@@ -1409,9 +1405,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                         continue;
                     }
                     else {
-                        if (qry instanceof JdbcSqlFieldsQuery && ((JdbcSqlFieldsQuery)qry).isQuery() != prepared.isQuery())
-                            throw new IgniteSQLException("Given statement type does not match that declared by JDBC driver",
-                                IgniteQueryErrorCode.STMT_TYPE_MISMATCH);
+                        checkQueryType(qry, prepared.isQuery());
 
                         if (prepared.isQuery()) {
                             bindParameters(stmt, F.asList(args));
@@ -1510,6 +1504,18 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /**
+     * Check expected statement type (when it is set by JDBC) and given statement type.
+     *
+     * @param qry Query.
+     * @param isQry {@code true} for select queries, otherwise (DML/DDL queries) {@code false}.
+     */
+    private void checkQueryType(SqlFieldsQuery qry, boolean isQry) {
+        if (qry instanceof JdbcSqlFieldsQuery && ((JdbcSqlFieldsQuery)qry).isQuery() != isQry)
+            throw new IgniteSQLException("Given statement type does not match that declared by JDBC driver",
+                IgniteQueryErrorCode.STMT_TYPE_MISMATCH);
+    }
+
+    /**
      * @param schemaName Schema name.
      * @param pageSize Page size.
      * @param partitions Partitions.
@@ -1526,7 +1532,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param cachedQry Cached query.
      * @return Cursor.
      */
-    public FieldsQueryCursor<List<?>> executeTwoStepsQuery(String schemaName, int pageSize, int partitions[],
+    private FieldsQueryCursor<List<?>> executeTwoStepsQuery(String schemaName, int pageSize, int partitions[],
         Object[] args, boolean keepBinary, boolean lazy, int timeout,
         GridQueryCancel cancel, String sqlQry, boolean enforceJoinOrder, GridCacheTwoStepQuery twoStepQry,
         List<GridQueryFieldMetadata> meta, H2TwoStepCachedQueryKey cachedQryKey, H2TwoStepCachedQuery cachedQry) {
