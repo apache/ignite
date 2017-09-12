@@ -23,9 +23,9 @@ import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 /**
  * Query cursor next page response.
  */
-class ClientCacheQueryScanCursorGetNextPageResponse extends ClientResponse {
+class ClientCacheScanQueryNextPageResponse extends ClientResponse {
     /** Cursor. */
-    private final ClientCacheQueryCursor cursor;
+    private final ClientCacheScanQueryCursor cursor;
 
     /**
      * Ctor.
@@ -33,7 +33,7 @@ class ClientCacheQueryScanCursorGetNextPageResponse extends ClientResponse {
      * @param requestId Request id.
      * @param cursor Cursor.
      */
-    ClientCacheQueryScanCursorGetNextPageResponse(int requestId, ClientCacheQueryCursor cursor) {
+    ClientCacheScanQueryNextPageResponse(int requestId, ClientCacheScanQueryCursor cursor) {
         super(requestId);
 
         assert cursor != null;

@@ -39,7 +39,7 @@ public class ClientConnectionContext implements SqlListenerConnectionContext {
     private final ClientRequestHandler handler;
 
     /** Handle registry. */
-    private final HandleRegistry handleRegistry = new HandleRegistry();
+    private final ClientResourceRegistry clientResourceRegistry = new ClientResourceRegistry();
 
     /** Kernal context. */
     private final GridKernalContext kernalCtx;
@@ -63,8 +63,8 @@ public class ClientConnectionContext implements SqlListenerConnectionContext {
      *
      * @return Handle registry.
      */
-    public HandleRegistry handleRegistry() {
-        return handleRegistry;
+    public ClientResourceRegistry handleRegistry() {
+        return clientResourceRegistry;
     }
 
     /**
@@ -104,6 +104,6 @@ public class ClientConnectionContext implements SqlListenerConnectionContext {
 
     /** {@inheritDoc} */
     @Override public void onDisconnected() {
-        handleRegistry.clean();
+        clientResourceRegistry.clean();
     }
 }

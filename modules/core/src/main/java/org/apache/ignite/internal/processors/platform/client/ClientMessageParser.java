@@ -36,7 +36,7 @@ import org.apache.ignite.internal.processors.platform.client.binary.ClientRegist
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheGetRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCachePutRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheQueryCursorCloseRequest;
-import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheQueryScanCursorGetNextPageRequest;
+import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheScanQueryNextPageRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheScanQueryRequest;
 
 /**
@@ -117,7 +117,7 @@ public class ClientMessageParser implements SqlListenerMessageParser {
                 return new ClientCacheScanQueryRequest(reader);
 
             case OP_QUERY_SCAN_CURSOR_GET_PAGE:
-                return new ClientCacheQueryScanCursorGetNextPageRequest(reader);
+                return new ClientCacheScanQueryNextPageRequest(reader);
 
             case OP_QUERY_SCAN_CURSOR_CLOSE:
                 return new ClientCacheQueryCursorCloseRequest(reader);

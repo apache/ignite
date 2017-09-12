@@ -42,7 +42,7 @@ public class ClientCacheQueryCursorCloseRequest extends ClientRequest {
 
     /** {@inheritDoc} */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
-        ClientCacheQueryCursor cur = ctx.handleRegistry().get(cursorId);
+        ClientCacheScanQueryCursor cur = ctx.handleRegistry().get(cursorId);
 
         cur.close();
         ctx.handleRegistry().release(cursorId);

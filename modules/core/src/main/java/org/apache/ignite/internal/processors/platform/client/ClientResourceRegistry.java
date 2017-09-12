@@ -24,11 +24,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * Server object handle registry.
+ * Per-connection resource registry.
  */
-public class HandleRegistry {
+public class ClientResourceRegistry {
     /** Handles. */
-    private final Map<Long, Object> handles = new ConcurrentHashMap<>();
+    private final Map<Long, Object> res = new ConcurrentHashMap<>();
 
     /** ID generator. */
     private final AtomicLong idGen = new AtomicLong();
@@ -39,10 +39,10 @@ public class HandleRegistry {
      * @param obj Object.
      * @return Handle.
      */
-    public long allocate(Object obj) {
+    public long put(Object obj) {
         long id = idGen.incrementAndGet();
 
-        handles.put(id, obj);
+        res.put(id, obj);
 
         return id;
     }
@@ -56,7 +56,7 @@ public class HandleRegistry {
      */
     @SuppressWarnings("unchecked")
     public <T> T get(long hnd) {
-        Object obj = handles.get(hnd);
+        Object obj = res.get(hnd);
 
         if (obj == null) {
             throw new IgniteException("Failed to find client object with id: " + hnd);
@@ -71,7 +71,7 @@ public class HandleRegistry {
      * @param hnd Handle.
      */
     public void release(long hnd) {
-        Object obj = handles.remove(hnd);
+        Object obj = res.remove(hnd);
 
         if (obj == null) {
             throw new IgniteException("Failed to find client object with id: " + hnd);
@@ -82,7 +82,7 @@ public class HandleRegistry {
      * Cleans all handles and closes all AutoCloseables.
      */
     public void clean() {
-        for (Map.Entry e : handles.entrySet()) {
+        for (Map.Entry e : res.entrySet()) {
             Object val = e.getValue();
 
             if (val instanceof AutoCloseable) {

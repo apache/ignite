@@ -26,7 +26,7 @@ import java.util.Iterator;
 /**
  * Query cursor holder.
   */
-class ClientCacheQueryCursor {
+class ClientCacheScanQueryCursor {
     /** Cursor. */
     private final QueryCursorEx<Cache.Entry> cursor;
 
@@ -42,7 +42,7 @@ class ClientCacheQueryCursor {
      * @param cursor Cursor.
      * @param pageSize Page size.
      */
-    ClientCacheQueryCursor(QueryCursorEx<Cache.Entry> cursor, int pageSize) {
+    ClientCacheScanQueryCursor(QueryCursorEx<Cache.Entry> cursor, int pageSize) {
         assert cursor != null;
         assert pageSize > 0;
 
