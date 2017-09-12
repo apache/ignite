@@ -35,6 +35,7 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBatchExecuteResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQuery;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteMultipleStatementsResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteResult;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcStatementType;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcStatementResults;
 
@@ -94,7 +95,7 @@ public class JdbcThinStatement implements Statement {
 
     /** {@inheritDoc} */
     @Override public ResultSet executeQuery(String sql) throws SQLException {
-        execute0(sql, null);
+        execute0(JdbcStatementType.SELECT_STATEMENT_TYPE, sql, null);
 
         ResultSet rs = getResultSet();
 
@@ -105,12 +106,13 @@ public class JdbcThinStatement implements Statement {
     }
 
     /**
+     * @param stmtType Expected statement type.
      * @param sql Sql query.
      * @param args Query parameters.
      *
      * @throws SQLException Onj error.
      */
-    protected void execute0(String sql, List<Object> args) throws SQLException {
+    protected void execute0(JdbcStatementType stmtType, String sql, List<Object> args) throws SQLException {
         ensureNotClosed();
 
         closeResults();
@@ -119,7 +121,7 @@ public class JdbcThinStatement implements Statement {
             throw new SQLException("SQL query is empty.");
 
         try {
-            JdbcResult res0 = conn.io().queryExecute(conn.getSchema(), pageSize, maxRows,
+            JdbcResult res0 = conn.io().queryExecute(stmtType, conn.getSchema(), pageSize, maxRows,
                 sql, args);
 
             assert res0 != null;
@@ -179,7 +181,7 @@ public class JdbcThinStatement implements Statement {
 
     /** {@inheritDoc} */
     @Override public int executeUpdate(String sql) throws SQLException {
-        execute0(sql, null);
+        execute0(JdbcStatementType.UPDATE_STMT_TYPE, sql, null);
 
         int res = getUpdateCount();
 
@@ -297,7 +299,7 @@ public class JdbcThinStatement implements Statement {
     @Override public boolean execute(String sql) throws SQLException {
         ensureNotClosed();
 
-        execute0(sql, null);
+        execute0(JdbcStatementType.ANY_STATEMENT_TYPE, sql, null);
 
         return resultSets.get(0).isQuery();
     }

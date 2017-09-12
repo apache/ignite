@@ -429,6 +429,7 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
             assert stmt.getMoreResults();
 
             ResultSet rs = stmt.getResultSet();
+
             assert rs.next();
             assert rs.getInt(1) == i;
             assert !rs.next();
@@ -558,7 +559,7 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
                 }
             },
             SQLException.class,
-            "The query is not DML"
+            "Given statement type does not match that declared by JDBC driver"
         );
     }
 
@@ -872,11 +873,13 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
     public void testGetMoreResults() throws Exception {
         assert !stmt.getMoreResults();
 
-        stmt.execute("select 1");
+        stmt.execute("select 1; ");
 
         ResultSet rs = stmt.getResultSet();
 
         assert !stmt.getMoreResults();
+
+        assert stmt.getResultSet() == null;
 
         assert rs.isClosed();
 
@@ -897,7 +900,7 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
         assert !stmt.getMoreResults(Statement.KEEP_CURRENT_RESULT);
         assert !stmt.getMoreResults(Statement.CLOSE_ALL_RESULTS);
 
-        stmt.execute("select 1");
+        stmt.execute("select 1; ");
 
         ResultSet rs = stmt.getResultSet();
 
@@ -1088,6 +1091,50 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
             },
             SQLException.class,
             "Statement is closed");
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testStatementTypeMismatchSelectForCachedQuery() throws Exception {
+        // Put query to cache.
+        stmt.executeQuery("select 1;");
+
+        GridTestUtils.assertThrows(log,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    stmt.executeUpdate("select 1;");
+
+                    return null;
+                }
+            },
+            SQLException.class,
+            "Given statement type does not match that declared by JDBC driver");
+
+        assert stmt.getResultSet() == null : "Not results expected. Last statement is executed with exception";
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testStatementTypeMismatchUpdate() throws Exception {
+        GridTestUtils.assertThrows(log,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    stmt.executeQuery("update test set val=28 where _key=1");
+
+                    return null;
+                }
+            },
+            SQLException.class,
+            "Given statement type does not match that declared by JDBC driver");
+
+        ResultSet rs = stmt.executeQuery("select val from test where _key=1");
+
+        assert rs.next();
+        assert rs.getInt(1) == 1 : "The data must not be updated. " +
+            "Because update statement is executed via 'executeQuery' method." +
+            " Data [val=" + rs.getInt(1) + ']';
     }
 
     /** */

@@ -1301,6 +1301,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         H2TwoStepCachedQuery cachedQry = twoStepCache.get(cachedQryKey);
 
         if (cachedQry != null) {
+            if (qry instanceof JdbcSqlFieldsQuery && !((JdbcSqlFieldsQuery)qry).isQuery())
+                throw new IgniteSQLException("Given statement type does not match that declared by JDBC driver",
+                    IgniteQueryErrorCode.STMT_TYPE_MISMATCH);
+
             GridCacheTwoStepQuery twoStepQry = cachedQry.query().copy();
             List<GridQueryFieldMetadata> meta = cachedQry.meta();
 
@@ -1391,6 +1395,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     cachedQry = twoStepCache.get(cachedQryKey);
 
                     if (cachedQry != null) {
+                        if (qry instanceof JdbcSqlFieldsQuery && !((JdbcSqlFieldsQuery)qry).isQuery())
+                            throw new IgniteSQLException("Given statement type does not match that declared by JDBC driver",
+                                IgniteQueryErrorCode.STMT_TYPE_MISMATCH);
+
                         twoStepQry = cachedQry.query().copy();
                         meta = cachedQry.meta();
 
