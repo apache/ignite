@@ -34,13 +34,18 @@ public class QueryField implements Serializable {
     /** Class name for this field's values. */
     private final String typeName;
 
+    /** Nullable flag. */
+    private final boolean nullable;
+
     /**
      * @param name Field name.
      * @param typeName Class name for this field's values.
+     * @param nullable Nullable flag.
      */
-    public QueryField(String name, String typeName) {
+    public QueryField(String name, String typeName, boolean nullable) {
         this.name = name;
         this.typeName = typeName;
+        this.nullable = nullable;
     }
 
     /**
@@ -55,6 +60,13 @@ public class QueryField implements Serializable {
      */
     public String typeName() {
         return typeName;
+    }
+
+    /**
+     * @return {@code true}, if field is nullable.
+     */
+    public boolean isNullable() {
+        return nullable;
     }
 
     /** {@inheritDoc} */

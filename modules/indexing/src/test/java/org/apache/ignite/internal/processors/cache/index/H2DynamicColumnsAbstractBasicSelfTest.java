@@ -266,6 +266,34 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
     }
 
     /**
+     * Test addition of column with not null constraint.
+     */
+    public void testAddNotNullColumn() {
+        run("ALTER TABLE Person ADD COLUMN age int NOT NULL");
+
+        doSleep(500);
+
+        QueryField c = new QueryField("AGE", Integer.class.getName(), false);
+
+        for (Ignite node : Ignition.allGrids())
+            checkNodeState((IgniteEx)node, QueryUtils.DFLT_SCHEMA, "PERSON", c);
+    }
+
+    /**
+     * Test addition of column explicitly defined as nullable.
+     */
+    public void testAddNullColumn() {
+        run("ALTER TABLE Person ADD COLUMN age int NULL");
+
+        doSleep(500);
+
+        QueryField c = new QueryField("AGE", Integer.class.getName(), true);
+
+        for (Ignite node : Ignition.allGrids())
+            checkNodeState((IgniteEx)node, QueryUtils.DFLT_SCHEMA, "PERSON", c);
+    }
+
+    /**
      * @return Node index to run queries on.
      */
     protected abstract int nodeIndex();

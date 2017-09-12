@@ -126,6 +126,7 @@ import org.apache.ignite.internal.processors.query.h2.IgniteSqlBigIntegerKeyTest
 import org.apache.ignite.internal.processors.query.IgniteQueryDedicatedPoolTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlEntryCacheModeAgnosticTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlKeyValueFieldsTest;
+import org.apache.ignite.internal.processors.query.IgniteSqlNotNullConstraintTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlRoutingTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlSchemaIndexingTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlSegmentedIndexMultiNodeSelfTest;
@@ -329,6 +330,7 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
         suite.addTestSuite(IgniteCacheDistributedPartitionQueryConfigurationSelfTest.class);
         suite.addTestSuite(IgniteSqlKeyValueFieldsTest.class);
         suite.addTestSuite(IgniteSqlRoutingTest.class);
+        suite.addTestSuite(IgniteSqlNotNullConstraintTest.class);
         suite.addTestSuite(LongIndexNameTest.class);
 
         suite.addTestSuite(GridCacheQuerySqlFieldInlineSizeSelfTest.class);

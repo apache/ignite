@@ -63,4 +63,11 @@ public interface GridQueryProperty {
      * @return Parent property or {@code null} if this property is not nested.
      */
     public GridQueryProperty parent();
+
+    /**
+     * Gets the flag restricting {@code null} value for this property.
+     *
+     * @return {@code true} if property does not allow {@code null} value.
+     */
+    public boolean notNull();
 }

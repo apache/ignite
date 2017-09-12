@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import org.apache.ignite.cache.QueryEntity;
@@ -163,8 +164,16 @@ public class QuerySchema implements Serializable {
                 if (target == null)
                     return;
 
-                for (QueryField field : op0.columns())
+                for (QueryField field : op0.columns()) {
                     target.getFields().put(field.name(), field.typeName());
+
+                    if (!field.isNullable()) {
+                        if (target.getNotNullFields() == null)
+                            target.setNotNullFields(new HashSet<String>());
+
+                        target.getNotNullFields().add(field.name());
+                    }
+                }
             }
         }
     }

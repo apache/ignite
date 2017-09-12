@@ -630,6 +630,13 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
+     * @return {@code True} in case cache supports query.
+     */
+    public boolean isQueryEnabled() {
+        return !F.isEmpty(cacheCfg.getQueryEntities());
+    }
+
+    /**
      * @return {@code True} if entries should not be deleted from cache immediately.
      */
     public boolean deferredDelete() {
@@ -1801,6 +1808,25 @@ public class GridCacheContext<K, V> implements Externalizable {
         Object obj = ctx.cacheObjects().unmarshal(cacheObjCtx, bytes, deploy().localLoader());
 
         return cacheObjects().toCacheKeyObject(cacheObjCtx, this, obj, false);
+    }
+
+    /**
+     * Performs validation of provided key and value against configured constraints.
+     *
+     * @param key Key.
+     * @param val Value.
+     * @throws IgniteCheckedException, If validation fails.
+     */
+    public void validateKeyAndValue(KeyCacheObject key, CacheObject val) throws IgniteCheckedException {
+        if (!isQueryEnabled())
+            return;
+
+        try {
+            ctx.query().validateKeyAndValue(cacheObjCtx, key, val);
+        }
+        catch (RuntimeException e) {
+            throw U.cast(e);
+        }
     }
 
     /**

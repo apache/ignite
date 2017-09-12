@@ -1029,10 +1029,6 @@ public class GridSqlQueryParser {
             throw new IgniteSQLException("AUTO_INCREMENT columns are not supported [colName=" + col.getName() + ']',
                 IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
-        if (!col.isNullable())
-            throw new IgniteSQLException("Non nullable columns are not supported [colName=" + col.getName() + ']',
-                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
-
         if (COLUMN_IS_COMPUTED.get(col))
             throw new IgniteSQLException("Computed columns are not supported [colName=" + col.getName() + ']',
                 IgniteQueryErrorCode.UNSUPPORTED_OPERATION);

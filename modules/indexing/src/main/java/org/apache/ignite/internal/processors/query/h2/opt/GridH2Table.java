@@ -985,7 +985,11 @@ public class GridH2Table extends TableBase {
                 }
 
                 try {
-                    newCols[pos++] = new Column(col.name(), DataType.getTypeFromClass(Class.forName(col.typeName())));
+                    Column c = new Column(col.name(), DataType.getTypeFromClass(Class.forName(col.typeName())));
+
+                    c.setNullable(col.isNullable());
+
+                    newCols[pos++] = c;
                 }
                 catch (ClassNotFoundException e) {
                     throw new IgniteSQLException("H2 data type not found for class: " + col.typeName(), e);

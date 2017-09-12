@@ -554,6 +554,11 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
                 @Override public GridQueryProperty parent() {
                     return null;
                 }
+
+                /** */
+                @Override public boolean notNull() {
+                    return false;
+                }
             };
         }
 
@@ -642,6 +647,11 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         /** {@inheritDoc} */
         @Nullable @Override public String valueFieldAlias() {
             return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void validateKeyAndValue(Object key, Object value) throws IgniteCheckedException {
+            // No-op.
         }
     }
 
