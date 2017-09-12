@@ -180,7 +180,7 @@ BOOST_AUTO_TEST_CASE(ConnectionAttributeConnectionDeadGet)
 {
     Connect("DRIVER={Apache Ignite};address=127.0.0.1:11110;schema=cache");
 
-    SQLINTEGER dead = SQL_CD_TRUE;
+    SQLUINTEGER dead = SQL_CD_TRUE;
     SQLRETURN ret;
 
     ret = SQLGetConnectAttr(dbc, SQL_ATTR_CONNECTION_DEAD, &dead, 0, 0);
@@ -194,7 +194,7 @@ BOOST_AUTO_TEST_CASE(ConnectionAttributeConnectionDeadSet)
 {
     Connect("DRIVER={Apache Ignite};address=127.0.0.1:11110;schema=cache");
 
-    SQLINTEGER dead = SQL_CD_TRUE;
+    SQLUINTEGER dead = SQL_CD_TRUE;
     SQLRETURN ret;
 
     ret = SQLSetConnectAttr(dbc, SQL_ATTR_CONNECTION_DEAD, &dead, 0);
