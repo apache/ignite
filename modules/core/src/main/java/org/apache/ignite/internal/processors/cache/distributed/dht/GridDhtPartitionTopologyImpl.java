@@ -1786,10 +1786,18 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 for (Integer part : lost) {
                     long updSeq = updateSeq.incrementAndGet();
 
-                    GridDhtLocalPartition locPart = localPartition(part, resTopVer, false);
+                    GridDhtLocalPartition locPart = localPartition(part, resTopVer, false, true);
 
                     if (locPart != null) {
                         boolean marked = plc == PartitionLossPolicy.IGNORE ? locPart.own() : locPart.markLost();
+
+                        if (!marked && locPart.state() == RENTING)
+                            try {
+                                locPart.tryEvict();
+                                locPart.rent(false).get();
+                            } catch (IgniteCheckedException e) {
+                                log.error("Erorr occur while waiting for partition eviction", e);
+                            }
 
                         if (marked)
                             updateLocal(locPart.id(), locPart.state(), updSeq, resTopVer);
