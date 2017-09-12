@@ -1364,8 +1364,8 @@ namespace Apache.Ignite.Core.Impl.Cache
             return DoOutInOpX((int)cacheOp,
                 w =>
                 {
-                    w.Write(x);
-                    w.Write(y);
+                    w.WriteObjectDetached(x);
+                    w.WriteObjectDetached(y);
                 },
                 (stream, res) => res == True ? new CacheResult<TV>(Unmarshal<TV>(stream)) : new CacheResult<TV>(),
                 _readException);

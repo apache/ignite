@@ -128,14 +128,18 @@ namespace Apache.Ignite.Core.Tests.Cache
             return GetIgnite(idx).GetCache<TK, TV>(CacheName());
         }
 
-        protected ICache<int, int> Cache()
+        protected ICache<int, int> Cache(bool async = false)
         {
-            return Cache<int, int>(0);
+            var cache = Cache<int, int>(0);
+
+            return async ? cache : cache.WrapAsync();
         }
 
-        private ICache<TK, TV> Cache<TK, TV>()
+        private ICache<TK, TV> Cache<TK, TV>(bool async = false)
         {
-            return Cache<TK, TV>(0);
+            var cache = Cache<TK, TV>(0);
+
+            return async ? cache : cache.WrapAsync();
         }
 
         private ICacheAffinity Affinity()
@@ -406,24 +410,14 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Test]
         public void TestPut([Values(true, false)] bool async)
         {
-            var cache = Cache();
-
-            if (async)
-            {
-                cache = cache.WrapAsync();
-            }
+            var cache = Cache(async);
 
             cache.Put(1, 1);
 
             Assert.AreEqual(1, cache.Get(1));
 
             // Objects.
-            var cache2 = Cache<Container, Container>();
-
-            if (async)
-            {
-                cache2 = cache2.WrapAsync();
-            }
+            var cache2 = Cache<Container, Container>(async);
 
             var obj1 = new Container {Id = 1};
             var obj2 = new Container {Id = 2};
@@ -434,22 +428,6 @@ namespace Apache.Ignite.Core.Tests.Cache
             cache2[obj1] = obj2;
 
             Assert.AreEqual(2, cache2[obj1].Id);
-        }
-
-        [Test]
-        public void TestPutIfAbsent()
-        {
-            var cache = Cache();
-
-            Assert.IsFalse(cache.ContainsKey(1));
-
-            Assert.AreEqual(true, cache.PutIfAbsent(1, 1));
-
-            Assert.AreEqual(1, cache.Get(1));
-
-            Assert.AreEqual(false, cache.PutIfAbsent(1, 2));
-
-            Assert.AreEqual(1, cache.Get(1));
         }
 
         [Test]
@@ -471,7 +449,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Test]
         public void TestGetAndPutIfAbsentAsync()
         {
-            var cache = Cache().WrapAsync();
+            var cache = Cache(true);
 
             Assert.IsFalse(cache.ContainsKey(1));
 
@@ -489,9 +467,9 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         [Test]
-        public void TestPutIfAbsentAsync()
+        public void TestPutIfAbsent([Values(true, false)] bool async)
         {
-            var cache = Cache().WrapAsync();
+            var cache = Cache(async);
 
             Assert.Throws<KeyNotFoundException>(() => cache.Get(1));
             Assert.IsFalse(cache.ContainsKey(1));
@@ -612,12 +590,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Test]
         public void TestPutAll([Values(true, false)] bool async)
         {
-            var cache = Cache();
-
-            if (async)
-            {
-                cache = cache.WrapAsync();
-            }
+            var cache = Cache(async);
 
             // Primitives.
             cache.PutAll(new Dictionary<int, int> { { 1, 1 }, { 2, 2 }, { 3, 3 } });
@@ -627,12 +600,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(3, cache.Get(3));
 
             // Objects.
-            var cache2 = Cache<int, Container>();
-
-            if (async)
-            {
-                cache2 = cache2.WrapAsync();
-            }
+            var cache2 = Cache<int, Container>(async);
 
             var obj1 = new Container();
             var obj2 = new Container();
