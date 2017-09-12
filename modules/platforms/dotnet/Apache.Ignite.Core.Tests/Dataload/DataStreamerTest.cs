@@ -168,6 +168,46 @@ namespace Apache.Ignite.Core.Tests.Dataload
         }
 
         /// <summary>
+        /// Tests object graphs with loops.
+        /// </summary>
+        [Test]
+        public void TestObjectGraphs()
+        {
+            var obj1 = new Container();
+            var obj2 = new Container();
+            var obj3 = new Container();
+            var obj4 = new Container();
+
+            obj1.Inner = obj2;
+            obj2.Inner = obj1;
+            obj3.Inner = obj1;
+            obj4.Inner = new Container();
+
+            using (var ldr = _grid.GetDataStreamer<int, Container>(CacheName))
+            {
+                ldr.AllowOverwrite = true;
+
+                ldr.AddData(1, obj1);
+                ldr.AddData(2, obj2);
+                ldr.AddData(3, obj3);
+                ldr.AddData(4, obj4);
+            }
+
+            var cache = _grid.GetCache<int, Container>(CacheName);
+
+            var res = cache[1];
+            Assert.AreEqual(res, res.Inner.Inner);
+
+            Assert.IsNotNull(cache[2].Inner);
+            Assert.IsNotNull(cache[2].Inner.Inner);
+            Assert.IsNotNull(cache[3].Inner);
+            Assert.IsNotNull(cache[3].Inner.Inner);
+            
+            Assert.IsNotNull(cache[4].Inner);
+            Assert.IsNull(cache[4].Inner.Inner);
+        }
+
+        /// <summary>
         /// Test "tryFlush".
         /// </summary>
         [Test]
@@ -572,5 +612,14 @@ namespace Apache.Ignite.Core.Tests.Dataload
         {
             public int Val { get; set; }
         }
+
+        /// <summary>
+        /// Container class.
+        /// </summary>
+        private class Container
+        {
+            public Container Inner;
+        }
+
     }
 }

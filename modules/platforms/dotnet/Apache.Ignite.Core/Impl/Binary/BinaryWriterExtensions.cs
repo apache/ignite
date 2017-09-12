@@ -92,12 +92,12 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (selector == null)
             {
                 foreach (var val in vals)
-                    writer.Write(val);
+                    writer.WriteObjectDetached(val);
             }
             else
             {
                 foreach (var val in vals)
-                    writer.Write(selector(val));
+                    writer.WriteObjectDetached(selector(val));
             }
         }
 
@@ -142,7 +142,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             {
                 foreach (var val in vals)
                 {
-                    writer.Write(val);
+                    writer.WriteObjectDetached(val);
 
                     size++;
                 }
@@ -151,7 +151,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             {
                 foreach (var val in vals)
                 {
-                    writer.Write(selector(val));
+                    writer.WriteObjectDetached(selector(val));
 
                     size++;
                 }
