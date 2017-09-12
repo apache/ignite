@@ -887,37 +887,45 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
             ctx.add(discoMgr, false);
 
-            // Start processors before discovery manager, so they will
-            // be able to start receiving messages once discovery completes.
-            startProcessor(createComponent(DiscoveryNodeValidationProcessor.class, ctx));
-            startProcessor(new GridClockSyncProcessor(ctx));
-            startProcessor(new GridAffinityProcessor(ctx));
-            startProcessor(createComponent(GridSegmentationProcessor.class, ctx));
-            startProcessor(createComponent(IgniteCacheObjectProcessor.class, ctx));
-            startProcessor(new GridCacheProcessor(ctx));
-            startProcessor(new GridQueryProcessor(ctx));
-            startProcessor(new OdbcProcessor(ctx));
-            startProcessor(new GridServiceProcessor(ctx));
-            startProcessor(new GridTaskSessionProcessor(ctx));
-            startProcessor(new GridJobProcessor(ctx));
-            startProcessor(new GridTaskProcessor(ctx));
-            startProcessor((GridProcessor)SCHEDULE.createOptional(ctx));
-            startProcessor(new GridRestProcessor(ctx));
-            startProcessor(new DataStreamProcessor(ctx));
-            startProcessor((GridProcessor)IGFS.create(ctx, F.isEmpty(cfg.getFileSystemConfiguration())));
-            startProcessor(new GridContinuousProcessor(ctx));
-            startProcessor(createHadoopComponent());
-            startProcessor(new DataStructuresProcessor(ctx));
-            startProcessor(createComponent(PlatformProcessor.class, ctx));
+                // Start processors before discovery manager, so they will
+                // be able to start receiving messages once discovery completes.
+            try {
+                startProcessor(createComponent(DiscoveryNodeValidationProcessor.class, ctx));
+                startProcessor(new GridClockSyncProcessor(ctx));
+                startProcessor(new GridAffinityProcessor(ctx));
+                startProcessor(createComponent(GridSegmentationProcessor.class, ctx));
+                startProcessor(createComponent(IgniteCacheObjectProcessor.class, ctx));
+                startProcessor(new GridCacheProcessor(ctx));
+                startProcessor(new GridQueryProcessor(ctx));
+                startProcessor(new OdbcProcessor(ctx));
+                startProcessor(new GridServiceProcessor(ctx));
+                startProcessor(new GridTaskSessionProcessor(ctx));
+                startProcessor(new GridJobProcessor(ctx));
+                startProcessor(new GridTaskProcessor(ctx));
+                startProcessor((GridProcessor)SCHEDULE.createOptional(ctx));
+                startProcessor(new GridRestProcessor(ctx));
+                startProcessor(new DataStreamProcessor(ctx));
+                startProcessor((GridProcessor)IGFS.create(ctx, F.isEmpty(cfg.getFileSystemConfiguration())));
+                startProcessor(new GridContinuousProcessor(ctx));
+                startProcessor(createHadoopComponent());
+                startProcessor(new DataStructuresProcessor(ctx));
+                startProcessor(createComponent(PlatformProcessor.class, ctx));
 
-            // Start plugins.
-            for (PluginProvider provider : ctx.plugins().allProviders()) {
-                ctx.add(new GridPluginComponent(provider));
+                // Start plugins.
+                for (PluginProvider provider : ctx.plugins().allProviders()) {
+                    ctx.add(new GridPluginComponent(provider));
 
-                provider.start(ctx.plugins().pluginContextForProvider(provider));
+                    provider.start(ctx.plugins().pluginContextForProvider(provider));
+                }
+
+                fillNodeAttributes(clusterProc.updateNotifierEnabled());
             }
+            catch (Throwable e) {
+                // Stop discovery spi to close tcp socket.
+                ctx.discovery().stop(true);
 
-            fillNodeAttributes(clusterProc.updateNotifierEnabled());
+                throw e;
+            }
 
             gw.writeLock();
 
