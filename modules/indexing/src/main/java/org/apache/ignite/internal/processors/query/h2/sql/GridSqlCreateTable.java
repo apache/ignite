@@ -21,6 +21,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 
 /**
  * CREATE TABLE statement.
@@ -42,6 +43,9 @@ public class GridSqlCreateTable extends GridSqlStatement {
 
     /** Atomicity mode for new cache. */
     private CacheAtomicityMode atomicityMode;
+
+    /** Write sync mode. */
+    private CacheWriteSynchronizationMode writeSyncMode;
 
     /** Backups number for new cache. */
     private int backups;
@@ -101,6 +105,20 @@ public class GridSqlCreateTable extends GridSqlStatement {
      */
     public void atomicityMode(CacheAtomicityMode atomicityMode) {
         this.atomicityMode = atomicityMode;
+    }
+
+    /**
+     * @return Write sync mode for new cache.
+     */
+    public CacheWriteSynchronizationMode writeSynchronizationMode() {
+        return writeSyncMode;
+    }
+
+    /**
+     * @param writeSyncMode Write sync mode for new cache.
+     */
+    public void writeSynchronizationMode(CacheWriteSynchronizationMode writeSyncMode) {
+        this.writeSyncMode = writeSyncMode;
     }
 
     /**

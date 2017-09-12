@@ -36,7 +36,6 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListener;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
-import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -151,7 +150,8 @@ public class IgnitePersistentStoreSchemaLoadTest extends GridCommonAbstractTest 
 
         idx.setName(IDX_NAME);
 
-        ig0.context().query().dynamicTableCreate(SCHEMA_NAME, getEntity(), TMPL_NAME, null, null, null, 1, true);
+        ig0.context().query().dynamicTableCreate(SCHEMA_NAME, getEntity(), TMPL_NAME, null, null, null,
+            null, 1, true);
 
         assert indexCnt(ig0, CACHE_NAME) == 0;
 
@@ -183,7 +183,7 @@ public class IgnitePersistentStoreSchemaLoadTest extends GridCommonAbstractTest 
             }
         });
 
-        ig0.context().query().dynamicTableCreate(SCHEMA_NAME, getEntity(), TMPL_NAME, null, null, null, 1, true);
+        ig0.context().query().dynamicTableCreate(SCHEMA_NAME, getEntity(), TMPL_NAME, null, null, null, null, 1, true);
 
         assert indexCnt(ig0, CACHE_NAME) == 0;
 
@@ -222,18 +222,10 @@ public class IgnitePersistentStoreSchemaLoadTest extends GridCommonAbstractTest 
 
         int cnt = 0;
 
-        for (QueryEntity entity : desc.schema().entities()) {
+        for (QueryEntity entity : desc.schema().entities())
             cnt += entity.getIndexes().size();
-        }
 
         return cnt;
-    }
-
-    /**
-     * @return Indexing.
-     */
-    private IgniteH2Indexing getIndexing(IgniteEx ignite) {
-        return U.field(ignite.context().query(), "idx");
     }
 
     /**
