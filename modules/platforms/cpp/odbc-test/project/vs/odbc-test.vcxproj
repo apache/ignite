@@ -164,6 +164,7 @@
     <ClCompile Include="..\..\..\odbc\src\utility.cpp" />
     <ClCompile Include="..\..\src\api_robustness_test.cpp" />
     <ClCompile Include="..\..\src\application_data_buffer_test.cpp" />
+    <ClCompile Include="..\..\src\attributes_test.cpp" />
     <ClCompile Include="..\..\src\column_test.cpp" />
     <ClCompile Include="..\..\src\configuration_test.cpp" />
     <ClCompile Include="..\..\src\connection_info_test.cpp" />

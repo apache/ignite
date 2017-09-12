@@ -1140,9 +1140,9 @@ namespace ignite
                             SQLINTEGER* valueResLen)
     {
         using namespace odbc;
-        using namespace odbc::type_traits;
+        using namespace type_traits;
 
-        using odbc::app::ApplicationDataBuffer;
+        using app::ApplicationDataBuffer;
 
         LOG_MSG("SQLGetEnvAttr called");
 
@@ -1308,6 +1308,48 @@ namespace ignite
             *msgResLen = static_cast<SQLSMALLINT>(outResLen);
 
         return SQL_SUCCESS;
+    }
+
+    SQLRETURN SQL_API SQLGetConnectAttr(SQLHDBC    conn,
+                                        SQLINTEGER attr,
+                                        SQLPOINTER valueBuf,
+                                        SQLINTEGER valueBufLen,
+                                        SQLINTEGER* valueResLen)
+    {
+        using namespace odbc;
+        using namespace type_traits;
+
+        using app::ApplicationDataBuffer;
+
+        LOG_MSG("SQLGetConnectAttr called");
+
+        Connection *connection = reinterpret_cast<Connection*>(conn);
+
+        if (!connection)
+            return SQL_INVALID_HANDLE;
+
+        connection->GetAttribute(attr, valueBuf, valueBufLen, valueResLen);
+
+        return connection->GetDiagnosticRecords().GetReturnCode();
+    }
+
+    SQLRETURN SQL_API SQLSetConnectAttr(SQLHDBC    conn,
+                                        SQLINTEGER attr,
+                                        SQLPOINTER value,
+                                        SQLINTEGER valueLen)
+    {
+        using odbc::Connection;
+
+        LOG_MSG("SQLSetConnectAttr called");
+
+        Connection *connection = reinterpret_cast<Connection*>(conn);
+
+        if (!connection)
+            return SQL_INVALID_HANDLE;
+
+        connection->SetAttribute(attr, value, valueLen);
+
+        return connection->GetDiagnosticRecords().GetReturnCode();
     }
 
 } // namespace ignite;
