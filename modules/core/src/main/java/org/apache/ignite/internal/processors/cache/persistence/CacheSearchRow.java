@@ -45,5 +45,5 @@ public interface CacheSearchRow {
 
     public long mvccCoordinatorVersion();
 
-    public long mvccUpdateCounter();
+    public long mvccCounter();
 }

@@ -578,7 +578,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
     }
 
     /** {@inheritDoc} */
-    @Override public long mvccUpdateCounter() {
+    @Override public long mvccCounter() {
         return 0;
     }
 

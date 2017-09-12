@@ -59,7 +59,7 @@ public abstract class AbstractDataLeafIO extends BPlusLeafIO<CacheSearchRow> imp
 
         if (storeMvccVersion()) {
             long mvccCrdVer = row.mvccCoordinatorVersion();
-            long mvccUpdateCntr = row.mvccUpdateCounter();
+            long mvccUpdateCntr = row.mvccCounter();
 
             assert mvccCrdVer > 0 : mvccCrdVer;
             assert mvccUpdateCntr != CacheCoordinatorsSharedManager.COUNTER_NA;

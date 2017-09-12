@@ -78,7 +78,7 @@ public class MvccDataRow extends DataRow {
     }
 
     /** {@inheritDoc} */
-    @Override public long mvccUpdateCounter() {
+    @Override public long mvccCounter() {
         return mvccCntr;
     }
 }

@@ -506,6 +506,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
             cctx.tm().addCommittedTx(this);
 
         if (!empty) {
+            assert mvccWaitTxs == null;
+
             batchStoreCommit(writeEntries());
 
             WALPointer ptr = null;

@@ -167,9 +167,9 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
 
         long mvccCntr = io.getMvccUpdateCounter(pageAddr, idx);
 
-        assert row.mvccUpdateCounter() != CacheCoordinatorsSharedManager.COUNTER_NA;
+        assert row.mvccCounter() != CacheCoordinatorsSharedManager.COUNTER_NA;
 
-        cmp = Long.compare(row.mvccUpdateCounter(), mvccCntr);
+        cmp = Long.compare(row.mvccCounter(), mvccCntr);
 
         return cmp;
     }

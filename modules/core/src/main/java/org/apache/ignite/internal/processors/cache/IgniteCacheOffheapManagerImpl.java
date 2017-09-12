@@ -1308,7 +1308,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             if (cmp != 0)
                 return cmp;
 
-            return Long.compare(row.mvccUpdateCounter(), mvccCntr);
+            return Long.compare(row.mvccCounter(), mvccCntr);
         }
 
         /** {@inheritDoc} */
@@ -1364,11 +1364,13 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                     CacheDataRow oldVal = cur.get();
 
                     if (activeTxs != null && oldVal.mvccCoordinatorVersion() == mvccVer.coordinatorVersion() &&
-                        activeTxs.contains(oldVal.mvccUpdateCounter())) {
+                        activeTxs.contains(oldVal.mvccCounter())) {
                         if (waitTxs == null)
                             waitTxs = new GridLongList();
 
-                        waitTxs.add(oldVal.mvccUpdateCounter());
+                        assert oldVal.mvccCounter() != mvccVer.counter();
+
+                        waitTxs.add(oldVal.mvccCounter());
                     }
                     else if (!first) {
                         int cmp = compare(oldVal, mvccVer.coordinatorVersion(), mvccVer.cleanupVersion());
@@ -1641,7 +1643,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
                 if (txs != null) {
                     visible = row0.mvccCoordinatorVersion() != ver.coordinatorVersion()
-                        || !txs.contains(row0.mvccUpdateCounter());
+                        || !txs.contains(row0.mvccCounter());
                 }
                 else
                     visible = true;
