@@ -1237,6 +1237,9 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
      * @throws IgniteCheckedException If transaction check failed.
      */
     protected void checkValid() throws IgniteCheckedException {
+        if (local() && !dht() && remainingTime() == -1 && cctx.tm().deadlockDetectionEnabled())
+            state(MARKED_ROLLBACK, true);
+
         if (isRollbackOnly()) {
             if (remainingTime() == -1)
                 throw new IgniteTxTimeoutCheckedException("Cache transaction timed out: " + this);

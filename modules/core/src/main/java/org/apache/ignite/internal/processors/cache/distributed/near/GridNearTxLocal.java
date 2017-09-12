@@ -230,7 +230,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
         mappings = implicitSingle ? new IgniteTxMappingsSingleImpl() : new IgniteTxMappingsImpl();
 
-        if (this.timeout() > 0 && !implicit())
+        if (this.timeout() > 0 && !implicit() && !cctx.tm().deadlockDetectionEnabled())
             cctx.time().addTimeoutObject(this);
 
         initResult();
@@ -4014,7 +4014,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      * Removes timeout handler used for eager rollbacks on timeouts.
      */
     private void removeTimeoutHandler() {
-        if (timeout() > 0 && !implicit() && !timedOut())
+        if (timeout() > 0 && !implicit() && !timedOut() && !cctx.tm().deadlockDetectionEnabled())
             cctx.time().removeTimeoutObject(this);
     }
 
@@ -4033,6 +4033,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         if (state(MARKED_ROLLBACK, true)) {
             cctx.kernalContext().closure().runLocalSafe(new Runnable() {
                 @Override public void run() {
+                    log().error("Transaction is timed out and will be rolled back: " + GridNearTxLocal.this);
+
                     rollbackNearTxLocalAsync();
                 }
             });
