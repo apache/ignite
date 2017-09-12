@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.platform.client.cache;
 
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
+import org.apache.ignite.internal.processors.platform.client.ClientCloseableResource;
 
 import javax.cache.Cache;
 import java.util.Iterator;
@@ -26,7 +27,7 @@ import java.util.Iterator;
 /**
  * Query cursor holder.
   */
-class ClientCacheScanQueryCursor {
+class ClientCacheScanQueryCursor implements ClientCloseableResource {
     /** Cursor. */
     private final QueryCursorEx<Cache.Entry> cursor;
 
@@ -76,7 +77,7 @@ class ClientCacheScanQueryCursor {
     /**
      * Closes the cursor.
      */
-    void close() {
+    @Override public void close() {
         cursor.close();
     }
 

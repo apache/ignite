@@ -81,7 +81,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Client.Query
         {
             try
             {
-                _ignite.Socket.DoOutInOp<object>(ClientOp.QueryScanCursorClose, w => w.WriteLong(_cursorId), null);
+                _ignite.Socket.DoOutInOp<object>(ClientOp.ResourceClose, w => w.WriteLong(_cursorId), null);
             }
             finally
             {

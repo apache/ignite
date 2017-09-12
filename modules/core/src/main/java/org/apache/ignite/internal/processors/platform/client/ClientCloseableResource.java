@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,21 +15,14 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Impl.Client
-{
-    /// <summary>
-    /// Client op code.
-    /// </summary>
-    internal enum ClientOp : short
-    {
-        CacheGet = 1,
-        GetBinaryTypeName = 2,
-        GetBinaryTypeSchema = 3,
-        CachePut = 4,
-        RegisterBinaryTypeName = 5,
-        PutBinaryTypes = 6,
-        QueryScan = 7,
-        QueryScanCursorGetPage = 8,
-        ResourceClose = 9
-    }
+package org.apache.ignite.internal.processors.platform.client;
+
+/**
+ * Client closeable resource.
+ */
+public interface ClientCloseableResource {
+    /**
+     * Closes the resource.
+     */
+    void close();
 }

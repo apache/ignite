@@ -79,18 +79,14 @@ public class ClientResourceRegistry {
     }
 
     /**
-     * Cleans all handles and closes all AutoCloseables.
+     * Cleans all handles and closes all ClientCloseableResources.
      */
     public void clean() {
         for (Map.Entry e : res.entrySet()) {
             Object val = e.getValue();
 
-            if (val instanceof AutoCloseable) {
-                try {
-                    ((AutoCloseable)val).close();
-                } catch (Exception ex) {
-                    throw new IgniteException(ex);
-                }
+            if (val instanceof ClientCloseableResource) {
+                ((ClientCloseableResource) val).close();
             }
         }
     }

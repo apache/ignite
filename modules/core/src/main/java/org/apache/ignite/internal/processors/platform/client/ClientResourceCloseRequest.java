@@ -15,37 +15,34 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.platform.client.cache;
+package org.apache.ignite.internal.processors.platform.client;
 
 import org.apache.ignite.binary.BinaryRawReader;
-import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
-import org.apache.ignite.internal.processors.platform.client.ClientRequest;
-import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 
 /**
- * Query cursor close request.
+ * Resource close request.
  */
-public class ClientCacheQueryCursorCloseRequest extends ClientRequest {
+public class ClientResourceCloseRequest extends ClientRequest {
     /** Cursor id. */
-    private final long cursorId;
+    private final long resourceId;
 
     /**
      * Ctor.
      *
      * @param reader Reader.
      */
-    public ClientCacheQueryCursorCloseRequest(BinaryRawReader reader) {
+    ClientResourceCloseRequest(BinaryRawReader reader) {
         super(reader);
 
-        cursorId = reader.readLong();
+        resourceId = reader.readLong();
     }
 
     /** {@inheritDoc} */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
-        ClientCacheScanQueryCursor cur = ctx.handleRegistry().get(cursorId);
+        ClientCloseableResource cur = ctx.handleRegistry().get(resourceId);
 
         cur.close();
-        ctx.handleRegistry().release(cursorId);
+        ctx.handleRegistry().release(resourceId);
 
         return new ClientResponse(getRequestId());
     }
