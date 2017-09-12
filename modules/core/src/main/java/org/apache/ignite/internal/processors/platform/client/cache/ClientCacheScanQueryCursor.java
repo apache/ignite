@@ -72,6 +72,8 @@ class ClientCacheScanQueryCursor implements ClientCloseableResource {
         }
 
         writer.writeInt(cntPos, cnt);
+
+        writer.writeBoolean(iter.hasNext());
     }
 
     /**

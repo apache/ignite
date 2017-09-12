@@ -54,6 +54,9 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
         /** Disposed flag. */
         private volatile bool _disposed;
 
+        /** Whether next batch is available. */
+        private bool _hasNext = true;
+
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -205,7 +208,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
         /// </summary>
         private void RequestBatch()
         {
-            _batch = GetBatch();
+            _batch = _hasNext ? GetBatch() : null;
 
             _batchPos = 0;
         }
@@ -251,7 +254,11 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
             var res = new T[size];
 
             for (var i = 0; i < size; i++)
+            {
                 res[i] = Read(reader);
+            }
+
+            _hasNext = stream.ReadBool();
 
             return res;
         }

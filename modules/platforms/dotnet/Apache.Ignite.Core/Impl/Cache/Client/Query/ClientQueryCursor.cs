@@ -53,7 +53,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Client.Query
         /** <inheritdoc /> */
         protected override void InitIterator()
         {
-            //_ignite.Socket.
+            // No-op.
         }
 
         /** <inheritdoc /> */
