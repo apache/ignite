@@ -29,7 +29,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.query.SqlQuery;
-import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.jdbc2.JdbcStateCode;
 import org.apache.ignite.internal.processors.odbc.SqlListenerResponse;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBatchExecuteResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQuery;
@@ -40,7 +40,6 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import static java.sql.ResultSet.CONCUR_READ_ONLY;
 import static java.sql.ResultSet.FETCH_FORWARD;
 import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
-import static org.apache.ignite.internal.jdbc2.JdbcUtils.igniteSqlException;
 
 /**
  * JDBC statement implementation.
@@ -99,8 +98,7 @@ public class JdbcThinStatement implements Statement {
         ResultSet rs = getResultSet();
 
         if (rs == null)
-            throw igniteSqlException("The query isn't SELECT query: " + sql,
-                IgniteQueryErrorCode.STMT_TYPE_MISMATCH);
+            throw new SQLException("The query isn't SELECT query: " + sql, JdbcStateCode.PARSING_EXCEPTION);
 
         return rs;
     }
@@ -124,7 +122,7 @@ public class JdbcThinStatement implements Statement {
         alreadyRead = false;
 
         if (sql == null || sql.isEmpty())
-            throw igniteSqlException("SQL query is empty.");
+            throw new SQLException("SQL query is empty.");
 
         try {
             JdbcQueryExecuteResult res = conn.io().queryExecute(stmtType, conn.getSchema(), pageSize, maxRows,
@@ -141,10 +139,10 @@ public class JdbcThinStatement implements Statement {
         catch (IOException e) {
             conn.close();
 
-            throw igniteSqlException("Failed to query Ignite.", IgniteQueryErrorCode.CONNECTION_FAILURE, e);
+            throw new SQLException("Failed to query Ignite.", JdbcStateCode.CONNECTION_FAILURE, e);
         }
         catch (IgniteCheckedException e) {
-            throw igniteSqlException("Failed to query Ignite [err=\"" + e.getMessage() + "\"]", e);
+            throw new SQLException("Failed to query Ignite [err=\"" + e.getMessage() + "\"]", e);
         }
     }
 
@@ -155,7 +153,7 @@ public class JdbcThinStatement implements Statement {
         int res = getUpdateCount();
 
         if (res == -1)
-            throw igniteSqlException("The query is not DML statememt: " + sql, IgniteQueryErrorCode.STMT_TYPE_MISMATCH);
+            throw new SQLException("The query is not DML statememt: " + sql, JdbcStateCode.PARSING_EXCEPTION);
 
         return res;
     }
@@ -183,7 +181,7 @@ public class JdbcThinStatement implements Statement {
         ensureNotClosed();
 
         if (max < 0)
-            throw igniteSqlException("Invalid field limit.");
+            throw new SQLException("Invalid field limit.");
 
         throw new SQLFeatureNotSupportedException("Field size limitation is not supported.");
     }
@@ -200,7 +198,7 @@ public class JdbcThinStatement implements Statement {
         ensureNotClosed();
 
         if (maxRows < 0)
-            throw igniteSqlException("Invalid max rows value.");
+            throw new SQLException("Invalid max rows value.");
 
         this.maxRows = maxRows;
     }
@@ -222,7 +220,7 @@ public class JdbcThinStatement implements Statement {
         ensureNotClosed();
 
         if (timeout < 0)
-            throw igniteSqlException("Invalid timeout value.");
+            throw new SQLException("Invalid timeout value.");
 
         this.timeout = timeout * 1000;
     }
@@ -326,7 +324,7 @@ public class JdbcThinStatement implements Statement {
         ensureNotClosed();
 
         if (fetchSize <= 0)
-            throw igniteSqlException("Fetch size must be greater than zero.");
+            throw new SQLException("Fetch size must be greater than zero.");
 
         this.pageSize = fetchSize;
     }
@@ -382,7 +380,7 @@ public class JdbcThinStatement implements Statement {
         alreadyRead = false;
 
         if (batch == null || batch.isEmpty())
-            throw igniteSqlException("Batch is empty.");
+            throw new SQLException("Batch is empty.");
 
         try {
             JdbcBatchExecuteResult res = conn.io().batchExecute(conn.getSchema(), batch);
@@ -398,10 +396,10 @@ public class JdbcThinStatement implements Statement {
         catch (IOException e) {
             conn.close();
 
-            throw igniteSqlException("Failed to query Ignite.", IgniteQueryErrorCode.CONNECTION_FAILURE, e);
+            throw new SQLException("Failed to query Ignite.", JdbcStateCode.CONNECTION_FAILURE, e);
         }
         catch (IgniteCheckedException e) {
-            throw igniteSqlException("Failed to query Ignite [err=\"" + e.getMessage() + "\"]", e);
+            throw new SQLException("Failed to query Ignite [err=\"" + e.getMessage() + "\"]", e);
         }
         finally {
             batch = null;
@@ -431,7 +429,7 @@ public class JdbcThinStatement implements Statement {
                 break;
 
             default:
-                throw igniteSqlException("Invalid 'current' parameter.");
+                throw new SQLException("Invalid 'current' parameter.");
         }
 
         return false;
@@ -456,7 +454,7 @@ public class JdbcThinStatement implements Statement {
                 return executeUpdate(sql);
 
             default:
-                throw igniteSqlException("Invalid autoGeneratedKeys value");
+                throw new SQLException("Invalid autoGeneratedKeys value");
         }
     }
 
@@ -485,7 +483,7 @@ public class JdbcThinStatement implements Statement {
                 return execute(sql);
 
             default:
-                throw igniteSqlException("Invalid autoGeneratedKeys value.");
+                throw new SQLException("Invalid autoGeneratedKeys value.");
         }
     }
 
@@ -540,7 +538,7 @@ public class JdbcThinStatement implements Statement {
     @SuppressWarnings("unchecked")
     @Override public <T> T unwrap(Class<T> iface) throws SQLException {
         if (!isWrapperFor(iface))
-            throw igniteSqlException("Statement is not a wrapper for " + iface.getName());
+            throw new SQLException("Statement is not a wrapper for " + iface.getName());
 
         return (T)this;
     }
@@ -590,6 +588,6 @@ public class JdbcThinStatement implements Statement {
      */
     protected void ensureNotClosed() throws SQLException {
         if (isClosed())
-            throw igniteSqlException("Statement is closed.");
+            throw new SQLException("Statement is closed.");
     }
 }

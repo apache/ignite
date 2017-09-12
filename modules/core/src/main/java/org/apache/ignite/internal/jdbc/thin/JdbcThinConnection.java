@@ -37,7 +37,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.Executor;
 import java.util.logging.Logger;
-import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.jdbc2.JdbcStateCode;
 import org.apache.ignite.internal.util.typedef.F;
 
 import static java.sql.ResultSet.CLOSE_CURSORS_AT_COMMIT;
@@ -55,7 +55,6 @@ import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_REPLICATED
 import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_SOCK_RCV_BUF;
 import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_SOCK_SND_BUF;
 import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_TCP_NO_DELAY;
-import static org.apache.ignite.internal.jdbc2.JdbcUtils.igniteSqlException;
 
 /**
  * JDBC connection implementation.
@@ -140,8 +139,8 @@ public class JdbcThinConnection implements Connection {
         catch (Exception e) {
             cliIo.close();
 
-            throw igniteSqlException("Failed to connect to Ignite node [host=" + host + ", port=" + port + ']',
-                IgniteQueryErrorCode.CLIENT_CONNECTION_FAILED, e);
+            throw new SQLException("Failed to connect to Ignite node [host=" + host + ", port=" + port + ']',
+                JdbcStateCode.CLIENT_CONNECTION_FAILED, e);
         }
     }
 
@@ -189,7 +188,7 @@ public class JdbcThinConnection implements Connection {
         checkCursorOptions(resSetType, resSetConcurrency, resSetHoldability);
 
         if (sql == null)
-            throw igniteSqlException("SQL string cannot be null.");
+            throw new SQLException("SQL string cannot be null.");
 
         JdbcThinPreparedStatement stmt = new JdbcThinPreparedStatement(this, sql, resSetHoldability);
 
@@ -237,7 +236,7 @@ public class JdbcThinConnection implements Connection {
         ensureNotClosed();
 
         if (sql == null)
-            throw igniteSqlException("SQL string cannot be null.");
+            throw new SQLException("SQL string cannot be null.");
 
         return sql;
     }
@@ -267,7 +266,7 @@ public class JdbcThinConnection implements Connection {
         ensureNotClosed();
 
         if (autoCommit)
-            throw igniteSqlException("Transaction cannot be committed explicitly in auto-commit mode.");
+            throw new SQLException("Transaction cannot be committed explicitly in auto-commit mode.");
 
         LOG.warning("Transactions are not supported.");
     }
@@ -277,7 +276,7 @@ public class JdbcThinConnection implements Connection {
         ensureNotClosed();
 
         if (autoCommit)
-            throw igniteSqlException("Transaction cannot rollback in auto-commit mode.");
+            throw new SQLException("Transaction cannot rollback in auto-commit mode.");
 
         LOG.warning("Transactions are not supported.");
     }
@@ -350,8 +349,7 @@ public class JdbcThinConnection implements Connection {
                 break;
 
             default:
-                throw igniteSqlException("Invalid transaction isolation level.",
-                    IgniteQueryErrorCode.INVALID_TRANSACTION_LEVEL);
+                throw new SQLException("Invalid transaction isolation level.", JdbcStateCode.INVALID_TRANSACTION_LEVEL);
         }
 
         txIsolation = level;
@@ -400,7 +398,7 @@ public class JdbcThinConnection implements Connection {
             LOG.warning("Transactions are not supported.");
 
         if (holdability != HOLD_CURSORS_OVER_COMMIT && holdability != CLOSE_CURSORS_AT_COMMIT)
-            throw igniteSqlException("Invalid result set holdability value.");
+            throw new SQLException("Invalid result set holdability value.");
 
         this.holdability = holdability;
     }
@@ -417,7 +415,7 @@ public class JdbcThinConnection implements Connection {
         ensureNotClosed();
 
         if (autoCommit)
-            throw igniteSqlException("Savepoint cannot be set in auto-commit mode.");
+            throw new SQLException("Savepoint cannot be set in auto-commit mode.");
 
         throw new SQLFeatureNotSupportedException("Savepoints are not supported.");
     }
@@ -427,10 +425,10 @@ public class JdbcThinConnection implements Connection {
         ensureNotClosed();
 
         if (name == null)
-            throw igniteSqlException("Savepoint name cannot be null.");
+            throw new SQLException("Savepoint name cannot be null.");
 
         if (autoCommit)
-            throw igniteSqlException("Savepoint cannot be set in auto-commit mode.");
+            throw new SQLException("Savepoint cannot be set in auto-commit mode.");
 
         throw new SQLFeatureNotSupportedException("Savepoints are not supported.");
     }
@@ -440,10 +438,10 @@ public class JdbcThinConnection implements Connection {
         ensureNotClosed();
 
         if (savepoint == null)
-            throw igniteSqlException("Invalid savepoint.");
+            throw new SQLException("Invalid savepoint.");
 
         if (autoCommit)
-            throw igniteSqlException("Auto-commit mode.");
+            throw new SQLException("Auto-commit mode.");
 
         throw new SQLFeatureNotSupportedException("Savepoints are not supported.");
     }
@@ -453,7 +451,7 @@ public class JdbcThinConnection implements Connection {
         ensureNotClosed();
 
         if (savepoint == null)
-            throw igniteSqlException("Savepoint cannot be null.");
+            throw new SQLException("Savepoint cannot be null.");
 
         throw new SQLFeatureNotSupportedException("Savepoints are not supported.");
     }
@@ -518,7 +516,7 @@ public class JdbcThinConnection implements Connection {
     /** {@inheritDoc} */
     @Override public boolean isValid(int timeout) throws SQLException {
         if (timeout < 0)
-            throw igniteSqlException("Invalid timeout: " + timeout);
+            throw new SQLException("Invalid timeout: " + timeout);
 
         return !closed;
     }
@@ -554,7 +552,7 @@ public class JdbcThinConnection implements Connection {
         ensureNotClosed();
 
         if (typeName == null)
-            throw igniteSqlException("Type name cannot be null.", IgniteQueryErrorCode.INVALID_DATA_TYPE);
+            throw new SQLException("Type name cannot be null.", JdbcStateCode.INVALID_DATA_TYPE);
 
         throw new SQLFeatureNotSupportedException("SQL-specific types are not supported.");
     }
@@ -564,7 +562,7 @@ public class JdbcThinConnection implements Connection {
         ensureNotClosed();
 
         if (typeName == null)
-            throw igniteSqlException("Type name cannot be null.", IgniteQueryErrorCode.INVALID_DATA_TYPE);
+            throw new SQLException("Type name cannot be null.", JdbcStateCode.INVALID_DATA_TYPE);
 
         throw new SQLFeatureNotSupportedException("SQL-specific types are not supported.");
     }
@@ -573,7 +571,7 @@ public class JdbcThinConnection implements Connection {
     @SuppressWarnings("unchecked")
     @Override public <T> T unwrap(Class<T> iface) throws SQLException {
         if (!isWrapperFor(iface))
-            throw igniteSqlException("Connection is not a wrapper for " + iface.getName());
+            throw new SQLException("Connection is not a wrapper for " + iface.getName());
 
         return (T)this;
     }
@@ -600,7 +598,7 @@ public class JdbcThinConnection implements Connection {
     /** {@inheritDoc} */
     @Override public void abort(Executor executor) throws SQLException {
         if (executor == null)
-            throw igniteSqlException("Executor cannot be null.");
+            throw new SQLException("Executor cannot be null.");
 
         close();
     }
@@ -610,10 +608,10 @@ public class JdbcThinConnection implements Connection {
         ensureNotClosed();
 
         if (executor == null)
-            throw igniteSqlException("Executor cannot be null.");
+            throw new SQLException("Executor cannot be null.");
 
         if (ms < 0)
-            throw igniteSqlException("Network timeout cannot be negative.");
+            throw new SQLException("Network timeout cannot be negative.");
 
         timeout = ms;
     }
@@ -632,7 +630,7 @@ public class JdbcThinConnection implements Connection {
      */
     private void ensureNotClosed() throws SQLException {
         if (closed)
-            throw igniteSqlException("Connection is closed.", IgniteQueryErrorCode.CONNECTION_CLOSED);
+            throw new SQLException("Connection is closed.", JdbcStateCode.CONNECTION_CLOSED);
     }
 
     /**
@@ -656,7 +654,7 @@ public class JdbcThinConnection implements Connection {
             host = host.trim();
 
         if (F.isEmpty(host))
-            throw igniteSqlException("Host name is empty.", IgniteQueryErrorCode.CONNECTION_ERROR_GENERAL);
+            throw new SQLException("Host name is empty.", JdbcStateCode.CONNECTION_ERROR);
 
         return host;
     }
@@ -680,10 +678,10 @@ public class JdbcThinConnection implements Connection {
             port = Integer.parseInt(portStr);
 
             if (port <= 0 || port > 0xFFFF)
-                throw igniteSqlException("Invalid port: " + portStr, IgniteQueryErrorCode.CONNECTION_ERROR_GENERAL);
+                throw new SQLException("Invalid port: " + portStr, JdbcStateCode.CONNECTION_ERROR);
         }
         catch (NumberFormatException e) {
-            throw igniteSqlException("Invalid port: " + portStr, IgniteQueryErrorCode.CONNECTION_ERROR_GENERAL);
+            throw new SQLException("Invalid port: " + portStr, JdbcStateCode.CONNECTION_ERROR);
         }
 
         return port;
@@ -709,8 +707,8 @@ public class JdbcThinConnection implements Connection {
         else if (Boolean.FALSE.toString().equalsIgnoreCase(strVal))
             return false;
         else
-            throw igniteSqlException("Failed to parse boolean property [name=" + JdbcThinUtils.trimPrefix(propName) +
-                    ", value=" + strVal + ']', IgniteQueryErrorCode.CONNECTION_ERROR_GENERAL);
+            throw new SQLException("Failed to parse boolean property [name=" + JdbcThinUtils.trimPrefix(propName) +
+                    ", value=" + strVal + ']', JdbcStateCode.CONNECTION_ERROR);
     }
 
     /**
@@ -726,8 +724,8 @@ public class JdbcThinConnection implements Connection {
         int res = extractInt(props, propName, dfltVal);
 
         if (res < 0)
-            throw igniteSqlException("Property cannot be negative [name=" + JdbcThinUtils.trimPrefix(propName) +
-                ", value=" + res + ']', IgniteQueryErrorCode.CONNECTION_ERROR_GENERAL);
+            throw new SQLException("Property cannot be negative [name=" + JdbcThinUtils.trimPrefix(propName) +
+                ", value=" + res + ']', JdbcStateCode.CONNECTION_ERROR);
 
         return res;
     }
@@ -751,8 +749,8 @@ public class JdbcThinConnection implements Connection {
             return Integer.parseInt(strVal);
         }
         catch (NumberFormatException e) {
-            throw igniteSqlException("Failed to parse int property [name=" + JdbcThinUtils.trimPrefix(propName) +
-                ", value=" + strVal + ']', IgniteQueryErrorCode.CONNECTION_ERROR_GENERAL);
+            throw new SQLException("Failed to parse int property [name=" + JdbcThinUtils.trimPrefix(propName) +
+                ", value=" + strVal + ']', JdbcStateCode.CONNECTION_ERROR);
         }
     }
 
