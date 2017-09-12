@@ -36,6 +36,7 @@ import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.jdbc2.JdbcSqlFieldsQuery;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
+import org.apache.ignite.internal.processors.odbc.SqlListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.SqlListenerRequest;
 import org.apache.ignite.internal.processors.odbc.SqlListenerRequestHandler;
 import org.apache.ignite.internal.processors.odbc.SqlListenerResponse;
@@ -64,6 +65,9 @@ import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.QRY_ME
  * JDBC request handler.
  */
 public class JdbcRequestHandler implements SqlListenerRequestHandler {
+    /** Multiple statements query supports since version 2.1.5. */
+    private static final SqlListenerProtocolVersion MULTIPLE_STMTS_SUPPORT_SINCE = SqlListenerProtocolVersion.create(2, 1, 5);
+
     /** Query ID sequence. */
     private static final AtomicLong QRY_ID_GEN = new AtomicLong();
 
@@ -100,6 +104,9 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
     /** Automatic close of cursors. */
     private final boolean autoCloseCursors;
 
+    /** Protocol version. */
+    private SqlListenerProtocolVersion protocolVer;
+
     /**
      * Constructor.
      *
@@ -112,10 +119,11 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
      * @param replicatedOnly Replicated only flag.
      * @param autoCloseCursors Flag to automatically close server cursors.
      * @param lazy Lazy query execution flag.
+     * @param protocolVer Protocol version.
      */
     public JdbcRequestHandler(GridKernalContext ctx, GridSpinBusyLock busyLock, int maxCursors,
         boolean distributedJoins, boolean enforceJoinOrder, boolean collocated, boolean replicatedOnly,
-        boolean autoCloseCursors, boolean lazy) {
+        boolean autoCloseCursors, boolean lazy, SqlListenerProtocolVersion protocolVer) {
         this.ctx = ctx;
         this.busyLock = busyLock;
         this.maxCursors = maxCursors;
@@ -125,6 +133,7 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
         this.replicatedOnly = replicatedOnly;
         this.autoCloseCursors = autoCloseCursors;
         this.lazy = lazy;
+        this.protocolVer = protocolVer;
 
         log = ctx.log(getClass());
     }
@@ -293,6 +302,10 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
                 return new JdbcResponse(res);
             }
             else {
+                if (protocolVer.compareTo(MULTIPLE_STMTS_SUPPORT_SINCE) < 0)
+                    return new JdbcResponse(SqlListenerResponse.STATUS_FAILED,
+                        "Multiple statements query is not supported.");
+
                 List<JdbcResultInfo> jdbcResults = new ArrayList<>(results.size());
                 List<List<Object>> items = null;
                 boolean last = true;
