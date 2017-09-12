@@ -44,6 +44,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.odbc.SqlListenerUtils;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaParamsResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQuery;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcStatementType;
 
 /**
  * JDBC prepared statement implementation.
@@ -73,7 +74,7 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
 
     /** {@inheritDoc} */
     @Override public ResultSet executeQuery() throws SQLException {
-        executeWithArguments();
+        executeWithArguments(JdbcStatementType.SELECT_STATEMENT_TYPE);
 
         ResultSet rs = getResultSet();
 
@@ -90,7 +91,7 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
 
     /** {@inheritDoc} */
     @Override public int executeUpdate() throws SQLException {
-        executeWithArguments();
+        executeWithArguments(JdbcStatementType.UPDATE_STMT_TYPE);
 
         int res = getUpdateCount();
 
@@ -230,7 +231,7 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
 
     /** {@inheritDoc} */
     @Override public boolean execute() throws SQLException {
-        executeWithArguments();
+        executeWithArguments(JdbcStatementType.ANY_STATEMENT_TYPE);
 
         return rs.isQuery();
     }
@@ -238,10 +239,11 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
     /**
      * Execute query with arguments and nullify them afterwards.
      *
+     * @param stmtType Expected statement type.
      * @throws SQLException If failed.
      */
-    private void executeWithArguments() throws SQLException {
-        execute0(sql, args);
+    private void executeWithArguments(JdbcStatementType stmtType) throws SQLException {
+        execute0(stmtType, sql, args);
     }
 
     /** {@inheritDoc} */
