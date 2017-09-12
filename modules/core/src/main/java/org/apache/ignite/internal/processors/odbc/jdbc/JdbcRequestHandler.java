@@ -28,8 +28,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -238,14 +236,10 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
 
                     break;
 
-                case UPDATE_STMT_TYPE:
-                    qry = new JdbcSqlFieldsQuery(sql, false);
-
-                    break;
-
                 default:
-                    throw new IgniteException("Unknown value of the expected statement type: "
-                        + req.expectedStatementType());
+                    assert req.expectedStatementType() == JdbcStatementType.UPDATE_STMT_TYPE;
+
+                    qry = new JdbcSqlFieldsQuery(sql, false);
             }
 
             qry.setArgs(req.arguments());
@@ -427,7 +421,7 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
                 QueryCursorImpl<List<?>> qryCur = (QueryCursorImpl<List<?>>)ctx.query()
                     .querySqlFieldsNoCache(qry, true);
 
-                assert !qryCur.isQuery() : "Query must not produced result set";
+                assert !qryCur.isQuery();
 
                 List<List<?>> items = qryCur.getAll();
 

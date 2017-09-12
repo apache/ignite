@@ -65,8 +65,8 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
      * @param sqlQry SQL query.
      * @param args Arguments list.
      */
-    public JdbcQueryExecuteRequest(JdbcStatementType stmtType, String schemaName, int pageSize, int maxRows, String sqlQry,
-        Object[] args) {
+    public JdbcQueryExecuteRequest(JdbcStatementType stmtType, String schemaName, int pageSize, int maxRows,
+        String sqlQry, Object[] args) {
         super(QRY_EXEC);
 
         this.schemaName = F.isEmpty(schemaName) ? null : schemaName;
@@ -113,8 +113,7 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
     }
 
     /**
-     * @return Boolean query flag {@code true} in case SELECT statement is expected,
-     * {@code false} in case DML/DDL statement is expected, {@code null} any statement type is expected.
+     * @return Expected statement type.
      */
     public JdbcStatementType expectedStatementType() {
         return stmtType;
