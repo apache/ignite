@@ -404,23 +404,36 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         [Test]
-        public void TestPut()
+        public void TestPut([Values(true, false)] bool async)
         {
             var cache = Cache();
 
-            cache.Put(1, 1);
-
-            Assert.AreEqual(1, cache.Get(1));
-        }
-
-        [Test]
-        public void TestPutxAsync()
-        {
-            var cache = Cache().WrapAsync();
+            if (async)
+            {
+                cache = cache.WrapAsync();
+            }
 
             cache.Put(1, 1);
 
             Assert.AreEqual(1, cache.Get(1));
+
+            // Objects.
+            var cache2 = Cache<Container, Container>();
+
+            if (async)
+            {
+                cache2 = cache2.WrapAsync();
+            }
+
+            var obj1 = new Container {Id = 1};
+            var obj2 = new Container {Id = 2};
+
+            obj1.Inner = obj2;
+            obj2.Inner = obj1;
+
+            cache2[obj1] = obj2;
+
+            Assert.AreEqual(2, cache2[obj1].Id);
         }
 
         [Test]
@@ -2565,6 +2578,8 @@ namespace Apache.Ignite.Core.Tests.Cache
 
         private class Container
         {
+            public int Id;
+
             public Container Inner;
         }
     }
