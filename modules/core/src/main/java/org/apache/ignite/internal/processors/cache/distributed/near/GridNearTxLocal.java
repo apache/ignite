@@ -4033,7 +4033,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         if (state(MARKED_ROLLBACK, true)) {
             cctx.kernalContext().closure().runLocalSafe(new Runnable() {
                 @Override public void run() {
-                    log().error("Transaction is timed out and will be rolled back: " + GridNearTxLocal.this);
+                    log().error("Transaction is timed out and will be rolled back [timeout=" + timeout() +
+                            ", tx=" + GridNearTxLocal.this + ']');
 
                     rollbackNearTxLocalAsync();
                 }

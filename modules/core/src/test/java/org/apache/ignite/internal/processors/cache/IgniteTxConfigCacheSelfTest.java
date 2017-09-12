@@ -63,7 +63,7 @@ public class IgniteTxConfigCacheSelfTest extends GridCommonAbstractTest {
     private static final String CACHE_NAME = "cache_name";
 
     /** Timeout of transaction. */
-    private static final long TX_TIMEOUT = 100;
+    private static final long TX_TIMEOUT = 300;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {

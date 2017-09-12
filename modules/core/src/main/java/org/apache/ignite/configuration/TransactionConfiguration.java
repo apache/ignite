@@ -19,7 +19,6 @@ package org.apache.ignite.configuration;
 
 import java.io.Serializable;
 import javax.cache.configuration.Factory;
-import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -182,11 +181,6 @@ public class TransactionConfiguration implements Serializable {
     /**
      * Sets default transaction timeout in milliseconds. By default this value is defined by {@link
      * #DFLT_TRANSACTION_TIMEOUT}.
-     * <p>
-     * If transaction's execution is not completed by calling {@link Transaction#commit()},
-     * {@link Transaction#rollback()} or {@link Transaction#close()}
-     * before timeout expires, it will be rolled back asynchronously. All further caches operations will fail until new
-     * explicit transaction is started in current thread by calling {@link IgniteTransactions#txStart()}.
      *
      * @param dfltTxTimeout Default transaction timeout.
      * @return {@code this} for chaining.

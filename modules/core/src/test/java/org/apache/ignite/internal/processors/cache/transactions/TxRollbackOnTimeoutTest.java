@@ -227,6 +227,59 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Tests if deadlock is unblocked on timeout.
+     * @throws Exception
+     */
+    public void testDeadlockUnblockedOnTimeout() throws Exception {
+        final CountDownLatch l = new CountDownLatch(2);
+
+        IgniteInternalFuture<?> fut1 = multithreadedAsync(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    try (Transaction tx = ignite(0).transactions().txStart()) {
+                        ignite(0).cache(CACHE_NAME).put(1, 1);
+
+                        l.countDown();
+                        U.awaitQuiet(l);
+
+                        ignite(0).cache(CACHE_NAME).put(2, 2);
+
+                        tx.commit();
+
+                        fail();
+                    }
+                } catch (CacheException e) {
+                    // No-op.
+                }
+            }
+        }, 1, "First");
+
+        IgniteInternalFuture<?> fut2 = multithreadedAsync(new Runnable() {
+            @Override public void run() {
+                U.awaitQuiet(blocked);
+
+                try (Transaction tx = ignite(1).transactions().txStart(PESSIMISTIC, REPEATABLE_READ, TX_TIMEOUT, 1)) {
+                    ignite(1).cache(CACHE_NAME).put(2, 2);
+
+                    l.countDown();
+                    U.awaitQuiet(l);
+
+                    ignite(1).cache(CACHE_NAME).put(1, 1);
+
+                    tx.commit();
+                }
+            }
+        }, 1, "Second");
+
+        fut1.get();
+        fut2.get();
+
+        assertTrue(ignite(0).cache(CACHE_NAME).containsKey(1));
+        assertTrue(ignite(0).cache(CACHE_NAME).containsKey(2));
+    }
+
+    /**
      * Tests timeout object cleanup on tx commit.
      *
      * @throws Exception If failed.
@@ -442,7 +495,7 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
                     tx.commit();
                 }
             }
-        }, 2, "Second");
+        }, 1, "Second");
 
         try {
             fut1.get();
