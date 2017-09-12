@@ -1013,6 +1013,47 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
             "Statement is closed");
     }
 
+    /**
+     * @throws Exception If failed.
+     */
+    public void testStatementTypeMismatchSelect() throws Exception {
+        GridTestUtils.assertThrows(log,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    stmt.executeUpdate("select 1;");
+
+                    return null;
+                }
+            },
+            SQLException.class,
+            "Given statement type does not match that declared by JDBC driver");
+
+        assert stmt.getResultSet() == null : "Not results expected. Last statement is executed with exception";
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testStatementTypeMismatchUpdate() throws Exception {
+        GridTestUtils.assertThrows(log,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    stmt.executeQuery("update test set val=28 where _key=1");
+
+                    return null;
+                }
+            },
+            SQLException.class,
+            "Given statement type does not match that declared by JDBC driver");
+
+        ResultSet rs = stmt.executeQuery("select val from test where _key=1");
+
+        assert rs.next();
+        assert rs.getInt(1) == 1 : "The data must not be updated. " +
+            "Because update statement is executed via 'executeQuery' method." +
+            " Data [val=" + rs.getInt(1) + ']';
+    }
+
     /** */
     private void fillCache() {
         IgniteCache<String, Person> cachePerson = grid(0).cache(DEFAULT_CACHE_NAME);
