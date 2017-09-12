@@ -98,7 +98,7 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
         if (typeId == GridBinaryMarshaller.UNREGISTERED_TYPE_ID) {
             int off = start + GridBinaryMarshaller.DFLT_HDR_LEN;
 
-            String clsName = BinaryUtils.doReadClassName(new BinaryOffheapInputStream(ptr + off, size), ctx.isVarintArrayLength());
+            String clsName = BinaryUtils.doReadClassName(new BinaryOffheapInputStream(ptr + off, size), ctx.isUseVarintArrayLength());
 
             typeId = ctx.typeId(clsName);
         }
@@ -228,9 +228,9 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
         int typeId = BinaryPrimitives.readInt(ptr, start + GridBinaryMarshaller.TYPE_ID_POS);
 
         if (typeId == GridBinaryMarshaller.UNREGISTERED_TYPE_ID) {
-            int len = BinaryUtils.doReadArrayLength(ptr, start + GridBinaryMarshaller.DFLT_HDR_LEN + 1, ctx.isVarintArrayLength());
+            int len = BinaryUtils.doReadArrayLength(ptr, start + GridBinaryMarshaller.DFLT_HDR_LEN + 1, ctx.isUseVarintArrayLength());
 
-            return start + GridBinaryMarshaller.DFLT_HDR_LEN + 1 + len + BinaryUtils.sizeOfArrayLengthValue(len, ctx.isVarintArrayLength());
+            return start + GridBinaryMarshaller.DFLT_HDR_LEN + 1 + len + BinaryUtils.sizeOfArrayLengthValue(len, ctx.isUseVarintArrayLength());
         } else
             return start + GridBinaryMarshaller.DFLT_HDR_LEN;
     }
@@ -317,9 +317,9 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
                 break;
 
             case GridBinaryMarshaller.STRING: {
-                int dataLen = BinaryUtils.doReadArrayLength(ptr, fieldPos + 1, ctx.isVarintArrayLength());
+                int dataLen = BinaryUtils.doReadArrayLength(ptr, fieldPos + 1, ctx.isUseVarintArrayLength());
 
-                int len = BinaryUtils.sizeOfArrayLengthValue(dataLen, ctx.isVarintArrayLength());
+                int len = BinaryUtils.sizeOfArrayLengthValue(dataLen, ctx.isUseVarintArrayLength());
 
                 byte[] data = BinaryPrimitives.readByteArray(ptr, fieldPos + 1 + len, dataLen);
 
@@ -370,8 +370,8 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
                 int scale = BinaryPrimitives.readInt(ptr, fieldPos + 1);
                 int len = 1 + 4;
 
-                int dataLen = BinaryUtils.doReadArrayLength(ptr, fieldPos + len, ctx.isVarintArrayLength());
-                len += BinaryUtils.sizeOfArrayLengthValue(dataLen, ctx.isVarintArrayLength());
+                int dataLen = BinaryUtils.doReadArrayLength(ptr, fieldPos + len, ctx.isUseVarintArrayLength());
+                len += BinaryUtils.sizeOfArrayLengthValue(dataLen, ctx.isUseVarintArrayLength());
 
                 byte[] data = BinaryPrimitives.readByteArray(ptr, fieldPos + len, dataLen);
 

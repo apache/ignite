@@ -282,9 +282,9 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
 
             assert arr[off] == GridBinaryMarshaller.STRING : arr[off];
 
-            int strLen = BinaryUtils.doReadArrayLength(arr, ++off, ctx.isVarintArrayLength());
+            int strLen = BinaryUtils.doReadArrayLength(arr, ++off, ctx.isUseVarintArrayLength());
 
-            int len = BinaryUtils.sizeOfArrayLengthValue(strLen, ctx.isVarintArrayLength());
+            int len = BinaryUtils.sizeOfArrayLengthValue(strLen, ctx.isUseVarintArrayLength());
 
             String clsName = new String(arr, off + len, strLen, UTF_8);
 
@@ -336,9 +336,9 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
         int typeId = BinaryPrimitives.readInt(arr, start + GridBinaryMarshaller.TYPE_ID_POS);
 
         if (typeId == GridBinaryMarshaller.UNREGISTERED_TYPE_ID) {
-            int len = BinaryUtils.doReadArrayLength(arr, start + GridBinaryMarshaller.DFLT_HDR_LEN + 1, ctx.isVarintArrayLength());
+            int len = BinaryUtils.doReadArrayLength(arr, start + GridBinaryMarshaller.DFLT_HDR_LEN + 1, ctx.isUseVarintArrayLength());
 
-            return start + GridBinaryMarshaller.DFLT_HDR_LEN + 1 + BinaryUtils.sizeOfArrayLengthValue(len, ctx.isVarintArrayLength()) + len;
+            return start + GridBinaryMarshaller.DFLT_HDR_LEN + 1 + BinaryUtils.sizeOfArrayLengthValue(len, ctx.isUseVarintArrayLength()) + len;
         } else
             return start + GridBinaryMarshaller.DFLT_HDR_LEN;
     }
@@ -425,9 +425,9 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
                 break;
 
             case GridBinaryMarshaller.STRING: {
-                int dataLen = BinaryUtils.doReadArrayLength(arr, fieldPos + 1, ctx.isVarintArrayLength());
+                int dataLen = BinaryUtils.doReadArrayLength(arr, fieldPos + 1, ctx.isUseVarintArrayLength());
 
-                int len = BinaryUtils.sizeOfArrayLengthValue(dataLen, ctx.isVarintArrayLength());
+                int len = BinaryUtils.sizeOfArrayLengthValue(dataLen, ctx.isUseVarintArrayLength());
 
                 val = new String(arr, fieldPos + 1 + len, dataLen, UTF_8);
 
@@ -476,8 +476,8 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
                 int scale = BinaryPrimitives.readInt(arr, fieldPos + 1);
                 int len = 1 + 4;
 
-                int dataLen = BinaryUtils.doReadArrayLength(arr, fieldPos + len, ctx.isVarintArrayLength());
-                len += BinaryUtils.sizeOfArrayLengthValue(dataLen, ctx.isVarintArrayLength());
+                int dataLen = BinaryUtils.doReadArrayLength(arr, fieldPos + len, ctx.isUseVarintArrayLength());
+                len += BinaryUtils.sizeOfArrayLengthValue(dataLen, ctx.isUseVarintArrayLength());
 
                 byte[] data = BinaryPrimitives.readByteArray(arr, fieldPos + len, dataLen);
 
@@ -577,9 +577,9 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
                 break;
 
             case GridBinaryMarshaller.STRING: {
-                int dataLen = BinaryUtils.doReadArrayLength(arr, fieldPos + 1, ctx.isVarintArrayLength());
+                int dataLen = BinaryUtils.doReadArrayLength(arr, fieldPos + 1, ctx.isUseVarintArrayLength());
 
-                totalLen = 1 + dataLen + BinaryUtils.sizeOfArrayLengthValue(dataLen, ctx.isVarintArrayLength());
+                totalLen = 1 + dataLen + BinaryUtils.sizeOfArrayLengthValue(dataLen, ctx.isUseVarintArrayLength());
 
                 break;
             }
@@ -595,9 +595,9 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
                 break;
 
             case GridBinaryMarshaller.DECIMAL: {
-                int dataLen = BinaryUtils.doReadArrayLength(arr, fieldPos + 5, ctx.isVarintArrayLength());
+                int dataLen = BinaryUtils.doReadArrayLength(arr, fieldPos + 5, ctx.isUseVarintArrayLength());
 
-                totalLen = dataLen + 5 + BinaryUtils.sizeOfArrayLengthValue(dataLen, ctx.isVarintArrayLength());
+                totalLen = dataLen + 5 + BinaryUtils.sizeOfArrayLengthValue(dataLen, ctx.isUseVarintArrayLength());
 
                 break;
             }

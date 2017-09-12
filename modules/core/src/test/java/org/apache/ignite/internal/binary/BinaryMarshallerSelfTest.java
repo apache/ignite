@@ -3613,9 +3613,9 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @return Whether to write arrays lengths in varint encoding.
+     * @return Whether to consider arrays lengths in varint encoding.
      */
-    protected boolean varintArrayLength() {
+    protected boolean useVarintArrayLength() {
         return false;
     }
 
@@ -3687,7 +3687,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         bCfg.setIdMapper(mapper);
         bCfg.setSerializer(serializer);
         bCfg.setCompactFooter(compactFooter());
-        bCfg.setVarintArrayLength(varintArrayLength());
+        bCfg.setUseVarintArrayLength(useVarintArrayLength());
 
         bCfg.setTypeConfigurations(cfgs);
 

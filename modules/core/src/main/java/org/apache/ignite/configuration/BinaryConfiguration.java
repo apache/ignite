@@ -34,7 +34,7 @@ public class BinaryConfiguration {
     public static final boolean DFLT_COMPACT_FOOTER = true;
 
     /** Default varint array length flag setting. */
-    public static final boolean DFLT_VARINT_ARRAY_LENGTH = false;
+    public static final boolean DFLT_USE_VARINT_ARRAY_LENGTH = false;
 
     /** ID mapper. */
     private BinaryIdMapper idMapper;
@@ -52,7 +52,7 @@ public class BinaryConfiguration {
     private boolean compactFooter = DFLT_COMPACT_FOOTER;
 
     /** Varint array length flag. */
-    private boolean varintArrayLength = DFLT_VARINT_ARRAY_LENGTH;
+    private boolean useVarintArrayLength = DFLT_USE_VARINT_ARRAY_LENGTH;
 
     /**
      * Sets class names of binary objects explicitly.
@@ -185,8 +185,8 @@ public class BinaryConfiguration {
     }
 
     /**
-     * Gets whether to write arrays lengths in varint encoding. When enabled, Ignite will write arrays lengths in varint
-     * encoding.
+     * Indicates whether to consider arrays lengths in varint encoding. When enabled, Ignite will consider arrays
+     * lengths in varint encoding.
      *
      * <a href="https://developers.google.com/protocol-buffers/docs/encoding#varints">Varint encoding description.</a>
      *
@@ -194,24 +194,25 @@ public class BinaryConfiguration {
      * (e.g. cache store which stores data in binary form, data center replication, etc.). Otherwise binary objects
      * without any associated metadata could appear in the cluster and Ignite will not be able to deserialize it.
      *
-     * Defaults to {@link #DFLT_VARINT_ARRAY_LENGTH}.
+     * Defaults to {@link #DFLT_USE_VARINT_ARRAY_LENGTH}.
      *
-     * @return Whether to write arrays lengths in varint encoding.
-     * @see #DFLT_VARINT_ARRAY_LENGTH
+     * @return Whether to consider arrays lengths in varint encoding.
+     * @see #DFLT_USE_VARINT_ARRAY_LENGTH
      */
-    public boolean isVarintArrayLength() {
-        return varintArrayLength;
+    public boolean isUseVarintArrayLength() {
+        return useVarintArrayLength;
     }
 
     /**
-     * Sets whether to write arrays lengths in varint encoding. See {@link #isVarintArrayLength()} for more info.
+     * Switches whether to consider arrays lengths in varint encoding. See {@link #isUseVarintArrayLength()} for more
+     * info.
      *
-     * @param varintArrayLength Whether to write arrays lengths in varint encoding.
+     * @param useVarintArrayLength Whether to consider arrays lengths in varint encoding.
      * @return {@code this} for chaining.
-     * @see #isVarintArrayLength()
+     * @see #isUseVarintArrayLength()
      */
-    public BinaryConfiguration setVarintArrayLength(boolean varintArrayLength) {
-        this.varintArrayLength = varintArrayLength;
+    public BinaryConfiguration setUseVarintArrayLength(boolean useVarintArrayLength) {
+        this.useVarintArrayLength = useVarintArrayLength;
 
         return this;
     }

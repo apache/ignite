@@ -545,15 +545,17 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /**
      * Writes value of length of an array, which can be written in default format or varint encoding.
      * Writing method depends on {@link #ctx#isVarintArrayLength()}.
+     *
      * <a href="https://developers.google.com/protocol-buffers/docs/encoding#varints">Varint encoding description.</a>
      *
      * If you need to know necessary number of bytes for writing,
      * use the method {@link BinaryUtils#sizeOfArrayLengthValue(int, boolean)}.
      *
      * @param val Value to write.
+     * @see BinaryUtils#sizeOfArrayLengthValue(int, boolean)
      */
     public void doUnsafeWriteArrayLength(int val) {
-        if (ctx.isVarintArrayLength())
+        if (ctx.isUseVarintArrayLength())
             doUnsafeWriteUnsignedVarint(val);
         else
             out.unsafeWriteInt(val);
@@ -562,24 +564,26 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /**
      * Writes value of length of an array, which can be written in default format or varint encoding.
      * Writing method depends on {@link #ctx#isVarintArrayLength()}.
+     *
      * <a href="https://developers.google.com/protocol-buffers/docs/encoding#varints">Varint encoding description.</a>
      *
      * If you need to know necessary number of bytes for writing,
      * use the method {@link BinaryUtils#sizeOfArrayLengthValue(int, boolean)}.
      *
      * @param val Value to write.
+     * @see BinaryUtils#sizeOfArrayLengthValue(int, boolean)
      */
     public void doWriteArrayLength(int val) {
-        if (ctx.isVarintArrayLength())
+        if (ctx.isUseVarintArrayLength())
             doWriteUnsignedVarint(val);
         else
             out.writeInt(val);
     }
 
     /**
-     * Writes integer value in varint encoding.
+     * Writes integer value in varint encoding. Value must be positive.
+     *
      * <a href="https://developers.google.com/protocol-buffers/docs/encoding#varints">Varint encoding description.</a>
-     * Value must be positive.
      *
      * @param val Value to write.
      */
@@ -593,11 +597,10 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     }
 
     /**
-     * Writes integer value in varint encoding.
-     * Uses unsafe writing methods.
-     * Before calling, make sure that {@link #out} has 5 bytes for writing.
+     * Writes an integer value in varint encoding. Uses unsafe writing methods. Before calling, make sure that {@link
+     * #out} has 5 bytes for writing. Value must be positive.
+     *
      * <a href="https://developers.google.com/protocol-buffers/docs/encoding#varints">Varint encoding description.</a>
-     * Value must be positive.
      *
      * @param val Value to write.
      */

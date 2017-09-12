@@ -20,11 +20,11 @@ package org.apache.ignite.internal.binary;
 /**
  * {@inheritDoc}
  *
- * Tests of Ignite compatibility mode with versions that writing length of arrays in default format.
+ * Tests writing arrays lengths in varint encoding.
  */
 public class BinaryMarshallerIntArraysSizeTest extends BinaryMarshallerSelfTest {
     /** {@inheritDoc} */
-    @Override protected boolean varintArrayLength() {
+    @Override protected boolean useVarintArrayLength() {
         return true;
     }
 }

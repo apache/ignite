@@ -320,12 +320,12 @@ public class BinarySerializedFieldComparator {
      */
     private static boolean compareByteArrays(BinarySerializedFieldComparator c1, BinarySerializedFieldComparator c2,
                                              int off) {
-        int len = c1.readArrayLength(off, c1.obj.context().isVarintArrayLength());
+        int len = c1.readArrayLength(off, c1.obj.context().isUseVarintArrayLength());
 
-        if (len != c2.readArrayLength(off, c2.obj.context().isVarintArrayLength()))
+        if (len != c2.readArrayLength(off, c2.obj.context().isUseVarintArrayLength()))
             return false;
         else {
-            off += BinaryUtils.sizeOfArrayLengthValue(len, c1.obj.context().isVarintArrayLength());
+            off += BinaryUtils.sizeOfArrayLengthValue(len, c1.obj.context().isUseVarintArrayLength());
 
             if (c1.offheap()) {
                 if (c2.offheap())
