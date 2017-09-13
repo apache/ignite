@@ -19,30 +19,29 @@ package org.apache.ignite.internal.processors.platform.client;
 
 import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.internal.processors.odbc.SqlListenerResponse;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Thin client response.
  */
 public class ClientResponse extends SqlListenerResponse {
     /** Request id. */
-    private final int requestId;
+    private final int reqId;
 
     /**
-     * Ctor.
+     * Constructor.
      *
-     * @param requestId Request id.
+     * @param reqId Request id.
      */
-    public ClientResponse(int requestId) {
+    public ClientResponse(int reqId) {
         super(STATUS_SUCCESS, null);
 
-        this.requestId = requestId;
+        this.reqId = reqId;
     }
 
     /**
      * Encodes the response data.
      */
     public void encode(BinaryRawWriter writer) {
-        writer.writeInt(requestId);
+        writer.writeInt(reqId);
     }
 }
