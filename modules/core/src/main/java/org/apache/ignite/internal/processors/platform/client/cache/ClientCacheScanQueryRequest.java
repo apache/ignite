@@ -22,7 +22,6 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
-import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
@@ -89,11 +88,14 @@ public class ClientCacheScanQueryRequest extends ClientCacheRequest {
 
         QueryCursor cur = cacheWithBinaryFlag(ctx).query(qry);
 
-        ClientCacheScanQueryCursor cliCur = new ClientCacheScanQueryCursor((QueryCursorEx) cur, pageSize);
+        ClientCacheScanQueryCursor cliCur = new ClientCacheScanQueryCursor((QueryCursorEx) cur, pageSize,
+                ctx.resources());
 
         long cursorId = ctx.resources().put(cliCur);
 
-        return new ClientCacheScanQueryResponse(requestId(), cursorId, cliCur);
+        cliCur.id(cursorId);
+
+        return new ClientCacheScanQueryResponse(requestId(), cliCur);
     }
 
     /**

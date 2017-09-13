@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.platform.client.cache;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
 import org.apache.ignite.internal.processors.platform.client.ClientCloseableResource;
+import org.apache.ignite.internal.processors.platform.client.ClientResourceRegistry;
 
 import javax.cache.Cache;
 import java.util.Iterator;
@@ -34,6 +35,12 @@ class ClientCacheScanQueryCursor implements ClientCloseableResource {
     /** Page size. */
     private final int pageSize;
 
+    /** Resources. */
+    private final ClientResourceRegistry resources;
+
+    /** Id. */
+    private long id;
+
     /** Iterator. */
     private Iterator<Cache.Entry> iterator;
 
@@ -43,12 +50,14 @@ class ClientCacheScanQueryCursor implements ClientCloseableResource {
      * @param cursor Cursor.
      * @param pageSize Page size.
      */
-    ClientCacheScanQueryCursor(QueryCursorEx<Cache.Entry> cursor, int pageSize) {
+    ClientCacheScanQueryCursor(QueryCursorEx<Cache.Entry> cursor, int pageSize, ClientResourceRegistry resources) {
         assert cursor != null;
         assert pageSize > 0;
+        assert resources != null;
 
         this.cursor = cursor;
         this.pageSize = pageSize;
+        this.resources = resources;
     }
 
     /**
@@ -74,6 +83,10 @@ class ClientCacheScanQueryCursor implements ClientCloseableResource {
         writer.writeInt(cntPos, cnt);
 
         writer.writeBoolean(iter.hasNext());
+
+        if (!iter.hasNext()) {
+            resources.release(id);
+        }
     }
 
     /**
@@ -81,6 +94,24 @@ class ClientCacheScanQueryCursor implements ClientCloseableResource {
      */
     @Override public void close() {
         cursor.close();
+    }
+
+    /**
+     * Sets the cursor id.
+     *
+     * @param id Id.
+     */
+    public void id(long id) {
+        this.id = id;
+    }
+
+    /**
+     * Gets the cursor id.
+     *
+     * @return Id.
+     */
+    public long id() {
+        return id;
     }
 
     /**

@@ -24,9 +24,6 @@ import org.apache.ignite.internal.processors.platform.client.ClientResponse;
  * Scan query response.
  */
 class ClientCacheScanQueryResponse extends ClientResponse {
-    /** Cursor id. */
-    private final long cursorId;
-
     /** Cursor. */
     private final ClientCacheScanQueryCursor cursor;
 
@@ -34,15 +31,13 @@ class ClientCacheScanQueryResponse extends ClientResponse {
      * Ctor.
      *
      * @param requestId Request id.
-     * @param cursorId Cursor id.
      * @param cursor Cursor.
      */
-    ClientCacheScanQueryResponse(long requestId, long cursorId, ClientCacheScanQueryCursor cursor) {
+    ClientCacheScanQueryResponse(long requestId, ClientCacheScanQueryCursor cursor) {
         super(requestId);
 
         assert cursor != null;
 
-        this.cursorId = cursorId;
         this.cursor = cursor;
     }
 
@@ -50,7 +45,7 @@ class ClientCacheScanQueryResponse extends ClientResponse {
     @Override public void encode(BinaryRawWriterEx writer) {
         super.encode(writer);
 
-        writer.writeLong(cursorId);
+        writer.writeLong(cursor.id());
         cursor.writePage(writer);
     }
 }

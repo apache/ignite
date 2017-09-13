@@ -92,9 +92,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
             var res = GetAllInternal();
 
             _getAllCalled = true;
-
-            // GetAll renders cursor unusable, dispose it.
-            Dispose();
+            _hasNext = false;
 
             return res;
         }
@@ -249,7 +247,10 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
             var size = reader.ReadInt();
 
             if (size == 0)
+            {
+                _hasNext = false;
                 return null;
+            }
 
             var res = new T[size];
 
@@ -269,9 +270,14 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
             lock (this)
             {
                 if (_disposed)
+                {
                     return;
+                }
 
-                Dispose(true);
+                if (_hasNext)
+                {
+                    Dispose(true);
+                }
 
                 GC.SuppressFinalize(this);
 
