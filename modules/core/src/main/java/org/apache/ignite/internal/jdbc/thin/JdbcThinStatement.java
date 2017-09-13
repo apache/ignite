@@ -35,7 +35,6 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBatchExecuteResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQuery;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcStatementType;
-import org.apache.ignite.internal.processors.query.IgniteSQLException;
 
 import static java.sql.ResultSet.CONCUR_READ_ONLY;
 import static java.sql.ResultSet.FETCH_FORWARD;
@@ -110,7 +109,7 @@ public class JdbcThinStatement implements Statement {
      *
      * @throws SQLException Onj error.
      */
-    protected void execute0(JdbcStatementType stmtType, String sql, List<Object> args) throws SQLException {
+    protected void execute0(final JdbcStatementType stmtType, final String sql, final List<Object> args) throws SQLException {
         ensureNotClosed();
 
         if (rs != null) {
@@ -124,26 +123,19 @@ public class JdbcThinStatement implements Statement {
         if (sql == null || sql.isEmpty())
             throw new SQLException("SQL query is empty.");
 
-        try {
-            JdbcQueryExecuteResult res = conn.io().queryExecute(stmtType, conn.getSchema(), pageSize, maxRows,
-                sql, args);
+        conn.execute(new JdbcThinConnectionRunnable<Void>() {
+            @Override public Void run(JdbcThinTcpIo io) throws IgniteCheckedException, IOException, SQLException {
+                JdbcQueryExecuteResult res = io.queryExecute(stmtType, conn.getSchema(), pageSize, maxRows,
+                    sql, args);
 
-            assert res != null;
+                assert res != null;
 
-            rs = new JdbcThinResultSet(this, res.getQueryId(), pageSize, res.last(), res.items(),
-                res.isQuery(), conn.io().autoCloseServerCursor(), res.updateCount(), closeOnCompletion);
-        }
-        catch (IgniteSQLException e) {
-            throw e.toJdbcException();
-        }
-        catch (IOException e) {
-            conn.close();
+                rs = new JdbcThinResultSet(JdbcThinStatement.this, res.getQueryId(), pageSize, res.last(), res.items(),
+                    res.isQuery(), io.autoCloseServerCursor(), res.updateCount(), closeOnCompletion);
 
-            throw new SQLException("Failed to query Ignite.", JdbcStateCode.CONNECTION_FAILURE, e);
-        }
-        catch (IgniteCheckedException e) {
-            throw new SQLException("Failed to query Ignite [err=\"" + e.getMessage() + "\"]", e);
-        }
+                return null;
+            }
+        });
     }
 
     /** {@inheritDoc} */
@@ -383,23 +375,16 @@ public class JdbcThinStatement implements Statement {
             throw new SQLException("Batch is empty.");
 
         try {
-            JdbcBatchExecuteResult res = conn.io().batchExecute(conn.getSchema(), batch);
+            JdbcBatchExecuteResult res = conn.execute(new JdbcThinConnectionRunnable<JdbcBatchExecuteResult>() {
+                @Override public JdbcBatchExecuteResult run(JdbcThinTcpIo io) throws IgniteCheckedException, IOException, SQLException {
+                    return io.batchExecute(conn.getSchema(), batch);
+                }
+            });
 
             if (res.errorCode() != SqlListenerResponse.STATUS_SUCCESS)
                 throw new BatchUpdateException(res.errorMessage(), null, res.errorCode(), res.updateCounts());
 
             return res.updateCounts();
-        }
-        catch (IgniteSQLException e) {
-            throw e.toJdbcException();
-        }
-        catch (IOException e) {
-            conn.close();
-
-            throw new SQLException("Failed to query Ignite.", JdbcStateCode.CONNECTION_FAILURE, e);
-        }
-        catch (IgniteCheckedException e) {
-            throw new SQLException("Failed to query Ignite [err=\"" + e.getMessage() + "\"]", e);
         }
         finally {
             batch = null;

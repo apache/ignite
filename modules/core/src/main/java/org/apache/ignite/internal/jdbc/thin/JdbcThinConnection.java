@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.jdbc.thin;
 
+import java.io.IOException;
 import java.sql.Array;
 import java.sql.Blob;
 import java.sql.CallableStatement;
@@ -37,7 +38,9 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.Executor;
 import java.util.logging.Logger;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.jdbc2.JdbcStateCode;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.util.typedef.F;
 
 import static java.sql.ResultSet.CLOSE_CURSORS_AT_COMMIT;
@@ -634,10 +637,27 @@ public class JdbcThinConnection implements Connection {
     }
 
     /**
-     * @return Ignite endpoint and I/O protocol.
+     * Run given runnable with {@link #cliIo} as param and process errors appropriately.
+     * @param clo Runnable.
+     * @param <T> Type of value that given runnable is expected to return.
+     * @return Run result.
+     * @throws SQLException if failed.
      */
-    public JdbcThinTcpIo io() {
-        return cliIo;
+    public <T> T execute(JdbcThinConnectionRunnable<T> clo) throws SQLException {
+        try {
+            return clo.run(cliIo);
+        }
+        catch (IgniteSQLException e) {
+            throw e.toJdbcException();
+        }
+        catch (IOException e) {
+            close();
+
+            throw new SQLException("Failed to close Ignite query.", JdbcStateCode.CONNECTION_FAILURE, e);
+        }
+        catch (IgniteCheckedException e) {
+            throw new SQLException("Failed to close Ignite query.", e);
+        }
     }
 
     /**
