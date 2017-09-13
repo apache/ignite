@@ -1663,9 +1663,9 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
          * @throws IOException In case of error.
          */
         private void writeObject(ObjectOutputStream out) throws IOException {
-            out.defaultWriteObject();
+            out.writeObject("Optional data");
 
-            out.writeUTF("Optional data");
+            out.defaultWriteObject();
         }
 
         /**
@@ -1674,9 +1674,9 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
          * @throws ClassNotFoundException If class not found.
          */
         private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
-            in.defaultReadObject();
+            strA = (String)in.readObject();
 
-            strA = in.readUTF();
+            in.defaultReadObject();
         }
     }
 
