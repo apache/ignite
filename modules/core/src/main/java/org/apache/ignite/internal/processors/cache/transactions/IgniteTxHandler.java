@@ -791,7 +791,7 @@ public class IgniteTxHandler {
      * @return Future.
      */
     @Nullable public IgniteInternalFuture<IgniteInternalTx> finish(UUID nodeId,
-        @Nullable GridNearTxLocal locTx,
+        @Nullable final GridNearTxLocal locTx,
         GridNearTxFinishRequest req)
     {
         assert nodeId != null;
@@ -989,16 +989,8 @@ public class IgniteTxHandler {
      */
     public IgniteInternalFuture<IgniteInternalTx> finishColocatedLocal(boolean commit, GridNearTxLocal tx) {
         try {
-            if (commit) {
-                if (!tx.markFinalizing(USER_FINISH)) {
-                    if (log.isDebugEnabled())
-                        log.debug("Will not finish transaction (it is handled by another thread): " + tx);
-
-                    return null;
-                }
-
+            if (commit)
                 return tx.commitAsyncLocal();
-            }
             else
                 return tx.rollbackAsyncLocal();
         }
