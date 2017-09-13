@@ -45,6 +45,6 @@ public class ClientCacheGetRequest extends ClientCacheRequest {
     @Override public ClientResponse process(GridKernalContext ctx) {
         Object val = getCache(ctx).get(key);
 
-        return new ClientObjectResponse(getRequestId(), val);
+        return new ClientObjectResponse(requestId(), val);
     }
 }

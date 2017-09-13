@@ -50,6 +50,6 @@ public class ClientGetBinaryTypeSchemaRequest extends ClientRequest {
     @Override public ClientResponse process(GridKernalContext ctx) {
         int[] schema = PlatformUtils.getSchema((CacheObjectBinaryProcessorImpl)ctx.cacheObjects(), typeId, schemaId);
 
-        return new ClientGetBinaryTypeSchemaResponse(getRequestId(), schema);
+        return new ClientGetBinaryTypeSchemaResponse(requestId(), schema);
     }
 }

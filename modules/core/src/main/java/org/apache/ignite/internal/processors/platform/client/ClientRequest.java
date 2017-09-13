@@ -24,9 +24,9 @@ import org.apache.ignite.internal.processors.odbc.SqlListenerRequest;
 /**
  * Thin client request.
  */
-public class ClientRequest extends SqlListenerRequest {
+public class ClientRequest implements SqlListenerRequest {
     /** Request id. */
-    private final long requestId;
+    private final long reqId;
 
     /**
      * Constructor.
@@ -34,16 +34,12 @@ public class ClientRequest extends SqlListenerRequest {
      * @param reader Reader.
      */
     public ClientRequest(BinaryRawReader reader) {
-        requestId = reader.readLong();
+        reqId = reader.readLong();
     }
 
-    /**
-     * Gets the request id.
-     *
-     * @return Data.
-     */
-    public long getRequestId() {
-        return requestId;
+    /** {@inheritDoc} */
+    @Override public long requestId() {
+        return reqId;
     }
 
     /**
@@ -52,6 +48,6 @@ public class ClientRequest extends SqlListenerRequest {
      * @return Response.
      */
     public ClientResponse process(GridKernalContext ctx) {
-        return new ClientResponse(requestId);
+        return new ClientResponse(reqId);
     }
 }
