@@ -496,8 +496,11 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
 
         assert left >= 0 : left;
 
-        if (left == 0)
-            activeQueries.remove(mvccCntr);
+        if (left == 0) {
+            Integer rmvd = activeQueries.remove(mvccCntr);
+
+            assert rmvd != null;
+        }
     }
 
     /** */
