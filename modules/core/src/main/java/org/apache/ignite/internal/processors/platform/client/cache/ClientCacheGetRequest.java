@@ -26,11 +26,11 @@ import org.apache.ignite.internal.processors.platform.client.ClientResponse;
  * Cache get request.
  */
 public class ClientCacheGetRequest extends ClientCacheRequest {
-    /** */
+    /** Key. */
     private final Object key;
 
     /**
-     * Ctor.
+     * Constructor.
      *
      * @param reader Reader.
      */
@@ -43,7 +43,7 @@ public class ClientCacheGetRequest extends ClientCacheRequest {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public ClientResponse process(GridKernalContext ctx) {
-        Object val = getCache(ctx).get(key);
+        Object val = cache(ctx).get(key);
 
         return new ClientObjectResponse(requestId(), val);
     }

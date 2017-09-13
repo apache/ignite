@@ -26,11 +26,11 @@ import org.apache.ignite.internal.processors.platform.client.ClientRequest;
  * Cache get request.
  */
 class ClientCacheRequest extends ClientRequest {
-    /** */
+    /** Cache ID. */
     private final int cacheId;
 
     /**
-     * Ctor.
+     * Constructor.
      *
      * @param reader Reader.
      */
@@ -38,6 +38,7 @@ class ClientCacheRequest extends ClientRequest {
         super(reader);
 
         cacheId = reader.readInt();
+
         reader.readByte();  // Flags (skipStore, etc);
     }
 
@@ -47,7 +48,7 @@ class ClientCacheRequest extends ClientRequest {
      * @param ctx Kernal context.
      * @return Cache.
      */
-    protected IgniteCache getCache(GridKernalContext ctx) {
+    protected IgniteCache cache(GridKernalContext ctx) {
         String cacheName = ctx.cache().context().cacheContext(cacheId).cache().name();
 
         return ctx.grid().cache(cacheName).withKeepBinary();
