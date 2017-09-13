@@ -47,7 +47,6 @@ import static java.sql.ResultSet.CONCUR_READ_ONLY;
 import static java.sql.ResultSet.HOLD_CURSORS_OVER_COMMIT;
 import static java.sql.RowIdLifetime.ROWID_UNSUPPORTED;
 import static org.apache.ignite.internal.jdbc2.JdbcUtils.convertToSqlException;
-import static org.apache.ignite.internal.jdbc2.JdbcUtils.igniteSqlException;
 
 /**
  * JDBC database metadata implementation.
@@ -1337,7 +1336,7 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
     @SuppressWarnings("unchecked")
     private void updateMetaData() throws SQLException {
         if (conn.isClosed())
-            throw igniteSqlException("Connection is closed.", IgniteQueryErrorCode.CONNECTION_CLOSED);
+            throw new SQLException("Connection is closed.", JdbcStateCode.CONNECTION_CLOSED);
 
         try {
             Ignite ignite = conn.ignite();

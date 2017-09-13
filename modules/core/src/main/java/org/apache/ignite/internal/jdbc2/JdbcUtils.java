@@ -18,10 +18,13 @@
 package org.apache.ignite.internal.jdbc2;
 
 import java.net.URL;
+import java.sql.SQLException;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.sql.Types;
 import java.util.Date;
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 
 import static java.sql.Types.BIGINT;
@@ -139,5 +142,34 @@ public class JdbcUtils {
      */
     static boolean isSqlType(Class<?> cls) {
         return QueryUtils.isSqlType(cls) || cls == URL.class;
+    }
+
+
+    /**
+     * Convert exception to {@link SQLException}.
+     *
+     * @param e Converted Exception.
+     * @param msgForUnknown Message non-convertable exception.
+     * @return JDBC {@link SQLException}.
+     * @see IgniteQueryErrorCode
+     */
+    public static SQLException convertToSqlException(Exception e, String msgForUnknown) {
+        SQLException sqlEx = null;
+
+        Throwable t = e;
+
+        while (sqlEx == null && t != null) {
+            if (t instanceof SQLException)
+                return (SQLException)t;
+            else if (t instanceof IgniteSQLException) {
+                sqlEx = ((IgniteSQLException)t).toJdbcException();
+
+                break;
+            }
+
+            t = t.getCause();
+        }
+
+        return sqlEx != null ? sqlEx : new SQLException(msgForUnknown, e);
     }
 }

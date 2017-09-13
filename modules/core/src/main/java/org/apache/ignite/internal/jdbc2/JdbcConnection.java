@@ -88,7 +88,7 @@ import static org.apache.ignite.IgniteJdbcDriver.PROP_STREAMING_FLUSH_FREQ;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_STREAMING_PER_NODE_BUF_SIZE;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_STREAMING_PER_NODE_PAR_OPS;
 import static org.apache.ignite.internal.jdbc2.JdbcUtils.convertToSqlException;
-import static org.apache.ignite.internal.jdbc2.JdbcUtils.igniteSqlException;
+import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.createJdbcSqlException;
 
 /**
  * JDBC connection implementation.
@@ -192,7 +192,7 @@ public class JdbcConnection implements Connection {
         stream = Boolean.parseBoolean(props.getProperty(PROP_STREAMING));
 
         if (stream && cacheName == null)
-            throw igniteSqlException("Cache name cannot be null when streaming is enabled.");
+            throw new SQLException("Cache name cannot be null when streaming is enabled.");
 
         streamAllowOverwrite = Boolean.parseBoolean(props.getProperty(PROP_STREAMING_ALLOW_OVERWRITE));
         streamFlushTimeout = Long.parseLong(props.getProperty(PROP_STREAMING_FLUSH_FREQ, "0"));
@@ -215,13 +215,13 @@ public class JdbcConnection implements Connection {
             ignite = getIgnite(cfg);
 
             if (!isValid(2))
-                throw igniteSqlException("Client is invalid. Probably cache name is wrong.");
+                throw new SQLException("Client is invalid. Probably cache name is wrong.");
 
             if (cacheName != null) {
                 DynamicCacheDescriptor cacheDesc = ignite().context().cache().cacheDescriptor(cacheName);
 
                 if (cacheDesc == null)
-                    throw igniteSqlException("Cache doesn't exist: " + cacheName, IgniteQueryErrorCode.CACHE_NOT_FOUND);
+                    throw createJdbcSqlException("Cache doesn't exist: " + cacheName, IgniteQueryErrorCode.CACHE_NOT_FOUND);
 
                 schemaName = QueryUtils.normalizeSchemaName(cacheName, cacheDesc.cacheConfiguration().getSqlSchema());
             }
@@ -680,7 +680,7 @@ public class JdbcConnection implements Connection {
         ensureNotClosed();
 
         if (timeout < 0)
-            throw igniteSqlException("Invalid timeout: " + timeout);
+            throw new SQLException("Invalid timeout: " + timeout);
 
         try {
             JdbcConnectionValidationTask task = new JdbcConnectionValidationTask(cacheName,
@@ -705,8 +705,7 @@ public class JdbcConnection implements Connection {
                 return task.call();
         }
         catch (IgniteClientDisconnectedException | ComputeTaskTimeoutException e) {
-            throw igniteSqlException("Failed to establish connection.",
-                IgniteQueryErrorCode.CONNECTION_ERROR_GENERAL, e);
+            throw new SQLException("Failed to establish connection.", JdbcStateCode.CONNECTION_ERROR, e);
         }
         catch (IgniteException ignored) {
             return false;

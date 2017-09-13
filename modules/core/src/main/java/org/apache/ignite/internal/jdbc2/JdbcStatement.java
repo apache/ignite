@@ -31,9 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.util.typedef.F;
 
@@ -42,7 +40,6 @@ import static java.sql.ResultSet.FETCH_FORWARD;
 import static java.sql.ResultSet.HOLD_CURSORS_OVER_COMMIT;
 import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
 import static org.apache.ignite.internal.jdbc2.JdbcUtils.convertToSqlException;
-import static org.apache.ignite.internal.jdbc2.JdbcUtils.igniteSqlException;
 
 /**
  * JDBC statement implementation.
@@ -102,7 +99,7 @@ public class JdbcStatement implements Statement {
         updateCnt = -1;
 
         if (F.isEmpty(sql))
-            throw igniteSqlException("SQL query is empty");
+            throw new SQLException("SQL query is empty");
 
         Ignite ignite = conn.ignite();
 
@@ -165,7 +162,7 @@ public class JdbcStatement implements Statement {
         boolean loc = nodeId == null;
 
         if (!conn.isDmlSupported())
-            throw igniteSqlException("Failed to query Ignite: DML operations are supported in versions 1.8.0 and newer");
+            throw new SQLException("Failed to query Ignite: DML operations are supported in versions 1.8.0 and newer");
 
         JdbcQueryTask qryTask = JdbcQueryTaskV2.createTask(loc ? ignite : null, conn.cacheName(), conn.schemaName(),
             sql, false, loc, args, fetchSize, uuid, conn.isLocalQuery(), conn.isCollocatedQuery(),
@@ -192,17 +189,17 @@ public class JdbcStatement implements Statement {
             return -1;
 
         if (rows.size() != 1)
-            throw igniteSqlException("Expected fetch size of 1 for update operation");
+            throw new SQLException("Expected fetch size of 1 for update operation");
 
         List<?> row = rows.get(0);
 
         if (row.size() != 1)
-            throw igniteSqlException("Expected row size of 1 for update operation");
+            throw new SQLException("Expected row size of 1 for update operation");
 
         Object objRes = row.get(0);
 
         if (!(objRes instanceof Long))
-            throw igniteSqlException("Unexpected update result type");
+            throw new SQLException("Unexpected update result type");
 
         return (Long)objRes;
     }
@@ -320,7 +317,7 @@ public class JdbcStatement implements Statement {
         updateCnt = -1;
 
         if (F.isEmpty(sql))
-            throw igniteSqlException("SQL query is empty");
+            throw new SQLException("SQL query is empty");
 
         Ignite ignite = conn.ignite();
 
@@ -438,7 +435,7 @@ public class JdbcStatement implements Statement {
         ensureNotClosed();
 
         if (F.isEmpty(sql))
-            throw igniteSqlException("SQL query is empty");
+            throw new SQLException("SQL query is empty");
 
         if (batch == null)
             batch = new ArrayList<>();
@@ -664,6 +661,6 @@ public class JdbcStatement implements Statement {
      */
     void ensureNotClosed() throws SQLException {
         if (closed)
-            throw igniteSqlException("Connection is closed.", IgniteQueryErrorCode.CONNECTION_CLOSED);
+            throw new SQLException("Connection is closed.", JdbcStateCode.CONNECTION_CLOSED);
     }
 }

@@ -34,7 +34,7 @@ import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.resources.IgniteInstanceResource;
 
 import static java.sql.Statement.SUCCESS_NO_INFO;
-import static org.apache.ignite.internal.jdbc2.JdbcUtils.igniteSqlException;
+import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.createJdbcSqlException;
 
 /**
  * Task for SQL batched update statements execution through {@link IgniteJdbcDriver}.
@@ -120,11 +120,11 @@ class JdbcBatchUpdateTask implements IgniteCallable<int[]> {
 
         if (cache == null) {
             if (cacheName == null) {
-                throw igniteSqlException("Failed to execute query. No suitable caches found.",
+                throw createJdbcSqlException("Failed to execute query. No suitable caches found.",
                     IgniteQueryErrorCode.CACHE_NOT_FOUND);
             }
             else {
-                throw igniteSqlException("Cache not found [cacheName=" + cacheName + ']',
+                throw createJdbcSqlException("Cache not found [cacheName=" + cacheName + ']',
                     IgniteQueryErrorCode.CACHE_NOT_FOUND);
             }
         }
@@ -174,7 +174,7 @@ class JdbcBatchUpdateTask implements IgniteCallable<int[]> {
         QueryCursorImpl<List<?>> qryCursor = (QueryCursorImpl<List<?>>)cache.withKeepBinary().query(qry);
 
         if (qryCursor.isQuery()) {
-            throw igniteSqlException(getError("Query produced result set", qry),
+            throw createJdbcSqlException(getError("Query produced result set", qry),
                 IgniteQueryErrorCode.STMT_TYPE_MISMATCH);
         }
 
