@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.io.Serializable;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -43,7 +42,6 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
-import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
@@ -66,7 +64,6 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -114,12 +111,12 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         final IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        final CacheConfiguration<Integer, IgniteWalReaderTest.IndexedObject> ccfg = new CacheConfiguration<>(CACHE_NAME);
+        final CacheConfiguration<Integer, IndexedObject> ccfg = new CacheConfiguration<>(CACHE_NAME);
 
         ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
         ccfg.setRebalanceMode(CacheRebalanceMode.SYNC);
         ccfg.setAffinity(new RendezvousAffinityFunction(false, 32));
-        ccfg.setIndexedTypes(Integer.class, IgniteWalReaderTest.IndexedObject.class);
+        ccfg.setIndexedTypes(Integer.class, IndexedObject.class);
 
         cfg.setCacheConfiguration(ccfg);
 
@@ -470,7 +467,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
                     IndexedObject indexedObj = (IndexedObject)val;
                     assertEquals(indexedObj.iVal, indexedObj.jVal);
                     assertEquals(indexedObj.iVal, key);
-                    for (byte datum : indexedObj.data) {
+                    for (byte datum : indexedObj.getData()) {
                         assert datum >= 'A' && datum <= 'A' + 10;
                     }
                 }
@@ -830,58 +827,6 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
          * @param t the input argument
          */
         public void accept(T t, U u);
-    }
-
-    /** Test object for placing into grid in this test */
-    private static class IndexedObject {
-        /** I value. */
-        @QuerySqlField(index = true)
-        private int iVal;
-
-        /** J value = I value. */
-        @QuerySqlField(index = true)
-        private int jVal;
-
-        /** Data filled with recognizable pattern */
-        private byte[] data;
-
-        /**
-         * @param iVal Integer value.
-         */
-        private IndexedObject(int iVal) {
-            this.iVal = iVal;
-            this.jVal = iVal;
-            int sz = 1024;
-            data = new byte[sz];
-            for (int i = 0; i < sz; i++)
-                data[i] = (byte)('A' + (i % 10));
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean equals(Object o) {
-            if (this == o)
-                return true;
-            if (o == null || getClass() != o.getClass())
-                return false;
-
-            IndexedObject obj = (IndexedObject)o;
-
-            if (iVal != obj.iVal)
-                return false;
-            return Arrays.equals(data, obj.data);
-        }
-
-        /** {@inheritDoc} */
-        @Override public int hashCode() {
-            int res = iVal;
-            res = 31 * res + Arrays.hashCode(data);
-            return res;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(IgniteWalReaderTest.IndexedObject.class, this);
-        }
     }
 
     /** Enum for cover binaryObject enum save/load */
