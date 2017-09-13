@@ -47,9 +47,6 @@ public class SqlListenerNioListener extends GridNioServerListenerAdapter<byte[]>
     /** Connection-related metadata key. */
     private static final int CONN_CTX_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
 
-    /** Request ID generator. */
-    private static final AtomicLong REQ_ID_GEN = new AtomicLong();
-
     /** Busy lock. */
     private final GridSpinBusyLock busyLock;
 
@@ -123,15 +120,13 @@ public class SqlListenerNioListener extends GridNioServerListenerAdapter<byte[]>
 
         assert req != null;
 
-        req.requestId(REQ_ID_GEN.incrementAndGet());
-
         try {
             long startTime = 0;
 
             if (log.isDebugEnabled()) {
                 startTime = System.nanoTime();
 
-                log.debug("SQL client request received [reqId=" + req.requestId() + ", addr=" +
+                log.debug("Client request received [reqId=" + req.requestId() + ", addr=" +
                     ses.remoteAddress() + ", req=" + req + ']');
             }
 
@@ -140,7 +135,7 @@ public class SqlListenerNioListener extends GridNioServerListenerAdapter<byte[]>
             if (log.isDebugEnabled()) {
                 long dur = (System.nanoTime() - startTime) / 1000;
 
-                log.debug("SQL client request processed [reqId=" + req.requestId() + ", dur(mcs)=" + dur  +
+                log.debug("Client request processed [reqId=" + req.requestId() + ", dur(mcs)=" + dur  +
                     ", resp=" + resp.status() + ']');
             }
 
@@ -149,7 +144,7 @@ public class SqlListenerNioListener extends GridNioServerListenerAdapter<byte[]>
             ses.send(outMsg);
         }
         catch (Exception e) {
-            log.error("Failed to process SQL client request [req=" + req + ']', e);
+            log.error("Failed to process client request [req=" + req + ']', e);
 
             ses.send(parser.encode(handler.handleException(e)));
         }
