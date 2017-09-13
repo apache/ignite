@@ -66,7 +66,7 @@ public class ClientMessageParser implements SqlListenerMessageParser {
      *
      * @param ctx Kernal context.
      */
-    public ClientMessageParser(GridKernalContext ctx) {
+    ClientMessageParser(GridKernalContext ctx) {
         assert ctx != null;
 
         CacheObjectBinaryProcessorImpl cacheObjProc = (CacheObjectBinaryProcessorImpl)ctx.cacheObjects();

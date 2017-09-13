@@ -26,14 +26,14 @@ import org.jetbrains.annotations.Nullable;
  */
 public class ClientResponse extends SqlListenerResponse {
     /** Request id. */
-    private final int requestId;
+    private final long requestId;
 
     /**
      * Ctor.
      *
      * @param requestId Request id.
      */
-    public ClientResponse(int requestId) {
+    public ClientResponse(long requestId) {
         super(STATUS_SUCCESS, null);
 
         this.requestId = requestId;
@@ -43,6 +43,6 @@ public class ClientResponse extends SqlListenerResponse {
      * Encodes the response data.
      */
     public void encode(BinaryRawWriter writer) {
-        writer.writeInt(requestId);
+        writer.writeLong(requestId);
     }
 }
