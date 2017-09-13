@@ -2241,7 +2241,7 @@ private IgniteInternalFuture<Object> rebuildIndexesFromHash(@Nullable final Stri
         for (QueryField col : cols) {
             try {
                 props.add(new QueryBinaryProperty(ctx, col.name(), null, Class.forName(col.typeName()),
-                    false, null));
+                    false, null, !col.isNullable()));
             }
             catch (ClassNotFoundException e) {
                 throw new SchemaOperationException("Class not found for new property: " + col.typeName());
@@ -2590,6 +2590,25 @@ private IgniteInternalFuture<Object> rebuildIndexesFromHash(@Nullable final Stri
      */
     public CacheQueryObjectValueContext objectContext() {
         return valCtx;
+    }
+
+    /**
+     * Performs validation of provided key and value against configured constraints.
+     * Throws runtime exception if validation fails.
+     *
+     * @param coctx Cache object context.
+     * @param key Key.
+     * @param val Value.
+     * @throws IgniteCheckedException, If error happens.
+     */
+    public void validateKeyAndValue(CacheObjectContext coctx, KeyCacheObject key, CacheObject val)
+        throws IgniteCheckedException {
+        QueryTypeDescriptorImpl desc = typeByValue(coctx.cacheName(), coctx, key, val, false);
+
+        if (desc == null)
+            return;
+
+        desc.validateKeyAndValue(key, val);
     }
 
     /**
