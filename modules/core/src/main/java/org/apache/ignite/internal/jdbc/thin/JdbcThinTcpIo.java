@@ -28,13 +28,13 @@ import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.odbc.SqlListenerNioListener;
 import org.apache.ignite.internal.processors.odbc.SqlListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.SqlListenerRequest;
 import org.apache.ignite.internal.processors.odbc.SqlListenerResponse;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBatchExecuteRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBatchExecuteResult;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcErrorResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaColumnsRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaColumnsResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaIndexesRequest;
@@ -356,15 +356,8 @@ public class JdbcThinTcpIo {
 
         res.readBinary(reader);
 
-        if (res.status() != SqlListenerResponse.STATUS_SUCCESS) {
-            if (res.response() instanceof JdbcErrorResult) {
-                JdbcErrorResult err = (JdbcErrorResult)res.response();
-
-                throw new IgniteSQLException(res.error(), err.code(), err.sqlState());
-            }
-
-            throw new IgniteCheckedException("Error server response: [req=" + req + ", resp=" + res + ']');
-        }
+        if (res.status() != SqlListenerResponse.STATUS_SUCCESS)
+            throw new IgniteSQLException(res.error(), res.status(), IgniteQueryErrorCode.codeToSqlState(res.status()));
 
         return (R)res.response();
     }

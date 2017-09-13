@@ -46,7 +46,9 @@ public class JdbcResponse extends SqlListenerResponse implements JdbcRawBinaryli
      * @param res Response result.
      */
     public JdbcResponse(JdbcResult res) {
-        this(res, res instanceof JdbcErrorResult ? STATUS_FAILED : STATUS_SUCCESS, null);
+        super(STATUS_SUCCESS, null);
+
+        this.res = res;
     }
 
     /**
@@ -56,24 +58,9 @@ public class JdbcResponse extends SqlListenerResponse implements JdbcRawBinaryli
      * @param err Error, {@code null} if success is {@code true}.
      */
     public JdbcResponse(int status, @Nullable String err) {
-        this(null, status, err);
-
-        assert status != STATUS_SUCCESS;
-    }
-
-    /**
-     * Constructor for arbitrary response.
-     *
-     * @param res result.
-     * @param status status code.
-     * @param err optional error message.
-     */
-    public JdbcResponse(JdbcResult res, int status, @Nullable String err) {
         super(status, err);
 
-        assert res instanceof JdbcErrorResult ^ status == STATUS_SUCCESS;
-
-        this.res = res;
+        assert status != STATUS_SUCCESS;
     }
 
     /**
@@ -92,23 +79,26 @@ public class JdbcResponse extends SqlListenerResponse implements JdbcRawBinaryli
     @Override public void writeBinary(BinaryWriterExImpl writer) throws BinaryObjectException {
         writer.writeInt(status());
 
-        if (status() != STATUS_SUCCESS)
+        if (status() == STATUS_SUCCESS) {
+            writer.writeBoolean(res != null);
+
+            if (res != null)
+                res.writeBinary(writer);
+        }
+        else
             writer.writeString(error());
 
-        writer.writeBoolean(res != null);
-
-        if (res != null)
-            res.writeBinary(writer);
     }
 
     /** {@inheritDoc} */
     @Override public void readBinary(BinaryReaderExImpl reader) throws BinaryObjectException {
         status(reader.readInt());
 
-        if (status() != STATUS_SUCCESS)
+        if (status() == STATUS_SUCCESS) {
+            if (reader.readBoolean())
+                res = JdbcResult.readResult(reader);
+        }
+        else
             error(reader.readString());
-
-        if (reader.readBoolean())
-            res = JdbcResult.readResult(reader);
     }
 }

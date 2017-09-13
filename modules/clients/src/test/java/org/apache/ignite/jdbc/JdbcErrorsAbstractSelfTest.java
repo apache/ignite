@@ -78,7 +78,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
     public void testDmlErrors() throws SQLException {
         checkErrorState("INSERT INTO \"test\".INTEGER(_key, _val) values(1, null)", "22004");
 
-        checkErrorState("INSERT INTO \"test\".INTEGER(_key, _val) values(1, 'zzz')", "22004");
+        checkErrorState("INSERT INTO \"test\".INTEGER(_key, _val) values(1, 'zzz')", "50000");
     }
 
     /**
