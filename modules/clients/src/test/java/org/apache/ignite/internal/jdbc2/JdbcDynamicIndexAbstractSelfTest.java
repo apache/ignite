@@ -320,37 +320,17 @@ public abstract class JdbcDynamicIndexAbstractSelfTest extends JdbcAbstractDmlSt
         try {
             r.run();
         }
-        catch (SQLException ex) {
-            if (ex.getCause() != null) {
-                try {
-                    throw ex.getCause();
-                }
-                catch (CacheException ex1) {
-                    if (ex1.getCause() != null) {
-                        try {
-                            throw ex1.getCause();
-                        }
-                        catch (IgniteSQLException e) {
-                            assertEquals("Unexpected error code [expected=" + expCode + ", actual=" + e.statusCode() + ']',
-                                expCode, e.statusCode());
+        catch (SQLException e) {
+            assertEquals("Unexpected error code [expected=" + expCode + ", actual=" + e.getErrorCode() + ']',
+                expCode, e.getErrorCode());
 
-                            return;
-                        }
-                        catch (Throwable t) {
-                            fail("Unexpected exception: " + t);
-                        }
-                    }
-                }
-                catch (Throwable t) {
-                    fail("Unexpected exception: " + t);
-                }
-            }
+            return;
         }
         catch (Exception e) {
             fail("Unexpected exception: " + e);
         }
 
-        fail(IgniteSQLException.class.getSimpleName() +  " is not thrown.");
+        fail(SQLException.class.getSimpleName() +  " is not thrown.");
     }
 
     /**
