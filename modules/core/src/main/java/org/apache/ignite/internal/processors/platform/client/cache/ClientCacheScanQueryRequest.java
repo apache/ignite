@@ -45,19 +45,19 @@ public class ClientCacheScanQueryRequest extends ClientCacheRequest {
     private static final byte FILTER_PLATFORM_CPP = 3;
 
     /** Local flag. */
-    private final boolean local;
+    private final boolean loc;
 
     /** Page size. */
     private final int pageSize;
 
     /** Partition. */
-    private final Integer partition;
+    private final Integer part;
 
     /** Filter platform. */
     private final byte filterPlatform;
 
     /** Filter object. */
-    private final Object filterObject;
+    private final Object filterObj;
 
     /**
      * Ctor.
@@ -71,13 +71,13 @@ public class ClientCacheScanQueryRequest extends ClientCacheRequest {
 
         switch (filterPlatform) {
             case GridBinaryMarshaller.NULL:
-                filterObject = null;
+                filterObj = null;
                 break;
 
             case FILTER_PLATFORM_JAVA:
             case FILTER_PLATFORM_DOTNET:
             case FILTER_PLATFORM_CPP:
-                filterObject = reader.readObjectDetached();
+                filterObj = reader.readObjectDetached();
                 break;
 
             default:
@@ -85,16 +85,16 @@ public class ClientCacheScanQueryRequest extends ClientCacheRequest {
         }
 
         pageSize = reader.readInt();
-        partition = reader.readBoolean() ? reader.readInt() : null;
-        local = reader.readBoolean();
+        part = reader.readBoolean() ? reader.readInt() : null;
+        loc = reader.readBoolean();
     }
 
     /** {@inheritDoc} */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
         ScanQuery qry = new ScanQuery()
-            .setLocal(local)
+            .setLocal(loc)
             .setPageSize(pageSize)
-            .setPartition(partition)
+            .setPartition(part)
             .setFilter(createFilter(ctx));
 
         QueryCursor cur = cacheWithBinaryFlag(ctx).query(qry);
@@ -113,13 +113,12 @@ public class ClientCacheScanQueryRequest extends ClientCacheRequest {
      * @param ctx Context.
      */
     private IgniteBiPredicate createFilter(ClientConnectionContext ctx) {
-        if (filterObject == null) {
+        if (filterObj == null)
             return null;
-        }
 
         switch (filterPlatform) {
             case FILTER_PLATFORM_JAVA:
-                return ((BinaryObject) filterObject).deserialize();
+                return ((BinaryObject) filterObj).deserialize();
 
             case FILTER_PLATFORM_DOTNET:
                 PlatformContext platformCtx = ctx.kernalContext().platform().context();
@@ -131,7 +130,7 @@ public class ClientCacheScanQueryRequest extends ClientCacheRequest {
                         ", current platform is " + curPlatform);
                 }
 
-                return platformCtx.createCacheEntryFilter(filterObject, 0);
+                return platformCtx.createCacheEntryFilter(filterObj, 0);
 
             default:
                 throw new UnsupportedOperationException("Invalid client ScanQuery filter code: " + filterPlatform);
