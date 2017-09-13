@@ -37,7 +37,7 @@ class ClientCacheScanQueryResponse extends ClientResponse {
      * @param cursorId Cursor id.
      * @param cursor Cursor.
      */
-    ClientCacheScanQueryResponse(int requestId, long cursorId, ClientCacheScanQueryCursor cursor) {
+    ClientCacheScanQueryResponse(long requestId, long cursorId, ClientCacheScanQueryCursor cursor) {
         super(requestId);
 
         assert cursor != null;

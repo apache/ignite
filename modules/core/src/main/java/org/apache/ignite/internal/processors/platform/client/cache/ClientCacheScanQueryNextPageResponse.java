@@ -33,7 +33,7 @@ class ClientCacheScanQueryNextPageResponse extends ClientResponse {
      * @param requestId Request id.
      * @param cursor Cursor.
      */
-    ClientCacheScanQueryNextPageResponse(int requestId, ClientCacheScanQueryCursor cursor) {
+    ClientCacheScanQueryNextPageResponse(long requestId, ClientCacheScanQueryCursor cursor) {
         super(requestId);
 
         assert cursor != null;
