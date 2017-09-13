@@ -51,7 +51,7 @@ public class ClientGetBinaryTypeNameRequest extends ClientRequest {
         try {
             String typeName = ctx.kernalContext().marshallerContext().getClassName(platformId, typeId);
 
-            return new ClientGetBinaryTypeNameResponse(getRequestId(), typeName);
+            return new ClientGetBinaryTypeNameResponse(requestId(), typeName);
         }
         catch (ClassNotFoundException | IgniteCheckedException e) {
             throw new BinaryObjectException(e);

@@ -15,38 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.platform.client;
-
-import org.apache.ignite.binary.BinaryRawReader;
-import org.apache.ignite.internal.processors.odbc.SqlListenerRequest;
+package org.apache.ignite.internal.processors.odbc;
 
 /**
- * Thin client request.
+ * Client request with no ID.
  */
-public class ClientRequest implements SqlListenerRequest {
-    /** Request id. */
-    private final long reqId;
-
-    /**
-     * Constructor.
-     *
-     * @param reader Reader.
-     */
-    public ClientRequest(BinaryRawReader reader) {
-        reqId = reader.readLong();
-    }
-
+public abstract class SqlListenerRequestNoId implements SqlListenerRequest {
     /** {@inheritDoc} */
     @Override public long requestId() {
-        return reqId;
-    }
-
-    /**
-     * Processes the request.
-     *
-     * @return Response.
-     */
-    public ClientResponse process(ClientConnectionContext ctx) {
-        return new ClientResponse(reqId);
+        return 0;
     }
 }

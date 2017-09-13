@@ -29,14 +29,14 @@ class ClientCacheRequest extends ClientRequest {
     /** Flag: keep binary. */
     private static final byte FLAG_KEEP_BINARY = 1;
 
-    /** Cache id. */
+    /** Cache ID. */
     private final int cacheId;
 
     /** Flags. */
     private final byte flags;
 
     /**
-     * Ctor.
+     * Constructor.
      *
      * @param reader Reader.
      */
@@ -44,6 +44,7 @@ class ClientCacheRequest extends ClientRequest {
         super(reader);
 
         cacheId = reader.readInt();
+
         flags = reader.readByte();  // Flags (skipStore, etc);
     }
 
@@ -53,7 +54,7 @@ class ClientCacheRequest extends ClientRequest {
      * @param ctx Kernal context.
      * @return Cache.
      */
-    protected IgniteCache getCache(ClientConnectionContext ctx) {
+    protected IgniteCache cache(ClientConnectionContext ctx) {
         return getRawCache(ctx).withKeepBinary();
     }
 

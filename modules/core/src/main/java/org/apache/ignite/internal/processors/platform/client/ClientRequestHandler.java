@@ -30,7 +30,7 @@ public class ClientRequestHandler implements SqlListenerRequestHandler {
     private final ClientConnectionContext ctx;
 
     /**
-     * Ctor.
+     * Constructor.
      *
      * @param ctx Kernal context.
      */

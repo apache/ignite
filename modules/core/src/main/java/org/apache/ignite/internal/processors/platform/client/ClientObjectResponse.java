@@ -27,12 +27,12 @@ public class ClientObjectResponse extends ClientResponse {
     private final Object val;
 
     /**
-     * Ctor.
+     * Constructor.
      *
-     * @param requestId Request id.
+     * @param reqId Request id.
      */
-    public ClientObjectResponse(long requestId, Object val) {
-        super(requestId);
+    public ClientObjectResponse(long reqId, Object val) {
+        super(reqId);
 
         this.val = val;
     }

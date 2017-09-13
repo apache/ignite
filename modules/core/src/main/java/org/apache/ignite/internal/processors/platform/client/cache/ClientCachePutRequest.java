@@ -25,10 +25,10 @@ import org.apache.ignite.internal.processors.platform.client.ClientResponse;
  * Cache put request.
  */
 public class ClientCachePutRequest extends ClientCacheRequest {
-    /** */
+    /** Key. */
     private final Object key;
 
-    /** */
+    /** Value. */
     private final Object val;
 
     /**
@@ -46,7 +46,7 @@ public class ClientCachePutRequest extends ClientCacheRequest {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public ClientResponse process(ClientConnectionContext ctx) {
-        getCache(ctx).put(key, val);
+        cache(ctx).put(key, val);
 
         return super.process(ctx);
     }

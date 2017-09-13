@@ -35,9 +35,9 @@ import org.apache.ignite.internal.processors.cache.IgniteCachePutStackOverflowSe
 import org.apache.ignite.internal.processors.cache.IgniteCacheReadThroughEvictionsVariationsSuite;
 import org.apache.ignite.internal.processors.cache.IgniteCacheStoreCollectionTest;
 import org.apache.ignite.internal.processors.cache.PartitionsExchangeOnDiscoveryHistoryOverflowTest;
+import org.apache.ignite.internal.processors.cache.distributed.Cache64kPartitionsTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheLateAffinityAssignmentNodeJoinValidationTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheLateAffinityAssignmentTest;
-import org.apache.ignite.internal.processors.cache.distributed.GridCachePartitionEvictionDuringReadThroughSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheGroupsPartitionLossPolicySelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCachePartitionLossPolicySelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheTxIteratorSelfTest;
@@ -95,6 +95,8 @@ public class IgniteCacheTestSuite5 extends TestSuite {
         suite.addTestSuite(GridCachePartitionExchangeManagerHistSizeTest.class);
 
         suite.addTestSuite(NotMappedPartitionInTxTest.class);
+
+        suite.addTestSuite(Cache64kPartitionsTest.class);
 
         return suite;
     }

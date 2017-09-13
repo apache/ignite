@@ -29,8 +29,7 @@ import org.apache.ignite.internal.processors.odbc.SqlListenerRequestHandler;
  */
 public class ClientConnectionContext implements SqlListenerConnectionContext {
     /** Version 1.0.0. */
-    private static final SqlListenerProtocolVersion VER_1_0_0 =
-            SqlListenerProtocolVersion.create(1, 0, 0);
+    private static final SqlListenerProtocolVersion VER_1_0_0 = SqlListenerProtocolVersion.create(1, 0, 0);
 
     /** Message parser. */
     private final ClientMessageParser parser;
@@ -87,8 +86,7 @@ public class ClientConnectionContext implements SqlListenerConnectionContext {
     }
 
     /** {@inheritDoc} */
-    @Override public void initializeFromHandshake(SqlListenerProtocolVersion ver,
-                                                  BinaryReaderExImpl reader) {
+    @Override public void initializeFromHandshake(SqlListenerProtocolVersion ver, BinaryReaderExImpl reader) {
         // No-op.
     }
 
