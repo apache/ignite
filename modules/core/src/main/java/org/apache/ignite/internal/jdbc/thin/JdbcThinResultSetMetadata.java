@@ -22,8 +22,6 @@ import java.sql.SQLException;
 import java.util.List;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcColumnMeta;
 
-import static org.apache.ignite.internal.jdbc2.JdbcUtils.igniteSqlException;
-
 /**
  * JDBC result set metadata implementation.
  */
@@ -151,7 +149,7 @@ public class JdbcThinResultSetMetadata implements ResultSetMetaData {
     /** {@inheritDoc} */
     @Override public <T> T unwrap(Class<T> iface) throws SQLException {
         if (!isWrapperFor(iface))
-            throw igniteSqlException("Result set meta data is not a wrapper for " + iface.getName());
+            throw new SQLException("Result set meta data is not a wrapper for " + iface.getName());
 
         return (T)this;
     }

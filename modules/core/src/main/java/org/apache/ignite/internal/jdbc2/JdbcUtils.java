@@ -18,14 +18,10 @@
 package org.apache.ignite.internal.jdbc2;
 
 import java.net.URL;
-import java.sql.SQLException;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.sql.Types;
 import java.util.Date;
-import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcErrorResult;
-import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 
 import static java.sql.Types.BIGINT;
@@ -143,74 +139,5 @@ public class JdbcUtils {
      */
     static boolean isSqlType(Class<?> cls) {
         return QueryUtils.isSqlType(cls) || cls == URL.class;
-    }
-
-    /**
-     * Create {@link SQLException} with proper {@code STATE} from given message and Ignite error code.
-     * @param msg error message.
-     * @param code error code.
-     * @return JDBC {@link SQLException}.
-     * @see IgniteQueryErrorCode
-     */
-    public static SQLException igniteSqlException(String msg, int code) {
-        return new IgniteSQLException(msg, code).toJdbcException();
-    }
-
-    /**
-     * Create {@link SQLException} with proper {@code STATE} from given message, Ignite error code, and cause.
-     * @param msg error message.
-     * @param code error code.
-     * @param err cause.
-     * @return JDBC {@link SQLException}.
-     * @see IgniteQueryErrorCode
-     */
-    public static SQLException igniteSqlException(String msg, int code, Throwable err) {
-        return new IgniteSQLException(msg, code, err).toJdbcException();
-    }
-
-    /**
-     * Create {@link SQLException} with common {@code STATE} and error code from given message.
-     * @param msg error message.
-     * @return JDBC {@link SQLException}.
-     * @see IgniteQueryErrorCode
-     */
-    public static SQLException igniteSqlException(String msg) {
-        return new IgniteSQLException(msg).toJdbcException();
-    }
-
-    /**
-     * Create {@link SQLException} with common {@code STATE} and error code from given message and cause.
-     * @param msg error message.
-     * @param err cause.
-     * @return JDBC {@link SQLException}.
-     * @see IgniteQueryErrorCode
-     */
-    public static SQLException igniteSqlException(String msg, Throwable err) {
-        return new IgniteSQLException(msg, err).toJdbcException();
-    }
-
-    /**
-     * Convert exception to {@link SQLException}.
-     *
-     * @param e Converted Exception.
-     * @param msgForUnknown Message non-convertable exception.
-     * @return JDBC {@link SQLException}.
-     * @see IgniteQueryErrorCode
-     */
-    public static SQLException convertToSqlException(Exception e, String msgForUnknown) {
-        SQLException sqlEx = null;
-
-        Throwable t = e;
-
-        while (sqlEx == null && t != null) {
-            if (e instanceof SQLException)
-                return (SQLException)e;
-            else if (e instanceof IgniteSQLException)
-                sqlEx = ((IgniteSQLException)e).toJdbcException();
-
-            t = t.getCause();
-        }
-
-        return sqlEx != null ? sqlEx : igniteSqlException(msgForUnknown, e);
     }
 }
