@@ -421,6 +421,9 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                                     procRes = processor.process(invokeEntry, t.get2());
 
                                     val = cacheCtx.toCacheObject(invokeEntry.getValue(true));
+
+                                    if (val != null) // no validation for remove case
+                                        cacheCtx.validateKeyAndValue(key, val);
                                 }
                                 catch (Exception e) {
                                     err = e;

@@ -22,9 +22,12 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.QueryIndexType;
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -100,6 +103,9 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
 
     /** Obsolete. */
     private volatile boolean obsolete;
+
+    /** */
+    private List<GridQueryProperty> validateProps;
 
     /**
      * Constructor.
@@ -367,6 +373,13 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
         if (uppercaseProps.put(name.toUpperCase(), prop) != null && failOnDuplicate)
             throw new IgniteCheckedException("Property with upper cased name '" + name + "' already exists.");
 
+        if (prop.notNull()) {
+            if (validateProps == null)
+                validateProps = new ArrayList<>();
+
+            validateProps.add(prop);
+        }
+
         fields.put(name, prop.type());
     }
 
@@ -469,5 +482,22 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
 
     @Nullable @Override public String valueFieldAlias() {
         return valFieldName != null ? aliases.get(valFieldName) : null;
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("ForLoopReplaceableByForEach")
+    @Override public void validateKeyAndValue(Object key, Object val) throws IgniteCheckedException {
+        if (validateProps == null)
+            return;
+
+        final int size = validateProps.size();
+
+        for (int idx = 0; idx < size; ++idx) {
+            GridQueryProperty prop = validateProps.get(idx);
+
+            if (prop.value(key, val) == null)
+                throw new IgniteSQLException("Null value is not allowed for field '" + prop.name() + "'",
+                    IgniteQueryErrorCode.NULL_VALUE);
+        }
     }
 }
