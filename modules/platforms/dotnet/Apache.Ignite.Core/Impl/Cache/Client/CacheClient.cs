@@ -684,12 +684,12 @@ namespace Apache.Ignite.Core.Impl.Cache.Client
             }
             else
             {
-                writer.WriteByte(FilterPlatformDotnet);
-
                 var holder = new CacheEntryFilterHolder(qry.Filter, (key, val) => qry.Filter.Invoke(
                     new CacheEntry<TK, TV>((TK) key, (TV) val)), writer.Marshaller, _keepBinary);
 
                 writer.WriteObject(holder);
+
+                writer.WriteByte(FilterPlatformDotnet);
             }
 
             writer.WriteInt(qry.PageSize);

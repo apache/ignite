@@ -67,22 +67,9 @@ public class ClientCacheScanQueryRequest extends ClientCacheRequest {
     public ClientCacheScanQueryRequest(BinaryRawReaderEx reader) {
         super(reader);
 
-        filterPlatform = reader.readByte();
+        filterObj = reader.readObjectDetached();
 
-        switch (filterPlatform) {
-            case GridBinaryMarshaller.NULL:
-                filterObj = null;
-                break;
-
-            case FILTER_PLATFORM_JAVA:
-            case FILTER_PLATFORM_DOTNET:
-            case FILTER_PLATFORM_CPP:
-                filterObj = reader.readObjectDetached();
-                break;
-
-            default:
-                throw new UnsupportedOperationException("Invalid client ScanQuery filter code: " + filterPlatform);
-        }
+        filterPlatform = filterObj == null ? 0 : reader.readByte();
 
         pageSize = reader.readInt();
 
