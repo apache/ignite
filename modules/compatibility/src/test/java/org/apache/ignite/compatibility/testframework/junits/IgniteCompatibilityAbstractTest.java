@@ -23,6 +23,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -311,8 +313,8 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
         /** Node joined latch. */
         private CountDownLatch nodeJoinedLatch;
 
-        /** Pattern for comparing. */
-        private String pattern;
+        /** Patterns for comparing. */
+        private Set<String> patterns = new HashSet<>();
 
         /**
          * @param nodeJoinedLatch Node joined latch.
@@ -320,12 +322,13 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
          */
         public LoggedJoinNodeClosure(CountDownLatch nodeJoinedLatch, UUID nodeId) {
             this.nodeJoinedLatch = nodeJoinedLatch;
-            this.pattern = "evt=NODE_JOINED, node=" + nodeId;
+            this.patterns.add("Remote node has joined [id=" + nodeId + "]");
+            this.patterns.add("Remote node has prepared [id=" + nodeId + "]");
         }
 
         /** {@inheritDoc} */
         @Override public void apply(String s) {
-            if (s.contains(pattern) && nodeJoinedLatch.getCount() > 0)
+            if (nodeJoinedLatch.getCount() > 0 && patterns.contains(s))
                 nodeJoinedLatch.countDown();
         }
     }

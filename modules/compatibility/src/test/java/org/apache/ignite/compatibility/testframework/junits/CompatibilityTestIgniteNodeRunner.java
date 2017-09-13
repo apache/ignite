@@ -26,15 +26,23 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.compatibility.testframework.plugins.TestCompatibilityPluginProvider;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.events.DiscoveryEvent;
+import org.apache.ignite.events.Event;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.util.GridJavaProcess;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.multijvm.IgniteNodeRunner;
 import org.jetbrains.annotations.NotNull;
@@ -71,12 +79,21 @@ public class CompatibilityTestIgniteNodeRunner extends IgniteNodeRunner {
 
         cfgClos.apply(cfg);
 
+        UUID id = UUID.fromString(args[2]);
+
         // Ignite instance name and id must be set according to arguments
         // it's used for nodes managing: start, stop etc.
         cfg.setIgniteInstanceName(args[1]);
-        cfg.setNodeId(UUID.fromString(args[2]));
+        cfg.setNodeId(id);
+
+        final CountDownLatch nodeStartedLatch = getNodeStartedLatch(cfg);
 
         Ignite ignite = Ignition.start(cfg);
+
+        if (nodeStartedLatch.await(20, TimeUnit.SECONDS))
+            X.println("Remote node has joined [id=" + id + "]");
+        else
+            X.println("Remote node has not joined [id=" + id + "]");
 
         // it needs to set private static field 'ignite' of the IgniteNodeRunner class via reflection
         GridTestUtils.setFieldValue(new IgniteNodeRunner(), "ignite", ignite);
@@ -86,6 +103,31 @@ public class CompatibilityTestIgniteNodeRunner extends IgniteNodeRunner {
 
             iClos.apply(ignite);
         }
+
+        X.println("Remote node has prepared [id=" + id + "]");
+    }
+
+    private static CountDownLatch getNodeStartedLatch(IgniteConfiguration cfg) {
+        final CountDownLatch rmtNodeStartedLatch = new CountDownLatch(1);
+
+        Map<IgnitePredicate<? extends Event>, int[]> lsnrs = new HashMap<>();
+
+        lsnrs.put(new IgnitePredicate<Event>() {
+            @Override public boolean apply(Event evt) {
+
+                X.println("****" + evt);
+
+                rmtNodeStartedLatch.countDown();
+
+                return true;
+            }
+        }, EventType.EVTS_ALL);
+
+        cfg.setLocalEventListeners(lsnrs);
+
+        cfg.setDiscoverySpi().
+
+        return rmtNodeStartedLatch;
     }
 
     /**

@@ -67,18 +67,18 @@ public class DummyPersistenceTest extends IgniteCompatibilityAbstractTest {
         try {
             startGrid(1, "2.1.0", new PostConfigurationClosure(), new PostActionClosure());
 
-            stopAllGrids();
+//            stopAllGrids();
+//
+//            IgniteEx ignite = startGrid(0);
+//
+//            assertEquals(1, ignite.context().discovery().topologyVersion());
+//
+//            ignite.active(true);
+//
+//            IgniteCache<Integer, String> cache = ignite.getOrCreateCache(TEST_CACHE_NAME);
 
-            IgniteEx ignite = startGrid(0);
-
-            assertEquals(1, ignite.context().discovery().topologyVersion());
-
-            ignite.active(true);
-
-            IgniteCache<Integer, String> cache = ignite.getOrCreateCache(TEST_CACHE_NAME);
-
-            for (int i = 0; i < 10; i++)
-                assertEquals("data" + i, cache.get(i));
+//            for (int i = 0; i < 10; i++)
+//                assertEquals("data" + i, cache.get(i));
         }
         finally {
             stopAllGrids();
@@ -89,18 +89,18 @@ public class DummyPersistenceTest extends IgniteCompatibilityAbstractTest {
     private static class PostActionClosure implements IgniteInClosure<Ignite> {
         /** {@inheritDoc} */
         @Override public void apply(Ignite ignite) {
-            ignite.active(true);
-
-            CacheConfiguration<Integer, String> cacheCfg = new CacheConfiguration<>();
-            cacheCfg.setName(TEST_CACHE_NAME);
-            cacheCfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
-            cacheCfg.setBackups(1);
-            cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-
-            IgniteCache<Integer, String> cache = ignite.createCache(cacheCfg);
-
-            for (int i = 0; i < 10; i++)
-                cache.put(i, "data" + i);
+//            ignite.active(true);
+//
+//            CacheConfiguration<Integer, String> cacheCfg = new CacheConfiguration<>();
+//            cacheCfg.setName(TEST_CACHE_NAME);
+//            cacheCfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+//            cacheCfg.setBackups(1);
+//            cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+//
+//            IgniteCache<Integer, String> cache = ignite.createCache(cacheCfg);
+//
+//            for (int i = 0; i < 10; i++)
+//                cache.put(i, "data" + i);
         }
     }
 
@@ -117,7 +117,7 @@ public class DummyPersistenceTest extends IgniteCompatibilityAbstractTest {
 
             cfg.setPeerClassLoadingEnabled(false);
 
-            cfg.setPersistentStoreConfiguration(new PersistentStoreConfiguration());
+//            cfg.setPersistentStoreConfiguration(new PersistentStoreConfiguration());
         }
     }
 }
