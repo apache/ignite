@@ -62,7 +62,7 @@ namespace Apache.Ignite.Core.Tests.Client
                 SendRequest(sock, stream =>
                 {
                     stream.WriteShort(1);  // OP_GET
-                    stream.WriteInt(1);  // Request id.
+                    stream.WriteLong(1);  // Request id.
                     var cacheId = BinaryUtils.GetStringHashCode(cache.Name);
                     stream.WriteInt(cacheId);
                     stream.WriteByte(0);  // Flags (withSkipStore, etc)
@@ -78,7 +78,7 @@ namespace Apache.Ignite.Core.Tests.Client
                 {
                     var reader = marsh.StartUnmarshal(stream);
 
-                    int requestId = reader.ReadInt();
+                    var requestId = reader.ReadLong();
                     Assert.AreEqual(1, requestId);
 
                     var res = reader.ReadObject<string>();

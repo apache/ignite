@@ -31,7 +31,7 @@ public class ClientObjectResponse extends ClientResponse {
      *
      * @param requestId Request id.
      */
-    public ClientObjectResponse(int requestId, Object val) {
+    public ClientObjectResponse(long requestId, Object val) {
         super(requestId);
 
         this.val = val;

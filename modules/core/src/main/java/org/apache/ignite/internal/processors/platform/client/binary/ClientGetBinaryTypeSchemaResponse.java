@@ -32,7 +32,7 @@ public class ClientGetBinaryTypeSchemaResponse extends ClientResponse {
      *
      * @param requestId Request id.
      */
-    ClientGetBinaryTypeSchemaResponse(int requestId, int[] schema) {
+    ClientGetBinaryTypeSchemaResponse(long requestId, int[] schema) {
         super(requestId);
 
         this.schema = schema;

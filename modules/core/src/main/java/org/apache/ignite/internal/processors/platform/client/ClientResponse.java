@@ -25,14 +25,14 @@ import org.apache.ignite.internal.processors.odbc.SqlListenerResponse;
  */
 public class ClientResponse extends SqlListenerResponse {
     /** Request id. */
-    private final int requestId;
+    private final long requestId;
 
     /**
      * Ctor.
      *
      * @param requestId Request id.
      */
-    public ClientResponse(int requestId) {
+    public ClientResponse(long requestId) {
         super(STATUS_SUCCESS, null);
 
         this.requestId = requestId;
@@ -42,6 +42,6 @@ public class ClientResponse extends SqlListenerResponse {
      * Encodes the response data.
      */
     public void encode(BinaryRawWriterEx writer) {
-        writer.writeInt(requestId);
+        writer.writeLong(requestId);
     }
 }

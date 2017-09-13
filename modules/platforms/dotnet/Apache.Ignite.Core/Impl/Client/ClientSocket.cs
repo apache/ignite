@@ -47,7 +47,7 @@ namespace Apache.Ignite.Core.Impl.Client
         private readonly Socket _socket;
 
         /** */
-        private int _requestId;
+        private long _requestId;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ClientSocket" /> class.
@@ -74,7 +74,7 @@ namespace Apache.Ignite.Core.Impl.Client
             var resBytes = SendReceive(_socket, stream =>
             {
                 stream.WriteShort((short) opId);
-                stream.WriteInt(requestId);
+                stream.WriteLong(requestId);
 
                 if (writeAction != null)
                 {
@@ -84,7 +84,7 @@ namespace Apache.Ignite.Core.Impl.Client
 
             using (var stream = new BinaryHeapStream(resBytes))
             {
-                var resRequestId = stream.ReadInt();
+                var resRequestId = stream.ReadLong();
                 Debug.Assert(requestId == resRequestId);
 
                 if (readFunc != null)
