@@ -23,6 +23,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
+import sun.awt.util.IdentityArrayList;
 
 import java.io.Externalizable;
 import java.io.InputStream;
@@ -30,14 +31,7 @@ import java.io.OutputStream;
 import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.EventListener;
-import java.util.HashMap;
-import java.util.IdentityHashMap;
-import java.util.LinkedList;
-import java.util.Map;
-import java.util.Queue;
+import java.util.*;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -105,9 +99,9 @@ public class GridToStringBuilder {
         }
     };
 
-    private static ThreadLocal<IdentityHashMap<Object, Integer>> savedObjects = new ThreadLocal<IdentityHashMap<Object, Integer>>() {
-        @Override protected IdentityHashMap<Object, Integer> initialValue() {
-            return new IdentityHashMap<>();
+    private static ThreadLocal<IdentityLinkedHashMap<Object, Integer>> savedObjects = new ThreadLocal<IdentityLinkedHashMap<Object, Integer>>() {
+        @Override protected IdentityLinkedHashMap<Object, Integer> initialValue() {
+            return new IdentityLinkedHashMap<>();
         }
     };
 
@@ -997,7 +991,10 @@ public class GridToStringBuilder {
                     }
 
                     if (!addNameWithPositionToBuffer(buf, val))
-                        buf.a(val);
+                        if (val != null)
+                            toStringAddVal(val.getClass(), val, buf);
+                        else
+                            buf.a(val);
                 }
             }
 
@@ -1693,19 +1690,71 @@ public class GridToStringBuilder {
     }
 
     private static boolean addNameWithPositionToBuffer(SB buf, Object val) {
-        IdentityHashMap<Object, Integer> map = savedObjects.get();
+        IdentityLinkedHashMap<Object, Integer> map = savedObjects.get();
 
         if (map.containsKey(val)) {
-            Object position = map.get(val);
+            Integer position = map.get(val);
 
             if (position == null)
                 throw new IllegalStateException("Method \"getPosition(Object o)\" must be called " +
                     "only after method isSaved(object) returned true.");
 
-            buf.a(val.getClass().getSimpleName() + "{position " + position + "}");
+            String hash = '@' + Integer.toHexString(System.identityHashCode(val));
+
+            addHashToBuffer(buf, position, val, hash, map);
+
+            buf.a(val.getClass().getSimpleName() + hash);
 
             return true;
         } else
             return false;
+    }
+
+    private static class IdentityLinkedHashMap<K, V> extends IdentityHashMap<K, V> {
+        private IdentityArrayList<Object> keys;
+
+        IdentityLinkedHashMap() {
+            super();
+
+            keys = new IdentityArrayList<>();
+        }
+
+        @Override public V put(K key, V value) {
+			V old = super.put(key, value);
+
+            if (old == null)
+                keys.add(key);
+
+            return old;
+        }
+
+        @Override public V remove(Object key) {
+            V old = super.remove(key);
+
+            keys.remove(key);
+
+            return old;
+        }
+    }
+
+    private static void addHashToBuffer(SB buf, int position, Object o, String hash, IdentityLinkedHashMap<Object, Integer> map) {
+        if (buf.impl().indexOf(hash, position) != position + hash.length()) {
+			buf.i(position + o.getClass().getSimpleName().length(), hash);
+
+            incValues(map, o, hash.length());
+        }
+    }
+
+    private static void incValues(IdentityLinkedHashMap<Object, Integer> map, Object o, int hashLength) {
+        boolean changeValue = false;
+
+        for (Object key : map.keys) {
+            if (changeValue)
+                map.put(key, map.get(key) + hashLength);
+
+            if (key == o) {
+                changeValue = true;
+            }
+        }
     }
 }
