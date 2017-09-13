@@ -1849,7 +1849,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
 
             for (DynamicCacheChangeRequest req : exchActions.cacheCloseRequests(ctx.localNodeId())) {
-                String cacheName = req.cacheName();
+                String cacheName = maskNull(req.cacheName());
 
                 IgniteCacheProxy<?, ?> proxy = jCacheProxies.get(cacheName);
 
