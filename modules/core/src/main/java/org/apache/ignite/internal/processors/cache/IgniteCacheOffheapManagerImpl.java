@@ -1377,6 +1377,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
                     assert oldVal.link() != 0 : oldVal;
 
+                    boolean activeTx = false;
+
                     if (activeTxs != null && oldVal.mvccCoordinatorVersion() == mvccVer.coordinatorVersion() &&
                         activeTxs.contains(oldVal.mvccCounter())) {
                         if (waitTxs == null)
@@ -1385,21 +1387,22 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                         assert oldVal.mvccCounter() != mvccVer.counter();
 
                         waitTxs.add(oldVal.mvccCounter());
+
+                        activeTx = true;
                     }
-                    else {
-                        // Should not delete oldest version which is less then cleanup version .
-                        int cmp = compare(oldVal, mvccVer.coordinatorVersion(), mvccVer.cleanupVersion());
 
-                        if (cmp <= 0) {
-                            if (first)
-                                first = false;
-                            else {
-                                boolean rmvd = dataTree.removex(oldVal);
+                    // Should not delete oldest version which is less than cleanup version .
+                    int cmp = compare(oldVal, mvccVer.coordinatorVersion(), mvccVer.cleanupVersion());
 
-                                assert rmvd;
+                    if (cmp <= 0) {
+                        if (first)
+                            first = false;
+                        else if (!activeTx) {
+                            boolean rmvd = dataTree.removex(oldVal);
 
-                                rowStore.removeRow(oldVal.link());
-                            }
+                            assert rmvd;
+
+                            rowStore.removeRow(oldVal.link());
                         }
                     }
                 }
