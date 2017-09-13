@@ -76,11 +76,13 @@ public class GridLogThrottle {
     public static void throttleTimeout(int timeout) {
         throttleTimeout = timeout;
 
-        if (cleanUpOldEntriesTask != null) {
+        synchronized (cleanUpOldEntriesTask){
+            if (cleanUpOldEntriesTask != null) {
 
-            cleanUpOldEntriesTask.cancel(false);
+                cleanUpOldEntriesTask.cancel(false);
 
-            mapCleaningPeriodSetup();
+                mapCleaningPeriodSetup();
+            }
         }
     }
 
