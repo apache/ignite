@@ -53,4 +53,10 @@ public interface SqlListenerConnectionContext {
      * @return Message parser for the connection.
      */
     SqlListenerMessageParser parser();
+
+    /**
+     * Called whenever client is disconnected due to correct connection close
+     * or due to {@code IOException} during network operations.
+     */
+    void onDisconnected();
 }
