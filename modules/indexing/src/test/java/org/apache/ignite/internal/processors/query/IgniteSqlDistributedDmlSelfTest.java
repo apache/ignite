@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -47,6 +46,7 @@ import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 
 import org.apache.ignite.internal.processors.query.h2.twostep.GridMapQueryExecutor;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridReduceQueryExecutor;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -82,7 +82,7 @@ public class IgniteSqlDistributedDmlSelfTest extends GridCommonAbstractTest {
     private static Ignite client;
 
     /** */
-    private static CountDownLatch waiterLatch;
+    private static CountDownLatch latch;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -246,6 +246,7 @@ public class IgniteSqlDistributedDmlSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @SuppressWarnings("ConstantConditions")
     public void testQueryParallelism() throws Exception {
         String cacheName = CACHE_ORG + "x4";
 
@@ -331,8 +332,6 @@ public class IgniteSqlDistributedDmlSelfTest extends GridCommonAbstractTest {
     public void testCancel() throws Exception {
         fillCaches();
 
-        waiterLatch = new CountDownLatch(NODE_COUNT);
-
         final IgniteCache<Integer, Organization> cache = grid(NODE_CLIENT).cache(CACHE_ORG);
 
         final IgniteInternalFuture<Object> fut = GridTestUtils.runAsync(new Callable<Object>() {
@@ -341,14 +340,20 @@ public class IgniteSqlDistributedDmlSelfTest extends GridCommonAbstractTest {
             }
         });
 
-        assertTrue(waiterLatch.await(5000, TimeUnit.MILLISECONDS));
+        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                Collection<GridRunningQueryInfo> qCol =
+                    grid(NODE_CLIENT).context().query().runningQueries(0);
 
-        Collection<GridRunningQueryInfo> qCol = grid(NODE_CLIENT).context().query().runningQueries(0);
+                if (qCol.isEmpty())
+                    return false;
 
-        assertFalse(qCol.isEmpty());
+                for (GridRunningQueryInfo queryInfo : qCol)
+                    queryInfo.cancel();
 
-        for (GridRunningQueryInfo queryInfo : qCol)
-            queryInfo.cancel();
+                return true;
+            }
+        }, 5000);
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws IgniteCheckedException {
@@ -359,23 +364,23 @@ public class IgniteSqlDistributedDmlSelfTest extends GridCommonAbstractTest {
 
     /** */
     public void testNodeStopDuringUpdate() throws Exception {
-        fillCaches();
-
-        waiterLatch = new CountDownLatch(NODE_COUNT + 1);
-
         startGrid(NODE_COUNT + 1);
 
         awaitPartitionMapExchange();
+
+        fillCaches();
+
+        latch = new CountDownLatch(NODE_COUNT + 1);
 
         final IgniteCache<Integer, Organization> cache = grid(NODE_CLIENT).cache(CACHE_ORG);
 
         final IgniteInternalFuture<Object> fut = GridTestUtils.runAsync(new Callable<Object>() {
             @Override public Object call() {
-                return cache.query(new SqlFieldsQuery("UPDATE Organization SET name = WAIT(name)"));
+                return cache.query(new SqlFieldsQuery("UPDATE Organization SET name = COUNTANDWAIT(name)"));
             }
         });
 
-        assertTrue(waiterLatch.await(5000, TimeUnit.MILLISECONDS));
+        assertTrue(latch.await(5000, MILLISECONDS));
 
         stopGrid(NODE_COUNT + 1);
 
@@ -436,7 +441,7 @@ public class IgniteSqlDistributedDmlSelfTest extends GridCommonAbstractTest {
             posCache.put(pos.id, pos);
 
         // Generate organizations
-        String[] forms = new String[] {" Inc", " Co", " AG", " Industrees"};
+        String[] forms = new String[] {" Inc", " Co", " AG", " Industries"};
         String[] orgNames = new String[] {"Acme", "Sierra", "Mesa", "Umbrella", "Robotics"};
         String[] names = new String[] {"Mary", "John", "William", "Tom", "Basil", "Ann", "Peter"};
 
@@ -478,11 +483,8 @@ public class IgniteSqlDistributedDmlSelfTest extends GridCommonAbstractTest {
     private List<String> produceCombination(String[] a, String[] b, String[] ends) {
         List<String> res = new ArrayList<>();
 
-        for (int i = 0; i < a.length; i++) {
-            for (int j = 0; j < b.length; j++) {
-                String s1 = a[i];
-                String s2 = a[j];
-
+        for (String s1 : a) {
+            for (String s2 : b) {
                 if (!s1.equals(s2)) {
                     String end = ends[ThreadLocalRandom8.current().nextInt(ends.length)];
 
@@ -595,7 +597,19 @@ public class IgniteSqlDistributedDmlSelfTest extends GridCommonAbstractTest {
     @QuerySqlFunction
     public static String Wait(String param) {
         try {
-            waiterLatch.countDown();
+            Thread.sleep(3000);
+        }
+        catch (InterruptedException ignore) {
+            // No-op
+        }
+        return param;
+    }
+
+    /** */
+    @QuerySqlFunction
+    public static String CountAndWait(String param) {
+        try {
+            latch.countDown();
 
             Thread.sleep(3000);
         }
