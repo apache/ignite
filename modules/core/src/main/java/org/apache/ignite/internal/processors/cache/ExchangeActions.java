@@ -17,10 +17,13 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
@@ -32,6 +35,9 @@ public class ExchangeActions {
 
     /** */
     private Map<String, CacheActionData> cachesToStop;
+
+    /** */
+    private Map<String, CacheActionData> cachesToClose;
 
     /**
      * @return New caches start requests.
@@ -127,11 +133,63 @@ public class ExchangeActions {
     }
 
     /**
+     * @param req Request.
+     * @param desc Cache descriptor.
+     */
+    void addCacheToClose(DynamicCacheChangeRequest req, DynamicCacheDescriptor desc) {
+        assert req.close() : req;
+
+        cachesToClose = add(cachesToClose, req, desc);
+    }
+
+    /**
+     * @param nodeId Local node ID.
+     * @return Close cache requests.
+     */
+    List<DynamicCacheChangeRequest> cacheCloseRequests(UUID nodeId) {
+        List<DynamicCacheChangeRequest> res = null;
+
+        if (cachesToClose != null) {
+            for (CacheActionData req : cachesToClose.values()) {
+                if (nodeId.equals(req.req.initiatingNodeId())) {
+                    if (res == null)
+                        res = new ArrayList<>(cachesToClose.size());
+
+                    res.add(req.req);
+                }
+            }
+        }
+
+        return res != null ? res : Collections.<DynamicCacheChangeRequest>emptyList();
+    }
+
+    /**
      * @return {@code True} if there are no cache change actions.
      */
     public boolean empty() {
         return F.isEmpty(cachesToStart) &&
-            F.isEmpty(cachesToStop);
+            F.isEmpty(cachesToStop) &&
+            F.isEmpty(cachesToClose);
+    }
+
+    /**
+     * @param ctx Context.
+     */
+    public void completeRequestFutures(GridCacheSharedContext ctx) {
+        completeRequestFutures(cachesToStart, ctx);
+        completeRequestFutures(cachesToStop, ctx);
+        completeRequestFutures(cachesToClose, ctx);
+    }
+
+    /**
+     * @param map Actions map.
+     * @param ctx Context.
+     */
+    private void completeRequestFutures(Map<String, CacheActionData> map, GridCacheSharedContext ctx) {
+        if (map != null) {
+            for (CacheActionData req : map.values())
+                ctx.cache().completeStartFuture(req.req, null);
+        }
     }
 
     /**
@@ -174,7 +232,8 @@ public class ExchangeActions {
     /** {@inheritDoc} */
     @Override public String toString() {
         return "ExchangeActions [startCaches=" + (cachesToStart != null ? cachesToStart.keySet() : null) +
-            ", stopCaches=" + (cachesToStop != null ? cachesToStop.keySet() : null)
+            ", stopCaches=" + (cachesToStop != null ? cachesToStop.keySet() : null) +
+            ", closeCaches=" + (cachesToClose != null ? cachesToClose.keySet() : null)
             + ']';
     }
 }

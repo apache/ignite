@@ -1627,12 +1627,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param topVer Topology version.
      * @throws IgniteCheckedException If failed.
      */
-    public void prepareCacheStart(DynamicCacheChangeRequest req, AffinityTopologyVersion topVer)
+    public void prepareCacheStart(DynamicCacheDescriptor cacheDesc,
+        DynamicCacheChangeRequest req,
+        AffinityTopologyVersion topVer)
         throws IgniteCheckedException {
         assert req.start() : req;
         assert req.cacheType() != null : req;
-
-        String cacheName = maskNull(req.cacheName());
 
         prepareCacheStart(
             req.startCacheConfiguration(),
@@ -1644,10 +1644,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             topVer
         );
 
-        DynamicCacheDescriptor desc = registeredCaches.get(cacheName);
-
-        if (desc != null)
-            desc.onStart();
+        if (cacheDesc != null)
+            cacheDesc.onStart();
     }
 
     /**
@@ -1841,39 +1839,37 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
         }
 
-        if (exchActions == null)
-            return;
+        if (exchActions != null && err == null) {
+            for (ExchangeActions.CacheActionData action : exchActions.cacheStopRequests()) {
+                DynamicCacheChangeRequest req = action.request();
 
-        for (ExchangeActions.CacheActionData action : F.concat(false, exchActions.cacheStopRequests(), exchActions.cacheStartRequests())) {
-            DynamicCacheChangeRequest req = action.request();
-            String masked = maskNull(req.cacheName());
+                stopGateway(req);
 
-            if (err == null) {
-                if (req.stop()) {
-                    stopGateway(req);
+                prepareCacheStop(req, false);
+            }
 
-                    prepareCacheStop(req, false);
-                }
-                else if (req.close() && req.initiatingNodeId().equals(ctx.localNodeId())) {
-                    IgniteCacheProxy<?, ?> proxy = jCacheProxies.remove(masked);
+            for (DynamicCacheChangeRequest req : exchActions.cacheCloseRequests(ctx.localNodeId())) {
+                String cacheName = req.cacheName();
 
-                    if (proxy != null) {
-                        if (proxy.context().affinityNode()) {
-                            GridCacheAdapter<?, ?> cache = caches.get(masked);
+                IgniteCacheProxy<?, ?> proxy = jCacheProxies.get(cacheName);
 
-                            if (cache != null)
-                                jCacheProxies.put(masked, new IgniteCacheProxy(cache.context(), cache, null, false));
-                        }
-                        else {
-                            proxy.context().gate().onStopped();
+                if (proxy != null) {
+                    if (proxy.context().affinityNode()) {
+                        GridCacheAdapter<?, ?> cache = caches.get(cacheName);
 
-                            prepareCacheStop(req, false);
-                        }
+                        assert cache != null : cacheName;
+
+                        jCacheProxies.put(cacheName, new IgniteCacheProxy(cache.context(), cache, null, false));
+                    }
+                    else {
+                        jCacheProxies.remove(cacheName);
+
+                        proxy.context().gate().onStopped();
+
+                        prepareCacheStop(req, false);
                     }
                 }
             }
-
-            completeStartFuture(req, err);
         }
     }
 
@@ -2786,15 +2782,17 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         ctx.discovery().removeCacheFilter(req.cacheName());
 
                         needExchange = true;
+
+                        exchangeActions.addCacheToStop(req, desc);
                     }
                     else {
                         assert req.close() : req;
 
                         needExchange = ctx.discovery().onClientCacheClose(req.cacheName(), req.initiatingNodeId());
-                    }
 
-                    if (needExchange)
-                        exchangeActions.addCacheToStop(req, desc);
+                        if (needExchange)
+                            exchangeActions.addCacheToClose(req, desc);
+                    }
                 }
             }
 
