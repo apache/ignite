@@ -28,6 +28,9 @@ import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
 import org.apache.ignite.internal.processors.odbc.odbc.OdbcConnectionContext;
+import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
+import org.apache.ignite.internal.processors.platform.client.ClientMessageParser;
+import org.apache.ignite.internal.processors.platform.client.ClientRequestHandler;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.nio.GridNioServerListenerAdapter;
 import org.apache.ignite.internal.util.nio.GridNioSession;
@@ -38,11 +41,14 @@ import org.jetbrains.annotations.Nullable;
  * SQL message listener.
  */
 public class SqlListenerNioListener extends GridNioServerListenerAdapter<byte[]> {
-    /** The value corresponds to ODBC driver of the parser field of the handshake request. */
+    /** ODBC driver handshake code. */
     public static final byte ODBC_CLIENT = 0;
 
-    /** The value corresponds to JDBC driver of the parser field of the handshake request. */
+    /** JDBC driver handshake code. */
     public static final byte JDBC_CLIENT = 1;
+
+    /** Thin client handshake code. */
+    public static final byte THIN_CLIENT = 2;
 
     /** Connection-related metadata key. */
     private static final int CONN_CTX_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
@@ -226,6 +232,9 @@ public class SqlListenerNioListener extends GridNioServerListenerAdapter<byte[]>
 
             case JDBC_CLIENT:
                 return new JdbcConnectionContext(ctx, busyLock, maxCursors);
+
+            case THIN_CLIENT:
+                return new ClientConnectionContext(ctx);
 
             default:
                 throw new IgniteException("Unknown client type: " + clientType);
