@@ -959,7 +959,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     /**
      * @throws Exception In case of error.
      */
-    public void testGetAllWithInTheMiddle() throws Exception {
+    public void testGetAllWithNullInTheMiddle() throws Exception {
         final IgniteCache<String, Integer> cache = jcache();
 
         final Set<String> c = new LinkedHashSet<>();
