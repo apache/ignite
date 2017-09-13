@@ -45,7 +45,7 @@ class ClientCacheRequest extends ClientRequest {
 
         cacheId = reader.readInt();
 
-        flags = reader.readByte();  // Flags (skipStore, etc);
+        flags = reader.readByte();
     }
 
     /**
@@ -55,7 +55,7 @@ class ClientCacheRequest extends ClientRequest {
      * @return Cache.
      */
     protected IgniteCache cache(ClientConnectionContext ctx) {
-        return getRawCache(ctx).withKeepBinary();
+        return rawCache(ctx).withKeepBinary();
     }
 
     /**
@@ -64,12 +64,11 @@ class ClientCacheRequest extends ClientRequest {
      * @param ctx Kernal context.
      * @return Cache.
      */
-    IgniteCache getCacheWithBinaryFlag(ClientConnectionContext ctx) {
-        IgniteCache cache = getRawCache(ctx);
+    public IgniteCache cacheWithBinaryFlag(ClientConnectionContext ctx) {
+        IgniteCache cache = rawCache(ctx);
 
-        if ((flags & FLAG_KEEP_BINARY) == FLAG_KEEP_BINARY) {
+        if ((flags & FLAG_KEEP_BINARY) == FLAG_KEEP_BINARY)
             cache = cache.withKeepBinary();
-        }
 
         return cache;
     }
@@ -80,7 +79,7 @@ class ClientCacheRequest extends ClientRequest {
      * @param ctx Kernal context.
      * @return Cache.
      */
-    private IgniteCache getRawCache(ClientConnectionContext ctx) {
+    private IgniteCache rawCache(ClientConnectionContext ctx) {
         String cacheName = ctx.kernalContext().cache().context().cacheContext(cacheId).cache().name();
 
         return ctx.kernalContext().grid().cache(cacheName);

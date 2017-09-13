@@ -97,7 +97,7 @@ public class ClientCacheScanQueryRequest extends ClientCacheRequest {
             .setPartition(partition)
             .setFilter(createFilter(ctx));
 
-        QueryCursor cur = getCacheWithBinaryFlag(ctx).query(qry);
+        QueryCursor cur = cacheWithBinaryFlag(ctx).query(qry);
 
         ClientCacheScanQueryCursor cliCur = new ClientCacheScanQueryCursor((QueryCursorEx) cur, pageSize);
 
