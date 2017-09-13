@@ -315,42 +315,20 @@ public abstract class JdbcDynamicIndexAbstractSelfTest extends JdbcAbstractDmlSt
      * @param expCode Error code.
      */
     private static void assertSqlException(RunnableX r, int expCode) {
-        // We expect IgniteSQLException with given code inside CacheException inside JDBC SQLException.
-
         try {
             r.run();
         }
-        catch (SQLException ex) {
-            if (ex.getCause() != null) {
-                try {
-                    throw ex.getCause();
-                }
-                catch (CacheException ex1) {
-                    if (ex1.getCause() != null) {
-                        try {
-                            throw ex1.getCause();
-                        }
-                        catch (SQLException e) {
-                            assertEquals("Unexpected error code [expected=" + expCode + ", actual=" + e.getErrorCode() + ']',
-                                expCode, e.getErrorCode());
+        catch (SQLException e) {
+            assertEquals("Unexpected error code [expected=" + expCode + ", actual=" + e.getErrorCode() + ']',
+                expCode, e.getErrorCode());
 
-                            return;
-                        }
-                        catch (Throwable t) {
-                            fail("Unexpected exception: " + t);
-                        }
-                    }
-                }
-                catch (Throwable t) {
-                    fail("Unexpected exception: " + t);
-                }
-            }
+            return;
         }
         catch (Exception e) {
             fail("Unexpected exception: " + e);
         }
 
-        fail(IgniteSQLException.class.getSimpleName() +  " is not thrown.");
+        fail(SQLException.class.getSimpleName() +  " is not thrown.");
     }
 
     /**

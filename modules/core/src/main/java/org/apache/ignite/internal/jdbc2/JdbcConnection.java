@@ -874,7 +874,7 @@ public class JdbcConnection implements Connection {
      */
     private void ensureNotClosed() throws SQLException {
         if (closed)
-            throw new SQLException("Connection is closed.");
+            throw new SQLException("Connection is closed.", JdbcStateCode.CONNECTION_CLOSED);
     }
 
     /**

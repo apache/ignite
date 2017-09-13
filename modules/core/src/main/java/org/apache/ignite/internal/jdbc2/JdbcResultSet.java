@@ -1495,13 +1495,13 @@ public class JdbcResultSet implements ResultSet {
             else if (cls == String.class)
                 return (T)String.valueOf(val);
             else
-                return (T)val;
+                return cls.cast(val);
         }
         catch (IndexOutOfBoundsException ignored) {
             throw new SQLException("Invalid column index: " + colIdx);
         }
         catch (ClassCastException ignored) {
-            throw new SQLException("Value is an not instance of " + cls.getName());
+            throw new SQLException("Value is an not instance of " + cls.getName(), JdbcStateCode.DATA_EXCEPTION);
         }
     }
 
@@ -1512,7 +1512,7 @@ public class JdbcResultSet implements ResultSet {
      */
     private void ensureNotClosed() throws SQLException {
         if (closed)
-            throw new SQLException("Result set is closed.");
+            throw new SQLException("Result set is closed.", JdbcStateCode.INVALID_CURSOR_STATE);
     }
 
     /**
