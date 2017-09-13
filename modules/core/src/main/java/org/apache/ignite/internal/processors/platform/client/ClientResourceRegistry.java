@@ -58,9 +58,8 @@ public class ClientResourceRegistry {
     public <T> T get(long hnd) {
         Object obj = res.get(hnd);
 
-        if (obj == null) {
-            throw new IgniteException("Failed to find client object with id: " + hnd);
-        }
+        if (obj == null)
+            throw new IgniteException("Failed to find resource with id: " + hnd);
 
         return (T) obj;
     }
@@ -73,21 +72,27 @@ public class ClientResourceRegistry {
     public void release(long hnd) {
         Object obj = res.remove(hnd);
 
-        if (obj == null) {
-            throw new IgniteException("Failed to find client object with id: " + hnd);
-        }
+        if (obj == null)
+            throw new IgniteException("Failed to find resource with id: " + hnd);
+
+        closeIfNeeded(obj);
     }
 
     /**
      * Cleans all handles and closes all ClientCloseableResources.
      */
     public void clean() {
-        for (Map.Entry e : res.entrySet()) {
-            Object val = e.getValue();
+        for (Map.Entry e : res.entrySet())
+            closeIfNeeded(e.getValue());
+    }
 
-            if (val instanceof ClientCloseableResource) {
-                ((ClientCloseableResource) val).close();
-            }
-        }
+    /**
+     * Close resource if needed.
+     *
+     * @param res Resource.
+     */
+    private static void closeIfNeeded(Object res) {
+        if (res instanceof ClientCloseableResource)
+            ((ClientCloseableResource)res).close();
     }
 }

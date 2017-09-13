@@ -23,11 +23,11 @@ import org.apache.ignite.binary.BinaryRawReader;
  * Resource close request.
  */
 public class ClientResourceCloseRequest extends ClientRequest {
-    /** Cursor id. */
+    /** Resource id. */
     private final long resId;
 
     /**
-     * Ctor.
+     * Constructor.
      *
      * @param reader Reader.
      */
@@ -39,9 +39,6 @@ public class ClientResourceCloseRequest extends ClientRequest {
 
     /** {@inheritDoc} */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
-        ClientCloseableResource cur = ctx.handleRegistry().get(resId);
-
-        cur.close();
         ctx.handleRegistry().release(resId);
 
         return new ClientResponse(requestId());

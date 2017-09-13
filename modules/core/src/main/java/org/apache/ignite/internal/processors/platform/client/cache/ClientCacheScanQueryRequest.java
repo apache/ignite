@@ -92,18 +92,18 @@ public class ClientCacheScanQueryRequest extends ClientCacheRequest {
     /** {@inheritDoc} */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
         ScanQuery qry = new ScanQuery()
-                .setLocal(local)
-                .setPageSize(pageSize)
-                .setPartition(partition)
-                .setFilter(createFilter(ctx));
+            .setLocal(local)
+            .setPageSize(pageSize)
+            .setPartition(partition)
+            .setFilter(createFilter(ctx));
 
         QueryCursor cur = getCacheWithBinaryFlag(ctx).query(qry);
 
-        ClientCacheScanQueryCursor clientCur = new ClientCacheScanQueryCursor((QueryCursorEx) cur, pageSize);
+        ClientCacheScanQueryCursor cliCur = new ClientCacheScanQueryCursor((QueryCursorEx) cur, pageSize);
 
-        long cursorId = ctx.handleRegistry().put(clientCur);
+        long cursorId = ctx.handleRegistry().put(cliCur);
 
-        return new ClientCacheScanQueryResponse(getRequestId(), cursorId, clientCur);
+        return new ClientCacheScanQueryResponse(requestId(), cursorId, cliCur);
     }
 
     /**
@@ -128,7 +128,7 @@ public class ClientCacheScanQueryRequest extends ClientCacheRequest {
 
                 if (!PlatformUtils.PLATFORM_DOTNET.equals(curPlatform)) {
                     throw new IgniteException("ScanQuery filter platform is " + PlatformUtils.PLATFORM_DOTNET +
-                            ", current platform is " + curPlatform);
+                        ", current platform is " + curPlatform);
                 }
 
                 return platformCtx.createCacheEntryFilter(filterObject, 0);
