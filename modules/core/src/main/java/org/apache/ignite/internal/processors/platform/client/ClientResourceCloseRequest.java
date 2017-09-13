@@ -44,6 +44,6 @@ public class ClientResourceCloseRequest extends ClientRequest {
         cur.close();
         ctx.handleRegistry().release(resourceId);
 
-        return new ClientResponse(getRequestId());
+        return new ClientResponse(requestId());
     }
 }
