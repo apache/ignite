@@ -43,6 +43,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishResponse;
 import org.apache.ignite.internal.util.lang.GridInClosure3;
@@ -472,6 +473,8 @@ public class CacheMvccTransactionsTest extends GridCommonAbstractTest {
         final Integer key1 = primaryKey(ignite(0).cache(cache.getName()));
         final Integer key2 = primaryKey(ignite(1).cache(cache.getName()));
 
+        info("Test keys [key1=" + key1 + ", key2=" + key2 + ']');
+
         try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
             cache.put(key1, 1);
             cache.put(key2, 1);
@@ -577,6 +580,112 @@ public class CacheMvccTransactionsTest extends GridCommonAbstractTest {
                 clientSpi.stopBlock(true);
             }
         }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCleanupWaitsForGet() throws Exception {
+        boolean vals[] = {true, false};
+
+        for (boolean otherPuts : vals) {
+            for (boolean putOnStart : vals) {
+                cleanupWaitsForGet(otherPuts, putOnStart);
+
+                afterTest();
+            }
+        }
+    }
+
+    /**
+     * @param otherPuts {@code True} to update unrelated keys to increment mvcc counter.
+     * @param putOnStart {@code True} to put data in cache before getAll.
+     * @throws Exception If failed.
+     */
+    private void cleanupWaitsForGet(boolean otherPuts, final boolean putOnStart) throws Exception {
+        info("cleanupWaitsForGet [otherPuts=" + otherPuts + ", putOnStart=" + putOnStart + "]");
+
+        testSpi = true;
+
+        client = false;
+
+        final Ignite srv = startGrid(0);
+
+        client = true;
+
+        final Ignite client = startGrid(1);
+
+        awaitPartitionMapExchange();
+
+        final IgniteCache<Object, Object> srvCache =
+            srv.createCache(cacheConfiguration(PARTITIONED, FULL_SYNC, 0, 16));
+
+        final Integer key1 = 1;
+        final Integer key2 = 2;
+
+        if (putOnStart) {
+            try (Transaction tx = srv.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                srvCache.put(key1, 0);
+                srvCache.put(key2, 0);
+
+                tx.commit();
+            }
+        }
+
+        if (otherPuts) {
+            for (int i = 0; i < 3; i++) {
+                try (Transaction tx = srv.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                    srvCache.put(1_000_000 + i, 99);
+
+                    tx.commit();
+                }
+            }
+        }
+
+        TestRecordingCommunicationSpi clientSpi = TestRecordingCommunicationSpi.spi(client);
+
+        clientSpi.blockMessages(GridNearGetRequest.class, getTestIgniteInstanceName(0));
+
+        IgniteInternalFuture<?> getFut = GridTestUtils.runAsync(new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                IgniteCache<Integer, Integer> cache = client.cache(srvCache.getName());
+
+                Map<Integer, Integer> vals = cache.getAll(F.asSet(key1, key2));
+
+                if (putOnStart) {
+                    assertEquals(2, vals.size());
+                    assertEquals(0, (Object)vals.get(key1));
+                    assertEquals(0, (Object)vals.get(key2));
+                }
+                else
+                    assertEquals(0, vals.size());
+
+                return null;
+            }
+        }, "get-thread");
+
+        clientSpi.waitForBlocked();
+
+        for (int i = 0; i < 5; i++) {
+            try (Transaction tx = srv.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                srvCache.put(key1, i + 1);
+                srvCache.put(key2, i + 1);
+
+                tx.commit();
+            }
+        }
+
+        clientSpi.stopBlock(true);
+
+        getFut.get();
+
+        IgniteCache<Integer, Integer> cache = client.cache(srvCache.getName());
+
+        Map<Integer, Integer> vals = cache.getAll(F.asSet(key1, key2));
+
+        assertEquals(2, vals.size());
+        assertEquals(5, (Object)vals.get(key1));
+        assertEquals(5, (Object)vals.get(key2));
     }
 
     /**

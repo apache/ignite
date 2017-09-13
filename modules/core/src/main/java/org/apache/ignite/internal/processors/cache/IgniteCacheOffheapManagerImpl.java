@@ -1375,6 +1375,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 while (cur.next()) {
                     CacheDataRow oldVal = cur.get();
 
+                    assert oldVal.link() != 0 : oldVal;
+
                     if (activeTxs != null && oldVal.mvccCoordinatorVersion() == mvccVer.coordinatorVersion() &&
                         activeTxs.contains(oldVal.mvccCounter())) {
                         if (waitTxs == null)
@@ -1384,17 +1386,22 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
                         waitTxs.add(oldVal.mvccCounter());
                     }
-                    else if (!first) {
+                    else {
+                        // Should not delete oldest version which is less then cleanup version .
                         int cmp = compare(oldVal, mvccVer.coordinatorVersion(), mvccVer.cleanupVersion());
 
                         if (cmp <= 0) {
-                            boolean rmvd = dataTree.removex(oldVal);
+                            if (first)
+                                first = false;
+                            else {
+                                boolean rmvd = dataTree.removex(oldVal);
 
-                            assert rmvd;
+                                assert rmvd;
+
+                                rowStore.removeRow(oldVal.link());
+                            }
                         }
                     }
-
-                    first = false;
                 }
 
                 return waitTxs;
@@ -1629,10 +1636,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         @Override public CacheDataRow mvccFind(GridCacheContext cctx,
             KeyCacheObject key,
             MvccCoordinatorVersion ver) throws IgniteCheckedException {
-//            log.info("mvccFind [k=" + key.value(cctx.cacheObjectContext(), false) +
-//                ", topVer=" + ver.topologyVersion() +
-//                ", cntr=" + ver.counter() + ']');
-
             key.valueBytes(cctx.cacheObjectContext());
 
             int cacheId = grp.sharedGroup() ? cctx.cacheId() : CU.UNDEFINED_CACHE_ID;
