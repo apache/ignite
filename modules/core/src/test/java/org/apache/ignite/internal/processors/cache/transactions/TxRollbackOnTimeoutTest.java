@@ -37,6 +37,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionDeadlockException;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionTimeoutException;
 import org.jsr166.ThreadLocalRandom8;
@@ -100,14 +101,14 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        System.setProperty(IGNITE_TX_DEADLOCK_DETECTION_MAX_ITERS, "0");
+        //System.setProperty(IGNITE_TX_DEADLOCK_DETECTION_MAX_ITERS, "0");
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         super.afterTestsStopped();
 
-        System.clearProperty(IGNITE_TX_DEADLOCK_DETECTION_MAX_ITERS);
+        //System.clearProperty(IGNITE_TX_DEADLOCK_DETECTION_MAX_ITERS);
     }
 
     /** {@inheritDoc} */
@@ -348,12 +349,22 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
                     U.awaitQuiet(l);
 
                     grid(1).cache(CACHE_NAME).put(1, 1);
+
+                    tx.commit();
                 }
+
             }
 
         }, 1, "Second");
 
-        fut1.get();
+        try {
+            fut1.get();
+
+            fail();
+        }
+        catch (Exception e) {
+            assertTrue(X.hasCause(e, TransactionDeadlockException.class));
+        }
 
         fut2.get();
 

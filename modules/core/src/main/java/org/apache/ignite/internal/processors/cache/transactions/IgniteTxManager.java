@@ -1422,10 +1422,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      */
     private void clearThreadMap(IgniteInternalTx tx) {
         if (tx.local() && !tx.dht()) {
-            if (!tx.system())
-                if (deadlockDetectionEnabled() || !tx.timedOut())
-                    threadMap.remove(tx.threadId(), tx);
-            else {
+            if (!tx.system()) {
                 Integer cacheId = tx.txState().firstCacheId();
 
                 if (cacheId != null)
@@ -1442,6 +1439,9 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                     }
                 }
             }
+            else if (!tx.timedOut())
+                threadMap.remove(tx.threadId(), tx);
+
         }
     }
 
