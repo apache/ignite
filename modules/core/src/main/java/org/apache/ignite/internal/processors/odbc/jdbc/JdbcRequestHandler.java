@@ -269,9 +269,7 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
 
             qry.setSchema(schemaName);
 
-            List<FieldsQueryCursor<List<?>>> results;
-
-            results = ctx.query().querySqlFieldsNoCache(qry, true,
+            List<FieldsQueryCursor<List<?>>> results = ctx.query().querySqlFieldsNoCache(qry, true,
                 protocolVer.compareTo(JdbcConnectionContext.VER_2_1_5) < 0);
 
             if (results.size() == 1) {
