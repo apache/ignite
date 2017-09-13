@@ -261,6 +261,13 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     }
 
     /**
+     * @param mvccVer Mvcc version.
+     */
+    void mvccVersion(MvccCoordinatorVersion mvccVer) {
+        this.mvccVer = mvccVer;
+    }
+
+    /**
      * @return Mvcc version.
      */
     @Nullable MvccCoordinatorVersion mvccVersion() {
