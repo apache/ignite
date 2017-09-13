@@ -1296,7 +1296,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                     ctx.WriteString(elemType.FullName);
             }
 
-            WriteArrayLength(val.Length, stream, ctx.VarintArrLen);
+            WriteArrayLength(val.Length, stream, ctx.UseVarintArrayLength);
 
             for (int i = 0; i < val.Length; i++)
                 ctx.Write(val.GetValue(i));
@@ -1342,7 +1342,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                     ctx.ReadString();
             }
 
-            int len = ReadArrayLength(stream, ctx.VarintArrLen);
+            int len = ReadArrayLength(stream, ctx.UseVarintArrayLength);
 
             var vals = new T[len];
 

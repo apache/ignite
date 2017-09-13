@@ -39,7 +39,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         private readonly BinaryObjectBuilder _builder;
 
         /** Whether to read arrays lengths in varint encoding. */
-        private readonly bool _varintArrLen;
+        private readonly bool _useVarintArrayLength;
 
         /** Handles. */
         private BinaryReaderHandleDictionary _hnds;
@@ -70,7 +70,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             _mode = mode;
             _builder = builder;
             _frame.Pos = stream.Position;
-            _varintArrLen = _marsh.UseVarintArrayLength;
+            _useVarintArrayLength = _marsh.UseVarintArrayLength;
 
             Stream = stream;
         }
@@ -94,9 +94,9 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Indicates whether to read arrays lengths in varint encoding.
         /// </summary>
-        internal bool VarintArrLen
+        internal bool UseVarintArrayLength
         {
-            get { return _varintArrLen; }
+            get { return _useVarintArrayLength; }
         }
 
         /** <inheritdoc /> */
@@ -973,7 +973,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         private T Read<T>(Func<IBinaryStream, bool, T> readFunc, byte expHdr)
         {
-            return Read(() => readFunc(Stream, _varintArrLen), expHdr);
+            return Read(() => readFunc(Stream, _useVarintArrayLength), expHdr);
         }
 
         /// <summary>

@@ -251,7 +251,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             ctx.Stream.WriteByte(BinaryTypeId.Decimal);
 
-            BinaryUtils.WriteDecimal(obj, ctx.Stream, ctx.VarintArrLen);
+            BinaryUtils.WriteDecimal(obj, ctx.Stream, ctx.UseVarintArrayLength);
         }
         
         /// <summary>
@@ -263,7 +263,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             ctx.Stream.WriteByte(BinaryTypeId.String);
 
-            BinaryUtils.WriteString(obj, ctx.Stream, ctx.VarintArrLen);
+            BinaryUtils.WriteString(obj, ctx.Stream, ctx.UseVarintArrayLength);
         }
 
         /// <summary>
@@ -287,7 +287,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             ctx.Stream.WriteByte(BinaryTypeId.ArrayBool);
 
-            BinaryUtils.WriteBooleanArray(obj, ctx.Stream, ctx.VarintArrLen);
+            BinaryUtils.WriteBooleanArray(obj, ctx.Stream, ctx.UseVarintArrayLength);
         }
         
         /// <summary>
@@ -299,7 +299,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             ctx.Stream.WriteByte(BinaryTypeId.ArrayByte);
 
-            BinaryUtils.WriteByteArray(obj, ctx.Stream, ctx.VarintArrLen);
+            BinaryUtils.WriteByteArray(obj, ctx.Stream, ctx.UseVarintArrayLength);
         }
 
         /// <summary>
@@ -311,7 +311,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             ctx.Stream.WriteByte(BinaryTypeId.ArrayShort);
 
-            BinaryUtils.WriteShortArray(obj, ctx.Stream, ctx.VarintArrLen);
+            BinaryUtils.WriteShortArray(obj, ctx.Stream, ctx.UseVarintArrayLength);
         }
         
         /// <summary>
@@ -323,7 +323,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             ctx.Stream.WriteByte(BinaryTypeId.ArrayChar);
 
-            BinaryUtils.WriteCharArray((char[])obj, ctx.Stream, ctx.VarintArrLen);
+            BinaryUtils.WriteCharArray((char[])obj, ctx.Stream, ctx.UseVarintArrayLength);
         }
 
         /// <summary>
@@ -335,7 +335,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             ctx.Stream.WriteByte(BinaryTypeId.ArrayInt);
 
-            BinaryUtils.WriteIntArray(obj, ctx.Stream, ctx.VarintArrLen);
+            BinaryUtils.WriteIntArray(obj, ctx.Stream, ctx.UseVarintArrayLength);
         }
 
         /// <summary>
@@ -347,7 +347,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             ctx.Stream.WriteByte(BinaryTypeId.ArrayLong);
 
-            BinaryUtils.WriteLongArray(obj, ctx.Stream, ctx.VarintArrLen);
+            BinaryUtils.WriteLongArray(obj, ctx.Stream, ctx.UseVarintArrayLength);
         }
 
         /// <summary>
@@ -359,7 +359,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             ctx.Stream.WriteByte(BinaryTypeId.ArrayFloat);
 
-            BinaryUtils.WriteFloatArray(obj, ctx.Stream, ctx.VarintArrLen);
+            BinaryUtils.WriteFloatArray(obj, ctx.Stream, ctx.UseVarintArrayLength);
         }
 
         /// <summary>
@@ -371,7 +371,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             ctx.Stream.WriteByte(BinaryTypeId.ArrayDouble);
 
-            BinaryUtils.WriteDoubleArray(obj, ctx.Stream, ctx.VarintArrLen);
+            BinaryUtils.WriteDoubleArray(obj, ctx.Stream, ctx.UseVarintArrayLength);
         }
 
         /// <summary>
@@ -383,7 +383,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             ctx.Stream.WriteByte(BinaryTypeId.ArrayDecimal);
 
-            BinaryUtils.WriteDecimalArray(obj, ctx.Stream, ctx.VarintArrLen);
+            BinaryUtils.WriteDecimalArray(obj, ctx.Stream, ctx.UseVarintArrayLength);
         }
         
         /// <summary>
@@ -395,7 +395,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             ctx.Stream.WriteByte(BinaryTypeId.ArrayString);
 
-            BinaryUtils.WriteStringArray(obj, ctx.Stream, ctx.VarintArrLen);
+            BinaryUtils.WriteStringArray(obj, ctx.Stream, ctx.UseVarintArrayLength);
         }
         
         /// <summary>
@@ -407,7 +407,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             ctx.Stream.WriteByte(BinaryTypeId.ArrayGuid);
 
-            BinaryUtils.WriteGuidArray(obj, ctx.Stream, ctx.VarintArrLen);
+            BinaryUtils.WriteGuidArray(obj, ctx.Stream, ctx.UseVarintArrayLength);
         }
 
         /// <summary>
@@ -643,7 +643,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             /** <inheritdoc /> */
             public TResult Read<TResult>(BinaryReader ctx)
             {
-                return TypeCaster<TResult>.Cast(_readDelegate(ctx.Stream, ctx.VarintArrLen));
+                return TypeCaster<TResult>.Cast(_readDelegate(ctx.Stream, ctx.UseVarintArrayLength));
             }
         }
 
@@ -687,7 +687,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
             T2 IBinarySystemReader<T2>.Read(BinaryReader ctx)
             {
-                return _readDelegate2(ctx.Stream, ctx.VarintArrLen);
+                return _readDelegate2(ctx.Stream, ctx.UseVarintArrayLength);
             }
 
             /** <inheritdoc /> */
@@ -699,7 +699,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 if (typeof(T) == typeof(T2))
                     return ((IBinarySystemReader<T>)this).Read(ctx);
 
-                return TypeCaster<T>.Cast(_readDelegate1(ctx.Stream, ctx.VarintArrLen));
+                return TypeCaster<T>.Cast(_readDelegate1(ctx.Stream, ctx.UseVarintArrayLength));
             }
         }
     }
