@@ -64,7 +64,7 @@ class ClientCacheRequest extends ClientRequest {
      * @param ctx Kernal context.
      * @return Cache.
      */
-    public IgniteCache cacheWithBinaryFlag(ClientConnectionContext ctx) {
+    IgniteCache cacheWithBinaryFlag(ClientConnectionContext ctx) {
         IgniteCache cache = rawCache(ctx);
 
         if ((flags & FLAG_KEEP_BINARY) == FLAG_KEEP_BINARY)

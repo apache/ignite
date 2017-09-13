@@ -677,7 +677,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Client
         private void WriteScanQuery(BinaryWriter writer, ScanQuery<TK, TV> qry)
         {
             Debug.Assert(qry != null);
-            
+
             if (qry.Filter == null)
             {
                 writer.WriteByte(BinaryUtils.HdrNull);
@@ -687,19 +687,14 @@ namespace Apache.Ignite.Core.Impl.Cache.Client
                 writer.WriteByte(FilterPlatformDotnet);
 
                 var holder = new CacheEntryFilterHolder(qry.Filter, (key, val) => qry.Filter.Invoke(
-                    new CacheEntry<TK, TV>((TK)key, (TV)val)), writer.Marshaller, _keepBinary);
+                    new CacheEntry<TK, TV>((TK) key, (TV) val)), writer.Marshaller, _keepBinary);
 
                 writer.WriteObject(holder);
             }
 
             writer.WriteInt(qry.PageSize);
 
-            writer.WriteBoolean(qry.Partition.HasValue);
-
-            if (qry.Partition.HasValue)
-            {
-                writer.WriteInt(qry.Partition.Value);
-            }
+            writer.WriteInt(qry.Partition ?? -1);
 
             writer.WriteBoolean(qry.Local);
         }

@@ -85,7 +85,10 @@ public class ClientCacheScanQueryRequest extends ClientCacheRequest {
         }
 
         pageSize = reader.readInt();
-        part = reader.readBoolean() ? reader.readInt() : null;
+
+        int part0 = reader.readInt();
+        part = part0 < 0 ? null : part0;
+
         loc = reader.readBoolean();
     }
 
