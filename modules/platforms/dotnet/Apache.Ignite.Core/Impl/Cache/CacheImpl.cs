@@ -635,7 +635,7 @@ namespace Apache.Ignite.Core.Impl.Cache
 
             StartTx();
 
-            DoOutOp(CacheOp.PutAll, writer => WriteDictionary(writer, vals));
+            DoOutOp(CacheOp.PutAll, writer => writer.WriteDictionary(vals));
         }
 
         /** <inheritDoc /> */
@@ -645,7 +645,7 @@ namespace Apache.Ignite.Core.Impl.Cache
 
             StartTx();
 
-            return DoOutOpAsync(CacheOp.PutAllAsync, writer => WriteDictionary(writer, vals));
+            return DoOutOpAsync(CacheOp.PutAllAsync, writer => writer.WriteDictionary(vals));
         }
 
         /** <inheritdoc /> */

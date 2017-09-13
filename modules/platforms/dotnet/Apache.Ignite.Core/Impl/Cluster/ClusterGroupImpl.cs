@@ -244,10 +244,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         {
             Debug.Assert(items != null);
 
-            IUnmanagedTarget prj = DoOutOpObject(OpForNodeIds, writer =>
-            {
-                WriteEnumerable(writer, items, func);
-            });
+            var prj = DoOutOpObject(OpForNodeIds, writer => writer.WriteEnumerable(items, func));
             
             return GetClusterGroup(prj);
         }
