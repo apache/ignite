@@ -248,8 +248,6 @@ public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
 
         final AtomicInteger threadCnt = new AtomicInteger();
 
-        final CyclicBarrier barrier = new CyclicBarrier(txCnt);
-
         final AtomicReference<TransactionDeadlockException> deadlockErr = new AtomicReference<>();
 
         final List<List<Object>> keySets = generateKeys(txCnt, startKey, !lockPrimaryFirst);
@@ -268,7 +266,7 @@ public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
 
                 List<Object> keys = keySets.get(threadNum - 1);
 
-                int txTimeout = 500 + txCnt * 100;
+                int txTimeout = 1000 + txCnt * 200;
 
                 try (Transaction tx = ignite.transactions().txStart(OPTIMISTIC, REPEATABLE_READ, txTimeout, 0)) {
                     IgniteInternalTx tx0 = ((TransactionProxyImpl)tx).tx();
@@ -287,8 +285,6 @@ public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
                     cache.put(key, 0);
 
                     involvedLockedKeys.add(key);
-
-                    barrier.await();
 
                     key = keys.get(1);
 
