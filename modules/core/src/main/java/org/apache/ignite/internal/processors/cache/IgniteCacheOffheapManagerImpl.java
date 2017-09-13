@@ -31,6 +31,7 @@ import javax.cache.Cache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -81,6 +82,9 @@ import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION
  */
 @SuppressWarnings("PublicInnerClass")
 public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager {
+    // TODO IGNITE-3478
+    public final boolean IGNITE_FAKE_MVCC_STORAGE = IgniteSystemProperties.getBoolean("IGNITE_FAKE_MVCC_STORAGE", false);
+
     /** */
     protected GridCacheSharedContext ctx;
 
@@ -126,6 +130,10 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         this.log = ctx.logger(getClass());
 
         updateValSizeThreshold = ctx.database().pageSize() / 2;
+
+        // TODO IGNITE-3478
+        if (grp.mvccEnabled())
+            log.info("IgniteCacheOffheapManagerImpl start, fakeMvcc=" + IGNITE_FAKE_MVCC_STORAGE);
 
         if (grp.affinityNode()) {
             ctx.database().checkpointReadLock();

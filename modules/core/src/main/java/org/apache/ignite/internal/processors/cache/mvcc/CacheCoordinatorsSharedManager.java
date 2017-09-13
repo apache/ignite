@@ -28,9 +28,11 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
@@ -59,6 +61,13 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYS
 public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
     /** */
     public static final long COUNTER_NA = 0L;
+
+    /** */
+    private static final GridTopic MSG_TOPIC = TOPIC_CACHE_COORDINATOR;
+
+    /** */
+    private static final byte MSG_POLICY = SYSTEM_POOL;
+    
     /** */
     private final CoordinatorAssignmentHistory assignHist = new CoordinatorAssignmentHistory();
 
@@ -96,7 +105,7 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
         cctx.gridEvents().addLocalEventListener(new CacheCoordinatorDiscoveryListener(),
             EVT_NODE_FAILED, EVT_NODE_LEFT);
 
-        cctx.gridIO().addMessageListener(TOPIC_CACHE_COORDINATOR, new CoordinatorMessageListener());
+        cctx.gridIO().addMessageListener(MSG_TOPIC, new CoordinatorMessageListener());
     }
 
     /**
@@ -125,9 +134,9 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
 
         try {
             cctx.gridIO().sendToGridTopic(crd,
-                TOPIC_CACHE_COORDINATOR,
+                MSG_TOPIC,
                 new CoordinatorTxCounterRequest(fut.id, tx.nearXidVersion()),
-                SYSTEM_POOL);
+                MSG_POLICY);
         }
         catch (IgniteCheckedException e) {
             if (verFuts.remove(fut.id) != null)
@@ -144,9 +153,9 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
     public void ackQueryDone(ClusterNode crd, long cntr) {
         try {
             cctx.gridIO().sendToGridTopic(crd,
-                TOPIC_CACHE_COORDINATOR,
+                MSG_TOPIC,
                 new CoordinatorQueryAckRequest(cntr),
-                SYSTEM_POOL);
+                MSG_POLICY);
         }
         catch (ClusterTopologyCheckedException e) {
             if (log.isDebugEnabled())
@@ -171,9 +180,9 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
 
         try {
             cctx.gridIO().sendToGridTopic(crd,
-                TOPIC_CACHE_COORDINATOR,
+                MSG_TOPIC,
                 new CoordinatorQueryVersionRequest(fut.id),
-                SYSTEM_POOL);
+                MSG_POLICY);
         }
         catch (IgniteCheckedException e) {
             if (verFuts.remove(fut.id) != null)
@@ -200,9 +209,9 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
 
         try {
             cctx.gridIO().sendToGridTopic(crd,
-                TOPIC_CACHE_COORDINATOR,
+                MSG_TOPIC,
                 new CoordinatorWaitTxsRequest(fut.id, txs),
-                SYSTEM_POOL);
+                MSG_POLICY);
         }
         catch (ClusterTopologyCheckedException e) {
             if (ackFuts.remove(fut.id) != null)
@@ -231,9 +240,9 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
 
         try {
             cctx.gridIO().sendToGridTopic(crd,
-                TOPIC_CACHE_COORDINATOR,
+                MSG_TOPIC,
                 new CoordinatorTxAckRequest(fut.id, txId),
-                SYSTEM_POOL);
+                MSG_POLICY);
         }
         catch (ClusterTopologyCheckedException e) {
             if (ackFuts.remove(fut.id) != null)
@@ -258,9 +267,9 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
 
         try {
             cctx.gridIO().sendToGridTopic(crd,
-                TOPIC_CACHE_COORDINATOR,
+                MSG_TOPIC,
                 msg,
-                SYSTEM_POOL);
+                MSG_POLICY);
         }
         catch (ClusterTopologyCheckedException e) {
             if (log.isDebugEnabled())
@@ -289,9 +298,9 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
 
         try {
             cctx.gridIO().sendToGridTopic(node,
-                TOPIC_CACHE_COORDINATOR,
+                MSG_TOPIC,
                 res,
-                SYSTEM_POOL);
+                MSG_POLICY);
         }
         catch (ClusterTopologyCheckedException e) {
             if (log.isDebugEnabled())
@@ -321,9 +330,9 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
 
         try {
             cctx.gridIO().sendToGridTopic(node,
-                TOPIC_CACHE_COORDINATOR,
+                MSG_TOPIC,
                 res,
-                SYSTEM_POOL);
+                MSG_POLICY);
         }
         catch (ClusterTopologyCheckedException e) {
             if (log.isDebugEnabled())
@@ -372,9 +381,9 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
         if (!msg.skipResponse()) {
             try {
                 cctx.gridIO().sendToGridTopic(nodeId,
-                    TOPIC_CACHE_COORDINATOR,
+                    MSG_TOPIC,
                     new CoordinatorFutureResponse(msg.futureId()),
-                    SYSTEM_POOL);
+                    MSG_POLICY);
             }
             catch (ClusterTopologyCheckedException e) {
                 if (log.isDebugEnabled())
@@ -557,9 +566,9 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
     private void sendFutureResponse(UUID nodeId, CoordinatorWaitTxsRequest msg) {
         try {
             cctx.gridIO().sendToGridTopic(nodeId,
-                TOPIC_CACHE_COORDINATOR,
+                MSG_TOPIC,
                 new CoordinatorFutureResponse(msg.futureId()),
-                SYSTEM_POOL);
+                MSG_POLICY);
         }
         catch (ClusterTopologyCheckedException e) {
             if (log.isDebugEnabled())

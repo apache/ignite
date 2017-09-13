@@ -1010,7 +1010,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             assert val != null;
 
-            if (cctx.mvccEnabled()) {
+            if (cctx.mvccEnabled() && !((IgniteCacheOffheapManagerImpl)cctx.offheap()).IGNITE_FAKE_MVCC_STORAGE) {
                 assert mvccVer != null;
 
                 mvccWaitTxs = cctx.offheap().mvccUpdate(this, val, newVer, mvccVer);

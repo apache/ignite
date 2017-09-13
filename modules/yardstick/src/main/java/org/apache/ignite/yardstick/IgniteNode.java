@@ -24,6 +24,8 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSpring;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.eviction.lru.LruEvictionPolicy;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -137,6 +139,13 @@ public class IgniteNode implements BenchmarkServer {
                 cc.setWriteThrough(args.isStoreEnabled());
 
                 cc.setWriteBehindEnabled(args.isWriteBehind());
+
+                if (args.mvccEnabled() &&
+                    cc.getAtomicityMode() == CacheAtomicityMode.TRANSACTIONAL &&
+                    cc.getCacheMode() != CacheMode.LOCAL) {
+                    cc.setMvccEnabled(true);
+                    cc.setNodeFilter(new TmpMvccNodeFilter());
+                }
 
                 BenchmarkUtils.println(cfg, "Cache configured with the following parameters: " + cc);
             }
