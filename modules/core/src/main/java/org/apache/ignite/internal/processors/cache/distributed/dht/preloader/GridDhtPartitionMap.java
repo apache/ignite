@@ -294,7 +294,7 @@ public class GridDhtPartitionMap implements Comparable<GridDhtPartitionMap>, Ext
 
         for (int i = 0; i < size; i++) {
             int ordinal = in.readByte();
-            int part = in.readShort();
+            int part = in.readUnsignedShort();
 
             put(part, GridDhtPartitionState.fromOrdinal(ordinal));
         }
