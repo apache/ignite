@@ -318,6 +318,50 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Tests tx timeout on deadlock.
+     *
+     * @throws Exception
+     */
+    public void testTimeoutOnDeadlock() throws Exception {
+        final CountDownLatch l = new CountDownLatch(2);
+
+        IgniteInternalFuture<?> fut1 = multithreadedAsync(new Runnable() {
+            @Override public void run() {
+                try(Transaction tx = grid(0).transactions().txStart(PESSIMISTIC, REPEATABLE_READ, TX_TIMEOUT, 1)) {
+                    grid(0).cache(CACHE_NAME).put(1, 1);
+
+                    l.countDown();
+                    U.awaitQuiet(l);
+
+                    grid(0).cache(CACHE_NAME).put(2, 2);
+                }
+
+            }
+        }, 1, "First");
+
+        IgniteInternalFuture<?> fut2 = multithreadedAsync(new Runnable() {
+            @Override public void run() {
+                try(Transaction tx = grid(1).transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 0, 1)) {
+                    grid(1).cache(CACHE_NAME).put(2, 2);
+
+                    l.countDown();
+                    U.awaitQuiet(l);
+
+                    grid(1).cache(CACHE_NAME).put(1, 1);
+                }
+            }
+
+        }, 1, "Second");
+
+        fut1.get();
+
+        fut2.get();
+
+        assertTrue(grid(0).cache(CACHE_NAME).containsKey(1));
+        assertTrue(grid(0).cache(CACHE_NAME).containsKey(2));
+    }
+
+    /**
      * @param concurrency Concurrency.
      * @param isolation Isolation.
      *
