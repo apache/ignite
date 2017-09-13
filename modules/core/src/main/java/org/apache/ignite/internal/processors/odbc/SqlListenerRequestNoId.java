@@ -18,14 +18,11 @@
 package org.apache.ignite.internal.processors.odbc;
 
 /**
- * SQL listener command request.
+ * Client request with no ID.
  */
-public interface SqlListenerRequest {
-    /** Handshake request. */
-    public static final int HANDSHAKE = 1;
-
-    /**
-     * @return Request ID.
-     */
-    public long requestId();
+public abstract class SqlListenerRequestNoId implements SqlListenerRequest {
+    /** {@inheritDoc} */
+    @Override public long requestId() {
+        return 0;
+    }
 }
