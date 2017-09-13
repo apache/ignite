@@ -1663,8 +1663,14 @@ public class GridCacheUtils {
         if (!F.isEmpty(entities)) {
             Collection<QueryEntity> normalEntities = new ArrayList<>(entities.size());
 
-            for (QueryEntity entity : entities)
+            for (QueryEntity entity : entities) {
+                if (cfg.isReadThrough() && !F.isEmpty(entity.getNotNullFields())) {
+                    throw new IgniteCheckedException("Not null field configuration is not supported " +
+                        "with read-through cache store.");
+                }
+
                 normalEntities.add(QueryUtils.normalizeQueryEntity(entity, cfg.isSqlEscapeAll()));
+            }
 
             cfg.clearQueryEntities().setQueryEntities(normalEntities);
         }

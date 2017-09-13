@@ -1392,6 +1392,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             throw new SchemaOperationException("Template cache already contains query entities which it should not: " +
                 templateName);
 
+        if (ccfg.isReadThrough() && !F.isEmpty(entity.getNotNullFields())) {
+            throw new SchemaOperationException("Not null field configuration is not supported " +
+                "with read-through cache store.");
+        }
+
         ccfg.setName(QueryUtils.createTableCacheName(schemaName, entity.getTableName()));
 
         if (!F.isEmpty(cacheGroup))

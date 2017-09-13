@@ -76,8 +76,18 @@ public class IgniteSqlNotNullConstraintTest extends GridCommonAbstractTest {
     /** Name of SQL table. */
     private static String TABLE_PERSON = "\"" + CACHE_PERSON +  "\".\"PERSON\"";
 
+    /** Template of cache with read-through setting. */
+    private static String CACHE_READ_THROUGH = "cacheReadThrough";
+
     /** Expected error message. */
     private static String ERR_MSG = "Null value is not allowed for field 'NAME'";
+
+    /** Expected error message for read-through restriction. */
+    private static String READ_THROUGH_ERR_MSG = "Not null field configuration is not supported " +
+        "with read-through cache store.";
+
+    /** Name of the node which configuration includes restricted cache config. */
+    private static String READ_THROUGH_CFG_NODE_NAME = "nodeCacheReadThrough";
 
     /** OK value. */
     private final Person okValue = new Person("Name", 18);
@@ -99,6 +109,11 @@ public class IgniteSqlNotNullConstraintTest extends GridCommonAbstractTest {
         List<CacheConfiguration> ccfgs = new ArrayList<>();
 
         ccfgs.addAll(cacheConfigurations());
+
+        if (gridName.equals(READ_THROUGH_CFG_NODE_NAME)) {
+            ccfgs.add(buildCacheConfigurationReadThrough(true).setName("BadCfgTestCache"));
+            c.setClientMode(true);
+        }
 
         c.setCacheConfiguration(ccfgs.toArray(new CacheConfiguration[ccfgs.size()]));
 
@@ -161,6 +176,23 @@ public class IgniteSqlNotNullConstraintTest extends GridCommonAbstractTest {
         return cfg;
     }
 
+    /** */
+    private CacheConfiguration buildCacheConfigurationReadThrough(boolean hasQueryEntity) {
+        CacheConfiguration cfg = new CacheConfiguration<Integer, Person>()
+            .setName(CACHE_READ_THROUGH)
+            .setCacheMode(CacheMode.PARTITIONED)
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+            .setCacheStoreFactory(singletonFactory(new TestStore()))
+            .setReadThrough(true);
+
+        if (hasQueryEntity) {
+            cfg.setQueryEntities(F.asList(new QueryEntity(Integer.class, Person.class)
+                .setNotNullFields(Collections.singleton("name"))));
+        }
+
+        return cfg;
+    }
+
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
@@ -168,6 +200,9 @@ public class IgniteSqlNotNullConstraintTest extends GridCommonAbstractTest {
         startGrids(NODE_COUNT);
 
         startGrid(NODE_CLIENT);
+
+        // Add cache template with read-through cache store.
+        grid(NODE_CLIENT).addCacheConfiguration(buildCacheConfigurationReadThrough(false));
 
         awaitPartitionMapExchange();
     }
@@ -804,6 +839,46 @@ public class IgniteSqlNotNullConstraintTest extends GridCommonAbstractTest {
 
         assertEquals(3, result.get(2).get(0));
         assertEquals("Bob", result.get(2).get(1));
+    }
+
+    /** Check QueryEntity configuration fails with NOT NULL field and read-through. */
+    public void testReadThroughRestrictionQueryEntity() throws Exception {
+        // Node start-up failure.
+        GridTestUtils.assertThrowsAnyCause(log, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                return startGrid(READ_THROUGH_CFG_NODE_NAME);
+            }
+        }, IgniteCheckedException.class, READ_THROUGH_ERR_MSG);
+
+        // Cache start-up failure.
+        GridTestUtils.assertThrowsAnyCause(log, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                return grid(NODE_CLIENT).createCache(
+                    buildCacheConfigurationReadThrough(true).setName("dynBadCfgCache"));
+            }
+        }, IgniteCheckedException.class, READ_THROUGH_ERR_MSG);
+    }
+
+    /** Check create table fails with NOT NULL field and read-through. */
+    public void testReadThroughRestrictionCreateTable() throws Exception {
+        GridTestUtils.assertThrowsAnyCause(log, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                return executeSql("CREATE TABLE test(id INT PRIMARY KEY, name char NOT NULL) " +
+                    "WITH \"template=cacheReadThrough\"");
+            }
+        }, IgniteSQLException.class, READ_THROUGH_ERR_MSG);
+    }
+
+    /** Check alter table fails with NOT NULL field and read-through. */
+    public void testReadThroughRestrictionAlterTable() throws Exception {
+        executeSql("CREATE TABLE test(id INT PRIMARY KEY, age INT) " +
+            "WITH \"template=" + CACHE_READ_THROUGH + "\"");
+
+        GridTestUtils.assertThrowsAnyCause(log, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                return executeSql("ALTER TABLE test ADD COLUMN name char NOT NULL");
+            }
+        }, IgniteSQLException.class, READ_THROUGH_ERR_MSG);
     }
 
     /** */
