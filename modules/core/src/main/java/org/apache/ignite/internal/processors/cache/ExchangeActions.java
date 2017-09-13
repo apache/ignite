@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.util.typedef.F;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Cache change requests to execute when receive {@link DynamicCacheChangeBatch} event.
@@ -175,20 +176,20 @@ public class ExchangeActions {
     /**
      * @param ctx Context.
      */
-    public void completeRequestFutures(GridCacheSharedContext ctx) {
-        completeRequestFutures(cachesToStart, ctx);
-        completeRequestFutures(cachesToStop, ctx);
-        completeRequestFutures(cachesToClose, ctx);
+    public void completeRequestFutures(GridCacheSharedContext ctx, @Nullable Throwable err) {
+        completeRequestFutures(cachesToStart, ctx, err);
+        completeRequestFutures(cachesToStop, ctx, err);
+        completeRequestFutures(cachesToClose, ctx, err);
     }
 
     /**
      * @param map Actions map.
      * @param ctx Context.
      */
-    private void completeRequestFutures(Map<String, CacheActionData> map, GridCacheSharedContext ctx) {
+    private void completeRequestFutures(Map<String, CacheActionData> map, GridCacheSharedContext ctx, @Nullable Throwable err) {
         if (map != null) {
             for (CacheActionData req : map.values())
-                ctx.cache().completeStartFuture(req.req, null);
+                ctx.cache().completeStartFuture(req.req, err);
         }
     }
 
