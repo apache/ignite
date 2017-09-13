@@ -35,7 +35,7 @@ public class ClientRequestHandler implements SqlListenerRequestHandler {
      *
      * @param ctx Kernal context.
      */
-    public ClientRequestHandler(GridKernalContext ctx) {
+    ClientRequestHandler(GridKernalContext ctx) {
         assert ctx != null;
 
         this.ctx = ctx;

@@ -32,7 +32,7 @@ public class ClientGetBinaryTypeNameResponse extends ClientResponse {
      *
      * @param requestId Request id.
      */
-    ClientGetBinaryTypeNameResponse(int requestId, String typeName) {
+    ClientGetBinaryTypeNameResponse(long requestId, String typeName) {
         super(requestId);
 
         this.typeName = typeName;

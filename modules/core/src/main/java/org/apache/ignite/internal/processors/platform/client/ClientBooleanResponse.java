@@ -31,7 +31,7 @@ public class ClientBooleanResponse extends ClientResponse {
      *
      * @param requestId Request id.
      */
-    public ClientBooleanResponse(int requestId, boolean val) {
+    public ClientBooleanResponse(long requestId, boolean val) {
         super(requestId);
 
         this.val = val;

@@ -26,7 +26,7 @@ import org.apache.ignite.internal.processors.odbc.SqlListenerRequest;
  */
 public class ClientRequest extends SqlListenerRequest {
     /** Request id. */
-    private final int requestId;
+    private final long requestId;
 
     /**
      * Ctor.
@@ -34,7 +34,7 @@ public class ClientRequest extends SqlListenerRequest {
      * @param reader Reader.
      */
     public ClientRequest(BinaryRawReader reader) {
-        requestId = reader.readInt();
+        requestId = reader.readLong();
     }
 
     /**
@@ -42,7 +42,7 @@ public class ClientRequest extends SqlListenerRequest {
      *
      * @return Data.
      */
-    public int getRequestId() {
+    public long getRequestId() {
         return requestId;
     }
 
