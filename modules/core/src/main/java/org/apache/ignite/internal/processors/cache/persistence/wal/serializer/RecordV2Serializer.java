@@ -54,7 +54,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.serial
  */
 public class RecordV2Serializer implements RecordSerializer {
     /** Length of WAL Pointer: Index (8) + File offset (4) + Record length (4) */
-    public static final int FILE_WAL_POINTER_SIZE = 8 + 4 + 4;
+    private static final int FILE_WAL_POINTER_SIZE = 8 + 4 + 4;
 
     /** V2 data serializer. */
     private final RecordDataV2Serializer dataSerializer;
@@ -212,24 +212,25 @@ public class RecordV2Serializer implements RecordSerializer {
      * @return Read file WAL pointer.
      * @throws IOException If failed to write.
      */
-    public static FileWALPointer readPositionAndCheckPoint(
+    @SuppressWarnings("UnusedReturnValue")
+    private static FileWALPointer readPositionAndCheckPoint(
         DataInput in,
         WALPointer expPtr,
         boolean skipPositionCheck
     ) throws IgniteCheckedException, IOException {
         long idx = in.readLong();
-        int fileOffset = in.readInt();
-        int length = in.readInt();
+        int fileOff = in.readInt();
+        int len = in.readInt();
 
         FileWALPointer p = (FileWALPointer)expPtr;
 
-        if (!F.eq(idx, p.index()) || (!skipPositionCheck && !F.eq(fileOffset, p.fileOffset())))
+        if (!F.eq(idx, p.index()) || (!skipPositionCheck && !F.eq(fileOff, p.fileOffset())))
             throw new WalSegmentTailReachedException(
                 "WAL segment tail is reached. [ " +
                         "Expected next state: {Index=" + p.index() + ",Offset=" + p.fileOffset() + "}, " +
-                        "Actual state : {Index=" + idx + ",Offset=" + fileOffset + "} ]", null);
+                        "Actual state : {Index=" + idx + ",Offset=" + fileOff + "} ]", null);
 
-        return new FileWALPointer(idx, fileOffset, length);
+        return new FileWALPointer(idx, fileOff, len);
     }
 
     /**
@@ -238,7 +239,7 @@ public class RecordV2Serializer implements RecordSerializer {
      * @param buf Buffer to write record file position.
      * @param record WAL record.
      */
-    public static void putPositionOfRecord(ByteBuffer buf, WALRecord record) {
+    private static void putPositionOfRecord(ByteBuffer buf, WALRecord record) {
         FileWALPointer p = (FileWALPointer)record.position();
 
         buf.putLong(p.index());

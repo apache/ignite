@@ -64,7 +64,7 @@ public class MockWalIteratorFactory {
      * @param log Logger.
      * @param pageSize Page size.
      * @param consistentId Consistent id.
-     * @param subfolderName
+     * @param subfolderName Subfolder name.
      * @param segments Segments.
      */
     public MockWalIteratorFactory(@Nullable IgniteLogger log,
@@ -85,13 +85,14 @@ public class MockWalIteratorFactory {
      * @return iterator
      * @throws IgniteCheckedException if IO failed
      */
+    @SuppressWarnings("unchecked")
     public WALIterator iterator(File wal, File walArchive) throws IgniteCheckedException {
         final DataStorageConfiguration persistentCfg1 = Mockito.mock(DataStorageConfiguration.class);
 
         when(persistentCfg1.getWalPath()).thenReturn(wal.getAbsolutePath());
         when(persistentCfg1.getWalArchivePath()).thenReturn(walArchive.getAbsolutePath());
         when(persistentCfg1.getWalSegments()).thenReturn(segments);
-        when(persistentCfg1.getWalThreadLocalBufferSize()).thenReturn(DataStorageConfiguration.DFLT_TLB_SIZE);
+        when(persistentCfg1.getWalBufferSize()).thenReturn(DataStorageConfiguration.DFLT_WAL_BUFF_SIZE);
         when(persistentCfg1.getWalRecordIteratorBufferSize()).thenReturn(DataStorageConfiguration.DFLT_WAL_RECORD_ITERATOR_BUFFER_SIZE);
 
         final FileIOFactory fileIOFactory = new DataStorageConfiguration().getFileIOFactory();
@@ -121,10 +122,10 @@ public class MockWalIteratorFactory {
         when(sctx.discovery()).thenReturn(disco);
         when(sctx.gridConfig()).thenReturn(cfg);
 
-        final GridCacheDatabaseSharedManager database = Mockito.mock(GridCacheDatabaseSharedManager.class);
+        final GridCacheDatabaseSharedManager db = Mockito.mock(GridCacheDatabaseSharedManager.class);
 
-        when(database.pageSize()).thenReturn(pageSize);
-        when(sctx.database()).thenReturn(database);
+        when(db.pageSize()).thenReturn(pageSize);
+        when(sctx.database()).thenReturn(db);
         when(sctx.logger(any(Class.class))).thenReturn(log);
 
         mgr.start(sctx);

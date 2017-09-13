@@ -314,14 +314,14 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 long lsb = in.readLong();
                 boolean hasPtr = in.readByte() != 0;
                 int idx = hasPtr ? in.readInt() : 0;
-                int offset = hasPtr ? in.readInt() : 0;
+                int off = hasPtr ? in.readInt() : 0;
                 int len = hasPtr ? in.readInt() : 0;
 
                 Map<Integer, CacheState> states = readPartitionStates(in);
 
                 boolean end = in.readByte() != 0;
 
-                FileWALPointer walPtr = hasPtr ? new FileWALPointer(idx, offset, len) : null;
+                FileWALPointer walPtr = hasPtr ? new FileWALPointer(idx, off, len) : null;
 
                 CheckpointRecord cpRec = new CheckpointRecord(new UUID(msb, lsb), walPtr, end);
 
@@ -789,9 +789,9 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
                 state = in.readByte();
 
-                long updateCounter = in.readLong();
+                long updateCntr = in.readLong();
 
-                res = new PartitionMetaStateRecord(cacheId, partId, GridDhtPartitionState.fromOrdinal(state), updateCounter);
+                res = new PartitionMetaStateRecord(cacheId, partId, GridDhtPartitionState.fromOrdinal(state), updateCntr);
 
                 break;
 
@@ -818,10 +818,10 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeRecord(WALRecord record, ByteBuffer buf) throws IgniteCheckedException {
-        switch (record.type()) {
+    @Override public void writeRecord(WALRecord rec, ByteBuffer buf) throws IgniteCheckedException {
+        switch (rec.type()) {
             case PAGE_RECORD:
-                PageSnapshot snap = (PageSnapshot)record;
+                PageSnapshot snap = (PageSnapshot)rec;
 
                 buf.putInt(snap.fullPageId().groupId());
                 buf.putLong(snap.fullPageId().pageId());
@@ -830,14 +830,14 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 break;
 
             case MEMORY_RECOVERY:
-                MemoryRecoveryRecord memoryRecoveryRecord = (MemoryRecoveryRecord)record;
+                MemoryRecoveryRecord memoryRecoveryRecord = (MemoryRecoveryRecord)rec;
 
                 buf.putLong(memoryRecoveryRecord.time());
 
                 break;
 
             case PARTITION_DESTROY:
-                PartitionDestroyRecord partDestroy = (PartitionDestroyRecord)record;
+                PartitionDestroyRecord partDestroy = (PartitionDestroyRecord)rec;
 
                 buf.putInt(partDestroy.groupId());
                 buf.putInt(partDestroy.partitionId());
@@ -845,7 +845,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 break;
 
             case META_PAGE_INIT:
-                MetaPageInitRecord updRootsRec = (MetaPageInitRecord)record;
+                MetaPageInitRecord updRootsRec = (MetaPageInitRecord)rec;
 
                 buf.putInt(updRootsRec.groupId());
                 buf.putLong(updRootsRec.pageId());
@@ -858,7 +858,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 break;
 
             case PARTITION_META_PAGE_UPDATE_COUNTERS:
-                MetaPageUpdatePartitionDataRecord partDataRec = (MetaPageUpdatePartitionDataRecord)record;
+                MetaPageUpdatePartitionDataRecord partDataRec = (MetaPageUpdatePartitionDataRecord)rec;
 
                 buf.putInt(partDataRec.groupId());
                 buf.putLong(partDataRec.pageId());
@@ -873,7 +873,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 break;
 
             case CHECKPOINT_RECORD:
-                CheckpointRecord cpRec = (CheckpointRecord)record;
+                CheckpointRecord cpRec = (CheckpointRecord)rec;
 
                 assert cpRec.checkpointMark() == null || cpRec.checkpointMark() instanceof FileWALPointer :
                         "Invalid WAL record: " + cpRec;
@@ -899,7 +899,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 break;
 
             case DATA_RECORD:
-                DataRecord dataRec = (DataRecord)record;
+                DataRecord dataRec = (DataRecord)rec;
 
                 buf.putInt(dataRec.writeEntries().size());
 
@@ -911,12 +911,12 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
             case HEADER_RECORD:
                 buf.putLong(HeaderRecord.REGULAR_MAGIC);
 
-                buf.putInt(((HeaderRecord)record).version());
+                buf.putInt(((HeaderRecord)rec).version());
 
                 break;
 
             case DATA_PAGE_INSERT_RECORD:
-                DataPageInsertRecord diRec = (DataPageInsertRecord)record;
+                DataPageInsertRecord diRec = (DataPageInsertRecord)rec;
 
                 buf.putInt(diRec.groupId());
                 buf.putLong(diRec.pageId());
@@ -928,7 +928,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 break;
 
             case DATA_PAGE_UPDATE_RECORD:
-                DataPageUpdateRecord uRec = (DataPageUpdateRecord)record;
+                DataPageUpdateRecord uRec = (DataPageUpdateRecord)rec;
 
                 buf.putInt(uRec.groupId());
                 buf.putLong(uRec.pageId());
@@ -941,7 +941,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 break;
 
             case DATA_PAGE_INSERT_FRAGMENT_RECORD:
-                final DataPageInsertFragmentRecord difRec = (DataPageInsertFragmentRecord)record;
+                final DataPageInsertFragmentRecord difRec = (DataPageInsertFragmentRecord)rec;
 
                 buf.putInt(difRec.groupId());
                 buf.putLong(difRec.pageId());
@@ -953,7 +953,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 break;
 
             case DATA_PAGE_REMOVE_RECORD:
-                DataPageRemoveRecord drRec = (DataPageRemoveRecord)record;
+                DataPageRemoveRecord drRec = (DataPageRemoveRecord)rec;
 
                 buf.putInt(drRec.groupId());
                 buf.putLong(drRec.pageId());
@@ -963,7 +963,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 break;
 
             case DATA_PAGE_SET_FREE_LIST_PAGE:
-                DataPageSetFreeListPageRecord freeListRec = (DataPageSetFreeListPageRecord)record;
+                DataPageSetFreeListPageRecord freeListRec = (DataPageSetFreeListPageRecord)rec;
 
                 buf.putInt(freeListRec.groupId());
                 buf.putLong(freeListRec.pageId());
@@ -973,7 +973,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 break;
 
             case INIT_NEW_PAGE_RECORD:
-                InitNewPageRecord inpRec = (InitNewPageRecord)record;
+                InitNewPageRecord inpRec = (InitNewPageRecord)rec;
 
                 buf.putInt(inpRec.groupId());
                 buf.putLong(inpRec.pageId());
@@ -985,7 +985,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 break;
 
             case BTREE_META_PAGE_INIT_ROOT:
-                MetaPageInitRootRecord imRec = (MetaPageInitRootRecord)record;
+                MetaPageInitRootRecord imRec = (MetaPageInitRootRecord)rec;
 
                 buf.putInt(imRec.groupId());
                 buf.putLong(imRec.pageId());
@@ -995,7 +995,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 break;
 
             case BTREE_META_PAGE_INIT_ROOT2:
-                MetaPageInitRootInlineRecord imRec2 = (MetaPageInitRootInlineRecord)record;
+                MetaPageInitRootInlineRecord imRec2 = (MetaPageInitRootInlineRecord)rec;
 
                 buf.putInt(imRec2.groupId());
                 buf.putLong(imRec2.pageId());
@@ -1006,7 +1006,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 break;
 
             case BTREE_META_PAGE_ADD_ROOT:
-                MetaPageAddRootRecord arRec = (MetaPageAddRootRecord)record;
+                MetaPageAddRootRecord arRec = (MetaPageAddRootRecord)rec;
 
                 buf.putInt(arRec.groupId());
                 buf.putLong(arRec.pageId());
@@ -1016,7 +1016,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 break;
 
             case BTREE_META_PAGE_CUT_ROOT:
-                MetaPageCutRootRecord crRec = (MetaPageCutRootRecord)record;
+                MetaPageCutRootRecord crRec = (MetaPageCutRootRecord)rec;
 
                 buf.putInt(crRec.groupId());
                 buf.putLong(crRec.pageId());
@@ -1024,7 +1024,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 break;
 
             case BTREE_INIT_NEW_ROOT:
-                NewRootInitRecord<?> riRec = (NewRootInitRecord<?>)record;
+                NewRootInitRecord<?> riRec = (NewRootInitRecord<?>)rec;
 
                 buf.putInt(riRec.groupId());
                 buf.putLong(riRec.pageId());
@@ -1040,7 +1040,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 break;
 
             case BTREE_PAGE_RECYCLE:
-                RecycleRecord recRec = (RecycleRecord)record;
+                RecycleRecord recRec = (RecycleRecord)rec;
 
                 buf.putInt(recRec.groupId());
                 buf.putLong(recRec.pageId());
@@ -1050,7 +1050,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 break;
 
             case BTREE_PAGE_INSERT:
-                InsertRecord<?> inRec = (InsertRecord<?>)record;
+                InsertRecord<?> inRec = (InsertRecord<?>)rec;
 
                 buf.putInt(inRec.groupId());
                 buf.putLong(inRec.pageId());
@@ -1065,7 +1065,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 break;
 
             case BTREE_FIX_LEFTMOST_CHILD:
-                FixLeftmostChildRecord flRec = (FixLeftmostChildRecord)record;
+                FixLeftmostChildRecord flRec = (FixLeftmostChildRecord)rec;
 
                 buf.putInt(flRec.groupId());
                 buf.putLong(flRec.pageId());
@@ -1075,7 +1075,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 break;
 
             case BTREE_FIX_COUNT:
-                FixCountRecord fcRec = (FixCountRecord)record;
+                FixCountRecord fcRec = (FixCountRecord)rec;
 
                 buf.putInt(fcRec.groupId());
                 buf.putLong(fcRec.pageId());
@@ -1085,7 +1085,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 break;
 
             case BTREE_PAGE_REPLACE:
-                ReplaceRecord<?> rRec = (ReplaceRecord<?>)record;
+                ReplaceRecord<?> rRec = (ReplaceRecord<?>)rec;
 
                 buf.putInt(rRec.groupId());
                 buf.putLong(rRec.pageId());
@@ -1099,7 +1099,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 break;
 
             case BTREE_PAGE_REMOVE:
-                RemoveRecord rmRec = (RemoveRecord)record;
+                RemoveRecord rmRec = (RemoveRecord)rec;
 
                 buf.putInt(rmRec.groupId());
                 buf.putLong(rmRec.pageId());
@@ -1110,7 +1110,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 break;
 
             case BTREE_PAGE_INNER_REPLACE:
-                InnerReplaceRecord<?> irRec = (InnerReplaceRecord<?>)record;
+                InnerReplaceRecord<?> irRec = (InnerReplaceRecord<?>)rec;
 
                 buf.putInt(irRec.groupId());
                 buf.putLong(irRec.pageId());
@@ -1123,7 +1123,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 break;
 
             case BTREE_FORWARD_PAGE_SPLIT:
-                SplitForwardPageRecord sfRec = (SplitForwardPageRecord)record;
+                SplitForwardPageRecord sfRec = (SplitForwardPageRecord)rec;
 
                 buf.putInt(sfRec.groupId());
                 buf.putLong(sfRec.pageId());
@@ -1138,7 +1138,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 break;
 
             case BTREE_EXISTING_PAGE_SPLIT:
-                SplitExistingPageRecord seRec = (SplitExistingPageRecord)record;
+                SplitExistingPageRecord seRec = (SplitExistingPageRecord)rec;
 
                 buf.putInt(seRec.groupId());
                 buf.putLong(seRec.pageId());
@@ -1149,7 +1149,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 break;
 
             case BTREE_PAGE_MERGE:
-                MergeRecord<?> mRec = (MergeRecord<?>)record;
+                MergeRecord<?> mRec = (MergeRecord<?>)rec;
 
                 buf.putInt(mRec.groupId());
                 buf.putLong(mRec.pageId());
@@ -1162,7 +1162,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 break;
 
             case PAGES_LIST_SET_NEXT:
-                PagesListSetNextRecord plNextRec = (PagesListSetNextRecord)record;
+                PagesListSetNextRecord plNextRec = (PagesListSetNextRecord)rec;
 
                 buf.putInt(plNextRec.groupId());
                 buf.putLong(plNextRec.pageId());
@@ -1172,7 +1172,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 break;
 
             case PAGES_LIST_SET_PREVIOUS:
-                PagesListSetPreviousRecord plPrevRec = (PagesListSetPreviousRecord)record;
+                PagesListSetPreviousRecord plPrevRec = (PagesListSetPreviousRecord)rec;
 
                 buf.putInt(plPrevRec.groupId());
                 buf.putLong(plPrevRec.pageId());
@@ -1182,7 +1182,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 break;
 
             case PAGES_LIST_INIT_NEW_PAGE:
-                PagesListInitNewPageRecord plNewRec = (PagesListInitNewPageRecord)record;
+                PagesListInitNewPageRecord plNewRec = (PagesListInitNewPageRecord)rec;
 
                 buf.putInt(plNewRec.groupId());
                 buf.putLong(plNewRec.pageId());
@@ -1196,7 +1196,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 break;
 
             case PAGES_LIST_ADD_PAGE:
-                PagesListAddPageRecord plAddRec = (PagesListAddPageRecord)record;
+                PagesListAddPageRecord plAddRec = (PagesListAddPageRecord)rec;
 
                 buf.putInt(plAddRec.groupId());
                 buf.putLong(plAddRec.pageId());
@@ -1206,7 +1206,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 break;
 
             case PAGES_LIST_REMOVE_PAGE:
-                PagesListRemovePageRecord plRmvRec = (PagesListRemovePageRecord)record;
+                PagesListRemovePageRecord plRmvRec = (PagesListRemovePageRecord)rec;
 
                 buf.putInt(plRmvRec.groupId());
                 buf.putLong(plRmvRec.pageId());
@@ -1216,7 +1216,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 break;
 
             case BTREE_FIX_REMOVE_ID:
-                FixRemoveId frRec = (FixRemoveId)record;
+                FixRemoveId frRec = (FixRemoveId)rec;
 
                 buf.putInt(frRec.groupId());
                 buf.putLong(frRec.pageId());
@@ -1226,7 +1226,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 break;
 
             case TRACKING_PAGE_DELTA:
-                TrackingPageDeltaRecord tpDelta = (TrackingPageDeltaRecord)record;
+                TrackingPageDeltaRecord tpDelta = (TrackingPageDeltaRecord)rec;
 
                 buf.putInt(tpDelta.groupId());
                 buf.putLong(tpDelta.pageId());
@@ -1238,7 +1238,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 break;
 
             case META_PAGE_UPDATE_NEXT_SNAPSHOT_ID:
-                MetaPageUpdateNextSnapshotId mpUpdateNextSnapshotId = (MetaPageUpdateNextSnapshotId)record;
+                MetaPageUpdateNextSnapshotId mpUpdateNextSnapshotId = (MetaPageUpdateNextSnapshotId)rec;
 
                 buf.putInt(mpUpdateNextSnapshotId.groupId());
                 buf.putLong(mpUpdateNextSnapshotId.pageId());
@@ -1249,7 +1249,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
             case META_PAGE_UPDATE_LAST_SUCCESSFUL_FULL_SNAPSHOT_ID:
                 MetaPageUpdateLastSuccessfulFullSnapshotId mpUpdateLastSuccFullSnapshotId =
-                        (MetaPageUpdateLastSuccessfulFullSnapshotId)record;
+                        (MetaPageUpdateLastSuccessfulFullSnapshotId)rec;
 
                 buf.putInt(mpUpdateLastSuccFullSnapshotId.groupId());
                 buf.putLong(mpUpdateLastSuccFullSnapshotId.pageId());
@@ -1260,7 +1260,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
             case META_PAGE_UPDATE_LAST_SUCCESSFUL_SNAPSHOT_ID:
                 MetaPageUpdateLastSuccessfulSnapshotId mpUpdateLastSuccSnapshotId =
-                        (MetaPageUpdateLastSuccessfulSnapshotId)record;
+                        (MetaPageUpdateLastSuccessfulSnapshotId)rec;
 
                 buf.putInt(mpUpdateLastSuccSnapshotId.groupId());
                 buf.putLong(mpUpdateLastSuccSnapshotId.pageId());
@@ -1272,7 +1272,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
             case META_PAGE_UPDATE_LAST_ALLOCATED_INDEX:
                 MetaPageUpdateLastAllocatedIndex mpUpdateLastAllocatedIdx =
-                        (MetaPageUpdateLastAllocatedIndex) record;
+                        (MetaPageUpdateLastAllocatedIndex) rec;
 
                 buf.putInt(mpUpdateLastAllocatedIdx.groupId());
                 buf.putLong(mpUpdateLastAllocatedIdx.pageId());
@@ -1282,7 +1282,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 break;
 
             case PART_META_UPDATE_STATE:
-                PartitionMetaStateRecord partMetaStateRecord = (PartitionMetaStateRecord) record;
+                PartitionMetaStateRecord partMetaStateRecord = (PartitionMetaStateRecord) rec;
 
                 buf.putInt(partMetaStateRecord.groupId());
 
@@ -1295,7 +1295,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 break;
 
             case PAGE_LIST_META_RESET_COUNT_RECORD:
-                PageListMetaResetCountRecord pageListMetaResetCntRecord = (PageListMetaResetCountRecord) record;
+                PageListMetaResetCountRecord pageListMetaResetCntRecord = (PageListMetaResetCountRecord) rec;
 
                 buf.putInt(pageListMetaResetCntRecord.groupId());
                 buf.putLong(pageListMetaResetCntRecord.pageId());
@@ -1303,7 +1303,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 break;
 
             case TX_RECORD:
-                txRecordSerializer.writeTxRecord((TxRecord)record, buf);
+                txRecordSerializer.writeTxRecord((TxRecord)rec, buf);
 
                 break;
 
@@ -1311,7 +1311,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 break;
 
             default:
-                throw new UnsupportedOperationException("Type: " + record.type());
+                throw new UnsupportedOperationException("Type: " + rec.type());
         }
     }
 
