@@ -258,6 +258,11 @@
                                 <xs:documentation>Compact footer flag.</xs:documentation>
                             </xs:annotation>
                         </xs:attribute>
+                      <xs:attribute name="useVarintArrayLength" type="xs:boolean">
+                        <xs:annotation>
+                          <xs:documentation>Varint array length setting.</xs:documentation>
+                        </xs:annotation>
+                      </xs:attribute>
                     </xs:complexType>
                 </xs:element>
                 <xs:element name="cacheConfiguration" minOccurs="0">
