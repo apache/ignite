@@ -4198,29 +4198,36 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                                 return new GridFinishedFuture<>(
                                     new IgniteCheckedException("Operation has been cancelled (node is stopping)."));
 
-                            return op.op(tx0, opCtx).chain(new CX1<IgniteInternalFuture<T>, T>() {
-                                @Override public T applyx(IgniteInternalFuture<T> tFut) throws IgniteCheckedException {
-                                    try {
-                                        return tFut.get();
-                                    }
-                                    catch (IgniteTxRollbackCheckedException e) {
-                                        throw e;
-                                    }
-                                    catch (IgniteCheckedException e1) {
+                            try {
+                                return op.op(tx0, opCtx).chain(new CX1<IgniteInternalFuture<T>, T>() {
+                                    @Override
+                                    public T applyx(IgniteInternalFuture<T> tFut) throws IgniteCheckedException {
                                         try {
-                                            tx0.rollbackNearTxLocalAsync();
+                                            return tFut.get();
                                         }
-                                        catch (Throwable e2) {
-                                            e1.addSuppressed(e2);
+                                        catch (IgniteTxRollbackCheckedException e) {
+                                            throw e;
                                         }
+                                        catch (IgniteCheckedException e1) {
+                                            try {
+                                                tx0.rollbackNearTxLocalAsync();
+                                            }
+                                            catch (Throwable e2) {
+                                                e1.addSuppressed(e2);
+                                            }
 
-                                        throw e1;
+                                            throw e1;
+                                        }
+                                        finally {
+                                            ctx.shared().txContextReset();
+                                        }
                                     }
-                                    finally {
-                                        ctx.shared().txContextReset();
-                                    }
-                                }
-                            });
+                                });
+                            }
+                            finally {
+                                // It is necessary to clear tx context in this thread as well.
+                                ctx.shared().txContextReset();
+                            }
                         }
                     });
 
@@ -4229,29 +4236,37 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 return f;
             }
 
-            final IgniteInternalFuture<T> f = op.op(tx, opCtx).chain(new CX1<IgniteInternalFuture<T>, T>() {
-                @Override public T applyx(IgniteInternalFuture<T> tFut) throws IgniteCheckedException {
-                    try {
-                        return tFut.get();
-                    }
-                    catch (IgniteTxRollbackCheckedException e) {
-                        throw e;
-                    }
-                    catch (IgniteCheckedException e1) {
-                        try {
-                            tx0.rollbackNearTxLocalAsync();
-                        }
-                        catch (Throwable e2) {
-                            e1.addSuppressed(e2);
-                        }
+            IgniteInternalFuture<T> f;
 
-                        throw e1;
+            try {
+                f = op.op(tx, opCtx).chain(new CX1<IgniteInternalFuture<T>, T>() {
+                    @Override public T applyx(IgniteInternalFuture<T> tFut) throws IgniteCheckedException {
+                        try {
+                            return tFut.get();
+                        }
+                        catch (IgniteTxRollbackCheckedException e) {
+                            throw e;
+                        }
+                        catch (IgniteCheckedException e1) {
+                            try {
+                                tx0.rollbackNearTxLocalAsync();
+                            }
+                            catch (Throwable e2) {
+                                e1.addSuppressed(e2);
+                            }
+
+                            throw e1;
+                        }
+                        finally {
+                            ctx.shared().txContextReset();
+                        }
                     }
-                    finally {
-                        ctx.shared().txContextReset();
-                    }
-                }
-            });
+                });
+            }
+            finally {
+                // It is necessary to clear tx context in this thread as well.
+                ctx.shared().txContextReset();
+            }
 
             saveFuture(holder, f, retry);
 
