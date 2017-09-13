@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.platform.client.cache;
 
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.query.QueryCursor;
@@ -86,7 +87,14 @@ public class ClientCacheScanQueryRequest extends ClientCacheRequest {
             .setPartition(part)
             .setFilter(createFilter(ctx));
 
-        QueryCursor cur = cacheWithBinaryFlag(ctx).query(qry);
+        IgniteCache cache = cache(ctx);
+
+        if (!isKeepBinary() || filterPlatform != FILTER_PLATFORM_JAVA) {
+            // Only Java filter can operate in non-binary mode.
+            cache = cache.withKeepBinary();
+        }
+
+        QueryCursor cur = cache.query(qry);
 
         ClientCacheScanQueryCursor cliCur = new ClientCacheScanQueryCursor((QueryCursorEx) cur, pageSize,
                 ctx.resources());

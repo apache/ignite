@@ -59,18 +59,12 @@ class ClientCacheRequest extends ClientRequest {
     }
 
     /**
-     * Gets the cache for current cache id, with binary mode enabled if FLAG_KEEP_BINARY is set.
+     *  Gets a value indicating whether keepBinary flag is set in this request.
      *
-     * @param ctx Kernal context.
-     * @return Cache.
+     * @return keepBinary flag value.
      */
-    IgniteCache cacheWithBinaryFlag(ClientConnectionContext ctx) {
-        IgniteCache cache = rawCache(ctx);
-
-        if ((flags & FLAG_KEEP_BINARY) == FLAG_KEEP_BINARY)
-            cache = cache.withKeepBinary();
-
-        return cache;
+    protected boolean isKeepBinary() {
+        return (flags & FLAG_KEEP_BINARY) == FLAG_KEEP_BINARY;
     }
 
     /**
