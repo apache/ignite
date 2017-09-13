@@ -29,7 +29,7 @@ public class ClientRequest extends SqlListenerRequest {
     private final long requestId;
 
     /**
-     * Ctor.
+     * Constructor.
      *
      * @param reader Reader.
      */

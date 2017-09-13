@@ -27,12 +27,12 @@ public class ClientBooleanResponse extends ClientResponse {
     private final boolean val;
 
     /**
-     * Ctor.
+     * Constructor.
      *
-     * @param requestId Request id.
+     * @param reqId Request id.
      */
-    public ClientBooleanResponse(long requestId, boolean val) {
-        super(requestId);
+    public ClientBooleanResponse(long reqId, boolean val) {
+        super(reqId);
 
         this.val = val;
     }
