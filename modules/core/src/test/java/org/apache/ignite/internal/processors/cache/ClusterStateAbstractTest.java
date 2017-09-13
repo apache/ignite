@@ -19,6 +19,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.Collection;
+import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import org.apache.ignite.Ignite;
@@ -280,14 +281,13 @@ public abstract class ClusterStateAbstractTest extends GridCommonAbstractTest {
 
         lock.lock();
 
-        try {
-            grid(0).active(false);
+        GridTestUtils.assertThrowsWithCause(new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                grid(0).active(false);
 
-            fail("Activation is prohibited if there is an explicit lock on current thread.");
-        }
-        catch (IgniteException ignore) {
-            // No-op.
-        }
+                return null;
+            }
+        }, IgniteException.class);
 
         lock.unlock();
     }
@@ -318,12 +318,13 @@ public abstract class ClusterStateAbstractTest extends GridCommonAbstractTest {
         try (Transaction tx = ignite0.transactions().txStart(concurrency, isolation)) {
             cache0.put(1, "1");
 
-            ignite0.active(false);
+            GridTestUtils.assertThrowsWithCause(new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    grid(0).active(false);
 
-            fail("Activation is prohibited if there is an ongoing transaction in current thread.");
-        }
-        catch (IgniteException ignore) {
-            // No-op.
+                    return null;
+                }
+            }, IgniteException.class);
         }
 
         assertNull(cache0.get(1));
