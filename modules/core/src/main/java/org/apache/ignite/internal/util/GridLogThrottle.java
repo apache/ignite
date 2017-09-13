@@ -56,23 +56,24 @@ public class GridLogThrottle {
     private static ScheduledFuture cleanUpOldEntriesTask;
 
     /**
-     * Setup period map cleaning.
+     * Setup period map cleaning task.
      */
     public static void mapCleaningPeriodSetup() {
-        cleanUpOldEntriesTask = scheduler.scheduleAtFixedRate(new Runnable() {
-            @Override public void run() {
-                cleanUpOldEntries();
-            }
-        }, throttleTimeout, throttleTimeout, TimeUnit.MILLISECONDS);
+        synchronized (scheduler) {
+            cleanUpOldEntriesTask = scheduler.scheduleAtFixedRate(new Runnable() {
+                @Override public void run() {
+                    cleanUpOldEntries();
+                }
+            }, throttleTimeout, throttleTimeout, TimeUnit.MILLISECONDS);
+        }
     }
 
     /**
      * Sets system-wide log throttle timeout.
      *
-     * @param timeout System-wide log throttle timeout.
+     * @param timeout System-wide log throttle timeout and map cleaning task restart.
      */
     public static void throttleTimeout(int timeout) {
-
         throttleTimeout = timeout;
 
         if (cleanUpOldEntriesTask != null) {
