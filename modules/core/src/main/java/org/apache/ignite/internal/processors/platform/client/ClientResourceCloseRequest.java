@@ -39,7 +39,7 @@ public class ClientResourceCloseRequest extends ClientRequest {
 
     /** {@inheritDoc} */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
-        ctx.handleRegistry().release(resId);
+        ctx.resources().release(resId);
 
         return new ClientResponse(requestId());
     }

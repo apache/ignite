@@ -62,7 +62,7 @@ public class ClientConnectionContext implements SqlListenerConnectionContext {
      *
      * @return Handle registry.
      */
-    public ClientResourceRegistry handleRegistry() {
+    public ClientResourceRegistry resources() {
         return resReg;
     }
 
