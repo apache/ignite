@@ -9449,11 +9449,9 @@ public abstract class IgniteUtils {
         try {
             Method mtd = cls.getDeclaredMethod(name, paramTypes);
 
-            if (mtd.getReturnType() != void.class) {
-                mtd.setAccessible(true);
+            mtd.setAccessible(true);
 
-                return mtd;
-            }
+            return mtd;
         }
         catch (NoSuchMethodException ignored) {
             // No-op.
