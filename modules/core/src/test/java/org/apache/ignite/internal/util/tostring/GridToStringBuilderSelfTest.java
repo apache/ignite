@@ -113,17 +113,22 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
         Node n1 = new Node();
         Node n2 = new Node();
         Node n3 = new Node();
+        Node n4 = new Node();
 
         n1.name = "n1";
         n2.name = "n2";
         n3.name = "n3";
+        n4.name = "n4";
 
         n1.next = n2;
         n2.next = n3;
-        n3.next = n2;
+        n3.next = n4;
+        n4.next = n3;
 
         System.out.println(n1);
         System.out.println(n2);
+        System.out.println(n3);
+        System.out.println(n4);
     }
 
     /** */
