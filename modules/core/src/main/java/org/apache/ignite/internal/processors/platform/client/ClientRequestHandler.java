@@ -31,7 +31,7 @@ public class ClientRequestHandler implements SqlListenerRequestHandler {
     private final GridKernalContext ctx;
 
     /**
-     * Ctor.
+     * Constructor.
      *
      * @param ctx Kernal context.
      */
