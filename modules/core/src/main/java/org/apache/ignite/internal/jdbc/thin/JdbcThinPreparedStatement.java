@@ -46,7 +46,6 @@ import org.apache.ignite.internal.processors.odbc.SqlListenerUtils;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaParamsResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQuery;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcStatementType;
-import org.apache.ignite.internal.processors.query.IgniteSQLException;
 
 /**
  * JDBC prepared statement implementation.
@@ -355,27 +354,20 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
     /** {@inheritDoc} */
     @Override public ParameterMetaData getParameterMetaData() throws SQLException {
         ensureNotClosed();
-        try {
-            if (metaData != null)
+
+        return conn.execute(new JdbcThinConnectionRunnable<ParameterMetaData>() {
+            @Override public ParameterMetaData run(JdbcThinTcpIo io) throws IgniteCheckedException, IOException,
+                SQLException {
+                if (metaData != null)
+                    return metaData;
+
+                JdbcMetaParamsResult res = io.parametersMeta(conn.getSchema(), sql);
+
+                metaData = new JdbcThinParameterMetadata(res.meta());
+
                 return metaData;
-
-            JdbcMetaParamsResult res = conn.io().parametersMeta(conn.getSchema(), sql);
-
-            metaData = new JdbcThinParameterMetadata(res.meta());
-
-            return metaData;
-        }
-        catch (IgniteSQLException e) {
-            throw e.toJdbcException();
-        }
-        catch (IOException e) {
-            conn.close();
-
-            throw new SQLException("Failed to query Ignite.", JdbcStateCode.CONNECTION_FAILURE, e);
-        }
-        catch (IgniteCheckedException e) {
-            throw new SQLException("Failed to query Ignite [err=\"" + e.getMessage() + "\"]", e);
-        }
+            }
+        });
     }
 
     /** {@inheritDoc} */

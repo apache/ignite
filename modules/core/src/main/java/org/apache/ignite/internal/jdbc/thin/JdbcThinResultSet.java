@@ -52,7 +52,6 @@ import org.apache.ignite.internal.jdbc2.JdbcStateCode;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcColumnMeta;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryFetchResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryMetadataResult;
-import org.apache.ignite.internal.processors.query.IgniteSQLException;
 
 /**
  * JDBC result set implementation.
@@ -199,25 +198,18 @@ public class JdbcThinResultSet implements ResultSet {
         ensureNotClosed();
 
         if ((rowsIter == null || !rowsIter.hasNext()) && !finished) {
-            try {
-                JdbcQueryFetchResult res = stmt.connection().io().queryFetch(qryId, fetchSize);
+            stmt.connection().execute(new JdbcThinConnectionRunnable<Void>() {
+                @Override public Void run(JdbcThinTcpIo io) throws IgniteCheckedException, IOException, SQLException {
+                    JdbcQueryFetchResult res = io.queryFetch(qryId, fetchSize);
 
-                rows = res.items();
-                finished = res.last();
+                    rows = res.items();
+                    finished = res.last();
 
-                rowsIter = rows.iterator();
-            }
-            catch (IgniteSQLException e) {
-                throw e.toJdbcException();
-            }
-            catch (IOException e) {
-                stmt.connection().close();
+                    rowsIter = rows.iterator();
 
-                throw new SQLException("Failed to query Ignite.", JdbcStateCode.CONNECTION_FAILURE, e);
-            }
-            catch (IgniteCheckedException e) {
-                throw new SQLException("Failed to query Ignite.",  e);
-            }
+                    return null;
+                }
+            });
         }
 
         if (rowsIter != null) {
@@ -254,23 +246,16 @@ public class JdbcThinResultSet implements ResultSet {
         if (isClosed())
             return;
 
-        try {
-            if (!finished || (isQuery && !autoClose))
-                stmt.connection().io().queryClose(qryId);
+        stmt.connection().execute(new JdbcThinConnectionRunnable<Void>() {
+            @Override public Void run(JdbcThinTcpIo io) throws IgniteCheckedException, IOException, SQLException {
+                if (!finished || (isQuery && !autoClose))
+                    io.queryClose(qryId);
 
-            closed = true;
-        }
-        catch (IgniteSQLException e) {
-            throw e.toJdbcException();
-        }
-        catch (IOException e) {
-            stmt.connection().close();
+                closed = true;
 
-            throw new SQLException("Failed to close Ignite query.", JdbcStateCode.CONNECTION_FAILURE, e);
-        }
-        catch (IgniteCheckedException e) {
-            throw new SQLException("Failed to close Ignite query.", e);
-        }
+                return null;
+            }
+        });
     }
 
     /** {@inheritDoc} */
@@ -1906,24 +1891,17 @@ public class JdbcThinResultSet implements ResultSet {
             throw new SQLException("Server cursor is already closed.", JdbcStateCode.INVALID_CURSOR_STATE);
 
         if (!metaInit) {
-            try {
-                JdbcQueryMetadataResult res = stmt.connection().io().queryMeta(qryId);
+           stmt.connection().execute(new JdbcThinConnectionRunnable<Void>() {
+               @Override public Void run(JdbcThinTcpIo io) throws IgniteCheckedException, IOException, SQLException {
+                   JdbcQueryMetadataResult res = io.queryMeta(qryId);
 
-                meta = res.meta();
+                   meta = res.meta();
 
-                metaInit = true;
-            }
-            catch (IgniteSQLException e) {
-                throw e.toJdbcException();
-            }
-            catch (IOException e) {
-                stmt.connection().close();
+                   metaInit = true;
 
-                throw new SQLException("Failed to get query metadata.", JdbcStateCode.CONNECTION_FAILURE, e);
-            }
-            catch (IgniteCheckedException e) {
-                throw new SQLException("Failed to get query metadata.", e);
-            }
+                   return null;
+               }
+           });
         }
 
         return meta;
