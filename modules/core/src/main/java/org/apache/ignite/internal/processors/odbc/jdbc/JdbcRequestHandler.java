@@ -269,7 +269,10 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
 
             qry.setSchema(schemaName);
 
-            List<FieldsQueryCursor<List<?>>> results = ctx.query().querySqlFieldsNoCache(qry, true, false);
+            List<FieldsQueryCursor<List<?>>> results;
+
+            results = ctx.query().querySqlFieldsNoCache(qry, true,
+                protocolVer.compareTo(JdbcConnectionContext.VER_2_1_5) < 0);
 
             if (results.size() == 1) {
                 FieldsQueryCursor<List<?>> qryCur = results.get(0);
@@ -299,10 +302,6 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
                 return new JdbcResponse(res);
             }
             else {
-                if (protocolVer.compareTo(JdbcConnectionContext.VER_2_1_5) < 0)
-                    return new JdbcResponse(SqlListenerResponse.STATUS_FAILED,
-                        "Multiple statements query is not supported.");
-
                 List<JdbcResultInfo> jdbcResults = new ArrayList<>(results.size());
                 List<List<Object>> items = null;
                 boolean last = true;
