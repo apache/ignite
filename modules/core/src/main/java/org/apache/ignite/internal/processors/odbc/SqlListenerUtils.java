@@ -72,10 +72,10 @@ public abstract class SqlListenerUtils {
                 return reader.readDouble();
 
             case GridBinaryMarshaller.STRING:
-                return reader.readString();
+                return BinaryUtils.doReadString(reader.in(), reader.isUseVarintArrayLength());
 
             case GridBinaryMarshaller.DECIMAL:
-                return reader.readDecimal();
+                return BinaryUtils.doReadDecimal(reader.in(), reader.isUseVarintArrayLength());
 
             case GridBinaryMarshaller.UUID:
                 return BinaryUtils.doReadUuid(reader.in());
@@ -90,46 +90,46 @@ public abstract class SqlListenerUtils {
                 return BinaryUtils.doReadDate(reader.in());
 
             case GridBinaryMarshaller.BOOLEAN_ARR:
-                return reader.readBooleanArray();
+                return BinaryUtils.doReadBooleanArray(reader.in(), reader.isUseVarintArrayLength());
 
             case GridBinaryMarshaller.BYTE_ARR:
-                return reader.readByteArray();
+                return BinaryUtils.doReadByteArray(reader.in(), reader.isUseVarintArrayLength());
 
             case GridBinaryMarshaller.CHAR_ARR:
-                return reader.readCharArray();
+                return BinaryUtils.doReadCharArray(reader.in(), reader.isUseVarintArrayLength());
 
             case GridBinaryMarshaller.SHORT_ARR:
-                return reader.readShortArray();
+                return BinaryUtils.doReadShortArray(reader.in(), reader.isUseVarintArrayLength());
 
             case GridBinaryMarshaller.INT_ARR:
-                return reader.readIntArray();
+                return BinaryUtils.doReadIntArray(reader.in(), reader.isUseVarintArrayLength());
 
             case GridBinaryMarshaller.LONG_ARR:
-                return reader.readLongArray();
+                return BinaryUtils.doReadLongArray(reader.in(), reader.isUseVarintArrayLength());
 
             case GridBinaryMarshaller.FLOAT_ARR:
-                return reader.readFloatArray();
+                return BinaryUtils.doReadFloatArray(reader.in(), reader.isUseVarintArrayLength());
 
             case GridBinaryMarshaller.DOUBLE_ARR:
-                return reader.readDoubleArray();
+                return BinaryUtils.doReadDoubleArray(reader.in(), reader.isUseVarintArrayLength());
 
             case GridBinaryMarshaller.STRING_ARR:
-                return reader.readStringArray();
+                return BinaryUtils.doReadStringArray(reader.in(), reader.isUseVarintArrayLength());
 
             case GridBinaryMarshaller.DECIMAL_ARR:
-                return reader.readDecimalArray();
+                return BinaryUtils.doReadDecimalArray(reader.in(), reader.isUseVarintArrayLength());
 
             case GridBinaryMarshaller.UUID_ARR:
-                return reader.readUuidArray();
+                return BinaryUtils.doReadUuidArray(reader.in(), reader.isUseVarintArrayLength());
 
             case GridBinaryMarshaller.TIME_ARR:
-                return reader.readTimeArray();
+                return BinaryUtils.doReadTimeArray(reader.in(), reader.isUseVarintArrayLength());
 
             case GridBinaryMarshaller.TIMESTAMP_ARR:
-                return reader.readTimestampArray();
+                return BinaryUtils.doReadTimeArray(reader.in(), reader.isUseVarintArrayLength());
 
             case GridBinaryMarshaller.DATE_ARR:
-                return reader.readDateArray();
+                return BinaryUtils.doReadDateArray(reader.in(), reader.isUseVarintArrayLength());
 
             default:
                 reader.in().position(reader.in().position() - 1);

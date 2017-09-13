@@ -61,6 +61,9 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /** Schema. */
     private final BinaryWriterSchemaHolder schema;
 
+    /** Varint array length flag. */
+    private final boolean useVarintArrayLength;
+
     /** */
     private int typeId;
 
@@ -110,6 +113,8 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         this.handles = handles;
 
         start = out.position();
+
+        useVarintArrayLength = ctx.isUseVarintArrayLength();
     }
 
     /**
@@ -544,7 +549,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
     /**
      * Writes value of length of an array, which can be written in default format or varint encoding.
-     * Writing method depends on {@link #ctx#isVarintArrayLength()}.
+     * Writing method depends on {@link #useVarintArrayLength}.
      *
      * <a href="https://developers.google.com/protocol-buffers/docs/encoding#varints">Varint encoding description.</a>
      *
@@ -555,7 +560,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      * @see BinaryUtils#sizeOfArrayLengthValue(int, boolean)
      */
     public void doUnsafeWriteArrayLength(int val) {
-        if (ctx.isUseVarintArrayLength())
+        if (useVarintArrayLength)
             doUnsafeWriteUnsignedVarint(val);
         else
             out.unsafeWriteInt(val);
@@ -563,7 +568,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
     /**
      * Writes value of length of an array, which can be written in default format or varint encoding.
-     * Writing method depends on {@link #ctx#isVarintArrayLength()}.
+     * Writing method depends on {@link #useVarintArrayLength}.
      *
      * <a href="https://developers.google.com/protocol-buffers/docs/encoding#varints">Varint encoding description.</a>
      *
@@ -574,7 +579,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      * @see BinaryUtils#sizeOfArrayLengthValue(int, boolean)
      */
     public void doWriteArrayLength(int val) {
-        if (ctx.isUseVarintArrayLength())
+        if (useVarintArrayLength)
             doWriteUnsignedVarint(val);
         else
             out.writeInt(val);
@@ -1980,5 +1985,17 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      */
     public BinaryContext context() {
         return ctx;
+    }
+
+    /**
+     * Indicates whether to consider arrays lengths in varint encoding. When enabled, Ignite will consider arrays
+     * lengths in varint encoding.
+     *
+     * <a href="https://developers.google.com/protocol-buffers/docs/encoding#varints">Varint encoding description.</a>
+     *
+     * @return Whether to consider arrays lengths in varint encoding.
+     */
+    public boolean isUseVarintArrayLength() {
+        return useVarintArrayLength;
     }
 }
