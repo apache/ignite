@@ -104,7 +104,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="types">Binary types.</param>
         public void PutBinaryTypes(ICollection<BinaryType> types)
         {
-            DoOutOp((int) Op.PutMeta, w => WriteBinaryTypes(types, w));
+            DoOutOp((int) Op.PutMeta, w => WriteBinaryTypes(w, types));
         }
 
         /// <summary>
@@ -175,71 +175,85 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Writes the binary types.
         /// </summary>
-        public static void WriteBinaryTypes(ICollection<BinaryType> types, BinaryWriter w)
+        public static void WriteBinaryTypes(BinaryWriter w, ICollection<BinaryType> types)
         {
+            Debug.Assert(w != null);
+            Debug.Assert(types != null);
+
             w.WriteInt(types.Count);
 
             foreach (var meta in types)
             {
-                w.WriteInt(meta.TypeId);
-                w.WriteString(meta.TypeName);
-                w.WriteString(meta.AffinityKeyFieldName);
-
-                var fields = meta.GetFieldsMap();
-
-                w.WriteInt(fields.Count);
-
-                foreach (var field in fields)
-                {
-                    w.WriteString(field.Key);
-                    w.WriteInt(field.Value.TypeId);
-                    w.WriteInt(field.Value.FieldId);
-                }
-
-                // Enum data
-                w.WriteBoolean(meta.IsEnum);
-
-                if (meta.IsEnum)
-                {
-                    if (meta.EnumValuesMap != null)
-                    {
-                        w.WriteInt(meta.EnumValuesMap.Count);
-
-                        foreach (var pair in meta.EnumValuesMap)
-                        {
-                            w.WriteString(pair.Key);
-                            w.WriteInt(pair.Value);
-                        }
-                    }
-                    else
-                    {
-                        w.WriteInt(0);
-                    }
-                }
-
-                // Send schemas
-                var desc = meta.Descriptor;
-                Debug.Assert(desc != null);
-
-                var count = 0;
-                var countPos = w.Stream.Position;
-                w.WriteInt(0); // Reserve for count
-
-                foreach (var schema in desc.Schema.GetAll())
-                {
-                    w.WriteInt(schema.Key);
-
-                    var ids = schema.Value;
-                    w.WriteInt(ids.Length);
-
-                    foreach (var id in ids)
-                        w.WriteInt(id);
-
-                    count++;
-                }
-
-                w.Stream.WriteInt(countPos, count);
+                WriteBinaryType(w, meta);
             }
+        }
+
+        /// <summary>
+        /// Writes the binary type.
+        /// </summary>
+        public static void WriteBinaryType(BinaryWriter w, BinaryType meta)
+        {
+            Debug.Assert(w != null);
+            Debug.Assert(meta != null);
+
+            w.WriteInt(meta.TypeId);
+            w.WriteString(meta.TypeName);
+            w.WriteString(meta.AffinityKeyFieldName);
+
+            var fields = meta.GetFieldsMap();
+
+            w.WriteInt(fields.Count);
+
+            foreach (var field in fields)
+            {
+                w.WriteString(field.Key);
+                w.WriteInt(field.Value.TypeId);
+                w.WriteInt(field.Value.FieldId);
+            }
+
+            // Enum data
+            w.WriteBoolean(meta.IsEnum);
+
+            if (meta.IsEnum)
+            {
+                if (meta.EnumValuesMap != null)
+                {
+                    w.WriteInt(meta.EnumValuesMap.Count);
+
+                    foreach (var pair in meta.EnumValuesMap)
+                    {
+                        w.WriteString(pair.Key);
+                        w.WriteInt(pair.Value);
+                    }
+                }
+                else
+                {
+                    w.WriteInt(0);
+                }
+            }
+
+            // Send schemas
+            var desc = meta.Descriptor;
+            Debug.Assert(desc != null);
+
+            var count = 0;
+            var countPos = w.Stream.Position;
+            w.WriteInt(0); // Reserve for count
+
+            foreach (var schema in desc.Schema.GetAll())
+            {
+                w.WriteInt(schema.Key);
+
+                var ids = schema.Value;
+                w.WriteInt(ids.Length);
+
+                foreach (var id in ids)
+                    w.WriteInt(id);
+
+                count++;
+            }
+
+            w.Stream.WriteInt(countPos, count);
         }
     }
 }

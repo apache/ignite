@@ -52,7 +52,8 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** <inheritdoc /> */
         public BinaryType GetBinaryType(int typeId)
         {
-            throw new NotImplementedException();
+            return _socket.DoOutInOp(ClientOp.GetBinaryType, s => s.WriteInt(typeId),
+                s => new BinaryType(_marsh.StartUnmarshal(s), true));
         }
 
         /** <inheritdoc /> */
@@ -64,19 +65,21 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** <inheritdoc /> */
         public int[] GetSchema(int typeId, int schemaId)
         {
-            return _socket.DoOutInOp(ClientOp.GetBinaryTypeSchema, s =>
-                {
-                    s.WriteInt(typeId);
-                    s.WriteInt(schemaId);
-                },
-                s => _marsh.StartUnmarshal(s).ReadIntArray());
+            return GetBinaryType(typeId).Schema.Get(schemaId);
         }
 
         /** <inheritdoc /> */
         public void PutBinaryTypes(ICollection<BinaryType> types)
         {
-            _socket.DoOutInOp<object>(ClientOp.PutBinaryTypes,
-                s => BinaryProcessor.WriteBinaryTypes(types, _marsh.StartMarshal(s)), null);
+            Debug.Assert(types != null);
+
+            foreach (var binaryType in types)
+            {
+                var type = binaryType;  // Access to modified closure.
+
+                _socket.DoOutInOp<object>(ClientOp.PutBinaryType,
+                    s => BinaryProcessor.WriteBinaryType(_marsh.StartMarshal(s), type), null);
+            }
         }
 
         /** <inheritdoc /> */

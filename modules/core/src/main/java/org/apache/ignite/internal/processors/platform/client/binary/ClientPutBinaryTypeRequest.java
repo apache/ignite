@@ -17,39 +17,40 @@
 
 package org.apache.ignite.internal.processors.platform.client.binary;
 
-import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.binary.BinaryContext;
+import org.apache.ignite.internal.binary.BinaryMetadata;
+import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 
 /**
- * Binary type schema request.
+ * Binary types update request.
  */
-public class ClientGetBinaryTypeSchemaRequest extends ClientRequest {
-    /** Type id. */
-    private final int typeId;
-
-    /** Schema id. */
-    private final int schemaId;
+public class ClientPutBinaryTypeRequest extends ClientRequest {
+    /** Meta. */
+    private final BinaryMetadata meta;
 
     /**
      * Ctor.
      *
      * @param reader Reader.
      */
-    public ClientGetBinaryTypeSchemaRequest(BinaryRawReader reader) {
+    public ClientPutBinaryTypeRequest(BinaryRawReaderEx reader) {
         super(reader);
 
-        typeId = reader.readInt();
-        schemaId = reader.readInt();
+        meta = PlatformUtils.readBinaryMetadata(reader);
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public ClientResponse process(GridKernalContext ctx) {
-        int[] schema = PlatformUtils.getSchema((CacheObjectBinaryProcessorImpl)ctx.cacheObjects(), typeId, schemaId);
+        BinaryContext binCtx = ((CacheObjectBinaryProcessorImpl) ctx.cacheObjects()).binaryContext();
 
-        return new ClientGetBinaryTypeSchemaResponse(requestId(), schema);
+        binCtx.updateMetadata(meta.typeId(), meta);
+
+        return super.process(ctx);
     }
 }
