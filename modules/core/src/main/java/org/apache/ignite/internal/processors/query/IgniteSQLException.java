@@ -43,6 +43,7 @@ public class IgniteSQLException extends IgniteException {
 
     /**
      * Constructor.
+     *
      * @param msg Exception message.
      */
     public IgniteSQLException(String msg) {
@@ -51,16 +52,19 @@ public class IgniteSQLException extends IgniteException {
 
     /**
      * Constructor.
+     *
      * @param cause Cause to throw this exception.
      */
     public IgniteSQLException(SQLException cause) {
         super(cause);
+
         this.sqlState = cause.getSQLState();
         this.statusCode = UNKNOWN;
     }
 
     /**
      * Constructor.
+     *
      * @param msg Exception message.
      * @param cause Cause to throw this exception.
      */
@@ -70,6 +74,7 @@ public class IgniteSQLException extends IgniteException {
 
     /**
      * Constructor.
+     *
      * @param msg Exception message.
      * @param statusCode Ignite specific error code.
      * @param cause Cause to throw this exception.
@@ -110,6 +115,7 @@ public class IgniteSQLException extends IgniteException {
      */
     private IgniteSQLException(String msg, int statusCode, String sqlState, @Nullable Throwable cause) {
         super(msg, cause);
+
         this.sqlState = sqlState;
         this.statusCode = statusCode;
     }

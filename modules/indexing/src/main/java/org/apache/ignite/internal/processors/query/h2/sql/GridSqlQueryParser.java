@@ -1027,10 +1027,12 @@ public class GridSqlQueryParser {
                     case CommandInterface.ALTER_TABLE_ALTER_COLUMN_SELECTIVITY:
                     case CommandInterface.ALTER_TABLE_ALTER_COLUMN_VISIBILITY:
                         stmtName = "ALTER COLUMN";
+
                         break;
 
                     case CommandInterface.ALTER_TABLE_DROP_COLUMN:
                         stmtName = "DROP COLUMN";
+
                         break;
                 }
 
