@@ -23,7 +23,7 @@ import org.jetbrains.annotations.Nullable;
 import java.io.OutputStream;
 
 /**
- * IGFS file create result.
+ * IGFS file create or append result.
  */
 public class IgfsCreateResult {
     /** File info in the primary file system. */

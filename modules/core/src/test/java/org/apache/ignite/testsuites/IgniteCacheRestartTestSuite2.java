@@ -19,6 +19,7 @@ package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.GridCachePutAllFailoverSelfTest;
+import org.apache.ignite.internal.processors.cache.IgniteBinaryMetadataUpdateFromInvoke;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAtomicPutAllFailoverSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCachePutAllRestartTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteBinaryMetadataUpdateNodeRestartTest;
@@ -45,6 +46,7 @@ public class IgniteCacheRestartTestSuite2 extends TestSuite {
         suite.addTestSuite(GridCachePutAllFailoverSelfTest.class);
 
         suite.addTestSuite(IgniteBinaryMetadataUpdateNodeRestartTest.class);
+        suite.addTestSuite(IgniteBinaryMetadataUpdateFromInvoke.class);
 
         suite.addTestSuite(IgniteCacheGetRestartTest.class);
 

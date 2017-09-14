@@ -563,7 +563,7 @@ public class IgfsBackupFailoverSelfTest extends IgfsCommonAbstractTest {
 
             U.closeQuiet(ios);
 
-            awaitFileClose(igfs0.asSecondary(), filePath(fileIdx));
+            awaitFileClose(igfs0, filePath(fileIdx));
         }
     }
 

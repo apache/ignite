@@ -67,7 +67,7 @@ class JdbcUtils {
         assert args != null;
 
         try {
-            return MARSHALLER.marshal(args);
+            return U.marshal(MARSHALLER, args);
         }
         catch (IgniteCheckedException e) {
             throw new SQLException("Failed to unmarshal result.", e);
@@ -96,7 +96,7 @@ class JdbcUtils {
         assert bytes != null;
 
         try {
-            return MARSHALLER.unmarshal(bytes, null);
+            return U.unmarshal(MARSHALLER, bytes, null);
         }
         catch (IgniteCheckedException e) {
             throw new SQLException("Failed to unmarshal result.", e);

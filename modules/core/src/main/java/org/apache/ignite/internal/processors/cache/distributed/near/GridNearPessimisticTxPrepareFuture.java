@@ -153,7 +153,7 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
     @Override public void prepare() {
         if (!tx.state(PREPARING)) {
             if (tx.setRollbackOnly()) {
-                if (tx.timedOut())
+                if (tx.remainingTime() == -1)
                     onDone(new IgniteTxTimeoutCheckedException("Transaction timed out and was rolled back: " + tx));
                 else
                     onDone(new IgniteCheckedException("Invalid transaction state for prepare " +
@@ -193,7 +193,9 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
 
             GridCacheContext cacheCtx = txEntry.context();
 
-            List<ClusterNode> nodes = cacheCtx.affinity().nodes(txEntry.key(), topVer);
+            List<ClusterNode> nodes = cacheCtx.isLocal() ?
+                cacheCtx.affinity().nodesByKey(txEntry.key(), topVer) :
+                cacheCtx.topology().nodes(cacheCtx.affinity().partition(txEntry.key()), topVer);
 
             ClusterNode primary = F.first(nodes);
 
@@ -222,6 +224,11 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
 
         checkOnePhase();
 
+        long timeout = tx.remainingTime();
+
+        if (timeout == -1)
+            onDone(new IgniteTxTimeoutCheckedException("Transaction timed out and was rolled back: " + tx));
+
         for (final GridDistributedTxMapping m : mappings.values()) {
             final ClusterNode node = m.node();
 
@@ -229,6 +236,7 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
                 futId,
                 tx.topologyVersion(),
                 tx,
+                timeout,
                 m.reads(),
                 m.writes(),
                 m.near(),
@@ -291,6 +299,8 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
                     }
 
                     fut.onError(e);
+
+                    break;
                 }
             }
         }

@@ -137,8 +137,7 @@ public class IgfsPathSummary implements Externalizable, Binarylizable {
         dirCnt = in.readInt();
         totalLen = in.readLong();
 
-        path = new IgfsPath();
-        path.readExternal(in);
+        path = IgfsUtils.readPath(in);
     }
 
     /** {@inheritDoc} */
