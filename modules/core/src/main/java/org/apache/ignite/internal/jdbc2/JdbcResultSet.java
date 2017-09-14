@@ -46,12 +46,19 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * JDBC result set implementation.
  */
 public class JdbcResultSet implements ResultSet {
+    /** Is query. */
+    private final boolean isQry;
+
+    /** Update count. */
+    private final long updCnt;
+
     /** Uuid. */
     private final UUID uuid;
 
@@ -91,6 +98,7 @@ public class JdbcResultSet implements ResultSet {
     /**
      * Creates new result set.
      *
+     * @param isQry Is query flag.
      * @param uuid Query UUID.
      * @param stmt Statement.
      * @param tbls Table names.
@@ -98,23 +106,35 @@ public class JdbcResultSet implements ResultSet {
      * @param types Types.
      * @param fields Fields.
      * @param finished Result set finished flag (the last result set).
+     * @throws SQLException On error.
      */
-    JdbcResultSet(@Nullable UUID uuid, JdbcStatement stmt, List<String> tbls, List<String> cols,
-        List<String> types, Collection<List<?>> fields, boolean finished) {
+    JdbcResultSet(boolean isQry, @Nullable UUID uuid, JdbcStatement stmt, List<String> tbls, List<String> cols,
+        List<String> types, List<List<?>> fields, boolean finished) throws SQLException {
         assert stmt != null;
         assert tbls != null;
         assert cols != null;
         assert types != null;
         assert fields != null;
 
+        this.isQry = isQry;
         this.uuid = uuid;
         this.stmt = stmt;
-        this.tbls = tbls;
-        this.cols = cols;
-        this.types = types;
-        this.finished = finished;
 
-        this.it = fields.iterator();
+        if (isQry) {
+            updCnt = -1;
+            this.tbls = tbls;
+            this.cols = cols;
+            this.types = types;
+            this.finished = finished;
+            this.it = fields.iterator();
+        } else {
+            updCnt = updateCounterFromQueryResult(fields);
+            this.tbls = null;
+            this.cols = null;
+            this.types = null;
+            this.finished = true;
+            this.it = null;
+        }
     }
 
     /** {@inheritDoc} */
@@ -1523,5 +1543,44 @@ public class JdbcResultSet implements ResultSet {
     private void ensureHasCurrentRow() throws SQLException {
         if (curr == null)
             throw new SQLException("Result set is not positioned on a row.");
+    }
+
+    /**
+     * @return Is Query flag.
+     */
+    public boolean isQuery() {
+        return isQry;
+    }
+
+    /**
+     * @return Update count.
+     */
+    public long updateCount() {
+        return updCnt;
+    }
+
+    /**
+     * @param rows query result.
+     * @return update counter, if found.
+     * @throws SQLException if getting an update counter from result proved to be impossible.
+     */
+    private static long updateCounterFromQueryResult(List<List<?>> rows) throws SQLException {
+        if (F.isEmpty(rows))
+            return -1;
+
+        if (rows.size() != 1)
+            throw new SQLException("Expected fetch size of 1 for update operation");
+
+        List<?> row = rows.get(0);
+
+        if (row.size() != 1)
+            throw new SQLException("Expected row size of 1 for update operation");
+
+        Object objRes = row.get(0);
+
+        if (!(objRes instanceof Long))
+            throw new SQLException("Unexpected update result type");
+
+        return (Long)objRes;
     }
 }

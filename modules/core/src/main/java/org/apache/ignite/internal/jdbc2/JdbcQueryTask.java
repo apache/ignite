@@ -279,6 +279,14 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
     }
 
     /**
+     * @param uuid Cursor UUID.
+     * @param c Cursor.
+     */
+    static void addCursor(UUID uuid, Cursor c) {
+        CURSORS.putIfAbsent(uuid, c);
+    }
+
+    /**
      * Closes and removes cursor.
      *
      * @param uuid Cursor UUID.
@@ -391,7 +399,7 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
     /**
      * Cursor.
      */
-    private static final class Cursor implements Iterable<List<?>> {
+    static final class Cursor implements Iterable<List<?>> {
         /** Cursor. */
         final QueryCursor<List<?>> cursor;
 
@@ -405,7 +413,7 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
          * @param cursor Cursor.
          * @param iter Iterator.
          */
-        private Cursor(QueryCursor<List<?>> cursor, Iterator<List<?>> iter) {
+        Cursor(QueryCursor<List<?>> cursor, Iterator<List<?>> iter) {
             this.cursor = cursor;
             this.iter = iter;
             this.lastAccessTime = U.currentTimeMillis();

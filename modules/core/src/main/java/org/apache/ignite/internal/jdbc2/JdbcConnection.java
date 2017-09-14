@@ -832,6 +832,13 @@ public class JdbcConnection implements Connection {
     }
 
     /**
+     * @return {@code true} if target node has DML support, {@code false} otherwise.
+     */
+    boolean isMultipleStatementsSupported() {
+        return ignite.version().greaterThanEqual(2, 1, 5);
+    }
+
+    /**
      * @return Local query flag.
      */
     boolean isLocalQuery() {
