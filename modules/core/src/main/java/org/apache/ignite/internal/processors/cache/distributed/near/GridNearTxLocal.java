@@ -46,6 +46,7 @@ import org.apache.ignite.internal.processors.cache.EntryGetResult;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
+import org.apache.ignite.internal.processors.cache.GridCacheFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
@@ -56,11 +57,14 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLockFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxLocalAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtColocatedLockFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtDetachedCacheEntry;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
+import org.apache.ignite.internal.processors.cache.local.GridLocalLockFuture;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
@@ -90,6 +94,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -134,6 +139,13 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     /** Rollback future updater. */
     private static final AtomicReferenceFieldUpdater<GridNearTxLocal, GridNearTxFinishFuture> ROLLBACK_FUT_UPD =
         AtomicReferenceFieldUpdater.newUpdater(GridNearTxLocal.class, GridNearTxFinishFuture.class, "rollbackFut");
+
+    /** Lock future predicate. */
+    private static final IgnitePredicate<GridCacheFuture<?>> LOCK_FUTURES = new IgnitePredicate<GridCacheFuture<?>>() {
+        @Override public boolean apply(GridCacheFuture<?> fut) {
+            return fut instanceof GridDhtColocatedLockFuture;
+        }
+    };
 
     /** DHT mappings. */
     private IgniteTxMappings mappings;
@@ -4025,21 +4037,38 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
     /** {@inheritDoc} */
     @Override public long endTime() {
-        return startTime() + timeout() - 50;
+        return startTime() + timeout() - 150;
     }
 
     /** {@inheritDoc} */
     @Override public void onTimeout() {
-        if (state(MARKED_ROLLBACK, true)) {
+        //if (state(MARKED_ROLLBACK, true)) {
             cctx.kernalContext().closure().runLocalSafe(new Runnable() {
                 @Override public void run() {
-                    log().error("Transaction is timed out and will be rolled back [timeout=" + timeout() +
+                    // Wait for active local lock futures completion to prevent races with deadlock detection.
+                    Collection<GridCacheFuture<?>> lockFuts = F.view(cctx.mvcc().activeFutures(), LOCK_FUTURES);
+
+                    for (GridCacheFuture<?> fut : lockFuts) {
+                        try {
+                            GridDhtColocatedLockFuture locFut = (GridDhtColocatedLockFuture)fut;
+
+                            if (locFut.timeout() > 0)
+                                fut.get();
+                        }
+                        catch (IgniteCheckedException e) {
+                            log.error("Failed to wait for lock future completion [fut=" + fut + ']', e);
+                        }
+                    }
+
+                    if (state(MARKED_ROLLBACK, true)) {
+                        log().error("Transaction is timed out and will be rolled back [timeout=" + timeout() +
                             ", tx=" + GridNearTxLocal.this + ']');
 
-                    rollbackNearTxLocalAsync();
+                        rollbackNearTxLocalAsync();
+                    }
                 }
             });
-        }
+        //}
     }
 
     /**

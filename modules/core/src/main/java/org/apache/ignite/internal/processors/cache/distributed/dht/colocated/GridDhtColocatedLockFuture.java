@@ -147,7 +147,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
     private final Map<KeyCacheObject, IgniteBiTuple<GridCacheVersion, CacheObject>> valMap;
 
     /** Trackable flag (here may be non-volatile). */
-    private boolean trackable;
+    private boolean trackable = true;
 
     /** TTL for create operation. */
     private final long createTtl;
@@ -631,6 +631,13 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
         }
     }
 
+    /**
+     * @return Timeout.
+     */
+    public long timeout() {
+        return timeout;
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         Collection<String> futs = F.viewReadOnly(futures(), new C1<IgniteInternalFuture<?>, String>() {
@@ -849,8 +856,12 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
         assert !remap || (clientNode && (tx == null || !tx.hasRemoteLocks()));
 
         // First assume this node is primary for all keys passed in.
-        if (!clientNode && mapAsPrimary(keys, topVer))
+        if (!clientNode && mapAsPrimary(keys, topVer)) {
+            if (!cctx.mvcc().addFuture(this))
+                throw new IllegalStateException("Duplicate future ID: " + this);
+
             return;
+        }
 
         mappings = new ArrayDeque<>();
 
@@ -880,8 +891,6 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
 
         if (log.isDebugEnabled())
             log.debug("Starting (re)map for mappings [mappings=" + mappings + ", fut=" + this + ']');
-
-        boolean hasRmtNodes = false;
 
         boolean first = true;
 
@@ -1029,11 +1038,8 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                 }
             }
 
-            if (!distributedKeys.isEmpty()) {
+            if (!distributedKeys.isEmpty())
                 mapping.distributedKeys(distributedKeys);
-
-                hasRmtNodes |= !mapping.node().isLocal();
-            }
             else {
                 assert mapping.request() == null;
 
@@ -1041,14 +1047,8 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
             }
         }
 
-        if (hasRmtNodes) {
-            trackable = true;
-
-            if (!remap && !cctx.mvcc().addFuture(this))
-                throw new IllegalStateException("Duplicate future ID: " + this);
-        }
-        else
-            trackable = false;
+        if (!remap && !cctx.mvcc().addFuture(this))
+            throw new IllegalStateException("Duplicate future ID: " + this);
 
         proceedMapping();
     }
@@ -1263,8 +1263,6 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
             if (isDone())
                 return true;
         }
-
-        trackable = false;
 
         if (tx != null) {
             if (explicit)

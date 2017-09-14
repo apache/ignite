@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
+import java.util.Collections;
 import java.util.concurrent.CountDownLatch;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
@@ -45,7 +46,6 @@ import org.jsr166.ThreadLocalRandom8;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_TX_DEADLOCK_DETECTION_MAX_ITERS;
 
 /**
  * Tests an ability to eagerly rollback timed out transactions.
@@ -95,20 +95,6 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
         cfg.setCacheConfiguration(ccfg);
 
         return cfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
-        //System.setProperty(IGNITE_TX_DEADLOCK_DETECTION_MAX_ITERS, "0");
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        //System.clearProperty(IGNITE_TX_DEADLOCK_DETECTION_MAX_ITERS);
     }
 
     /** {@inheritDoc} */
@@ -228,23 +214,31 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Tests if deadlock is unblocked on timeout.
-     * @throws Exception
+     * Tests if deadlock is resolved on timeout with correct message.
+     *
+     * @throws Exception If failed.
      */
     public void testDeadlockUnblockedOnTimeout() throws Exception {
+        testDeadlockUnblockedOnTimeout0(ignite(0), ignite(1));
+    }
+
+    /**
+     * Tests if deadlock is resolved on timeout with correct message.
+     * @throws Exception
+     */
+    private void testDeadlockUnblockedOnTimeout0(final Ignite node1, final Ignite node2) throws Exception {
         final CountDownLatch l = new CountDownLatch(2);
 
         IgniteInternalFuture<?> fut1 = multithreadedAsync(new Runnable() {
-            @Override
-            public void run() {
+            @Override public void run() {
                 try {
-                    try (Transaction tx = ignite(0).transactions().txStart()) {
-                        ignite(0).cache(CACHE_NAME).put(1, 1);
+                    try (Transaction tx = ignite(0).transactions().txStart(PESSIMISTIC, REPEATABLE_READ, TX_TIMEOUT, 2)) {
+                        node1.cache(CACHE_NAME).put(1, 1);
 
                         l.countDown();
                         U.awaitQuiet(l);
 
-                        ignite(0).cache(CACHE_NAME).put(2, 2);
+                        node1.cache(CACHE_NAME).putAll(Collections.singletonMap(2, 2));
 
                         tx.commit();
 
@@ -252,21 +246,20 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
                     }
                 } catch (CacheException e) {
                     // No-op.
+                    assertTrue(X.hasCause(e, TransactionDeadlockException.class));
                 }
             }
         }, 1, "First");
 
         IgniteInternalFuture<?> fut2 = multithreadedAsync(new Runnable() {
             @Override public void run() {
-                U.awaitQuiet(blocked);
-
-                try (Transaction tx = ignite(1).transactions().txStart(PESSIMISTIC, REPEATABLE_READ, TX_TIMEOUT, 1)) {
-                    ignite(1).cache(CACHE_NAME).put(2, 2);
+                try (Transaction tx = ignite(1).transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 0, 2)) {
+                    node2.cache(CACHE_NAME).put(2, 2);
 
                     l.countDown();
                     U.awaitQuiet(l);
 
-                    ignite(1).cache(CACHE_NAME).put(1, 1);
+                    node2.cache(CACHE_NAME).put(1, 1);
 
                     tx.commit();
                 }
@@ -276,8 +269,8 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
         fut1.get();
         fut2.get();
 
-        assertTrue(ignite(0).cache(CACHE_NAME).containsKey(1));
-        assertTrue(ignite(0).cache(CACHE_NAME).containsKey(2));
+        assertTrue(node1.cache(CACHE_NAME).containsKey(1));
+        assertTrue(node1.cache(CACHE_NAME).containsKey(2));
     }
 
     /**
@@ -316,60 +309,6 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
         for (TransactionConcurrency concurrency : TransactionConcurrency.values())
             for (TransactionIsolation isolation : TransactionIsolation.values())
                 testSimple0(concurrency, isolation);
-    }
-
-    /**
-     * Tests tx timeout on deadlock.
-     *
-     * @throws Exception
-     */
-    public void testTimeoutOnDeadlock() throws Exception {
-        final CountDownLatch l = new CountDownLatch(2);
-
-        IgniteInternalFuture<?> fut1 = multithreadedAsync(new Runnable() {
-            @Override public void run() {
-                try(Transaction tx = grid(0).transactions().txStart(PESSIMISTIC, REPEATABLE_READ, TX_TIMEOUT, 1)) {
-                    grid(0).cache(CACHE_NAME).put(1, 1);
-
-                    l.countDown();
-                    U.awaitQuiet(l);
-
-                    grid(0).cache(CACHE_NAME).put(2, 2);
-                }
-
-            }
-        }, 1, "First");
-
-        IgniteInternalFuture<?> fut2 = multithreadedAsync(new Runnable() {
-            @Override public void run() {
-                try(Transaction tx = grid(1).transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 0, 1)) {
-                    grid(1).cache(CACHE_NAME).put(2, 2);
-
-                    l.countDown();
-                    U.awaitQuiet(l);
-
-                    grid(1).cache(CACHE_NAME).put(1, 1);
-
-                    tx.commit();
-                }
-
-            }
-
-        }, 1, "Second");
-
-        try {
-            fut1.get();
-
-            fail();
-        }
-        catch (Exception e) {
-            assertTrue(X.hasCause(e, TransactionDeadlockException.class));
-        }
-
-        fut2.get();
-
-        assertTrue(grid(0).cache(CACHE_NAME).containsKey(1));
-        assertTrue(grid(0).cache(CACHE_NAME).containsKey(2));
     }
 
     /**
@@ -454,7 +393,7 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void testWaitingTxUnblockedOnTimeout0(final Ignite near, final Ignite other) throws Exception {
-        final int recordsCnt = 100;
+        final int recordsCnt = 1;
 
         IgniteInternalFuture<?> fut1 = multithreadedAsync(new Runnable() {
             @Override public void run() {
