@@ -135,7 +135,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
         @NotNull final File... walFiles) throws IgniteCheckedException {
         super(log,
             sharedCtx,
-            new RecordV1Serializer(sharedCtx),
+            new RecordV1Serializer(sharedCtx, true),
             ioFactory,
             BUF_SIZE);
 
