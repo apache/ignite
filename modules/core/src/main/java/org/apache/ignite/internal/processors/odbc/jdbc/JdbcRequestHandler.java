@@ -144,7 +144,7 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
         JdbcRequest req = (JdbcRequest)req0;
 
         if (!busyLock.enterBusy())
-            return new JdbcResponse(SqlListenerResponse.STATUS_FAILED, 
+            return new JdbcResponse(SqlListenerResponse.STATUS_FAILED,
                 "Failed to handle JDBC request because node is stopping.");
 
         try {
@@ -207,6 +207,24 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
         writer.writeString(IgniteVersionUtils.VER.stage());
         writer.writeLong(IgniteVersionUtils.VER.revisionTimestamp());
         writer.writeByteArray(IgniteVersionUtils.VER.revisionHash());
+    }
+
+    /**
+     * Called whenever client is disconnected due to correct connection close
+     * or due to {@code IOException} during network operations.
+     */
+    public void onDisconnect() {
+        if (busyLock.enterBusy())
+        {
+            try
+            {
+                for (JdbcQueryCursor cursor : qryCursors.values())
+                    cursor.close();
+            }
+            finally {
+                busyLock.leaveBusy();
+            }
+        }
     }
 
     /**

@@ -1254,7 +1254,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
                             String msg = NL +
                                 "Metrics for local node (to disable set 'metricsLogFrequency' to 0)" + NL +
-                                "    ^-- Node [id=" + id + ", name=" + name() + ", uptime=" + getUpTimeFormatted() + "]" + NL +
+                                "    ^-- Node [id=" + id + (name() != null ? ", name=" + name() : "") + ", uptime=" +
+                                getUpTimeFormatted() + "]" + NL +
                                 "    ^-- H/N/C [hosts=" + hosts + ", nodes=" + nodes + ", CPUs=" + cpus + "]" + NL +
                                 "    ^-- CPU [cur=" + dblFmt.format(cpuLoadPct) + "%, avg=" +
                                 dblFmt.format(avgCpuLoadPct) + "%, GC=" + dblFmt.format(gcPct) + "%]" + NL +
@@ -3764,7 +3765,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         if (!ctx.state().publicApiActiveState()) {
             throw new IgniteException("Can not perform the operation because the cluster is inactive. Note, that " +
                 "the cluster is considered inactive by default if Ignite Persistent Store is used to let all the nodes " +
-                "join the cluster. To activate the cluster call Ignite.activate(true).");
+                "join the cluster. To activate the cluster call Ignite.active(true).");
         }
     }
 
