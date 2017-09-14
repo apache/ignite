@@ -144,8 +144,10 @@ namespace Apache.Ignite.Core.Binary
         }
 
         /// <summary>
-        /// Indicates whether to consider arrays lengths in varint encoding. When enabled, Ignite will consider arrays lengths in varint encoding.
-        /// <a href="https://developers.google.com/protocol-buffers/docs/encoding#varints">Varint encoding description.</a>
+        /// Indicates whether to consider arrays lengths in varint encoding. When enabled, Ignite will consider arrays
+        /// lengths in varint encoding.
+        /// <a href="https://developers.google.com/protocol-buffers/docs/encoding#varints">Varint encoding description.
+        /// </a>
         /// <para/>
         /// <b>WARNING!</b> This mode should be disabled when already serialized data can be taken from some external
         /// sources (e.g.cache store which stores data in binary form, data center replication, etc.). 

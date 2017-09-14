@@ -868,8 +868,9 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                 case BinaryTypeId.Decimal:
                     TransferBytes(inStream, outStream, 4); // Transfer scale
-                    
-                    int magLen = BinaryUtils.ReadArrayLength(inStream, ctx.UseVarintArrayLength); // Transfer magnitude length.
+
+                    // Transfer magnitude length.
+                    int magLen = BinaryUtils.ReadArrayLength(inStream, ctx.UseVarintArrayLength);
 
                     BinaryUtils.WriteArrayLength(magLen, outStream, ctx.UseVarintArrayLength);
 
@@ -878,7 +879,8 @@ namespace Apache.Ignite.Core.Impl.Binary
                     break;
 
                 case BinaryTypeId.String:
-                    BinaryUtils.WriteString(BinaryUtils.ReadString(inStream, ctx.UseVarintArrayLength), outStream, ctx.UseVarintArrayLength);
+                    BinaryUtils.WriteString(BinaryUtils.ReadString(inStream, ctx.UseVarintArrayLength), outStream,
+                        ctx.UseVarintArrayLength);
 
                     break;
 
@@ -953,9 +955,10 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                     if (type == BinaryTypeId.Unregistered)
                     {
-                        outStream.WriteByte(inStream.ReadByte());  // String header.
+                        outStream.WriteByte(inStream.ReadByte()); // String header.
 
-                        BinaryUtils.WriteString(BinaryUtils.ReadString(inStream, ctx.UseVarintArrayLength), outStream, ctx.UseVarintArrayLength);  // String data.
+                        BinaryUtils.WriteString(BinaryUtils.ReadString(inStream, ctx.UseVarintArrayLength), outStream,
+                            ctx.UseVarintArrayLength); // String data.
                     }
 
                     arrLen = BinaryUtils.ReadArrayLength(inStream, ctx.UseVarintArrayLength);
@@ -1195,7 +1198,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             }
 
             /// <summary>
-            /// Writer.
+            /// Indicates whether to write arrays lengths in varint encoding.
             /// </summary>
             public bool UseVarintArrayLength
             {

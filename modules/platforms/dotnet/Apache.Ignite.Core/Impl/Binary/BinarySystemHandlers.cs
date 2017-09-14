@@ -52,7 +52,8 @@ namespace Apache.Ignite.Core.Impl.Binary
             ReadHandlers[BinaryTypeId.Long] = new BinarySystemReader<long>(s => s.ReadLong());
             ReadHandlers[BinaryTypeId.Float] = new BinarySystemReader<float>(s => s.ReadFloat());
             ReadHandlers[BinaryTypeId.Double] = new BinarySystemReader<double>(s => s.ReadDouble());
-            ReadHandlers[BinaryTypeId.Decimal] = new BinarySystemVarintSupportReader<decimal?>(BinaryUtils.ReadDecimal);
+            ReadHandlers[BinaryTypeId.Decimal] = new BinarySystemVarintSupportReader<decimal?>(
+                BinaryUtils.ReadDecimal);
 
             // 2. Date.
             ReadHandlers[BinaryTypeId.Timestamp] = new BinarySystemReader<DateTime?>(BinaryUtils.ReadTimestamp);
@@ -64,7 +65,8 @@ namespace Apache.Ignite.Core.Impl.Binary
             ReadHandlers[BinaryTypeId.Guid] = new BinarySystemReader<Guid?>(s => BinaryUtils.ReadGuid(s));
 
             // 5. Primitive arrays.
-            ReadHandlers[BinaryTypeId.ArrayBool] = new BinarySystemVarintSupportReader<bool[]>(BinaryUtils.ReadBooleanArray);
+            ReadHandlers[BinaryTypeId.ArrayBool] = new BinarySystemVarintSupportReader<bool[]>(
+                BinaryUtils.ReadBooleanArray);
 
             ReadHandlers[BinaryTypeId.ArrayByte] =
                 new BinarySystemDualReader<byte[], sbyte[]>(BinaryUtils.ReadByteArray, BinaryUtils.ReadSbyteArray);
@@ -674,7 +676,8 @@ namespace Apache.Ignite.Core.Impl.Binary
             /// </summary>
             /// <param name="readDelegate1">The read delegate1.</param>
             /// <param name="readDelegate2">The read delegate2.</param>
-            public BinarySystemDualReader(Func<IBinaryStream, bool, T1> readDelegate1, Func<IBinaryStream, bool, T2> readDelegate2)
+            public BinarySystemDualReader(Func<IBinaryStream, bool, T1> readDelegate1, Func<IBinaryStream, bool,
+                T2> readDelegate2)
             {
                 Debug.Assert(readDelegate1 != null);
                 Debug.Assert(readDelegate2 != null);
