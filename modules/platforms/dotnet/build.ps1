@@ -33,6 +33,9 @@ Requirements:
 .PARAMETER skipJava
 Skip Java build.
 
+.PARAMETER skipDotNet
+Skip .NET build.
+
 .PARAMETER skipNuGet
 Skip NuGet packaging.
 
@@ -66,6 +69,7 @@ Java jar files source folders, default is "modules\indexing\target,modules\core\
 
 param (
     [switch]$skipJava,
+	[switch]$skipDotNet,
     [switch]$skipNuGet,
     [switch]$skipCodeAnalysis,  
     [switch]$clean,
@@ -130,46 +134,48 @@ cd $PSScriptRoot
 
 
 # 2) Build .NET
-# Detect MSBuild 4.0+
-for ($i=20; $i -ge 4; $i--) {
-    $regKey = "HKLM:\software\Microsoft\MSBuild\ToolsVersions\$i.0"
-    if (Test-Path $regKey) { break }
-}
+if (!skipDotNet) {
+	# Detect MSBuild 4.0+
+	for ($i=20; $i -ge 4; $i--) {
+		$regKey = "HKLM:\software\Microsoft\MSBuild\ToolsVersions\$i.0"
+		if (Test-Path $regKey) { break }
+	}
 
-if (!(Test-Path $regKey)) {
-    echo "Failed to detect MSBuild path, exiting."
-    exit -1
-}
+	if (!(Test-Path $regKey)) {
+		echo "Failed to detect MSBuild path, exiting."
+		exit -1
+	}
 
-$msbuildExe = (join-path -path (Get-ItemProperty $regKey)."MSBuildToolsPath" -childpath "msbuild.exe")
-echo "MSBuild detected at '$msbuildExe'."
+	$msbuildExe = (join-path -path (Get-ItemProperty $regKey)."MSBuildToolsPath" -childpath "msbuild.exe")
+	echo "MSBuild detected at '$msbuildExe'."
 
-# Detect NuGet
-$ng = "nuget"
-if ((Get-Command $ng -ErrorAction SilentlyContinue) -eq $null) { 
-    $ng = ".\nuget.exe"
+	# Detect NuGet
+	$ng = "nuget"
+	if ((Get-Command $ng -ErrorAction SilentlyContinue) -eq $null) { 
+		$ng = ".\nuget.exe"
 
-    if (-not (Test-Path $ng)) {
-        echo "Downloading NuGet..."
-        (New-Object System.Net.WebClient).DownloadFile("https://dist.nuget.org/win-x86-commandline/v3.3.0/nuget.exe", "nuget.exe");    
-    }
-}
+		if (-not (Test-Path $ng)) {
+			echo "Downloading NuGet..."
+			(New-Object System.Net.WebClient).DownloadFile("https://dist.nuget.org/win-x86-commandline/v3.3.0/nuget.exe", "nuget.exe");    
+		}
+	}
 
-# Restore NuGet packages
-echo "Restoring NuGet..."
-& $ng restore
+	# Restore NuGet packages
+	echo "Restoring NuGet..."
+	& $ng restore
 
-# Build
-$targets = if ($clean) {"Clean;Rebuild"} else {"Build"}
-$codeAnalysis = if ($skipCodeAnalysis) {"/p:RunCodeAnalysis=false"} else {""}
-$msBuildCommand = "`"$msBuildExe`" Apache.Ignite.sln /target:$targets /p:Configuration=$configuration /p:Platform=`"$platform`" $codeAnalysis /p:UseSharedCompilation=false"
-echo "Starting MsBuild: '$msBuildCommand'"
-cmd /c $msBuildCommand
+	# Build
+	$targets = if ($clean) {"Clean;Rebuild"} else {"Build"}
+	$codeAnalysis = if ($skipCodeAnalysis) {"/p:RunCodeAnalysis=false"} else {""}
+	$msBuildCommand = "`"$msBuildExe`" Apache.Ignite.sln /target:$targets /p:Configuration=$configuration /p:Platform=`"$platform`" $codeAnalysis /p:UseSharedCompilation=false"
+	echo "Starting MsBuild: '$msBuildCommand'"
+	cmd /c $msBuildCommand
 
-# Check result
-if ($LastExitCode -ne 0) {
-    echo ".NET build failed."
-    exit -1
+	# Check result
+	if ($LastExitCode -ne 0) {
+		echo ".NET build failed."
+		exit -1
+	}
 }
 
 # Copy binaries
