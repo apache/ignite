@@ -20,9 +20,7 @@ package org.apache.ignite.internal.jdbc2;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Collections;
-import java.util.List;
 import org.apache.ignite.IgniteDataStreamer;
-import org.apache.ignite.internal.IgniteEx;
 
 /**
  * Prepared statement associated with a data streamer.

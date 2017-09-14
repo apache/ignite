@@ -20,20 +20,15 @@ package org.apache.ignite.internal.jdbc2;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteJdbcDriver;
-import org.apache.ignite.IgniteSystemProperties;
 
 /**
  * Task for SQL queries execution through {@link IgniteJdbcDriver}.
- * <p>
- * Not closed cursors will be removed after {@link #RMV_DELAY} milliseconds.
- * This parameter can be configured via {@link IgniteSystemProperties#IGNITE_JDBC_DRIVER_CURSOR_REMOVE_DELAY}
- * system property.
  */
 class JdbcQueryTaskV3 extends JdbcQueryTaskV2 {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
-    /** Lazy query execution flag. */
+    /** Update metadata on demand flag. */
     private final boolean updateMeta;
 
     /**
