@@ -300,8 +300,6 @@ class GridDhtPartitionSupplier {
 
                 GridDhtLocalPartition loc = top.localPartition(part, d.topologyVersion(), false);
 
-                assert d.partitions().hasPartition(part);
-
                 if (!iter.isPartitionMissing(part) && (loc == null || loc.state() != OWNING)) {
                     // Demander no longer needs this partition,
                     // so we send '-1' partition and move on.
