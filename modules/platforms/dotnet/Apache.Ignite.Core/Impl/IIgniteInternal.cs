@@ -32,7 +32,7 @@ namespace Apache.Ignite.Core.Impl
         /// <summary>
         /// Gets the binary processor.
         /// </summary>
-        BinaryProcessor BinaryProcessor { get; }
+        IBinaryProcessor BinaryProcessor { get; }
 
         /// <summary>
         /// Configuration.
