@@ -23,10 +23,10 @@ namespace Apache.Ignite.Core.Impl.Client
     internal enum ClientOp : short
     {
         CacheGet = 1,
-        GetBinaryTypeName = 2,
-        GetBinaryType = 3,
+        BinaryTypeNameGet = 2,
+        BinaryTypeGet = 3,
         CachePut = 4,
-        RegisterBinaryTypeName = 5,
-        PutBinaryType = 6
+        BinaryTypeNamePut = 5,
+        BinaryTypePut = 6
     }
 }

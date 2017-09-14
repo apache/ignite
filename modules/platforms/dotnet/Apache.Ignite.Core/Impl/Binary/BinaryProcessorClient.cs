@@ -52,7 +52,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** <inheritdoc /> */
         public BinaryType GetBinaryType(int typeId)
         {
-            return _socket.DoOutInOp(ClientOp.GetBinaryType, s => s.WriteInt(typeId),
+            return _socket.DoOutInOp(ClientOp.BinaryTypeGet, s => s.WriteInt(typeId),
                 s => new BinaryType(_marsh.StartUnmarshal(s), true));
         }
 
@@ -77,7 +77,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             {
                 var type = binaryType;  // Access to modified closure.
 
-                _socket.DoOutInOp<object>(ClientOp.PutBinaryType,
+                _socket.DoOutInOp<object>(ClientOp.BinaryTypePut,
                     s => BinaryProcessor.WriteBinaryType(_marsh.StartMarshal(s), type), null);
             }
         }
@@ -85,7 +85,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** <inheritdoc /> */
         public bool RegisterType(int id, string typeName)
         {
-            return _socket.DoOutInOp(ClientOp.RegisterBinaryTypeName, s =>
+            return _socket.DoOutInOp(ClientOp.BinaryTypeNamePut, s =>
             {
                 s.WriteByte(DotNetPlatformId);
                 s.WriteInt(id);
@@ -102,7 +102,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** <inheritdoc /> */
         public string GetTypeName(int id)
         {
-            return _socket.DoOutInOp(ClientOp.GetBinaryTypeName, s =>
+            return _socket.DoOutInOp(ClientOp.BinaryTypeNameGet, s =>
                 {
                     s.WriteByte(DotNetPlatformId);
                     s.WriteInt(id);
