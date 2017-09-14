@@ -32,7 +32,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.util.typedef.F;
 
 import static java.sql.ResultSet.CONCUR_READ_ONLY;
@@ -499,14 +498,8 @@ public class JdbcStatement implements Statement {
 
             return res;
         }
-        catch (IgniteSQLException e) {
-            throw e.toJdbcException();
-        }
-        catch (SQLException e) {
-            throw e;
-        }
         catch (Exception e) {
-            throw new SQLException("Failed to query Ignite.", e);
+            throw convertToSqlException(e, "Failed to query Ignite.");
         }
     }
 
