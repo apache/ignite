@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.jdbc.thin;
 
-import java.io.IOException;
 import java.sql.BatchUpdateException;
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -27,12 +26,13 @@ import java.sql.SQLWarning;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.internal.jdbc2.JdbcStateCode;
 import org.apache.ignite.internal.processors.odbc.SqlListenerResponse;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBatchExecuteRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBatchExecuteResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQuery;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcStatementType;
 
@@ -109,7 +109,7 @@ public class JdbcThinStatement implements Statement {
      *
      * @throws SQLException Onj error.
      */
-    protected void execute0(final JdbcStatementType stmtType, final String sql, final List<Object> args) throws SQLException {
+    protected void execute0(JdbcStatementType stmtType, String sql, List<Object> args) throws SQLException {
         ensureNotClosed();
 
         if (rs != null) {
@@ -123,19 +123,13 @@ public class JdbcThinStatement implements Statement {
         if (sql == null || sql.isEmpty())
             throw new SQLException("SQL query is empty.");
 
-        conn.execute(new JdbcThinConnectionRunnable<Void>() {
-            @Override public Void run(JdbcThinTcpIo io) throws IgniteCheckedException, IOException, SQLException {
-                JdbcQueryExecuteResult res = io.queryExecute(stmtType, conn.getSchema(), pageSize, maxRows,
-                    sql, args);
+        JdbcQueryExecuteResult res = conn.sendRequest(new JdbcQueryExecuteRequest(stmtType, conn.getSchema(), pageSize,
+            maxRows, sql, args == null ? null : args.toArray(new Object[args.size()])));
 
-                assert res != null;
+        assert res != null;
 
-                rs = new JdbcThinResultSet(JdbcThinStatement.this, res.getQueryId(), pageSize, res.last(), res.items(),
-                    res.isQuery(), io.autoCloseServerCursor(), res.updateCount(), closeOnCompletion);
-
-                return null;
-            }
-        });
+        rs = new JdbcThinResultSet(JdbcThinStatement.this, res.getQueryId(), pageSize, res.last(), res.items(),
+            res.isQuery(), conn.autoCloseServerCursor(), res.updateCount(), closeOnCompletion);
     }
 
     /** {@inheritDoc} */
@@ -375,11 +369,7 @@ public class JdbcThinStatement implements Statement {
             throw new SQLException("Batch is empty.");
 
         try {
-            JdbcBatchExecuteResult res = conn.execute(new JdbcThinConnectionRunnable<JdbcBatchExecuteResult>() {
-                @Override public JdbcBatchExecuteResult run(JdbcThinTcpIo io) throws IgniteCheckedException, IOException, SQLException {
-                    return io.batchExecute(conn.getSchema(), batch);
-                }
-            });
+            JdbcBatchExecuteResult res = conn.sendRequest(new JdbcBatchExecuteRequest(conn.getSchema(), batch));
 
             if (res.errorCode() != SqlListenerResponse.STATUS_SUCCESS)
                 throw new BatchUpdateException(res.errorMessage(), null, res.errorCode(), res.updateCounts());

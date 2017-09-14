@@ -22,7 +22,6 @@ import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
-import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
@@ -33,32 +32,9 @@ import org.apache.ignite.internal.processors.odbc.SqlListenerNioListener;
 import org.apache.ignite.internal.processors.odbc.SqlListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.SqlListenerRequest;
 import org.apache.ignite.internal.processors.odbc.SqlListenerResponse;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBatchExecuteRequest;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBatchExecuteResult;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaColumnsRequest;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaColumnsResult;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaIndexesRequest;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaIndexesResult;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaParamsRequest;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaParamsResult;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaPrimaryKeysRequest;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaPrimaryKeysResult;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaSchemasRequest;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaSchemasResult;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaTablesRequest;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaTablesResult;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQuery;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryCloseRequest;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteRequest;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteResult;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryFetchRequest;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryFetchResult;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryMetadataRequest;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryMetadataResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResponse;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResult;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcStatementType;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.util.ipc.loopback.IpcClientTcpEndpoint;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -78,19 +54,19 @@ public class JdbcThinTcpIo {
     private static final int HANDSHAKE_MSG_SIZE = 13;
 
     /** Initial output for query message. */
-    private static final int DYNAMIC_SIZE_MSG_CAP = 256;
+    static final int DYNAMIC_SIZE_MSG_CAP = 256;
 
     /** Maximum batch query count. */
-    private static final int MAX_BATCH_QRY_CNT = 32;
+    static final int MAX_BATCH_QRY_CNT = 32;
 
     /** Initial output for query fetch message. */
-    private static final int QUERY_FETCH_MSG_SIZE = 13;
+    static final int QUERY_FETCH_MSG_SIZE = 13;
 
     /** Initial output for query fetch message. */
-    private static final int QUERY_META_MSG_SIZE = 9;
+    static final int QUERY_META_MSG_SIZE = 9;
 
     /** Initial output for query close message. */
-    private static final int QUERY_CLOSE_MSG_SIZE = 9;
+    static final int QUERY_CLOSE_MSG_SIZE = 9;
 
     /** Host. */
     private final String host;
@@ -318,32 +294,14 @@ public class JdbcThinTcpIo {
     }
 
     /**
-     * @param stmtType Expected statement type.
-     * @param cache Cache name.
-     * @param fetchSize Fetch size.
-     * @param maxRows Max rows.
-     * @param sql SQL statement.
-     * @param args Query parameters.
-     * @return Execute query results.
-     * @throws IOException On error.
-     * @throws IgniteCheckedException On error.
-     */
-    public JdbcQueryExecuteResult queryExecute(JdbcStatementType stmtType, String cache, int fetchSize, int maxRows,
-        String sql, List<Object> args)
-        throws IOException, IgniteCheckedException {
-        return sendRequest(new JdbcQueryExecuteRequest(stmtType, cache, fetchSize, maxRows, sql,
-            args == null ? null : args.toArray(new Object[args.size()])), DYNAMIC_SIZE_MSG_CAP);
-    }
-
-    /**
      * @param req Request.
-     * @param cap Initial ouput stream capacity.
+     * @param cap Initial output stream capacity.
      * @return Server response.
      * @throws IOException On IO error.
      * @throws IgniteCheckedException On error.
      */
     @SuppressWarnings("unchecked")
-    public <R extends JdbcResult> R sendRequest(JdbcRequest req, int cap) throws IOException, IgniteCheckedException {
+    <R extends JdbcResult> R sendRequest(JdbcRequest req, int cap) throws IOException, IgniteCheckedException {
         BinaryWriterExImpl writer = new BinaryWriterExImpl(null, new BinaryHeapOutputStream(cap), null, null);
 
         req.writeBinary(writer);
@@ -360,121 +318,6 @@ public class JdbcThinTcpIo {
             throw new IgniteSQLException(res.error(), res.status(), IgniteQueryErrorCode.codeToSqlState(res.status()));
 
         return (R)res.response();
-    }
-
-    /**
-     * @param qryId Query ID.
-     * @param pageSize pageSize.
-     * @return Fetch results.
-     * @throws IOException On error.
-     * @throws IgniteCheckedException On error.
-     */
-    public JdbcQueryFetchResult queryFetch(Long qryId, int pageSize)
-        throws IOException, IgniteCheckedException {
-        return sendRequest(new JdbcQueryFetchRequest(qryId, pageSize), QUERY_FETCH_MSG_SIZE);
-    }
-
-
-    /**
-     * @param qryId Query ID.
-     * @return Fetch results.
-     * @throws IOException On error.
-     * @throws IgniteCheckedException On error.
-     */
-    public JdbcQueryMetadataResult queryMeta(Long qryId)
-        throws IOException, IgniteCheckedException {
-        return sendRequest(new JdbcQueryMetadataRequest(qryId), QUERY_META_MSG_SIZE);
-    }
-
-    /**
-     * @param qryId Query ID.
-     * @throws IOException On error.
-     * @throws IgniteCheckedException On error.
-     */
-    public void queryClose(long qryId) throws IOException, IgniteCheckedException {
-        sendRequest(new JdbcQueryCloseRequest(qryId), QUERY_CLOSE_MSG_SIZE);
-    }
-
-    /**
-     * @param schemaName Schema.
-     * @param batch Batch queries.
-     * @return Result.
-     * @throws IOException On error.
-     * @throws IgniteCheckedException On error.
-     */
-    public JdbcBatchExecuteResult batchExecute(String schemaName, List<JdbcQuery> batch)
-        throws IOException, IgniteCheckedException {
-        int cnt = Math.min(MAX_BATCH_QRY_CNT, batch.size());
-
-        return sendRequest(new JdbcBatchExecuteRequest(schemaName, batch), DYNAMIC_SIZE_MSG_CAP * cnt);
-    }
-
-    /**
-     * @param schemaPtrn Schema name pattern.
-     * @param tablePtrn Table name pattern.
-     * @return Result.
-     * @throws IOException On error.
-     * @throws IgniteCheckedException On error.
-     */
-    public JdbcMetaTablesResult tablesMeta(String schemaPtrn, String tablePtrn)
-        throws IOException, IgniteCheckedException {
-        return sendRequest(new JdbcMetaTablesRequest(schemaPtrn, tablePtrn), DYNAMIC_SIZE_MSG_CAP);
-    }
-
-    /**
-     * @param schemaPtrn Schema name pattern.
-     * @param tablePtrn Table name pattern.
-     * @param columnPtrn Column name pattern.
-     * @return Result.
-     * @throws IOException On error.
-     * @throws IgniteCheckedException On error.
-     */
-    public JdbcMetaColumnsResult columnsMeta(String schemaPtrn, String tablePtrn, String columnPtrn)
-        throws IOException, IgniteCheckedException {
-        return sendRequest(new JdbcMetaColumnsRequest(schemaPtrn, tablePtrn, columnPtrn), DYNAMIC_SIZE_MSG_CAP);
-    }
-
-    /**
-     * @param schemaPtrn Schema name pattern.
-     * @param tablePtrn Table name pattern.
-     * @return Result.
-     * @throws IOException On error.
-     * @throws IgniteCheckedException On error.
-     */
-    public JdbcMetaIndexesResult indexMeta(String schemaPtrn, String tablePtrn) throws IOException, IgniteCheckedException {
-        return sendRequest(new JdbcMetaIndexesRequest(schemaPtrn, tablePtrn), DYNAMIC_SIZE_MSG_CAP);
-    }
-
-    /**
-     * @param schemaPtrn Schema name pattern.
-     * @param sql SQL query.
-     * @return Result.
-     * @throws IOException On error.
-     * @throws IgniteCheckedException On error.
-     */
-    public JdbcMetaParamsResult parametersMeta(String schemaPtrn, String sql) throws IOException, IgniteCheckedException {
-        return sendRequest(new JdbcMetaParamsRequest(schemaPtrn, sql), DYNAMIC_SIZE_MSG_CAP);
-    }
-
-    /**
-     * @param schemaPtrn Schema name pattern.
-     * @param tablePtrn Table name pattern.
-     * @return Result.
-     * @throws IOException On error.
-     * @throws IgniteCheckedException On error.
-     */
-    public JdbcMetaPrimaryKeysResult primaryKeysMeta(String schemaPtrn, String tablePtrn) throws IOException, IgniteCheckedException {
-        return sendRequest(new JdbcMetaPrimaryKeysRequest(schemaPtrn, tablePtrn), DYNAMIC_SIZE_MSG_CAP);
-    }
-
-    /**
-     * @param schemaPtrn Schema name pattern.
-     * @return Result.
-     * @throws IOException On error.
-     * @throws IgniteCheckedException On error.
-     */
-    public JdbcMetaSchemasResult schemasMeta(String schemaPtrn) throws IOException, IgniteCheckedException {
-        return sendRequest(new JdbcMetaSchemasRequest(schemaPtrn), DYNAMIC_SIZE_MSG_CAP);
     }
 
     /**
@@ -605,7 +448,7 @@ public class JdbcThinTcpIo {
     }
 
     /**
-     * @return Ignnite server version.
+     * @return Ignite server version.
      */
     IgniteProductVersion igniteVersion() {
         return igniteVer;

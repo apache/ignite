@@ -40,13 +40,25 @@ import java.util.concurrent.Executor;
 import java.util.logging.Logger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.jdbc2.JdbcStateCode;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBatchExecuteRequest;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryCloseRequest;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryFetchRequest;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryMetadataRequest;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResult;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.lang.IgniteProductVersion;
 
 import static java.sql.ResultSet.CLOSE_CURSORS_AT_COMMIT;
 import static java.sql.ResultSet.CONCUR_READ_ONLY;
 import static java.sql.ResultSet.HOLD_CURSORS_OVER_COMMIT;
 import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
+import static org.apache.ignite.internal.jdbc.thin.JdbcThinTcpIo.DYNAMIC_SIZE_MSG_CAP;
+import static org.apache.ignite.internal.jdbc.thin.JdbcThinTcpIo.MAX_BATCH_QRY_CNT;
+import static org.apache.ignite.internal.jdbc.thin.JdbcThinTcpIo.QUERY_CLOSE_MSG_SIZE;
+import static org.apache.ignite.internal.jdbc.thin.JdbcThinTcpIo.QUERY_FETCH_MSG_SIZE;
+import static org.apache.ignite.internal.jdbc.thin.JdbcThinTcpIo.QUERY_META_MSG_SIZE;
 import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_AUTO_CLOSE_SERVER_CURSORS;
 import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_COLLOCATED;
 import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_DISTRIBUTED_JOINS;
@@ -637,15 +649,44 @@ public class JdbcThinConnection implements Connection {
     }
 
     /**
-     * Run given runnable with {@link #cliIo} as param and process errors appropriately.
-     * @param clo Runnable.
-     * @param <T> Type of value that given runnable is expected to return.
-     * @return Run result.
-     * @throws SQLException if failed.
+     * @return Ignite server version.
      */
-    public <T> T execute(JdbcThinConnectionRunnable<T> clo) throws SQLException {
+    IgniteProductVersion igniteVersion() {
+        return cliIo.igniteVersion();
+    }
+
+    /**
+     * @return Auto close server cursors flag.
+     */
+    boolean autoCloseServerCursor() {
+        return cliIo.autoCloseServerCursor();
+    }
+
+    /**
+     * Send request for execution via {@link #cliIo}.
+     * @param req Request.
+     * @return Server response.
+     * @throws SQLException On any error.
+     */
+    <R extends JdbcResult> R sendRequest(JdbcRequest req) throws SQLException {
+        int cap;
+
+        if (req instanceof JdbcBatchExecuteRequest) {
+            int cnt = Math.min(MAX_BATCH_QRY_CNT, ((JdbcBatchExecuteRequest)req).queries().size());
+
+            cap = cnt * DYNAMIC_SIZE_MSG_CAP;
+        }
+        else if (req instanceof JdbcQueryCloseRequest)
+            cap = QUERY_CLOSE_MSG_SIZE;
+        else if (req instanceof JdbcQueryMetadataRequest)
+            cap = QUERY_META_MSG_SIZE;
+        else if (req instanceof JdbcQueryFetchRequest)
+            cap = QUERY_FETCH_MSG_SIZE;
+        else
+            cap = DYNAMIC_SIZE_MSG_CAP;
+
         try {
-            return clo.run(cliIo);
+            return cliIo.sendRequest(req, cap);
         }
         catch (IgniteSQLException e) {
             throw e.toJdbcException();
@@ -653,10 +694,10 @@ public class JdbcThinConnection implements Connection {
         catch (IOException e) {
             close();
 
-            throw new SQLException("Failed to close Ignite query.", JdbcStateCode.CONNECTION_FAILURE, e);
+            throw new SQLException("Failed to send Ignite JDBC request.", JdbcStateCode.CONNECTION_FAILURE, e);
         }
         catch (IgniteCheckedException e) {
-            throw new SQLException("Failed to close Ignite query.", e);
+            throw new SQLException("Failed to send Ignite JDBC request.", e);
         }
     }
 

@@ -45,8 +45,14 @@ public final class JdbcStateCode {
     /** Value can't be converted to expected type (to be used in {@link ResultSet}'s {@code getXxx()} methods. */
     public final static String DATA_EXCEPTION = "22000";
 
+    /** Null value occurred where it wasn't expected to. */
+    public final static String NULL_VALUE = "22004";
+
     /** Parameter type is not supported. */
     public final static String INVALID_PARAMETER_VALUE = "22023";
+
+    /** Data integrity constraint violation. */
+    public final static String CONSTRAINT_VIOLATION = "23000";
 
     /** Invalid result set state. */
     public final static String INVALID_CURSOR_STATE = "24000";
@@ -54,8 +60,14 @@ public final class JdbcStateCode {
     /** Invalid cursor name. */
     public final static String INVALID_CURSOR_NAME = "34000";
 
+    /** Conversion failure. */
+    public final static String CONVERSION_FAILED = "0700B";
+
     /** Invalid transaction level. */
     public final static String INVALID_TRANSACTION_LEVEL = "0700E";
+
+    /** Requested operation is not supported. */
+    public final static String UNSUPPORTED_OPERATION = "0A000";
 
     /** Invalid data type. */
     public final static String INVALID_DATA_TYPE = "0D000";

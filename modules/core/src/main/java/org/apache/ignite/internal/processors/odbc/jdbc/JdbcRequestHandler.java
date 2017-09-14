@@ -330,7 +330,7 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
             JdbcQueryCursor cur = qryCursors.remove(req.queryId());
 
             if (cur == null)
-                return new JdbcResponse(IgniteQueryErrorCode.INVALID_CURSOR_NAME,
+                return new JdbcResponse(IgniteQueryErrorCode.UNKNOWN,
                     "Failed to find query cursor with ID: " + req.queryId());
 
             cur.close();
@@ -357,7 +357,7 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
             JdbcQueryCursor cur = qryCursors.get(req.queryId());
 
             if (cur == null)
-                return new JdbcResponse(IgniteQueryErrorCode.INVALID_CURSOR_NAME,
+                return new JdbcResponse(IgniteQueryErrorCode.UNKNOWN,
                     "Failed to find query cursor with ID: " + req.queryId());
 
             if (req.pageSize() <= 0)
@@ -392,7 +392,7 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
             JdbcQueryCursor cur = qryCursors.get(req.queryId());
 
             if (cur == null)
-                return new JdbcResponse(IgniteQueryErrorCode.INVALID_CURSOR_NAME,
+                return new JdbcResponse(IgniteQueryErrorCode.UNKNOWN,
                     "Failed to find query with ID: " + req.queryId());
 
             JdbcQueryMetadataResult res = new JdbcQueryMetadataResult(req.queryId(),

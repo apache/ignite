@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.jdbc.thin;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
 import java.math.BigDecimal;
@@ -40,9 +39,9 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Calendar;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.jdbc2.JdbcStateCode;
 import org.apache.ignite.internal.processors.odbc.SqlListenerUtils;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaParamsRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaParamsResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQuery;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcStatementType;
@@ -355,19 +354,14 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
     @Override public ParameterMetaData getParameterMetaData() throws SQLException {
         ensureNotClosed();
 
-        return conn.execute(new JdbcThinConnectionRunnable<ParameterMetaData>() {
-            @Override public ParameterMetaData run(JdbcThinTcpIo io) throws IgniteCheckedException, IOException,
-                SQLException {
-                if (metaData != null)
-                    return metaData;
+        if (metaData != null)
+            return metaData;
 
-                JdbcMetaParamsResult res = io.parametersMeta(conn.getSchema(), sql);
+        JdbcMetaParamsResult res = conn.sendRequest(new JdbcMetaParamsRequest(conn.getSchema(), sql));
 
-                metaData = new JdbcThinParameterMetadata(res.meta());
+        metaData = new JdbcThinParameterMetadata(res.meta());
 
-                return metaData;
-            }
-        });
+        return metaData;
     }
 
     /** {@inheritDoc} */

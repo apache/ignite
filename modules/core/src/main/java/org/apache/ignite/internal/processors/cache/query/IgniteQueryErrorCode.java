@@ -116,7 +116,7 @@ public final class IgniteQueryErrorCode {
      * @return {@link SQLException} with given details.
      */
     public static SQLException createJdbcSqlException(String msg, int code) {
-        return new SQLException(msg, codeToSqlState(code), code);
+        return new SQLException(msg, codeToSqlState(code));
     }
 
     /**
@@ -129,17 +129,17 @@ public final class IgniteQueryErrorCode {
     public static String codeToSqlState(int statusCode) {
         switch (statusCode) {
             case DUPLICATE_KEY:
-                return "23000"; // Generic value for "integrity constraint violation" 23 class.
+                return JdbcStateCode.CONSTRAINT_VIOLATION;
 
             case NULL_KEY:
             case NULL_VALUE:
-                return "22004"; // "Null value not allowed".
+                return JdbcStateCode.NULL_VALUE;
 
             case UNSUPPORTED_OPERATION:
-                return "0A000"; // Generic value for "feature not supported" 0A class.
+                return JdbcStateCode.UNSUPPORTED_OPERATION;
 
             case CONVERSION_FAILED:
-                return "0700B"; // "Data type transform function violation"
+                return JdbcStateCode.CONVERSION_FAILED;
 
             case INVALID_CURSOR_NAME:
                 return JdbcStateCode.INVALID_CURSOR_NAME;

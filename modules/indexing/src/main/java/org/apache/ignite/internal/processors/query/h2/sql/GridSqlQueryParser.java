@@ -1037,7 +1037,7 @@ public class GridSqlQueryParser {
                 }
 
                 if (stmtName == null) {
-                    throw new IgniteSQLException("Unsupported operation code: " + stmt.getType(),
+                    throw new IgniteSQLException("Unsupported ALTER TABLE operation: " + stmt.getSQL(),
                         IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
                 }
                 else {

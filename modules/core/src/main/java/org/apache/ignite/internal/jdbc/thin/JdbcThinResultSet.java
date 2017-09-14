@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.jdbc.thin;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
 import java.math.BigDecimal;
@@ -47,10 +46,12 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.jdbc2.JdbcStateCode;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcColumnMeta;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryCloseRequest;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryFetchRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryFetchResult;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryMetadataRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryMetadataResult;
 
 /**
@@ -198,18 +199,12 @@ public class JdbcThinResultSet implements ResultSet {
         ensureNotClosed();
 
         if ((rowsIter == null || !rowsIter.hasNext()) && !finished) {
-            stmt.connection().execute(new JdbcThinConnectionRunnable<Void>() {
-                @Override public Void run(JdbcThinTcpIo io) throws IgniteCheckedException, IOException, SQLException {
-                    JdbcQueryFetchResult res = io.queryFetch(qryId, fetchSize);
+            JdbcQueryFetchResult res = stmt.conn.sendRequest(new JdbcQueryFetchRequest(qryId, fetchSize));
 
-                    rows = res.items();
-                    finished = res.last();
+            rows = res.items();
+            finished = res.last();
 
-                    rowsIter = rows.iterator();
-
-                    return null;
-                }
-            });
+            rowsIter = rows.iterator();
         }
 
         if (rowsIter != null) {
@@ -246,16 +241,10 @@ public class JdbcThinResultSet implements ResultSet {
         if (isClosed())
             return;
 
-        stmt.connection().execute(new JdbcThinConnectionRunnable<Void>() {
-            @Override public Void run(JdbcThinTcpIo io) throws IgniteCheckedException, IOException, SQLException {
-                if (!finished || (isQuery && !autoClose))
-                    io.queryClose(qryId);
+        if (!finished || (isQuery && !autoClose))
+            stmt.conn.sendRequest(new JdbcQueryCloseRequest(qryId));
 
-                closed = true;
-
-                return null;
-            }
-        });
+        closed = true;
     }
 
     /** {@inheritDoc} */
@@ -1891,17 +1880,11 @@ public class JdbcThinResultSet implements ResultSet {
             throw new SQLException("Server cursor is already closed.", JdbcStateCode.INVALID_CURSOR_STATE);
 
         if (!metaInit) {
-           stmt.connection().execute(new JdbcThinConnectionRunnable<Void>() {
-               @Override public Void run(JdbcThinTcpIo io) throws IgniteCheckedException, IOException, SQLException {
-                   JdbcQueryMetadataResult res = io.queryMeta(qryId);
+          JdbcQueryMetadataResult res = stmt.conn.sendRequest(new JdbcQueryMetadataRequest(qryId));
 
-                   meta = res.meta();
+           meta = res.meta();
 
-                   metaInit = true;
-
-                   return null;
-               }
-           });
+           metaInit = true;
         }
 
         return meta;

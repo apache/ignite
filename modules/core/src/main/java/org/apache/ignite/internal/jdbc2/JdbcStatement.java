@@ -31,7 +31,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.util.typedef.F;
@@ -361,12 +360,6 @@ public class JdbcStatement implements Statement {
         }
         catch (IgniteSQLException e) {
             throw e.toJdbcException();
-        }
-        catch (CacheException e) {
-            if (e.getCause() instanceof IgniteSQLException)
-                throw ((IgniteSQLException) e.getCause()).toJdbcException();
-            else
-                throw new SQLException("Failed to query Ignite.", e);
         }
         catch (Exception e) {
             throw new SQLException("Failed to query Ignite.", e);
