@@ -1422,7 +1422,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      */
     private void clearThreadMap(IgniteInternalTx tx) {
         if (tx.local() && !tx.dht()) {
-            if (!tx.system()) {
+            if (tx.system()) {
                 Integer cacheId = tx.txState().firstCacheId();
 
                 if (cacheId != null)
