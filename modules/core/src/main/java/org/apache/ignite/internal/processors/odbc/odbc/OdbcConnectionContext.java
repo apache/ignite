@@ -113,4 +113,9 @@ public class OdbcConnectionContext implements SqlListenerConnectionContext {
     @Override public SqlListenerMessageParser parser() {
         return parser;
     }
+
+    /** {@inheritDoc} */
+    @Override public void onDisconnected() {
+        handler.onDisconnect();
+    }
 }
