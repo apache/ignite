@@ -509,21 +509,23 @@ public abstract class PagesList extends DataStructure {
      */
     private Stripe getPageForPut(int bucket) throws IgniteCheckedException {
         // Striped pool optimization.
-        int stripeIdx; IgniteThread igniteThread = IgniteThread.current();
-
-        if (igniteThread != null && (stripeIdx = igniteThread.stripe()) != -1) {
-            Stripe[] tails = getBucket(bucket);
-
-            while (tails == null || stripeIdx >= tails.length) {
-                addStripe(bucket, true);
-
-                tails = getBucket(bucket);
-            }
-
-            return tails[stripeIdx];
-        }
+        IgniteThread igniteThread = IgniteThread.current();
 
         Stripe[] tails = getBucket(bucket);
+
+        if (igniteThread != null && igniteThread.policy() == GridIoPolicy.DATA_STREAMER_POOL) {
+            int stripeIdx = igniteThread.stripe();
+
+            if (stripeIdx != -1) {
+                while (tails == null || stripeIdx >= tails.length) {
+                    addStripe(bucket, true);
+
+                    tails = getBucket(bucket);
+                }
+
+                return tails[stripeIdx];
+            }
+        }
 
         if (tails == null)
             return addStripe(bucket, true);
@@ -973,7 +975,8 @@ public abstract class PagesList extends DataStructure {
         // Striped pool optimization.
         IgniteThread igniteThread = IgniteThread.current();
 
-        if (igniteThread != null && igniteThread.stripe() != -1)
+        if (igniteThread != null && igniteThread.policy() == GridIoPolicy.DATA_STREAMER_POOL &&
+            igniteThread.stripe() != -1)
             return writeLock(pageId, page);
 
         long pageAddr = tryWriteLock(pageId, page);
