@@ -173,7 +173,11 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
             if (isQry == null)
                 isQry = qryCursor.isQuery();
 
-            Collection<GridQueryFieldMetadata> meta = qryCursor.fieldsMeta();
+            CURSORS.put(uuid, cursor = new Cursor(qryCursor, qryCursor.iterator()));
+        }
+
+        if (first || updateMetadata()) {
+            Collection<GridQueryFieldMetadata> meta = cursor.queryCursor().fieldsMeta();
 
             tbls = new ArrayList<>(meta.size());
             cols = new ArrayList<>(meta.size());
@@ -184,8 +188,6 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
                 cols.add(desc.fieldName().toUpperCase());
                 types.add(desc.fieldTypeName());
             }
-
-            CURSORS.put(uuid, cursor = new Cursor(qryCursor, qryCursor.iterator()));
         }
 
         List<List<?>> rows = new ArrayList<>();
@@ -229,6 +231,13 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
      * @return Lazy query execution flag (SQL hit).
      */
     protected boolean lazy() {
+        return false;
+    }
+
+    /**
+     * @return Flag to update metadata on demand.
+     */
+    protected boolean updateMetadata() {
         return false;
     }
 
@@ -329,7 +338,7 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
         /**
          * @param uuid UUID..
          * @param finished Finished.
-         * @param isQry
+         * @param isQry Is query flag.
          * @param rows Rows.
          * @param cols Columns.
          * @param tbls Tables.
@@ -429,6 +438,13 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
          */
         public boolean hasNext() {
             return iter.hasNext();
+        }
+
+        /**
+         * @return Cursor.
+         */
+        public QueryCursorImpl<List<?>> queryCursor() {
+            return (QueryCursorImpl<List<?>>)cursor;
         }
     }
 }

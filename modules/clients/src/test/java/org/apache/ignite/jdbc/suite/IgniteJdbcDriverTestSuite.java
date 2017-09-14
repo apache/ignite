@@ -67,20 +67,20 @@ public class IgniteJdbcDriverTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Ignite JDBC Driver Test Suite");
 
-//        // Thin client based driver tests.
-//        suite.addTest(new TestSuite(JdbcConnectionSelfTest.class));
-//        suite.addTest(new TestSuite(JdbcStatementSelfTest.class));
-//        suite.addTest(new TestSuite(JdbcPreparedStatementSelfTest.class));
-//        suite.addTest(new TestSuite(JdbcResultSetSelfTest.class));
-//        suite.addTest(new TestSuite(JdbcComplexQuerySelfTest.class));
-//        suite.addTest(new TestSuite(JdbcMetadataSelfTest.class));
-//        suite.addTest(new TestSuite(JdbcEmptyCacheSelfTest.class));
-//        suite.addTest(new TestSuite(JdbcLocalCachesSelfTest.class));
-//        suite.addTest(new TestSuite(JdbcNoDefaultCacheTest.class));
-//        suite.addTest(new TestSuite(JdbcDefaultNoOpCacheTest.class));
-//        suite.addTest(new TestSuite(JdbcPojoQuerySelfTest.class));
-//        suite.addTest(new TestSuite(JdbcPojoLegacyQuerySelfTest.class));
-//        suite.addTest(new TestSuite(JdbcConnectionReopenTest.class));
+        // Thin client based driver tests.
+        suite.addTest(new TestSuite(JdbcConnectionSelfTest.class));
+        suite.addTest(new TestSuite(JdbcStatementSelfTest.class));
+        suite.addTest(new TestSuite(JdbcPreparedStatementSelfTest.class));
+        suite.addTest(new TestSuite(JdbcResultSetSelfTest.class));
+        suite.addTest(new TestSuite(JdbcComplexQuerySelfTest.class));
+        suite.addTest(new TestSuite(JdbcMetadataSelfTest.class));
+        suite.addTest(new TestSuite(JdbcEmptyCacheSelfTest.class));
+        suite.addTest(new TestSuite(JdbcLocalCachesSelfTest.class));
+        suite.addTest(new TestSuite(JdbcNoDefaultCacheTest.class));
+        suite.addTest(new TestSuite(JdbcDefaultNoOpCacheTest.class));
+        suite.addTest(new TestSuite(JdbcPojoQuerySelfTest.class));
+        suite.addTest(new TestSuite(JdbcPojoLegacyQuerySelfTest.class));
+        suite.addTest(new TestSuite(JdbcConnectionReopenTest.class));
 
         // Ignite client node based driver tests
         suite.addTest(new TestSuite(org.apache.ignite.internal.jdbc2.JdbcConnectionSelfTest.class));
@@ -114,36 +114,36 @@ public class IgniteJdbcDriverTestSuite extends TestSuite {
         suite.addTest(new TestSuite(org.apache.ignite.internal.jdbc2.JdbcDynamicIndexTransactionalPartitionedSelfTest.class));
         suite.addTest(new TestSuite(org.apache.ignite.internal.jdbc2.JdbcDynamicIndexTransactionalReplicatedSelfTest.class));
 
-//        // New thin JDBC
-//        suite.addTest(new TestSuite(JdbcThinConnectionSelfTest.class));
-//        suite.addTest(new TestSuite(JdbcThinPreparedStatementSelfTest.class));
-//        suite.addTest(new TestSuite(JdbcThinResultSetSelfTest.class));
-//
-//        suite.addTest(new TestSuite(JdbcThinStatementSelfTest.class));
-//        suite.addTest(new TestSuite(JdbcThinComplexQuerySelfTest.class));
-//        suite.addTest(new TestSuite(JdbcThinNoDefaultSchemaTest.class));
-//        suite.addTest(new TestSuite(JdbcThinEmptyCacheSelfTest.class));
-//        suite.addTest(new TestSuite(JdbcThinMetadataSelfTest.class));
-//
-//        suite.addTest(new TestSuite(JdbcThinInsertStatementSelfTest.class));
-//        suite.addTest(new TestSuite(JdbcThinUpdateStatementSelfTest.class));
-//        suite.addTest(new TestSuite(JdbcThinMergeStatementSelfTest.class));
-//        suite.addTest(new TestSuite(JdbcThinDeleteStatementSelfTest.class));
-//        suite.addTest(new TestSuite(JdbcThinAutoCloseServerCursorTest.class));
-//        suite.addTest(new TestSuite(JdbcThinBatchSelfTest.class));
-//        suite.addTest(new TestSuite(JdbcThinMissingLongArrayResultsTest.class));
-//
-//        // New thin JDBC driver, DDL tests
-//        suite.addTest(new TestSuite(JdbcThinDynamicIndexAtomicPartitionedNearSelfTest.class));
-//        suite.addTest(new TestSuite(JdbcThinDynamicIndexAtomicPartitionedSelfTest.class));
-//        suite.addTest(new TestSuite(JdbcThinDynamicIndexAtomicReplicatedSelfTest.class));
-//        suite.addTest(new TestSuite(JdbcThinDynamicIndexTransactionalPartitionedNearSelfTest.class));
-//        suite.addTest(new TestSuite(JdbcThinDynamicIndexTransactionalPartitionedSelfTest.class));
-//        suite.addTest(new TestSuite(JdbcThinDynamicIndexTransactionalReplicatedSelfTest.class));
-//
-//        // New thin JDBC driver, full SQL tests
-//        suite.addTest(new TestSuite(JdbcThinComplexDmlDdlSelfTest.class));
-//
+        // New thin JDBC
+        suite.addTest(new TestSuite(JdbcThinConnectionSelfTest.class));
+        suite.addTest(new TestSuite(JdbcThinPreparedStatementSelfTest.class));
+        suite.addTest(new TestSuite(JdbcThinResultSetSelfTest.class));
+
+        suite.addTest(new TestSuite(JdbcThinStatementSelfTest.class));
+        suite.addTest(new TestSuite(JdbcThinComplexQuerySelfTest.class));
+        suite.addTest(new TestSuite(JdbcThinNoDefaultSchemaTest.class));
+        suite.addTest(new TestSuite(JdbcThinEmptyCacheSelfTest.class));
+        suite.addTest(new TestSuite(JdbcThinMetadataSelfTest.class));
+
+        suite.addTest(new TestSuite(JdbcThinInsertStatementSelfTest.class));
+        suite.addTest(new TestSuite(JdbcThinUpdateStatementSelfTest.class));
+        suite.addTest(new TestSuite(JdbcThinMergeStatementSelfTest.class));
+        suite.addTest(new TestSuite(JdbcThinDeleteStatementSelfTest.class));
+        suite.addTest(new TestSuite(JdbcThinAutoCloseServerCursorTest.class));
+        suite.addTest(new TestSuite(JdbcThinBatchSelfTest.class));
+        suite.addTest(new TestSuite(JdbcThinMissingLongArrayResultsTest.class));
+
+        // New thin JDBC driver, DDL tests
+        suite.addTest(new TestSuite(JdbcThinDynamicIndexAtomicPartitionedNearSelfTest.class));
+        suite.addTest(new TestSuite(JdbcThinDynamicIndexAtomicPartitionedSelfTest.class));
+        suite.addTest(new TestSuite(JdbcThinDynamicIndexAtomicReplicatedSelfTest.class));
+        suite.addTest(new TestSuite(JdbcThinDynamicIndexTransactionalPartitionedNearSelfTest.class));
+        suite.addTest(new TestSuite(JdbcThinDynamicIndexTransactionalPartitionedSelfTest.class));
+        suite.addTest(new TestSuite(JdbcThinDynamicIndexTransactionalReplicatedSelfTest.class));
+
+        // New thin JDBC driver, full SQL tests
+        suite.addTest(new TestSuite(JdbcThinComplexDmlDdlSelfTest.class));
+
         return suite;
     }
 }

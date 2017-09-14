@@ -19,6 +19,7 @@ package org.apache.ignite.internal.jdbc2;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.concurrent.Callable;
@@ -131,14 +132,11 @@ public class JdbcNoDefaultCacheTest extends GridCommonAbstractTest {
             assertNotNull(stmt);
             assertFalse(stmt.isClosed());
 
-            Throwable throwable = GridTestUtils.assertThrows(null, new Callable<Void>() {
-                @Override public Void call() throws Exception {
-                    stmt.execute("select t._key, t._val from \"cache1\".Integer t");
-                    return null;
-                }
-            }, SQLException.class, "Failed to query Ignite.");
+            stmt.execute("select t._key, t._val from \"cache1\".Integer t");
 
-            assertEquals(throwable.getCause().getMessage(), "Ouch! Argument is invalid: Cache name must not be null or empty.");
+            ResultSet rs = stmt.getResultSet();
+
+            assert rs.next();
         }
     }
 }

@@ -316,7 +316,7 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
 
     /** {@inheritDoc} */
     @Override public boolean supportsMultipleResultSets() {
-        return false;
+        return true;
     }
 
     /** {@inheritDoc} */

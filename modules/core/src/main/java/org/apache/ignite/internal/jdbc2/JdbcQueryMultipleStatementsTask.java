@@ -139,9 +139,9 @@ class JdbcQueryMultipleStatementsTask implements IgniteCallable<JdbcQueryMultipl
         for (FieldsQueryCursor<List<?>> cur0 : curs) {
             QueryCursorImpl<List<?>> cur = (QueryCursorImpl<List<?>>)cur0;
 
-            JdbcQueryTask.Cursor jdbcCur = new JdbcQueryTask.Cursor(cur, cur.iterator());
-
             long updCnt = -1;
+
+            UUID qryId = null;
 
             if (!cur.isQuery()) {
                 List<List<?>> items = cur.getAll();
@@ -152,11 +152,18 @@ class JdbcQueryMultipleStatementsTask implements IgniteCallable<JdbcQueryMultipl
                         ", res=" + S.toString(List.class, items) + ']';
 
                 updCnt = (Long)items.get(0).get(0);
+
+                cur.close();
+            }
+            else {
+                qryId = UUID.randomUUID();
+
+                JdbcQueryTask.Cursor jdbcCur = new JdbcQueryTask.Cursor(cur, cur.iterator());
+
+                JdbcQueryTask.addCursor(qryId, jdbcCur);
             }
 
-            ResultInfo resInfo = new ResultInfo(cur.isQuery(), updCnt);
-
-            JdbcQueryTask.addCursor(resInfo.qryId, jdbcCur);
+            ResultInfo resInfo = new ResultInfo(cur.isQuery(), qryId, updCnt);
 
             resultsInfo.add(resInfo);
         }
@@ -205,14 +212,13 @@ class JdbcQueryMultipleStatementsTask implements IgniteCallable<JdbcQueryMultipl
 
         /**
          * @param isQuery Query flag.
+         * @param qryId Query ID.
          * @param updCnt Update count.
          */
-        public ResultInfo(boolean isQuery, long updCnt) {
+        public ResultInfo(boolean isQuery, UUID qryId, long updCnt) {
             this.isQuery = isQuery;
             this.updCnt = updCnt;
-
-            if (isQuery)
-                qryId = UUID.randomUUID();
+            this.qryId = qryId;
         }
 
         /**
