@@ -3139,6 +3139,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         GridNearTxPrepareFutureAdapter fut = (GridNearTxPrepareFutureAdapter)prepFut;
 
         if (fut == null) {
+            removeTimeoutHandler();
+
             long timeout = remainingTime();
 
             // Future must be created before any exception can be thrown.
@@ -3162,8 +3164,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         else
             // Prepare was called explicitly.
             return fut;
-
-        removeTimeoutHandler();
 
         mapExplicitLocks();
 
@@ -3710,8 +3710,11 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
         if (state != ROLLING_BACK && state != ROLLED_BACK && state != COMMITTING && state != COMMITTED)
             rollback();
-        else
+        else {
             cctx.tm().onLocalClose(this);
+
+            removeTimeoutHandler();
+        }
 
         synchronized (this) {
             try {
@@ -4023,10 +4026,10 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     }
 
     /**
-     * Removes timeout handler used for eager rollbacks on timeouts.
+     * Removes timeout handler.
      */
     private void removeTimeoutHandler() {
-        if (timeout() > 0 && !implicit() && !timedOut())
+        if (timeout() > 0 && !implicit())
             cctx.time().removeTimeoutObject(this);
     }
 
@@ -4037,12 +4040,12 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
     /** {@inheritDoc} */
     @Override public long endTime() {
-        return startTime() + timeout() - 150;
+        return startTime() + timeout();
     }
 
     /** {@inheritDoc} */
     @Override public void onTimeout() {
-        //if (state(MARKED_ROLLBACK, true)) {
+        if (state(MARKED_ROLLBACK, true)) {
             cctx.kernalContext().closure().runLocalSafe(new Runnable() {
                 @Override public void run() {
                     // Wait for active local lock futures completion to prevent races with deadlock detection.
@@ -4060,15 +4063,16 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                         }
                     }
 
-                    if (state(MARKED_ROLLBACK, true)) {
-                        log().error("Transaction is timed out and will be rolled back [timeout=" + timeout() +
-                            ", tx=" + GridNearTxLocal.this + ']');
+                    if (state() != MARKED_ROLLBACK)
+                        return;
 
-                        rollbackNearTxLocalAsync();
-                    }
+                    log().error("Transaction is timed out and will be rolled back [timeout=" + timeout() +
+                        ", tx=" + GridNearTxLocal.this + ']');
+
+                    rollbackNearTxLocalAsync();
                 }
             });
-        //}
+        }
     }
 
     /**

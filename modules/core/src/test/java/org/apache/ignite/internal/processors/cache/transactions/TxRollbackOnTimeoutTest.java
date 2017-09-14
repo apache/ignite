@@ -23,7 +23,6 @@ import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
@@ -218,9 +217,40 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    public void testDeadlockUnblockedOnTimeout() throws Exception {
+    public void testDeadlockUnblockedOnTimeout1() throws Exception {
         testDeadlockUnblockedOnTimeout0(ignite(0), ignite(1));
     }
+
+    /**
+     * Tests if deadlock is resolved on timeout with correct message.
+     *
+     * @throws Exception If failed.
+     */
+    public void testDeadlockUnblockedOnTimeout2() throws Exception {
+        testDeadlockUnblockedOnTimeout0(ignite(0), ignite(0));
+    }
+
+    /**
+     * Tests if deadlock is resolved on timeout with correct message.
+     *
+     * @throws Exception If failed.
+     */
+    public void testDeadlockUnblockedOnTimeout3() throws Exception {
+        Ignite client = startGrid("client");
+
+        testDeadlockUnblockedOnTimeout0(ignite(0), client);
+    }
+
+    /**
+     * Tests if deadlock is resolved on timeout with correct message.
+     *
+     * @throws Exception If failed.
+     */
+//    public void testDeadlockUnblockedOnTimeout4() throws Exception {
+//        Ignite client = startGrid("client");
+//
+//        testDeadlockUnblockedOnTimeout0(client, ignite(0));
+//    }
 
     /**
      * Tests if deadlock is resolved on timeout with correct message.
@@ -232,7 +262,7 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
         IgniteInternalFuture<?> fut1 = multithreadedAsync(new Runnable() {
             @Override public void run() {
                 try {
-                    try (Transaction tx = ignite(0).transactions().txStart(PESSIMISTIC, REPEATABLE_READ, TX_TIMEOUT, 2)) {
+                    try (Transaction tx = node1.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, TX_TIMEOUT, 2)) {
                         node1.cache(CACHE_NAME).put(1, 1);
 
                         l.countDown();
@@ -253,7 +283,7 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
 
         IgniteInternalFuture<?> fut2 = multithreadedAsync(new Runnable() {
             @Override public void run() {
-                try (Transaction tx = ignite(1).transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 0, 2)) {
+                try (Transaction tx = node2.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 0, 2)) {
                     node2.cache(CACHE_NAME).put(2, 2);
 
                     l.countDown();
@@ -346,6 +376,8 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void testTimeoutRemoval0(IgniteEx near, int mode, long timeout) throws Exception {
+        Throwable saved = null;
+
         try (Transaction tx = near.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, timeout, 1)) {
             near.cache(CACHE_NAME).put(1, 1);
 
@@ -373,18 +405,18 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
                     fail();
             }
         }
-        catch (TransactionTimeoutException e) {
-            // No-op.
-        }
-        catch (CacheException e) {
-            assertTrue("Only timeout exception is possible", X.hasCause(e, TransactionTimeoutException.class));
+        catch (Throwable t) {
+            saved = t;
         }
 
         GridConcurrentSkipListSet set = U.field(near.context().cache().context().time(), "timeoutObjs");
 
         for (Object obj : set)
-            assertFalse("Not remove for mode=" + mode + " and timeout=" + timeout,
-                    obj.getClass().isAssignableFrom(GridNearTxLocal.class));
+            if (obj.getClass().isAssignableFrom(GridNearTxLocal.class)) {
+                log.error("Last saved exception", saved);
+
+                fail("Not remove for mode=" + mode + " and timeout=" + timeout);
+            }
     }
 
     /**
@@ -393,7 +425,7 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void testWaitingTxUnblockedOnTimeout0(final Ignite near, final Ignite other) throws Exception {
-        final int recordsCnt = 1;
+        final int recordsCnt = 100;
 
         IgniteInternalFuture<?> fut1 = multithreadedAsync(new Runnable() {
             @Override public void run() {
