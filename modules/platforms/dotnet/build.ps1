@@ -51,6 +51,9 @@ Build configuration ("Release", "Debug").
 .PARAMETER mavenOpts
 Custom Maven options, default is "-U -P-lgpl,-scala,-examples,-test,-benchmarks -Dmaven.javadoc.skip=true".
 
+.PARAMETER jarDirs
+Java jar files source folders, default is "modules\indexing\target,modules\core\target,modules\spring\target"
+
 .EXAMPLE
 .\build.ps1 -clean  
 # Full rebuild of Java, .NET and NuGet packages.
@@ -70,7 +73,8 @@ param (
     [string]$platform="Any CPU",
     [ValidateSet("Release", "Debug")]
     [string]$configuration="Release",
-    [string]$mavenOpts="-U -P-lgpl,-scala,-examples,-test,-benchmarks -Dmaven.javadoc.skip=true"
+    [string]$mavenOpts="-U -P-lgpl,-scala,-examples,-test,-benchmarks -Dmaven.javadoc.skip=true",
+	[string]$jarDirs="modules\indexing\target,modules\core\target,modules\spring\target"
  )
 
 # 1) Build Java (Maven)
@@ -116,11 +120,11 @@ else {
 $libsDir = "$PSScriptRoot\bin\Libs"
 mkdir -Force $libsDir; del -Force $libsDir\*.*
 
-ls modules\indexing\target,modules\core\target,modules\spring\target *.jar -recurse `
+ls $jarDirs.Split(',') *.jar -recurse `
    -include "ignite-core*","ignite-indexing*","ignite-shmem*","ignite-spring*","lucene*","h2*","cache-api*","commons-*","spring*" `
    -exclude "*-sources*","*-javadoc*","*-tests*" `
    | % { copy -Force $_ $libsDir }
-
+   
 # Restore directory
 cd $PSScriptRoot
 
