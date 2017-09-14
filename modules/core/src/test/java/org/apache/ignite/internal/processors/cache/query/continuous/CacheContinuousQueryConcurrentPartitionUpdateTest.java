@@ -18,23 +18,50 @@
 package org.apache.ignite.internal.processors.cache.query.continuous;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import javax.cache.Cache;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryUpdatedListener;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheInterceptorAdapter;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
+import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.GridCacheConcurrentMapImpl;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
+import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
+import org.apache.ignite.internal.processors.cache.GridCacheMapEntryFactory;
+import org.apache.ignite.internal.processors.cache.GridCacheOperation;
+import org.apache.ignite.internal.processors.cache.GridCacheUpdateAtomicResult;
+import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
+import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.distributed.GridCacheModuloAffinityFunction;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicAbstractUpdateFuture;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.dr.GridDrType;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
+import org.apache.ignite.internal.util.lang.GridClosureException;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -42,6 +69,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -54,6 +82,8 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
     /** */
     private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
+    private AtomicInteger cntr = new AtomicInteger(0);
+
     /** */
     private boolean client;
 
@@ -64,6 +94,9 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
         ((TcpDiscoverySpi) cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
         cfg.setClientMode(client);
+
+        cfg.setUserAttributes(F.asMap(GridCacheModuloAffinityFunction.IDX_ATTR,
+            cntr.getAndIncrement()));
 
         return cfg;
     }
@@ -255,6 +288,68 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
      */
     public void _testConcurrentUpdatesAndQueryStartTxCacheGroup() throws Exception {
         concurrentUpdatesAndQueryStart(TRANSACTIONAL, true);
+    }
+
+    public void test1() throws Exception {
+        Ignite srv = startGrid(0);
+
+        client = true;
+
+        Ignite client = startGrid(1);
+
+        List<String> caches = new ArrayList<>();
+
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
+
+        ccfg.setWriteSynchronizationMode(FULL_SYNC);
+        ccfg.setAtomicityMode(ATOMIC);
+
+        ccfg.setAffinity(new GridCacheModuloAffinityFunction(1, ccfg.getBackups()));
+
+        IgniteCache clientCache = client.createCache(ccfg);
+        IgniteCache serverCache = srv.cache(DEFAULT_CACHE_NAME);
+
+        Affinity<Integer> aff = srv.affinity(DEFAULT_CACHE_NAME);
+
+        final List<Integer> keys = new ArrayList<>();
+
+        assert aff.partition(1) == 0;
+        assert aff.partition(2) == 0;
+
+        multithreadedAsync(new Runnable() {
+            @Override public void run() {
+
+                serverCache.put(1, 1);
+            }
+        }, 1);
+
+        Thread.sleep(1000);
+
+        ContinuousQuery<Object, Object> qry = new ContinuousQuery<>();
+        Set<Integer> keysReceived = new HashSet<>();
+        qry.setLocalListener(new CacheEntryUpdatedListener<Object, Object>() {
+            @Override public void onUpdated(Iterable<CacheEntryEvent<?, ?>> evts) {
+                for (CacheEntryEvent evt : evts)
+                    keysReceived.add((Integer)evt.getKey());
+            }
+        });
+
+        clientCache.query(qry);
+
+        serverCache.put(2, 1);
+
+        serverCache.put(3, 1);
+
+        Thread.sleep(1000);
+
+        for (Integer integer : keysReceived)
+            System.out.println("Lister received key: " + integer + " ");
+    }
+
+    private static class TestInterceptor extends CacheInterceptorAdapter {
+        @Nullable @Override public Object onBeforePut(Cache.Entry entry, Object newVal) {
+            return super.onBeforePut(entry, newVal);
+        }
     }
 
     /**
