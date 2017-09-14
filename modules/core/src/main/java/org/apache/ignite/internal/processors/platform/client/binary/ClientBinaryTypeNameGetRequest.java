@@ -23,6 +23,7 @@ import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
+import org.apache.ignite.internal.processors.platform.client.ClientStringResponse;
 
 /**
  * Gets binary type name by id.
@@ -51,7 +52,7 @@ public class ClientBinaryTypeNameGetRequest extends ClientRequest {
         try {
             String typeName = ctx.marshallerContext().getClassName(platformId, typeId);
 
-            return new ClientBinaryTypeNameGetResponse(requestId(), typeName);
+            return new ClientStringResponse(requestId(), typeName);
         } catch (ClassNotFoundException | IgniteCheckedException e) {
             throw new BinaryObjectException(e);
         }
