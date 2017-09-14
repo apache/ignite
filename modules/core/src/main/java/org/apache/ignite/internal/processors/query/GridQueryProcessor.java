@@ -1935,11 +1935,13 @@ private IgniteInternalFuture<Object> rebuildIndexesFromHash(@Nullable final Stri
             throw new IllegalStateException("Failed to execute query (grid is stopping).");
 
         try {
-            IgniteOutClosureX<List<FieldsQueryCursor<List<?>>>> clo = new IgniteOutClosureX<List<FieldsQueryCursor<List<?>>>>() {
+            IgniteOutClosureX<List<FieldsQueryCursor<List<?>>>> clo =
+                new IgniteOutClosureX<List<FieldsQueryCursor<List<?>>>>() {
                 @Override public List<FieldsQueryCursor<List<?>>> applyx() throws IgniteCheckedException {
                     GridQueryCancel cancel = new GridQueryCancel();
 
-                    return idx.queryDistributedSqlFields(qry.getSchema(), qry, keepBinary, cancel, null, failOnMultipleStmts);
+                    return idx.queryDistributedSqlFields(qry.getSchema(), qry, keepBinary, cancel, null,
+                        failOnMultipleStmts);
                 }
             };
 
