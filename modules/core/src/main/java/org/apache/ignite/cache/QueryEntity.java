@@ -83,6 +83,9 @@ public class QueryEntity implements Serializable {
     /** Table name. */
     private String tableName;
 
+    /** Fields that must have non-null value. */
+    private Set<String> notNullFields;
+
     /**
      * Creates an empty query entity.
      */
@@ -109,6 +112,8 @@ public class QueryEntity implements Serializable {
         idxs = other.idxs != null ? new ArrayList<>(other.idxs) : null;
 
         tableName = other.tableName;
+
+        notNullFields = other.notNullFields != null ? new HashSet<>(other.notNullFields) : null;
     }
 
     /**
@@ -352,6 +357,27 @@ public class QueryEntity implements Serializable {
      */
     public void setTableName(String tableName) {
         this.tableName = tableName;
+    }
+
+    /**
+     * Gets names of fields that must be checked for null.
+     *
+     * @return Set of names of fields that must have non-null values.
+     */
+    @Nullable public Set<String> getNotNullFields() {
+        return notNullFields;
+    }
+
+    /**
+     * Sets names of fields that must checked for null.
+     *
+     * @param notNullFields Set of names of fields that must have non-null values.
+     * @return {@code this} for chaining.
+     */
+    public QueryEntity setNotNullFields(@Nullable Set<String> notNullFields) {
+        this.notNullFields = notNullFields;
+
+        return this;
     }
 
     /**
@@ -604,12 +630,14 @@ public class QueryEntity implements Serializable {
             F.eq(keyFields, entity.keyFields) &&
             F.eq(aliases, entity.aliases) &&
             F.eqNotOrdered(idxs, entity.idxs) &&
-            F.eq(tableName, entity.tableName);
+            F.eq(tableName, entity.tableName) &&
+            F.eq(notNullFields, entity.notNullFields);
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        return Objects.hash(keyType, valType, keyFieldName, valueFieldName, fields, keyFields, aliases, idxs, tableName);
+        return Objects.hash(keyType, valType, keyFieldName, valueFieldName, fields, keyFields, aliases, idxs,
+            tableName, notNullFields);
     }
 
     /** {@inheritDoc} */

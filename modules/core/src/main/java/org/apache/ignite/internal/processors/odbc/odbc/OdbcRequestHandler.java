@@ -170,6 +170,24 @@ public class OdbcRequestHandler implements SqlListenerRequestHandler {
     }
 
     /**
+     * Called whenever client is disconnected due to correct connection close
+     * or due to {@code IOException} during network operations.
+     */
+    public void onDisconnect() {
+        if (busyLock.enterBusy())
+        {
+            try
+            {
+                for (IgniteBiTuple<QueryCursor, Iterator> tuple : qryCursors.values())
+                    tuple.get1().close();
+            }
+            finally {
+                busyLock.leaveBusy();
+            }
+        }
+    }
+
+    /**
      * Make query considering handler configuration.
      * @param schema Schema.
      * @param sql SQL request.
@@ -216,13 +234,21 @@ public class OdbcRequestHandler implements SqlListenerRequestHandler {
 
             SqlFieldsQuery qry = makeQuery(req.schema(), sql, req.arguments());
 
-            QueryCursor qryCur = ctx.query().querySqlFieldsNoCache(qry, true);
+            QueryCursorImpl<List<?>> qryCur = (QueryCursorImpl<List<?>>)ctx.query().querySqlFieldsNoCache(qry, true);
 
-            qryCursors.put(qryId, new IgniteBiTuple<QueryCursor, Iterator>(qryCur, null));
+            long rowsAffected = 0;
+
+            if (!qryCur.isQuery()) {
+                rowsAffected = getRowsAffected(qryCur);
+
+                qryCur.close();
+            }
+            else
+                qryCursors.put(qryId, new IgniteBiTuple<QueryCursor, Iterator>(qryCur, null));
 
             List<?> fieldsMeta = ((QueryCursorImpl) qryCur).fieldsMeta();
 
-            OdbcQueryExecuteResult res = new OdbcQueryExecuteResult(qryId, convertMetadata(fieldsMeta));
+            OdbcQueryExecuteResult res = new OdbcQueryExecuteResult(qryId, convertMetadata(fieldsMeta), rowsAffected);
 
             return new OdbcResponse(res);
         }

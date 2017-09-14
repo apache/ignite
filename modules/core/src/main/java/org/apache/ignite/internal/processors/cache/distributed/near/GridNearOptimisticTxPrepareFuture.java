@@ -304,7 +304,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
 
         if (super.onDone(tx, err0)) {
             // Don't forget to clean up.
-            cctx.mvcc().removeMvccFuture(this);
+            cctx.mvcc().removeVersionedFuture(this);
 
             return true;
         }
@@ -445,7 +445,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
 
                 ClusterNode primary = updated.primary();
 
-                assert !primary.isLocal() || !cctx.kernalContext().clientNode();
+                assert !primary.isLocal() || !cctx.kernalContext().clientNode() || write.context().isLocal();
 
                 // Minor optimization to not create MappingKey: on client node can not have mapping for local node.
                 Object key =  cctx.kernalContext().clientNode() ? primary.id() :

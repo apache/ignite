@@ -77,7 +77,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     private static final long serialVersionUID = 0L;
 
     /** Maximum number of partitions. */
-    public static final int MAX_PARTITIONS_COUNT = 0xFFFF;
+    public static final int MAX_PARTITIONS_COUNT = 65000;
 
     /** Default size of rebalance thread pool. */
     @Deprecated
