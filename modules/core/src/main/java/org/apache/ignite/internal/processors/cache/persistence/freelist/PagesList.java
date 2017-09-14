@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
@@ -154,9 +155,8 @@ public abstract class PagesList extends DataStructure {
      */
     protected final void init(long metaPageId, boolean initNew) throws IgniteCheckedException {
         if (metaPageId != 0L) {
-            if (initNew) {
+            if (initNew)
                 init(metaPageId, PagesListMetaIO.VERSIONS.latest());
-            }
             else {
                 Map<Integer, GridLongList> bucketsData = new HashMap<>();
 
@@ -854,9 +854,8 @@ public abstract class PagesList extends DataStructure {
 
                         assert nextPageAddr != 0L;
 
-                        if (locked == null) {
+                        if (locked == null)
                             locked = new GridLongList(6);
-                        }
 
                         locked.add(nextId);
                         locked.add(nextPage);
@@ -911,9 +910,8 @@ public abstract class PagesList extends DataStructure {
                 updateTail(bucket, pageId, prevId);
 
                 // Release write.
-                for (int i = 0; i < locked.size(); i+=3) {
+                for (int i = 0; i < locked.size(); i += 3)
                     writeUnlock(locked.get(i), locked.get(i + 1), locked.get(i + 2), FALSE, true);
-                }
             }
         }
 
@@ -933,15 +931,19 @@ public abstract class PagesList extends DataStructure {
         int len = tails.length;
 
         // Striped pool optimization.
-        int stripeIdx; IgniteThread igniteThread = IgniteThread.current();
+        IgniteThread igniteThread = IgniteThread.current();
 
-        if (igniteThread != null && (stripeIdx = igniteThread.stripe()) != -1) {
-            if (stripeIdx >= len)
-                return null;
+        if (igniteThread != null && igniteThread.policy() == GridIoPolicy.DATA_STREAMER_POOL) {
+            int stripeIdx = igniteThread.stripe();
 
-            Stripe stripe = tails[stripeIdx];
+            if (stripeIdx != -1) {
+                if (stripeIdx >= len)
+                    return null;
 
-            return stripe.empty ? null : stripe;
+                Stripe stripe = tails[stripeIdx];
+
+                return stripe.empty ? null : stripe;
+            }
         }
 
         int init = randomInt(len);
