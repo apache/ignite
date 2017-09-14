@@ -7,6 +7,10 @@ ls $bins | % `
 {
     $projName = [System.IO.Path]::GetFileNameWithoutExtension($_.Name);
 
+    if ($_.Name.EndsWith(".exe.config")) {
+        $projName = [System.IO.Path]::GetFileNameWithoutExtension($projName);
+    }
+
     if ($projName.StartsWith("Apache.Ignite")) {
         $target = "$projName\bin\Release"
         mkdir -Force $target
