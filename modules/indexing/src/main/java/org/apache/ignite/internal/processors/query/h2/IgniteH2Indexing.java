@@ -1246,7 +1246,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (qry.getTimeout() > 0)
             fqry.setTimeout(qry.getTimeout(), TimeUnit.MILLISECONDS);
 
-        final QueryCursor<List<?>> res = queryDistributedSqlFields(schemaName, fqry, keepBinary, null, mainCacheId, true).get(0);
+        final QueryCursor<List<?>> res =
+            queryDistributedSqlFields(schemaName, fqry, keepBinary, null, mainCacheId, true).get(0);
 
         final Iterable<Cache.Entry<K, V>> converted = new Iterable<Cache.Entry<K, V>>() {
             @Override public Iterator<Cache.Entry<K, V>> iterator() {
@@ -1299,6 +1300,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             checkQueryType(qry, true);
 
             GridCacheTwoStepQuery twoStepQry = cachedQry.query().copy();
+
             List<GridQueryFieldMetadata> meta = cachedQry.meta();
 
             return Collections.singletonList(executeTwoStepsQuery(schemaName, qry.getPageSize(), qry.getPartitions(),
@@ -1306,7 +1308,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 twoStepQry, meta, cachedQryKey, cachedQry));
         }
 
-        List<FieldsQueryCursor<List<?>>> results = new ArrayList<>();
+        List<FieldsQueryCursor<List<?>>> res = new ArrayList<>(1);
 
         Object[] argsOrig = qry.getArgs();
         int firstArg = 0;
@@ -1388,6 +1390,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                     cachedQryKey = new H2TwoStepCachedQueryKey(schemaName, sqlQry, grpByCollocated,
                         distributedJoins, enforceJoinOrder, qry.isLocal());
+
                     cachedQry = twoStepCache.get(cachedQryKey);
 
                     if (cachedQry != null) {
@@ -1396,7 +1399,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                         twoStepQry = cachedQry.query().copy();
                         meta = cachedQry.meta();
 
-                        results.add(executeTwoStepsQuery(schemaName, qry.getPageSize(), qry.getPartitions(), args, keepBinary,
+                        res.add(executeTwoStepsQuery(schemaName, qry.getPageSize(), qry.getPartitions(), args, keepBinary,
                             qry.isLazy(), qry.getTimeout(), cancel, sqlQry, enforceJoinOrder,
                             twoStepQry, meta, cachedQryKey, cachedQry));
 
@@ -1423,7 +1426,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 if (twoStepQry == null) {
                     if (DmlStatementsProcessor.isDmlStatement(prepared)) {
                         try {
-                            results.add(dmlProc.updateSqlFieldsDistributed(schemaName, prepared,
+                            res.add(dmlProc.updateSqlFieldsDistributed(schemaName, prepared,
                                 new SqlFieldsQuery(qry).setSql(sqlQry).setArgs(args), cancel));
 
                             continue;
@@ -1436,7 +1439,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                     if (DdlStatementsProcessor.isDdlStatement(prepared)) {
                         try {
-                            results.add(ddlProc.runDdlStatement(sqlQry, prepared));
+                            res.add(ddlProc.runDdlStatement(sqlQry, prepared));
 
                             continue;
                         }
@@ -1490,12 +1493,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 U.close(stmt, log);
             }
 
-            results.add(executeTwoStepsQuery(schemaName, qry.getPageSize(), qry.getPartitions(), args, keepBinary,
+            res.add(executeTwoStepsQuery(schemaName, qry.getPageSize(), qry.getPartitions(), args, keepBinary,
                 qry.isLazy(), qry.getTimeout(), cancel, sqlQry, enforceJoinOrder,
                 twoStepQry, meta, cachedQryKey, cachedQry));
         }
 
-        return results;
+        return res;
     }
 
     /**
