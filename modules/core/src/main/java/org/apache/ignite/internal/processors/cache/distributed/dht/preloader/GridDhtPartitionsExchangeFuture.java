@@ -53,6 +53,7 @@ import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCach
 import org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessage;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
+import org.apache.ignite.internal.processors.cache.ExchangeActions;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -177,9 +178,6 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     /** Logger. */
     private IgniteLogger log;
 
-    /** Dynamic cache change requests. */
-    private Collection<DynamicCacheChangeRequest> reqs;
-
     /** */
     private CacheAffinityChangeMessage affChangeMsg;
 
@@ -200,6 +198,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
     /** Forced Rebalance future. */
     private GridCompoundFuture<Boolean, Boolean> forcedRebFut;
+
+    /** Cache change requests. */
+    private ExchangeActions exchActions;
 
     /**
      * Dummy future created to trigger reassignments if partition
@@ -255,14 +256,14 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      * @param cctx Cache context.
      * @param busyLock Busy lock.
      * @param exchId Exchange ID.
-     * @param reqs Cache change requests.
+     * @param exchActions Exchange actions.
      * @param affChangeMsg Affinity change message.
      */
     public GridDhtPartitionsExchangeFuture(
         GridCacheSharedContext cctx,
         ReadWriteLock busyLock,
         GridDhtPartitionExchangeId exchId,
-        Collection<DynamicCacheChangeRequest> reqs,
+        ExchangeActions exchActions,
         CacheAffinityChangeMessage affChangeMsg
     ) {
         assert busyLock != null;
@@ -275,7 +276,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         this.cctx = cctx;
         this.busyLock = busyLock;
         this.exchId = exchId;
-        this.reqs = reqs;
+        this.exchActions = exchActions;
         this.affChangeMsg = affChangeMsg;
 
         log = cctx.logger(getClass());
@@ -284,13 +285,6 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
         if (log.isDebugEnabled())
             log.debug("Creating exchange future [localNode=" + cctx.localNodeId() + ", fut=" + this + ']');
-    }
-
-    /**
-     * @param reqs Cache change requests.
-     */
-    public void cacheChangeRequests(Collection<DynamicCacheChangeRequest> reqs) {
-        this.reqs = reqs;
     }
 
     /**
@@ -366,16 +360,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      * @return {@code True} if non-client cache was added during this exchange.
      */
     public boolean cacheStarted(int cacheId) {
-        if (!F.isEmpty(reqs)) {
-            for (DynamicCacheChangeRequest req : reqs) {
-                if (req.start() && !req.clientStartOnly()) {
-                    if (CU.cacheId(req.cacheName()) == cacheId)
-                        return true;
-                }
-            }
-        }
-
-        return false;
+        return exchActions != null && exchActions.cacheStarted(cacheId);
     }
 
     /**
@@ -477,8 +462,11 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             Collection<DynamicCacheDescriptor> receivedCaches;
 
             if (discoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT) {
-                if (!F.isEmpty(reqs))
+                if (exchActions != null) {
+                    assert !exchActions.empty();
+
                     exchange = onCacheChangeRequest(crdNode);
+                }
                 else {
                     assert affChangeMsg != null : this;
 
@@ -596,29 +584,28 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
     /**
      * @param crd Coordinator flag.
-     * @throws IgniteCheckedException If failed.
      * @return Exchange type.
+     * @throws IgniteCheckedException If failed.
      */
     private ExchangeType onCacheChangeRequest(boolean crd) throws IgniteCheckedException {
-        assert !F.isEmpty(reqs) : this;
+        assert exchActions != null;
 
-        boolean clientOnly = cctx.affinity().onCacheChangeRequest(this, crd, reqs);
+        boolean clientOnly = cctx.affinity().onCacheChangeRequest(this, crd, exchActions);
 
         if (clientOnly) {
             boolean clientCacheStarted = false;
 
-            for (DynamicCacheChangeRequest req : reqs) {
-                if (req.start() && req.clientStartOnly() && req.initiatingNodeId().equals(cctx.localNodeId())) {
+            for (ExchangeActions.CacheActionData action :exchActions.cacheStartRequests()){
+                DynamicCacheChangeRequest req = action.request();
+
+                if (req.clientStartOnly() && req.initiatingNodeId().equals(cctx.localNodeId())) {
                     clientCacheStarted = true;
 
                     break;
                 }
             }
 
-            if (clientCacheStarted)
-                return ExchangeType.CLIENT;
-            else
-                return ExchangeType.NONE;
+            return clientCacheStarted ? ExchangeType.CLIENT : ExchangeType.NONE;
         }
         else
             return cctx.kernalContext().clientNode() ? ExchangeType.CLIENT : ExchangeType.ALL;
@@ -626,8 +613,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
     /**
      * @param crd Coordinator flag.
-     * @throws IgniteCheckedException If failed.
      * @return Exchange type.
+     * @throws IgniteCheckedException If failed.
      */
     private ExchangeType onAffinityChangeRequest(boolean crd) throws IgniteCheckedException {
         assert affChangeMsg != null : this;
@@ -642,8 +629,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
     /**
      * @param crd Coordinator flag.
-     * @throws IgniteCheckedException If failed.
      * @return Exchange type.
+     * @throws IgniteCheckedException If failed.
      */
     private ExchangeType onClientNodeEvent(boolean crd) throws IgniteCheckedException {
         assert CU.clientNode(discoEvt.eventNode()) : this;
@@ -666,8 +653,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
     /**
      * @param crd Coordinator flag.
-     * @throws IgniteCheckedException If failed.
      * @return Exchange type.
+     * @throws IgniteCheckedException If failed.
      */
     private ExchangeType onServerNodeEvent(boolean crd) throws IgniteCheckedException {
         assert !CU.clientNode(discoEvt.eventNode()) : this;
@@ -951,19 +938,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      * @return {@code True} if cache is stopping by this exchange.
      */
     public boolean stopping(int cacheId) {
-        boolean stopping = false;
-
-        if (!F.isEmpty(reqs)) {
-            for (DynamicCacheChangeRequest req : reqs) {
-                if (cacheId == CU.cacheId(req.cacheName())) {
-                    stopping = req.stop();
-
-                    break;
-                }
-            }
-        }
-
-        return stopping;
+        return exchActions != null && exchActions.cacheStopped(cacheId);
     }
 
     /**
@@ -1084,7 +1059,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
         cctx.exchange().onExchangeDone(this, err);
 
-        cctx.cache().onExchangeDone(exchId.topologyVersion(), reqs, err, false);
+        cctx.cache().onExchangeDone(exchId.topologyVersion(), collectCacheChangeRequests(exchActions), err, false);
 
         if (super.onDone(res, err) && realExchange) {
             if (log.isDebugEnabled())
@@ -1098,7 +1073,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                     cacheCtx.config().getAffinity().removeNode(exchId.nodeId());
             }
 
-            reqs = null;
+            exchActions = null;
 
             if (discoEvt instanceof DiscoveryCustomEvent)
                 ((DiscoveryCustomEvent)discoEvt).customMessage(null);
@@ -1107,6 +1082,26 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         }
 
         return dummy;
+    }
+
+    /**
+     * @param actions Actions.
+     */
+    private Collection<DynamicCacheChangeRequest> collectCacheChangeRequests(ExchangeActions actions) {
+        if (actions == null)
+            return Collections.emptyList();
+
+        List<DynamicCacheChangeRequest> reqs = new ArrayList<>();
+
+        for (ExchangeActions.CacheActionData action : actions.cacheStartRequests())
+            reqs.add(action.request());
+
+        for (ExchangeActions.CacheActionData action : actions.cacheStopRequests())
+            reqs.add(action.request());
+
+        reqs.addAll(actions.cacheCloseRequests(cctx.localNodeId()));
+
+        return reqs;
     }
 
     /** {@inheritDoc} */
@@ -1735,6 +1730,16 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     /** {@inheritDoc} */
     @Override public int compareTo(GridDhtPartitionsExchangeFuture fut) {
         return exchId.compareTo(fut.exchId);
+    }
+
+    /**
+     * @param exchActions New cache change requests.
+     */
+    public void exchangeActions(ExchangeActions exchActions) {
+        assert exchActions == null || !exchActions.empty() : exchActions;
+        assert evtLatch != null && evtLatch.getCount() == 1L : this;
+
+        this.exchActions = exchActions;
     }
 
     /** {@inheritDoc} */
