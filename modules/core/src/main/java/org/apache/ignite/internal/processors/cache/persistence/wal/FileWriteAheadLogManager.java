@@ -1010,12 +1010,20 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      * @return Entry serializer.
      */
     static RecordSerializer forVersion(GridCacheSharedContext cctx, int ver) throws IgniteCheckedException {
+        return forVersion(cctx, ver, false);
+    }
+
+    /**
+     * @param ver Serializer version.
+     * @return Entry serializer.
+     */
+    static RecordSerializer forVersion(GridCacheSharedContext cctx, int ver, boolean writePointer) throws IgniteCheckedException {
         if (ver <= 0)
             throw new IgniteCheckedException("Failed to create a serializer (corrupted WAL file).");
 
         switch (ver) {
             case 1:
-                return new RecordV1Serializer(cctx);
+                return new RecordV1Serializer(cctx, writePointer);
 
             default:
                 throw new IgniteCheckedException("Failed to create a serializer with the given version " +

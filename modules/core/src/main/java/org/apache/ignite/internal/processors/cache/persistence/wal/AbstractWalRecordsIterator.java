@@ -275,7 +275,7 @@ public abstract class AbstractWalRecordsIterator
 
                 int ver = ((HeaderRecord)rec).version();
 
-                RecordSerializer ser = FileWriteAheadLogManager.forVersion(sharedCtx, ver);
+                RecordSerializer ser = FileWriteAheadLogManager.forVersion(sharedCtx, ver, serializer.writePointer());
 
                 if (start != null && desc.idx == start.index())
                     in.seek(start.fileOffset());
