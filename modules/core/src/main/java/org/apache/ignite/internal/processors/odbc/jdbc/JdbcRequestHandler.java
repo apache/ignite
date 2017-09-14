@@ -207,6 +207,24 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
     }
 
     /**
+     * Called whenever client is disconnected due to correct connection close
+     * or due to {@code IOException} during network operations.
+     */
+    public void onDisconnect() {
+        if (busyLock.enterBusy())
+        {
+            try
+            {
+                for (JdbcQueryCursor cursor : qryCursors.values())
+                    cursor.close();
+            }
+            finally {
+                busyLock.leaveBusy();
+            }
+        }
+    }
+
+    /**
      * {@link JdbcQueryExecuteRequest} command handler.
      *
      * @param req Execute query request.
