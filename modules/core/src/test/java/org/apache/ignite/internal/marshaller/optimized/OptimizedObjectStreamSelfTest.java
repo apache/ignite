@@ -47,6 +47,7 @@ import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.PriorityQueue;
 import java.util.Properties;
 import java.util.Queue;
@@ -1044,6 +1045,20 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
         Throwable t = new Throwable("Throwable");
 
         assertEquals(t.getMessage(), ((Throwable)marshalUnmarshal(t)).getMessage());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testNestedReadWriteObject() throws Exception {
+        NestedReadWriteObject[] arr = new NestedReadWriteObject[5];
+        arr[0] = new NestedReadWriteObject(null, null, 1, "n1");
+        arr[1] = new NestedReadWriteObject(arr[0], null, 2, "n2");
+        arr[2] = new NestedReadWriteObject(null, arr[0], 3, "n3");
+        arr[3] = new NestedReadWriteObject(arr[1], arr[2], 4, "n4");
+        arr[4] = new NestedReadWriteObject(arr[3], arr[0], 5, "n4");
+
+        assertTrue(Objects.deepEquals(arr, marshalUnmarshal(arr)));
     }
 
     /**
@@ -2157,6 +2172,77 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
             fields.put("name", "test");
 
             stream.writeFields();
+        }
+    }
+
+
+    /**
+     * Class with custom {@link #writeObject(ObjectOutputStream) writeObject} / {@link #readObject(ObjectInputStream) readObject} implementation uses {@link ObjectOutputStream#writeObject(Object)} / {@link ObjectInputStream#readObject()} internally
+     */
+    private static class NestedReadWriteObject implements Serializable {
+
+        /** */
+        private transient NestedReadWriteObject obj1;
+
+        /** */
+        private transient NestedReadWriteObject obj2;
+
+        /** */
+        private int val;
+
+        /** */
+        private String str;
+
+        /** */
+        public NestedReadWriteObject(NestedReadWriteObject obj1, NestedReadWriteObject obj2, int val, String str) {
+            this.obj1 = obj1;
+            this.obj2 = obj2;
+            this.val = val;
+            this.str = str;
+        }
+
+        /**
+         * @param out Output stream.
+         * @throws IOException In case of error.
+         */
+        private void writeObject(ObjectOutputStream out) throws IOException {
+            out.writeObject(obj1);
+
+            out.defaultWriteObject();
+
+            out.writeObject(obj2);
+        }
+
+        /**
+         * @param in Input stream.
+         * @throws IOException In case of error.
+         * @throws ClassNotFoundException If class not found.
+         */
+        private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
+            obj1 = (NestedReadWriteObject)in.readObject();
+
+            in.defaultReadObject();
+
+            obj2 = (NestedReadWriteObject)in.readObject();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object obj) {
+            if (obj == this)
+                return true;
+            if (!(obj instanceof NestedReadWriteObject))
+                return false;
+            NestedReadWriteObject o = (NestedReadWriteObject) obj;
+            return o.val == val && Objects.equals(o.str, str) && Objects.equals(o.obj1, obj1)
+                && Objects.equals(o.obj2, obj2);
+        }
+
+        @Override public int hashCode() {
+            int result = obj1 != null ? obj1.hashCode() : 0;
+            result = 31 * result + (obj2 != null ? obj2.hashCode() : 0);
+            result = 31 * result + val;
+            result = 31 * result + (str != null ? str.hashCode() : 0);
+            return result;
         }
     }
 }
