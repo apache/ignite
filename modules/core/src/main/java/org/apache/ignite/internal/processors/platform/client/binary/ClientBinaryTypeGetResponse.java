@@ -30,7 +30,7 @@ public class ClientBinaryTypeGetResponse extends ClientResponse {
     private final BinaryMetadata meta;
 
     /**
-     * Ctor.
+     * Constructor.
      *
      * @param requestId Request id.
      */

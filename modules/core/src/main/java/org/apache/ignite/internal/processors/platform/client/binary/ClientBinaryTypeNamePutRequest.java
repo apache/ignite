@@ -39,7 +39,7 @@ public class ClientBinaryTypeNamePutRequest extends ClientRequest {
     private final String typeName;
 
     /**
-     * Ctor.
+     * Constructor.
      *
      * @param reader Reader.
      */

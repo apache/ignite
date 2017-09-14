@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.platform.client.binary;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.platform.client.ClientRequest;
@@ -36,7 +36,7 @@ public class ClientBinaryTypeNameGetRequest extends ClientRequest {
     private final int typeId;
 
     /**
-     * Ctor.
+     * Constructor.
      *
      * @param reader Reader.
      */
@@ -53,8 +53,9 @@ public class ClientBinaryTypeNameGetRequest extends ClientRequest {
             String typeName = ctx.marshallerContext().getClassName(platformId, typeId);
 
             return new ClientStringResponse(requestId(), typeName);
-        } catch (ClassNotFoundException | IgniteCheckedException e) {
-            throw new BinaryObjectException(e);
+        }
+        catch (ClassNotFoundException | IgniteCheckedException e) {
+            throw new IgniteException(e);
         }
     }
 }

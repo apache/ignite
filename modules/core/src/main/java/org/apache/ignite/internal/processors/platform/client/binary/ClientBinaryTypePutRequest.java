@@ -34,7 +34,7 @@ public class ClientBinaryTypePutRequest extends ClientRequest {
     private final BinaryMetadata meta;
 
     /**
-     * Ctor.
+     * Constructor.
      *
      * @param reader Reader.
      */

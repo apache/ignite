@@ -31,7 +31,7 @@ public class ClientBinaryTypeGetRequest extends ClientRequest {
     private final int typeId;
 
     /**
-     * Ctor.
+     * Constructor.
      *
      * @param reader Reader.
      */

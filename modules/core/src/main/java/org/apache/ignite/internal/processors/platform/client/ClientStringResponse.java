@@ -23,13 +23,14 @@ import org.apache.ignite.binary.BinaryRawWriter;
  * Single string response.
  */
 public class ClientStringResponse extends ClientResponse {
-    /** */
+    /** Value. */
     private final String val;
 
     /**
      * Constructor.
      *
      * @param reqId Request id.
+     * @param val Value.
      */
     public ClientStringResponse(long reqId, String val) {
         super(reqId);
