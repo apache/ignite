@@ -246,8 +246,6 @@ class GridDhtPartitionSupplier {
 
                 remainingParts.addAll(d.partitions().historicalMap().keySet());
 
-                long keysCnt = 0;
-
                 for (Integer part : d.partitions().fullSet()) {
                     if (iter.isPartitionMissing(part))
                         continue;
@@ -256,17 +254,15 @@ class GridDhtPartitionSupplier {
 
                     assert loc != null && loc.state() == GridDhtPartitionState.OWNING;
 
-                    keysCnt += grp.offheap().entriesCount(part);
+                    s.addEstimatedKeysCount(grp.offheap().totalPartitionEntriesCount(part));
                 }
 
                 for (Map.Entry<Integer, T2<Long, Long>> e : d.partitions().historicalMap().entrySet()) {
                     if (iter.isPartitionMissing(e.getKey()))
                         continue;
 
-                    keysCnt += (e.getValue().get2() - e.getValue().get1());
+                    s.addEstimatedKeysCount(e.getValue().get2() - e.getValue().get1());
                 }
-
-                s.estimatedKeysCount(keysCnt);
             }
             else {
                 iter = sctx.entryIt;
@@ -291,8 +287,8 @@ class GridDhtPartitionSupplier {
                         if (!reply(node, d, s, scId))
                             return;
 
-                        s = new GridDhtPartitionSupplyMessageV2(d.updateSequence(),
-                            grp.cacheId(),
+                        s = new GridDhtPartitionSupplyMessage(d.updateSequence(),
+                            grp.groupId(),
                             d.topologyVersion(),
                             grp.deploymentEnabled());
                     }
@@ -302,9 +298,11 @@ class GridDhtPartitionSupplier {
 
                 int part = row.partition();
 
+                GridDhtLocalPartition loc = top.localPartition(part, d.topologyVersion(), false);
+
                 assert d.partitions().hasPartition(part);
 
-                if (!iter.isPartitionMissing(part) && !grp.affinity().partitionBelongs(node, part, d.topologyVersion())) {
+                if (!iter.isPartitionMissing(part) && (loc == null || loc.state() != OWNING)) {
                     // Demander no longer needs this partition,
                     // so we send '-1' partition and move on.
                     iter.setPartitionMissing(part);
@@ -337,7 +335,7 @@ class GridDhtPartitionSupplier {
                 info.value(row.value());
 
                 if (preloadPred == null || preloadPred.apply(info))
-                    s.addEntry0(part, info, grp);
+                    s.addEntry0(part, info, grp.shared(), grp.cacheObjectContext());
                 else {
                     if (log.isDebugEnabled())
                         log.debug("Rebalance predicate evaluated to false (will not send " +
@@ -345,7 +343,7 @@ class GridDhtPartitionSupplier {
                 }
 
                 if (iter.isPartitionDone(part)) {
-                    s.last(part);
+                    s.last(part, loc.updateCounter());
 
                     remainingParts.remove(part);
                 }
@@ -360,7 +358,11 @@ class GridDhtPartitionSupplier {
                 int p = remainingIter.next();
 
                 if (iter.isPartitionDone(p)) {
-                    s.last(p);
+                    GridDhtLocalPartition loc = top.localPartition(p, d.topologyVersion(), false);
+
+                    assert loc != null;
+
+                    s.last(p, loc.updateCounter());
 
                     remainingIter.remove();
                 }
