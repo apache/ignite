@@ -637,9 +637,9 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual(vals, newVals);
         }
 
-        /**
-        * <summary>Checks the writing an integer value in varint encoding.</summary>
-        */
+        /// <summary>
+        /// Checks the writing an integer value in varint encoding.
+        /// </summary>
         [Test]
         public void TestWriteUvarint()
         {
