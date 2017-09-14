@@ -5,14 +5,15 @@ $bins = "c:\w\ignite-2.2\ignite.dotnet.bin"
 
 ls $bins | % `
 {
-    if (($_.Extension -eq ".exe") -or ($_.Extension -eq ".dll")) {
-        $projName = [System.IO.Path]::GetFileNameWithoutExtension($_.Name);
+    $projName = [System.IO.Path]::GetFileNameWithoutExtension($_.Name);
 
-        if ($projName.StartsWith("Apache.Ignite")) {
-            $target = "$projName\bin\Release"
-            mkdir -Force $target
+    if ($projName.StartsWith("Apache.Ignite")) {
+        $target = "$projName\bin\Release"
+        mkdir -Force $target
 
-            xcopy /s /y $_.FullName $target
-        }
+        xcopy /s /y $_.FullName $target
     }
 }
+
+# 2. Build packages
+# .\build.bat -skipJava -skipDotNet -jarDirs c:\w\ignite-2.2\apache-ignite-fabric-2.1.0-bin\apache-ignite-fabric-2.1.0-bin\libs

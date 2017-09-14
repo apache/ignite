@@ -126,7 +126,7 @@ mkdir -Force $libsDir; del -Force $libsDir\*.*
 
 ls $jarDirs.Split(',') *.jar -recurse `
    -include "ignite-core*","ignite-indexing*","ignite-shmem*","ignite-spring*","lucene*","h2*","cache-api*","commons-*","spring*" `
-   -exclude "*-sources*","*-javadoc*","*-tests*" `
+   -exclude "*-sources*","*-javadoc*","*-tests*","*optional*" `
    | % { copy -Force $_ $libsDir }
    
 # Restore directory
@@ -134,7 +134,19 @@ cd $PSScriptRoot
 
 
 # 2) Build .NET
-if (!skipDotNet) {
+
+# Detect NuGet
+$ng = "nuget"
+if ((Get-Command $ng -ErrorAction SilentlyContinue) -eq $null) { 
+	$ng = ".\nuget.exe"
+
+	if (-not (Test-Path $ng)) {
+		echo "Downloading NuGet..."
+		(New-Object System.Net.WebClient).DownloadFile("https://dist.nuget.org/win-x86-commandline/v3.3.0/nuget.exe", "nuget.exe");    
+	}
+}
+
+if (!$skipDotNet) {
 	# Detect MSBuild 4.0+
 	for ($i=20; $i -ge 4; $i--) {
 		$regKey = "HKLM:\software\Microsoft\MSBuild\ToolsVersions\$i.0"
@@ -148,17 +160,6 @@ if (!skipDotNet) {
 
 	$msbuildExe = (join-path -path (Get-ItemProperty $regKey)."MSBuildToolsPath" -childpath "msbuild.exe")
 	echo "MSBuild detected at '$msbuildExe'."
-
-	# Detect NuGet
-	$ng = "nuget"
-	if ((Get-Command $ng -ErrorAction SilentlyContinue) -eq $null) { 
-		$ng = ".\nuget.exe"
-
-		if (-not (Test-Path $ng)) {
-			echo "Downloading NuGet..."
-			(New-Object System.Net.WebClient).DownloadFile("https://dist.nuget.org/win-x86-commandline/v3.3.0/nuget.exe", "nuget.exe");    
-		}
-	}
 
 	# Restore NuGet packages
 	echo "Restoring NuGet..."
