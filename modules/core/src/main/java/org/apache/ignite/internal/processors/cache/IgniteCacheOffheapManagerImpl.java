@@ -19,10 +19,12 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
@@ -36,6 +38,11 @@ import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtDemandedPartitionsMap;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteHistoricalIterator;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteRebalanceIteratorImpl;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.CacheSearchRow;
@@ -66,15 +73,18 @@ import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.lang.IgniteRunnable;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.itemId;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
 
@@ -826,51 +836,81 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteRebalanceIterator rebalanceIterator(int part, AffinityTopologyVersion topVer, Long partCntr)
-        throws IgniteCheckedException {
-        final GridIterator<CacheDataRow> it = partitionIterator(part);
+    @Override public GridCloseableIterator<CacheDataRow> reservedIterator(int part,
+        AffinityTopologyVersion topVer) throws IgniteCheckedException {
+        final GridDhtLocalPartition loc = grp.topology().localPartition(part, topVer, false);
 
-        return new IgniteRebalanceIterator() {
-            @Override public boolean historical() {
-                return false;
+        if (loc == null || loc.state() != OWNING || !loc.reserve())
+            return null;
+
+        CacheDataStore data = partitionData(part);
+
+        final GridCursor<? extends CacheDataRow> cur = data.cursor();
+
+        return new GridCloseableIteratorAdapter<CacheDataRow>() {
+            /** */
+            private CacheDataRow next;
+
+            @Override protected CacheDataRow onNext() {
+                CacheDataRow res = next;
+
+                next = null;
+
+                return res;
             }
 
-            @Override public boolean hasNextX() throws IgniteCheckedException {
-                return it.hasNextX();
+            @Override protected boolean onHasNext() throws IgniteCheckedException {
+                if (next != null)
+                    return true;
+
+                if (cur.next())
+                    next = cur.get();
+
+                return next != null;
             }
 
-            @Override public CacheDataRow nextX() throws IgniteCheckedException {
-                return it.nextX();
-            }
+            @Override protected void onClose() throws IgniteCheckedException {
+                assert loc != null && loc.state() == OWNING && loc.reservations() > 0;
 
-            @Override public void removeX() throws IgniteCheckedException {
-                it.removeX();
-            }
-
-            @Override public Iterator<CacheDataRow> iterator() {
-                return it.iterator();
-            }
-
-            @Override public boolean hasNext() {
-                return it.hasNext();
-            }
-
-            @Override public CacheDataRow next() {
-                return it.next();
-            }
-
-            @Override public void close() {
-
-            }
-
-            @Override public boolean isClosed() {
-                return false;
-            }
-
-            @Override public void remove() {
-                throw new UnsupportedOperationException();
+                loc.release();
             }
         };
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteRebalanceIterator rebalanceIterator(IgniteDhtDemandedPartitionsMap parts,
+        final AffinityTopologyVersion topVer)
+        throws IgniteCheckedException {
+
+        final TreeMap<Integer, GridCloseableIterator<CacheDataRow>> iterators = new TreeMap<>();
+        Set<Integer> missing = null;
+
+        for (Integer p : parts.fullSet()) {
+            GridCloseableIterator<CacheDataRow> partIter = reservedIterator(p, topVer);
+
+            if (partIter == null) {
+                if (missing == null)
+                    missing = new HashSet<>();
+
+                missing.add(p);
+            }
+            else
+                iterators.put(p, partIter);
+        }
+
+        IgniteRebalanceIterator iter = new IgniteRebalanceIteratorImpl(iterators, historicalIterator(parts.historicalMap()));
+
+        if (missing != null) {
+            for (Integer p : missing)
+                iter.setPartitionMissing(p);
+        }
+
+        return iter;
+    }
+
+    @Nullable protected IgniteHistoricalIterator historicalIterator(Map<Integer, T2<Long, Long>> partCntrs)
+        throws IgniteCheckedException {
+        return null;
     }
 
     /** {@inheritDoc} */

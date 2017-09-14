@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -45,11 +46,11 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManagerImpl;
-import org.apache.ignite.internal.processors.cache.IgniteRebalanceIterator;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteHistoricalIterator;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeListImpl;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
@@ -62,6 +63,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageParti
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseListImpl;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.lang.GridCursor;
@@ -569,32 +571,28 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteRebalanceIterator rebalanceIterator(int part, AffinityTopologyVersion topVer,
-        Long partCntrSince) throws IgniteCheckedException {
-        if (partCntrSince == null)
-            return super.rebalanceIterator(part, topVer, partCntrSince);
+    @Override @Nullable protected IgniteHistoricalIterator historicalIterator(
+        Map<Integer, T2<Long, Long>> partCntrs) throws IgniteCheckedException {
+        if (partCntrs == null || partCntrs.isEmpty())
+            return null;
 
-        GridCacheDatabaseSharedManager database = (GridCacheDatabaseSharedManager)ctx.database();
+        GridCacheDatabaseSharedManager database = (GridCacheDatabaseSharedManager)grp.shared().database();
 
-        try {
-            WALPointer startPtr = database.searchPartitionCounter(grp.groupId(), part, partCntrSince);
+        FileWALPointer minPtr = null;
 
-            if (startPtr == null) {
-                assert false : "partCntr=" + partCntrSince + ", reservations=" + S.toString(Map.class, database.reservedForPreloading());
+        for (Map.Entry<Integer, T2<Long, Long>> e : partCntrs.entrySet()) {
+            FileWALPointer startPtr = (FileWALPointer)database.searchPartitionCounter(grp.groupId(), e.getKey(), e.getValue().get1());
 
-                return super.rebalanceIterator(part, topVer, partCntrSince);
-            }
+            if (startPtr == null)
+                throw new IgniteCheckedException("Could not find start pointer for partition [part=" + e.getKey() + ", partCntrSince=" + e.getValue().get1() + "]");
 
-            WALIterator it = ctx.wal().replay(startPtr);
-
-            return new RebalanceIteratorAdapter(grp, it, part);
+            if (minPtr == null || startPtr.compareTo(minPtr) == -1)
+                minPtr = startPtr;
         }
-        catch (IgniteCheckedException e) {
-            U.warn(log, "Failed to create WAL-based rebalance iterator (a full partition will transferred to a " +
-                "remote node) [part=" + part + ", partCntrSince=" + partCntrSince + ", err=" + e + ']');
 
-            return super.rebalanceIterator(part, topVer, partCntrSince);
-        }
+        WALIterator it = grp.shared().wal().replay(minPtr);
+
+        return new WALIteratorAdapter(grp, partCntrs, it);
     }
 
     /**
@@ -626,18 +624,18 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     /**
      *
      */
-    private static class RebalanceIteratorAdapter implements IgniteRebalanceIterator {
-        /** Serial version uid. */
-        private static final long serialVersionUID = 0L;
+    private static class WALIteratorAdapter implements IgniteHistoricalIterator {
+        /** Cache context. */
+        private final CacheGroupContext grp;
 
-        /** Cache group caches. */
-        private final Set<Integer> cacheGrpCaches;
+        /** Partition counters map. */
+        private final Map<Integer, T2<Long, Long>> partMap;
+
+        /** Partitions marked as done. */
+        private final Set<Integer> doneParts = new HashSet<>();
 
         /** WAL iterator. */
-        private final WALIterator walIt;
-
-        /** Partition to scan. */
-        private final int part;
+        private WALIterator walIt;
 
         /** */
         private Iterator<DataEntry> entryIt;
@@ -646,21 +644,25 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         private CacheDataRow next;
 
         /**
-         * @param grp Cache group.
+         * @param grp Cache context.
          * @param walIt WAL iterator.
-         * @param part Partition ID.
          */
-        private RebalanceIteratorAdapter(CacheGroupContext grp, WALIterator walIt, int part) {
-            this.cacheGrpCaches = grp.cacheIds();
+        private WALIteratorAdapter(CacheGroupContext grp, Map<Integer, T2<Long, Long>> partMap, WALIterator walIt) {
+            this.grp = grp;
+            this.partMap = partMap;
             this.walIt = walIt;
-            this.part = part;
 
             advance();
         }
 
         /** {@inheritDoc} */
-        @Override public boolean historical() {
-            return true;
+        @Override public boolean contains(int partId) {
+            return partMap.containsKey(partId);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isDone(int partId) {
+            return doneParts.contains(partId);
         }
 
         /** {@inheritDoc} */
@@ -726,11 +728,17 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                     while (entryIt.hasNext()) {
                         DataEntry entry = entryIt.next();
 
-                        if (entry.partitionId() == part && cacheGrpCaches.contains(entry.cacheId())) {
+                        if (grp.cacheIds().contains(entry.cacheId())) {
+                            T2<Long, Long> t = partMap.get(entry.partitionId());
 
-                            next = new DataEntryRow(entry);
+                            if (t != null && entry.partitionCounter() >= t.get1() && entry.partitionCounter() <= t.get2()) {
+                                if (entry.partitionCounter() == t.get2())
+                                    doneParts.add(entry.partitionId());
 
-                            return;
+                                next = new DataEntryRow(entry);
+
+                                return;
+                            }
                         }
                     }
                 }

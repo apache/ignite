@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
@@ -32,6 +33,9 @@ public class GridCacheUpdateTxResult {
     @GridToStringInclude
     private final CacheObject oldVal;
 
+    /** WAL pointer. */
+    @Nullable private final WALPointer walPtr;
+
     /** Partition idx. */
     private long updateCntr;
 
@@ -41,10 +45,12 @@ public class GridCacheUpdateTxResult {
      * @param success Success flag.
      * @param oldVal Old value (if any),
      */
-    GridCacheUpdateTxResult(boolean success, @Nullable CacheObject oldVal) {
+    GridCacheUpdateTxResult(boolean success, @Nullable CacheObject oldVal, @Nullable WALPointer walPtr) {
         this.success = success;
         this.oldVal = oldVal;
+        this.walPtr = walPtr;
     }
+
 
     /**
      * Constructor.
@@ -52,9 +58,10 @@ public class GridCacheUpdateTxResult {
      * @param success Success flag.
      * @param oldVal Old value (if any),
      */
-    GridCacheUpdateTxResult(boolean success, @Nullable CacheObject oldVal, long updateCntr) {
+    GridCacheUpdateTxResult(boolean success, @Nullable CacheObject oldVal, @Nullable WALPointer walPtr, long updateCntr) {
         this.success = success;
         this.oldVal = oldVal;
+        this.walPtr = walPtr;
         this.updateCntr = updateCntr;
     }
 
@@ -77,6 +84,13 @@ public class GridCacheUpdateTxResult {
      */
     @Nullable public CacheObject oldValue() {
         return oldVal;
+    }
+
+    /**
+     * @return WAL pointer.
+     */
+    @Nullable public WALPointer walPtr() {
+        return walPtr;
     }
 
     /** {@inheritDoc} */

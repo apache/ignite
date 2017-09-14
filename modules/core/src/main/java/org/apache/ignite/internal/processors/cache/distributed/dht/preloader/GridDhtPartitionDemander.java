@@ -420,7 +420,7 @@ public class GridDhtPartitionDemander {
             for (Map.Entry<ClusterNode, GridDhtPartitionDemandMessage> e : assigns.entrySet()) {
                 UUID nodeId = e.getKey().id();
 
-                Collection<Integer> parts= e.getValue().partitions();
+                IgniteDhtDemandedPartitionsMap parts = e.getValue().partitions();
 
                 assert parts != null : "Partitions are null [grp=" + grp.cacheOrGroupName() + ", fromNode=" + nodeId + "]";
 
@@ -437,23 +437,33 @@ public class GridDhtPartitionDemander {
 
             GridDhtPartitionDemandMessage d = e.getValue();
 
-            final Collection<Integer> parts = d.partitions();
+            final IgniteDhtDemandedPartitionsMap parts = fut.remaining.get(node.id()).get2();
+//            final Collection<Integer> parts = d.partitions();
 
             U.log(log, "Starting rebalancing [mode=" + cfg.getRebalanceMode() +
                 ", fromNode=" + node.id() + ", partitionsCount=" + parts.size() +
                 ", topology=" + fut.topologyVersion() + ", updateSeq=" + fut.updateSeq + "]");
 
-            final List<Set<Integer>> sParts = new ArrayList<>(lsnrCnt);
+            final List<IgniteDhtDemandedPartitionsMap> sParts = new ArrayList<>(lsnrCnt);
 
             for (int cnt = 0; cnt < lsnrCnt; cnt++)
-                sParts.add(new HashSet<Integer>());
+                sParts.add(new IgniteDhtDemandedPartitionsMap());
 
-            Iterator<Integer> it = parts.iterator();
+            boolean hasReservedStripe = false;
+
+            if (parts.hasHistorical()) {
+                hasReservedStripe = true;
+
+                for (Map.Entry<Integer,T2<Long,Long>> entry : parts.historicalMap().entrySet())
+                    sParts.get(lsnrCnt - 1).addHistorical(entry.getKey(), entry.getValue().get1(), entry.getValue().get2());
+            }
+
+            Iterator<Integer> it = parts.fullSet().iterator();
 
             int cnt = 0;
 
             while (it.hasNext())
-                sParts.get(cnt++ % lsnrCnt).add(it.next());
+                sParts.get(cnt++ % lsnrCnt - (hasReservedStripe ? 1 : 0)).addFull(it.next());
 
             for (cnt = 0; cnt < lsnrCnt; cnt++) {
                 if (!sParts.get(cnt).isEmpty()) {
@@ -512,34 +522,25 @@ public class GridDhtPartitionDemander {
      * @return New demand message.
      */
     private GridDhtPartitionDemandMessage createDemandMessage(GridDhtPartitionDemandMessage old,
-        Collection<Integer> parts) {
-        Map<Integer, Long> partCntrs = null;
-
-        for (Integer part : parts) {
-            try {
-                if (ctx.database().persistenceEnabled()) {
-                    if (partCntrs == null)
-                        partCntrs = new HashMap<>(parts.size(), 1.0f);
-
-                    GridDhtLocalPartition p = grp.topology().localPartition(part, old.topologyVersion(), false);
-
-                    partCntrs.put(part, p.initialUpdateCounter());
-                }
-            }
-            catch (GridDhtInvalidPartitionException ignore) {
-                // Skip this partition.
-            }
-        }
-
-        return new GridDhtPartitionDemandMessage(old, parts, partCntrs);
+        IgniteDhtDemandedPartitionsMap parts) {
+        return new GridDhtPartitionDemandMessage(old, parts);
     }
 
     /**
-     * @param c Partitions.
+     * @param map Partitions.
      * @return String representation of partitions list.
      */
-    private String partitionsList(Collection<Integer> c) {
-        List<Integer> s = new ArrayList<>(c);
+    private String partitionsList(IgniteDhtDemandedPartitionsMap map) {
+        List<Integer> s = new ArrayList<>(map.size());
+
+        for (Integer p : map.fullSet())
+            s.add(p);
+
+        for (Integer p : map.historicalMap().keySet()) {
+            assert !s.contains(p);
+
+            s.add(p);
+        }
 
         Collections.sort(s);
 
@@ -877,7 +878,7 @@ public class GridDhtPartitionDemander {
         private final IgniteLogger log;
 
         /** Remaining. T2: startTime, partitions */
-        private final Map<UUID, T2<Long, Collection<Integer>>> remaining = new HashMap<>();
+        private final Map<UUID, T2<Long, IgniteDhtDemandedPartitionsMap>> remaining = new HashMap<>();
 
         /** Missed. */
         private final Map<UUID, Collection<Integer>> missed = new HashMap<>();
@@ -1055,12 +1056,12 @@ public class GridDhtPartitionDemander {
                 if (grp.eventRecordable(EVT_CACHE_REBALANCE_PART_LOADED))
                     rebalanceEvent(p, EVT_CACHE_REBALANCE_PART_LOADED, exchId.discoveryEvent());
 
-                T2<Long, Collection<Integer>> t = remaining.get(nodeId);
+                T2<Long, IgniteDhtDemandedPartitionsMap> t = remaining.get(nodeId);
 
                 assert t != null : "Remaining not found [grp=" + grp.name() + ", fromNode=" + nodeId +
                     ", part=" + p + "]";
 
-                Collection<Integer> parts = t.get2();
+                IgniteDhtDemandedPartitionsMap parts = t.get2();
 
                 boolean rmvd = parts.remove(p);
 

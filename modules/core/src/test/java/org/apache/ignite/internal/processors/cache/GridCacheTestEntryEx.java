@@ -457,7 +457,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         @Nullable GridCacheVersion dhtVer,
         @Nullable Long updateCntr)
         throws IgniteCheckedException, GridCacheEntryRemovedException {
-        return new GridCacheUpdateTxResult(true, rawPut(val, ttl));
+        return new GridCacheUpdateTxResult(true, rawPut(val, ttl), null);
     }
 
     /** {@inheritDoc} */
@@ -543,7 +543,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
 
         val = null;
 
-        return new GridCacheUpdateTxResult(true, old);
+        return new GridCacheUpdateTxResult(true, old, null);
     }
 
     /** @inheritDoc */
