@@ -982,6 +982,13 @@ public class GridSqlQueryParser {
                 processExtraParam(e.getKey(), e.getValue(), res);
         }
 
+        if (res.affinityKey() == null) {
+            LinkedHashSet<String> pkCols0 = res.primaryKeyColumns();
+
+            if (!F.isEmpty(pkCols0) && pkCols0.size() == 1)
+                res.affinityKey(pkCols0.iterator().next());
+        }
+
         return res;
     }
 
