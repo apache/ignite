@@ -54,6 +54,9 @@ import static java.sql.RowIdLifetime.ROWID_UNSUPPORTED;
  */
 @SuppressWarnings("RedundantCast")
 public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
+    /** Driver name. */
+    public static final String DRIVER_NAME = "Apache Ignite Thin JDBC Driver";
+
     /** Connection. */
     private final JdbcThinConnection conn;
 
@@ -111,7 +114,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
 
     /** {@inheritDoc} */
     @Override public String getDatabaseProductName() throws SQLException {
-        return "Ignite";
+        return "Apache Ignite";
     }
 
     /** {@inheritDoc} */
@@ -121,7 +124,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
 
     /** {@inheritDoc} */
     @Override public String getDriverName() throws SQLException {
-        return "Ignite JDBC Thin Driver";
+        return DRIVER_NAME;
     }
 
     /** {@inheritDoc} */
@@ -1490,7 +1493,6 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
 
     /** {@inheritDoc} */
     @Override public ResultSet getClientInfoProperties() throws SQLException {
-        // TODO: IGNITE-5425.
         return new JdbcThinResultSet(Collections.<List<Object>>emptyList(), Arrays.asList(
             new JdbcColumnMeta(null, null, "NAME", String.class),
             new JdbcColumnMeta(null, null, "MAX_LEN", Integer.class),

@@ -279,6 +279,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Start cache rebalance.
+     */
+    public void enableRebalance() {
+        for (IgniteCacheProxy c : publicCaches())
+            c.rebalance();
+    }
+
+    /**
      * Create exchange worker task for custom discovery message.
      *
      * @param msg Custom discovery message.
@@ -1016,7 +1024,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                     assert desc != null : cctx.name();
 
-                    ctx.query().onCacheStop0(cctx.name());
+                    ctx.query().onCacheStop0(cctx.name(), false);
                     ctx.query().onCacheStart0(cctx, desc.schema());
                 }
             }
@@ -1142,7 +1150,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         cache.stop();
 
-        ctx.kernalContext().query().onCacheStop(ctx);
+        ctx.kernalContext().query().onCacheStop(ctx, destroy);
 
         if (isNearEnabled(ctx)) {
             GridDhtCacheAdapter dht = ctx.near().dht();
