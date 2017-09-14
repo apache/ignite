@@ -182,6 +182,7 @@ public class BinarySerializedFieldComparator {
 
     /**
      * Reads value of length of an array, which can be presented in default format or varint encoding.
+     *
      * <a href="https://developers.google.com/protocol-buffers/docs/encoding#varints">Varint encoding description.</a>
      *
      * If you need to know number of bytes which were used for storage of the read value,

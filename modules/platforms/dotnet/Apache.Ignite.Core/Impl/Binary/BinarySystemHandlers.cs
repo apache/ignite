@@ -52,19 +52,19 @@ namespace Apache.Ignite.Core.Impl.Binary
             ReadHandlers[BinaryTypeId.Long] = new BinarySystemReader<long>(s => s.ReadLong());
             ReadHandlers[BinaryTypeId.Float] = new BinarySystemReader<float>(s => s.ReadFloat());
             ReadHandlers[BinaryTypeId.Double] = new BinarySystemReader<double>(s => s.ReadDouble());
-            ReadHandlers[BinaryTypeId.Decimal] = new BinarySystemArrayReader<decimal?>(BinaryUtils.ReadDecimal);
+            ReadHandlers[BinaryTypeId.Decimal] = new BinarySystemVarintSupportReader<decimal?>(BinaryUtils.ReadDecimal);
 
             // 2. Date.
             ReadHandlers[BinaryTypeId.Timestamp] = new BinarySystemReader<DateTime?>(BinaryUtils.ReadTimestamp);
 
             // 3. String.
-            ReadHandlers[BinaryTypeId.String] = new BinarySystemArrayReader<string>(BinaryUtils.ReadString);
+            ReadHandlers[BinaryTypeId.String] = new BinarySystemVarintSupportReader<string>(BinaryUtils.ReadString);
 
             // 4. Guid.
             ReadHandlers[BinaryTypeId.Guid] = new BinarySystemReader<Guid?>(s => BinaryUtils.ReadGuid(s));
 
             // 5. Primitive arrays.
-            ReadHandlers[BinaryTypeId.ArrayBool] = new BinarySystemArrayReader<bool[]>(BinaryUtils.ReadBooleanArray);
+            ReadHandlers[BinaryTypeId.ArrayBool] = new BinarySystemVarintSupportReader<bool[]>(BinaryUtils.ReadBooleanArray);
 
             ReadHandlers[BinaryTypeId.ArrayByte] =
                 new BinarySystemDualReader<byte[], sbyte[]>(BinaryUtils.ReadByteArray, BinaryUtils.ReadSbyteArray);
@@ -74,7 +74,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                     BinaryUtils.ReadUshortArray);
 
             ReadHandlers[BinaryTypeId.ArrayChar] = 
-                new BinarySystemArrayReader<char[]>(BinaryUtils.ReadCharArray);
+                new BinarySystemVarintSupportReader<char[]>(BinaryUtils.ReadCharArray);
 
             ReadHandlers[BinaryTypeId.ArrayInt] =
                 new BinarySystemDualReader<int[], uint[]>(BinaryUtils.ReadIntArray, BinaryUtils.ReadUintArray);
@@ -84,17 +84,17 @@ namespace Apache.Ignite.Core.Impl.Binary
                     BinaryUtils.ReadUlongArray);
 
             ReadHandlers[BinaryTypeId.ArrayFloat] =
-                new BinarySystemArrayReader<float[]>(BinaryUtils.ReadFloatArray);
+                new BinarySystemVarintSupportReader<float[]>(BinaryUtils.ReadFloatArray);
 
             ReadHandlers[BinaryTypeId.ArrayDouble] =
-                new BinarySystemArrayReader<double[]>(BinaryUtils.ReadDoubleArray);
+                new BinarySystemVarintSupportReader<double[]>(BinaryUtils.ReadDoubleArray);
 
             ReadHandlers[BinaryTypeId.ArrayDecimal] =
-                new BinarySystemArrayReader<decimal?[]>(BinaryUtils.ReadDecimalArray);
+                new BinarySystemVarintSupportReader<decimal?[]>(BinaryUtils.ReadDecimalArray);
 
             // 6. Date array.
             ReadHandlers[BinaryTypeId.ArrayTimestamp] =
-                new BinarySystemArrayReader<DateTime?[]>(BinaryUtils.ReadTimestampArray);
+                new BinarySystemVarintSupportReader<DateTime?[]>(BinaryUtils.ReadTimestampArray);
 
             // 7. String array.
             ReadHandlers[BinaryTypeId.ArrayString] = new BinarySystemTypedArrayReader<string>();
@@ -622,9 +622,9 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
-        /// Reader without boxing.
+        /// Support varint reader without boxing.
         /// </summary>
-        private class BinarySystemArrayReader<T> : IBinarySystemReader
+        private class BinarySystemVarintSupportReader<T> : IBinarySystemReader
         {
             /** */
             private readonly Func<IBinaryStream, bool, T> _readDelegate;
@@ -633,7 +633,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             /// Initializes a new instance of the <see cref="BinarySystemReader{T}"/> class.
             /// </summary>
             /// <param name="readDelegate">The read delegate.</param>
-            public BinarySystemArrayReader(Func<IBinaryStream, bool, T> readDelegate)
+            public BinarySystemVarintSupportReader(Func<IBinaryStream, bool, T> readDelegate)
             {
                 Debug.Assert(readDelegate != null);
 
