@@ -23,7 +23,7 @@ import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 /**
  * Type name response.
  */
-public class ClientGetBinaryTypeNameResponse extends ClientResponse {
+public class ClientBinaryTypeNameGetResponse extends ClientResponse {
     /** Type name. */
     private final String typeName;
 
@@ -32,7 +32,7 @@ public class ClientGetBinaryTypeNameResponse extends ClientResponse {
      *
      * @param requestId Request id.
      */
-    ClientGetBinaryTypeNameResponse(long requestId, String typeName) {
+    ClientBinaryTypeNameGetResponse(long requestId, String typeName) {
         super(requestId);
 
         this.typeName = typeName;

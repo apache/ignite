@@ -17,40 +17,35 @@
 
 package org.apache.ignite.internal.processors.platform.client.binary;
 
-import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.binary.BinaryContext;
+import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.internal.binary.BinaryMetadata;
-import org.apache.ignite.internal.binary.BinaryRawReaderEx;
-import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
-import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 
 /**
- * Binary types update request.
+ * Binary meta response.
  */
-public class ClientPutBinaryTypeRequest extends ClientRequest {
+public class ClientBinaryTypeGetResponse extends ClientResponse {
     /** Meta. */
     private final BinaryMetadata meta;
 
     /**
      * Ctor.
      *
-     * @param reader Reader.
+     * @param requestId Request id.
      */
-    public ClientPutBinaryTypeRequest(BinaryRawReaderEx reader) {
-        super(reader);
+    ClientBinaryTypeGetResponse(long requestId, BinaryMetadata meta) {
+        super(requestId);
 
-        meta = PlatformUtils.readBinaryMetadata(reader);
+        assert meta != null;
+
+        this.meta = meta;
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override public ClientResponse process(GridKernalContext ctx) {
-        BinaryContext binCtx = ((CacheObjectBinaryProcessorImpl) ctx.cacheObjects()).binaryContext();
+    @Override public void encode(BinaryRawWriter writer) {
+        super.encode(writer);
 
-        binCtx.updateMetadata(meta.typeId(), meta);
-
-        return super.process(ctx);
+        PlatformUtils.writeBinaryMetadata(writer, meta, true);
     }
 }

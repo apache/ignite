@@ -18,47 +18,42 @@
 package org.apache.ignite.internal.processors.platform.client.binary;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
+import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.platform.client.ClientBooleanResponse;
 import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 
 /**
  * Gets binary type name by id.
  */
-public class ClientRegisterBinaryTypeNameRequest extends ClientRequest {
+public class ClientBinaryTypeNameGetRequest extends ClientRequest {
     /** Platform ID, see org.apache.ignite.internal.MarshallerPlatformIds. */
     private final byte platformId;
 
     /** Type id. */
     private final int typeId;
 
-    /** Type name. */
-    private final String typeName;
-
     /**
      * Ctor.
      *
      * @param reader Reader.
      */
-    public ClientRegisterBinaryTypeNameRequest(BinaryRawReader reader) {
+    public ClientBinaryTypeNameGetRequest(BinaryRawReader reader) {
         super(reader);
 
         platformId = reader.readByte();
         typeId = reader.readInt();
-        typeName = reader.readString();
     }
 
     /** {@inheritDoc} */
     @Override public ClientResponse process(GridKernalContext ctx) {
         try {
-            boolean res = ctx.marshallerContext().registerClassName(platformId, typeId, typeName);
+            String typeName = ctx.marshallerContext().getClassName(platformId, typeId);
 
-            return new ClientBooleanResponse(requestId(), res);
-        } catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
+            return new ClientBinaryTypeNameGetResponse(requestId(), typeName);
+        } catch (ClassNotFoundException | IgniteCheckedException e) {
+            throw new BinaryObjectException(e);
         }
     }
 }

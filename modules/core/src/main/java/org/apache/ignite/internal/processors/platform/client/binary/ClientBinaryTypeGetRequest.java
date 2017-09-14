@@ -17,20 +17,16 @@
 
 package org.apache.ignite.internal.processors.platform.client.binary;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.binary.BinaryTypeImpl;
 import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 
 /**
- * Gets binary type name by id.
+ * Binary type schema request.
  */
-public class ClientGetBinaryTypeNameRequest extends ClientRequest {
-    /** Platform ID, see org.apache.ignite.internal.MarshallerPlatformIds. */
-    private final byte platformId;
-
+public class ClientBinaryTypeGetRequest extends ClientRequest {
     /** Type id. */
     private final int typeId;
 
@@ -39,21 +35,16 @@ public class ClientGetBinaryTypeNameRequest extends ClientRequest {
      *
      * @param reader Reader.
      */
-    public ClientGetBinaryTypeNameRequest(BinaryRawReader reader) {
+    public ClientBinaryTypeGetRequest(BinaryRawReader reader) {
         super(reader);
 
-        platformId = reader.readByte();
         typeId = reader.readInt();
     }
 
     /** {@inheritDoc} */
     @Override public ClientResponse process(GridKernalContext ctx) {
-        try {
-            String typeName = ctx.marshallerContext().getClassName(platformId, typeId);
+        BinaryTypeImpl type = (BinaryTypeImpl) ctx.cacheObjects().binary().type(typeId);
 
-            return new ClientGetBinaryTypeNameResponse(requestId(), typeName);
-        } catch (ClassNotFoundException | IgniteCheckedException e) {
-            throw new BinaryObjectException(e);
-        }
+        return new ClientBinaryTypeGetResponse(requestId(), type.metadata());
     }
 }
