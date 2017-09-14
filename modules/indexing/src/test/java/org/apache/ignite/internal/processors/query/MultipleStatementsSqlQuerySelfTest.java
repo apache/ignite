@@ -18,10 +18,12 @@
 package org.apache.ignite.internal.processors.query;
 
 import java.util.List;
+import java.util.concurrent.Callable;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -132,5 +134,21 @@ public class MultipleStatementsSqlQuerySelfTest extends GridCommonAbstractTest {
                 || Integer.valueOf(3).equals(rows.get(i).get(0))
                 : "Invalid ID: " + rows.get(i).get(0);
         }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testQueryMultipleStatementsFailed() throws Exception {
+        final SqlFieldsQuery qry = new SqlFieldsQuery("select 1; select 1;").setSchema("PUBLIC");
+
+        GridTestUtils.assertThrows(log,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    node.context().query().querySqlFieldsNoCache(qry, true);
+
+                    return null;
+                }
+            }, IgniteSQLException.class, "Multiple statements queries are not supported");
     }
 }
