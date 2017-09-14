@@ -126,7 +126,7 @@ public abstract class SqlListenerUtils {
                 return BinaryUtils.doReadTimeArray(reader.in(), reader.isUseVarintArrayLength());
 
             case GridBinaryMarshaller.TIMESTAMP_ARR:
-                return BinaryUtils.doReadTimeArray(reader.in(), reader.isUseVarintArrayLength());
+                return BinaryUtils.doReadTimestampArray(reader.in(), reader.isUseVarintArrayLength());
 
             case GridBinaryMarshaller.DATE_ARR:
                 return BinaryUtils.doReadDateArray(reader.in(), reader.isUseVarintArrayLength());

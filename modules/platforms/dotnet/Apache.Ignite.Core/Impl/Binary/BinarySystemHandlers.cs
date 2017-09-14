@@ -52,49 +52,49 @@ namespace Apache.Ignite.Core.Impl.Binary
             ReadHandlers[BinaryTypeId.Long] = new BinarySystemReader<long>(s => s.ReadLong());
             ReadHandlers[BinaryTypeId.Float] = new BinarySystemReader<float>(s => s.ReadFloat());
             ReadHandlers[BinaryTypeId.Double] = new BinarySystemReader<double>(s => s.ReadDouble());
-            ReadHandlers[BinaryUtils.TypeDecimal] = new BinarySystemVarintReader<decimal?>(BinaryUtils.ReadDecimal);
+            ReadHandlers[BinaryTypeId.Decimal] = new BinarySystemArrayReader<decimal?>(BinaryUtils.ReadDecimal);
 
             // 2. Date.
             ReadHandlers[BinaryTypeId.Timestamp] = new BinarySystemReader<DateTime?>(BinaryUtils.ReadTimestamp);
 
             // 3. String.
-            ReadHandlers[BinaryUtils.TypeString] = new BinarySystemVarintReader<string>(BinaryUtils.ReadString);
+            ReadHandlers[BinaryTypeId.String] = new BinarySystemArrayReader<string>(BinaryUtils.ReadString);
 
             // 4. Guid.
             ReadHandlers[BinaryTypeId.Guid] = new BinarySystemReader<Guid?>(s => BinaryUtils.ReadGuid(s));
 
             // 5. Primitive arrays.
-            ReadHandlers[BinaryUtils.TypeArrayBool] = new BinarySystemVarintReader<bool[]>(BinaryUtils.ReadBooleanArray);
+            ReadHandlers[BinaryTypeId.ArrayBool] = new BinarySystemArrayReader<bool[]>(BinaryUtils.ReadBooleanArray);
 
             ReadHandlers[BinaryTypeId.ArrayByte] =
-                new BinarySystemVarintDualReader<byte[], sbyte[]>(BinaryUtils.ReadByteArray, BinaryUtils.ReadSbyteArray);
+                new BinarySystemDualReader<byte[], sbyte[]>(BinaryUtils.ReadByteArray, BinaryUtils.ReadSbyteArray);
             
             ReadHandlers[BinaryTypeId.ArrayShort] =
-                new BinarySystemVarintDualReader<short[], ushort[]>(BinaryUtils.ReadShortArray,
+                new BinarySystemDualReader<short[], ushort[]>(BinaryUtils.ReadShortArray,
                     BinaryUtils.ReadUshortArray);
 
             ReadHandlers[BinaryTypeId.ArrayChar] = 
-                new BinarySystemVarintReader<char[]>(BinaryUtils.ReadCharArray);
+                new BinarySystemArrayReader<char[]>(BinaryUtils.ReadCharArray);
 
             ReadHandlers[BinaryTypeId.ArrayInt] =
-                new BinarySystemVarintDualReader<int[], uint[]>(BinaryUtils.ReadIntArray, BinaryUtils.ReadUintArray);
+                new BinarySystemDualReader<int[], uint[]>(BinaryUtils.ReadIntArray, BinaryUtils.ReadUintArray);
             
             ReadHandlers[BinaryTypeId.ArrayLong] =
-                new BinarySystemVarintDualReader<long[], ulong[]>(BinaryUtils.ReadLongArray, 
+                new BinarySystemDualReader<long[], ulong[]>(BinaryUtils.ReadLongArray, 
                     BinaryUtils.ReadUlongArray);
 
             ReadHandlers[BinaryTypeId.ArrayFloat] =
-                new BinarySystemVarintReader<float[]>(BinaryUtils.ReadFloatArray);
+                new BinarySystemArrayReader<float[]>(BinaryUtils.ReadFloatArray);
 
             ReadHandlers[BinaryTypeId.ArrayDouble] =
-                new BinarySystemVarintReader<double[]>(BinaryUtils.ReadDoubleArray);
+                new BinarySystemArrayReader<double[]>(BinaryUtils.ReadDoubleArray);
 
             ReadHandlers[BinaryTypeId.ArrayDecimal] =
-                new BinarySystemVarintReader<decimal?[]>(BinaryUtils.ReadDecimalArray);
+                new BinarySystemArrayReader<decimal?[]>(BinaryUtils.ReadDecimalArray);
 
             // 6. Date array.
             ReadHandlers[BinaryTypeId.ArrayTimestamp] =
-                new BinarySystemVarintReader<DateTime?[]>(BinaryUtils.ReadTimestampArray);
+                new BinarySystemArrayReader<DateTime?[]>(BinaryUtils.ReadTimestampArray);
 
             // 7. String array.
             ReadHandlers[BinaryTypeId.ArrayString] = new BinarySystemTypedArrayReader<string>();
@@ -624,7 +624,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Reader without boxing.
         /// </summary>
-        private class BinarySystemVarintReader<T> : IBinarySystemReader
+        private class BinarySystemArrayReader<T> : IBinarySystemReader
         {
             /** */
             private readonly Func<IBinaryStream, bool, T> _readDelegate;
@@ -633,7 +633,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             /// Initializes a new instance of the <see cref="BinarySystemReader{T}"/> class.
             /// </summary>
             /// <param name="readDelegate">The read delegate.</param>
-            public BinarySystemVarintReader(Func<IBinaryStream, bool, T> readDelegate)
+            public BinarySystemArrayReader(Func<IBinaryStream, bool, T> readDelegate)
             {
                 Debug.Assert(readDelegate != null);
 
@@ -661,7 +661,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Reader with selection based on requested type.
         /// </summary>
-        private class BinarySystemVarintDualReader<T1, T2> : IBinarySystemReader, IBinarySystemReader<T2>
+        private class BinarySystemDualReader<T1, T2> : IBinarySystemReader, IBinarySystemReader<T2>
         {
             /** */
             private readonly Func<IBinaryStream, bool, T1> _readDelegate1;
@@ -670,11 +670,11 @@ namespace Apache.Ignite.Core.Impl.Binary
             private readonly Func<IBinaryStream, bool, T2> _readDelegate2;
 
             /// <summary>
-            /// Initializes a new instance of the <see cref="BinarySystemVarintDualReader{T1,T2}"/> class.
+            /// Initializes a new instance of the <see cref="BinarySystemDualReader{T1,T2}"/> class.
             /// </summary>
             /// <param name="readDelegate1">The read delegate1.</param>
             /// <param name="readDelegate2">The read delegate2.</param>
-            public BinarySystemVarintDualReader(Func<IBinaryStream, bool, T1> readDelegate1, Func<IBinaryStream, bool, T2> readDelegate2)
+            public BinarySystemDualReader(Func<IBinaryStream, bool, T1> readDelegate1, Func<IBinaryStream, bool, T2> readDelegate2)
             {
                 Debug.Assert(readDelegate1 != null);
                 Debug.Assert(readDelegate2 != null);

@@ -2755,8 +2755,7 @@ public class BinaryUtils {
     }
 
     /**
-     * Reads via given pointer an integer value which is presented in varint encoding. Starts reading from given
-     * offset.
+     * Reads via given pointer an integer value which is presented in varint encoding. Starts reading from given offset.
      *
      * <a href="https://developers.google.com/protocol-buffers/docs/encoding#varints">Varint encoding description.</a>
      *
@@ -2782,8 +2781,9 @@ public class BinaryUtils {
     }
 
     /**
-     * Returns the encoded size of the given unsigned an integer value. <a href="https://developers.google.com/protocol-buffers/docs/encoding#varints">Varint
-     * encoding description.</a>
+     * Returns the encoded size of the given unsigned an integer value.
+     *
+     * <a href="https://developers.google.com/protocol-buffers/docs/encoding#varints">Varint encoding description.</a>
      *
      * @param val Value to be encoded.
      * @return Encoded size.
