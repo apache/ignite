@@ -28,7 +28,7 @@ import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 /**
  * Gets binary type name by id.
  */
-public class ClientRegisterBinaryTypeNameRequest extends ClientRequest {
+public class ClientBinaryTypeNamePutRequest extends ClientRequest {
     /** Platform ID, see org.apache.ignite.internal.MarshallerPlatformIds. */
     private final byte platformId;
 
@@ -43,7 +43,7 @@ public class ClientRegisterBinaryTypeNameRequest extends ClientRequest {
      *
      * @param reader Reader.
      */
-    public ClientRegisterBinaryTypeNameRequest(BinaryRawReader reader) {
+    public ClientBinaryTypeNamePutRequest(BinaryRawReader reader) {
         super(reader);
 
         platformId = reader.readByte();
@@ -57,7 +57,8 @@ public class ClientRegisterBinaryTypeNameRequest extends ClientRequest {
             boolean res = ctx.marshallerContext().registerClassName(platformId, typeId, typeName);
 
             return new ClientBooleanResponse(requestId(), res);
-        } catch (IgniteCheckedException e) {
+        }
+        catch (IgniteCheckedException e) {
             throw new IgniteException(e);
         }
     }

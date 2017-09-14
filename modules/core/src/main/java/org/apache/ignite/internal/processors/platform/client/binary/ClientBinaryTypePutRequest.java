@@ -17,43 +17,40 @@
 
 package org.apache.ignite.internal.processors.platform.client.binary;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.binary.BinaryContext;
+import org.apache.ignite.internal.binary.BinaryMetadata;
+import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
+import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 
 /**
- * Gets binary type name by id.
+ * Binary types update request.
  */
-public class ClientGetBinaryTypeNameRequest extends ClientRequest {
-    /** Platform ID, see org.apache.ignite.internal.MarshallerPlatformIds. */
-    private final byte platformId;
-
-    /** Type id. */
-    private final int typeId;
+public class ClientBinaryTypePutRequest extends ClientRequest {
+    /** Meta. */
+    private final BinaryMetadata meta;
 
     /**
      * Ctor.
      *
      * @param reader Reader.
      */
-    public ClientGetBinaryTypeNameRequest(BinaryRawReader reader) {
+    public ClientBinaryTypePutRequest(BinaryRawReaderEx reader) {
         super(reader);
 
-        platformId = reader.readByte();
-        typeId = reader.readInt();
+        meta = PlatformUtils.readBinaryMetadata(reader);
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public ClientResponse process(GridKernalContext ctx) {
-        try {
-            String typeName = ctx.marshallerContext().getClassName(platformId, typeId);
+        BinaryContext binCtx = ((CacheObjectBinaryProcessorImpl) ctx.cacheObjects()).binaryContext();
 
-            return new ClientGetBinaryTypeNameResponse(requestId(), typeName);
-        } catch (ClassNotFoundException | IgniteCheckedException e) {
-            throw new BinaryObjectException(e);
-        }
+        binCtx.updateMetadata(meta.typeId(), meta);
+
+        return super.process(ctx);
     }
 }
