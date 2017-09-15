@@ -18,7 +18,9 @@
 namespace Apache.Ignite.Core.Tests.Client.Cache
 {
     using System;
+    using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Query;
@@ -41,9 +43,16 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         /// Tests scan query without filter.
         /// </summary>
         [Test]
+        [SuppressMessage("ReSharper", "ReturnValueOfPureMethodIsNotUsed")]
         public void TestNoFilter()
         {
             var cache = GetPersonCache();
+
+            Action<IEnumerable<ICacheEntry<int, Person>>> checkResults = e =>
+            {
+                Assert.AreEqual(cache.Select(x => x.Value.Name).OrderBy(x => x).ToArray(),
+                    e.Select(x => x.Value.Name).OrderBy(x => x).ToArray());
+            };
 
             using (var client = GetClient())
             {
@@ -51,19 +60,22 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 
                 var query = new ScanQuery<int, Person>();
 
-                // GetAll is not supported.
+                // GetAll.
                 var cursor = clientCache.Query(query);
-                Assert.Throws<NotSupportedException>(() => cursor.GetAll());
+                checkResults(cursor.GetAll());
+
+                // Can't iterate or call GetAll again.
+                Assert.Throws<InvalidOperationException>(() => cursor.ToArray());
+                Assert.Throws<InvalidOperationException>(() => cursor.GetAll());
 
                 // Iterator.
                 using (cursor = clientCache.Query(query))
                 {
-                    var res = cursor.Select(x => x.Value.Name).OrderBy(x => x).ToArray();
-                    Assert.AreEqual(cache.Select(x => x.Value.Name).OrderBy(x => x).ToArray(), res);
+                    checkResults(cursor.ToArray());
 
-                    // Can't iterate twice.
-                    // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
+                    // Can't iterate or call GetAll again.
                     Assert.Throws<InvalidOperationException>(() => cursor.ToArray());
+                    Assert.Throws<InvalidOperationException>(() => cursor.GetAll());
                 }
 
                 // Partial iterator.
