@@ -737,7 +737,7 @@ namespace Apache.Ignite.Core
         /// Thin client connects to an existing Ignite node with a socket and does not start JVM in process.
         /// </summary>
         /// <returns>Ignite instance.</returns>
-        public static IIgnite GetClient()
+        public static IIgniteClient GetClient()
         {
             return new IgniteClient(new IgniteClientConfiguration());
         }
@@ -749,7 +749,7 @@ namespace Apache.Ignite.Core
         /// </summary>
         /// <param name="clientConfiguration">The client configuration.</param>
         /// <returns>Ignite instance.</returns>
-        public static IIgnite GetClient(IgniteClientConfiguration clientConfiguration)
+        public static IIgniteClient GetClient(IgniteClientConfiguration clientConfiguration)
         {
             return new IgniteClient(clientConfiguration);
         }

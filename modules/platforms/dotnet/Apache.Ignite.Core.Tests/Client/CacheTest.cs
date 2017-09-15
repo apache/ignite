@@ -103,6 +103,9 @@ namespace Apache.Ignite.Core.Tests.Client
                 var serverCache = GetCache<Person>();
                 var clientCache = client.GetCache<int?, Person>(CacheName);
 
+                Assert.AreEqual(client, clientCache.Ignite);
+                Assert.AreEqual(CacheName, clientCache.Name);
+
                 // Put through server cache.
                 serverCache.Put(1, person);
 
@@ -156,7 +159,7 @@ namespace Apache.Ignite.Core.Tests.Client
             GetCache<string>().Put(1, "foo");
 
             // One client per thread.
-            ConcurrentDictionary<int, IIgnite> clients = new ConcurrentDictionary<int, IIgnite>();
+            var clients = new ConcurrentDictionary<int, IIgniteClient>();
 
             TestUtils.RunMultiThreaded(() =>
                 {
@@ -182,7 +185,7 @@ namespace Apache.Ignite.Core.Tests.Client
         /// <summary>
         /// Gets the client.
         /// </summary>
-        private static IIgnite GetClient()
+        private static IIgniteClient GetClient()
         {
             return Ignition.GetClient(GetClientConfiguration());
         }
