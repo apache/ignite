@@ -59,9 +59,9 @@ namespace Apache.Ignite.Core.Client.Cache
         TV this[TK key] { get; set; }
 
         /// <summary>
-        /// Exectutes a Scan query.
+        /// Executes a Scan query.
         /// </summary>
-        /// <param name="query">Scan Query.</param>
+        /// <param name="query">Scan query.</param>
         /// <returns>Query cursor.</returns>
         IQueryCursor<ICacheEntry<TK, TV>> Query(ScanQuery<TK, TV> query);
     }
