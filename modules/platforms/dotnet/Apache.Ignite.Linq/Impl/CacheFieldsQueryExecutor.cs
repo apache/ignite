@@ -207,7 +207,8 @@ namespace Apache.Ignite.Linq.Impl
                 ReplicatedOnly = _options.ReplicatedOnly,
                 Colocated = _options.Colocated,
                 Local = _options.Local,
-                Arguments = args
+                Arguments = args,
+                Lazy = _options.Lazy
             };
         }
 

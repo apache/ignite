@@ -17,12 +17,12 @@
 
 package org.apache.ignite.internal.processors.odbc.odbc;
 
-import org.apache.ignite.internal.processors.odbc.SqlListenerRequest;
+import org.apache.ignite.internal.processors.odbc.SqlListenerRequestNoId;
 
 /**
  * SQL listener command request.
  */
-public class OdbcRequest extends SqlListenerRequest {
+public class OdbcRequest extends SqlListenerRequestNoId {
     /** Execute sql query. */
     public static final int QRY_EXEC = 2;
 

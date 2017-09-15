@@ -15,23 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
-
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+package org.apache.ignite.internal.processors.cache.index;
 
 /**
- * Distributed future aware of MVCC locking.
+ * Test to check {@code ALTER TABLE} operations started from client node.
  */
-public interface GridCacheMvccFuture<T> extends GridCacheFuture<T> {
-    /**
-     * @return Future version.
-     */
-    public GridCacheVersion version();
-
-    /**
-     * @param entry Entry which received new owner.
-     * @param owner Owner.
-     * @return {@code True} if future cares about this entry.
-     */
-    public boolean onOwnerChanged(GridCacheEntryEx entry, GridCacheMvccCandidate owner);
+public class H2DynamicColumnsClientBasicSelfTest extends H2DynamicColumnsAbstractBasicSelfTest {
+    /** {@inheritDoc} */
+    @Override protected int nodeIndex() {
+        return CLI_IDX;
+    }
 }

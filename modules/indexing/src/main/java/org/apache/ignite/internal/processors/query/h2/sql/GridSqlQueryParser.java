@@ -30,6 +30,7 @@ import java.util.Map;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
@@ -38,8 +39,10 @@ import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.h2.command.Command;
 import org.h2.command.CommandContainer;
+import org.h2.command.CommandInterface;
 import org.h2.command.Prepared;
 import org.h2.command.ddl.AlterTableAddConstraint;
+import org.h2.command.ddl.AlterTableAlterColumn;
 import org.h2.command.ddl.CreateIndex;
 import org.h2.command.ddl.CreateTable;
 import org.h2.command.ddl.CreateTableData;
@@ -393,6 +396,30 @@ public class GridSqlQueryParser {
     private static final Getter<Column, Expression> COLUMN_CHECK_CONSTRAINT = getter(Column.class, "checkConstraint");
 
     /** */
+    private static final Getter<AlterTableAlterColumn, String> ALTER_COLUMN_TBL_NAME =
+        getter(AlterTableAlterColumn.class, "tableName");
+
+    /** */
+    private static final Getter<AlterTableAlterColumn, ArrayList<Column>> ALTER_COLUMN_NEW_COLS =
+        getter(AlterTableAlterColumn.class, "columnsToAdd");
+
+    /** */
+    private static final Getter<AlterTableAlterColumn, Boolean> ALTER_COLUMN_IF_NOT_EXISTS =
+        getter(AlterTableAlterColumn.class, "ifNotExists");
+
+    /** */
+    private static final Getter<AlterTableAlterColumn, Boolean> ALTER_COLUMN_IF_TBL_EXISTS =
+        getter(AlterTableAlterColumn.class, "ifTableExists");
+
+    /** */
+    private static final Getter<AlterTableAlterColumn, String> ALTER_COLUMN_BEFORE_COL =
+        getter(AlterTableAlterColumn.class, "addBefore");
+
+    /** */
+    private static final Getter<AlterTableAlterColumn, String> ALTER_COLUMN_AFTER_COL =
+        getter(AlterTableAlterColumn.class, "addAfter");
+
+    /** */
     private static final String PARAM_NAME_VALUE_SEPARATOR = "=";
 
     /** */
@@ -409,6 +436,9 @@ public class GridSqlQueryParser {
 
     /** */
     private static final String PARAM_AFFINITY_KEY = "AFFINITYKEY";
+
+    /** */
+    private static final String PARAM_WRITE_SYNC = "WRITE_SYNCHRONIZATION_MODE";
 
     /** */
     private final IdentityHashMap<Object, Object> h2ObjToGridObj = new IdentityHashMap<>();
@@ -885,41 +915,8 @@ public class GridSqlQueryParser {
 
         LinkedHashMap<String, GridSqlColumn> cols = new LinkedHashMap<>(data.columns.size());
 
-        for (Column col : data.columns) {
-            if (col.isAutoIncrement())
-                throw new IgniteSQLException("AUTO_INCREMENT columns are not supported [colName=" + col.getName() + ']',
-                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
-
-            if (!col.isNullable())
-                throw new IgniteSQLException("Non nullable columns are forbidden [colName=" + col.getName() + ']',
-                    IgniteQueryErrorCode.PARSING);
-
-            if (COLUMN_IS_COMPUTED.get(col))
-                throw new IgniteSQLException("Computed columns are not supported [colName=" + col.getName() + ']',
-                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
-
-            if (col.getDefaultExpression() != null)
-                throw new IgniteSQLException("DEFAULT expressions are not supported [colName=" + col.getName() + ']',
-                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
-
-            if (col.getSequence() != null)
-                throw new IgniteSQLException("SEQUENCE columns are not supported [colName=" + col.getName() + ']',
-                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
-
-            if (col.getSelectivity() != Constants.SELECTIVITY_DEFAULT)
-                throw new IgniteSQLException("SELECTIVITY column attr is not supported [colName=" + col.getName() + ']',
-                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
-
-            if (COLUMN_CHECK_CONSTRAINT.get(col) != null)
-                throw new IgniteSQLException("Column CHECK constraints are not supported [colName=" + col.getName() +
-                    ']', IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
-
-            GridSqlColumn gridCol = new GridSqlColumn(col, null, col.getName());
-
-            gridCol.resultType(GridSqlType.fromColumn(col));
-
-            cols.put(col.getName(), gridCol);
-        }
+        for (Column col : data.columns)
+            cols.put(col.getName(), parseColumn(col));
 
         if (cols.containsKey(QueryUtils.KEY_FIELD_NAME.toUpperCase()) ||
             cols.containsKey(QueryUtils.VAL_FIELD_NAME.toUpperCase()))
@@ -1009,6 +1006,94 @@ public class GridSqlQueryParser {
     }
 
     /**
+     * Parse {@code ALTER TABLE} statement.
+     * @param stmt H2 statement.
+     */
+    private GridSqlStatement parseAlterColumn(AlterTableAlterColumn stmt) {
+        switch (stmt.getType()) {
+            case CommandInterface.ALTER_TABLE_ADD_COLUMN:
+                return parseAddColumn(stmt);
+
+            default:
+                throw new IgniteSQLException("Unsupported operation code: " + stmt.getType());
+        }
+    }
+
+    /**
+     * Turn H2 column to grid column and check requested features.
+     * @param col H2 column.
+     * @return Grid column.
+     */
+    private static GridSqlColumn parseColumn(Column col) {
+        if (col.isAutoIncrement())
+            throw new IgniteSQLException("AUTO_INCREMENT columns are not supported [colName=" + col.getName() + ']',
+                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
+        if (COLUMN_IS_COMPUTED.get(col))
+            throw new IgniteSQLException("Computed columns are not supported [colName=" + col.getName() + ']',
+                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
+        if (col.getDefaultExpression() != null)
+            throw new IgniteSQLException("DEFAULT expressions are not supported [colName=" + col.getName() + ']',
+                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
+        if (col.getSequence() != null)
+            throw new IgniteSQLException("SEQUENCE columns are not supported [colName=" + col.getName() + ']',
+                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
+        if (col.getSelectivity() != Constants.SELECTIVITY_DEFAULT)
+            throw new IgniteSQLException("SELECTIVITY column attribute is not supported [colName=" + col.getName() + ']',
+                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
+        if (COLUMN_CHECK_CONSTRAINT.get(col) != null)
+            throw new IgniteSQLException("Column CHECK constraints are not supported [colName=" + col.getName() +
+                ']', IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
+        GridSqlColumn gridCol = new GridSqlColumn(col, null, col.getName());
+
+        gridCol.resultType(GridSqlType.fromColumn(col));
+
+        return gridCol;
+    }
+
+    /**
+     * Parse {@code ALTER TABLE ... ADD COLUMN} statement.
+     * @param addCol H2 statement.
+     * @see <a href="http://www.h2database.com/html/grammar.html#alter_table_add"></a>
+     */
+    private GridSqlStatement parseAddColumn(AlterTableAlterColumn addCol) {
+        assert addCol.getType() == CommandInterface.ALTER_TABLE_ADD_COLUMN;
+
+        if (ALTER_COLUMN_BEFORE_COL.get(addCol) != null || ALTER_COLUMN_AFTER_COL.get(addCol) != null)
+            throw new IgniteSQLException("ALTER TABLE ADD COLUMN BEFORE/AFTER is not supported",
+                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
+        GridSqlAlterTableAddColumn res = new GridSqlAlterTableAddColumn();
+
+        ArrayList<Column> h2NewCols = ALTER_COLUMN_NEW_COLS.get(addCol);
+
+        GridSqlColumn[] gridNewCols = new GridSqlColumn[h2NewCols.size()];
+
+        for (int i = 0; i < h2NewCols.size(); i++)
+            gridNewCols[i] = parseColumn(h2NewCols.get(i));
+
+        res.columns(gridNewCols);
+
+        if (gridNewCols.length == 1)
+            res.ifNotExists(ALTER_COLUMN_IF_NOT_EXISTS.get(addCol));
+
+        res.ifTableExists(ALTER_COLUMN_IF_TBL_EXISTS.get(addCol));
+
+        Schema schema = SCHEMA_COMMAND_SCHEMA.get(addCol);
+
+        res.schemaName(schema.getName());
+
+        res.tableName(ALTER_COLUMN_TBL_NAME.get(addCol));
+
+        return res;
+    }
+
+    /**
      * @param name Param name.
      * @param val Param value.
      * @param res Table params to update.
@@ -1040,17 +1125,17 @@ public class GridSqlQueryParser {
             case PARAM_ATOMICITY:
                 ensureNotEmpty(name, val);
 
-                CacheAtomicityMode mode;
+                CacheAtomicityMode atomicityMode;
 
                 if (CacheAtomicityMode.TRANSACTIONAL.name().equalsIgnoreCase(val))
-                    mode = CacheAtomicityMode.TRANSACTIONAL;
+                    atomicityMode = CacheAtomicityMode.TRANSACTIONAL;
                 else if (CacheAtomicityMode.ATOMIC.name().equalsIgnoreCase(val))
-                    mode = CacheAtomicityMode.ATOMIC;
+                    atomicityMode = CacheAtomicityMode.ATOMIC;
                 else
                     throw new IgniteSQLException("Invalid value of \"" + PARAM_ATOMICITY + "\" parameter " +
                         "(should be either TRANSACTIONAL or ATOMIC): " + val, IgniteQueryErrorCode.PARSING);
 
-                res.atomicityMode(mode);
+                res.atomicityMode(atomicityMode);
 
                 break;
 
@@ -1099,6 +1184,25 @@ public class GridSqlQueryParser {
                         IgniteQueryErrorCode.PARSING);
 
                 res.affinityKey(affColName);
+
+                break;
+
+            case PARAM_WRITE_SYNC:
+                ensureNotEmpty(name, val);
+
+                CacheWriteSynchronizationMode writeSyncMode;
+
+                if (CacheWriteSynchronizationMode.FULL_ASYNC.name().equalsIgnoreCase(val))
+                    writeSyncMode = CacheWriteSynchronizationMode.FULL_ASYNC;
+                else if (CacheWriteSynchronizationMode.FULL_SYNC.name().equalsIgnoreCase(val))
+                    writeSyncMode = CacheWriteSynchronizationMode.FULL_SYNC;
+                else if (CacheWriteSynchronizationMode.PRIMARY_SYNC.name().equalsIgnoreCase(val))
+                    writeSyncMode = CacheWriteSynchronizationMode.PRIMARY_SYNC;
+                else
+                    throw new IgniteSQLException("Invalid value of \"" + PARAM_WRITE_SYNC + "\" parameter " +
+                        "(should be FULL_SYNC, FULL_ASYNC, or PRIMARY_SYNC): " + val, IgniteQueryErrorCode.PARSING);
+
+                res.writeSynchronizationMode(writeSyncMode);
 
                 break;
 
@@ -1206,7 +1310,10 @@ public class GridSqlQueryParser {
             return parseCreateTable((CreateTable)stmt);
 
         if (stmt instanceof DropTable)
-            return parseDropTable((DropTable) stmt);
+            return parseDropTable((DropTable)stmt);
+
+        if (stmt instanceof AlterTableAlterColumn)
+            return parseAlterColumn((AlterTableAlterColumn)stmt);
 
         throw new CacheException("Unsupported SQL statement: " + stmt);
     }

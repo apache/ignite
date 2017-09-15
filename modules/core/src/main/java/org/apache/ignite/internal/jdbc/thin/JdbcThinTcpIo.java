@@ -59,6 +59,7 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryMetadataResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResponse;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResult;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcStatementType;
 import org.apache.ignite.internal.util.ipc.loopback.IpcClientTcpEndpoint;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteProductVersion;
@@ -69,6 +70,9 @@ import org.apache.ignite.lang.IgniteProductVersion;
 public class JdbcThinTcpIo implements AutoCloseable {
     /** Current version. */
     private static final SqlListenerProtocolVersion CURRENT_VER = SqlListenerProtocolVersion.create(2, 1, 5);
+
+    /** Version 2.1.0. */
+    private static final SqlListenerProtocolVersion VER_2_1_0 = SqlListenerProtocolVersion.create(2, 1, 0);
 
     /** Initial output stream capacity for handshake. */
     private static final int HANDSHAKE_MSG_SIZE = 13;
@@ -141,6 +145,9 @@ public class JdbcThinTcpIo implements AutoCloseable {
 
     /** Current query ID. */
     private long qryId = -1;
+
+    /** Ignite server protocol version. */
+    private SqlListenerProtocolVersion srvProtocolVer;
 
     /**
      * Constructor.
@@ -250,7 +257,60 @@ public class JdbcThinTcpIo implements AutoCloseable {
             }
             else
                 igniteVer = new IgniteProductVersion((byte)2, (byte)0, (byte)0, "Unknown", 0L, null);
+
+            srvProtocolVer = CURRENT_VER;
         }
+        else {
+            short maj = reader.readShort();
+            short min = reader.readShort();
+            short maintenance = reader.readShort();
+
+            String err = reader.readString();
+
+            srvProtocolVer = SqlListenerProtocolVersion.create(maj, min, maintenance);
+
+            if (VER_2_1_0.equals(srvProtocolVer))
+                handshake_2_1_0();
+            else {
+                throw new IgniteCheckedException("Handshake failed [driverProtocolVer=" + CURRENT_VER +
+                    ", remoteNodeProtocolVer=" + srvProtocolVer + ", err=" + err + ']');
+            }
+        }
+    }
+
+    /**
+     * Compatibility handshake for server version 2.1.0
+     *
+     * @throws IOException On error.
+     * @throws IgniteCheckedException On error.
+     */
+    public void handshake_2_1_0() throws IOException, IgniteCheckedException {
+        BinaryWriterExImpl writer = new BinaryWriterExImpl(null, new BinaryHeapOutputStream(HANDSHAKE_MSG_SIZE),
+            null, null);
+
+        writer.writeByte((byte)SqlListenerRequest.HANDSHAKE);
+
+        writer.writeShort(VER_2_1_0.major());
+        writer.writeShort(VER_2_1_0.minor());
+        writer.writeShort(VER_2_1_0.maintenance());
+
+        writer.writeByte(SqlListenerNioListener.JDBC_CLIENT);
+
+        writer.writeBoolean(distributedJoins);
+        writer.writeBoolean(enforceJoinOrder);
+        writer.writeBoolean(collocated);
+        writer.writeBoolean(replicatedOnly);
+        writer.writeBoolean(autoCloseServerCursor);
+
+        send(writer.array());
+
+        BinaryReaderExImpl reader = new BinaryReaderExImpl(null, new BinaryHeapInputStream(read()),
+            null, null, false);
+
+        boolean accepted = reader.readBoolean();
+
+        if (accepted)
+            igniteVer = new IgniteProductVersion((byte)2, (byte)1, (byte)0, "Unknown", 0L, null);
         else {
             short maj = reader.readShort();
             short min = reader.readShort();
@@ -266,6 +326,7 @@ public class JdbcThinTcpIo implements AutoCloseable {
     }
 
     /**
+     * @param stmtType Expected statement type.
      * @param cache Cache name.
      * @param fetchSize Fetch size.
      * @param maxRows Max rows.
@@ -275,10 +336,10 @@ public class JdbcThinTcpIo implements AutoCloseable {
      * @throws IOException On error.
      * @throws IgniteCheckedException On error.
      */
-    public JdbcQueryExecuteResult queryExecute(String cache, int fetchSize, int maxRows,
+    public JdbcQueryExecuteResult queryExecute(JdbcStatementType stmtType, String cache, int fetchSize, int maxRows,
         String sql, List<Object> args)
         throws IOException, IgniteCheckedException {
-        JdbcQueryIdResult resId = sendRequest(new JdbcQueryExecuteRequest(cache, fetchSize, maxRows, sql,
+        JdbcQueryIdResult resId =  sendRequest(new JdbcQueryExecuteRequest(stmtType, cache, fetchSize, maxRows, sql,
             args == null ? null : args.toArray(new Object[args.size()])), DYNAMIC_SIZE_MSG_CAP);
 
         qryId = resId.getQueryId();

@@ -369,7 +369,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// </summary>
         [Test]
         public void TestSqlFieldsQuery([Values(true, false)] bool loc, [Values(true, false)] bool distrJoin, 
-            [Values(true, false)] bool enforceJoinOrder)
+            [Values(true, false)] bool enforceJoinOrder, [Values(true, false)] bool lazy)
         {
             int cnt = MaxItemCnt;
 
@@ -386,7 +386,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 Colocated = !distrJoin,
                 ReplicatedOnly = false,
                 Local = loc,
-                Timeout = TimeSpan.FromSeconds(2)
+                Timeout = TimeSpan.FromSeconds(2),
+                Lazy = lazy
             };
 
             using (IQueryCursor<IList> cursor = cache.QueryFields(qry))

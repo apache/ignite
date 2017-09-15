@@ -584,9 +584,9 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
         assertCreateTableEquals(
             buildCreateTable("sch1", "Person", "cache", F.asList("id"),
                 false, c("id", Value.INT), c("city", Value.STRING), c("name", Value.STRING),
-                c("surname", Value.STRING), c("age", Value.INT)),
+                c("surname", Value.STRING), cn("age", Value.INT)),
             "CREATE TABLE sch1.\"Person\" (\"id\" integer PRIMARY KEY, \"city\" varchar," +
-                " \"name\" varchar, \"surname\" varchar, \"age\" integer) WITH " +
+                " \"name\" varchar, \"surname\" varchar, \"age\" integer NOT NULL) WITH " +
                 "\"template=cache\"");
 
         assertParseThrows("create table Person (id int)",
@@ -597,9 +597,6 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
 
         assertParseThrows("create table Person (id int primary key)",
             IgniteSQLException.class, "No cache value related columns found");
-
-        assertParseThrows("create table Person (id int primary key, age int not null) WITH \"cacheTemplate=cache\"",
-            IgniteSQLException.class, "Non nullable columns are forbidden");
 
         assertParseThrows("create table Person (id int primary key, age int unique) WITH \"template=cache\"",
             IgniteSQLException.class, "Too many constraints - only PRIMARY KEY is supported for CREATE TABLE");
@@ -618,6 +615,47 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
 
         assertParseThrows("create table Int (_key int primary key, _val int) WITH \"template=cache\"",
             IgniteSQLException.class, "Direct specification of _KEY and _VAL columns is forbidden");
+    }
+
+    /** */
+    public void testParseAlterTableAddColumn() throws Exception {
+        assertAlterTableAddColumnEquals(buildAlterTableAddColumn("SCH2", "Person", false, false,
+            c("COMPANY", Value.STRING)), "ALTER TABLE SCH2.Person ADD company varchar");
+
+        assertAlterTableAddColumnEquals(buildAlterTableAddColumn("SCH2", "Person", true, true,
+            c("COMPANY", Value.STRING)), "ALTER TABLE IF EXISTS SCH2.Person ADD if not exists company varchar");
+
+        assertAlterTableAddColumnEquals(buildAlterTableAddColumn("SCH2", "Person", false, true,
+            c("COMPANY", Value.STRING), c("city", Value.STRING)),
+            "ALTER TABLE IF EXISTS SCH2.Person ADD (company varchar, \"city\" varchar)");
+
+        assertAlterTableAddColumnEquals(buildAlterTableAddColumn("SCH2", "City", false, true,
+            c("POPULATION", Value.INT)), "ALTER TABLE IF EXISTS SCH2.\"City\" ADD (population int)");
+
+        assertAlterTableAddColumnEquals(buildAlterTableAddColumn("SCH2", "City", false, true,
+            cn("POPULATION", Value.INT)), "ALTER TABLE IF EXISTS SCH2.\"City\" ADD (population int NOT NULL)");
+
+        // There's no table with such name, but H2 parsing does not fail just yet.
+        assertAlterTableAddColumnEquals(buildAlterTableAddColumn("SCH2", "City", false, false,
+            c("POPULATION", Value.INT)), "ALTER TABLE SCH2.\"City\" ADD (population int)");
+
+        assertAlterTableAddColumnEquals(buildAlterTableAddColumn("SCH2", "Person", true, false,
+            c("NAME", Value.STRING)), "ALTER TABLE SCH2.Person ADD if not exists name varchar");
+
+        // There's a column with such name, but H2 parsing does not fail just yet.
+        assertAlterTableAddColumnEquals(buildAlterTableAddColumn("SCH2", "Person", false, false,
+            c("NAME", Value.STRING)), "ALTER TABLE SCH2.Person ADD name varchar");
+
+        // IF NOT EXISTS with multiple columns.
+        assertParseThrows("ALTER TABLE IF EXISTS SCH2.Person ADD if not exists (company varchar, city varchar)",
+            DbException.class, null);
+
+        // Both BEFORE and AFTER keywords.
+        assertParseThrows("ALTER TABLE IF EXISTS SCH2.Person ADD if not exists company varchar before addrid",
+            IgniteSQLException.class, "ALTER TABLE ADD COLUMN BEFORE/AFTER is not supported");
+
+        // No such schema.
+        assertParseThrows("ALTER TABLE SCH3.\"Person\" ADD (city varchar)", DbException.class, null);
     }
 
     /**
@@ -747,12 +785,79 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Parse SQL and compare it to expected instance of ALTER TABLE.
+     */
+    private void assertAlterTableAddColumnEquals(GridSqlAlterTableAddColumn exp, String sql) throws Exception {
+        Prepared prepared = parse(sql);
+
+        GridSqlStatement stmt = new GridSqlQueryParser(false).parse(prepared);
+
+        assertTrue(stmt instanceof GridSqlAlterTableAddColumn);
+
+        assertAlterTableAddColumnEquals(exp, (GridSqlAlterTableAddColumn)stmt);
+    }
+
+    /** */
+    private static GridSqlAlterTableAddColumn buildAlterTableAddColumn(String schema, String tbl,
+        boolean ifNotExists, boolean ifTblExists, GridSqlColumn... cols) {
+        GridSqlAlterTableAddColumn res = new GridSqlAlterTableAddColumn();
+
+        res.schemaName(schema);
+
+        res.tableName(tbl);
+
+        res.ifNotExists(ifNotExists);
+
+        res.ifTableExists(ifTblExists);
+
+        res.columns(cols);
+
+        return res;
+    }
+
+    /**
+     * Test two instances of {@link GridSqlAlterTableAddColumn} for equality.
+     */
+    private static void assertAlterTableAddColumnEquals(GridSqlAlterTableAddColumn exp,
+        GridSqlAlterTableAddColumn actual) {
+        assertEqualsIgnoreCase(exp.schemaName(), actual.schemaName());
+        assertEqualsIgnoreCase(exp.tableName(), actual.tableName());
+        assertEquals(exp.columns().length, actual.columns().length);
+
+        for (int i = 0; i < exp.columns().length; i++) {
+            GridSqlColumn expCol = exp.columns()[i];
+            GridSqlColumn col = actual.columns()[i];
+
+            assertEquals(expCol.columnName(), col.columnName());
+            assertEquals(expCol.column().getType(), col.column().getType());
+        }
+
+        assertEquals(exp.ifNotExists(), actual.ifNotExists());
+        assertEquals(exp.ifTableExists(), actual.ifTableExists());
+    }
+
+    /**
      * @param name Column name.
      * @param type Column data type.
      * @return {@link GridSqlColumn} with given name and type.
      */
     private static GridSqlColumn c(String name, int type) {
         return new GridSqlColumn(new Column(name, type), null, name);
+    }
+
+    /**
+     * Constructs non-nullable column.
+     *
+     * @param name Column name.
+     * @param type Column data type.
+     * @return {@link GridSqlColumn} with given name and type.
+     */
+    private static GridSqlColumn cn(String name, int type) {
+        Column col = new Column(name, type);
+
+        col.setNullable(false);
+
+        return new GridSqlColumn(col, null, name);
     }
 
     /**

@@ -17,20 +17,21 @@
 
 package org.apache.ignite.internal.processors.query;
 
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaFinishDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaAbstractOperation;
+import org.apache.ignite.internal.processors.query.schema.operation.SchemaAlterTableAddColumnOperation;
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaIndexCreateOperation;
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaIndexDropOperation;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
-
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.LinkedList;
-import java.util.List;
 
 /**
  * Dynamic cache schema.
@@ -118,9 +119,7 @@ public class QuerySchema implements Serializable {
                     }
                 }
             }
-            else {
-                assert op instanceof SchemaIndexDropOperation;
-
+            else if (op instanceof SchemaIndexDropOperation) {
                 SchemaIndexDropOperation op0 = (SchemaIndexDropOperation)op;
 
                 for (QueryEntity entity : entities) {
@@ -144,6 +143,35 @@ public class QuerySchema implements Serializable {
                         entity.setIndexes(newIdxs);
 
                         break;
+                    }
+                }
+            }
+            else {
+                assert op instanceof SchemaAlterTableAddColumnOperation;
+
+                SchemaAlterTableAddColumnOperation op0 = (SchemaAlterTableAddColumnOperation)op;
+
+                QueryEntity target = null;
+
+                for (QueryEntity entity : entities()) {
+                    if (F.eq(entity.getTableName(), op0.tableName())) {
+                        target = entity;
+
+                        break;
+                    }
+                }
+
+                if (target == null)
+                    return;
+
+                for (QueryField field : op0.columns()) {
+                    target.getFields().put(field.name(), field.typeName());
+
+                    if (!field.isNullable()) {
+                        if (target.getNotNullFields() == null)
+                            target.setNotNullFields(new HashSet<String>());
+
+                        target.getNotNullFields().add(field.name());
                     }
                 }
             }

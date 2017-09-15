@@ -19,9 +19,11 @@ package org.apache.ignite.internal.pagemem.wal.record;
 
 import java.util.UUID;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- *
+ * Logical data record indented for transaction (tx) related actions.<br>
+ * This record is marker of begin, prepare, commit, and rollback transactions.
  */
 public class TxRecord extends WALRecord {
     /**
@@ -57,7 +59,7 @@ public class TxRecord extends WALRecord {
     /** */
     private TxAction action;
 
-    /** */
+    /** Global transaction identifier within cluster, assigned by transaction coordinator */
     private GridCacheVersion nearXidVer;
 
     /** */
@@ -125,5 +127,10 @@ public class TxRecord extends WALRecord {
      */
     public UUID[] participatingNodeId() {
         return participatingNodeIds;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(TxRecord.class, this, "super", super.toString());
     }
 }

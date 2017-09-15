@@ -69,6 +69,7 @@ import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.query.property.QueryBinaryProperty;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorImpl;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexOperationCancellationToken;
@@ -81,6 +82,7 @@ import org.apache.ignite.internal.processors.query.schema.message.SchemaFinishDi
 import org.apache.ignite.internal.processors.query.schema.message.SchemaOperationStatusMessage;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaProposeDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaAbstractOperation;
+import org.apache.ignite.internal.processors.query.schema.operation.SchemaAlterTableAddColumnOperation;
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaIndexCreateOperation;
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaIndexDropOperation;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
@@ -754,6 +756,16 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                                         QueryUtils.processDynamicIndexChange(opDrop.indexName(), null, typeDesc);
                                     }
+                                    else if (op0 instanceof SchemaAlterTableAddColumnOperation) {
+                                        SchemaAlterTableAddColumnOperation opAddCol =
+                                            (SchemaAlterTableAddColumnOperation)op0;
+
+                                        QueryTypeDescriptorImpl typeDesc = tblTypMap.get(opAddCol.tableName());
+
+                                        assert typeDesc != null;
+
+                                        processDynamicAddColumn(typeDesc, opAddCol.columns());
+                                    }
                                     else
                                         assert false;
                                 }
@@ -966,6 +978,32 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             else
                 type = oldIdx.typeDescriptor();
         }
+        else if (op instanceof SchemaAlterTableAddColumnOperation) {
+            SchemaAlterTableAddColumnOperation op0 = (SchemaAlterTableAddColumnOperation)op;
+
+            type = type(cacheName, op0.tableName());
+
+            if (type == null) {
+                if (op0.ifTableExists())
+                    nop = true;
+                else
+                    err = new SchemaOperationException(SchemaOperationException.CODE_TABLE_NOT_FOUND,
+                        op0.tableName());
+            }
+            else {
+                for (QueryField col : op0.columns()) {
+                    if (type.hasField(col.name())) {
+                        if (op0.ifNotExists()) {
+                            assert op0.columns().size() == 1;
+
+                            nop = true;
+                        }
+                        else
+                            err = new SchemaOperationException(SchemaOperationException.CODE_COLUMN_EXISTS, col.name());
+                    }
+                }
+            }
+        }
         else
             err = new SchemaOperationException("Unsupported operation: " + op);
 
@@ -1068,6 +1106,32 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     nop = true;
                 else
                     err = new SchemaOperationException(SchemaOperationException.CODE_INDEX_NOT_FOUND, idxName);
+            }
+        }
+        else if (op instanceof SchemaAlterTableAddColumnOperation) {
+            SchemaAlterTableAddColumnOperation op0 = (SchemaAlterTableAddColumnOperation)op;
+
+            QueryEntity e = tblMap.get(op0.tableName());
+
+            if (e == null) {
+                if (op0.ifTableExists())
+                    nop = true;
+                else
+                    err = new SchemaOperationException(SchemaOperationException.CODE_TABLE_NOT_FOUND,
+                        op0.tableName());
+            }
+            else {
+                for (QueryField fld : op0.columns()) {
+                    if (e.getFields().containsKey(fld.name())) {
+                        if (op0.ifNotExists()) {
+                            assert op0.columns().size() == 1;
+
+                            nop = true;
+                        }
+                        else
+                            err = new SchemaOperationException(SchemaOperationException.CODE_COLUMN_EXISTS, fld.name());
+                    }
+                }
             }
         }
         else
@@ -1180,9 +1244,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                     idxs.put(idxKey, idxDesc);
                 }
-                else {
-                    assert op instanceof SchemaIndexDropOperation;
-
+                else if (op instanceof SchemaIndexDropOperation) {
                     SchemaIndexDropOperation op0 = (SchemaIndexDropOperation) op;
 
                     QueryUtils.processDynamicIndexChange(op0.indexName(), null, type);
@@ -1190,6 +1252,12 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     QueryIndexKey idxKey = new QueryIndexKey(schemaName, op0.indexName());
 
                     idxs.remove(idxKey);
+                }
+                else {
+                    assert op instanceof SchemaAlterTableAddColumnOperation;
+
+                    // No-op - all processing is done at "local" stage
+                    // as we must update both table and type descriptor atomically.
                 }
             }
             catch (IgniteCheckedException e) {
@@ -1229,7 +1297,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Process index operation.
+     * Process schema operation.
      *
      * @param op Operation.
      * @param type Type descriptor.
@@ -1237,7 +1305,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param cancelTok Cancel token.
      * @throws SchemaOperationException If failed.
      */
-    public void processIndexOperationLocal(SchemaAbstractOperation op, QueryTypeDescriptorImpl type, IgniteUuid depId,
+    @SuppressWarnings("StatementWithEmptyBody")
+    public void processSchemaOperationLocal(SchemaAbstractOperation op, QueryTypeDescriptorImpl type, IgniteUuid depId,
         SchemaIndexOperationCancellationToken cancelTok) throws SchemaOperationException {
         if (log.isDebugEnabled())
             log.debug("Started local index operation [opId=" + op.id() + ']');
@@ -1251,7 +1320,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         try {
             if (op instanceof SchemaIndexCreateOperation) {
-                SchemaIndexCreateOperation op0 = (SchemaIndexCreateOperation) op;
+                SchemaIndexCreateOperation op0 = (SchemaIndexCreateOperation)op;
 
                 QueryIndexDescriptorImpl idxDesc = QueryUtils.createIndexDescriptor(type, op0.index());
 
@@ -1261,9 +1330,17 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 idx.dynamicIndexCreate(op0.schemaName(), op0.tableName(), idxDesc, op0.ifNotExists(), visitor);
             }
             else if (op instanceof SchemaIndexDropOperation) {
-                SchemaIndexDropOperation op0 = (SchemaIndexDropOperation) op;
+                SchemaIndexDropOperation op0 = (SchemaIndexDropOperation)op;
 
                 idx.dynamicIndexDrop(op0.schemaName(), op0.indexName(), op0.ifExists());
+            }
+            else if (op instanceof SchemaAlterTableAddColumnOperation) {
+                SchemaAlterTableAddColumnOperation op0 = (SchemaAlterTableAddColumnOperation)op;
+
+                processDynamicAddColumn(type, op0.columns());
+
+                idx.dynamicAddColumn(op0.schemaName(), op0.tableName(), op0.columns(), op0.ifTableExists(),
+                    op0.ifNotExists());
             }
             else
                 throw new SchemaOperationException("Unsupported operation: " + op);
@@ -1285,13 +1362,15 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param cacheGroup Cache group name.
      * @param affinityKey Affinity key column name.
      * @param atomicityMode Atomicity mode.
+     * @param writeSyncMode Write synchronization mode.
      * @param backups Backups.
      * @param ifNotExists Quietly ignore this command if table already exists.
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
     public void dynamicTableCreate(String schemaName, QueryEntity entity, String templateName, String cacheGroup,
-        String affinityKey, @Nullable CacheAtomicityMode atomicityMode, int backups, boolean ifNotExists)
+        String affinityKey, @Nullable CacheAtomicityMode atomicityMode,
+        @Nullable CacheWriteSynchronizationMode writeSyncMode, int backups, boolean ifNotExists)
         throws IgniteCheckedException {
         assert !F.isEmpty(templateName);
         assert backups >= 0;
@@ -1320,6 +1399,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         if (atomicityMode != null)
             ccfg.setAtomicityMode(atomicityMode);
+
+        if (writeSyncMode != null)
+            ccfg.setWriteSynchronizationMode(writeSyncMode);
 
         ccfg.setBackups(backups);
 
@@ -2063,6 +2145,23 @@ private IgniteInternalFuture<Object> rebuildIndexesFromHash(@Nullable final Stri
     }
 
     /**
+     * Entry point for add column procedure.
+     * @param schemaName Schema name.
+     * @param tblName Target table name.
+     * @param cols Columns to add.
+     * @param ifTblExists Ignore operation if target table doesn't exist.
+     * @param ifNotExists Ignore operation if column exists.
+     */
+    public IgniteInternalFuture<?> dynamicColumnAdd(String cacheName, String schemaName, String tblName,
+        List<QueryField> cols, boolean ifTblExists, boolean ifNotExists) {
+
+        SchemaAlterTableAddColumnOperation op = new SchemaAlterTableAddColumnOperation(UUID.randomUUID(), cacheName,
+            schemaName, tblName, cols, ifTblExists, ifNotExists);
+
+        return startIndexOperationDistributed(op);
+    }
+
+    /**
      * Start distributed index change operation.
      *
      * @param op Operation.
@@ -2127,6 +2226,30 @@ private IgniteInternalFuture<Object> rebuildIndexesFromHash(@Nullable final Stri
                 null,
                 null));
         }
+    }
+
+    /**
+     * Update type descriptor with new fields metadata.
+     *
+     * @param d Type descriptor to update.
+     * @param cols Columns to add.
+     * @throws IgniteCheckedException If failed to update type descriptor.
+     */
+    private void processDynamicAddColumn(QueryTypeDescriptorImpl d, List<QueryField> cols) throws IgniteCheckedException {
+        List<GridQueryProperty> props = new ArrayList<>(cols.size());
+
+        for (QueryField col : cols) {
+            try {
+                props.add(new QueryBinaryProperty(ctx, col.name(), null, Class.forName(col.typeName()),
+                    false, null, !col.isNullable()));
+            }
+            catch (ClassNotFoundException e) {
+                throw new SchemaOperationException("Class not found for new property: " + col.typeName());
+            }
+        }
+
+        for (GridQueryProperty p : props)
+            d.addProperty(p, true);
     }
 
     /**
@@ -2467,6 +2590,25 @@ private IgniteInternalFuture<Object> rebuildIndexesFromHash(@Nullable final Stri
      */
     public CacheQueryObjectValueContext objectContext() {
         return valCtx;
+    }
+
+    /**
+     * Performs validation of provided key and value against configured constraints.
+     * Throws runtime exception if validation fails.
+     *
+     * @param coctx Cache object context.
+     * @param key Key.
+     * @param val Value.
+     * @throws IgniteCheckedException, If error happens.
+     */
+    public void validateKeyAndValue(CacheObjectContext coctx, KeyCacheObject key, CacheObject val)
+        throws IgniteCheckedException {
+        QueryTypeDescriptorImpl desc = typeByValue(coctx.cacheName(), coctx, key, val, false);
+
+        if (desc == null)
+            return;
+
+        desc.validateKeyAndValue(key, val);
     }
 
     /**

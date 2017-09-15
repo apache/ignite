@@ -136,7 +136,12 @@ namespace ignite
                 return SqlResult::AI_ERROR;
             }
 
-            return MakeRequestHandshake();
+            SqlResult::Type res = MakeRequestHandshake();
+
+            if (res == SqlResult::AI_ERROR)
+                Close();
+
+            return res;
         }
 
         void Connection::Release()
@@ -153,11 +158,16 @@ namespace ignite
                 return SqlResult::AI_ERROR;
             }
 
+            Close();
+
+            return SqlResult::AI_SUCCESS;
+        }
+
+        void Connection::Close()
+        {
             socket.Close();
 
             connected = false;
-
-            return SqlResult::AI_SUCCESS;
         }
 
         Statement* Connection::CreateStatement()
@@ -217,7 +227,11 @@ namespace ignite
                 LOG_MSG("Sent: " << res);
 
                 if (res <= 0)
+                {
+                    Close();
+
                     return sent;
+                }
 
                 sent += res;
             }
@@ -240,7 +254,11 @@ namespace ignite
                 IGNITE_ERROR_1(IgniteError::IGNITE_ERR_GENERIC, "Can not receive message header");
 
             if (hdr.len < 0)
-                IGNITE_ERROR_1(IgniteError::IGNITE_ERR_GENERIC, "Message lenght is negative");
+            {
+                Close();
+
+                IGNITE_ERROR_1(IgniteError::IGNITE_ERR_GENERIC, "Message length is negative");
+            }
 
             if (hdr.len == 0)
                 return;
@@ -272,7 +290,11 @@ namespace ignite
                 LOG_MSG("Receive res: " << res << " remain: " << remain);
 
                 if (res <= 0)
+                {
+                    Close();
+
                     return received;
+                }
 
                 remain -= static_cast<size_t>(res);
             }
@@ -311,6 +333,74 @@ namespace ignite
             IGNITE_ODBC_API_CALL(InternalTransactionRollback());
         }
 
+        void Connection::GetAttribute(int attr, void* buf, SQLINTEGER bufLen, SQLINTEGER* valueLen)
+        {
+            IGNITE_ODBC_API_CALL(InternalGetAttribute(attr, buf, bufLen, valueLen));
+        }
+
+        SqlResult::Type Connection::InternalGetAttribute(int attr, void* buf, SQLINTEGER bufLen, SQLINTEGER* valueLen)
+        {
+            if (!buf)
+            {
+                AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, "Data buffer is NULL.");
+
+                return SqlResult::AI_ERROR;
+            }
+
+            switch (attr)
+            {
+                case SQL_ATTR_CONNECTION_DEAD:
+                {
+                    SQLUINTEGER *val = reinterpret_cast<SQLUINTEGER*>(buf);
+
+                    *val = connected ? SQL_CD_FALSE : SQL_CD_TRUE;
+
+                    if (valueLen)
+                        *valueLen = SQL_IS_INTEGER;
+
+                    break;
+                }
+
+                default:
+                {
+                    AddStatusRecord(SqlState::SHYC00_OPTIONAL_FEATURE_NOT_IMPLEMENTED,
+                        "Specified attribute is not supported.");
+
+                    return SqlResult::AI_ERROR;
+                }
+            }
+
+            return SqlResult::AI_SUCCESS;
+        }
+
+        void Connection::SetAttribute(int attr, void* value, SQLINTEGER valueLen)
+        {
+            IGNITE_ODBC_API_CALL(InternalSetAttribute(attr, value, valueLen));
+        }
+
+        SqlResult::Type Connection::InternalSetAttribute(int attr, void* value, SQLINTEGER valueLen)
+        {
+            switch (attr)
+            {
+                case SQL_ATTR_CONNECTION_DEAD:
+                {
+                    AddStatusRecord(SqlState::SHY092_OPTION_TYPE_OUT_OF_RANGE, "Attribute is read only.");
+
+                    return SqlResult::AI_ERROR;
+                }
+
+                default:
+                {
+                    AddStatusRecord(SqlState::SHYC00_OPTIONAL_FEATURE_NOT_IMPLEMENTED,
+                        "Specified attribute is not supported.");
+
+                    return SqlResult::AI_ERROR;
+                }
+            }
+
+            return SqlResult::AI_SUCCESS;
+        }
+
         SqlResult::Type Connection::InternalTransactionRollback()
         {
             AddStatusRecord(SqlState::SHYC00_OPTIONAL_FEATURE_NOT_IMPLEMENTED,
@@ -325,6 +415,7 @@ namespace ignite
             bool enforceJoinOrder = false;
             bool replicatedOnly = false;
             bool collocated = false;
+            bool lazy = false;
             ProtocolVersion protocolVersion;
 
             try
@@ -334,6 +425,7 @@ namespace ignite
                 enforceJoinOrder = config.IsEnforceJoinOrder();
                 replicatedOnly = config.IsReplicatedOnly();
                 collocated = config.IsCollocated();
+                lazy = config.IsLazy();
             }
             catch (const IgniteError& err)
             {
@@ -350,7 +442,7 @@ namespace ignite
                 return SqlResult::AI_ERROR;
             }
 
-            HandshakeRequest req(protocolVersion, distributedJoins, enforceJoinOrder, replicatedOnly, collocated);
+            HandshakeRequest req(protocolVersion, distributedJoins, enforceJoinOrder, replicatedOnly, collocated, lazy);
             HandshakeResponse rsp;
 
             try
@@ -373,15 +465,13 @@ namespace ignite
                 constructor << "Node rejected handshake message. ";
 
                 if (!rsp.GetError().empty())
-                    constructor << "Additional info: " << rsp.GetError();
+                    constructor << "Additional info: " << rsp.GetError() << " ";
 
                 constructor << "Current node Apache Ignite version: " << rsp.GetCurrentVer().ToString() << ", "
                             << "driver protocol version introduced in version: "
                             << config.GetProtocolVersion().ToString() << ".";
 
                 AddStatusRecord(SqlState::S08001_CANNOT_CONNECT, constructor.str());
-
-                InternalRelease();
 
                 return SqlResult::AI_ERROR;
             }

@@ -20,24 +20,12 @@ package org.apache.ignite.internal.processors.odbc;
 /**
  * SQL listener command request.
  */
-public abstract class SqlListenerRequest {
+public interface SqlListenerRequest {
     /** Handshake request. */
     public static final int HANDSHAKE = 1;
-
-    /** Request ID. */
-    private long reqId;
 
     /**
      * @return Request ID.
      */
-    public long requestId() {
-        return reqId;
-    }
-
-    /**
-     * @param reqId Request ID.
-     */
-    public void requestId(long reqId) {
-        this.reqId = reqId;
-    }
+    public long requestId();
 }
