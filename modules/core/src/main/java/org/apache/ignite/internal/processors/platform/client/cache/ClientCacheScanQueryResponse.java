@@ -46,6 +46,7 @@ class ClientCacheScanQueryResponse extends ClientResponse {
         super.encode(writer);
 
         writer.writeLong(cursor.id());
+
         cursor.writePage(writer);
     }
 }

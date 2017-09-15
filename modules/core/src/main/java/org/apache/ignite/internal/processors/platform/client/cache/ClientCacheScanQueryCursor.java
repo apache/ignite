@@ -84,9 +84,8 @@ class ClientCacheScanQueryCursor implements ClientCloseableResource {
 
         writer.writeBoolean(iter.hasNext());
 
-        if (!iter.hasNext()) {
+        if (!iter.hasNext())
             resources.release(id);
-        }
     }
 
     /**
@@ -120,9 +119,8 @@ class ClientCacheScanQueryCursor implements ClientCloseableResource {
      * @return Iterator.
      */
     private Iterator<Cache.Entry> iterator() {
-        if (iterator == null) {
+        if (iterator == null)
             iterator = cursor.iterator();
-        }
 
         return iterator;
     }

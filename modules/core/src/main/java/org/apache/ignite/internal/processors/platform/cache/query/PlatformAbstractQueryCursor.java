@@ -91,9 +91,8 @@ public abstract class PlatformAbstractQueryCursor<T> extends PlatformAbstractTar
 
                     writer.writeBoolean(iter.hasNext());
 
-                    if (!iter.hasNext()) {
+                    if (!iter.hasNext())
                         cursor.close();
-                    }
                 }
                 catch (Exception err) {
                     throw PlatformUtils.unwrapQueryException(err);

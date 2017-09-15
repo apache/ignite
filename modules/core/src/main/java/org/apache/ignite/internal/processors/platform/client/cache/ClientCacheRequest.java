@@ -73,7 +73,7 @@ class ClientCacheRequest extends ClientRequest {
      * @param ctx Kernal context.
      * @return Cache.
      */
-    private IgniteCache rawCache(ClientConnectionContext ctx) {
+    protected IgniteCache rawCache(ClientConnectionContext ctx) {
         String cacheName = ctx.kernalContext().cache().context().cacheContext(cacheId).cache().name();
 
         return ctx.kernalContext().grid().cache(cacheName);
