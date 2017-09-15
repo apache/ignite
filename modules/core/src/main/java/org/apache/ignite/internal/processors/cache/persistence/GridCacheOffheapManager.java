@@ -625,6 +625,9 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
      *
      */
     private static class WALIteratorAdapter implements IgniteHistoricalIterator {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** Cache context. */
         private final CacheGroupContext grp;
 
