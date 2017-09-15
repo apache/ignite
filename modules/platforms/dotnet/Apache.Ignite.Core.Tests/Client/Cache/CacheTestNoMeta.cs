@@ -31,29 +31,8 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
     /// <summary>
     /// Client cache test without metadata (no-op binary processor).
     /// </summary>
-    public class CacheTestNoMeta
+    public class CacheTestNoMeta : ClientTestBase
     {
-        /** Cache name. */
-        private const string CacheName = "cache";
-
-        /// <summary>
-        /// Fixture tear down.
-        /// </summary>
-        [TestFixtureSetUp]
-        public void FixtureSetUp()
-        {
-            Ignition.Start(TestUtils.GetTestConfiguration());
-        }
-
-        /// <summary>
-        /// Fixture tear down.
-        /// </summary>
-        [TestFixtureTearDown]
-        public void FixtureTearDown()
-        {
-            Ignition.StopAll(true);
-        }
-
         /// <summary>
         /// Tests the cache put / get with user data types.
         /// </summary>
