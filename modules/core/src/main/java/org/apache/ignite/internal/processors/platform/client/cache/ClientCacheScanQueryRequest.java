@@ -87,17 +87,17 @@ public class ClientCacheScanQueryRequest extends ClientCacheRequest {
             .setPartition(part)
             .setFilter(createFilter(ctx));
 
-        IgniteCache cache = cache(ctx);
+        IgniteCache cache;
 
-        if (!isKeepBinary() || filterPlatform != FILTER_PLATFORM_JAVA) {
-            // Only Java filter can operate in non-binary mode.
-            cache = cache.withKeepBinary();
-        }
+        if (filterPlatform == FILTER_PLATFORM_JAVA && !isKeepBinary())
+            cache = rawCache(ctx);
+        else
+            cache = cache(ctx);
 
         QueryCursor cur = cache.query(qry);
 
-        ClientCacheScanQueryCursor cliCur = new ClientCacheScanQueryCursor((QueryCursorEx) cur, pageSize,
-                ctx.resources());
+        ClientCacheScanQueryCursor cliCur =
+            new ClientCacheScanQueryCursor((QueryCursorEx) cur, pageSize, ctx.resources());
 
         long cursorId = ctx.resources().put(cliCur);
 
@@ -118,7 +118,7 @@ public class ClientCacheScanQueryRequest extends ClientCacheRequest {
 
         switch (filterPlatform) {
             case FILTER_PLATFORM_JAVA:
-                return ((BinaryObject) filterObj).deserialize();
+                return ((BinaryObject)filterObj).deserialize();
 
             case FILTER_PLATFORM_DOTNET:
                 PlatformContext platformCtx = ctx.kernalContext().platform().context();
