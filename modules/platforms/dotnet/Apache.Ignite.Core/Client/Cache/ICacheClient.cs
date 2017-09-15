@@ -30,11 +30,6 @@ namespace Apache.Ignite.Core.Client.Cache
         string Name { get; }
 
         /// <summary>
-        /// Ignite hosting this cache.
-        /// </summary>
-        IIgniteClient Ignite { get; }
-
-        /// <summary>
         /// Associates the specified value with the specified key in the cache.
         /// <para />
         /// If the cache previously contained a mapping for the key,
