@@ -632,7 +632,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             private readonly Func<IBinaryStream, bool, T> _readDelegate;
 
             /// <summary>
-            /// Initializes a new instance of the <see cref="BinarySystemReader{T}"/> class.
+            /// Initializes a new instance of the <see cref="BinarySystemVarintSupportReader{T}"/> class.
             /// </summary>
             /// <param name="readDelegate">The read delegate.</param>
             public BinarySystemVarintSupportReader(Func<IBinaryStream, bool, T> readDelegate)
