@@ -28,6 +28,9 @@ import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
 import org.apache.ignite.internal.processors.odbc.odbc.OdbcConnectionContext;
+import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
+import org.apache.ignite.internal.processors.platform.client.ClientMessageParser;
+import org.apache.ignite.internal.processors.platform.client.ClientRequestHandler;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.nio.GridNioServerListenerAdapter;
 import org.apache.ignite.internal.util.nio.GridNioSession;
@@ -38,17 +41,17 @@ import org.jetbrains.annotations.Nullable;
  * SQL message listener.
  */
 public class SqlListenerNioListener extends GridNioServerListenerAdapter<byte[]> {
-    /** The value corresponds to ODBC driver of the parser field of the handshake request. */
+    /** ODBC driver handshake code. */
     public static final byte ODBC_CLIENT = 0;
 
-    /** The value corresponds to JDBC driver of the parser field of the handshake request. */
+    /** JDBC driver handshake code. */
     public static final byte JDBC_CLIENT = 1;
+
+    /** Thin client handshake code. */
+    public static final byte THIN_CLIENT = 2;
 
     /** Connection-related metadata key. */
     private static final int CONN_CTX_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
-
-    /** Request ID generator. */
-    private static final AtomicLong REQ_ID_GEN = new AtomicLong();
 
     /** Busy lock. */
     private final GridSpinBusyLock busyLock;
@@ -85,6 +88,11 @@ public class SqlListenerNioListener extends GridNioServerListenerAdapter<byte[]>
 
     /** {@inheritDoc} */
     @Override public void onDisconnected(GridNioSession ses, @Nullable Exception e) {
+        SqlListenerConnectionContext connCtx = ses.meta(CONN_CTX_META_KEY);
+
+        if (connCtx != null)
+            connCtx.onDisconnected();
+
         if (log.isDebugEnabled()) {
             if (e == null)
                 log.debug("SQL client disconnected: " + ses.remoteAddress());
@@ -123,15 +131,13 @@ public class SqlListenerNioListener extends GridNioServerListenerAdapter<byte[]>
 
         assert req != null;
 
-        req.requestId(REQ_ID_GEN.incrementAndGet());
-
         try {
             long startTime = 0;
 
             if (log.isDebugEnabled()) {
                 startTime = System.nanoTime();
 
-                log.debug("SQL client request received [reqId=" + req.requestId() + ", addr=" +
+                log.debug("Client request received [reqId=" + req.requestId() + ", addr=" +
                     ses.remoteAddress() + ", req=" + req + ']');
             }
 
@@ -140,7 +146,7 @@ public class SqlListenerNioListener extends GridNioServerListenerAdapter<byte[]>
             if (log.isDebugEnabled()) {
                 long dur = (System.nanoTime() - startTime) / 1000;
 
-                log.debug("SQL client request processed [reqId=" + req.requestId() + ", dur(mcs)=" + dur  +
+                log.debug("Client request processed [reqId=" + req.requestId() + ", dur(mcs)=" + dur  +
                     ", resp=" + resp.status() + ']');
             }
 
@@ -149,7 +155,7 @@ public class SqlListenerNioListener extends GridNioServerListenerAdapter<byte[]>
             ses.send(outMsg);
         }
         catch (Exception e) {
-            log.error("Failed to process SQL client request [req=" + req + ']', e);
+            log.error("Failed to process client request [req=" + req + ']', e);
 
             ses.send(parser.encode(handler.handleException(e)));
         }
@@ -231,6 +237,9 @@ public class SqlListenerNioListener extends GridNioServerListenerAdapter<byte[]>
 
             case JDBC_CLIENT:
                 return new JdbcConnectionContext(ctx, busyLock, maxCursors);
+
+            case THIN_CLIENT:
+                return new ClientConnectionContext(ctx);
 
             default:
                 throw new IgniteException("Unknown client type: " + clientType);

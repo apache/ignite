@@ -15,17 +15,32 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.odbc;
+package org.apache.ignite.internal.processors.platform.client;
+
+import org.apache.ignite.binary.BinaryRawWriter;
 
 /**
- * SQL listener command request.
+ * Single object response.
  */
-public interface SqlListenerRequest {
-    /** Handshake request. */
-    public static final int HANDSHAKE = 1;
+public class ClientObjectResponse extends ClientResponse {
+    /** */
+    private final Object val;
 
     /**
-     * @return Request ID.
+     * Constructor.
+     *
+     * @param reqId Request id.
      */
-    public long requestId();
+    public ClientObjectResponse(long reqId, Object val) {
+        super(reqId);
+
+        this.val = val;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void encode(BinaryRawWriter writer) {
+        super.encode(writer);
+
+        writer.writeObject(val);
+    }
 }

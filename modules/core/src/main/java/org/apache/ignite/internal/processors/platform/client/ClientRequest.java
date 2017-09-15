@@ -15,17 +15,39 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.odbc;
+package org.apache.ignite.internal.processors.platform.client;
+
+import org.apache.ignite.binary.BinaryRawReader;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.odbc.SqlListenerRequest;
 
 /**
- * SQL listener command request.
+ * Thin client request.
  */
-public interface SqlListenerRequest {
-    /** Handshake request. */
-    public static final int HANDSHAKE = 1;
+public class ClientRequest implements SqlListenerRequest {
+    /** Request id. */
+    private final long reqId;
 
     /**
-     * @return Request ID.
+     * Constructor.
+     *
+     * @param reader Reader.
      */
-    public long requestId();
+    public ClientRequest(BinaryRawReader reader) {
+        reqId = reader.readLong();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long requestId() {
+        return reqId;
+    }
+
+    /**
+     * Processes the request.
+     *
+     * @return Response.
+     */
+    public ClientResponse process(GridKernalContext ctx) {
+        return new ClientResponse(reqId);
+    }
 }
