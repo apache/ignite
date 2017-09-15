@@ -18,7 +18,10 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.tree.io;
 
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageUtils;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
+import org.apache.ignite.internal.util.GridStringBuilder;
 
 /**
  *
@@ -159,5 +162,21 @@ public class PagePartitionMetaIO extends PageMetaIO {
      */
     public void setCountersPageId(long pageAddr, long metaPageId) {
         PageUtils.putLong(pageAddr, NEXT_PART_META_PAGE_OFF, metaPageId);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void printPage(long pageAddr, int pageSize, GridStringBuilder sb) throws IgniteCheckedException {
+        super.printPage(pageAddr, pageSize, sb);
+
+        byte state = getPartitionState(pageAddr);
+
+        sb
+            .a(",\nPagePartitionMeta[\n\tsize=").a(getSize(pageAddr))
+            .a(",\n\tupdateCounter=").a(getUpdateCounter(pageAddr))
+            .a(",\n\tglobalRemoveId=").a(getGlobalRemoveId(pageAddr))
+            .a(",\n\tpartitionState=").a(state).a("(").a(GridDhtPartitionState.fromOrdinal(state)).a(")")
+            .a(",\n\tcountersPageId=").a(getCountersPageId(pageAddr))
+            .a("\n]")
+            ;
     }
 }
