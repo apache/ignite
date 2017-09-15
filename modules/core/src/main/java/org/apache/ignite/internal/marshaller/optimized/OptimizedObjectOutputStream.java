@@ -152,6 +152,7 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
         Object oldObj = curObj;
         OptimizedClassDescriptor.ClassFields oldFields = curFields;
         PutFieldImpl oldPut = curPut;
+
         try {
             writeObject0(obj);
         }

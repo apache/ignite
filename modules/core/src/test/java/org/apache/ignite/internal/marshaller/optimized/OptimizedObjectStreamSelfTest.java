@@ -1052,6 +1052,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
      */
     public void testNestedReadWriteObject() throws Exception {
         NestedReadWriteObject[] arr = new NestedReadWriteObject[5];
+
         arr[0] = new NestedReadWriteObject(null, null, 1, "n1");
         arr[1] = new NestedReadWriteObject(arr[0], null, 2, "n2");
         arr[2] = new NestedReadWriteObject(null, arr[0], 3, "n3");
