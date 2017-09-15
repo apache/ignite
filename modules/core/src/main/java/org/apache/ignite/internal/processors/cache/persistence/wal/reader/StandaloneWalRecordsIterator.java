@@ -92,7 +92,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
         @NotNull FileIOFactory ioFactory) throws IgniteCheckedException {
         super(log,
             sharedCtx,
-            new RecordV1Serializer(sharedCtx),
+            new RecordV1Serializer(sharedCtx, true),
             ioFactory,
             BUF_SIZE);
         init(walFilesDir, false, null);

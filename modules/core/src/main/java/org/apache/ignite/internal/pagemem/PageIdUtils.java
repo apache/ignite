@@ -200,4 +200,17 @@ public final class PageIdUtils {
     public static long changeType(long pageId, byte type) {
         return pageId(partId(pageId), type, pageIndex(pageId));
     }
+
+    /**
+     * @param pageId Page id.
+     */
+    public static String toDetailString(long pageId) {
+        return "pageId=" + pageId +
+            "(offset=" + itemId(pageId) +
+            ", flags=" + Integer.toBinaryString(flag(pageId)) +
+            ", partId=" + partId(pageId) +
+            ", index=" + pageIndex(pageId) +
+            ")"
+            ;
+    }
 }
