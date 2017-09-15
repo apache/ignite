@@ -18,16 +18,17 @@
 package org.apache.ignite.internal.processors.platform.client.binary;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
+import org.apache.ignite.internal.processors.platform.client.ClientStringResponse;
 
 /**
  * Gets binary type name by id.
  */
-public class ClientGetBinaryTypeNameRequest extends ClientRequest {
+public class ClientBinaryTypeNameGetRequest extends ClientRequest {
     /** Platform ID, see org.apache.ignite.internal.MarshallerPlatformIds. */
     private final byte platformId;
 
@@ -35,11 +36,11 @@ public class ClientGetBinaryTypeNameRequest extends ClientRequest {
     private final int typeId;
 
     /**
-     * Ctor.
+     * Constructor.
      *
      * @param reader Reader.
      */
-    public ClientGetBinaryTypeNameRequest(BinaryRawReader reader) {
+    public ClientBinaryTypeNameGetRequest(BinaryRawReader reader) {
         super(reader);
 
         platformId = reader.readByte();
@@ -51,10 +52,10 @@ public class ClientGetBinaryTypeNameRequest extends ClientRequest {
         try {
             String typeName = ctx.kernalContext().marshallerContext().getClassName(platformId, typeId);
 
-            return new ClientGetBinaryTypeNameResponse(requestId(), typeName);
+            return new ClientStringResponse(requestId(), typeName);
         }
         catch (ClassNotFoundException | IgniteCheckedException e) {
-            throw new BinaryObjectException(e);
+            throw new IgniteException(e);
         }
     }
 }

@@ -17,43 +17,49 @@
 
 package org.apache.ignite.internal.processors.platform.client.binary;
 
-import org.apache.ignite.internal.binary.BinaryContext;
-import org.apache.ignite.internal.binary.BinaryMetadata;
-import org.apache.ignite.internal.binary.BinaryRawReaderEx;
-import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.binary.BinaryRawReader;
+import org.apache.ignite.internal.processors.platform.client.ClientBooleanResponse;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
-import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
-
-import java.util.Collection;
 
 /**
- * Binary types update request.
+ * Gets binary type name by id.
  */
-public class ClientPutBinaryTypesRequest extends ClientRequest {
-    /** Metas. */
-    private final Collection<BinaryMetadata> metas;
+public class ClientBinaryTypeNamePutRequest extends ClientRequest {
+    /** Platform ID, see org.apache.ignite.internal.MarshallerPlatformIds. */
+    private final byte platformId;
+
+    /** Type id. */
+    private final int typeId;
+
+    /** Type name. */
+    private final String typeName;
 
     /**
-     * Ctor.
+     * Constructor.
      *
      * @param reader Reader.
      */
-    public ClientPutBinaryTypesRequest(BinaryRawReaderEx reader) {
+    public ClientBinaryTypeNamePutRequest(BinaryRawReader reader) {
         super(reader);
 
-        metas = PlatformUtils.readBinaryMetadata(reader);
+        platformId = reader.readByte();
+        typeId = reader.readInt();
+        typeName = reader.readString();
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public ClientResponse process(ClientConnectionContext ctx) {
-        BinaryContext binCtx = ((CacheObjectBinaryProcessorImpl) ctx.kernalContext().cacheObjects()).binaryContext();
+        try {
+            boolean res = ctx.kernalContext().marshallerContext().registerClassName(platformId, typeId, typeName);
 
-        for (BinaryMetadata meta : metas)
-            binCtx.updateMetadata(meta.typeId(), meta);
-
-        return super.process(ctx);
+            return new ClientBooleanResponse(requestId(), res);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
     }
 }

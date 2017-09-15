@@ -116,6 +116,6 @@ public class OdbcConnectionContext implements SqlListenerConnectionContext {
 
     /** {@inheritDoc} */
     @Override public void onDisconnected() {
-        // No-op.
+        handler.onDisconnect();
     }
 }

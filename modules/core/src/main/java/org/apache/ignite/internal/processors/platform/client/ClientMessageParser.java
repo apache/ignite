@@ -29,10 +29,10 @@ import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProce
 import org.apache.ignite.internal.processors.odbc.SqlListenerMessageParser;
 import org.apache.ignite.internal.processors.odbc.SqlListenerRequest;
 import org.apache.ignite.internal.processors.odbc.SqlListenerResponse;
-import org.apache.ignite.internal.processors.platform.client.binary.ClientGetBinaryTypeNameRequest;
-import org.apache.ignite.internal.processors.platform.client.binary.ClientGetBinaryTypeSchemaRequest;
-import org.apache.ignite.internal.processors.platform.client.binary.ClientPutBinaryTypesRequest;
-import org.apache.ignite.internal.processors.platform.client.binary.ClientRegisterBinaryTypeNameRequest;
+import org.apache.ignite.internal.processors.platform.client.binary.ClientBinaryTypeNameGetRequest;
+import org.apache.ignite.internal.processors.platform.client.binary.ClientBinaryTypeGetRequest;
+import org.apache.ignite.internal.processors.platform.client.binary.ClientBinaryTypePutRequest;
+import org.apache.ignite.internal.processors.platform.client.binary.ClientBinaryTypeNamePutRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheGetRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCachePutRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheScanQueryNextPageRequest;
@@ -49,7 +49,7 @@ public class ClientMessageParser implements SqlListenerMessageParser {
     private static final short OP_GET_BINARY_TYPE_NAME = 2;
 
     /** */
-    private static final short OP_GET_BINARY_TYPE_SCHEMA = 3;
+    private static final short OP_GET_BINARY_TYPE = 3;
 
     /** */
     private static final short OP_CACHE_PUT = 4;
@@ -58,7 +58,7 @@ public class ClientMessageParser implements SqlListenerMessageParser {
     private static final short OP_REGISTER_BINARY_TYPE_NAME = 5;
 
     /** */
-    private static final short OP_PUT_BINARY_TYPES = 6;
+    private static final short OP_PUT_BINARY_TYPE = 6;
 
     /** */
     private static final short OP_QUERY_SCAN = 7;
@@ -98,19 +98,19 @@ public class ClientMessageParser implements SqlListenerMessageParser {
                 return new ClientCacheGetRequest(reader);
 
             case OP_GET_BINARY_TYPE_NAME:
-                return new ClientGetBinaryTypeNameRequest(reader);
+                return new ClientBinaryTypeNameGetRequest(reader);
 
-            case OP_GET_BINARY_TYPE_SCHEMA:
-                return new ClientGetBinaryTypeSchemaRequest(reader);
+            case OP_GET_BINARY_TYPE:
+                return new ClientBinaryTypeGetRequest(reader);
 
             case OP_CACHE_PUT:
                 return new ClientCachePutRequest(reader);
 
             case OP_REGISTER_BINARY_TYPE_NAME:
-                return new ClientRegisterBinaryTypeNameRequest(reader);
+                return new ClientBinaryTypeNamePutRequest(reader);
 
-            case OP_PUT_BINARY_TYPES:
-                return new ClientPutBinaryTypesRequest(reader);
+            case OP_PUT_BINARY_TYPE:
+                return new ClientBinaryTypePutRequest(reader);
 
             case OP_QUERY_SCAN:
                 return new ClientCacheScanQueryRequest(reader);

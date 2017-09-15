@@ -18,30 +18,34 @@
 package org.apache.ignite.internal.processors.platform.client.binary;
 
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
+import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 
 /**
- * Type name response.
+ * Binary meta response.
  */
-public class ClientGetBinaryTypeNameResponse extends ClientResponse {
-    /** Type name. */
-    private final String typeName;
+public class ClientBinaryTypeGetResponse extends ClientResponse {
+    /** Meta. */
+    private final BinaryMetadata meta;
 
     /**
-     * Ctor.
+     * Constructor.
      *
      * @param requestId Request id.
      */
-    ClientGetBinaryTypeNameResponse(long requestId, String typeName) {
+    ClientBinaryTypeGetResponse(long requestId, BinaryMetadata meta) {
         super(requestId);
 
-        this.typeName = typeName;
+        assert meta != null;
+
+        this.meta = meta;
     }
 
     /** {@inheritDoc} */
     @Override public void encode(BinaryRawWriterEx writer) {
         super.encode(writer);
 
-        writer.writeString(typeName);
+        PlatformUtils.writeBinaryMetadata(writer, meta, true);
     }
 }

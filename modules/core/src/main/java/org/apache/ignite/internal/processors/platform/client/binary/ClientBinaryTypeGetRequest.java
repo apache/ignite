@@ -17,49 +17,34 @@
 
 package org.apache.ignite.internal.processors.platform.client.binary;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryRawReader;
-import org.apache.ignite.internal.processors.platform.client.ClientBooleanResponse;
-import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.binary.BinaryTypeImpl;
 import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 
 /**
- * Gets binary type name by id.
+ * Binary type schema request.
  */
-public class ClientRegisterBinaryTypeNameRequest extends ClientRequest {
-    /** Platform ID, see org.apache.ignite.internal.MarshallerPlatformIds. */
-    private final byte platformId;
-
+public class ClientBinaryTypeGetRequest extends ClientRequest {
     /** Type id. */
     private final int typeId;
 
-    /** Type name. */
-    private final String typeName;
-
     /**
-     * Ctor.
+     * Constructor.
      *
      * @param reader Reader.
      */
-    public ClientRegisterBinaryTypeNameRequest(BinaryRawReader reader) {
+    public ClientBinaryTypeGetRequest(BinaryRawReader reader) {
         super(reader);
 
-        platformId = reader.readByte();
         typeId = reader.readInt();
-        typeName = reader.readString();
     }
 
     /** {@inheritDoc} */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
-        try {
-            boolean res = ctx.kernalContext().marshallerContext().registerClassName(platformId, typeId, typeName);
+        BinaryTypeImpl type = (BinaryTypeImpl)ctx.kernalContext().cacheObjects().binary().type( typeId);
 
-            return new ClientBooleanResponse(requestId(), res);
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
+        return new ClientBinaryTypeGetResponse(requestId(), type.metadata());
     }
 }

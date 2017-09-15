@@ -118,6 +118,6 @@ public class JdbcConnectionContext implements SqlListenerConnectionContext {
 
     /** {@inheritDoc} */
     @Override public void onDisconnected() {
-        // No-op.
+        handler.onDisconnect();
     }
 }
