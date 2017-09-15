@@ -58,13 +58,27 @@ public class GridLogThrottle {
     /**
      * Setup period map cleaning task.
      */
-    public static void mapCleaningPeriodSetup() {
+    public static void mapCleaningPeriodSetup(boolean cleanUpCancelEnabled) {
         synchronized (scheduler) {
-            cleanUpOldEntriesTask = scheduler.scheduleAtFixedRate(new Runnable() {
-                @Override public void run() {
-                    cleanUpOldEntries();
+            if (cleanUpCancelEnabled) {
+                if (cleanUpOldEntriesTask != null) {
+
+                    cleanUpOldEntriesTask.cancel(false);
+
+                    cleanUpOldEntriesTask = scheduler.scheduleAtFixedRate(new Runnable() {
+                        @Override public void run() {
+                            cleanUpOldEntries();
+                        }
+                    }, throttleTimeout, throttleTimeout, TimeUnit.MILLISECONDS);
                 }
-            }, throttleTimeout, throttleTimeout, TimeUnit.MILLISECONDS);
+            }
+            else {
+                cleanUpOldEntriesTask = scheduler.scheduleAtFixedRate(new Runnable() {
+                    @Override public void run() {
+                        cleanUpOldEntries();
+                    }
+                }, throttleTimeout, throttleTimeout, TimeUnit.MILLISECONDS);
+            }
         }
     }
 
@@ -76,18 +90,7 @@ public class GridLogThrottle {
     public static void throttleTimeout(int timeout) {
         throttleTimeout = timeout;
 
-        synchronized (scheduler) {
-            if (cleanUpOldEntriesTask != null) {
-
-                cleanUpOldEntriesTask.cancel(false);
-
-                cleanUpOldEntriesTask = scheduler.scheduleAtFixedRate(new Runnable() {
-                    @Override public void run() {
-                        cleanUpOldEntries();
-                    }
-                }, throttleTimeout, throttleTimeout, TimeUnit.MILLISECONDS);
-            }
-        }
+        mapCleaningPeriodSetup(true);
     }
 
     /**
@@ -228,7 +231,7 @@ public class GridLogThrottle {
         assert !F.isEmpty(longMsg);
 
         if (cleanUpOldEntriesTask == null)
-            mapCleaningPeriodSetup();
+            mapCleaningPeriodSetup(false);
 
         IgniteBiTuple<Class<? extends Throwable>, String> tup =
             e != null && !byMsg ? F.<Class<? extends Throwable>, String>t(e.getClass(), e.getMessage()) :
