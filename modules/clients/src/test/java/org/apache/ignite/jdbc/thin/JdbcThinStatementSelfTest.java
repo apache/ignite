@@ -951,25 +951,6 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void testCloseOnCompletion() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-5344");
-
-        assert !stmt.isCloseOnCompletion() : "Default value of CloseOnCompletion is invalid";
-
-        stmt.execute("select 1");
-
-        stmt.closeOnCompletion();
-
-        assert stmt.isCloseOnCompletion();
-
-        stmt.getResultSet().close();
-
-        assert stmt.isClosed() : "Must be closed on complete";
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testCancel() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-5439");
 
