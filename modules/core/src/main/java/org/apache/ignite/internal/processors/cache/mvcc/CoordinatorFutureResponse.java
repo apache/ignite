@@ -57,7 +57,7 @@ public class CoordinatorFutureResponse implements MvccCoordinatorMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean processedOnCoordinator() {
+    @Override public boolean processedFromNioThread() {
         return false;
     }
 

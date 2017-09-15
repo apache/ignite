@@ -61,7 +61,7 @@ public class CoordinatorTxCounterRequest implements MvccCoordinatorMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean processedOnCoordinator() {
+    @Override public boolean processedFromNioThread() {
         return true;
     }
 
