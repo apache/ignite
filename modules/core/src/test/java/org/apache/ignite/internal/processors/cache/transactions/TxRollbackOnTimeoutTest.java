@@ -249,17 +249,6 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
 
     /**
      * Tests if deadlock is resolved on timeout with correct message.
-     *
-     * @throws Exception If failed.
-     */
-//    public void testDeadlockUnblockedOnTimeout4() throws Exception {
-//        Ignite client = startGrid("client");
-//
-//        testDeadlockUnblockedOnTimeout0(client, ignite(0));
-//    }
-
-    /**
-     * Tests if deadlock is resolved on timeout with correct message.
      * @throws Exception
      */
     private void testDeadlockUnblockedOnTimeout0(final Ignite node1, final Ignite node2) throws Exception {
