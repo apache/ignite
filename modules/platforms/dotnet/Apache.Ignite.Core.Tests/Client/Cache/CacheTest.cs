@@ -30,8 +30,29 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
     /// <summary>
     /// Thin client cache test.
     /// </summary>
-    public sealed class CacheTest : ClientTestBase
+    public sealed class CacheTest
     {
+        /** Cache name. */
+        private const string CacheName = "cache";
+
+        /// <summary>
+        /// Fixture tear down.
+        /// </summary>
+        [TestFixtureSetUp]
+        public void FixtureSetUp()
+        {
+            Ignition.Start(TestUtils.GetTestConfiguration());
+        }
+
+        /// <summary>
+        /// Fixture tear down.
+        /// </summary>
+        [TestFixtureTearDown]
+        public void FixtureTearDown()
+        {
+            Ignition.StopAll(true);
+        }
+
         /// <summary>
         /// Tests the cache put / get with primitive data types.
         /// </summary>
@@ -74,13 +95,15 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 CompactFooter = compactFooter
             };
 
-            using (var client = Ignition.GetClient(cfg))
+            using (var client = Ignition.StartClient(cfg))
             {
                 var person = new Person {Id = 100, Name = "foo"};
                 var person2 = new Person2 {Id = 200, Name = "bar"};
                 
                 var serverCache = GetCache<Person>();
                 var clientCache = client.GetCache<int?, Person>(CacheName);
+
+                Assert.AreEqual(CacheName, clientCache.Name);
 
                 // Put through server cache.
                 serverCache.Put(1, person);
@@ -135,7 +158,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             GetCache<string>().Put(1, "foo");
 
             // One client per thread.
-            ConcurrentDictionary<int, IIgnite> clients = new ConcurrentDictionary<int, IIgnite>();
+            var clients = new ConcurrentDictionary<int, IIgniteClient>();
 
             TestUtils.RunMultiThreaded(() =>
                 {
@@ -148,6 +171,30 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 Environment.ProcessorCount, 5);
 
             clients.ToList().ForEach(x => x.Value.Dispose());
+        }
+
+        /// <summary>
+        /// Gets the cache.
+        /// </summary>
+        private static ICache<int, T> GetCache<T>()
+        {
+            return Ignition.GetIgnite().GetOrCreateCache<int, T>(CacheName);
+        }
+
+        /// <summary>
+        /// Gets the client.
+        /// </summary>
+        private static IIgniteClient GetClient()
+        {
+            return Ignition.StartClient(GetClientConfiguration());
+        }
+
+        /// <summary>
+        /// Gets the client configuration.
+        /// </summary>
+        private static IgniteClientConfiguration GetClientConfiguration()
+        {
+            return new IgniteClientConfiguration {Host = "127.0.0.1"};
         }
     }
 }

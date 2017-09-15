@@ -18,6 +18,8 @@
 namespace Apache.Ignite.Core.Client.Cache
 {
     using System.Collections.Generic;
+    using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Cache.Query;
 
     /// <summary>
     /// Client cache API. See <see cref="IIgniteClient.GetCache{K, V}"/>.
@@ -55,5 +57,12 @@ namespace Apache.Ignite.Core.Client.Cache
         /// <returns>Cache value with the specified key.</returns>
         /// <exception cref="KeyNotFoundException">If the key is not present in the cache.</exception>
         TV this[TK key] { get; set; }
+
+        /// <summary>
+        /// Exectutes a Scan query.
+        /// </summary>
+        /// <param name="query">Scan Query.</param>
+        /// <returns>Query cursor.</returns>
+        IQueryCursor<ICacheEntry<TK, TV>> Query(ScanQuery<TK, TV> query);
     }
 }

@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.Client
 {
+    using System.Net;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Client;
     using NUnit.Framework;
@@ -85,9 +86,9 @@ namespace Apache.Ignite.Core.Tests.Client
         /// <summary>
         /// Gets the client.
         /// </summary>
-        protected IIgnite GetClient()
+        protected IIgniteClient GetClient()
         {
-            return Ignition.GetClient(GetClientConfiguration());
+            return Ignition.StartClient(GetClientConfiguration());
         }
 
         /// <summary>
@@ -95,7 +96,10 @@ namespace Apache.Ignite.Core.Tests.Client
         /// </summary>
         protected IgniteClientConfiguration GetClientConfiguration()
         {
-            return new IgniteClientConfiguration();
+            return new IgniteClientConfiguration
+            {
+                Host = IPAddress.Loopback.ToString()
+            };
         }
     }
 }
