@@ -1689,6 +1689,15 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             else
                 cctx.offheap().invoke(cctx, key, localPartition(), c);
 
+            if(lsnrs == null && !readThrough) {
+                lsnrs = cctx.continuousQueries().updateListeners(internal, false);
+
+                if (lsnrs != null) {
+                    needVal = lsnrs != null || intercept || retval || op == GridCacheOperation.TRANSFORM
+                            || !F.isEmptyOrNulls(filter);
+                }
+            }
+
             GridCacheUpdateAtomicResult updateRes = c.updateRes;
 
             assert updateRes != null : c;
