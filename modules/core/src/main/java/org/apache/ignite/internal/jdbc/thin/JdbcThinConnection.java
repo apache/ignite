@@ -38,11 +38,12 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.Executor;
 import java.util.logging.Logger;
-import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.odbc.SqlListenerResponse;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResponse;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResult;
-import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteProductVersion;
 
@@ -659,19 +660,27 @@ public class JdbcThinConnection implements Connection {
      * @return Server response.
      * @throws SQLException On any error.
      */
+    @SuppressWarnings("unchecked")
     <R extends JdbcResult> R sendRequest(JdbcRequest req) throws SQLException {
         try {
-            return cliIo.sendRequest(req);
+            JdbcResponse res = cliIo.sendRequest(req);
+
+            if (res.status() != SqlListenerResponse.STATUS_SUCCESS)
+                throw new SQLException(res.error(), IgniteQueryErrorCode.codeToSqlState(res.status()));
+
+            return (R)res.response();
         }
-        catch (IgniteSQLException e) {
-            throw e.toJdbcException();
+        catch (SQLException e) {
+            throw e;
         }
         catch (IOException e) {
             close();
 
             throw new SQLException("Failed to send Ignite JDBC request.", SqlStateCode.CONNECTION_FAILURE, e);
         }
-        catch (IgniteCheckedException e) {
+        catch (Exception e) {
+            close();
+
             throw new SQLException("Failed to send Ignite JDBC request.", e);
         }
     }

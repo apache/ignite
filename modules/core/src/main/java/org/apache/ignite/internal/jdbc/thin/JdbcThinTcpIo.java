@@ -22,24 +22,21 @@ import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
-import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.odbc.SqlListenerNioListener;
 import org.apache.ignite.internal.processors.odbc.SqlListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.SqlListenerRequest;
-import org.apache.ignite.internal.processors.odbc.SqlListenerResponse;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBatchExecuteRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryCloseRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryFetchRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryMetadataRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResponse;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResult;
-import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.util.ipc.loopback.IpcClientTcpEndpoint;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteProductVersion;
@@ -300,11 +297,10 @@ public class JdbcThinTcpIo {
     /**
      * @param req Request.
      * @return Server response.
-     * @throws IOException On IO error.
-     * @throws IgniteCheckedException On error.
+     * @throws IOException In case of IO error.
      */
     @SuppressWarnings("unchecked")
-    <R extends JdbcResult> R sendRequest(JdbcRequest req) throws IOException, IgniteCheckedException {
+    JdbcResponse sendRequest(JdbcRequest req) throws IOException {
         int cap = guessCapacity(req);
 
         BinaryWriterExImpl writer = new BinaryWriterExImpl(null, new BinaryHeapOutputStream(cap), null, null);
@@ -319,10 +315,7 @@ public class JdbcThinTcpIo {
 
         res.readBinary(reader);
 
-        if (res.status() != SqlListenerResponse.STATUS_SUCCESS)
-            throw new IgniteSQLException(res.error(), res.status(), IgniteQueryErrorCode.codeToSqlState(res.status()));
-
-        return (R)res.response();
+        return res;
     }
 
     /**
@@ -371,9 +364,8 @@ public class JdbcThinTcpIo {
     /**
      * @return Bytes of a response from server.
      * @throws IOException On error.
-     * @throws IgniteCheckedException On error.
      */
-    private byte[] read() throws IOException, IgniteCheckedException {
+    private byte[] read() throws IOException {
         byte[] sizeBytes = read(4);
 
         int msgSize  = (((0xFF & sizeBytes[3]) << 24) | ((0xFF & sizeBytes[2]) << 16)
@@ -386,9 +378,8 @@ public class JdbcThinTcpIo {
      * @param size Count of bytes to read from stream.
      * @return Read bytes.
      * @throws IOException On error.
-     * @throws IgniteCheckedException On error.
      */
-    private byte [] read(int size) throws IOException, IgniteCheckedException {
+    private byte [] read(int size) throws IOException {
         int off = 0;
 
         byte[] data = new byte[size];
@@ -397,7 +388,7 @@ public class JdbcThinTcpIo {
             int res = in.read(data, off, size - off);
 
             if (res == -1)
-                throw new IgniteCheckedException("Failed to read incoming message (not enough data).");
+                throw new IOException("Failed to read incoming message (not enough data).");
 
             off += res;
         }
