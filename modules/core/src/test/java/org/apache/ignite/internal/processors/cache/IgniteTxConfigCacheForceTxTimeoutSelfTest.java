@@ -36,8 +36,4 @@ public class IgniteTxConfigCacheForceTxTimeoutSelfTest extends IgniteTxConfigCac
 
         System.clearProperty(IGNITE_TX_DEADLOCK_DETECTION_MAX_ITERS);
     }
-
-    @Override public void testUserTxTimeout() throws Exception {
-        super.testUserTxTimeout();
-    }
 }
