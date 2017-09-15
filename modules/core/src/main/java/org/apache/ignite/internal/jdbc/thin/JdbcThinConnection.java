@@ -40,10 +40,6 @@ import java.util.concurrent.Executor;
 import java.util.logging.Logger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBatchExecuteRequest;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryCloseRequest;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryFetchRequest;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryMetadataRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResult;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
@@ -54,11 +50,6 @@ import static java.sql.ResultSet.CLOSE_CURSORS_AT_COMMIT;
 import static java.sql.ResultSet.CONCUR_READ_ONLY;
 import static java.sql.ResultSet.HOLD_CURSORS_OVER_COMMIT;
 import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
-import static org.apache.ignite.internal.jdbc.thin.JdbcThinTcpIo.DYNAMIC_SIZE_MSG_CAP;
-import static org.apache.ignite.internal.jdbc.thin.JdbcThinTcpIo.MAX_BATCH_QRY_CNT;
-import static org.apache.ignite.internal.jdbc.thin.JdbcThinTcpIo.QUERY_CLOSE_MSG_SIZE;
-import static org.apache.ignite.internal.jdbc.thin.JdbcThinTcpIo.QUERY_FETCH_MSG_SIZE;
-import static org.apache.ignite.internal.jdbc.thin.JdbcThinTcpIo.QUERY_META_MSG_SIZE;
 import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_AUTO_CLOSE_SERVER_CURSORS;
 import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_COLLOCATED;
 import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_DISTRIBUTED_JOINS;
@@ -669,24 +660,8 @@ public class JdbcThinConnection implements Connection {
      * @throws SQLException On any error.
      */
     <R extends JdbcResult> R sendRequest(JdbcRequest req) throws SQLException {
-        int cap;
-
-        if (req instanceof JdbcBatchExecuteRequest) {
-            int cnt = Math.min(MAX_BATCH_QRY_CNT, ((JdbcBatchExecuteRequest)req).queries().size());
-
-            cap = cnt * DYNAMIC_SIZE_MSG_CAP;
-        }
-        else if (req instanceof JdbcQueryCloseRequest)
-            cap = QUERY_CLOSE_MSG_SIZE;
-        else if (req instanceof JdbcQueryMetadataRequest)
-            cap = QUERY_META_MSG_SIZE;
-        else if (req instanceof JdbcQueryFetchRequest)
-            cap = QUERY_FETCH_MSG_SIZE;
-        else
-            cap = DYNAMIC_SIZE_MSG_CAP;
-
         try {
-            return cliIo.sendRequest(req, cap);
+            return cliIo.sendRequest(req);
         }
         catch (IgniteSQLException e) {
             throw e.toJdbcException();

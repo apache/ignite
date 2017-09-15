@@ -32,6 +32,10 @@ import org.apache.ignite.internal.processors.odbc.SqlListenerNioListener;
 import org.apache.ignite.internal.processors.odbc.SqlListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.SqlListenerRequest;
 import org.apache.ignite.internal.processors.odbc.SqlListenerResponse;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBatchExecuteRequest;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryCloseRequest;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryFetchRequest;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryMetadataRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResponse;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResult;
@@ -54,19 +58,19 @@ public class JdbcThinTcpIo {
     private static final int HANDSHAKE_MSG_SIZE = 13;
 
     /** Initial output for query message. */
-    static final int DYNAMIC_SIZE_MSG_CAP = 256;
+    private static final int DYNAMIC_SIZE_MSG_CAP = 256;
 
     /** Maximum batch query count. */
-    static final int MAX_BATCH_QRY_CNT = 32;
+    private static final int MAX_BATCH_QRY_CNT = 32;
 
     /** Initial output for query fetch message. */
-    static final int QUERY_FETCH_MSG_SIZE = 13;
+    private static final int QUERY_FETCH_MSG_SIZE = 13;
 
     /** Initial output for query fetch message. */
-    static final int QUERY_META_MSG_SIZE = 9;
+    private static final int QUERY_META_MSG_SIZE = 9;
 
     /** Initial output for query close message. */
-    static final int QUERY_CLOSE_MSG_SIZE = 9;
+    private static final int QUERY_CLOSE_MSG_SIZE = 9;
 
     /** Host. */
     private final String host;
@@ -295,13 +299,14 @@ public class JdbcThinTcpIo {
 
     /**
      * @param req Request.
-     * @param cap Initial output stream capacity.
      * @return Server response.
      * @throws IOException On IO error.
      * @throws IgniteCheckedException On error.
      */
     @SuppressWarnings("unchecked")
-    <R extends JdbcResult> R sendRequest(JdbcRequest req, int cap) throws IOException, IgniteCheckedException {
+    <R extends JdbcResult> R sendRequest(JdbcRequest req) throws IOException, IgniteCheckedException {
+        int cap = guessCapacity(req);
+
         BinaryWriterExImpl writer = new BinaryWriterExImpl(null, new BinaryHeapOutputStream(cap), null, null);
 
         req.writeBinary(writer);
@@ -318,6 +323,32 @@ public class JdbcThinTcpIo {
             throw new IgniteSQLException(res.error(), res.status(), IgniteQueryErrorCode.codeToSqlState(res.status()));
 
         return (R)res.response();
+    }
+
+    /**
+     * Try to guess request capacity.
+     *
+     * @param req Request.
+     * @return Expected capacity.
+     */
+    private static int guessCapacity(JdbcRequest req) {
+        int cap;
+
+        if (req instanceof JdbcBatchExecuteRequest) {
+            int cnt = Math.min(MAX_BATCH_QRY_CNT, ((JdbcBatchExecuteRequest)req).queries().size());
+
+            cap = cnt * DYNAMIC_SIZE_MSG_CAP;
+        }
+        else if (req instanceof JdbcQueryCloseRequest)
+            cap = QUERY_CLOSE_MSG_SIZE;
+        else if (req instanceof JdbcQueryMetadataRequest)
+            cap = QUERY_META_MSG_SIZE;
+        else if (req instanceof JdbcQueryFetchRequest)
+            cap = QUERY_FETCH_MSG_SIZE;
+        else
+            cap = DYNAMIC_SIZE_MSG_CAP;
+
+        return cap;
     }
 
     /**
