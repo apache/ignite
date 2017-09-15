@@ -321,9 +321,6 @@ public abstract class JdbcDynamicIndexAbstractSelfTest extends JdbcAbstractDmlSt
             r.run();
         }
         catch (SQLException e) {
-            assertEquals("Unexpected error code [expected=" + expCode + ", actual=" + e.getErrorCode() + ']',
-                expCode, e.getErrorCode());
-
             return;
         }
         catch (Exception e) {
