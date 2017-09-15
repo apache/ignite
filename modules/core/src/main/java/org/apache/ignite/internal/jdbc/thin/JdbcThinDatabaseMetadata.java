@@ -29,7 +29,6 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import org.apache.ignite.internal.IgniteVersionUtils;
-import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.jdbc2.JdbcUtils;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcColumnMeta;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcIndexMeta;
@@ -708,8 +707,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
     /** {@inheritDoc} */
     @Override public ResultSet getTables(String catalog, String schemaPtrn, String tblNamePtrn, String[] tblTypes)
         throws SQLException {
-        if (conn.isClosed())
-            throw new SQLException("Connection is closed.", SqlStateCode.CONNECTION_CLOSED);
+        conn.ensureNotClosed();
 
         final List<JdbcColumnMeta> meta = Arrays.asList(
             new JdbcColumnMeta(null, null, "TABLE_CAT", String.class),
@@ -793,8 +791,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
     /** {@inheritDoc} */
     @Override public ResultSet getColumns(String catalog, String schemaPtrn, String tblNamePtrn, String colNamePtrn)
         throws SQLException {
-        if (conn.isClosed())
-            throw new SQLException("Connection is closed.", SqlStateCode.CONNECTION_CLOSED);
+        conn.ensureNotClosed();
 
         final List<JdbcColumnMeta> meta = Arrays.asList(
             new JdbcColumnMeta(null, null, "TABLE_CAT", String.class),
@@ -923,8 +920,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
 
     /** {@inheritDoc} */
     @Override public ResultSet getPrimaryKeys(String catalog, String schema, String tbl) throws SQLException {
-        if (conn.isClosed())
-            throw new SQLException("Connection is closed.", SqlStateCode.CONNECTION_CLOSED);
+        conn.ensureNotClosed();
 
         final List<JdbcColumnMeta> meta = Arrays.asList(
             new JdbcColumnMeta(null, null, "TABLE_CAT", String.class),
@@ -1144,8 +1140,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
     /** {@inheritDoc} */
     @Override public ResultSet getIndexInfo(String catalog, String schema, String tbl, boolean unique,
         boolean approximate) throws SQLException {
-        if (conn.isClosed())
-            throw new SQLException("Connection is closed.", SqlStateCode.CONNECTION_CLOSED);
+        conn.ensureNotClosed();
 
         final List<JdbcColumnMeta> meta = Arrays.asList(
             new JdbcColumnMeta(null, null, "TABLE_CAT", String.class),
@@ -1408,8 +1403,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
 
     /** {@inheritDoc} */
     @Override public ResultSet getSchemas(String catalog, String schemaPtrn) throws SQLException {
-        if (conn.isClosed())
-            throw new SQLException("Connection is closed.", SqlStateCode.CONNECTION_CLOSED);
+        conn.ensureNotClosed();
 
         final List<JdbcColumnMeta> meta = Arrays.asList(
             new JdbcColumnMeta(null, null, "TABLE_SCHEM", String.class),

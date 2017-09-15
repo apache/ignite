@@ -51,7 +51,10 @@ public class IgniteWalConverter {
         H2ExtrasLeafIO.register();
 
         final IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory(new NullLogger(),
-                new RandomAccessFileIOFactory(), new Integer(args[0]));
+            Integer.parseInt(args[0]),
+            null,
+            null,
+            false);
 
         final File walWorkDirWithConsistentId = new File(args[1]);
 
