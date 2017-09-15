@@ -281,13 +281,14 @@ public abstract class ClusterStateAbstractTest extends GridCommonAbstractTest {
 
         lock.lock();
 
-        GridTestUtils.assertThrowsWithCause(new Callable<Object>() {
+        GridTestUtils.assertThrowsAnyCause(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
                 grid(0).active(false);
 
                 return null;
             }
-        }, IgniteException.class);
+        }, IgniteException.class,
+            "Failed to deactivate cluster (must invoke the method outside of an active transaction or lock).");
 
         lock.unlock();
     }
@@ -318,13 +319,14 @@ public abstract class ClusterStateAbstractTest extends GridCommonAbstractTest {
         try (Transaction tx = ignite0.transactions().txStart(concurrency, isolation)) {
             cache0.put(1, "1");
 
-            GridTestUtils.assertThrowsWithCause(new Callable<Object>() {
+            GridTestUtils.assertThrowsAnyCause(log, new Callable<Object>() {
                 @Override public Object call() throws Exception {
                     grid(0).active(false);
 
                     return null;
                 }
-            }, IgniteException.class);
+            }, IgniteException.class,
+                "Failed to deactivate cluster (must invoke the method outside of an active transaction or lock).");
         }
 
         assertNull(cache0.get(1));
