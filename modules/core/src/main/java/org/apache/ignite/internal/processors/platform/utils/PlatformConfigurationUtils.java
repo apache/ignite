@@ -1143,6 +1143,7 @@ public class PlatformConfigurationUtils {
 
         writeMemoryConfiguration(w, cfg.getMemoryConfiguration());
 
+        // TODO: Implement .NET part.
         writeSqlConnectorConfiguration(w, cfg.getSqlConnectorConfiguration());
 
         writePersistentStoreConfiguration(w, cfg.getPersistentStoreConfiguration());

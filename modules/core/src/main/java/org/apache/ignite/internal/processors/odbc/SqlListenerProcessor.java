@@ -199,6 +199,7 @@ public class SqlListenerProcessor extends GridProcessorAdapter {
     @SuppressWarnings("deprecation")
     @Nullable private SqlConnectorConfiguration prepareConfiguration(IgniteConfiguration cfg)
         throws IgniteCheckedException {
+        // TODO: Wire
         SqlConnectorConfiguration res = cfg.getSqlConnectorConfiguration();
 
         OdbcConfiguration odbcCfg = cfg.getOdbcConfiguration();
