@@ -122,6 +122,9 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
     /** */
     private final boolean keepCacheObjects;
 
+    /** Future start time in nanoseconds. */
+    private final long startTimeNanos;
+
     /** */
     @GridToStringInclude
     private ClusterNode node;
@@ -181,6 +184,8 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
         this.topVer = topVer;
 
         futId = IgniteUuid.randomUuid();
+
+        startTimeNanos = (cctx.config().isStatisticsEnabled())? System.nanoTime() : 0L;
 
         if (log == null)
             log = U.logger(cctx.kernalContext(), logRef, GridPartitionedSingleGetFuture.class);
@@ -734,6 +739,9 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
                 cctx.mvcc().removeFuture(futId);
 
             cctx.dht().sendTtlUpdateRequest(expiryPlc);
+
+            if (cctx.config().isStatisticsEnabled() && !trackable && !skipVals && err == null)
+                cctx.cache().metrics0().addGetTimeNanos(System.nanoTime() - startTimeNanos);
 
             return true;
         }

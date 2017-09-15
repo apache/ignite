@@ -61,7 +61,9 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.CLOCK;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
+import static org.apache.ignite.internal.processors.cache.GridCacheOperation.DELETE;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
+import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPDATE;
 
 /**
  * DHT atomic cache near update future.
@@ -588,10 +590,33 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
         }
 
         if (locUpdate != null) {
+            final boolean statsEnabled = cctx.config().isStatisticsEnabled();
+
+            final long start = (statsEnabled)? System.nanoTime() : 0L;
+
             cache.updateAllAsyncInternal(cctx.localNodeId(), locUpdate,
                 new CI2<GridNearAtomicFullUpdateRequest, GridNearAtomicUpdateResponse>() {
                     @Override public void apply(GridNearAtomicFullUpdateRequest req, GridNearAtomicUpdateResponse res) {
                         onResult(res.nodeId(), res, false);
+
+                        if (statsEnabled && res.error() == null) {
+                            final boolean retVal = req.returnValue();
+
+                            final long end = System.nanoTime();
+
+                            if (req.operation() == UPDATE) {
+                                if (retVal)
+                                    cache.metrics0().addPutAndGetTimeNanos(end - start);
+                                else
+                                    cache.metrics0().addPutTimeNanos(end - start);
+                            }
+                            else if (req.operation() == DELETE) {
+                                if (retVal)
+                                    cache.metrics0().addRemoveAndGetTimeNanos(end - start);
+                                else
+                                    cache.metrics0().addRemoveTimeNanos(end - start);
+                            }
+                        }
                     }
                 });
         }

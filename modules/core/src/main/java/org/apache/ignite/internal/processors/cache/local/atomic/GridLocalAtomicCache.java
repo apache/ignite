@@ -142,6 +142,10 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
 
     /** {@inheritDoc} */
     @Override protected boolean put0(K key, V val, CacheEntryPredicate filter) throws IgniteCheckedException {
+        boolean statsEnabled = ctx.config().isStatisticsEnabled();
+
+        long start = statsEnabled ? System.nanoTime() : 0L;
+
         CacheOperationContext opCtx = ctx.operationContextPerCall();
 
         Boolean res = (Boolean)updateAllInternal(UPDATE,
@@ -158,29 +162,50 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
 
         assert res != null;
 
+        if (statsEnabled && Boolean.TRUE.equals(res))
+            metrics0().addPutTimeNanos(System.nanoTime() - start);
+
         return res;
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public IgniteInternalFuture<V> getAndPutAsync0(K key, V val, @Nullable CacheEntryPredicate filter) {
-        return updateAllAsync0(F0.asMap(key, val),
+        final boolean statsEnabled = ctx.config().isStatisticsEnabled();
+
+        final long start = statsEnabled ? System.nanoTime() : 0L;
+
+        IgniteInternalFuture<V> fut = updateAllAsync0(F0.asMap(key, val),
             null,
             null,
             true,
             false,
             filter);
+
+        if (statsEnabled)
+            fut.listen(new UpdatePutAndGetTimeStatClosure<V>(metrics0(), start));
+
+        return fut;
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public IgniteInternalFuture<Boolean> putAsync0(K key, V val, @Nullable CacheEntryPredicate filter) {
-        return updateAllAsync0(F0.asMap(key, val),
+        final boolean statsEnabled = ctx.config().isStatisticsEnabled();
+
+        final long start = statsEnabled ? System.nanoTime() : 0L;
+
+        IgniteInternalFuture<Boolean> fut = updateAllAsync0(F0.asMap(key, val),
             null,
             null,
             false,
             false,
             filter);
+
+        if (statsEnabled)
+            fut.listen(new UpdatePutTimeStatClosure<Boolean>(metrics0(), start));
+
+        return fut;
     }
 
     /** {@inheritDoc} */
@@ -230,7 +255,16 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public IgniteInternalFuture<V> getAndRemoveAsync0(K key) {
-        return removeAllAsync0(Collections.singletonList(key), true, false, null);
+        final boolean statsEnabled = ctx.config().isStatisticsEnabled();
+
+        final long start = statsEnabled ? System.nanoTime() : 0L;
+
+        IgniteInternalFuture<V> fut = removeAllAsync0(Collections.singletonList(key), true, false, null);
+
+        if (statsEnabled)
+            fut.listen(new UpdateRemoveTimeStatClosure<V>(metrics0(), start));
+
+        return fut;
     }
 
     /** {@inheritDoc} */
@@ -259,6 +293,10 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public boolean remove0(K key, final CacheEntryPredicate filter) throws IgniteCheckedException {
+        boolean statsEnabled = ctx.config().isStatisticsEnabled();
+
+        long start = statsEnabled ? System.nanoTime() : 0L;
+
         CacheOperationContext opCtx = ctx.operationContextPerCall();
 
         Boolean rmv = (Boolean)updateAllInternal(DELETE,
@@ -274,6 +312,9 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
             opCtx != null && opCtx.isKeepBinary());
 
         assert rmv != null;
+
+        if (statsEnabled && Boolean.TRUE.equals(rmv))
+            metrics0().addRemoveTimeNanos(System.nanoTime() - start);
 
         return rmv;
     }
@@ -303,6 +344,10 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
         boolean deserializeBinary,
         boolean needVer) throws IgniteCheckedException
     {
+        boolean statsEnabled = ctx.config().isStatisticsEnabled();
+
+        long start = statsEnabled ? System.nanoTime() : 0L;
+
         Map<K, V> m = getAllInternal(Collections.singleton(key),
             ctx.isSwapOrOffheapEnabled(),
             ctx.readThrough(),
@@ -313,6 +358,9 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
 
         assert m.isEmpty() || m.size() == 1 : m.size();
 
+        if (statsEnabled)
+            metrics0().addGetTimeNanos(System.nanoTime() - start);
+
         return F.firstValue(m);
     }
 
@@ -322,15 +370,24 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
         throws IgniteCheckedException {
         A.notNull(keys, "keys");
 
+        boolean statsEnabled = ctx.config().isStatisticsEnabled();
+
+        long start = statsEnabled ? System.nanoTime() : 0L;
+
         String taskName = ctx.kernalContext().job().currentTaskName();
 
-        return getAllInternal(keys,
+        Map<K, V> result = getAllInternal(keys,
             ctx.isSwapOrOffheapEnabled(),
             ctx.readThrough(),
             taskName,
             deserializeBinary,
             false,
             needVer);
+
+        if (statsEnabled)
+            metrics0().addGetTimeNanos(System.nanoTime() - start);
+
+        return result;
     }
 
     /** {@inheritDoc} */
@@ -348,15 +405,24 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
     ) {
         A.notNull(keys, "keys");
 
+        final boolean statsEnabled = ctx.config().isStatisticsEnabled();
+
+        final long start = statsEnabled ? System.nanoTime() : 0L;
+
         final boolean swapOrOffheap = ctx.isSwapOrOffheapEnabled();
         final boolean storeEnabled = ctx.readThrough();
 
-        return asyncOp(new Callable<Map<K, V>>() {
+        IgniteInternalFuture<Map<K, V>> fut = asyncOp(new Callable<Map<K, V>>() {
             @Override public Map<K, V> call() throws Exception {
                 return getAllInternal(keys, swapOrOffheap, storeEnabled, taskName, deserializeBinary, skipVals, needVer);
             }
         });
-    }
+
+        if (statsEnabled)
+            fut.listen(new UpdateGetTimeStatClosure<Map<K, V>>(metrics0(), start));
+
+        return fut;
+   }
 
     /**
      * Entry point to all public API get methods.

@@ -42,6 +42,8 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.CLOCK;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
+import static org.apache.ignite.internal.processors.cache.GridCacheOperation.DELETE;
+import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPDATE;
 
 /**
  * Base for near atomic update futures.
@@ -260,11 +262,34 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridFutureAdapt
      * @param req Request.
      */
     protected void mapSingle(UUID nodeId, GridNearAtomicAbstractUpdateRequest req) {
+        final boolean statsEnabled = cctx.config().isStatisticsEnabled();
+
+        final long start = (statsEnabled)? System.nanoTime() : 0L;
+
         if (cctx.localNodeId().equals(nodeId)) {
             cache.updateAllAsyncInternal(nodeId, req,
                 new CI2<GridNearAtomicAbstractUpdateRequest, GridNearAtomicUpdateResponse>() {
                     @Override public void apply(GridNearAtomicAbstractUpdateRequest req, GridNearAtomicUpdateResponse res) {
                         onResult(res.nodeId(), res, false);
+
+                        if (statsEnabled && res.error() == null) {
+                            final boolean retVal = req.returnValue();
+
+                            final long end = System.nanoTime();
+
+                            if (req.operation() == UPDATE) {
+                                if (retVal)
+                                    cache.metrics0().addPutAndGetTimeNanos(end - start);
+                                else
+                                    cache.metrics0().addPutTimeNanos(end - start);
+                            }
+                            else if (req.operation() == DELETE) {
+                                if (retVal)
+                                    cache.metrics0().addRemoveAndGetTimeNanos(end - start);
+                                else
+                                    cache.metrics0().addRemoveTimeNanos(end - start);
+                            }
+                        }
                     }
                 });
         }

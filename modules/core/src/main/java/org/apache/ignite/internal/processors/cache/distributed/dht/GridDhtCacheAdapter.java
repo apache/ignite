@@ -761,6 +761,10 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     protected void processNearSingleGetRequest(final UUID nodeId, final GridNearSingleGetRequest req) {
         assert ctx.affinityNode();
 
+        final boolean statsEnabled = ctx.config().isStatisticsEnabled();
+
+        final long start = statsEnabled ? System.nanoTime() : 0L;
+
         final CacheExpiryPolicy expiryPlc = CacheExpiryPolicy.fromRemote(req.createTtl(), req.accessTtl());
 
         IgniteInternalFuture<GridCacheEntryInfo> fut =
@@ -851,6 +855,14 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                 sendTtlUpdateRequest(expiryPlc);
             }
         });
+
+        if (statsEnabled)
+            fut.listen(new CI1<IgniteInternalFuture<GridCacheEntryInfo>>() {
+                @Override public void apply(IgniteInternalFuture<GridCacheEntryInfo> f) {
+                    if (!req.skipValues() &&f.error() == null)
+                        metrics0().addGetTimeNanos(System.nanoTime() - start);
+                }
+            });
     }
 
     /**
@@ -860,6 +872,10 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     protected void processNearGetRequest(final UUID nodeId, final GridNearGetRequest req) {
         assert ctx.affinityNode();
         assert !req.reload() : req;
+
+        final boolean statsEnabled = ctx.config().isStatisticsEnabled();
+
+        final long start = statsEnabled ? System.nanoTime() : 0L;
 
         final CacheExpiryPolicy expiryPlc = CacheExpiryPolicy.fromRemote(req.createTtl(), req.accessTtl());
 
@@ -915,6 +931,14 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                 sendTtlUpdateRequest(expiryPlc);
             }
         });
+
+        if (statsEnabled)
+            fut.listen(new CI1<IgniteInternalFuture<Collection<GridCacheEntryInfo>>>() {
+                @Override public void apply(IgniteInternalFuture<Collection<GridCacheEntryInfo>> f) {
+                    if (!req.skipValues() && f.error() == null)
+                        metrics0().addGetTimeNanos(System.nanoTime() - start);
+                }
+            });
     }
 
     /**
