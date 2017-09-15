@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Impl.Client.Cache.Query
 {
     using System.Collections.Generic;
+    using System.Linq;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
@@ -60,7 +61,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache.Query
         /** <inheritdoc /> */
         protected override IList<ICacheEntry<TK, TV>> GetAllInternal()
         {
-            throw IgniteClient.GetClientNotSupportedException("Use IQueryCursor.ToList extension method instead.");
+            return this.ToArray();
         }
 
         /** <inheritdoc /> */
