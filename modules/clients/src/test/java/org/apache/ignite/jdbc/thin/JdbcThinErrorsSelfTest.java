@@ -67,7 +67,7 @@ public class JdbcThinErrorsSelfTest extends JdbcErrorsAbstractSelfTest {
 
                 return null;
             }
-        }, "08000");
+        }, "08001");
     }
 
     /* ALL TESTS PAST THIS POINT MUST BE MOVED TO PARENT CLASS JdbcErrorsAbstractSelfTest
@@ -234,7 +234,7 @@ public class JdbcThinErrorsSelfTest extends JdbcErrorsAbstractSelfTest {
                     rs.getLong(1);
                 }
             }
-        }, "22000");
+        }, "0700B");
     }
 
     /**
@@ -253,7 +253,7 @@ public class JdbcThinErrorsSelfTest extends JdbcErrorsAbstractSelfTest {
                     rs.getLong(1);
                 }
             }
-        }, "22000");
+        }, "0700B");
     }
 
     /**
@@ -272,7 +272,7 @@ public class JdbcThinErrorsSelfTest extends JdbcErrorsAbstractSelfTest {
                     rs.getFloat(1);
                 }
             }
-        }, "22000");
+        }, "0700B");
     }
 
     /**
@@ -291,7 +291,7 @@ public class JdbcThinErrorsSelfTest extends JdbcErrorsAbstractSelfTest {
                     rs.getDouble(1);
                 }
             }
-        }, "22000");
+        }, "0700B");
     }
 
     /**
@@ -310,7 +310,7 @@ public class JdbcThinErrorsSelfTest extends JdbcErrorsAbstractSelfTest {
                     rs.getByte(1);
                 }
             }
-        }, "22000");
+        }, "0700B");
     }
 
     /**
@@ -329,7 +329,7 @@ public class JdbcThinErrorsSelfTest extends JdbcErrorsAbstractSelfTest {
                     rs.getShort(1);
                 }
             }
-        }, "22000");
+        }, "0700B");
     }
 
     /**
@@ -348,7 +348,7 @@ public class JdbcThinErrorsSelfTest extends JdbcErrorsAbstractSelfTest {
                     rs.getBigDecimal(1);
                 }
             }
-        }, "22000");
+        }, "0700B");
     }
 
     /**
@@ -367,7 +367,7 @@ public class JdbcThinErrorsSelfTest extends JdbcErrorsAbstractSelfTest {
                     rs.getBoolean(1);
                 }
             }
-        }, "22000");
+        }, "0700B");
     }
 
     /**
@@ -386,7 +386,7 @@ public class JdbcThinErrorsSelfTest extends JdbcErrorsAbstractSelfTest {
                     rs.getObject(1, List.class);
                 }
             }
-        }, "22000");
+        }, "0700B");
     }
 
     /**
@@ -405,7 +405,7 @@ public class JdbcThinErrorsSelfTest extends JdbcErrorsAbstractSelfTest {
                     rs.getDate(1);
                 }
             }
-        }, "22000");
+        }, "0700B");
     }
 
     /**
@@ -424,7 +424,7 @@ public class JdbcThinErrorsSelfTest extends JdbcErrorsAbstractSelfTest {
                     rs.getTime(1);
                 }
             }
-        }, "22000");
+        }, "0700B");
     }
 
     /**
@@ -443,7 +443,7 @@ public class JdbcThinErrorsSelfTest extends JdbcErrorsAbstractSelfTest {
                     rs.getTimestamp(1);
                 }
             }
-        }, "22000");
+        }, "0700B");
     }
 
     /**
@@ -462,6 +462,6 @@ public class JdbcThinErrorsSelfTest extends JdbcErrorsAbstractSelfTest {
                     rs.getURL(1);
                 }
             }
-        }, "22000");
+        }, "0700B");
     }
 }
