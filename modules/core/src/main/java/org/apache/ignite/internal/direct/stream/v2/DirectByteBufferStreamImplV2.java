@@ -527,6 +527,17 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
     }
 
     /** {@inheritDoc} */
+    @Override public void writeLongArray(long[] val, int len) {
+        if (val != null)
+            if (BIG_ENDIAN)
+                lastFinished = writeArrayLE(val, LONG_ARR_OFF, len, 8, 3);
+            else
+                lastFinished = writeArray(val, LONG_ARR_OFF, len, len << 3);
+        else
+            writeInt(-1);
+    }
+
+    /** {@inheritDoc} */
     @Override public void writeFloatArray(float[] val) {
         if (val != null)
             if (BIG_ENDIAN)

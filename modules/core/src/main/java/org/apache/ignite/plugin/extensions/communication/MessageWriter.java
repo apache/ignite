@@ -172,6 +172,8 @@ public interface MessageWriter {
      */
     public boolean writeLongArray(String name, long[] val);
 
+    public boolean writeLongArray(String name, long[] val, int len);
+
     /**
      * Writes {@code float} array.
      *

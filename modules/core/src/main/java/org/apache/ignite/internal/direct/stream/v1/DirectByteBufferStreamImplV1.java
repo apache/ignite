@@ -436,6 +436,14 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
     }
 
     /** {@inheritDoc} */
+    @Override public void writeLongArray(long[] val, int len) {
+        if (val != null)
+            lastFinished = writeArray(val, GridUnsafe.LONG_ARR_OFF, len, len << 3);
+        else
+            writeInt(-1);
+    }
+
+    /** {@inheritDoc} */
     @Override public void writeFloatArray(float[] val) {
         if (val != null)
             lastFinished = writeArray(val, GridUnsafe.FLOAT_ARR_OFF, val.length, val.length << 2);
