@@ -39,9 +39,9 @@ namespace Apache.Ignite.Core
 
     /// <summary>
     /// Main entry point for all Ignite APIs.
-    /// You can obtain an instance of <c>IGrid</c> through <see cref="Ignition.GetIgnite()"/>,
+    /// You can obtain an instance of <see cref="IIgnite"/> through <see cref="Ignition.GetIgnite()"/>,
     /// or for named grids you can use <see cref="Ignition.GetIgnite(string)"/>. Note that you
-    /// can have multiple instances of <c>IGrid</c> running in the same process by giving
+    /// can have multiple instances of <see cref="IIgnite"/> running in the same process by giving
     /// each instance a different name.
     /// <para/>
     /// All members are thread-safe and may be used concurrently from multiple threads.

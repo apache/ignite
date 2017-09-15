@@ -57,7 +57,7 @@ namespace Apache.Ignite.Core.Client
         }
 
         /// <summary>
-        /// Gets or sets the host. Null for loopback.
+        /// Gets or sets the host. Should not be null.
         /// </summary>
         public string Host { get; set; }
 

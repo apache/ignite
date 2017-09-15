@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Tests.Client
 {
     using System;
     using System.Linq;
+    using System.Net;
     using System.Net.Sockets;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Common;
@@ -46,7 +47,7 @@ namespace Apache.Ignite.Core.Tests.Client
         [Test]
         public void TestNoServerConnectionRefused()
         {
-            var ex = Assert.Throws<AggregateException>(() => Ignition.GetClient());
+            var ex = Assert.Throws<AggregateException>(() => StartClient());
             var socketEx = ex.InnerExceptions.OfType<SocketException>().First();
             Assert.AreEqual(SocketError.ConnectionRefused, socketEx.SocketErrorCode);
         }
@@ -59,9 +60,9 @@ namespace Apache.Ignite.Core.Tests.Client
         {
             using (Ignition.Start(TestUtils.GetTestConfiguration()))
             {
-                var client1 = Ignition.GetClient();
-                var client2 = Ignition.GetClient();
-                var client3 = Ignition.GetClient();
+                var client1 = StartClient();
+                var client2 = StartClient();
+                var client3 = StartClient();
 
                 client1.Dispose();
                 client2.Dispose();
@@ -93,10 +94,19 @@ namespace Apache.Ignite.Core.Tests.Client
             };
 
             using (Ignition.Start(servCfg))
-            using (Ignition.GetClient(clientCfg))
+            using (Ignition.StartClient(clientCfg))
             {
                 // No-op.
             }
+        }
+
+        /// <summary>
+        /// Tests that default configuration throws.
+        /// </summary>
+        [Test]
+        public void TestDefaultConfigThrows()
+        {
+            Assert.Throws<ArgumentNullException>(() => Ignition.StartClient(new IgniteClientConfiguration()));
         }
 
         /// <summary>
@@ -109,12 +119,28 @@ namespace Apache.Ignite.Core.Tests.Client
             using (Ignition.Start(TestUtils.GetTestConfiguration()))
             {
                 // ReSharper disable once ObjectCreationAsStatement
-                var ex = Assert.Throws<IgniteException>(() => new ClientSocket(new IgniteClientConfiguration(),
+                var ex = Assert.Throws<IgniteException>(() => new ClientSocket(GetClientConfiguration(),
                     new ClientProtocolVersion(-1, -1, -1)));
 
                 Assert.AreEqual("Client handhsake failed: 'Unsupported version.'. " +
                                 "Client version: -1.-1.-1. Server version: 1.0.0", ex.Message);
             }
+        }
+
+        /// <summary>
+        /// Starts the client.
+        /// </summary>
+        private static IIgniteClient StartClient()
+        {
+            return Ignition.StartClient(GetClientConfiguration());
+        }
+
+        /// <summary>
+        /// Gets the client configuration.
+        /// </summary>
+        private static IgniteClientConfiguration GetClientConfiguration()
+        {
+            return new IgniteClientConfiguration { Host = IPAddress.Loopback.ToString() };
         }
     }
 }

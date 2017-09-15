@@ -69,6 +69,7 @@ public class PagesListRemovePageRecord extends PageDeltaRecord {
         return S.toString(PagesListRemovePageRecord.class, this,
             "rmvdPageId", U.hexLong(rmvdPageId),
             "pageId", U.hexLong(pageId()),
-            "grpId", groupId());
+            "grpId", groupId(),
+            "super", super.toString());
     }
 }
