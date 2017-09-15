@@ -239,6 +239,7 @@ namespace Apache.Ignite.Core.Impl.Client
                 throw new IgniteException("IgniteClientConfiguration.Host cannot be null.");
             }
 
+            // GetHostEntry accepts IPs, but TryParse is a more efficient shortcut.
             IPAddress ip;
 
             if (IPAddress.TryParse(host, out ip))
