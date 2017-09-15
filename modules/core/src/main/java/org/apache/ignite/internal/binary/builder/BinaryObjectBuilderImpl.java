@@ -551,7 +551,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
     @Override public BinaryObjectBuilder setField(String name, Object val0) {
         Object val = assignedValues().get(name);
 
-        if (val instanceof BinaryValueWithType)
+        if (val instanceof BinaryValueWithType && val0 != null)
             ((BinaryValueWithType)val).value(val0);
         else if (val == null)
             val = val0 == null ? new BinaryValueWithType(BinaryUtils.typeByClass(Object.class), null) : val0;
