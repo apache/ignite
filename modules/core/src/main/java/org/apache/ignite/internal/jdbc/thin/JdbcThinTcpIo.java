@@ -22,7 +22,7 @@ import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
-
+import java.sql.SQLException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
@@ -31,6 +31,7 @@ import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
 import org.apache.ignite.internal.processors.odbc.SqlListenerNioListener;
 import org.apache.ignite.internal.processors.odbc.SqlListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.SqlListenerRequest;
+import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBatchExecuteRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryCloseRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryFetchRequest;
@@ -152,10 +153,10 @@ public class JdbcThinTcpIo {
     }
 
     /**
-     * @throws IgniteCheckedException On error.
+     * @throws SQLException On connection error or reject.
      * @throws IOException On IO error in handshake.
      */
-    public void start() throws IgniteCheckedException, IOException {
+    public void start() throws SQLException, IOException {
         Socket sock = new Socket();
 
         if (sockSndBuf != 0)
@@ -168,24 +169,25 @@ public class JdbcThinTcpIo {
 
         try {
             sock.connect(new InetSocketAddress(host, port));
-        }
-        catch (IOException e) {
-            throw new IgniteCheckedException("Failed to connect to server [host=" + host + ", port=" + port + ']', e);
-        }
 
-        endpoint = new IpcClientTcpEndpoint(sock);
+            endpoint = new IpcClientTcpEndpoint(sock);
 
-        out = new BufferedOutputStream(endpoint.outputStream());
-        in = new BufferedInputStream(endpoint.inputStream());
+            out = new BufferedOutputStream(endpoint.outputStream());
+            in = new BufferedInputStream(endpoint.inputStream());
+        }
+        catch (IOException | IgniteCheckedException e) {
+            throw new SQLException("Failed to connect to server [host=" + host + ", port=" + port + ']',
+                SqlStateCode.CLIENT_CONNECTION_FAILED, e);
+        }
 
         handshake();
     }
 
     /**
-     * @throws IOException On error.
-     * @throws IgniteCheckedException On error.
+     * @throws IOException On IO error.
+     * @throws SQLException On connection reject.
      */
-    public void handshake() throws IOException, IgniteCheckedException {
+    public void handshake() throws IOException, SQLException {
         BinaryWriterExImpl writer = new BinaryWriterExImpl(null, new BinaryHeapOutputStream(HANDSHAKE_MSG_SIZE),
             null, null);
 
@@ -241,8 +243,9 @@ public class JdbcThinTcpIo {
             if (VER_2_1_0.equals(srvProtocolVer))
                 handshake_2_1_0();
             else {
-                throw new IgniteCheckedException("Handshake failed [driverProtocolVer=" + CURRENT_VER +
-                    ", remoteNodeProtocolVer=" + srvProtocolVer + ", err=" + err + ']');
+                throw new SQLException("Handshake failed [driverProtocolVer=" + CURRENT_VER +
+                    ", remoteNodeProtocolVer=" + srvProtocolVer + ", err=" + err + ']',
+                    SqlStateCode.CONNECTION_REJECTED);
             }
         }
     }
@@ -250,10 +253,10 @@ public class JdbcThinTcpIo {
     /**
      * Compatibility handshake for server version 2.1.0
      *
-     * @throws IOException On error.
-     * @throws IgniteCheckedException On error.
+     * @throws IOException On IO error.
+     * @throws SQLException On connection reject.
      */
-    public void handshake_2_1_0() throws IOException, IgniteCheckedException {
+    private void handshake_2_1_0() throws IOException, SQLException {
         BinaryWriterExImpl writer = new BinaryWriterExImpl(null, new BinaryHeapOutputStream(HANDSHAKE_MSG_SIZE),
             null, null);
 
@@ -289,8 +292,8 @@ public class JdbcThinTcpIo {
 
             SqlListenerProtocolVersion ver = SqlListenerProtocolVersion.create(maj, min, maintenance);
 
-            throw new IgniteCheckedException("Handshake failed [driverProtocolVer=" + CURRENT_VER +
-                ", remoteNodeProtocolVer=" + ver + ", err=" + err + ']');
+            throw new SQLException("Handshake failed [driverProtocolVer=" + CURRENT_VER +
+                ", remoteNodeProtocolVer=" + ver + ", err=" + err + ']', SqlStateCode.CONNECTION_REJECTED);
         }
     }
 

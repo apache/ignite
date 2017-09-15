@@ -280,11 +280,11 @@ public class JdbcThinResultSet implements ResultSet {
                 return Integer.parseInt(val.toString()) != 0;
             }
             catch (NumberFormatException e) {
-                throw new SQLException("Cannot convert to boolean: " + val, SqlStateCode.DATA_EXCEPTION, e);
+                throw new SQLException("Cannot convert to boolean: " + val, SqlStateCode.CONVERSION_FAILED, e);
             }
         }
         else
-            throw new SQLException("Cannot convert to boolean: " + val, SqlStateCode.DATA_EXCEPTION);
+            throw new SQLException("Cannot convert to boolean: " + val, SqlStateCode.CONVERSION_FAILED);
     }
 
     /** {@inheritDoc} */
@@ -305,11 +305,11 @@ public class JdbcThinResultSet implements ResultSet {
                 return Byte.parseByte(val.toString());
             }
             catch (NumberFormatException e) {
-                throw new SQLException("Cannot convert to byte: " + val, SqlStateCode.DATA_EXCEPTION, e);
+                throw new SQLException("Cannot convert to byte: " + val, SqlStateCode.CONVERSION_FAILED, e);
             }
         }
         else
-            throw new SQLException("Cannot convert to byte: " + val, SqlStateCode.DATA_EXCEPTION);
+            throw new SQLException("Cannot convert to byte: " + val, SqlStateCode.CONVERSION_FAILED);
     }
 
     /** {@inheritDoc} */
@@ -330,11 +330,11 @@ public class JdbcThinResultSet implements ResultSet {
                 return Short.parseShort(val.toString());
             }
             catch (NumberFormatException e) {
-                throw new SQLException("Cannot convert to short: " + val, SqlStateCode.DATA_EXCEPTION, e);
+                throw new SQLException("Cannot convert to short: " + val, SqlStateCode.CONVERSION_FAILED, e);
             }
         }
         else
-            throw new SQLException("Cannot convert to short: " + val, SqlStateCode.DATA_EXCEPTION);
+            throw new SQLException("Cannot convert to short: " + val, SqlStateCode.CONVERSION_FAILED);
     }
 
     /** {@inheritDoc} */
@@ -355,11 +355,11 @@ public class JdbcThinResultSet implements ResultSet {
                 return Integer.parseInt(val.toString());
             }
             catch (NumberFormatException e) {
-                throw new SQLException("Cannot convert to int: " + val, SqlStateCode.DATA_EXCEPTION, e);
+                throw new SQLException("Cannot convert to int: " + val, SqlStateCode.CONVERSION_FAILED, e);
             }
         }
         else
-            throw new SQLException("Cannot convert to int: " + val, SqlStateCode.DATA_EXCEPTION);
+            throw new SQLException("Cannot convert to int: " + val, SqlStateCode.CONVERSION_FAILED);
     }
 
     /** {@inheritDoc} */
@@ -380,11 +380,11 @@ public class JdbcThinResultSet implements ResultSet {
                 return Long.parseLong(val.toString());
             }
             catch (NumberFormatException e) {
-                throw new SQLException("Cannot convert to long: " + val, SqlStateCode.DATA_EXCEPTION, e);
+                throw new SQLException("Cannot convert to long: " + val, SqlStateCode.CONVERSION_FAILED, e);
             }
         }
         else
-            throw new SQLException("Cannot convert to long: " + val, SqlStateCode.DATA_EXCEPTION);
+            throw new SQLException("Cannot convert to long: " + val, SqlStateCode.CONVERSION_FAILED);
     }
 
     /** {@inheritDoc} */
@@ -405,11 +405,11 @@ public class JdbcThinResultSet implements ResultSet {
                 return Float.parseFloat(val.toString());
             }
             catch (NumberFormatException e) {
-                throw new SQLException("Cannot convert to float: " + val, SqlStateCode.DATA_EXCEPTION, e);
+                throw new SQLException("Cannot convert to float: " + val, SqlStateCode.CONVERSION_FAILED, e);
             }
         }
         else
-            throw new SQLException("Cannot convert to float: " + val, SqlStateCode.DATA_EXCEPTION);
+            throw new SQLException("Cannot convert to float: " + val, SqlStateCode.CONVERSION_FAILED);
     }
 
     /** {@inheritDoc} */
@@ -430,11 +430,11 @@ public class JdbcThinResultSet implements ResultSet {
                 return Double.parseDouble(val.toString());
             }
             catch (NumberFormatException e) {
-                throw new SQLException("Cannot convert to double: " + val, SqlStateCode.DATA_EXCEPTION, e);
+                throw new SQLException("Cannot convert to double: " + val, SqlStateCode.CONVERSION_FAILED, e);
             }
         }
         else
-            throw new SQLException("Cannot convert to double: " + val, SqlStateCode.DATA_EXCEPTION);
+            throw new SQLException("Cannot convert to double: " + val, SqlStateCode.CONVERSION_FAILED);
     }
 
     /** {@inheritDoc} */
@@ -476,7 +476,7 @@ public class JdbcThinResultSet implements ResultSet {
         else if (cls == String.class)
             return ((String)val).getBytes();
         else
-            throw new SQLException("Cannot convert to byte[]: " + val, SqlStateCode.DATA_EXCEPTION);
+            throw new SQLException("Cannot convert to byte[]: " + val, SqlStateCode.CONVERSION_FAILED);
     }
 
     /** {@inheritDoc} */
@@ -493,7 +493,7 @@ public class JdbcThinResultSet implements ResultSet {
         else if (cls == java.util.Date.class || cls == Time.class || cls == Timestamp.class)
             return new Date(((java.util.Date)val).getTime());
         else
-            throw new SQLException("Cannot convert to date: " + val, SqlStateCode.DATA_EXCEPTION);
+            throw new SQLException("Cannot convert to date: " + val, SqlStateCode.CONVERSION_FAILED);
     }
 
     /** {@inheritDoc} */
@@ -510,7 +510,7 @@ public class JdbcThinResultSet implements ResultSet {
         else if (cls == java.util.Date.class || cls == Date.class || cls == Timestamp.class)
             return new Time(((java.util.Date)val).getTime());
         else
-            throw new SQLException("Cannot convert to time: " + val, SqlStateCode.DATA_EXCEPTION);
+            throw new SQLException("Cannot convert to time: " + val, SqlStateCode.CONVERSION_FAILED);
     }
 
     /** {@inheritDoc} */
@@ -527,7 +527,7 @@ public class JdbcThinResultSet implements ResultSet {
         else if (cls == java.util.Date.class || cls == Date.class || cls == Time.class)
             return new Timestamp(((java.util.Date)val).getTime());
         else
-            throw new SQLException("Cannot convert to timestamp: " + val, SqlStateCode.DATA_EXCEPTION);
+            throw new SQLException("Cannot convert to timestamp: " + val, SqlStateCode.CONVERSION_FAILED);
     }
 
     /** {@inheritDoc} */
@@ -546,11 +546,11 @@ public class JdbcThinResultSet implements ResultSet {
                 return new URL(val.toString());
             }
             catch (MalformedURLException e) {
-                throw new SQLException("Cannot convert to URL: " + val, SqlStateCode.DATA_EXCEPTION, e);
+                throw new SQLException("Cannot convert to URL: " + val, SqlStateCode.CONVERSION_FAILED, e);
             }
         }
         else
-            throw new SQLException("Cannot convert to URL: " + val, SqlStateCode.DATA_EXCEPTION);
+            throw new SQLException("Cannot convert to URL: " + val, SqlStateCode.CONVERSION_FAILED);
     }
 
 
@@ -776,11 +776,11 @@ public class JdbcThinResultSet implements ResultSet {
                 return (BigDecimal)decimalFormat.get().parse(val.toString());
             }
             catch (ParseException e) {
-                throw new SQLException("Cannot convert to BigDecimal: " + val, SqlStateCode.DATA_EXCEPTION, e);
+                throw new SQLException("Cannot convert to BigDecimal: " + val, SqlStateCode.CONVERSION_FAILED, e);
             }
         }
         else
-            throw new SQLException("Cannot convert to BigDecimal: " + val, SqlStateCode.DATA_EXCEPTION);
+            throw new SQLException("Cannot convert to BigDecimal: " + val, SqlStateCode.CONVERSION_FAILED);
     }
 
     /** {@inheritDoc} */
@@ -1817,7 +1817,7 @@ public class JdbcThinResultSet implements ResultSet {
                 return val;
             else
                 throw new SQLException("Cannot convert to " + targetCls.getName() + ": " + val,
-                    SqlStateCode.DATA_EXCEPTION);
+                    SqlStateCode.CONVERSION_FAILED);
         }
     }
 

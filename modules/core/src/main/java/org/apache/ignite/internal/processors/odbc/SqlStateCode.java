@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
-import java.sql.ResultSet;
-
 /**
  * SQL state codes.
  */
@@ -30,20 +28,17 @@ public final class SqlStateCode {
         // No-op.
     }
 
-    /** General connection establishment error. */
-    public final static String CONNECTION_ERROR = "08000";
-
     /** Client has failed to open connection with specified server. */
     public final static String CLIENT_CONNECTION_FAILED = "08001";
 
     /** Connection unexpectedly turned out to be in closed state. */
     public final static String CONNECTION_CLOSED = "08003";
 
+    /** Connection was rejected by server. */
+    public final static String CONNECTION_REJECTED = "08004";
+
     /** IO error during communication. */
     public final static String CONNECTION_FAILURE = "08006";
-
-    /** Value can't be converted to expected type (to be used in {@link ResultSet}'s {@code getXxx()} methods. */
-    public final static String DATA_EXCEPTION = "22000";
 
     /** Null value occurred where it wasn't expected to. */
     public final static String NULL_VALUE = "22004";
@@ -65,9 +60,6 @@ public final class SqlStateCode {
 
     /** Requested operation is not supported. */
     public final static String UNSUPPORTED_OPERATION = "0A000";
-
-    /** Invalid data type. */
-    public final static String INVALID_DATA_TYPE = "0D000";
 
     /** Parsing exception. */
     public final static String PARSING_EXCEPTION = "42000";
