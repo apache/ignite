@@ -58,9 +58,9 @@ public class GridLogThrottle {
     /**
      * Setup period map cleaning task.
      */
-    public static void mapCleaningPeriodSetup(boolean cleanUpCancelEnabled) {
+    public static void mapCleaningPeriodSetup(boolean cancelCheckEnabled) {
         synchronized (scheduler) {
-            if (cleanUpCancelEnabled) {
+            if (cancelCheckEnabled) {
                 if (cleanUpOldEntriesTask != null) {
 
                     cleanUpOldEntriesTask.cancel(false);
