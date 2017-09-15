@@ -64,6 +64,9 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
     public static final long COUNTER_NA = 0L;
 
     /** */
+    public static final boolean STAT_CNTRS = true;
+
+    /** */
     private static final GridTopic MSG_TOPIC = TOPIC_CACHE_COORDINATOR;
 
     /** */
@@ -124,10 +127,12 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
      * @param log Logger.
      */
     public void dumpStatistics(IgniteLogger log) {
-        log.info("Mvcc coordinator statistics: ");
+        if (STAT_CNTRS) {
+            log.info("Mvcc coordinator statistics: ");
 
-        for (StatCounter cntr : statCntrs)
-            cntr.dumpInfo(log);
+            for (StatCounter cntr : statCntrs)
+                cntr.dumpInfo(log);
+        }
     }
 
     /**
@@ -318,7 +323,8 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
 
         MvccCoordinatorVersionResponse res = assignTxCounter(msg.txId(), msg.futureId());
 
-        statCntrs[0].update(res.activeTransactions());
+        if (STAT_CNTRS)
+            statCntrs[0].update(res.activeTransactions());
 
         try {
             cctx.gridIO().sendToGridTopic(node,
@@ -379,7 +385,8 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
         MvccVersionFuture fut = verFuts.remove(msg.futureId());
 
         if (fut != null) {
-            statCntrs[1].update((System.nanoTime() - fut.startTime) * 1000);
+            if (STAT_CNTRS)
+                statCntrs[1].update((System.nanoTime() - fut.startTime) * 1000);
 
             fut.onResponse(msg);
         }
@@ -405,7 +412,8 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
     private void processCoordinatorTxAckRequest(UUID nodeId, CoordinatorTxAckRequest msg) {
         onTxDone(msg.txId());
 
-        statCntrs[2].update();
+        if (STAT_CNTRS)
+            statCntrs[2].update();
 
         if (!msg.skipResponse()) {
             try {
@@ -432,7 +440,8 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
         WaitAckFuture fut = ackFuts.remove(msg.futureId());
 
         if (fut != null) {
-            statCntrs[3].update((System.nanoTime() - fut.startTime) * 1000);
+            if (STAT_CNTRS)
+                statCntrs[3].update((System.nanoTime() - fut.startTime) * 1000);
 
             fut.onResponse();
         }
@@ -673,7 +682,7 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
         public final ClusterNode crd;
 
         /** */
-        final long startTime = System.nanoTime();
+        long startTime;
 
         /**
          * @param id Future ID.
@@ -683,6 +692,9 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
             this.id = id;
             this.crd = crd;
             this.tx = tx;
+
+            if (STAT_CNTRS)
+                startTime = System.nanoTime();
         }
 
         /**
@@ -724,7 +736,7 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
         private final ClusterNode crd;
 
         /** */
-        final long startTime = System.nanoTime();
+        long startTime;
 
         /**
          * @param id Future ID.
@@ -733,6 +745,9 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
         WaitAckFuture(long id, ClusterNode crd) {
             this.id = id;
             this.crd = crd;
+
+            if (STAT_CNTRS)
+                startTime = System.nanoTime();
         }
 
         /**
@@ -786,7 +801,8 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
     private class CoordinatorMessageListener implements GridMessageListener {
         /** {@inheritDoc} */
         @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
-            statCntrs[4].update();
+            if (STAT_CNTRS)
+                statCntrs[4].update();
 
             MvccCoordinatorMessage msg0 = (MvccCoordinatorMessage)msg;
 
