@@ -49,7 +49,7 @@ import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.jdbc2.JdbcStateCode;
+import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
@@ -848,7 +848,7 @@ public class DmlStatementsProcessor {
                 String msg = "Failed to INSERT some keys because they are already in cache " +
                     "[keys=" + sender.failedKeys() + ']';
 
-                SQLException dupEx = new SQLException(msg, JdbcStateCode.CONSTRAINT_VIOLATION);
+                SQLException dupEx = new SQLException(msg, SqlStateCode.CONSTRAINT_VIOLATION);
 
                 if (resEx == null)
                     resEx = dupEx;

@@ -15,18 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.jdbc2;
+package org.apache.ignite.internal.processors.odbc;
 
 import java.sql.ResultSet;
 
 /**
- * Error codes to throw from JDBC driver (SQLSTATE codes).
+ * SQL state codes.
  */
-public final class JdbcStateCode {
+public final class SqlStateCode {
     /**
      * No-op constructor to prevent instantiation.
      */
-    private JdbcStateCode() {
+    private SqlStateCode() {
         // No-op.
     }
 

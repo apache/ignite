@@ -39,7 +39,7 @@ import java.util.Properties;
 import java.util.concurrent.Executor;
 import java.util.logging.Logger;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.jdbc2.JdbcStateCode;
+import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBatchExecuteRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryCloseRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryFetchRequest;
@@ -155,7 +155,7 @@ public class JdbcThinConnection implements Connection {
             cliIo.close();
 
             throw new SQLException("Failed to connect to Ignite node [host=" + host + ", port=" + port + ']',
-                JdbcStateCode.CLIENT_CONNECTION_FAILED, e);
+                SqlStateCode.CLIENT_CONNECTION_FAILED, e);
         }
     }
 
@@ -364,7 +364,7 @@ public class JdbcThinConnection implements Connection {
                 break;
 
             default:
-                throw new SQLException("Invalid transaction isolation level.", JdbcStateCode.INVALID_TRANSACTION_LEVEL);
+                throw new SQLException("Invalid transaction isolation level.", SqlStateCode.INVALID_TRANSACTION_LEVEL);
         }
 
         txIsolation = level;
@@ -567,7 +567,7 @@ public class JdbcThinConnection implements Connection {
         ensureNotClosed();
 
         if (typeName == null)
-            throw new SQLException("Type name cannot be null.", JdbcStateCode.INVALID_DATA_TYPE);
+            throw new SQLException("Type name cannot be null.", SqlStateCode.INVALID_DATA_TYPE);
 
         throw new SQLFeatureNotSupportedException("SQL-specific types are not supported.");
     }
@@ -577,7 +577,7 @@ public class JdbcThinConnection implements Connection {
         ensureNotClosed();
 
         if (typeName == null)
-            throw new SQLException("Type name cannot be null.", JdbcStateCode.INVALID_DATA_TYPE);
+            throw new SQLException("Type name cannot be null.", SqlStateCode.INVALID_DATA_TYPE);
 
         throw new SQLFeatureNotSupportedException("SQL-specific types are not supported.");
     }
@@ -645,7 +645,7 @@ public class JdbcThinConnection implements Connection {
      */
     private void ensureNotClosed() throws SQLException {
         if (closed)
-            throw new SQLException("Connection is closed.", JdbcStateCode.CONNECTION_CLOSED);
+            throw new SQLException("Connection is closed.", SqlStateCode.CONNECTION_CLOSED);
     }
 
     /**
@@ -694,7 +694,7 @@ public class JdbcThinConnection implements Connection {
         catch (IOException e) {
             close();
 
-            throw new SQLException("Failed to send Ignite JDBC request.", JdbcStateCode.CONNECTION_FAILURE, e);
+            throw new SQLException("Failed to send Ignite JDBC request.", SqlStateCode.CONNECTION_FAILURE, e);
         }
         catch (IgniteCheckedException e) {
             throw new SQLException("Failed to send Ignite JDBC request.", e);
@@ -715,7 +715,7 @@ public class JdbcThinConnection implements Connection {
             host = host.trim();
 
         if (F.isEmpty(host))
-            throw new SQLException("Host name is empty.", JdbcStateCode.CONNECTION_ERROR);
+            throw new SQLException("Host name is empty.", SqlStateCode.CONNECTION_ERROR);
 
         return host;
     }
@@ -739,10 +739,10 @@ public class JdbcThinConnection implements Connection {
             port = Integer.parseInt(portStr);
 
             if (port <= 0 || port > 0xFFFF)
-                throw new SQLException("Invalid port: " + portStr, JdbcStateCode.CONNECTION_ERROR);
+                throw new SQLException("Invalid port: " + portStr, SqlStateCode.CONNECTION_ERROR);
         }
         catch (NumberFormatException e) {
-            throw new SQLException("Invalid port: " + portStr, JdbcStateCode.CONNECTION_ERROR);
+            throw new SQLException("Invalid port: " + portStr, SqlStateCode.CONNECTION_ERROR);
         }
 
         return port;
@@ -769,7 +769,7 @@ public class JdbcThinConnection implements Connection {
             return false;
         else
             throw new SQLException("Failed to parse boolean property [name=" + JdbcThinUtils.trimPrefix(propName) +
-                    ", value=" + strVal + ']', JdbcStateCode.CONNECTION_ERROR);
+                    ", value=" + strVal + ']', SqlStateCode.CONNECTION_ERROR);
     }
 
     /**
@@ -786,7 +786,7 @@ public class JdbcThinConnection implements Connection {
 
         if (res < 0)
             throw new SQLException("Property cannot be negative [name=" + JdbcThinUtils.trimPrefix(propName) +
-                ", value=" + res + ']', JdbcStateCode.CONNECTION_ERROR);
+                ", value=" + res + ']', SqlStateCode.CONNECTION_ERROR);
 
         return res;
     }
@@ -811,7 +811,7 @@ public class JdbcThinConnection implements Connection {
         }
         catch (NumberFormatException e) {
             throw new SQLException("Failed to parse int property [name=" + JdbcThinUtils.trimPrefix(propName) +
-                ", value=" + strVal + ']', JdbcStateCode.CONNECTION_ERROR);
+                ", value=" + strVal + ']', SqlStateCode.CONNECTION_ERROR);
         }
     }
 

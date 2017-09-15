@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache.query;
 import java.sql.SQLException;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.internal.jdbc2.JdbcStateCode;
+import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 
 /**
  * Error codes for query operations.
@@ -126,17 +126,17 @@ public final class IgniteQueryErrorCode {
     public static String codeToSqlState(int statusCode) {
         switch (statusCode) {
             case DUPLICATE_KEY:
-                return JdbcStateCode.CONSTRAINT_VIOLATION;
+                return SqlStateCode.CONSTRAINT_VIOLATION;
 
             case NULL_KEY:
             case NULL_VALUE:
-                return JdbcStateCode.NULL_VALUE;
+                return SqlStateCode.NULL_VALUE;
 
             case UNSUPPORTED_OPERATION:
-                return JdbcStateCode.UNSUPPORTED_OPERATION;
+                return SqlStateCode.UNSUPPORTED_OPERATION;
 
             case CONVERSION_FAILED:
-                return JdbcStateCode.CONVERSION_FAILED;
+                return SqlStateCode.CONVERSION_FAILED;
 
             case PARSING:
             case TABLE_NOT_FOUND:
@@ -149,10 +149,10 @@ public final class IgniteQueryErrorCode {
             case UNEXPECTED_OPERATION:
             case UNEXPECTED_ELEMENT_TYPE:
             case KEY_UPDATE:
-                return JdbcStateCode.PARSING_EXCEPTION;
+                return SqlStateCode.PARSING_EXCEPTION;
 
             default:
-                return JdbcStateCode.INTERNAL_ERROR;
+                return SqlStateCode.INTERNAL_ERROR;
         }
     }
 }

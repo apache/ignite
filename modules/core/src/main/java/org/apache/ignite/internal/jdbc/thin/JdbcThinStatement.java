@@ -27,7 +27,7 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.cache.query.SqlQuery;
-import org.apache.ignite.internal.jdbc2.JdbcStateCode;
+import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.processors.odbc.SqlListenerResponse;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBatchExecuteRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBatchExecuteResult;
@@ -97,7 +97,7 @@ public class JdbcThinStatement implements Statement {
         ResultSet rs = getResultSet();
 
         if (rs == null)
-            throw new SQLException("The query isn't SELECT query: " + sql, JdbcStateCode.PARSING_EXCEPTION);
+            throw new SQLException("The query isn't SELECT query: " + sql, SqlStateCode.PARSING_EXCEPTION);
 
         return rs;
     }
@@ -139,7 +139,7 @@ public class JdbcThinStatement implements Statement {
         int res = getUpdateCount();
 
         if (res == -1)
-            throw new SQLException("The query is not DML statememt: " + sql, JdbcStateCode.PARSING_EXCEPTION);
+            throw new SQLException("The query is not DML statememt: " + sql, SqlStateCode.PARSING_EXCEPTION);
 
         return res;
     }
