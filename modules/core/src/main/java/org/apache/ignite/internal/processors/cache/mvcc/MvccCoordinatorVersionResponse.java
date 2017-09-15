@@ -172,7 +172,7 @@ public class MvccCoordinatorVersionResponse implements MvccCoordinatorMessage, M
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeLongArray("txs", txs))
+                if (!writer.writeLongArray("txs", txs, txsCnt))
                     return false;
 
                 writer.incrementState();
