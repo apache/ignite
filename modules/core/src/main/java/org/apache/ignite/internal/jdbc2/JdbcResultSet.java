@@ -45,6 +45,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.jdbc2.JdbcUtils.convertToSqlException;
@@ -1499,7 +1500,7 @@ public class JdbcResultSet implements ResultSet {
             throw new SQLException("Invalid column index: " + colIdx);
         }
         catch (ClassCastException ignored) {
-            throw new SQLException("Value is an not instance of " + cls.getName(), JdbcStateCode.DATA_EXCEPTION);
+            throw new SQLException("Value is an not instance of " + cls.getName(), SqlStateCode.CONVERSION_FAILED);
         }
     }
 
@@ -1510,7 +1511,7 @@ public class JdbcResultSet implements ResultSet {
      */
     private void ensureNotClosed() throws SQLException {
         if (closed)
-            throw new SQLException("Result set is closed.", JdbcStateCode.INVALID_CURSOR_STATE);
+            throw new SQLException("Result set is closed.", SqlStateCode.INVALID_CURSOR_STATE);
     }
 
     /**

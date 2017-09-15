@@ -37,6 +37,7 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlIndexMetadata;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlMetadata;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
@@ -1336,7 +1337,7 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
     @SuppressWarnings("unchecked")
     private void updateMetaData() throws SQLException {
         if (conn.isClosed())
-            throw new SQLException("Connection is closed.", JdbcStateCode.CONNECTION_CLOSED);
+            throw new SQLException("Connection is closed.", SqlStateCode.CONNECTION_CLOSED);
 
         try {
             Ignite ignite = conn.ignite();

@@ -23,6 +23,7 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.sql.Types;
 import java.util.Date;
+
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -154,6 +155,19 @@ public class JdbcUtils {
      * @see IgniteQueryErrorCode
      */
     public static SQLException convertToSqlException(Exception e, String msgForUnknown) {
+        return convertToSqlException(e, msgForUnknown, null);
+    }
+
+    /**
+     * Convert exception to {@link SQLException}.
+     *
+     * @param e Converted Exception.
+     * @param msgForUnknown Message non-convertable exception.
+     * @param sqlStateForUnknown SQLSTATE for non-convertable exception.
+     * @return JDBC {@link SQLException}.
+     * @see IgniteQueryErrorCode
+     */
+    public static SQLException convertToSqlException(Exception e, String msgForUnknown, String sqlStateForUnknown) {
         SQLException sqlEx = null;
 
         Throwable t = e;
@@ -170,6 +184,6 @@ public class JdbcUtils {
             t = t.getCause();
         }
 
-        return sqlEx != null ? sqlEx : new SQLException(msgForUnknown, e);
+        return sqlEx != null ? sqlEx : new SQLException(msgForUnknown, sqlStateForUnknown, e);
     }
 }

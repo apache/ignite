@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,21 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.jdbc.thin;
-
-import java.io.IOException;
-import java.sql.SQLException;
-import org.apache.ignite.IgniteCheckedException;
-
-/**
- * Runnable to operate on {@link JdbcThinTcpIo} that can throw checked exceptions.
- */
-interface JdbcThinConnectionRunnable<T> {
-    /**
-     * Do run.
-     * @throws IOException if failed.
-     * @throws IgniteCheckedException if failed.
-     * @throws SQLException if failed.
-     */
-    public T run(JdbcThinTcpIo io) throws IgniteCheckedException, IOException, SQLException;
+namespace Apache.Ignite.Core.Impl.Client
+{
+    /// <summary>
+    /// Client op code.
+    /// </summary>
+    internal enum ClientOp : short
+    {
+        CacheGet = 1,
+        BinaryTypeNameGet = 2,
+        BinaryTypeGet = 3,
+        CachePut = 4,
+        BinaryTypeNamePut = 5,
+        BinaryTypePut = 6
+    }
 }

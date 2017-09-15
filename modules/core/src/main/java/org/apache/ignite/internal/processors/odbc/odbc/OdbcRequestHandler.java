@@ -170,6 +170,24 @@ public class OdbcRequestHandler implements SqlListenerRequestHandler {
     }
 
     /**
+     * Called whenever client is disconnected due to correct connection close
+     * or due to {@code IOException} during network operations.
+     */
+    public void onDisconnect() {
+        if (busyLock.enterBusy())
+        {
+            try
+            {
+                for (IgniteBiTuple<QueryCursor, Iterator> tuple : qryCursors.values())
+                    tuple.get1().close();
+            }
+            finally {
+                busyLock.leaveBusy();
+            }
+        }
+    }
+
+    /**
      * Make query considering handler configuration.
      * @param schema Schema.
      * @param sql SQL request.

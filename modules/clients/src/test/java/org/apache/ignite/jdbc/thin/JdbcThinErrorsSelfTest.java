@@ -17,10 +17,19 @@
 
 package org.apache.ignite.jdbc.thin;
 
+import java.net.URL;
 import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.Date;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.util.List;
 import org.apache.ignite.jdbc.JdbcErrorsAbstractSelfTest;
+import org.apache.ignite.lang.IgniteCallable;
 
 /**
  * Test SQLSTATE codes propagation with thin client driver.
@@ -29,6 +38,36 @@ public class JdbcThinErrorsSelfTest extends JdbcErrorsAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected Connection getConnection() throws SQLException {
         return DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1");
+    }
+
+    /**
+     * Test error code for the case when connection string is fine but client can't reach server
+     * due to <b>communication problems</b> (not due to clear misconfiguration).
+     * @throws SQLException if failed.
+     */
+    public void testConnectionError() throws SQLException {
+        checkErrorState(new IgniteCallable<Void>() {
+            @Override public Void call() throws Exception {
+                DriverManager.getConnection("jdbc:ignite:thin://unknown.host");
+
+                return null;
+            }
+        }, "08001");
+    }
+
+    /**
+     * Test error code for the case when connection string is a mess.
+     * @throws SQLException if failed.
+     */
+    public void testInvalidConnectionStringFormat() throws SQLException {
+        checkErrorState(new IgniteCallable<Void>() {
+            @Override public Void call() throws Exception {
+                // Invalid port number yields an error.
+                DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1:1000000");
+
+                return null;
+            }
+        }, "08001");
     }
 
     /**

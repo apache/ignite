@@ -84,7 +84,7 @@ namespace Apache.Ignite.Core.Impl.Cache
             _flagPartitionRecover = flagPartitionRecover;
 
             _txManager = GetConfiguration().AtomicityMode == CacheAtomicityMode.Transactional
-                ? new CacheTransactionManager(_ignite.GetTransactions())
+                ? new CacheTransactionManager(_ignite.GetIgnite().GetTransactions())
                 : null;
 
             _readException = stream => ReadException(Marshaller.StartUnmarshal(stream));
@@ -93,7 +93,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public IIgnite Ignite
         {
-            get { return _ignite; }
+            get { return _ignite.GetIgnite(); }
         }
 
         /// <summary>

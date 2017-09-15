@@ -137,7 +137,7 @@ namespace Apache.Ignite.Core.Tests.Binary
                 return;
             }
 
-            var cache = ignite.GetOrCreateCache<int, OffsetTest>(
+            var cache = ignite.GetIgnite().GetOrCreateCache<int, OffsetTest>(
                     new CacheConfiguration("offs", new QueryEntity(typeof(int), typeof(OffsetTest))));
 
             // Cache operation.

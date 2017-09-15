@@ -21,9 +21,10 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import org.apache.ignite.jdbc.JdbcErrorsAbstractSelfTest;
+import org.apache.ignite.lang.IgniteCallable;
 
 /**
- * Test SQLSTATE codes propagation with "JDBC2" driver.
+ * Test SQLSTATE codes propagation with thin client driver.
  */
 public class JdbcErrorsSelfTest extends JdbcErrorsAbstractSelfTest {
     /** Path to JDBC configuration for node that is to start. */
@@ -32,5 +33,35 @@ public class JdbcErrorsSelfTest extends JdbcErrorsAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected Connection getConnection() throws SQLException {
         return DriverManager.getConnection("jdbc:ignite:cfg://cache=test@" + CFG_PATH);
+    }
+
+    /**
+     * Test error code for the case when connection string is fine but client can't reach server
+     * due to <b>communication problems</b> (not due to clear misconfiguration).
+     * @throws SQLException if failed.
+     */
+    public void testConnectionError() throws SQLException {
+        checkErrorState(new IgniteCallable<Void>() {
+            @Override public Void call() throws Exception {
+                DriverManager.getConnection("jdbc:ignite:сfg://cache=test@/unknown/path");
+
+                return null;
+            }
+        }, "08001");
+    }
+
+    /**
+     * Test error code for the case when connection string is a mess.
+     * @throws SQLException if failed.
+     */
+    public void testInvalidConnectionStringFormat() throws SQLException {
+        checkErrorState(new IgniteCallable<Void>() {
+            @Override public Void call() throws Exception {
+                // Empty config path yields an error.
+                DriverManager.getConnection("jdbc:ignite:cfg://cache=");
+
+                return null;
+            }
+        }, "08001");
     }
 }

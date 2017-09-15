@@ -32,6 +32,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.util.typedef.F;
 
 import static java.sql.ResultSet.CONCUR_READ_ONLY;
@@ -654,6 +655,6 @@ public class JdbcStatement implements Statement {
      */
     void ensureNotClosed() throws SQLException {
         if (closed)
-            throw new SQLException("Connection is closed.", JdbcStateCode.CONNECTION_CLOSED);
+            throw new SQLException("Connection is closed.", SqlStateCode.CONNECTION_CLOSED);
     }
 }

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.pagemem.wal.record;
 
 import java.util.UUID;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  *
@@ -125,5 +126,10 @@ public class TxRecord extends WALRecord {
      */
     public UUID[] participatingNodeId() {
         return participatingNodeIds;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(TxRecord.class, this, "super", super.toString());
     }
 }

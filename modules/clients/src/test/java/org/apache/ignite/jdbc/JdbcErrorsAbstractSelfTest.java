@@ -21,7 +21,6 @@ import java.net.URL;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.Date;
-import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -96,39 +95,6 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
     public void testUnsupportedSql() throws SQLException {
         checkErrorState("ALTER TABLE \"test\".Integer DROP COLUMN _key", "0A000");
     }
-
-    /**
-     * Test error code for the case when connection string is fine but client can't reach server
-     * due to <b>communication problems</b> (not due to clear misconfiguration).
-     * @throws SQLException if failed.
-     */
-    public void testConnectionError() throws SQLException {
-        checkErrorState(new IgniteCallable<Void>() {
-            @Override public Void call() throws Exception {
-                DriverManager.getConnection("jdbc:ignite:thin://unknown.host");
-
-                return null;
-            }
-        }, "08001");
-    }
-
-    /**
-     * Test error code for the case when connection string is a mess.
-     * @throws SQLException if failed.
-     */
-    public void testInvalidConnectionStringFormat() throws SQLException {
-        checkErrorState(new IgniteCallable<Void>() {
-            @Override public Void call() throws Exception {
-                // Invalid port number yields an error.
-                DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1:1000000");
-
-                return null;
-            }
-        }, "08000");
-    }
-
-    /* ALL TESTS PAST THIS POINT MUST BE MOVED TO PARENT CLASS JdbcErrorsAbstractSelfTest
-     * ONCE ERROR CODES RELATED WORK ON JDBC2 DRIVER IS FINISHED */
 
     /**
      * Test error code for the case when user attempts to use a closed connection.
@@ -278,7 +244,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
                     rs.getLong(1);
                 }
             }
-        }, "22000");
+        }, "0700B");
     }
 
     /**
@@ -297,7 +263,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
                     rs.getLong(1);
                 }
             }
-        }, "22000");
+        }, "0700B");
     }
 
     /**
@@ -316,7 +282,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
                     rs.getFloat(1);
                 }
             }
-        }, "22000");
+        }, "0700B");
     }
 
     /**
@@ -335,7 +301,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
                     rs.getDouble(1);
                 }
             }
-        }, "22000");
+        }, "0700B");
     }
 
     /**
@@ -354,7 +320,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
                     rs.getByte(1);
                 }
             }
-        }, "22000");
+        }, "0700B");
     }
 
     /**
@@ -373,7 +339,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
                     rs.getShort(1);
                 }
             }
-        }, "22000");
+        }, "0700B");
     }
 
     /**
@@ -392,7 +358,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
                     rs.getBigDecimal(1);
                 }
             }
-        }, "22000");
+        }, "0700B");
     }
 
     /**
@@ -411,7 +377,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
                     rs.getBoolean(1);
                 }
             }
-        }, "22000");
+        }, "0700B");
     }
 
     /**
@@ -430,7 +396,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
                     rs.getObject(1, List.class);
                 }
             }
-        }, "22000");
+        }, "0700B");
     }
 
     /**
@@ -449,7 +415,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
                     rs.getDate(1);
                 }
             }
-        }, "22000");
+        }, "0700B");
     }
 
     /**
@@ -468,7 +434,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
                     rs.getTime(1);
                 }
             }
-        }, "22000");
+        }, "0700B");
     }
 
     /**
@@ -487,7 +453,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
                     rs.getTimestamp(1);
                 }
             }
-        }, "22000");
+        }, "0700B");
     }
 
     /**
@@ -506,7 +472,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
                     rs.getURL(1);
                 }
             }
-        }, "22000");
+        }, "0700B");
     }
 
     /**

@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache.query;
 import java.sql.SQLException;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.internal.jdbc2.JdbcStateCode;
+import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 
 /**
  * Error codes for query operations.
@@ -80,9 +80,6 @@ public final class IgniteQueryErrorCode {
     /** Conversion failure. */
     public final static int CONVERSION_FAILED = 3013;
 
-    /** Invalid cursor name. */
-    public final static int INVALID_CURSOR_NAME = 3014;
-
     /* 4xxx - cache related runtime errors */
 
     /** Attempt to INSERT a key that is already in cache. */
@@ -116,7 +113,7 @@ public final class IgniteQueryErrorCode {
      * @return {@link SQLException} with given details.
      */
     public static SQLException createJdbcSqlException(String msg, int code) {
-        return new SQLException(msg, codeToSqlState(code), code);
+        return new SQLException(msg, codeToSqlState(code));
     }
 
     /**
@@ -129,20 +126,17 @@ public final class IgniteQueryErrorCode {
     public static String codeToSqlState(int statusCode) {
         switch (statusCode) {
             case DUPLICATE_KEY:
-                return "23000"; // Generic value for "integrity constraint violation" 23 class.
+                return SqlStateCode.CONSTRAINT_VIOLATION;
 
             case NULL_KEY:
             case NULL_VALUE:
-                return "22004"; // "Null value not allowed".
+                return SqlStateCode.NULL_VALUE;
 
             case UNSUPPORTED_OPERATION:
-                return "0A000"; // Generic value for "feature not supported" 0A class.
+                return SqlStateCode.UNSUPPORTED_OPERATION;
 
             case CONVERSION_FAILED:
-                return "0700B"; // "Data type transform function violation"
-
-            case INVALID_CURSOR_NAME:
-                return JdbcStateCode.INVALID_CURSOR_NAME;
+                return SqlStateCode.CONVERSION_FAILED;
 
             case PARSING:
             case TABLE_NOT_FOUND:
@@ -155,10 +149,10 @@ public final class IgniteQueryErrorCode {
             case UNEXPECTED_OPERATION:
             case UNEXPECTED_ELEMENT_TYPE:
             case KEY_UPDATE:
-                return JdbcStateCode.PARSING_EXCEPTION;
+                return SqlStateCode.PARSING_EXCEPTION;
 
             default:
-                return JdbcStateCode.INTERNAL_ERROR;
+                return SqlStateCode.INTERNAL_ERROR;
         }
     }
 }

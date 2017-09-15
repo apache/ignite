@@ -15,23 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.jdbc2;
-
-import java.sql.ResultSet;
+package org.apache.ignite.internal.processors.odbc;
 
 /**
- * Error codes to throw from JDBC driver (SQLSTATE codes).
+ * SQL state codes.
  */
-public final class JdbcStateCode {
+public final class SqlStateCode {
     /**
      * No-op constructor to prevent instantiation.
      */
-    private JdbcStateCode() {
+    private SqlStateCode() {
         // No-op.
     }
-
-    /** General connection establishment error. */
-    public final static String CONNECTION_ERROR = "08000";
 
     /** Client has failed to open connection with specified server. */
     public final static String CLIENT_CONNECTION_FAILED = "08001";
@@ -39,26 +34,32 @@ public final class JdbcStateCode {
     /** Connection unexpectedly turned out to be in closed state. */
     public final static String CONNECTION_CLOSED = "08003";
 
+    /** Connection was rejected by server. */
+    public final static String CONNECTION_REJECTED = "08004";
+
     /** IO error during communication. */
     public final static String CONNECTION_FAILURE = "08006";
 
-    /** Value can't be converted to expected type (to be used in {@link ResultSet}'s {@code getXxx()} methods. */
-    public final static String DATA_EXCEPTION = "22000";
+    /** Null value occurred where it wasn't expected to. */
+    public final static String NULL_VALUE = "22004";
 
     /** Parameter type is not supported. */
     public final static String INVALID_PARAMETER_VALUE = "22023";
 
+    /** Data integrity constraint violation. */
+    public final static String CONSTRAINT_VIOLATION = "23000";
+
     /** Invalid result set state. */
     public final static String INVALID_CURSOR_STATE = "24000";
 
-    /** Invalid cursor name. */
-    public final static String INVALID_CURSOR_NAME = "34000";
+    /** Conversion failure. */
+    public final static String CONVERSION_FAILED = "0700B";
 
     /** Invalid transaction level. */
     public final static String INVALID_TRANSACTION_LEVEL = "0700E";
 
-    /** Invalid data type. */
-    public final static String INVALID_DATA_TYPE = "0D000";
+    /** Requested operation is not supported. */
+    public final static String UNSUPPORTED_OPERATION = "0A000";
 
     /** Parsing exception. */
     public final static String PARSING_EXCEPTION = "42000";
