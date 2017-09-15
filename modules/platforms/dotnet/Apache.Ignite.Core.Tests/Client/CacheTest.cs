@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Tests.Client
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Net;
     using System.Threading;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
@@ -95,13 +96,15 @@ namespace Apache.Ignite.Core.Tests.Client
                 CompactFooter = compactFooter
             };
 
-            using (var client = Ignition.GetClient(cfg))
+            using (var client = Ignition.StartClient(cfg))
             {
                 var person = new Person {Id = 100, Name = "foo"};
                 var person2 = new Person2 {Id = 200, Name = "bar"};
                 
                 var serverCache = GetCache<Person>();
                 var clientCache = client.GetCache<int?, Person>(CacheName);
+
+                Assert.AreEqual(CacheName, clientCache.Name);
 
                 // Put through server cache.
                 serverCache.Put(1, person);
@@ -156,7 +159,7 @@ namespace Apache.Ignite.Core.Tests.Client
             GetCache<string>().Put(1, "foo");
 
             // One client per thread.
-            ConcurrentDictionary<int, IIgnite> clients = new ConcurrentDictionary<int, IIgnite>();
+            var clients = new ConcurrentDictionary<int, IIgniteClient>();
 
             TestUtils.RunMultiThreaded(() =>
                 {
@@ -182,9 +185,9 @@ namespace Apache.Ignite.Core.Tests.Client
         /// <summary>
         /// Gets the client.
         /// </summary>
-        private static IIgnite GetClient()
+        private static IIgniteClient GetClient()
         {
-            return Ignition.GetClient(GetClientConfiguration());
+            return Ignition.StartClient(GetClientConfiguration());
         }
 
         /// <summary>
@@ -192,7 +195,7 @@ namespace Apache.Ignite.Core.Tests.Client
         /// </summary>
         private static IgniteClientConfiguration GetClientConfiguration()
         {
-            return new IgniteClientConfiguration();
+            return new IgniteClientConfiguration {Host = "127.0.0.1"};
         }
     }
 }

@@ -97,7 +97,9 @@
     <Compile Include="Cache\Configuration\MemoryPolicyConfiguration.cs" />
     <Compile Include="Cache\Configuration\PartitionLossPolicy.cs" />
     <Compile Include="Cache\IMemoryMetrics.cs" />
+    <Compile Include="Client\Cache\ICacheClient.cs" />
     <Compile Include="Client\IgniteClientConfiguration.cs" />
+    <Compile Include="Client\IIgniteClient.cs" />
     <Compile Include="Common\ExceptionFactory.cs" />
     <Compile Include="Configuration\Package-Info.cs" />
     <Compile Include="Impl\Binary\BinaryTypeId.cs" />
@@ -105,7 +107,7 @@
     <Compile Include="Impl\Binary\BinaryProcessorClient.cs" />
     <Compile Include="Impl\Binary\IBinaryProcessor.cs" />
     <Compile Include="Impl\IIgniteInternal.cs" />
-    <Compile Include="Impl\Cache\CacheClient.cs" />
+    <Compile Include="Impl\Client\Cache\CacheClient.cs" />
     <Compile Include="Impl\Client\ClientOp.cs" />
     <Compile Include="Impl\Client\ClientProtocolVersion.cs" />
     <Compile Include="Impl\Client\ClientSocket.cs" />

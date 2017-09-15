@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Tests.Client
 {
     using System.Collections.Generic;
     using System.Linq;
+    using System.Net;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Query;
@@ -65,10 +66,11 @@ namespace Apache.Ignite.Core.Tests.Client
                 BinaryConfiguration = new BinaryConfiguration
                 {
                     CompactFooter = false
-                }
+                },
+                Host = IPAddress.Loopback.ToString()
             };
 
-            using (var client = Ignition.GetClient(cfg))
+            using (var client = Ignition.StartClient(cfg))
             {
                 var serverCache = Ignition.GetIgnite().GetOrCreateCache<int?, Person>(
                     new CacheConfiguration(CacheName, new QueryEntity

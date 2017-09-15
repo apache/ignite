@@ -18,35 +18,23 @@
 namespace Apache.Ignite.Core.Impl.Client
 {
     using System;
-    using System.Collections.Generic;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using Apache.Ignite.Core.Binary;
-    using Apache.Ignite.Core.Cache;
-    using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Client;
-    using Apache.Ignite.Core.Cluster;
-    using Apache.Ignite.Core.Compute;
+    using Apache.Ignite.Core.Client.Cache;
     using Apache.Ignite.Core.Datastream;
-    using Apache.Ignite.Core.DataStructures;
-    using Apache.Ignite.Core.Events;
     using Apache.Ignite.Core.Impl.Binary;
-    using Apache.Ignite.Core.Impl.Cache;
+    using Apache.Ignite.Core.Impl.Client.Cache;
     using Apache.Ignite.Core.Impl.Cluster;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Handle;
     using Apache.Ignite.Core.Impl.Plugin;
-    using Apache.Ignite.Core.Lifecycle;
-    using Apache.Ignite.Core.Log;
-    using Apache.Ignite.Core.Messaging;
-    using Apache.Ignite.Core.PersistentStore;
-    using Apache.Ignite.Core.Services;
-    using Apache.Ignite.Core.Transactions;
 
     /// <summary>
     /// Thin client implementation
     /// </summary>
-    internal class IgniteClient : IIgniteInternal
+    internal class IgniteClient : IIgniteInternal, IIgniteClient
     {
         /** Socket. */
         private readonly ClientSocket _socket;
@@ -92,25 +80,7 @@ namespace Apache.Ignite.Core.Impl.Client
         }
 
         /** <inheritDoc /> */
-        public string Name
-        {
-            get { throw GetClientNotSupportedException(); }
-        }
-
-        /** <inheritDoc /> */
-        public ICluster GetCluster()
-        {
-            throw GetClientNotSupportedException();
-        }
-
-        /** <inheritDoc /> */
-        public ICompute GetCompute()
-        {
-            throw GetClientNotSupportedException();
-        }
-
-        /** <inheritDoc /> */
-        public ICache<TK, TV> GetCache<TK, TV>(string name)
+        public ICacheClient<TK, TV> GetCache<TK, TV>(string name)
         {
             IgniteArgumentCheck.NotNull(name, "name");
 
@@ -118,209 +88,13 @@ namespace Apache.Ignite.Core.Impl.Client
         }
 
         /** <inheritDoc /> */
-        public ICache<TK, TV> GetOrCreateCache<TK, TV>(string name)
-        {
-            throw GetClientNotSupportedException();
-        }
-
-        /** <inheritDoc /> */
-        public ICache<TK, TV> GetOrCreateCache<TK, TV>(CacheConfiguration configuration)
-        {
-            throw GetClientNotSupportedException();
-        }
-
-        /** <inheritDoc /> */
-        public ICache<TK, TV> GetOrCreateCache<TK, TV>(CacheConfiguration configuration, NearCacheConfiguration nearConfiguration)
-        {
-            throw GetClientNotSupportedException();
-        }
-
-        /** <inheritDoc /> */
-        public ICache<TK, TV> CreateCache<TK, TV>(string name)
-        {
-            throw GetClientNotSupportedException();
-        }
-
-        /** <inheritDoc /> */
-        public ICache<TK, TV> CreateCache<TK, TV>(CacheConfiguration configuration)
-        {
-            throw GetClientNotSupportedException();
-        }
-
-        /** <inheritDoc /> */
-        public ICache<TK, TV> CreateCache<TK, TV>(CacheConfiguration configuration, NearCacheConfiguration nearConfiguration)
-        {
-            throw GetClientNotSupportedException();
-        }
-
-        /** <inheritDoc /> */
-        public void DestroyCache(string name)
-        {
-            throw GetClientNotSupportedException();
-        }
-
-        /** <inheritDoc /> */
-        public IDataStreamer<TK, TV> GetDataStreamer<TK, TV>(string cacheName)
+        public IIgnite GetIgnite()
         {
             throw GetClientNotSupportedException();
         }
 
         /** <inheritDoc /> */
         public IBinary GetBinary()
-        {
-            throw GetClientNotSupportedException();
-        }
-
-        /** <inheritDoc /> */
-        public ICacheAffinity GetAffinity(string name)
-        {
-            throw GetClientNotSupportedException();
-        }
-
-        /** <inheritDoc /> */
-        public ITransactions GetTransactions()
-        {
-            throw GetClientNotSupportedException();
-        }
-
-        /** <inheritDoc /> */
-        public IMessaging GetMessaging()
-        {
-            throw GetClientNotSupportedException();
-        }
-
-        /** <inheritDoc /> */
-        public IEvents GetEvents()
-        {
-            throw GetClientNotSupportedException();
-        }
-
-        /** <inheritDoc /> */
-        public IServices GetServices()
-        {
-            throw GetClientNotSupportedException();
-        }
-
-        /** <inheritDoc /> */
-        public IAtomicLong GetAtomicLong(string name, long initialValue, bool create)
-        {
-            throw GetClientNotSupportedException();
-        }
-
-        /** <inheritDoc /> */
-        public IAtomicSequence GetAtomicSequence(string name, long initialValue, bool create)
-        {
-            throw GetClientNotSupportedException();
-        }
-
-        /** <inheritDoc /> */
-        public IAtomicReference<T> GetAtomicReference<T>(string name, T initialValue, bool create)
-        {
-            throw GetClientNotSupportedException();
-        }
-
-        /** <inheritDoc /> */
-        public IgniteConfiguration GetConfiguration()
-        {
-            throw GetClientNotSupportedException();
-        }
-
-        /** <inheritDoc /> */
-        public ICache<TK, TV> CreateNearCache<TK, TV>(string name, NearCacheConfiguration configuration)
-        {
-            throw GetClientNotSupportedException();
-        }
-
-        /** <inheritDoc /> */
-        public ICache<TK, TV> GetOrCreateNearCache<TK, TV>(string name, NearCacheConfiguration configuration)
-        {
-            throw GetClientNotSupportedException();
-        }
-
-        /** <inheritDoc /> */
-        public ICollection<string> GetCacheNames()
-        {
-            throw GetClientNotSupportedException();
-        }
-
-        /** <inheritDoc /> */
-        public ILogger Logger
-        {
-            get { throw GetClientNotSupportedException(); }
-        }
-
-        /** <inheritDoc /> */
-        public event EventHandler Stopping
-        {
-            add { throw GetClientNotSupportedException(); }
-            remove { throw GetClientNotSupportedException(); }
-        }
-
-        /** <inheritDoc /> */
-        public event EventHandler Stopped
-        {
-            add { throw GetClientNotSupportedException(); }
-            remove { throw GetClientNotSupportedException(); }
-        }
-
-        /** <inheritDoc /> */
-        public event EventHandler ClientDisconnected
-        {
-            add { throw GetClientNotSupportedException(); }
-            remove { throw GetClientNotSupportedException(); }
-        }
-
-        /** <inheritDoc /> */
-        public event EventHandler<ClientReconnectEventArgs> ClientReconnected
-        {
-            add { throw GetClientNotSupportedException(); }
-            remove { throw GetClientNotSupportedException(); }
-        }
-
-        /** <inheritDoc /> */
-        public T GetPlugin<T>(string name) where T : class
-        {
-            throw GetClientNotSupportedException();
-        }
-
-        /** <inheritDoc /> */
-        public void ResetLostPartitions(IEnumerable<string> cacheNames)
-        {
-            throw GetClientNotSupportedException();
-        }
-
-        /** <inheritDoc /> */
-        public void ResetLostPartitions(params string[] cacheNames)
-        {
-            throw GetClientNotSupportedException();
-        }
-
-        /** <inheritDoc /> */
-        public ICollection<IMemoryMetrics> GetMemoryMetrics()
-        {
-            throw GetClientNotSupportedException();
-        }
-
-        /** <inheritDoc /> */
-        public IMemoryMetrics GetMemoryMetrics(string memoryPolicyName)
-        {
-            throw GetClientNotSupportedException();
-        }
-
-        /** <inheritDoc /> */
-        public void SetActive(bool isActive)
-        {
-            throw GetClientNotSupportedException();
-        }
-
-        /** <inheritDoc /> */
-        public bool IsActive()
-        {
-            throw GetClientNotSupportedException();
-        }
-
-        /** <inheritDoc /> */
-        public IPersistentStoreMetrics GetPersistentStoreMetrics()
         {
             throw GetClientNotSupportedException();
         }
