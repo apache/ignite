@@ -140,10 +140,11 @@ public class IgniteNode implements BenchmarkServer {
 
                 cc.setWriteBehindEnabled(args.isWriteBehind());
 
-                if (args.mvccEnabled() &&
-                    cc.getAtomicityMode() == CacheAtomicityMode.TRANSACTIONAL &&
-                    cc.getCacheMode() != CacheMode.LOCAL) {
-                    cc.setMvccEnabled(true);
+                if (args.mvccEnabled()) {
+                    if (cc.getAtomicityMode() == CacheAtomicityMode.TRANSACTIONAL &&
+                        cc.getCacheMode() != CacheMode.LOCAL)
+                        cc.setMvccEnabled(true);
+
                     cc.setNodeFilter(new TmpMvccNodeFilter());
                 }
 
