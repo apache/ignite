@@ -18,12 +18,16 @@
 package org.apache.ignite.jdbc.suite;
 
 import junit.framework.TestSuite;
+import org.apache.ignite.internal.jdbc2.JdbcBlobTest;
+import org.apache.ignite.internal.jdbc2.JdbcDistributedJoinsQueryTest;
 import org.apache.ignite.jdbc.JdbcComplexQuerySelfTest;
 import org.apache.ignite.jdbc.JdbcConnectionSelfTest;
 import org.apache.ignite.jdbc.JdbcEmptyCacheSelfTest;
 import org.apache.ignite.jdbc.JdbcLocalCachesSelfTest;
 import org.apache.ignite.jdbc.JdbcMetadataSelfTest;
 import org.apache.ignite.jdbc.JdbcNoDefaultCacheTest;
+import org.apache.ignite.jdbc.JdbcPojoLegacyQuerySelfTest;
+import org.apache.ignite.jdbc.JdbcPojoQuerySelfTest;
 import org.apache.ignite.jdbc.JdbcPreparedStatementSelfTest;
 import org.apache.ignite.jdbc.JdbcResultSetSelfTest;
 import org.apache.ignite.jdbc.JdbcStatementSelfTest;
@@ -39,7 +43,7 @@ public class IgniteJdbcDriverTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Ignite JDBC Driver Test Suite");
 
-        // Thin client based driver tests
+        // Thin client based driver tests.
         suite.addTest(new TestSuite(JdbcConnectionSelfTest.class));
         suite.addTest(new TestSuite(JdbcStatementSelfTest.class));
         suite.addTest(new TestSuite(JdbcPreparedStatementSelfTest.class));
@@ -49,6 +53,8 @@ public class IgniteJdbcDriverTestSuite extends TestSuite {
         suite.addTest(new TestSuite(JdbcEmptyCacheSelfTest.class));
         suite.addTest(new TestSuite(JdbcLocalCachesSelfTest.class));
         suite.addTest(new TestSuite(JdbcNoDefaultCacheTest.class));
+        suite.addTest(new TestSuite(JdbcPojoQuerySelfTest.class));
+        suite.addTest(new TestSuite(JdbcPojoLegacyQuerySelfTest.class));
 
         // Ignite client node based driver tests
         suite.addTest(new TestSuite(org.apache.ignite.internal.jdbc2.JdbcConnectionSelfTest.class));
@@ -56,7 +62,7 @@ public class IgniteJdbcDriverTestSuite extends TestSuite {
         suite.addTest(new TestSuite(org.apache.ignite.internal.jdbc2.JdbcPreparedStatementSelfTest.class));
         suite.addTest(new TestSuite(org.apache.ignite.internal.jdbc2.JdbcResultSetSelfTest.class));
         suite.addTest(new TestSuite(org.apache.ignite.internal.jdbc2.JdbcComplexQuerySelfTest.class));
-        suite.addTest(new TestSuite(org.apache.ignite.internal.jdbc2.JdbcDistributedJoinsQueryTest.class));
+        suite.addTest(new TestSuite(JdbcDistributedJoinsQueryTest.class));
         suite.addTest(new TestSuite(org.apache.ignite.internal.jdbc2.JdbcMetadataSelfTest.class));
         suite.addTest(new TestSuite(org.apache.ignite.internal.jdbc2.JdbcEmptyCacheSelfTest.class));
         suite.addTest(new TestSuite(org.apache.ignite.internal.jdbc2.JdbcLocalCachesSelfTest.class));
@@ -67,6 +73,7 @@ public class IgniteJdbcDriverTestSuite extends TestSuite {
         suite.addTest(new TestSuite(org.apache.ignite.internal.jdbc2.JdbcBinaryMarshallerInsertStatementSelfTest.class));
         suite.addTest(new TestSuite(org.apache.ignite.internal.jdbc2.JdbcDeleteStatementSelfTest.class));
         suite.addTest(new TestSuite(org.apache.ignite.internal.jdbc2.JdbcStreamingSelfTest.class));
+        suite.addTest(new TestSuite(JdbcBlobTest.class));
 
         return suite;
     }

@@ -1633,6 +1633,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         assert req.start() : req;
         assert req.cacheType() != null : req;
 
+        String cacheName = maskNull(req.cacheName());
+
         prepareCacheStart(
             req.startCacheConfiguration(),
             req.nearCacheConfiguration(),
@@ -1643,7 +1645,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             topVer
         );
 
-        DynamicCacheDescriptor desc = registeredCaches.get(maskNull(req.cacheName()));
+        DynamicCacheDescriptor desc = registeredCaches.get(cacheName);
 
         if (desc != null)
             desc.onStart();
@@ -1767,6 +1769,20 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Called during exchange rollback in order to stop the given cache
+     * even if it's not fully initialized (e.g. fail on cache init stage).
+     *
+     * @param req Stop request.
+     */
+     public void forceCloseCache(DynamicCacheChangeRequest req) {
+        assert req.stop() : req;
+
+        stopGateway(req);
+
+        prepareCacheStop(req, true);
+    }
+
+    /**
      * @param req Request.
      */
     private void stopGateway(DynamicCacheChangeRequest req) {
@@ -1782,8 +1798,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /**
      * @param req Stop request.
      */
-    private void prepareCacheStop(DynamicCacheChangeRequest req) {
-        assert req.stop() || req.close() : req;
+    private void prepareCacheStop(DynamicCacheChangeRequest req, boolean forceClose) {
+        assert req.stop() || req.close() || forceClose : req;
 
         GridCacheAdapter<?, ?> cache = caches.remove(maskNull(req.cacheName()));
 
@@ -1826,42 +1842,45 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
         }
 
-        if (!F.isEmpty(reqs) && err == null) {
+        if (!F.isEmpty(reqs)) {
             for (DynamicCacheChangeRequest req : reqs) {
-                String masked = maskNull(req.cacheName());
+                if (err == null) {
+                    String masked = maskNull(req.cacheName());
 
-                if (req.stop()) {
-                    stopGateway(req);
+                    if (req.stop()) {
+                        stopGateway(req);
 
-                    prepareCacheStop(req);
-                }
-                else if (req.close() && req.initiatingNodeId().equals(ctx.localNodeId())) {
-                    IgniteCacheProxy<?, ?> proxy = jCacheProxies.remove(masked);
+                        prepareCacheStop(req, false);
+                    }
+                    else if (req.close() && req.initiatingNodeId().equals(ctx.localNodeId())) {
+                        IgniteCacheProxy<?, ?> proxy = jCacheProxies.remove(masked);
 
-                    if (proxy != null) {
-                        if (proxy.context().affinityNode()) {
-                            GridCacheAdapter<?, ?> cache = caches.get(masked);
+                        if (proxy != null) {
+                            if (proxy.context().affinityNode()) {
+                                GridCacheAdapter<?, ?> cache = caches.get(masked);
 
-                            if (cache != null)
-                                jCacheProxies.put(masked, new IgniteCacheProxy(cache.context(), cache, null, false));
-                        }
-                        else {
-                            proxy.context().gate().onStopped();
+                                if (cache != null)
+                                    jCacheProxies.put(masked, new IgniteCacheProxy(cache.context(), cache, null, false));
+                            }
+                            else {
+                                proxy.context().gate().onStopped();
 
-                            prepareCacheStop(req);
+                                prepareCacheStop(req, false);
+                            }
                         }
                     }
                 }
 
-                completeStartFuture(req);
+                completeStartFuture(req, err);
             }
         }
     }
 
     /**
      * @param req Request to complete future for.
+     * @param err Error to be passed to futures.
      */
-    public void completeStartFuture(DynamicCacheChangeRequest req) {
+    public void completeStartFuture(DynamicCacheChangeRequest req, @Nullable Throwable err) {
         DynamicCacheStartFuture fut = (DynamicCacheStartFuture)pendingFuts.get(maskNull(req.cacheName()));
 
         assert req.deploymentId() != null;
@@ -1869,7 +1888,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         if (fut != null && fut.deploymentId().equals(req.deploymentId()) &&
             F.eq(req.initiatingNodeId(), ctx.localNodeId()))
-            fut.onDone();
+            fut.onDone(err);
     }
 
     /**
@@ -2598,8 +2617,24 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         AffinityTopologyVersion topVer) {
         if (msg instanceof CacheAffinityChangeMessage)
             return sharedCtx.affinity().onCustomEvent(((CacheAffinityChangeMessage)msg));
+        else if (msg instanceof DynamicCacheChangeFailureMessage)
+            return onCacheChangeRequested((DynamicCacheChangeFailureMessage)msg);
 
         return msg instanceof DynamicCacheChangeBatch && onCacheChangeRequested((DynamicCacheChangeBatch)msg, topVer);
+    }
+
+    /**
+     * @param failMsg Dynamic change change request fail message.
+     * @return {@code True} if minor topology version should be increased.
+     */
+    private boolean onCacheChangeRequested(DynamicCacheChangeFailureMessage failMsg) {
+        for (String cacheName : failMsg.cacheNames()) {
+            registeredCaches.remove(maskNull(cacheName));
+
+            ctx.discovery().removeCacheFilter(cacheName);
+        }
+
+        return false;
     }
 
     /**
@@ -2925,6 +2960,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "writeBehindBatchSize",
                 "Write behind batch size", locAttr.writeBehindBatchSize(), rmtAttr.writeBehindBatchSize(),
+                false);
+
+            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "writeBehindCacheCoalescing",
+                "Write behind coalescing", locAttr.writeBehindCoalescing(), rmtAttr.writeBehindCoalescing(),
                 false);
 
             CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "writeBehindEnabled",
@@ -3365,6 +3404,24 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * @param name Cache name.
+     * @param id Cache id.
+     * @return Cache instance for given name or stub if cache not created yet, but cache descriptor exists.
+     */
+    @SuppressWarnings("unchecked")
+    public <K, V> IgniteCacheProxy<K, V> safeJcache(String name, int id) {
+        IgniteCacheProxy<K, V> cache = (IgniteCacheProxy<K, V>)jCacheProxies.get(maskNull(name));
+
+        if (cache == null)
+            if (cacheDescriptor(id) != null && CU.isSystemCache(name))
+                cache = new IgniteCacheProxyStub<K, V>();
+            else
+                throw new IllegalArgumentException("Cache is not configured: " + name);
+
+        return cache;
+    }
+
+    /**
      * @return All configured public cache instances.
      */
     public Collection<IgniteCacheProxy<?, ?>> publicCaches() {
@@ -3498,6 +3555,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     @SuppressWarnings("unchecked")
     private void registerMbean(Object o, @Nullable String cacheName, boolean near)
         throws IgniteCheckedException {
+        if(U.IGNITE_MBEANS_DISABLED)
+            return;
+
         assert o != null;
 
         MBeanServer srvr = ctx.config().getMBeanServer();
@@ -3514,7 +3574,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     U.registerCacheMBean(srvr, ctx.gridName(), cacheName, o.getClass().getName(), o,
                         (Class<Object>)itf);
                 }
-                catch (JMException e) {
+                catch (Throwable e) {
                     throw new IgniteCheckedException("Failed to register MBean for component: " + o, e);
                 }
 
@@ -3531,6 +3591,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param near Near flag.
      */
     private void unregisterMbean(Object o, @Nullable String cacheName, boolean near) {
+        if(U.IGNITE_MBEANS_DISABLED)
+            return;
+
         assert o != null;
 
         MBeanServer srvr = ctx.config().getMBeanServer();
@@ -3546,7 +3609,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 try {
                     srvr.unregisterMBean(U.makeCacheMBeanName(ctx.gridName(), cacheName, o.getClass().getName()));
                 }
-                catch (JMException e) {
+                catch (Throwable e) {
                     U.error(log, "Failed to unregister MBean for component: " + o, e);
                 }
 

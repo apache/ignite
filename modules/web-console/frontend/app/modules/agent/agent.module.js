@@ -18,6 +18,8 @@
 import angular from 'angular';
 import io from 'socket.io-client'; // eslint-disable-line no-unused-vars
 
+import templateUrl from 'views/templates/agent-download.tpl.pug';
+
 const maskNull = (val) => _.isEmpty(val) ? 'null' : val;
 
 class IgniteAgentMonitor {
@@ -35,7 +37,7 @@ class IgniteAgentMonitor {
         // Pre-fetch modal dialogs.
         this._downloadAgentModal = $modal({
             scope: this._scope,
-            templateUrl: '/templates/agent-download.html',
+            templateUrl,
             show: false,
             backdrop: 'static',
             keyboard: false
@@ -263,12 +265,13 @@ class IgniteAgentMonitor {
      * @param {String} cacheName Cache name.
      * @param {String} [query] Query if null then scan query.
      * @param {Boolean} nonCollocatedJoins Flag whether to execute non collocated joins.
+     * @param {Boolean} enforceJoinOrder Flag whether enforce join order is enabled.
      * @param {Boolean} local Flag whether to execute query locally.
      * @param {int} pageSize
      * @returns {Promise}
      */
-    query(nid, cacheName, query, nonCollocatedJoins, local, pageSize) {
-        return this._rest('node:query', nid, maskNull(cacheName), maskNull(query), nonCollocatedJoins, local, pageSize)
+    query(nid, cacheName, query, nonCollocatedJoins, enforceJoinOrder, local, pageSize) {
+        return this._rest('node:query', nid, maskNull(cacheName), maskNull(query), nonCollocatedJoins, enforceJoinOrder, local, pageSize)
             .then(({result}) => {
                 if (_.isEmpty(result.key))
                     return result.value;
@@ -282,11 +285,12 @@ class IgniteAgentMonitor {
      * @param {String} cacheName Cache name.
      * @param {String} [query] Query if null then scan query.
      * @param {Boolean} nonCollocatedJoins Flag whether to execute non collocated joins.
+     * @param {Boolean} enforceJoinOrder Flag whether enforce join order is enabled.
      * @param {Boolean} local Flag whether to execute query locally.
      * @returns {Promise}
      */
-    queryGetAll(nid, cacheName, query, nonCollocatedJoins, local) {
-        return this._rest('node:query:getAll', nid, maskNull(cacheName), maskNull(query), nonCollocatedJoins, local);
+    queryGetAll(nid, cacheName, query, nonCollocatedJoins, enforceJoinOrder, local) {
+        return this._rest('node:query:getAll', nid, maskNull(cacheName), maskNull(query), nonCollocatedJoins, enforceJoinOrder, local);
     }
 
     /**
