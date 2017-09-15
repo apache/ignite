@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.jdbc.thin;
 
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
-import org.apache.ignite.configuration.SqlConnectorConfiguration;
 
 import java.sql.Time;
 import java.sql.Timestamp;
