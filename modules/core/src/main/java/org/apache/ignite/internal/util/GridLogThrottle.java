@@ -58,27 +58,17 @@ public class GridLogThrottle {
     /**
      * Setup period map cleaning task.
      */
-    public static void mapCleaningPeriodSetup(boolean cancelCheckEnabled) {
+    public static void mapCleaningPeriodSetup(boolean cancelMapCleanEnabled) {
         synchronized (scheduler) {
-            if (cancelCheckEnabled) {
-                if (cleanUpOldEntriesTask != null) {
+            if (cancelMapCleanEnabled) {
+                cleanUpOldEntriesTask.cancel(false);
+            }
 
-                    cleanUpOldEntriesTask.cancel(false);
-
-                    cleanUpOldEntriesTask = scheduler.scheduleAtFixedRate(new Runnable() {
-                        @Override public void run() {
-                            cleanUpOldEntries();
-                        }
-                    }, throttleTimeout, throttleTimeout, TimeUnit.MILLISECONDS);
+            cleanUpOldEntriesTask = scheduler.scheduleAtFixedRate(new Runnable() {
+                @Override public void run() {
+                    cleanUpOldEntries();
                 }
-            }
-            else {
-                cleanUpOldEntriesTask = scheduler.scheduleAtFixedRate(new Runnable() {
-                    @Override public void run() {
-                        cleanUpOldEntries();
-                    }
-                }, throttleTimeout, throttleTimeout, TimeUnit.MILLISECONDS);
-            }
+            }, throttleTimeout, throttleTimeout, TimeUnit.MILLISECONDS);
         }
     }
 
@@ -90,7 +80,9 @@ public class GridLogThrottle {
     public static void throttleTimeout(int timeout) {
         throttleTimeout = timeout;
 
-        mapCleaningPeriodSetup(true);
+        if (cleanUpOldEntriesTask != null) {
+            mapCleaningPeriodSetup(true);
+        }
     }
 
     /**
