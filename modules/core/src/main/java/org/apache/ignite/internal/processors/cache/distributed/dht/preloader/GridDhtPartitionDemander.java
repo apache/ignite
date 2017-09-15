@@ -406,26 +406,35 @@ public class GridDhtPartitionDemander {
     }
 
     /**
-     * @param fut Future.
+     * @param fut Rebalance future.
      * @param assigns Assignments.
-     * @throws IgniteCheckedException If failed.
-     * @return Partitions were requested.
      */
     private void requestPartitions(
         final RebalanceFuture fut,
         GridDhtPreloaderAssignments assigns){
+        assert fut != null;
+
         if (topologyChanged(fut)) {
             fut.cancel();
 
             return;
         }
 
-        for (Map.Entry<ClusterNode, GridDhtPartitionDemandMessage> e : assigns.entrySet()) {
-            final ClusterNode node = e.getKey();
+        synchronized (fut) {
+            if (fut.isDone())
+                return;
 
-            GridDhtPartitionDemandMessage d = e.getValue();
+            // Must add all remaining node before send first request, for avoid race between add remaining node and
+            // processing response, see checkIsDone(boolean).
+            for (Map.Entry<ClusterNode, GridDhtPartitionDemandMessage> e : assigns.entrySet()) {
+                UUID nodeId = e.getKey().id();
 
-            fut.appendPartitions(node.id(), d.partitions()); //Future preparation.
+                Collection<Integer> parts= e.getValue().partitions();
+
+                assert parts != null : "Partitions are null [cache=" + cctx.name() + ", fromNode=" + nodeId + "]";
+
+                fut.remaining.put(nodeId, new T2<>(U.currentTimeMillis(), parts));
+            }
         }
 
         for (Map.Entry<ClusterNode, GridDhtPartitionDemandMessage> e : assigns.entrySet()) {
@@ -433,9 +442,9 @@ public class GridDhtPartitionDemander {
 
             final CacheConfiguration cfg = cctx.config();
 
-            final Collection<Integer> parts = fut.remaining.get(node.id()).get2();
-
             GridDhtPartitionDemandMessage d = e.getValue();
+
+            final Collection<Integer> parts = d.partitions();
 
             //Check remote node rebalancing API version.
             if (node.version().compareTo(GridDhtPreloader.REBALANCING_VER_2_SINCE) >= 0) {
@@ -472,6 +481,8 @@ public class GridDhtPartitionDemander {
                             @Override public void run() {
                                 try {
                                     if (!fut.isDone()) {
+                                        // Future can be already cancelled at this moment and all failovers happened.
+                                        // New requests will not be covered by failovers.
                                         cctx.io().sendOrderedMessage(node,
                                             rebalanceTopics.get(finalCnt), initD, cctx.ioPolicy(), initD.timeout());
 
@@ -913,18 +924,6 @@ public class GridDhtPartitionDemander {
          */
         private boolean isInitial() {
             return topVer == null;
-        }
-
-        /**
-         * @param nodeId Node id.
-         * @param parts Parts.
-         */
-        private void appendPartitions(UUID nodeId, Collection<Integer> parts) {
-            synchronized (this) {
-                assert parts != null : "Partitions are null [cache=" + cctx.name() + ", fromNode=" + nodeId + "]";
-
-                remaining.put(nodeId, new T2<>(U.currentTimeMillis(), parts));
-            }
         }
 
         /**
