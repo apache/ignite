@@ -23,7 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -35,6 +35,7 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -49,7 +50,10 @@ public class GridLostPartitionRebalanceTest extends GridCommonAbstractTest {
     private static final String CACHE_NAME = "cache";
 
     /** Latch. */
-    private static CountDownLatch latch = new CountDownLatch(4);
+    private static CountDownLatch latch;
+
+    /** Count. */
+    private static AtomicInteger cnt;
 
     /** Failed flag. */
     private static boolean failed;
@@ -100,6 +104,12 @@ public class GridLostPartitionRebalanceTest extends GridCommonAbstractTest {
         }
     };
 
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        latch = new CountDownLatch(4);
+        cnt = new AtomicInteger(0);
+    }
+
     /**
      * @throws Exception If failed.
      */
@@ -141,6 +151,10 @@ public class GridLostPartitionRebalanceTest extends GridCommonAbstractTest {
 
         // Check that exchange was not finished when event received.
         assertFalse("Exchange was finished when event received.", failed);
+
+        U.sleep(4_000);
+
+        assertEquals("Fired more events than expected",4, cnt.get());
     }
 
     /**
@@ -155,24 +169,21 @@ public class GridLostPartitionRebalanceTest extends GridCommonAbstractTest {
         @IgniteInstanceResource
         private Ignite ignite;
 
-        /** Got. */
-        private final AtomicBoolean got = new AtomicBoolean(false);
-
         /** {@inheritDoc} */
         @Override public boolean apply(CacheRebalancingEvent evt) {
             int part = evt.partition();
 
             // AtomicBoolean because new owner will produce two events.
-            if (part == 0 && CACHE_NAME.equals(evt.cacheName()) && got.compareAndSet(false, true)) {
+            if (part == 0 && CACHE_NAME.equals(evt.cacheName())) {
                 System.out.println(">> Received event for 0 partition. [node=" + ignite.name() + ", evt=" + evt
                     + ", thread=" + Thread.currentThread().getName() + ']');
 
                 latch.countDown();
 
+                cnt.incrementAndGet();
+
                 if (exchangeCompleted(ignite))
                     failed = true;
-
-                return false;
             }
 
             return true;
