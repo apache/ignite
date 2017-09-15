@@ -272,8 +272,7 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
             qry.setLazy(lazy);
 
             if (req.pageSize() <= 0)
-                return new JdbcResponse(IgniteQueryErrorCode.UNKNOWN,
-                    "Invalid fetch size : [fetchSize=" + req.pageSize() + ']');
+                return new JdbcResponse(IgniteQueryErrorCode.UNKNOWN, "Invalid fetch size: " + req.pageSize());
 
             qry.setPageSize(req.pageSize());
 
@@ -460,10 +459,12 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
 
             if (e instanceof IgniteSQLException) {
                 code = ((IgniteSQLException) e).statusCode();
+
                 msg = e.getMessage();
             }
             else {
                 code = IgniteQueryErrorCode.UNKNOWN;
+
                 msg = e.getMessage();
             }
 
@@ -691,6 +692,7 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
     /**
      * Create {@link JdbcResponse} bearing appropriate Ignite specific result code if possible
      *     from given {@link Exception}.
+     *
      * @param e Exception to convert.
      * @return resulting {@link JdbcResponse}.
      */
