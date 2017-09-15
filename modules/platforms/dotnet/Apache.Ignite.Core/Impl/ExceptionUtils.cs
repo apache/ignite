@@ -139,10 +139,11 @@ namespace Apache.Ignite.Core.Impl
                 if (match.Success && Exs.TryGetValue(match.Groups[1].Value, out innerCtor))
                 {
                     return ctor(clsName, msg,
-                        innerCtor(match.Groups[1].Value, match.Groups[2].Value, innerException, ignite), ignite);
+                        innerCtor(match.Groups[1].Value, match.Groups[2].Value, innerException, ignite.GetIgnite()), 
+                        ignite.GetIgnite());
                 }
 
-                return ctor(clsName, msg, innerException, ignite);
+                return ctor(clsName, msg, innerException, ignite.GetIgnite());
             }
 
             if (ClsNoClsDefFoundErr.Equals(clsName, StringComparison.OrdinalIgnoreCase))
@@ -163,7 +164,7 @@ namespace Apache.Ignite.Core.Impl
 
                 if (ctor != null)
                 {
-                    return ctor(clsName, msg, innerException, ignite);
+                    return ctor(clsName, msg, innerException, ignite.GetIgnite());
                 }
             }
 

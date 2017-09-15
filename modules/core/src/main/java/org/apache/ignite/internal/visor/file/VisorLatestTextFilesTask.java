@@ -18,13 +18,11 @@
 package org.apache.ignite.internal.visor.file;
 
 import java.io.File;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
 import org.apache.ignite.internal.visor.log.VisorLogFile;
@@ -32,6 +30,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.visor.util.VisorTaskUtils.LOG_FILES_COUNT_LIMIT;
 import static org.apache.ignite.internal.visor.util.VisorTaskUtils.matchedFiles;
+import static org.apache.ignite.internal.visor.util.VisorTaskUtils.resolveIgnitePath;
 
 /**
  * Get list files matching filter.
@@ -69,13 +68,11 @@ public class VisorLatestTextFilesTask extends VisorOneNodeTask<VisorLatestTextFi
             assert path != null;
             assert regexp != null;
 
-            URL url = U.resolveIgniteUrl(path);
-
-            if (url == null)
-                return null;
-
             try {
-                File folder = new File(url.toURI());
+                File folder = resolveIgnitePath(path);
+
+                if (folder == null)
+                    return null;
 
                 List<VisorLogFile> files = matchedFiles(folder, regexp);
 

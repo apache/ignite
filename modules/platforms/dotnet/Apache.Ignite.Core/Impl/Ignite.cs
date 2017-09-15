@@ -55,7 +55,7 @@ namespace Apache.Ignite.Core.Impl
     /// <summary>
     /// Native Ignite wrapper.
     /// </summary>
-    internal class Ignite : PlatformTargetAdapter, ICluster, IIgniteInternal
+    internal class Ignite : PlatformTargetAdapter, ICluster, IIgniteInternal, IIgnite
     {
         /// <summary>
         /// Operation codes for PlatformProcessorImpl calls.
@@ -579,6 +579,14 @@ namespace Apache.Ignite.Core.Impl
             return new DataStreamerImpl<TK, TV>(streamerTarget, _marsh, cacheName, keepBinary);
         }
 
+        /// <summary>
+        /// Gets the public Ignite interface.
+        /// </summary>
+        public IIgnite GetIgnite()
+        {
+            return this;
+        }
+
         /** <inheritdoc /> */
         public IBinary GetBinary()
         {
@@ -804,7 +812,7 @@ namespace Apache.Ignite.Core.Impl
         /// <summary>
         /// Gets the binary processor.
         /// </summary>
-        public BinaryProcessor BinaryProcessor
+        public IBinaryProcessor BinaryProcessor
         {
             get { return _binaryProc; }
         }
