@@ -2488,7 +2488,7 @@ public class IgniteConfiguration {
      * Gets configuration for ODBC.
      *
      * @return ODBC configuration.
-     * @deprecated Use {@link #getSqlConnectorConfiguration()} instead.
+     * @deprecated Use {@link #getClientConnectorConfiguration()} ()} instead.
      */
     @Deprecated
     public OdbcConfiguration getOdbcConfiguration() {
@@ -2500,7 +2500,7 @@ public class IgniteConfiguration {
      *
      * @param odbcCfg ODBC configuration.
      * @return {@code this} for chaining.
-     * @deprecated Use {@link #setSqlConnectorConfiguration(SqlConnectorConfiguration)} instead.
+     * @deprecated Use {@link #setClientConnectorConfiguration(ClientConnectorConfiguration)} instead.
      */
     @Deprecated
     public IgniteConfiguration setOdbcConfiguration(OdbcConfiguration odbcCfg) {
@@ -2801,7 +2801,7 @@ public class IgniteConfiguration {
      *
      * @param sqlConnCfg SQL connector configuration.
      * @return {@code this} for chaining.
-     * @deprecated Please use {@link #setClientConnectorConfiguration(ClientConnectorConfiguration)} instead.
+     * @deprecated Use {@link #setClientConnectorConfiguration(ClientConnectorConfiguration)} instead.
      */
     @Deprecated
     public IgniteConfiguration setSqlConnectorConfiguration(SqlConnectorConfiguration sqlConnCfg) {
@@ -2814,7 +2814,7 @@ public class IgniteConfiguration {
      * Gets SQL connector configuration.
      *
      * @return SQL connector configuration.
-     * @deprecated Please use {@link #getClientConnectorConfiguration()} instead.
+     * @deprecated Use {@link #getClientConnectorConfiguration()} instead.
      */
     @Deprecated
     public SqlConnectorConfiguration getSqlConnectorConfiguration() {
