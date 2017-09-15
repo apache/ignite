@@ -375,6 +375,21 @@ namespace ignite
 #ifdef SQL_DYNAMIC_CURSOR_ATTRIBUTES1
                     DBG_STR_CASE(SQL_DYNAMIC_CURSOR_ATTRIBUTES1);
 #endif // SQL_DYNAMIC_CURSOR_ATTRIBUTES1
+#ifdef SQL_DYNAMIC_CURSOR_ATTRIBUTES2
+                    DBG_STR_CASE(SQL_DYNAMIC_CURSOR_ATTRIBUTES2);
+#endif // SQL_DYNAMIC_CURSOR_ATTRIBUTES2
+#ifdef SQL_EXPRESSIONS_IN_ORDERBY
+                    DBG_STR_CASE(SQL_EXPRESSIONS_IN_ORDERBY);
+#endif // SQL_EXPRESSIONS_IN_ORDERBY
+#ifdef SQL_FILE_USAGE
+                    DBG_STR_CASE(SQL_FILE_USAGE);
+#endif // SQL_FILE_USAGE
+#ifdef SQL_FORWARD_ONLY_CURSOR_ATTRIBUTES1
+                    DBG_STR_CASE(SQL_FORWARD_ONLY_CURSOR_ATTRIBUTES1);
+#endif // SQL_FORWARD_ONLY_CURSOR_ATTRIBUTES1
+#ifdef SQL_FORWARD_ONLY_CURSOR_ATTRIBUTES2
+                    DBG_STR_CASE(SQL_FORWARD_ONLY_CURSOR_ATTRIBUTES2);
+#endif // SQL_FORWARD_ONLY_CURSOR_ATTRIBUTES2
                     default:
                         break;
                 }
@@ -528,6 +543,12 @@ namespace ignite
                 // describing parameters might not be supported, even in a SQL-92 Full level-conformant driver.
                 strParams[SQL_DESCRIBE_PARAMETER] = "N";
 #endif // SQL_DESCRIBE_PARAMETER
+
+#ifdef SQL_EXPRESSIONS_IN_ORDERBY
+                // A character string: "Y" if the data source supports expressions in the ORDER BY list; "N" if it does
+                // not.
+                strParams[SQL_EXPRESSIONS_IN_ORDERBY] = "Y";
+#endif // SQL_EXPRESSIONS_IN_ORDERBY
 
                 //
                 //====================== Integer Params =======================
@@ -1423,6 +1444,125 @@ namespace ignite
                 intParams[SQL_DYNAMIC_CURSOR_ATTRIBUTES1] = SQL_CA1_NEXT;
 #endif // SQL_DYNAMIC_CURSOR_ATTRIBUTES1
 
+#ifdef SQL_DYNAMIC_CURSOR_ATTRIBUTES2
+                // A bitmask that describes the attributes of a dynamic cursor that are supported by the driver.
+                // This bitmask contains the second subset of attributes; for the first subset, see
+                // SQL_DYNAMIC_CURSOR_ATTRIBUTES1.
+                //
+                // The following bitmasks are used to determine which attributes are supported:
+                // SQL_CA2_READ_ONLY_CONCURRENCY = A read-only dynamic cursor, in which no updates are allowed, is
+                //     supported. (The SQL_ATTR_CONCURRENCY statement attribute can be SQL_CONCUR_READ_ONLY for a
+                //     dynamic cursor).
+                // SQL_CA2_LOCK_CONCURRENCY = A dynamic cursor that uses the lowest level of locking sufficient to make
+                //     sure that the row can be updated is supported. (The SQL_ATTR_CONCURRENCY statement attribute can
+                //     be SQL_CONCUR_LOCK for a dynamic cursor.) These locks must be consistent with the transaction
+                //     isolation level set by the SQL_ATTR_TXN_ISOLATION connection attribute.
+                // SQL_CA2_OPT_ROWVER_CONCURRENCY = A dynamic cursor that uses the optimistic concurrency control
+                //     comparing row versions is supported. (The SQL_ATTR_CONCURRENCY statement attribute can be
+                //     SQL_CONCUR_ROWVER for a dynamic cursor.)
+                // SQL_CA2_OPT_VALUES_CONCURRENCY = A dynamic cursor that uses the optimistic concurrency control
+                //     comparing values is supported. (The SQL_ATTR_CONCURRENCY statement attribute can be
+                //     SQL_CONCUR_VALUES for a dynamic cursor.)
+                // SQL_CA2_SENSITIVITY_ADDITIONS = Added rows are visible to a dynamic cursor; the cursor can scroll to
+                //     those rows. (Where these rows are added to the cursor is driver-dependent.)
+                // SQL_CA2_SENSITIVITY_DELETIONS = Deleted rows are no longer available to a dynamic cursor, and do not
+                //     leave a "hole" in the result set; after the dynamic cursor scrolls from a deleted row, it cannot
+                //     return to that row.
+                // SQL_CA2_SENSITIVITY_UPDATES = Updates to rows are visible to a dynamic cursor; if the dynamic cursor
+                //     scrolls from and returns to an updated row, the data returned by the cursor is the updated data,
+                //     not the original data.
+                // SQL_CA2_MAX_ROWS_SELECT = The SQL_ATTR_MAX_ROWS statement attribute affects SELECT statements when
+                //     the cursor is a dynamic cursor.
+                // SQL_CA2_MAX_ROWS_INSERT = The SQL_ATTR_MAX_ROWS statement attribute affects INSERT statements when
+                //     the cursor is a dynamic cursor.
+                // SQL_CA2_MAX_ROWS_DELETE = The SQL_ATTR_MAX_ROWS statement attribute affects DELETE statements when
+                //     the cursor is a dynamic cursor.
+                // SQL_CA2_MAX_ROWS_UPDATE = The SQL_ATTR_MAX_ROWS statement attribute affects UPDATE statements when
+                //     the cursor is a dynamic cursor.
+                // SQL_CA2_MAX_ROWS_CATALOG = The SQL_ATTR_MAX_ROWS statement attribute affects CATALOG result sets when
+                //     the cursor is a dynamic cursor.
+                // SQL_CA2_MAX_ROWS_AFFECTS_ALL = The SQL_ATTR_MAX_ROWS statement attribute affects SELECT, INSERT,
+                //     DELETE, and UPDATE statements, and CATALOG result sets, when the cursor is a dynamic cursor.
+                // SQL_CA2_CRC_EXACT = The exact row count is available in the SQL_DIAG_CURSOR_ROW_COUNT diagnostic
+                //     field when the cursor is a dynamic cursor.
+                // SQL_CA2_CRC_APPROXIMATE = An approximate row count is available in the SQL_DIAG_CURSOR_ROW_COUNT
+                //     diagnostic field when the cursor is a dynamic cursor.
+                // SQL_CA2_SIMULATE_NON_UNIQUE = The driver does not guarantee that simulated positioned update or
+                //     delete statements will affect only one row when the cursor is a dynamic cursor; it is the
+                //     application's responsibility to guarantee this. (If a statement affects more than one row,
+                //     SQLExecute or SQLExecDirect returns SQLSTATE 01001 [Cursor operation conflict].) To set this
+                //     behavior, the application calls SQLSetStmtAttr with the SQL_ATTR_SIMULATE_CURSOR attribute set to
+                //     SQL_SC_NON_UNIQUE.
+                // SQL_CA2_SIMULATE_TRY_UNIQUE = The driver tries to guarantee that simulated positioned update or
+                //     delete statements will affect only one row when the cursor is a dynamic cursor. The driver always
+                //     executes such statements, even if they might affect more than one row, such as when there is no
+                //     unique key. (If a statement affects more than one row, SQLExecute or SQLExecDirect returns
+                //     SQLSTATE 01001 [Cursor operation conflict].) To set this behavior, the application calls
+                //     SQLSetStmtAttr with the SQL_ATTR_SIMULATE_CURSOR attribute set to SQL_SC_TRY_UNIQUE.
+                // SQL_CA2_SIMULATE_UNIQUE = The driver guarantees that simulated positioned update or delete statements
+                //     will affect only one row when the cursor is a dynamic cursor. If the driver cannot guarantee this
+                //     for a given statement, SQLExecDirect or SQLPrepare return SQLSTATE 01001 (Cursor operation
+                //     conflict). To set this behavior, the application calls SQLSetStmtAttr with the
+                //     SQL_ATTR_SIMULATE_CURSOR attribute set to SQL_SC_UNIQUE.
+                intParams[SQL_DYNAMIC_CURSOR_ATTRIBUTES2] = SQL_CA2_READ_ONLY_CONCURRENCY;
+#endif // SQL_DYNAMIC_CURSOR_ATTRIBUTES2
+
+#ifdef SQL_FORWARD_ONLY_CURSOR_ATTRIBUTES1
+                // A bitmask that describes the attributes of a forward-only cursor that are supported by the driver.
+                // This bitmask contains the first subset of attributes; for the second subset, see
+                // SQL_FORWARD_ONLY_CURSOR_ATTRIBUTES2.
+                //
+                // The following bitmasks are used to determine which attributes are supported:
+                // SQL_CA1_NEXT
+                // SQL_CA1_LOCK_EXCLUSIVE
+                // SQL_CA1_LOCK_NO_CHANGE
+                // SQL_CA1_LOCK_UNLOCK
+                // SQL_CA1_POS_POSITION
+                // SQL_CA1_POS_UPDATE
+                // SQL_CA1_POS_DELETE
+                // SQL_CA1_POS_REFRESH
+                // SQL_CA1_POSITIONED_UPDATE
+                // SQL_CA1_POSITIONED_DELETE
+                // SQL_CA1_SELECT_FOR_UPDATE
+                // SQL_CA1_BULK_ADD
+                // SQL_CA1_BULK_UPDATE_BY_BOOKMARK
+                // SQL_CA1_BULK_DELETE_BY_BOOKMARK
+                // SQL_CA1_BULK_FETCH_BY_BOOKMARK
+                //
+                // For descriptions of these bitmasks, see SQL_DYNAMIC_CURSOR_ATTRIBUTES1 (and substitute "forward-only
+                // cursor" for "dynamic cursor" in the descriptions).
+                intParams[SQL_FORWARD_ONLY_CURSOR_ATTRIBUTES1] = SQL_CA1_NEXT;
+#endif // SQL_FORWARD_ONLY_CURSOR_ATTRIBUTES1
+
+#ifdef SQL_FORWARD_ONLY_CURSOR_ATTRIBUTES2
+                // A bitmask that describes the attributes of a forward-only cursor that are supported by the driver.
+                // This bitmask contains the second subset of attributes; for the first subset, see
+                // SQL_FORWARD_ONLY_CURSOR_ATTRIBUTES1.
+                //
+                // The following bitmasks are used to determine which attributes are supported:
+                // SQL_CA2_READ_ONLY_CONCURRENCY
+                // SQL_CA2_LOCK_CONCURRENCY
+                // SQL_CA2_OPT_ROWVER_CONCURRENCY
+                // SQL_CA2_OPT_VALUES_CONCURRENCY
+                // SQL_CA2_SENSITIVITY_ADDITIONS
+                // SQL_CA2_SENSITIVITY_DELETIONS
+                // SQL_CA2_SENSITIVITY_UPDATES
+                // SQL_CA2_MAX_ROWS_SELECT
+                // SQL_CA2_MAX_ROWS_INSERT
+                // SQL_CA2_MAX_ROWS_DELETE
+                // SQL_CA2_MAX_ROWS_UPDATE
+                // SQL_CA2_MAX_ROWS_CATALOG
+                // SQL_CA2_MAX_ROWS_AFFECTS_ALL
+                // SQL_CA2_CRC_EXACT
+                // SQL_CA2_CRC_APPROXIMATE
+                // SQL_CA2_SIMULATE_NON_UNIQUE
+                // SQL_CA2_SIMULATE_TRY_UNIQUE
+                // SQL_CA2_SIMULATE_UNIQUE
+                //
+                // For descriptions of these bitmasks, see SQL_DYNAMIC_CURSOR_ATTRIBUTES2 (and substitute "forward-only
+                // cursor" for "dynamic cursor" in the descriptions).
+                intParams[SQL_FORWARD_ONLY_CURSOR_ATTRIBUTES2] = SQL_CA2_READ_ONLY_CONCURRENCY;
+#endif // SQL_FORWARD_ONLY_CURSOR_ATTRIBUTES2
 
                 //
                 //======================= Short Params ========================
@@ -1498,6 +1638,26 @@ namespace ignite
                 // An SQL - 92 Entry level-conformant driver will always return SQL_CN_ANY.
                 shortParams[SQL_CORRELATION_NAME] = SQL_CB_NULL;
 #endif // SQL_CORRELATION_NAME
+
+#ifdef SQL_FILE_USAGE
+                // Value that indicates how a single-tier driver directly treats files in a data source:
+                //
+                // SQL_FILE_NOT_SUPPORTED = The driver is not a single-tier driver. For example, an ORACLE driver is a
+                //     two-tier driver.
+                // SQL_FILE_TABLE = A single-tier driver treats files in a data source as tables. For example, an Xbase
+                //     driver treats each Xbase file as a table.
+                // SQL_FILE_CATALOG = A single-tier driver treats files in a data source as a catalog. For example, a
+                //     Microsoft Access driver treats each Microsoft Access file as a complete database.
+                //
+                // An application might use this to determine how users will select data. For example, Xbase users often
+                // think of data as stored in files, whereas ORACLE and Microsoft Access users generally think of
+                // data as stored in tables.
+                //
+                // When a user selects an Xbase data source, the application could display the Windows File Open common
+                // dialog box; when the user selects a Microsoft Access or ORACLE data source, the application could
+                // display a custom Select Table dialog box.
+                shortParams[SQL_FILE_USAGE] = SQL_FILE_NOT_SUPPORTED;
+#endif // SQL_FILE_USAGE
             }
 
             ConnectionInfo::~ConnectionInfo()
