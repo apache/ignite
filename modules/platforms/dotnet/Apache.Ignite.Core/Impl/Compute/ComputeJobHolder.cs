@@ -86,7 +86,7 @@ namespace Apache.Ignite.Core.Impl.Compute
                 success ? null : new IgniteException("Compute job has failed on local node, " +
                                                      "examine InnerException for details.", (Exception) res), 
                 _job, 
-                _ignite.GetCluster().GetLocalNode().Id, 
+                _ignite.GetIgnite().GetCluster().GetLocalNode().Id, 
                 cancel
             );
         }

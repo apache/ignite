@@ -3218,7 +3218,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
 
         GridNearTxFinishFuture fut = commitFut;
 
-        if (fut == null &&
+        if (fut != null ||
             !COMMIT_FUT_UPD.compareAndSet(this, null, fut = new GridNearTxFinishFuture<>(cctx, this, true)))
             return commitFut;
 

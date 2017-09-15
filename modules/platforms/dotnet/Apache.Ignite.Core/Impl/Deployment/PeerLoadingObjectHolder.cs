@@ -82,7 +82,7 @@ namespace Apache.Ignite.Core.Impl.Deployment
         {
             var writer0 = (BinaryWriter) writer.GetRawWriter();
 
-            writer0.WriteGuid(writer0.Marshaller.Ignite.GetCluster().GetLocalNode().Id);
+            writer0.WriteGuid(writer0.Marshaller.Ignite.GetIgnite().GetCluster().GetLocalNode().Id);
             writer0.WriteString(_object.GetType().AssemblyQualifiedName);
             writer0.WriteObjectDetached(_object);
         }
