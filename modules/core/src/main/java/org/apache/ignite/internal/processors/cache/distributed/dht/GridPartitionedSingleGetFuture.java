@@ -31,6 +31,7 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.EntryGetResult;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
@@ -50,7 +51,6 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CIX1;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteProductVersion;
@@ -280,6 +280,7 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
                     topVer,
                     subjId,
                     taskName == null ? 0 : taskName.hashCode(),
+                    expiryPlc != null ? expiryPlc.forCreate() : -1L,
                     expiryPlc != null ? expiryPlc.forAccess() : -1L,
                     skipVals,
                     /**add reader*/false,
@@ -299,6 +300,7 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
                     topVer,
                     subjId,
                     taskName == null ? 0 : taskName.hashCode(),
+                    expiryPlc != null ? expiryPlc.forCreate() : -1L,
                     expiryPlc != null ? expiryPlc.forAccess() : -1L,
                     skipVals,
                     cctx.deploymentEnabled());
@@ -323,7 +325,7 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
     @Nullable private ClusterNode mapKeyToNode(AffinityTopologyVersion topVer) {
         int part = cctx.affinity().partition(key);
 
-        List<ClusterNode> affNodes = cctx.affinity().nodes(part, topVer);
+        List<ClusterNode> affNodes = cctx.affinity().nodesByPartition(part, topVer);
 
         if (affNodes.isEmpty()) {
             onDone(serverNotFoundError(topVer));
@@ -373,7 +375,7 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
                     GridCacheVersion ver = null;
 
                     if (needVer) {
-                        T2<CacheObject, GridCacheVersion> res = entry.innerGetVersioned(
+                        EntryGetResult res = entry.innerGetVersioned(
                             null,
                             null,
                             /*swap*/true,
@@ -384,11 +386,12 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
                             null,
                             taskName,
                             expiryPlc,
-                            true);
+                            true,
+                            null);
 
                         if (res != null) {
-                            v = res.get1();
-                            ver = res.get2();
+                            v = res.value();
+                            ver = res.version();
                         }
                     }
                     else {
@@ -611,7 +614,7 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
         if (needVer) {
             assert ver != null || !res;
 
-            onDone(new T2<>(res, ver));
+            onDone(new EntryGetResult(res, ver));
         }
         else
             onDone(res);
@@ -629,10 +632,10 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
                 if (!keepCacheObjects) {
                     Object res = cctx.unwrapBinaryIfNeeded(val, !deserializeBinary);
 
-                    onDone(needVer ? new T2<>(res, ver) : res);
+                    onDone(needVer ? new EntryGetResult(res, ver) : res);
                 }
                 else
-                    onDone(needVer ? new T2<>(val, ver) : val);
+                    onDone(needVer ? new EntryGetResult(val, ver) : val);
             }
             else
                 onDone(null);

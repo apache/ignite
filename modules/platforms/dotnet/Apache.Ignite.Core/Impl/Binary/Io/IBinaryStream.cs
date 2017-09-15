@@ -312,7 +312,7 @@ namespace Apache.Ignite.Core.Impl.Binary.IO
         bool IsSameArray(byte[] arr);
 
         /// <summary>
-        /// Seek to the given positoin.
+        /// Seek to the given position.
         /// </summary>
         /// <param name="offset">Offset.</param>
         /// <param name="origin">Seek origin.</param>

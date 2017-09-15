@@ -15,12 +15,12 @@
  * limitations under the License.
  */
 
-using System;
-using System.Threading;
-using Apache.Ignite.Core.Messaging;
-
 namespace Apache.Ignite.ExamplesDll.Messaging
 {
+    using System;
+    using System.Threading;
+    using Apache.Ignite.Core.Messaging;
+
     /// <summary>
     /// Local message listener which signals countdown event on each received message.
     /// </summary>

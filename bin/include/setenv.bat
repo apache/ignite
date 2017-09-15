@@ -43,15 +43,7 @@ set IGNITE_LIBS=%IGNITE_HOME%\libs\*
 
 for /D %%F in (%IGNITE_HOME%\libs\*) do if not "%%F" == "%IGNITE_HOME%\libs\optional" call :concat %%F\*
 
-if exist %IGNITE_HOME%\libs\ignite-hadoop set HADOOP_EDITION=1
-
 if defined USER_LIBS set IGNITE_LIBS=%USER_LIBS%;%IGNITE_LIBS%
-
-if "%HADOOP_EDITION%" == "1" FOR /F "delims=" %%i IN ('%JAVA_HOME%\bin\java.exe -cp %IGNITE_HOME%\libs\ignite-hadoop\* org.apache.ignite.internal.processors.hadoop.HadoopClasspathMain ";"' ) DO set IGNITE_HADOOP_CLASSPATH=%%i
-
-if "%IGNITE_HADOOP_CLASSPATH%" == "" goto :eof
-
-set IGNITE_LIBS=%IGNITE_LIBS%;%IGNITE_HADOOP_CLASSPATH%
 
 goto :eof
 

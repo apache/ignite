@@ -84,7 +84,7 @@ namespace ignite
                  *
                  * @return An informational message on the error or warning.
                  */
-                const std::string& GetMessage() const;
+                const std::string& GetMessageText() const;
 
                 /**
                  * Get connection name.
@@ -127,6 +127,19 @@ namespace ignite
                  */
                 int32_t GetColumnNumber() const;
 
+                /**
+                 * Check if the record was retrieved with the SQLError previously.
+                 *
+                 * return True if the record was retrieved with the SQLError
+                 *  previously.
+                 */
+                bool IsRetrieved() const;
+
+                /**
+                 * Mark record as retrieved with the SQLError.
+                 */
+                void MarkRetrieved();
+
             private:
                 /** SQL state diagnostic code. */
                 SqlState sqlState;
@@ -157,6 +170,12 @@ namespace ignite
                  * result set or the parameter number in the set of parameters.
                  */
                 int32_t columnNum;
+
+                /**
+                 * Flag that shows if the record was retrieved with the 
+                 * SQLError previously.
+                 */
+                bool retrieved;
             };
         }
     }

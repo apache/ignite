@@ -62,7 +62,7 @@ namespace Apache.Ignite.Core.Compute
         /// </returns>
         /// <exception cref="IgniteException">Split returned no jobs.</exception>
         [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
-        override public IDictionary<IComputeJob<TJobRes>, IClusterNode> Map(IList<IClusterNode> subgrid, TArg arg)
+        public override IDictionary<IComputeJob<TJobRes>, IClusterNode> Map(IList<IClusterNode> subgrid, TArg arg)
         {
             var jobs = Split(subgrid.Count, arg);
 

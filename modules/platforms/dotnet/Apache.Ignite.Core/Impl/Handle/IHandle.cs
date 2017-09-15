@@ -26,10 +26,5 @@ namespace Apache.Ignite.Core.Impl.Handle
         /// Release the resource.
         /// </summary>
         void Release();
-
-        /// <summary>
-        /// Resource released flag.
-        /// </summary>
-        bool Released { get; }
     }
 }

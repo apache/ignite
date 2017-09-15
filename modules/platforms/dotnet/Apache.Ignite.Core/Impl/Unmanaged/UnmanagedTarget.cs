@@ -24,7 +24,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
     /// <summary>
     /// Base unmanaged target implementation.
     /// </summary>
-    internal unsafe sealed class UnmanagedTarget : CriticalHandle, IUnmanagedTarget
+    internal sealed unsafe class UnmanagedTarget : CriticalHandle, IUnmanagedTarget
     {
         /** Context. */
         private readonly UnmanagedContext _ctx;
