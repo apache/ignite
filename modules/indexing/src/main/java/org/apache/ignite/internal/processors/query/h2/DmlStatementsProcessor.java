@@ -711,8 +711,8 @@ public class DmlStatementsProcessor {
             return H2Utils.convert(val, desc, type);
         }
         catch (Exception e) {
-            throw new IgniteSQLException("Value conversion failed [origCls=" + currCls.getName() + ", targetCls=" +
-                expCls +']', IgniteQueryErrorCode.CONVERSION_FAILED, e);
+            throw new IgniteSQLException("Value conversion failed [from=" + currCls.getName() + ", to=" +
+                expCls.getName() +']', IgniteQueryErrorCode.CONVERSION_FAILED, e);
         }
     }
 
