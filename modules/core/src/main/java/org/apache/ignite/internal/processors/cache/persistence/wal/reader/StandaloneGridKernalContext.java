@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.wal.reader;
 
+import java.lang.reflect.Field;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -25,11 +26,14 @@ import java.util.concurrent.ExecutorService;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridKernalGateway;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.MarshallerContextImpl;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointManager;
 import org.apache.ignite.internal.managers.collision.GridCollisionManager;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
@@ -83,6 +87,7 @@ import org.jetbrains.annotations.Nullable;
  * Dummy grid kernal context
  */
 public class StandaloneGridKernalContext implements GridKernalContext {
+    private final IgniteConfiguration cfg;
     /** */
     private IgniteLogger log;
 
@@ -92,7 +97,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     /**
      * @param log Logger.
      */
-    StandaloneGridKernalContext(IgniteLogger log) {
+    public StandaloneGridKernalContext(IgniteLogger log) {
         this.log = log;
 
         try {
@@ -102,6 +107,25 @@ public class StandaloneGridKernalContext implements GridKernalContext {
         catch (IgniteCheckedException e) {
             throw new IllegalStateException("Must not fail on empty providers list.", e);
         }
+
+        this.cfg = prepareIgniteConfiguration();
+
+    }
+
+    private IgniteConfiguration prepareIgniteConfiguration() {
+        IgniteConfiguration cfg = new IgniteConfiguration();
+        BinaryMarshaller marshaller = new BinaryMarshaller();
+        cfg.setMarshaller(marshaller);
+
+        PersistentStoreConfiguration pstCfg = new PersistentStoreConfiguration();
+        cfg.setPersistentStoreConfiguration(pstCfg);
+
+        //todo set work directory from outside
+        cfg.setWorkDirectory("C:\\projects\\incubator-ignite\\work\\");
+
+        marshaller.setContext(new MarshallerContextImpl(null));
+
+        return cfg;
     }
 
     /** {@inheritDoc} */
@@ -141,12 +165,21 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
     /** {@inheritDoc} */
     @Override public IgniteEx grid() {
-        return null;
+        IgniteKernal kernal = new IgniteKernal();
+        try {
+            Field fieldCfg = kernal.getClass().getDeclaredField("cfg");
+            fieldCfg.setAccessible(true);
+            fieldCfg.set(kernal, cfg);
+        }
+        catch (NoSuchFieldException | IllegalAccessException e) {
+            log.error("", e);
+        }
+        return kernal;
     }
 
     /** {@inheritDoc} */
     @Override public IgniteConfiguration config() {
-        return null;
+        return cfg;
     }
 
     /** {@inheritDoc} */
