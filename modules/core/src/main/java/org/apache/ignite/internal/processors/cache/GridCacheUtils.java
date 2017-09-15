@@ -1664,15 +1664,31 @@ public class GridCacheUtils {
             Collection<QueryEntity> normalEntities = new ArrayList<>(entities.size());
 
             for (QueryEntity entity : entities) {
-                if (cfg.isReadThrough() && !F.isEmpty(entity.getNotNullFields())) {
-                    throw new IgniteCheckedException("Not null field configuration is not supported " +
-                        "with read-through cache store.");
-                }
+                if (!F.isEmpty(entity.getNotNullFields()))
+                    checkNotNullFieldsRestrictions(cfg);
 
                 normalEntities.add(QueryUtils.normalizeQueryEntity(entity, cfg.isSqlEscapeAll()));
             }
 
             cfg.clearQueryEntities().setQueryEntities(normalEntities);
         }
+    }
+
+    /**
+     * Performs checks to forbid cache configurations that
+     * are not compatible with NOT NULL query fields.
+     * See {@link QueryEntity#setNotNullFields(Set)}.
+     *
+     * @param cfg Cache configuration.
+     * @throws IgniteCheckedException If failed.
+     */
+    public static void checkNotNullFieldsRestrictions(CacheConfiguration cfg) throws IgniteCheckedException {
+        if (cfg.isReadThrough())
+            throw new IgniteCheckedException("Not null field configuration is not supported " +
+                "with read-through cache store.");
+
+        if (cfg.getInterceptor() != null)
+            throw new IgniteCheckedException("Not null field configuration is not supported " +
+                "with cache interceptor enabled.");
     }
 }

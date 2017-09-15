@@ -64,6 +64,7 @@ import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
@@ -1392,10 +1393,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             throw new SchemaOperationException("Template cache already contains query entities which it should not: " +
                 templateName);
 
-        if (ccfg.isReadThrough() && !F.isEmpty(entity.getNotNullFields())) {
-            throw new SchemaOperationException("Not null field configuration is not supported " +
-                "with read-through cache store.");
-        }
+        if (!F.isEmpty(entity.getNotNullFields()))
+            GridCacheUtils.checkNotNullFieldsRestrictions(ccfg);
 
         ccfg.setName(QueryUtils.createTableCacheName(schemaName, entity.getTableName()));
 
