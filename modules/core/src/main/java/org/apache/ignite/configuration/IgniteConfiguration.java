@@ -467,7 +467,11 @@ public class IgniteConfiguration {
     private long longQryWarnTimeout = DFLT_LONG_QRY_WARN_TIMEOUT;
 
     /** SQL connector configuration. */
-    private SqlConnectorConfiguration sqlConnCfg = new SqlConnectorConfiguration();
+    @Deprecated
+    private SqlConnectorConfiguration sqlConnCfg;
+
+    /** Client connector configuration. */
+    private ClientConnectorConfiguration cliConnCfg = new ClientConnectorConfiguration();
 
     /**
      * Creates valid grid configuration with all default values.
@@ -513,6 +517,7 @@ public class IgniteConfiguration {
         classLdr = cfg.getClassLoader();
         clientFailureDetectionTimeout = cfg.getClientFailureDetectionTimeout();
         clientMode = cfg.isClientMode();
+        cliConnCfg = cfg.getClientConnectorConfiguration();
         connectorCfg = cfg.getConnectorConfiguration();
         consistentId = cfg.getConsistentId();
         daemon = cfg.isDaemon();
@@ -2796,7 +2801,9 @@ public class IgniteConfiguration {
      *
      * @param sqlConnCfg SQL connector configuration.
      * @return {@code this} for chaining.
+     * @deprecated Please use {@link #setClientConnectorConfiguration(ClientConnectorConfiguration)} instead.
      */
+    @Deprecated
     public IgniteConfiguration setSqlConnectorConfiguration(SqlConnectorConfiguration sqlConnCfg) {
         this.sqlConnCfg = sqlConnCfg;
 
@@ -2807,9 +2814,32 @@ public class IgniteConfiguration {
      * Gets SQL connector configuration.
      *
      * @return SQL connector configuration.
+     * @deprecated Please use {@link #getClientConnectorConfiguration()} instead.
      */
+    @Deprecated
     public SqlConnectorConfiguration getSqlConnectorConfiguration() {
         return sqlConnCfg;
+    }
+
+    /**
+     * Sets client connector configuration.
+     *
+     * @param cliConnCfg Client connector configuration.
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setClientConnectorConfiguration(ClientConnectorConfiguration cliConnCfg) {
+        this.cliConnCfg = cliConnCfg;
+
+        return this;
+    }
+
+    /**
+     * Gets client connector configuration.
+     *
+     * @return Client connector configuration.
+     */
+    public ClientConnectorConfiguration getClientConnectorConfiguration() {
+        return cliConnCfg;
     }
 
     /** {@inheritDoc} */
