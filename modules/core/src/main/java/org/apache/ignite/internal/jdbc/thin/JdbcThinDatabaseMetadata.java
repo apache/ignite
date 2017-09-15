@@ -706,8 +706,8 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
     }
 
     /** {@inheritDoc} */
-    @Override public ResultSet getTables(String catalog, final String schemaPtrn, final String tblNamePtrn,
-                                         String[] tblTypes) throws SQLException {
+    @Override public ResultSet getTables(String catalog, String schemaPtrn, String tblNamePtrn, String[] tblTypes)
+        throws SQLException {
         if (conn.isClosed())
             throw new SQLException("Connection is closed.", SqlStateCode.CONNECTION_CLOSED);
 
@@ -791,8 +791,8 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
     }
 
     /** {@inheritDoc} */
-    @Override public ResultSet getColumns(String catalog, final String schemaPtrn, final String tblNamePtrn,
-        final String colNamePtrn) throws SQLException {
+    @Override public ResultSet getColumns(String catalog, String schemaPtrn, String tblNamePtrn, String colNamePtrn)
+        throws SQLException {
         if (conn.isClosed())
             throw new SQLException("Connection is closed.", SqlStateCode.CONNECTION_CLOSED);
 
@@ -1142,8 +1142,8 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
     }
 
     /** {@inheritDoc} */
-    @Override public ResultSet getIndexInfo(String catalog, final String schema, final String tbl, boolean unique,
-                                            boolean approximate) throws SQLException {
+    @Override public ResultSet getIndexInfo(String catalog, String schema, String tbl, boolean unique,
+        boolean approximate) throws SQLException {
         if (conn.isClosed())
             throw new SQLException("Connection is closed.", SqlStateCode.CONNECTION_CLOSED);
 
@@ -1407,7 +1407,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
     }
 
     /** {@inheritDoc} */
-    @Override public ResultSet getSchemas(String catalog, final String schemaPtrn) throws SQLException {
+    @Override public ResultSet getSchemas(String catalog, String schemaPtrn) throws SQLException {
         if (conn.isClosed())
             throw new SQLException("Connection is closed.", SqlStateCode.CONNECTION_CLOSED);
 
