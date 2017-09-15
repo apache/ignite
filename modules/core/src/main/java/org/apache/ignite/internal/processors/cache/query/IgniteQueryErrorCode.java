@@ -80,9 +80,6 @@ public final class IgniteQueryErrorCode {
     /** Conversion failure. */
     public final static int CONVERSION_FAILED = 3013;
 
-    /** Invalid cursor name. */
-    public final static int INVALID_CURSOR_NAME = 3014;
-
     /* 4xxx - cache related runtime errors */
 
     /** Attempt to INSERT a key that is already in cache. */
@@ -140,9 +137,6 @@ public final class IgniteQueryErrorCode {
 
             case CONVERSION_FAILED:
                 return JdbcStateCode.CONVERSION_FAILED;
-
-            case INVALID_CURSOR_NAME:
-                return JdbcStateCode.INVALID_CURSOR_NAME;
 
             case PARSING:
             case TABLE_NOT_FOUND:

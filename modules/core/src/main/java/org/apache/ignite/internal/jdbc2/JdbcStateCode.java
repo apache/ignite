@@ -57,9 +57,6 @@ public final class JdbcStateCode {
     /** Invalid result set state. */
     public final static String INVALID_CURSOR_STATE = "24000";
 
-    /** Invalid cursor name. */
-    public final static String INVALID_CURSOR_NAME = "34000";
-
     /** Conversion failure. */
     public final static String CONVERSION_FAILED = "0700B";
 
