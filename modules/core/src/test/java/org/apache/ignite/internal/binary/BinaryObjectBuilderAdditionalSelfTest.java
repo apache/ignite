@@ -1620,19 +1620,26 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
      * @throws Exception If fails
      */
     public void testBuilderReusage() throws Exception {
-        BinaryObjectBuilder builder = newWrapper("SimpleCls");
+        // Check: rewrite null field value.
+        BinaryObjectBuilder builder = newWrapper("SimpleCls1");
 
-        builder.setField("str", "abc");
+        builder.setField("f1", null, Object.class);
+        assertNull(builder.build().field("f1"));
 
-        assertEquals("abc", builder.build().field("str"));
+        builder.setField("f1", "val1");
+        assertEquals("val1", builder.build().field("f1"));
 
-        builder.setField("str", null);
+        // Check: rewrite non-null field value to null and back.
+        builder = newWrapper("SimpleCls2");
 
-        assertNull(builder.build().field("str"));
+        builder.setField("f1", "val1", String.class);
+        assertEquals("val1", builder.build().field("f1"));
 
-        builder.setField("str", "def");
+        builder.setField("f1", null);
+        assertNull(builder.build().field("f1"));
 
-        assertEquals("def", builder.build().field("str"));
+        builder.setField("f1", "val2");
+        assertEquals("val2", builder.build().field("f1"));
     }
 
     /**

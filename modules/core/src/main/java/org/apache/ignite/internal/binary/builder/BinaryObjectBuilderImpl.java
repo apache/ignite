@@ -551,12 +551,13 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
     @Override public BinaryObjectBuilder setField(String name, Object val0) {
         Object val = assignedValues().get(name);
 
-        if (val instanceof BinaryValueWithType && val0 != null)
+        if (val instanceof BinaryValueWithType)
             ((BinaryValueWithType)val).value(val0);
-        else if (val == null)
-            val = val0 == null ? new BinaryValueWithType(BinaryUtils.typeByClass(Object.class), null) : val0;
-        else
-            val = val0 == null ? new BinaryValueWithType(BinaryUtils.typeByClass(val.getClass()), null) : val0;
+        else {
+            Class valCls = (val == null) ? Object.class : val.getClass();
+
+            val = val0 == null ? new BinaryValueWithType(BinaryUtils.typeByClass(valCls), null) : val0;
+        }
 
         assignedValues().put(name, val);
 
