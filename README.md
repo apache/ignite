@@ -19,6 +19,18 @@ with powerful <b>SQL</b>, <b>key-value</b> and <b>processing</b> APIs.
 ## Durable Memory
 Ignite's durable memory component treats RAM not just as a caching layer but as a complete fully functional storage layer. This means that users can turn the persistence on and off as needed. If the persistence is off, then Ignite can act as a distributed **in-memory database** or **in-memory data grid**, depending on whether you prefer to use SQL or key-value APIs. If the persistence is turned on, then Ignite becomes a distributed, **horizontally scalable database** that guarantees full data consistency and is resilient to full cluster failures.
 
+## Ignite Persistence
+
+Ignite Native Persistence is a distributed ACID and SQL-compliant disk store that transparently integrates with Ignite's Durable Memory as an optional disk layer storing data and indexes on SSD, Flash, 3D XPoint, and other types of non-volatile storages.
+
+With the Ignite Persistence enabled, you no longer need to keep all the data and indexes in memory or warm it up after a node or cluster restart because the Durable Memory is tightly coupled with persistence and treats it as a secondary memory tier. This implies that if a subset of data or an index is missing in RAM, the Durable Memory will take it from the disk.
+
+<p align="center">
+    <a href="https://apacheignite.readme.io/docs/distributed-persistent-store">
+        <img src="https://ignite.apache.org/images/check_pointing-2.png" width="400px"/>
+    </a>
+</p>
+
 ## ACID Compliance
 Data stored in Ignite is ACID-compliant both in memory and on disk, making Ignite a **strongly consistent** system. Ignite transactions work across the network and can span multiple servers.
 
@@ -33,18 +45,6 @@ Most traditional databases work in a client-server fashion, meaning that data mu
 
 ## Scalability and Durability
 Ignite is an elastic, horizontally scalable distributed system that supports adding and removing cluster nodes on demand. Ignite also allows for storing multiple copies of the data, making it resilient to partial cluster failures. If the persistence is enabled, then data stored in Ignite will also survive full cluster failures. Cluster restarts in Ignite can be very fast, as the data becomes operational instantaneously directly from disk. As a result, the data does not need to be preloaded in-memory to begin processing, and Ignite caches will lazily warm up resuming the in memory performance.
-
-## Ignite Persistence
-
-Ignite Native Persistence is a distributed ACID and SQL-compliant disk store that transparently integrates with Ignite's Durable Memory as an optional disk layer storing data and indexes on SSD, Flash, 3D XPoint, and other types of non-volatile storages.
-
-With the Ignite Persistence enabled, you no longer need to keep all the data and indexes in memory or warm it up after a node or cluster restart because the Durable Memory is tightly coupled with persistence and treats it as a secondary memory tier. This implies that if a subset of data or an index is missing in RAM, the Durable Memory will take it from the disk.
-
-<p align="center">
-    <a href="https://apacheignite.readme.io/docs/distributed-persistent-store">
-        <img src="https://ignite.apache.org/images/check_pointing-2.png" width="400px"/>
-    </a>
-</p>
 
 ## Ignite Facts
 
