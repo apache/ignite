@@ -38,6 +38,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccLongList;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.CacheSearchRow;
@@ -1369,7 +1370,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
                 assert !old;
 
-                GridLongList activeTxs = mvccVer.activeTransactions();
+                MvccLongList activeTxs = mvccVer.activeTransactions();
 
                 // TODO IGNITE-3484: need special method.
                 GridCursor<CacheDataRow> cur = dataTree.find(
@@ -1658,7 +1659,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
             CacheDataRow row = null;
 
-            GridLongList txs = ver.activeTransactions();
+            MvccLongList txs = ver.activeTransactions();
 
             while (cur.next()) {
                 CacheDataRow row0 = cur.get();
@@ -1728,7 +1729,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                             || row.mvccCounter() > ver.counter())
                             continue;
 
-                        GridLongList txs = ver.activeTransactions();
+                        MvccLongList txs = ver.activeTransactions();
 
                         if (txs != null && row.mvccCoordinatorVersion() == ver.coordinatorVersion() && txs.contains(row.mvccCounter()))
                             continue;

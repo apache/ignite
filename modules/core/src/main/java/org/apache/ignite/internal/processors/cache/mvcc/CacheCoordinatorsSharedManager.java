@@ -326,7 +326,7 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
         MvccCoordinatorVersionResponse res = assignTxCounter(msg.txId(), msg.futureId());
 
         if (STAT_CNTRS)
-            statCntrs[0].update(res.activeTransactions());
+            statCntrs[0].update(res.size());
 
         try {
             cctx.gridIO().sendToGridTopic(node,
@@ -468,14 +468,10 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
         long nextCtr = mvccCntr.incrementAndGet();
 
         // TODO IGNITE-3478 sorted? + change GridLongList.writeTo?
-        GridLongList txs = null;
+        MvccCoordinatorVersionResponse res = new MvccCoordinatorVersionResponse();
 
-        for (Long txVer : activeTxs.values()) {
-            if (txs == null)
-                txs = new GridLongList();
-
-            txs.add(txVer);
-        }
+        for (Long txVer : activeTxs.values())
+            res.addTx(txVer);
 
         Object old = activeTxs.put(txId, nextCtr);
 
@@ -488,7 +484,9 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
                 cleanupVer = qryVer - 1;
         }
 
-        return new MvccCoordinatorVersionResponse(futId, crdVer, nextCtr, txs, cleanupVer);
+        res.init(futId, crdVer, nextCtr, cleanupVer);
+
+        return res;
     }
 
     /**
@@ -511,14 +509,10 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
 
         Long mvccCntr = committedCntr.get();
 
-        GridLongList txs = null;
+        MvccCoordinatorVersionResponse res = new MvccCoordinatorVersionResponse();
 
-        for (Long txVer : activeTxs.values()) {
-            if (txs == null)
-                txs = new GridLongList();
-
-            txs.add(txVer);
-        }
+        for (Long txVer : activeTxs.values())
+            res.addTx(txVer);
 
         Integer queries = activeQueries.get(mvccCntr);
 
@@ -527,7 +521,9 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
         else
             activeQueries.put(mvccCntr, 1);
 
-        return new MvccCoordinatorVersionResponse(futId, crdVer, mvccCntr, txs, COUNTER_NA);
+        res.init(futId, crdVer, mvccCntr, COUNTER_NA);
+
+        return res;
     }
 
     /**

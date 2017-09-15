@@ -17,29 +17,13 @@
 
 package org.apache.ignite.internal.processors.cache.mvcc;
 
-import org.apache.ignite.plugin.extensions.communication.Message;
-
 /**
  *
  */
-public interface MvccCoordinatorVersion extends Message {
-    /**
-     * @return Active transactions.
-     */
-    public MvccLongList activeTransactions();
+public interface MvccLongList {
+    public int size();
 
-    /**
-     * @return Coordinator version.
-     */
-    public long coordinatorVersion();
+    public long get(int i);
 
-    /**
-     * @return Cleanup version.
-     */
-    public long cleanupVersion();
-
-    /**
-     * @return Counter.
-     */
-    public long counter();
+    public boolean contains(long val);
 }

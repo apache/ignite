@@ -18,8 +18,9 @@
 package org.apache.ignite.internal.processors.cache.mvcc;
 
 import java.nio.ByteBuffer;
+import java.util.Arrays;
+import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
-import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -27,7 +28,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 /**
  *
  */
-public class MvccCoordinatorVersionResponse implements MvccCoordinatorMessage, MvccCoordinatorVersion {
+public class MvccCoordinatorVersionResponse implements MvccCoordinatorMessage, MvccCoordinatorVersion, MvccLongList {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -41,7 +42,11 @@ public class MvccCoordinatorVersionResponse implements MvccCoordinatorMessage, M
     private long cntr;
 
     /** */
-    private GridLongList txs; // TODO IGNITE-3478 (do not send on backups?)
+    @GridDirectTransient
+    private int txsCnt;
+
+    /** */
+    private long[] txs; // TODO IGNITE-3478 (do not send on backups?)
 
     /** */
     private long cleanupVer;
@@ -57,12 +62,40 @@ public class MvccCoordinatorVersionResponse implements MvccCoordinatorMessage, M
      * @param cntr Counter.
      * @param futId Future ID.
      */
-    public MvccCoordinatorVersionResponse(long futId, long crdVer, long cntr, GridLongList txs, long cleanupVer) {
+    void init(long futId, long crdVer, long cntr, long cleanupVer) {
         this.futId = futId;
         this.crdVer = crdVer;
         this.cntr = cntr;
-        this.txs = txs;
         this.cleanupVer = cleanupVer;
+    }
+
+    void addTx(long txId) {
+        if (txs == null)
+            txs = new long[4];
+        else if (txs.length == txsCnt)
+            txs = Arrays.copyOf(txs, txs.length << 1);
+
+        txs[txsCnt++] = txId;
+    }
+
+    @Override
+    public int size() {
+        return txsCnt;
+    }
+
+    @Override
+    public long get(int i) {
+        return txs[i];
+    }
+
+    @Override
+    public boolean contains(long val) {
+        for (int i = 0; i < txsCnt; i++) {
+            if (txs[i] == val)
+                return true;
+        }
+
+        return false;
     }
 
     /** {@inheritDoc} */
@@ -93,8 +126,8 @@ public class MvccCoordinatorVersionResponse implements MvccCoordinatorMessage, M
     }
 
     /** {@inheritDoc} */
-    @Override public GridLongList activeTransactions() {
-        return txs;
+    @Override public MvccLongList activeTransactions() {
+        return this;
     }
 
     /** {@inheritDoc} */
@@ -139,7 +172,7 @@ public class MvccCoordinatorVersionResponse implements MvccCoordinatorMessage, M
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeMessage("txs", txs))
+                if (!writer.writeLongArray("txs", txs))
                     return false;
 
                 writer.incrementState();
@@ -190,10 +223,12 @@ public class MvccCoordinatorVersionResponse implements MvccCoordinatorMessage, M
                 reader.incrementState();
 
             case 4:
-                txs = reader.readMessage("txs");
+                txs = reader.readLongArray("txs");
 
                 if (!reader.isLastRead())
                     return false;
+
+                txsCnt = txs != null ? txs.length : 0;
 
                 reader.incrementState();
 
