@@ -57,6 +57,11 @@ public class CoordinatorFutureResponse implements MvccCoordinatorMessage {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean processedOnCoordinator() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 

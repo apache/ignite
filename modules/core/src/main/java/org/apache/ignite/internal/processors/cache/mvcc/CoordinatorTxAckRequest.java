@@ -64,6 +64,11 @@ public class CoordinatorTxAckRequest implements MvccCoordinatorMessage {
         return false;
     }
 
+    /** {@inheritDoc} */
+    @Override public boolean processedOnCoordinator() {
+        return true;
+    }
+
     /**
      * @return Future ID.
      */

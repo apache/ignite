@@ -52,6 +52,11 @@ public class CoordinatorQueryAckRequest implements MvccCoordinatorMessage {
         return false;
     }
 
+    /** {@inheritDoc} */
+    @Override public boolean processedOnCoordinator() {
+        return true;
+    }
+
     /**
      * @return Counter.
      */

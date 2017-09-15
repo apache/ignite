@@ -57,7 +57,7 @@ public class MvccCoordinatorVersionResponse implements MvccCoordinatorMessage, M
      * @param cntr Counter.
      * @param futId Future ID.
      */
-    MvccCoordinatorVersionResponse(long futId, long crdVer, long cntr, GridLongList txs, long cleanupVer) {
+    public MvccCoordinatorVersionResponse(long futId, long crdVer, long cntr, GridLongList txs, long cleanupVer) {
         this.futId = futId;
         this.crdVer = crdVer;
         this.cntr = cntr;
@@ -67,6 +67,11 @@ public class MvccCoordinatorVersionResponse implements MvccCoordinatorMessage, M
 
     /** {@inheritDoc} */
     @Override public boolean waitForCoordinatorInit() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean processedOnCoordinator() {
         return false;
     }
 

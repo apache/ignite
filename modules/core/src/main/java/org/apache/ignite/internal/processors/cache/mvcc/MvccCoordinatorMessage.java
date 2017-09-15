@@ -24,4 +24,6 @@ import org.apache.ignite.plugin.extensions.communication.Message;
  */
 public interface MvccCoordinatorMessage extends Message {
     public boolean waitForCoordinatorInit();
+
+    public boolean processedOnCoordinator();
 }

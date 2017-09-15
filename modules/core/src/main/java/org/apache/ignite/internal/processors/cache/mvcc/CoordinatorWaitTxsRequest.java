@@ -71,6 +71,11 @@ public class CoordinatorWaitTxsRequest implements MvccCoordinatorMessage {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean processedOnCoordinator() {
+        return true;
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 

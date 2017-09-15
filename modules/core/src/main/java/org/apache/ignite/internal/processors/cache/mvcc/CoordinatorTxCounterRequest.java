@@ -60,6 +60,11 @@ public class CoordinatorTxCounterRequest implements MvccCoordinatorMessage {
         return true;
     }
 
+    /** {@inheritDoc} */
+    @Override public boolean processedOnCoordinator() {
+        return true;
+    }
+
     /**
      * @return Future ID.
      */
