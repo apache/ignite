@@ -128,7 +128,7 @@ public class JdbcThinStatement implements Statement {
 
         assert res != null;
 
-        rs = new JdbcThinResultSet(JdbcThinStatement.this, res.getQueryId(), pageSize, res.last(), res.items(),
+        rs = new JdbcThinResultSet(this, res.getQueryId(), pageSize, res.last(), res.items(),
             res.isQuery(), conn.autoCloseServerCursor(), res.updateCount(), closeOnCompletion);
     }
 
