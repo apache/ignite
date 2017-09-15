@@ -163,6 +163,11 @@ public class RecordV1Serializer implements RecordSerializer {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean writePointer() {
+        return writePointer;
+    }
+
+    /** {@inheritDoc} */
     @SuppressWarnings("CastConflictsWithInstanceof")
     @Override public void writeRecord(WALRecord record, ByteBuffer buf) throws IgniteCheckedException {
         assert record.size() > 0 && buf.remaining() >= record.size() : record.size();

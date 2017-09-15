@@ -634,7 +634,7 @@ public class JdbcThinConnection implements Connection {
      *
      * @throws SQLException If connection is closed.
      */
-    private void ensureNotClosed() throws SQLException {
+    public void ensureNotClosed() throws SQLException {
         if (closed)
             throw new SQLException("Connection is closed.", SqlStateCode.CONNECTION_CLOSED);
     }
