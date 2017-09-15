@@ -775,7 +775,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     topHist.clear();
 
                     topSnap.set(new Snapshot(AffinityTopologyVersion.ZERO,
-                        createDiscoCache(AffinityTopologyVersion.ZERO, ctx.state().clusterState(), locNode, Collections.<ClusterNode>emptySet())));
+                        createDiscoCache(AffinityTopologyVersion.ZERO, ctx.state().clusterState(), locNode, Collections.<ClusterNode>singleton(locNode))));
                 }
                 else if (type == EVT_CLIENT_NODE_RECONNECTED) {
                     assert locNode.isClient() : locNode;
@@ -2189,6 +2189,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         DiscoveryDataClusterState state,
         ClusterNode loc,
         Collection<ClusterNode> topSnapshot) {
+        assert topSnapshot.contains(loc);
+
         HashSet<UUID> alives = U.newHashSet(topSnapshot.size());
         HashMap<UUID, ClusterNode> nodeMap = U.newHashMap(topSnapshot.size());
 
@@ -2390,15 +2392,15 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     lastChk = now;
 
                     if (!segValid) {
-                        List<ClusterNode> empty = Collections.emptyList();
-
                         ClusterNode node = getSpi().getLocalNode();
+
+                        Collection<ClusterNode> locNodeOnlyTop = Collections.singleton(node);
 
                         discoWrk.addEvent(EVT_NODE_SEGMENTED,
                             AffinityTopologyVersion.NONE,
                             node,
-                            createDiscoCache(AffinityTopologyVersion.NONE, null, node, empty),
-                            empty,
+                            createDiscoCache(AffinityTopologyVersion.NONE, null, node, locNodeOnlyTop),
+                            locNodeOnlyTop,
                             null);
 
                         lastSegChkRes.set(false);

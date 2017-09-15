@@ -44,7 +44,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Statement test.
  */
-@SuppressWarnings("ThrowableNotThrown")
+@SuppressWarnings({"ThrowableNotThrown", "ThrowableResultOfMethodCallIgnored"})
 public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -1131,7 +1131,10 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
 
         ResultSet rs = stmt.executeQuery("select val from test where _key=1");
 
-        assert rs.next();
+        boolean next = rs.next();
+
+        assert next;
+
         assert rs.getInt(1) == 1 : "The data must not be updated. " +
             "Because update statement is executed via 'executeQuery' method." +
             " Data [val=" + rs.getInt(1) + ']';

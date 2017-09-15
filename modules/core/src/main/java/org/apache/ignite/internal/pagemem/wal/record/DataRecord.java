@@ -23,7 +23,9 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- *
+ * Logical data record with cache operation description.
+ * This record contains information about operation we want to do.
+ * Contains operation type (put, remove) and (Key, Value, Version) for each {@link DataEntry}
  */
 public class DataRecord extends WALRecord {
     /** */
