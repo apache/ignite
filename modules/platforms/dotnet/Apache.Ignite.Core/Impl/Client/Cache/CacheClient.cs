@@ -198,7 +198,6 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             writer.WriteBoolean(qry.Local);
         }
 
-
         /// <summary>
         /// Gets the key not found exception.
         /// </summary>
