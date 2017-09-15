@@ -146,7 +146,7 @@ public class JdbcThinConnection implements Connection {
         catch (Exception e) {
             cliIo.close();
 
-            throw new SQLException("Failed to connect to Ignite node [host=" + host + ", port=" + port + ']',
+            throw new SQLException("Failed to connect to Ignite cluster [host=" + host + ", port=" + port + ']',
                 SqlStateCode.CLIENT_CONNECTION_FAILED, e);
         }
     }
@@ -559,7 +559,7 @@ public class JdbcThinConnection implements Connection {
         ensureNotClosed();
 
         if (typeName == null)
-            throw new SQLException("Type name cannot be null.", SqlStateCode.INVALID_DATA_TYPE);
+            throw new SQLException("Type name cannot be null.");
 
         throw new SQLFeatureNotSupportedException("SQL-specific types are not supported.");
     }
@@ -569,7 +569,7 @@ public class JdbcThinConnection implements Connection {
         ensureNotClosed();
 
         if (typeName == null)
-            throw new SQLException("Type name cannot be null.", SqlStateCode.INVALID_DATA_TYPE);
+            throw new SQLException("Type name cannot be null.");
 
         throw new SQLFeatureNotSupportedException("SQL-specific types are not supported.");
     }
@@ -676,12 +676,12 @@ public class JdbcThinConnection implements Connection {
         catch (IOException e) {
             close();
 
-            throw new SQLException("Failed to send Ignite JDBC request.", SqlStateCode.CONNECTION_FAILURE, e);
+            throw new SQLException("Failed to communicate with Ignite cluster.", SqlStateCode.CONNECTION_FAILURE, e);
         }
         catch (Exception e) {
             close();
 
-            throw new SQLException("Failed to send Ignite JDBC request.", e);
+            throw new SQLException("Failed to communicate with Ignite cluster.", e);
         }
     }
 
