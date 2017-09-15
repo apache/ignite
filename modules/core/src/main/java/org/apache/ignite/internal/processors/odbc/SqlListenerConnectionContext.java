@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.odbc;
 
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 
 /**
  * SQL listener connection context.
@@ -41,6 +42,13 @@ public interface SqlListenerConnectionContext {
      * @param reader Reader set to the configuration part of the handshake message.
      */
     void initializeFromHandshake(SqlListenerProtocolVersion ver, BinaryReaderExImpl reader);
+
+    /**
+     * Write successful handshake response.
+     *
+     * @param writer Binary writer.
+     */
+    public void writeHandshake(BinaryWriterExImpl writer);
 
     /**
      * Handler getter.

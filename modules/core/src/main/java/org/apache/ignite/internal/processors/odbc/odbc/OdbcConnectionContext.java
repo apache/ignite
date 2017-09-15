@@ -21,6 +21,7 @@ import java.util.HashSet;
 import java.util.Set;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.processors.odbc.SqlListenerConnectionContext;
 import org.apache.ignite.internal.processors.odbc.SqlListenerMessageParser;
 import org.apache.ignite.internal.processors.odbc.SqlListenerProtocolVersion;
@@ -102,6 +103,11 @@ public class OdbcConnectionContext implements SqlListenerConnectionContext {
                 enforceJoinOrder, replicatedOnly, collocated, lazy);
 
         parser = new OdbcMessageParser(ctx);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeHandshake(BinaryWriterExImpl writer) {
+        writer.writeBoolean(true);
     }
 
     /** {@inheritDoc} */

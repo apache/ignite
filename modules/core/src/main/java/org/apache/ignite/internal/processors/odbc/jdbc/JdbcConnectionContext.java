@@ -20,12 +20,15 @@ package org.apache.ignite.internal.processors.odbc.jdbc;
 import java.util.HashSet;
 import java.util.Set;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.processors.odbc.SqlListenerConnectionContext;
 import org.apache.ignite.internal.processors.odbc.SqlListenerMessageParser;
 import org.apache.ignite.internal.processors.odbc.SqlListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.SqlListenerRequestHandler;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
+import org.apache.ignite.internal.util.nio.GridNioSession;
 
 /**
  * ODBC Connection Context.
@@ -53,10 +56,19 @@ public class JdbcConnectionContext implements SqlListenerConnectionContext {
     private final int maxCursors;
 
     /** Message parser. */
-    private JdbcMessageParser parser = null;
+    private JdbcMessageParser parser;
 
     /** Request handler. */
-    private JdbcRequestHandler handler = null;
+    private JdbcRequestHandler hnd;
+
+    /** Session. */
+    private GridNioSession ses;
+
+    /** Connection handler. */
+    private JdbcConnectionHandler connHnd;
+
+    /** Connection ID. */
+    private final long connId;
 
     static {
         SUPPORTED_VERS.add(CURRENT_VER);
@@ -66,13 +78,20 @@ public class JdbcConnectionContext implements SqlListenerConnectionContext {
     /**
      * Constructor.
      * @param ctx Kernal Context.
+     * @param ses I/O Session.
+     * @param connHnd Connection handler.
      * @param busyLock Shutdown busy lock.
      * @param maxCursors Maximum allowed cursors.
+     * @param connId Connection ID.
      */
-    public JdbcConnectionContext(GridKernalContext ctx, GridSpinBusyLock busyLock, int maxCursors) {
+    public JdbcConnectionContext(GridKernalContext ctx, GridNioSession ses, JdbcConnectionHandler connHnd,
+        GridSpinBusyLock busyLock, int maxCursors, long connId) {
         this.ctx = ctx;
+        this.ses = ses;
+        this.connHnd = connHnd;
         this.busyLock = busyLock;
         this.maxCursors = maxCursors;
+        this.connId = connId;
     }
 
     /** {@inheritDoc} */
@@ -100,15 +119,33 @@ public class JdbcConnectionContext implements SqlListenerConnectionContext {
         if (ver.compareTo(VER_2_1_5) >= 0)
             lazyExec = reader.readBoolean();
 
-        handler = new JdbcRequestHandler(ctx, busyLock, maxCursors, distributedJoins,
+        hnd = new JdbcRequestHandler(ctx, connHnd, this, busyLock, maxCursors, distributedJoins,
                 enforceJoinOrder, collocated, replicatedOnly, autoCloseCursors, lazyExec);
 
         parser = new JdbcMessageParser(ctx);
     }
 
     /** {@inheritDoc} */
+    @Override public void writeHandshake(BinaryWriterExImpl writer) {
+        // Handshake OK.
+        writer.writeBoolean(true);
+
+        // Write server version.
+        writer.writeByte(IgniteVersionUtils.VER.major());
+        writer.writeByte(IgniteVersionUtils.VER.minor());
+        writer.writeByte(IgniteVersionUtils.VER.maintenance());
+        writer.writeString(IgniteVersionUtils.VER.stage());
+        writer.writeLong(IgniteVersionUtils.VER.revisionTimestamp());
+        writer.writeByteArray(IgniteVersionUtils.VER.revisionHash());
+
+        // Write connection ID.
+        writer.writeLong(connId);
+    }
+
+
+    /** {@inheritDoc} */
     @Override public SqlListenerRequestHandler handler() {
-        return handler;
+        return hnd;
     }
 
     /** {@inheritDoc} */
@@ -118,6 +155,15 @@ public class JdbcConnectionContext implements SqlListenerConnectionContext {
 
     /** {@inheritDoc} */
     @Override public void onDisconnected() {
-        handler.onDisconnect();
+        hnd.onDisconnect();
+
+        connHnd.onDisconnect(connId);
+    }
+
+    /**
+     * @param res Responce.
+     */
+    void sendIntermediate(JdbcResponse res) {
+        ses.send(parser.encode(res));
     }
 }

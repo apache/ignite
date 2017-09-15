@@ -50,9 +50,4 @@ public class ClientRequestHandler implements SqlListenerRequestHandler {
     @Override public SqlListenerResponse handleException(Exception e) {
         return null;
     }
-
-    /** {@inheritDoc} */
-    @Override public void writeHandshake(BinaryWriterExImpl writer) {
-        writer.writeBoolean(true);
-    }
 }

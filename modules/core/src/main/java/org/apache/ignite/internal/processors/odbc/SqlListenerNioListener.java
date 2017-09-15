@@ -17,9 +17,6 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
-import java.util.HashSet;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -30,6 +27,7 @@ import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionHandler;
 import org.apache.ignite.internal.processors.odbc.odbc.OdbcConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientMessageParser;
@@ -56,17 +54,8 @@ public class SqlListenerNioListener extends GridNioServerListenerAdapter<byte[]>
     /** Connection-related metadata key. */
     private static final int CONN_CTX_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
 
-    /** Request ID generator. */
-    private static final AtomicLong REQ_ID_GEN = new AtomicLong();
-
-    /** Session ID generator. */
-    private static final AtomicLong SESSION_ID_GEN = new AtomicLong();
-
     /** Busy lock. */
     private final GridSpinBusyLock busyLock;
-
-    /** Connection ID to JDBC handler map. */
-    private final ConcurrentHashMap<Long, JdbcRequestHandler> handlers = new ConcurrentHashMap<>();
 
     /** Kernal context. */
     private final GridKernalContext ctx;
@@ -76,6 +65,9 @@ public class SqlListenerNioListener extends GridNioServerListenerAdapter<byte[]>
 
     /** Logger. */
     private final IgniteLogger log;
+
+    /** Jdbc connection handler. */
+    private JdbcConnectionHandler jdbcConnHandler = new JdbcConnectionHandler();
 
     /**
      * Constructor.
@@ -110,14 +102,6 @@ public class SqlListenerNioListener extends GridNioServerListenerAdapter<byte[]>
                 log.debug("SQL client disconnected: " + ses.remoteAddress());
             else
                 log.debug("SQL client disconnected due to an error [addr=" + ses.remoteAddress() + ", err=" + e + ']');
-        }
-
-        SqlListenerConnectionContext connCtx = ses.meta(CONN_CTX_META_KEY);
-
-        if (connCtx != null && connCtx.handler() != null && connCtx.handler() instanceof JdbcRequestHandler) {
-            JdbcRequestHandler handler = (JdbcRequestHandler)connCtx.handler();
-
-            handlers.remove(handler.connectionId());
         }
     }
 
@@ -161,7 +145,7 @@ public class SqlListenerNioListener extends GridNioServerListenerAdapter<byte[]>
                     ses.remoteAddress() + ", req=" + req + ']');
             }
 
-            SqlListenerResponse resp = handler.handle(req, new IntermediateResponseSenderImpl(ses, parser));
+            SqlListenerResponse resp = handler.handle(req);
 
             if (log.isDebugEnabled()) {
                 long dur = (System.nanoTime() - startTime) / 1000;
@@ -210,7 +194,7 @@ public class SqlListenerNioListener extends GridNioServerListenerAdapter<byte[]>
 
         byte clientType = reader.readByte();
 
-        SqlListenerConnectionContext connCtx = prepareContext(clientType);
+        SqlListenerConnectionContext connCtx = prepareContext(clientType, ses);
 
         String errMsg = null;
 
@@ -229,7 +213,7 @@ public class SqlListenerNioListener extends GridNioServerListenerAdapter<byte[]>
         BinaryWriterExImpl writer = new BinaryWriterExImpl(null, new BinaryHeapOutputStream(8), null, null);
 
         if (errMsg == null)
-            connCtx.handler().writeHandshake(writer);
+            connCtx.writeHandshake(writer);
         else {
             SqlListenerProtocolVersion currentVer = connCtx.currentVersion();
 
@@ -248,49 +232,22 @@ public class SqlListenerNioListener extends GridNioServerListenerAdapter<byte[]>
      * Prepare context.
      *
      * @param clientType Client type.
+     * @param ses I/O Session.
      * @return Context.
      */
-    private SqlListenerConnectionContext prepareContext(byte clientType) {
+    private SqlListenerConnectionContext prepareContext(byte clientType, GridNioSession ses) {
         switch (clientType) {
             case ODBC_CLIENT:
                 return new OdbcConnectionContext(ctx, busyLock, maxCursors);
 
             case JDBC_CLIENT:
-                return new JdbcConnectionContext(ctx, busyLock, maxCursors);
+                return jdbcConnHandler.createContext(ctx, ses, busyLock, maxCursors);
 
             case THIN_CLIENT:
                 return new ClientConnectionContext(ctx);
 
             default:
                 throw new IgniteException("Unknown client type: " + clientType);
-        }
-    }
-
-    /**
-     *
-     */
-    private static class IntermediateResponseSenderImpl implements SqlListenerIntermediateResponseSender {
-        /** Session. */
-        private final GridNioSession ses;
-
-        /** Parser. */
-        private final SqlListenerMessageParser parser;
-
-        /**
-         * @param ses Session.
-         * @param parser Parser
-         */
-        private IntermediateResponseSenderImpl(GridNioSession ses,
-            SqlListenerMessageParser parser) {
-            this.ses = ses;
-            this.parser = parser;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void send(SqlListenerResponse resp) {
-            byte[] outMsg = parser.encode(resp);
-
-            ses.send(outMsg);
         }
     }
 }

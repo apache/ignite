@@ -33,11 +33,8 @@ import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteVersionUtils;
-import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.jdbc2.JdbcSqlFieldsQuery;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
-import org.apache.ignite.internal.processors.odbc.SqlListenerIntermediateResponseSender;
 import org.apache.ignite.internal.processors.odbc.SqlListenerRequest;
 import org.apache.ignite.internal.processors.odbc.SqlListenerRequestHandler;
 import org.apache.ignite.internal.processors.odbc.SqlListenerResponse;
@@ -103,16 +100,18 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
     /** Automatic close of cursors. */
     private final boolean autoCloseCursors;
 
-    /** Connection ID. */
-    private final Long connId;
+    /** Connection handler. */
+    private final JdbcConnectionHandler connHnd;
 
-    /** Request handlers map. */
-    private final ConcurrentHashMap<Long, JdbcRequestHandler> handlers;
+    /** Connection context. */
+    private final JdbcConnectionContext connCtx;
 
     /**
      * Constructor.
      *
      * @param ctx Context.
+     * @param connHnd Connection handler.
+     * @param connCtx Connection context.
      * @param busyLock Shutdown latch.
      * @param maxCursors Maximum allowed cursors.
      * @param distributedJoins Distributed joins flag.
@@ -121,13 +120,13 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
      * @param replicatedOnly Replicated only flag.
      * @param autoCloseCursors Flag to automatically close server cursors.
      * @param lazy Lazy query execution flag.
-     * @param connId Connection ID.
-     * @param handlers Connection Id to handler map.
      */
-    public JdbcRequestHandler(GridKernalContext ctx, GridSpinBusyLock busyLock, int maxCursors,
-        boolean distributedJoins, boolean enforceJoinOrder, boolean collocated, boolean replicatedOnly,
-        boolean autoCloseCursors, boolean lazy, long connId, ConcurrentHashMap<Long, JdbcRequestHandler> handlers) {
+    public JdbcRequestHandler(GridKernalContext ctx, JdbcConnectionHandler connHnd, JdbcConnectionContext connCtx,
+        GridSpinBusyLock busyLock, int maxCursors, boolean distributedJoins, boolean enforceJoinOrder,
+        boolean collocated, boolean replicatedOnly, boolean autoCloseCursors, boolean lazy) {
         this.ctx = ctx;
+        this.connHnd = connHnd;
+        this.connCtx = connCtx;
         this.busyLock = busyLock;
         this.maxCursors = maxCursors;
         this.distributedJoins = distributedJoins;
@@ -136,14 +135,12 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
         this.replicatedOnly = replicatedOnly;
         this.autoCloseCursors = autoCloseCursors;
         this.lazy = lazy;
-        this.connId = connId;
-        this.handlers = handlers;
 
         log = ctx.log(getClass());
     }
 
     /** {@inheritDoc} */
-    @Override public SqlListenerResponse handle(SqlListenerRequest req0, SqlListenerIntermediateResponseSender sender) {
+    @Override public SqlListenerResponse handle(SqlListenerRequest req0) {
         assert req0 != null;
 
         assert req0 instanceof JdbcRequest;
@@ -157,7 +154,7 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
         try {
             switch (req.type()) {
                 case QRY_EXEC:
-                    return executeQuery((JdbcQueryExecuteRequest)req, sender);
+                    return executeQuery((JdbcQueryExecuteRequest)req);
 
                 case QRY_FETCH:
                     return fetchQuery((JdbcQueryFetchRequest)req);
@@ -205,30 +202,6 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
         return new JdbcResponse(SqlListenerResponse.STATUS_FAILED, e.toString());
     }
 
-    /** {@inheritDoc} */
-    @Override public void writeHandshake(BinaryWriterExImpl writer) {
-        // Handshake OK.
-        writer.writeBoolean(true);
-
-        // Write server version.
-        writer.writeByte(IgniteVersionUtils.VER.major());
-        writer.writeByte(IgniteVersionUtils.VER.minor());
-        writer.writeByte(IgniteVersionUtils.VER.maintenance());
-        writer.writeString(IgniteVersionUtils.VER.stage());
-        writer.writeLong(IgniteVersionUtils.VER.revisionTimestamp());
-        writer.writeByteArray(IgniteVersionUtils.VER.revisionHash());
-
-        // Write connection ID.
-        writer.writeLong(connId);
-    }
-
-    /**
-     * @return Connection ID.
-     */
-    public Long connectionId() {
-        return connId;
-    }
-
     /**
      * @param qryId Query ID to cancel.
      */
@@ -268,11 +241,10 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
      * {@link JdbcQueryExecuteRequest} command handler.
      *
      * @param req Execute query request.
-     * @param sender Intermediate response sender.
      * @return Response.
      */
     @SuppressWarnings("unchecked")
-    private JdbcResponse executeQuery(JdbcQueryExecuteRequest req, SqlListenerIntermediateResponseSender sender) {
+    private JdbcResponse executeQuery(JdbcQueryExecuteRequest req) {
         int cursorCnt = qryCursors.size();
 
         if (maxCursors > 0 && cursorCnt >= maxCursors)
@@ -331,7 +303,7 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
 
             qryCursors.put(qryId, cur);
 
-            sender.send(new JdbcResponse(new JdbcQueryIdResult(qryId)));
+            connCtx.sendIntermediate(new JdbcResponse(new JdbcQueryIdResult(qryId)));
 
             cur.open();
 
@@ -733,7 +705,7 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
      */
     private JdbcResponse cancelQuery(JdbcQueryCancelRequest req) {
         try {
-            JdbcRequestHandler handler = handlers.get(req.connectionId());
+            JdbcRequestHandler handler = connHnd.handler(req.connectionId());
 
             handler.cancelQuery(req.queryId());
 

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.platform.client;
 
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.processors.odbc.SqlListenerConnectionContext;
 import org.apache.ignite.internal.processors.odbc.SqlListenerMessageParser;
 import org.apache.ignite.internal.processors.odbc.SqlListenerProtocolVersion;
@@ -62,6 +63,11 @@ public class ClientConnectionContext implements SqlListenerConnectionContext {
     /** {@inheritDoc} */
     @Override public void initializeFromHandshake(SqlListenerProtocolVersion ver, BinaryReaderExImpl reader) {
         // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeHandshake(BinaryWriterExImpl writer) {
+        writer.writeBoolean(true);
     }
 
     /** {@inheritDoc} */
