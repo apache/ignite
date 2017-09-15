@@ -1330,11 +1330,9 @@ namespace Apache.Ignite.Core.Impl.Binary
             return res;
         }
 
-        /**
-         * <summary>Get string hash code.</summary>
-         * <param name="val">Value.</param>
-         * <returns>Hash code.</returns>
-         */
+        /// <summary>
+        /// Gets the string hash code using Java algorithm.
+        /// </summary>
         public static int GetStringHashCode(string val)
         {
             if (val == null)
@@ -1350,6 +1348,14 @@ namespace Apache.Ignite.Core.Impl.Binary
             }
 
             return hash;
+        }
+
+        /// <summary>
+        /// Gets the cache identifier.
+        /// </summary>
+        public static int GetCacheId(string cacheName)
+        {
+            return string.IsNullOrEmpty(cacheName) ? 1 : GetStringHashCode(cacheName);
         }
 
         /// <summary>
