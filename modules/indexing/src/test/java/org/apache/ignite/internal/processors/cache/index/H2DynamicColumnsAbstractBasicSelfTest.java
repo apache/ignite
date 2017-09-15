@@ -269,10 +269,10 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
         else {
             BinaryObject city = (BinaryObject)cache.withKeepBinary().get(1);
 
-            assertEquals(1, city.field("id"));
-            assertEquals("Washington", city.field("name"));
-            assertEquals("DC", city.field("state"));
-            assertEquals(2500000, city.field("population"));
+            assertEquals(1, (int)city.field("id"));
+            assertEquals("Washington", (String)city.field("name"));
+            assertEquals("DC", (String)city.field("state"));
+            assertEquals(2500000, (int)city.field("population"));
         }
 
         cache.destroy();
