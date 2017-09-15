@@ -516,15 +516,15 @@ public abstract class PagesList extends DataStructure {
         if (igniteThread != null && igniteThread.policy() == GridIoPolicy.DATA_STREAMER_POOL) {
             int stripeIdx = igniteThread.stripe();
 
-            if (stripeIdx != -1) {
-                while (tails == null || stripeIdx >= tails.length) {
-                    addStripe(bucket, true);
+            assert stripeIdx != -1 : igniteThread;
 
-                    tails = getBucket(bucket);
-                }
+            while (tails == null || stripeIdx >= tails.length) {
+                addStripe(bucket, true);
 
-                return tails[stripeIdx];
+                tails = getBucket(bucket);
             }
+
+            return tails[stripeIdx];
         }
 
         if (tails == null)
@@ -938,14 +938,14 @@ public abstract class PagesList extends DataStructure {
         if (igniteThread != null && igniteThread.policy() == GridIoPolicy.DATA_STREAMER_POOL) {
             int stripeIdx = igniteThread.stripe();
 
-            if (stripeIdx != -1) {
-                if (stripeIdx >= len)
-                    return null;
+            assert stripeIdx != -1 : igniteThread;
 
-                Stripe stripe = tails[stripeIdx];
+            if (stripeIdx >= len)
+                return null;
 
-                return stripe.empty ? null : stripe;
-            }
+            Stripe stripe = tails[stripeIdx];
+
+            return stripe.empty ? null : stripe;
         }
 
         int init = randomInt(len);
@@ -975,9 +975,11 @@ public abstract class PagesList extends DataStructure {
         // Striped pool optimization.
         IgniteThread igniteThread = IgniteThread.current();
 
-        if (igniteThread != null && igniteThread.policy() == GridIoPolicy.DATA_STREAMER_POOL &&
-            igniteThread.stripe() != -1)
+        if (igniteThread != null && igniteThread.policy() == GridIoPolicy.DATA_STREAMER_POOL) {
+            assert igniteThread.stripe() != -1 : igniteThread;
+
             return writeLock(pageId, page);
+        }
 
         long pageAddr = tryWriteLock(pageId, page);
 
