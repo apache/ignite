@@ -106,6 +106,7 @@ public class MockWalIteratorFactory {
 
         when(sctx.kernalContext()).thenReturn(ctx);
         when(sctx.discovery()).thenReturn(disco);
+        when(sctx.gridConfig()).thenReturn(cfg);
 
         final GridCacheDatabaseSharedManager database = Mockito.mock(GridCacheDatabaseSharedManager.class);
 
