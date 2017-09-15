@@ -732,25 +732,17 @@ namespace Apache.Ignite.Core
         }
 
         /// <summary>
-        /// Connects Ignite lightweight (thin) client to a local Ignite node.
-        /// <para />
-        /// Thin client connects to an existing Ignite node with a socket and does not start JVM in process.
-        /// </summary>
-        /// <returns>Ignite instance.</returns>
-        public static IIgniteClient GetClient()
-        {
-            return new IgniteClient(new IgniteClientConfiguration());
-        }
-
-        /// <summary>
         /// Connects Ignite lightweight (thin) client to an Ignite node.
         /// <para />
         /// Thin client connects to an existing Ignite node with a socket and does not start JVM in process.
         /// </summary>
         /// <param name="clientConfiguration">The client configuration.</param>
         /// <returns>Ignite instance.</returns>
-        public static IIgniteClient GetClient(IgniteClientConfiguration clientConfiguration)
+        public static IIgniteClient StartClient(IgniteClientConfiguration clientConfiguration)
         {
+            IgniteArgumentCheck.NotNull(clientConfiguration, "clientConfiguration");
+            IgniteArgumentCheck.NotNull(clientConfiguration.Host, "clientConfiguration.Host");
+
             return new IgniteClient(clientConfiguration);
         }
 

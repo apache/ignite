@@ -22,7 +22,7 @@ namespace Apache.Ignite.Core.Client
 
     /// <summary>
     /// Main entry point for Ignite Thin Client APIs.
-    /// You can obtain an instance of <see cref="IIgniteClient"/> through <see cref="Ignition.GetClient()"/>.
+    /// You can obtain an instance of <see cref="IIgniteClient"/> through <see cref="Ignition.StartClient"/>.
     /// </summary>
     public interface IIgniteClient : IDisposable
     {

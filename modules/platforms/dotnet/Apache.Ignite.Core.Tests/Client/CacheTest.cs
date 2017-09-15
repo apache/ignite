@@ -95,7 +95,7 @@ namespace Apache.Ignite.Core.Tests.Client
                 CompactFooter = compactFooter
             };
 
-            using (var client = Ignition.GetClient(cfg))
+            using (var client = Ignition.StartClient(cfg))
             {
                 var person = new Person {Id = 100, Name = "foo"};
                 var person2 = new Person2 {Id = 200, Name = "bar"};
@@ -187,7 +187,7 @@ namespace Apache.Ignite.Core.Tests.Client
         /// </summary>
         private static IIgniteClient GetClient()
         {
-            return Ignition.GetClient(GetClientConfiguration());
+            return Ignition.StartClient(GetClientConfiguration());
         }
 
         /// <summary>

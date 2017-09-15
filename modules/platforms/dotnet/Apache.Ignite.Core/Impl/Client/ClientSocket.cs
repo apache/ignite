@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Impl.Client
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
+    using System.Linq;
     using System.Net;
     using System.Net.Sockets;
     using System.Threading;
@@ -231,14 +232,12 @@ namespace Apache.Ignite.Core.Impl.Client
         /// </summary>
         private static IEnumerable<IPEndPoint> GetEndPoints(IgniteClientConfiguration cfg)
         {
-            var addressList = cfg.Host != null
-                ? Dns.GetHostEntry(cfg.Host).AddressList
-                : new[] { IPAddress.Loopback };
-
-            foreach (var ipAddress in addressList)
+            if (cfg.Host == null)
             {
-                yield return new IPEndPoint(ipAddress, cfg.Port);
+                throw new IgniteException("IgniteClientConfiguration.Host cannot be null.");
             }
+
+            return Dns.GetHostEntry(cfg.Host).AddressList.Select(x => new IPEndPoint(x, cfg.Port));
         }
 
         /// <summary>
