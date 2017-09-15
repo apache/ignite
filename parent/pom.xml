@@ -456,6 +456,10 @@
                                 <title>RocketMQ integration</title>
                                 <packages>org.apache.ignite.rocketmq*</packages>
                             </group>
+                            <group>
+                                <title>Ignite Development Utils</title>
+                                <packages>org.apache.ignite.development.utils*</packages>
+                            </group>
                         </groups>
                         <header>
                             <![CDATA[
