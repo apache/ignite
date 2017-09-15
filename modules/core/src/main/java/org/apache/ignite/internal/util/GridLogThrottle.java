@@ -76,12 +76,16 @@ public class GridLogThrottle {
     public static void throttleTimeout(int timeout) {
         throttleTimeout = timeout;
 
-        synchronized (cleanUpOldEntriesTask){
+        synchronized (scheduler) {
             if (cleanUpOldEntriesTask != null) {
 
                 cleanUpOldEntriesTask.cancel(false);
 
-                mapCleaningPeriodSetup();
+                cleanUpOldEntriesTask = scheduler.scheduleAtFixedRate(new Runnable() {
+                    @Override public void run() {
+                        cleanUpOldEntries();
+                    }
+                }, throttleTimeout, throttleTimeout, TimeUnit.MILLISECONDS);
             }
         }
     }
