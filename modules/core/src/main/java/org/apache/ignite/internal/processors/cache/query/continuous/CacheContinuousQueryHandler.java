@@ -462,7 +462,9 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                                     prepareEntry(cctx, nodeId, e);
                             }
 
-                            ctx.continuous().addBackupNotification(nodeId, routineId, backupQueue, topic);
+                            throw new RuntimeException("[contQuery]Sending backupQueue to node.");
+
+                            //ctx.continuous().addBackupNotification(nodeId, routineId, backupQueue, topic);
                         }
                     }
                 }
