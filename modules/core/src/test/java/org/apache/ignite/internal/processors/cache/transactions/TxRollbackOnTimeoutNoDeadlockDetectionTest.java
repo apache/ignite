@@ -15,14 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.internal.processors.cache.transactions;
+
+import org.apache.ignite.transactions.TransactionTimeoutException;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_TX_DEADLOCK_DETECTION_MAX_ITERS;
 
 /**
- * Test checks that grid transaction configuration doesn't influence system caches.
+ * Tests an ability to eagerly rollback timed out transactions.
  */
-public class IgniteTxConfigCacheForceTxTimeoutSelfTest extends IgniteTxConfigCacheSelfTest {
+public class TxRollbackOnTimeoutNoDeadlockDetectionTest extends TxRollbackOnTimeoutTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         System.setProperty(IGNITE_TX_DEADLOCK_DETECTION_MAX_ITERS, "0");
@@ -35,5 +37,11 @@ public class IgniteTxConfigCacheForceTxTimeoutSelfTest extends IgniteTxConfigCac
         super.afterTestsStopped();
 
         System.clearProperty(IGNITE_TX_DEADLOCK_DETECTION_MAX_ITERS);
+    }
+
+    /** */
+    @Override protected void validateException(Exception e) {
+        assertEquals("Deadlock report is expected",
+            TransactionTimeoutException.class, e.getCause().getClass());
     }
 }

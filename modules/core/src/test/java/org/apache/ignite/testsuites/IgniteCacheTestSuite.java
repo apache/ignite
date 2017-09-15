@@ -102,7 +102,6 @@ import org.apache.ignite.internal.processors.cache.IgniteClientAffinityAssignmen
 import org.apache.ignite.internal.processors.cache.IgniteIncompleteCacheObjectSelfTest;
 import org.apache.ignite.internal.processors.cache.IgnitePutAllLargeBatchSelfTest;
 import org.apache.ignite.internal.processors.cache.IgnitePutAllUpdateNonPreloadedPartitionSelfTest;
-import org.apache.ignite.internal.processors.cache.IgniteTxConfigCacheForceTxTimeoutSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteTxConfigCacheSelfTest;
 import org.apache.ignite.internal.processors.cache.context.IgniteCacheAtomicExecutionContextTest;
 import org.apache.ignite.internal.processors.cache.context.IgniteCacheContinuousExecutionContextTest;
@@ -135,6 +134,7 @@ import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCa
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalTxExceptionSelfTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheEntryProcessorExternalizableFailedTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheEntryProcessorNonSerializableTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxRollbackOnTimeoutNoDeadlockDetectionTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxRollbackOnTimeoutTest;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamProcessorSelfTest;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerImplSelfTest;
@@ -303,7 +303,6 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(CachePutEventListenerErrorSelfTest.class);
 
         suite.addTestSuite(IgniteTxConfigCacheSelfTest.class);
-        suite.addTestSuite(IgniteTxConfigCacheForceTxTimeoutSelfTest.class);
 
         suite.addTestSuite(CacheTxFastFinishTest.class);
 
@@ -318,6 +317,7 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(IgniteIncompleteCacheObjectSelfTest.class);
 
         suite.addTestSuite(TxRollbackOnTimeoutTest.class);
+        suite.addTestSuite(TxRollbackOnTimeoutNoDeadlockDetectionTest.class);
 
         return suite;
     }

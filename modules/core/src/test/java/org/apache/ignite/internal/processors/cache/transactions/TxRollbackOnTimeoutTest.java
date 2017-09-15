@@ -110,6 +110,12 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
         stopAllGrids();
     }
 
+    /** */
+    protected void validateException(Exception e) {
+        assertEquals("Deadlock report is expected",
+            TransactionDeadlockException.class, e.getCause().getCause().getClass());
+    }
+
     /**
      * Tests if timeout on first tx unblocks second tx waiting for the locked key.
      *
@@ -276,7 +282,7 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
                     }
                 } catch (CacheException e) {
                     // No-op.
-                    assertTrue(X.hasCause(e, TransactionDeadlockException.class));
+                    validateException(e);
                 }
             }
         }, 1, "First");
@@ -533,5 +539,21 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
         }
 
         fut2.get();
+    }
+
+    /**
+     * Returns root cause for an exception.
+     * @param t Throwable.
+     *
+     * @return Root cause or input if none.
+     */
+    private static Throwable getRootCause(Throwable t) {
+        Throwable cause;
+        Throwable res = t;
+
+        while(null != (cause = res.getCause()) && (res != cause) )
+            res = cause;
+
+        return res;
     }
 }
