@@ -18,11 +18,22 @@
 package org.apache.ignite.internal.processors.odbc;
 
 /**
- * Client request with no ID.
+ * Client listener message parser.
  */
-public abstract class SqlListenerRequestNoId implements SqlListenerRequest {
-    /** {@inheritDoc} */
-    @Override public long requestId() {
-        return 0;
-    }
+public interface ClientListenerMessageParser {
+    /**
+     * Decode request from byte array.
+     *
+     * @param msg Message.
+     * @return Request.
+     */
+    public ClientListenerRequest decode(byte[] msg);
+
+    /**
+     * Encode response to byte array.
+     *
+     * @param resp Response.
+     * @return Message.
+     */
+    public byte[] encode(ClientListenerResponse resp);
 }

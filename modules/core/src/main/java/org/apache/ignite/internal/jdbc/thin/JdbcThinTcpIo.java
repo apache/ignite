@@ -28,10 +28,10 @@ import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
-import org.apache.ignite.internal.processors.odbc.SqlListenerNioListener;
-import org.apache.ignite.internal.processors.odbc.SqlListenerProtocolVersion;
-import org.apache.ignite.internal.processors.odbc.SqlListenerRequest;
-import org.apache.ignite.internal.processors.odbc.SqlListenerResponse;
+import org.apache.ignite.internal.processors.odbc.ClientListenerNioListener;
+import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
+import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
+import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBatchExecuteRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBatchExecuteResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaColumnsRequest;
@@ -67,10 +67,10 @@ import org.apache.ignite.lang.IgniteProductVersion;
  */
 public class JdbcThinTcpIo {
     /** Current version. */
-    private static final SqlListenerProtocolVersion CURRENT_VER = SqlListenerProtocolVersion.create(2, 1, 5);
+    private static final ClientListenerProtocolVersion CURRENT_VER = ClientListenerProtocolVersion.create(2, 1, 5);
 
     /** Version 2.1.0. */
-    private static final SqlListenerProtocolVersion VER_2_1_0 = SqlListenerProtocolVersion.create(2, 1, 0);
+    private static final ClientListenerProtocolVersion VER_2_1_0 = ClientListenerProtocolVersion.create(2, 1, 0);
 
     /** Initial output stream capacity for handshake. */
     private static final int HANDSHAKE_MSG_SIZE = 13;
@@ -139,7 +139,7 @@ public class JdbcThinTcpIo {
     private IgniteProductVersion igniteVer;
 
     /** Ignite server protocol version. */
-    private SqlListenerProtocolVersion srvProtocolVer;
+    private ClientListenerProtocolVersion srvProtocolVer;
 
     /**
      * Constructor.
@@ -210,13 +210,13 @@ public class JdbcThinTcpIo {
         BinaryWriterExImpl writer = new BinaryWriterExImpl(null, new BinaryHeapOutputStream(HANDSHAKE_MSG_SIZE),
             null, null);
 
-        writer.writeByte((byte)SqlListenerRequest.HANDSHAKE);
+        writer.writeByte((byte) ClientListenerRequest.HANDSHAKE);
 
         writer.writeShort(CURRENT_VER.major());
         writer.writeShort(CURRENT_VER.minor());
         writer.writeShort(CURRENT_VER.maintenance());
 
-        writer.writeByte(SqlListenerNioListener.JDBC_CLIENT);
+        writer.writeByte(ClientListenerNioListener.JDBC_CLIENT);
 
         writer.writeBoolean(distributedJoins);
         writer.writeBoolean(enforceJoinOrder);
@@ -257,7 +257,7 @@ public class JdbcThinTcpIo {
 
             String err = reader.readString();
 
-            srvProtocolVer = SqlListenerProtocolVersion.create(maj, min, maintenance);
+            srvProtocolVer = ClientListenerProtocolVersion.create(maj, min, maintenance);
 
             if (VER_2_1_0.equals(srvProtocolVer))
                 handshake_2_1_0();
@@ -278,13 +278,13 @@ public class JdbcThinTcpIo {
         BinaryWriterExImpl writer = new BinaryWriterExImpl(null, new BinaryHeapOutputStream(HANDSHAKE_MSG_SIZE),
             null, null);
 
-        writer.writeByte((byte)SqlListenerRequest.HANDSHAKE);
+        writer.writeByte((byte) ClientListenerRequest.HANDSHAKE);
 
         writer.writeShort(VER_2_1_0.major());
         writer.writeShort(VER_2_1_0.minor());
         writer.writeShort(VER_2_1_0.maintenance());
 
-        writer.writeByte(SqlListenerNioListener.JDBC_CLIENT);
+        writer.writeByte(ClientListenerNioListener.JDBC_CLIENT);
 
         writer.writeBoolean(distributedJoins);
         writer.writeBoolean(enforceJoinOrder);
@@ -308,7 +308,7 @@ public class JdbcThinTcpIo {
 
             String err = reader.readString();
 
-            SqlListenerProtocolVersion ver = SqlListenerProtocolVersion.create(maj, min, maintenance);
+            ClientListenerProtocolVersion ver = ClientListenerProtocolVersion.create(maj, min, maintenance);
 
             throw new IgniteCheckedException("Handshake failed [driverProtocolVer=" + CURRENT_VER +
                 ", remoteNodeProtocolVer=" + ver + ", err=" + err + ']');
@@ -354,7 +354,7 @@ public class JdbcThinTcpIo {
 
         res.readBinary(reader);
 
-        if (res.status() != SqlListenerResponse.STATUS_SUCCESS)
+        if (res.status() != ClientListenerResponse.STATUS_SUCCESS)
             throw new IgniteCheckedException("Error server response: [req=" + req + ", resp=" + res + ']');
 
         return (R)res.response();

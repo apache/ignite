@@ -74,6 +74,7 @@ import org.apache.ignite.spi.indexing.IndexingSpi;
 import org.apache.ignite.spi.loadbalancing.LoadBalancingSpi;
 import org.apache.ignite.spi.loadbalancing.roundrobin.RoundRobinLoadBalancingSpi;
 import org.apache.ignite.ssl.SslContextFactory;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.plugin.segmentation.SegmentationPolicy.STOP;
 
@@ -471,7 +472,7 @@ public class IgniteConfiguration {
     private SqlConnectorConfiguration sqlConnCfg;
 
     /** Client connector configuration. */
-    private ClientConnectorConfiguration cliConnCfg = new ClientConnectorConfiguration();
+    private ClientConnectorConfiguration cliConnCfg;
 
     /**
      * Creates valid grid configuration with all default values.
@@ -2827,7 +2828,7 @@ public class IgniteConfiguration {
      * @param cliConnCfg Client connector configuration.
      * @return {@code this} for chaining.
      */
-    public IgniteConfiguration setClientConnectorConfiguration(ClientConnectorConfiguration cliConnCfg) {
+    public IgniteConfiguration setClientConnectorConfiguration(@Nullable ClientConnectorConfiguration cliConnCfg) {
         this.cliConnCfg = cliConnCfg;
 
         return this;
@@ -2838,7 +2839,7 @@ public class IgniteConfiguration {
      *
      * @return Client connector configuration.
      */
-    public ClientConnectorConfiguration getClientConnectorConfiguration() {
+    @Nullable public ClientConnectorConfiguration getClientConnectorConfiguration() {
         return cliConnCfg;
     }
 
