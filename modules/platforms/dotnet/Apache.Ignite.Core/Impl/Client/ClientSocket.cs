@@ -232,12 +232,21 @@ namespace Apache.Ignite.Core.Impl.Client
         /// </summary>
         private static IEnumerable<IPEndPoint> GetEndPoints(IgniteClientConfiguration cfg)
         {
-            if (cfg.Host == null)
+            var host = cfg.Host;
+
+            if (host == null)
             {
                 throw new IgniteException("IgniteClientConfiguration.Host cannot be null.");
             }
 
-            return Dns.GetHostEntry(cfg.Host).AddressList.Select(x => new IPEndPoint(x, cfg.Port));
+            IPAddress ip;
+
+            if (IPAddress.TryParse(host, out ip))
+            {
+                return new[] {new IPEndPoint(ip, cfg.Port)};
+            }
+
+            return Dns.GetHostEntry(host).AddressList.Select(x => new IPEndPoint(x, cfg.Port));
         }
 
         /// <summary>

@@ -119,7 +119,7 @@ namespace Apache.Ignite.Core.Tests.Client
             using (Ignition.Start(TestUtils.GetTestConfiguration()))
             {
                 // ReSharper disable once ObjectCreationAsStatement
-                var ex = Assert.Throws<IgniteException>(() => new ClientSocket(new IgniteClientConfiguration(),
+                var ex = Assert.Throws<IgniteException>(() => new ClientSocket(GetClientConfiguration(),
                     new ClientProtocolVersion(-1, -1, -1)));
 
                 Assert.AreEqual("Client handhsake failed: 'Unsupported version.'. " +
@@ -132,7 +132,15 @@ namespace Apache.Ignite.Core.Tests.Client
         /// </summary>
         private static IIgniteClient StartClient()
         {
-            return Ignition.StartClient(new IgniteClientConfiguration { Host = IPAddress.Loopback.ToString() });
+            return Ignition.StartClient(GetClientConfiguration());
+        }
+
+        /// <summary>
+        /// Gets the client configuration.
+        /// </summary>
+        private static IgniteClientConfiguration GetClientConfiguration()
+        {
+            return new IgniteClientConfiguration { Host = IPAddress.Loopback.ToString() };
         }
     }
 }
