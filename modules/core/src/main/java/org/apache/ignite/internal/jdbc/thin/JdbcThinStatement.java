@@ -139,7 +139,7 @@ public class JdbcThinStatement implements Statement {
         int res = getUpdateCount();
 
         if (res == -1)
-            throw new SQLException("The query is not DML statememt: " + sql, SqlStateCode.PARSING_EXCEPTION);
+            throw new SQLException("The query is not DML statement: " + sql, SqlStateCode.PARSING_EXCEPTION);
 
         return res;
     }
@@ -563,6 +563,6 @@ public class JdbcThinStatement implements Statement {
      */
     protected void ensureNotClosed() throws SQLException {
         if (isClosed())
-            throw new SQLException("Statement is closed.", SqlStateCode.CONNECTION_CLOSED);
+            throw new SQLException("Statement is closed.");
     }
 }
