@@ -438,7 +438,7 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
                         }
                     }, TransactionTimeoutException.class);
 
-                    assertEquals(MARKED_ROLLBACK, tx.state());
+                    assertEquals(ROLLED_BACK, tx.state());
 
                     tx.close();
                 }
@@ -469,7 +469,7 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
                         }
                     }, TransactionTimeoutException.class);
 
-                    assertEquals(MARKED_ROLLBACK, tx.state());
+                    assertEquals(ROLLED_BACK, tx.state());
 
                     tx.close();
 
