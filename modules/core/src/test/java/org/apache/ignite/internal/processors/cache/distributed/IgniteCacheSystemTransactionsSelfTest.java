@@ -113,7 +113,6 @@ public class IgniteCacheSystemTransactionsSelfTest extends GridCacheAbstractSelf
         IgniteInternalCache<Object, Object> utilityCache = ignite.context().cache().utilityCache();
 
         try (GridNearTxLocal itx = utilityCache.txStartEx(OPTIMISTIC, SERIALIZABLE)) {
-
             utilityCache.put("1", "1");
 
             itx.commitNearTxLocalAsync();
