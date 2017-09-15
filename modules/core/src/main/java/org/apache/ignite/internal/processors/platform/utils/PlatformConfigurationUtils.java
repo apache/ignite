@@ -532,6 +532,7 @@ public class PlatformConfigurationUtils {
      * @param in Reader.
      * @param cfg Configuration.
      */
+    @SuppressWarnings("deprecation")
     public static void readIgniteConfiguration(BinaryRawReaderEx in, IgniteConfiguration cfg) {
         if (in.readBoolean())
             cfg.setClientMode(in.readBoolean());
@@ -983,6 +984,7 @@ public class PlatformConfigurationUtils {
      * @param w Writer.
      * @param cfg Configuration.
      */
+    @SuppressWarnings("deprecation")
     public static void writeIgniteConfiguration(BinaryRawWriter w, IgniteConfiguration cfg) {
         assert w != null;
         assert cfg != null;
@@ -1143,7 +1145,6 @@ public class PlatformConfigurationUtils {
 
         writeMemoryConfiguration(w, cfg.getMemoryConfiguration());
 
-        // TODO: Implement .NET part.
         writeSqlConnectorConfiguration(w, cfg.getSqlConnectorConfiguration());
 
         writePersistentStoreConfiguration(w, cfg.getPersistentStoreConfiguration());
@@ -1443,6 +1444,7 @@ public class PlatformConfigurationUtils {
      * @param in Reader.
      * @return Config.
      */
+    @SuppressWarnings("deprecation")
     private static SqlConnectorConfiguration readSqlConnectorConfiguration(BinaryRawReader in) {
         return new SqlConnectorConfiguration()
                 .setHost(in.readString())
@@ -1460,6 +1462,7 @@ public class PlatformConfigurationUtils {
      *
      * @param w Writer.
      */
+    @SuppressWarnings("deprecation")
     private static void writeSqlConnectorConfiguration(BinaryRawWriter w, SqlConnectorConfiguration cfg) {
         assert w != null;
 
