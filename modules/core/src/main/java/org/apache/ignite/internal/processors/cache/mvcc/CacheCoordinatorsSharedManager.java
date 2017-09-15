@@ -109,13 +109,15 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
     @Override protected void start0() throws IgniteCheckedException {
         super.start0();
 
-        statCntrs = new StatCounter[5];
+        statCntrs = new StatCounter[7];
 
         statCntrs[0] = new CounterWithAvg("CoordinatorTxCounterRequest", "avgTxs");
         statCntrs[1] = new CounterWithAvg("MvccCoordinatorVersionResponse", "avgFutTime");
         statCntrs[2] = new StatCounter("CoordinatorTxAckRequest");
         statCntrs[3] = new CounterWithAvg("CoordinatorTxAckResponse", "avgFutTime");
         statCntrs[4] = new StatCounter("TotalRequests");
+        statCntrs[5] = new StatCounter("CoordinatorWaitTxsRequest");
+        statCntrs[6] = new CounterWithAvg("CoordinatorWaitTxsResponse", "avgFutTime");
 
         cctx.gridEvents().addLocalEventListener(new CacheCoordinatorDiscoveryListener(),
             EVT_NODE_FAILED, EVT_NODE_LEFT);
@@ -230,7 +232,7 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
 
         // TODO IGNITE-3478: special case for local?
 
-        WaitAckFuture fut = new WaitAckFuture(futIdCntr.incrementAndGet(), crd);
+        WaitAckFuture fut = new WaitAckFuture(futIdCntr.incrementAndGet(), crd, false);
 
         ackFuts.put(fut.id, fut);
 
@@ -261,7 +263,7 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
         assert crd != null;
         assert txId != null;
 
-        WaitAckFuture fut = new WaitAckFuture(futIdCntr.incrementAndGet(), crd);
+        WaitAckFuture fut = new WaitAckFuture(futIdCntr.incrementAndGet(), crd, true);
 
         ackFuts.put(fut.id, fut);
 
@@ -440,8 +442,11 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
         WaitAckFuture fut = ackFuts.remove(msg.futureId());
 
         if (fut != null) {
-            if (STAT_CNTRS)
-                statCntrs[3].update((System.nanoTime() - fut.startTime) * 1000);
+            if (STAT_CNTRS) {
+                StatCounter cntr = fut.ackTx ? statCntrs[3] : statCntrs[6];
+
+                cntr.update((System.nanoTime() - fut.startTime) * 1000);
+            }
 
             fut.onResponse();
         }
@@ -560,6 +565,8 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
      * @param msg Message.
      */
     private void processCoordinatorWaitTxsRequest(final UUID nodeId, final CoordinatorWaitTxsRequest msg) {
+        statCntrs[5].update();
+
         GridLongList txs = msg.transactions();
 
         // TODO IGNITE-3478.
@@ -738,13 +745,17 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
         /** */
         long startTime;
 
+        /** */
+        final boolean ackTx;
+
         /**
          * @param id Future ID.
          * @param crd Coordinator.
          */
-        WaitAckFuture(long id, ClusterNode crd) {
+        WaitAckFuture(long id, ClusterNode crd, boolean ackTx) {
             this.id = id;
             this.crd = crd;
+            this.ackTx = ackTx;
 
             if (STAT_CNTRS)
                 startTime = System.nanoTime();
