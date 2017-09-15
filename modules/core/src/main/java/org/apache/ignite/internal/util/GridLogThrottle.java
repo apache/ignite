@@ -58,9 +58,9 @@ public class GridLogThrottle {
     /**
      * Setup period map cleaning task.
      */
-    public static void mapCleaningPeriodSetup(boolean cancelMapCleanEnabled) {
+    public static void mapCleaningPeriodSetup() {
         synchronized (scheduler) {
-            if (cancelMapCleanEnabled) {
+            if (cleanUpOldEntriesTask != null) {
                 cleanUpOldEntriesTask.cancel(false);
             }
 
@@ -80,9 +80,7 @@ public class GridLogThrottle {
     public static void throttleTimeout(int timeout) {
         throttleTimeout = timeout;
 
-        if (cleanUpOldEntriesTask != null) {
-            mapCleaningPeriodSetup(true);
-        }
+        mapCleaningPeriodSetup();
     }
 
     /**
@@ -223,7 +221,7 @@ public class GridLogThrottle {
         assert !F.isEmpty(longMsg);
 
         if (cleanUpOldEntriesTask == null)
-            mapCleaningPeriodSetup(false);
+            mapCleaningPeriodSetup();
 
         IgniteBiTuple<Class<? extends Throwable>, String> tup =
             e != null && !byMsg ? F.<Class<? extends Throwable>, String>t(e.getClass(), e.getMessage()) :
