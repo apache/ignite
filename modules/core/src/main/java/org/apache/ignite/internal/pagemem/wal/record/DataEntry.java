@@ -31,6 +31,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  */
 public class DataEntry {
     /** */
+    @GridToStringInclude
     protected int cacheId;
 
     /** */
