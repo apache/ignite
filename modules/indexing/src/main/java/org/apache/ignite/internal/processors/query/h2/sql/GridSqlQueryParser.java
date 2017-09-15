@@ -941,7 +941,7 @@ public class GridSqlQueryParser {
         int valColsNum = cols.size() - pkCols.size();
 
         if (valColsNum == 0)
-            throw new IgniteSQLException("Tables with only key related columns are not supported at the moment",
+            throw new IgniteSQLException("Table must have at least one non PRIMARY KEY columnn.",
                 IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
         res.columns(cols);
@@ -1037,11 +1037,11 @@ public class GridSqlQueryParser {
                 }
 
                 if (stmtName == null) {
-                    throw new IgniteSQLException("Unsupported ALTER TABLE operation: " + stmt.getSQL(),
+                    throw new IgniteSQLException("Unsupported operation: " + stmt.getSQL(),
                         IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
                 }
                 else {
-                    throw new IgniteSQLException("Unsupported ALTER TABLE operation: " + stmtName,
+                    throw new IgniteSQLException(stmtName + " is not supported",
                         IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
                 }
             }
