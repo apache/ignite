@@ -348,6 +348,33 @@ namespace ignite
 #ifdef SQL_DESCRIBE_PARAMETER
                     DBG_STR_CASE(SQL_DESCRIBE_PARAMETER);
 #endif // SQL_DESCRIBE_PARAMETER
+#ifdef SQL_DROP_ASSERTION
+                    DBG_STR_CASE(SQL_DROP_ASSERTION);
+#endif // SQL_DROP_ASSERTION
+#ifdef SQL_DROP_CHARACTER_SET
+                    DBG_STR_CASE(SQL_DROP_CHARACTER_SET);
+#endif // SQL_DROP_CHARACTER_SET
+#ifdef SQL_DROP_COLLATION
+                    DBG_STR_CASE(SQL_DROP_COLLATION);
+#endif // SQL_DROP_COLLATION
+#ifdef SQL_DROP_DOMAIN
+                    DBG_STR_CASE(SQL_DROP_DOMAIN);
+#endif // SQL_DROP_DOMAIN
+#ifdef SQL_DROP_SCHEMA
+                    DBG_STR_CASE(SQL_DROP_SCHEMA);
+#endif // SQL_DROP_SCHEMA
+#ifdef SQL_DROP_TABLE
+                    DBG_STR_CASE(SQL_DROP_TABLE);
+#endif // SQL_DROP_TABLE
+#ifdef SQL_DROP_TRANSLATION
+                    DBG_STR_CASE(SQL_DROP_TRANSLATION);
+#endif // SQL_DROP_TRANSLATION
+#ifdef SQL_DROP_VIEW
+                    DBG_STR_CASE(SQL_DROP_VIEW);
+#endif // SQL_DROP_VIEW
+#ifdef SQL_DYNAMIC_CURSOR_ATTRIBUTES1
+                    DBG_STR_CASE(SQL_DYNAMIC_CURSOR_ATTRIBUTES1);
+#endif // SQL_DYNAMIC_CURSOR_ATTRIBUTES1
                     default:
                         break;
                 }
@@ -1258,6 +1285,144 @@ namespace ignite
                 //     reads, nonrepeatable reads, or phantoms.
                 intParams[SQL_DEFAULT_TXN_ISOLATION] = 0;
 #endif // SQL_DEFAULT_TXN_ISOLATION
+
+#ifdef SQL_DROP_ASSERTION
+                // A bitmask enumerating the clauses in the DROP ASSERTION statement, as defined in SQL-92,
+                // supported by the data source.
+                // The following bitmask is used to determine which clauses are supported :
+                // SQL_DA_DROP_ASSERTION
+                // An SQL-92 Full level-conformant driver will always return this option as supported.
+                intParams[SQL_DROP_ASSERTION] = 0;
+#endif // SQL_DROP_ASSERTION
+
+#ifdef SQL_DROP_CHARACTER_SET
+                // A bitmask enumerating the clauses in the DROP CHARACTER SET statement, as defined in
+                // SQL-92, supported by the data source.
+                // The following bitmask is used to determine which clauses are supported :
+                // SQL_DCS_DROP_CHARACTER_SET
+                // An SQL-92 Full level-conformant driver will always return this option as supported.
+                intParams[SQL_DROP_CHARACTER_SET] = 0;
+#endif // SQL_DROP_CHARACTER_SET
+
+#ifdef SQL_DROP_COLLATION
+                // A bitmask enumerating the clauses in the DROP COLLATION statement, as defined in SQL-92, supported by
+                // the data source.
+                // The following bitmask is used to determine which clauses are supported :
+                // SQL_DC_DROP_COLLATION
+                // An SQL-92 Full level-conformant driver will always return this option as supported.
+                intParams[SQL_DROP_COLLATION] = 0;
+#endif // SQL_DROP_COLLATION
+
+#ifdef SQL_DROP_DOMAIN
+                // A bitmask enumerating the clauses in the DROP DOMAIN statement, as defined in SQL-92, supported by
+                // the data source.
+                // The following bitmasks are used to determine which clauses are supported :
+                // SQL_DD_DROP_DOMAIN
+                // SQL_DD_CASCADE
+                // SQL_DD_RESTRICT
+                // An SQL-92 Intermediate level-conformant driver will always return all of these options as supported.
+                intParams[SQL_DROP_DOMAIN] = 0;
+#endif // SQL_DROP_DOMAIN
+
+#ifdef SQL_DROP_SCHEMA
+                // A bitmask enumerating the clauses in the DROP SCHEMA statement, as defined in SQL-92, supported by
+                // the data source.
+                // The following bitmasks are used to determine which clauses are supported :
+                // SQL_DS_DROP_SCHEMA
+                // SQL_DS_CASCADE
+                // SQL_DS_RESTRICT
+                // An SQL-92 Intermediate level-conformant driver will always return all of these options as supported.
+                intParams[SQL_DROP_SCHEMA] = 0;
+#endif // SQL_DROP_SCHEMA
+
+#ifdef SQL_DROP_TABLE
+                // A bitmask enumerating the clauses in the DROP TABLE statement, as defined in SQL-92, supported by the
+                // data source.
+                // The following bitmasks are used to determine which clauses are supported:
+                // SQL_DT_DROP_TABLE
+                // SQL_DT_CASCADE
+                // SQL_DT_RESTRICT
+                // An FIPS Transitional level-conformant driver will always return all of these options as supported.
+                intParams[SQL_DROP_TABLE] = SQL_DT_DROP_TABLE;
+#endif // SQL_DROP_TABLE
+
+#ifdef SQL_DROP_TRANSLATION
+                // A bitmask enumerating the clauses in the DROP TRANSLATION statement, as defined in SQL-92, supported
+                // by the data source.
+                // The following bitmask is used to determine which clauses are supported:
+                // SQL_DTR_DROP_TRANSLATION
+                // An SQL-92 Full level-conformant driver will always return this option as supported.
+                intParams[SQL_DROP_TRANSLATION] = 0;
+#endif // SQL_DROP_TRANSLATION
+
+#ifdef SQL_DROP_VIEW
+                // A bitmask enumerating the clauses in the DROP VIEW statement, as defined in SQL-92, supported by the
+                // data source.
+                // The following bitmasks are used to determine which clauses are supported:
+                // SQL_DV_DROP_VIEW
+                // SQL_DV_CASCADE
+                // SQL_DV_RESTRICT
+                // An FIPS Transitional level-conformant driver will always return all of these options as supported.
+                intParams[SQL_DROP_VIEW] = 0;
+#endif // SQL_DROP_VIEW
+
+#ifdef SQL_DYNAMIC_CURSOR_ATTRIBUTES1
+                // A bitmask that describes the attributes of a dynamic cursor that are supported by the driver.
+                // This bitmask contains the first subset of attributes; for the second subset, see
+                // SQL_DYNAMIC_CURSOR_ATTRIBUTES2.
+                //
+                // The following bitmasks are used to determine which attributes are supported:
+                // SQL_CA1_NEXT = A FetchOrientation argument of SQL_FETCH_NEXT is supported in a call to SQLFetchScroll
+                //     when the cursor is a dynamic cursor.
+                // SQL_CA1_ABSOLUTE = FetchOrientation arguments of SQL_FETCH_FIRST, SQL_FETCH_LAST, and
+                //     SQL_FETCH_ABSOLUTE are supported in a call to SQLFetchScroll when the cursor is a dynamic cursor.
+                //     (The rowset that will be fetched is independent of the current cursor position.)
+                // SQL_CA1_RELATIVE = FetchOrientation arguments of SQL_FETCH_PRIOR and SQL_FETCH_RELATIVE are supported
+                //     in a call to SQLFetchScroll when the cursor is a dynamic cursor. (The rowset that will be fetched
+                //     depends on the current cursor position. Note that this is separated from SQL_FETCH_NEXT because
+                //     in a forward-only cursor, only SQL_FETCH_NEXT is supported.)
+                // SQL_CA1_BOOKMARK = A FetchOrientation argument of SQL_FETCH_BOOKMARK is supported in a call to
+                //     SQLFetchScroll when the cursor is a dynamic cursor.
+                // SQL_CA1_LOCK_EXCLUSIVE = A LockType argument of SQL_LOCK_EXCLUSIVE is supported in a call to 
+                //     SQLSetPos when the cursor is a dynamic cursor.
+                // SQL_CA1_LOCK_NO_CHANGE = A LockType argument of SQL_LOCK_NO_CHANGE is supported in a call to
+                //     SQLSetPos when the cursor is a dynamic cursor.
+                // SQL_CA1_LOCK_UNLOCK = A LockType argument of SQL_LOCK_UNLOCK is supported in a call to SQLSetPos
+                //     when the cursor is a dynamic cursor.
+                // SQL_CA1_POS_POSITION = An Operation argument of SQL_POSITION is supported in a call to SQLSetPos when
+                //     the cursor is a dynamic cursor.
+                // SQL_CA1_POS_UPDATE = An Operation argument of SQL_UPDATE is supported in a call to SQLSetPos when the
+                //     cursor is a dynamic cursor.
+                // SQL_CA1_POS_DELETE = An Operation argument of SQL_DELETE is supported in a call to SQLSetPos when the
+                //     cursor is a dynamic cursor.
+                // SQL_CA1_POS_REFRESH = An Operation argument of SQL_REFRESH is supported in a call to SQLSetPos when
+                //     the cursor is a dynamic cursor.
+                // SQL_CA1_POSITIONED_UPDATE = An UPDATE WHERE CURRENT OF SQL statement is supported when the cursor is
+                //     a dynamic cursor. (An SQL-92 Entry level-conformant driver will always return this option as
+                //     supported.)
+                // SQL_CA1_POSITIONED_DELETE = A DELETE WHERE CURRENT OF SQL statement is supported when the cursor is a
+                //     dynamic cursor. (An SQL-92 Entry level-conformant driver will always return this option as
+                //     supported.)
+                // SQL_CA1_SELECT_FOR_UPDATE = A SELECT FOR UPDATE SQL statement is supported when the cursor is a
+                //     dynamic cursor. (An SQL-92 Entry level-conformant driver will always return this option as
+                //     supported.)
+                // SQL_CA1_BULK_ADD = An Operation argument of SQL_ADD is supported in a call to SQLBulkOperations when
+                //     the cursor is a dynamic cursor.
+                // SQL_CA1_BULK_UPDATE_BY_BOOKMARK = An Operation argument of SQL_UPDATE_BY_BOOKMARK is supported in a
+                //     call to SQLBulkOperations when the cursor is a dynamic cursor.
+                // SQL_CA1_BULK_DELETE_BY_BOOKMARK = An Operation argument of SQL_DELETE_BY_BOOKMARK is supported in a
+                //     call to SQLBulkOperations when the cursor is a dynamic cursor.
+                // SQL_CA1_BULK_FETCH_BY_BOOKMARK = An Operation argument of SQL_FETCH_BY_BOOKMARK is supported in a
+                //     call to SQLBulkOperations when the cursor is a dynamic cursor.
+                //
+                // An SQL-92 Intermediate level-conformant driver will usually return the SQL_CA1_NEXT,
+                // SQL_CA1_ABSOLUTE, and SQL_CA1_RELATIVE options as supported, because it supports scrollable cursors
+                // through the embedded SQL FETCH statement. Because this does not directly determine the underlying SQL
+                // support, however, scrollable cursors may not be supported, even for an SQL-92 Intermediate
+                // level-conformant driver.
+                intParams[SQL_DYNAMIC_CURSOR_ATTRIBUTES1] = SQL_CA1_NEXT;
+#endif // SQL_DYNAMIC_CURSOR_ATTRIBUTES1
+
 
                 //
                 //======================= Short Params ========================
