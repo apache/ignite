@@ -70,6 +70,7 @@ import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -2335,6 +2336,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         /** {@inheritDoc} */
         @Override public FileWALPointer position() {
             return (FileWALPointer) super.position();
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(FakeRecord.class, this, "super", super.toString());
         }
     }
 

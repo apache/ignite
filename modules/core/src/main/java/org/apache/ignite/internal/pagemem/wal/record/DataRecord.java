@@ -65,6 +65,6 @@ public class DataRecord extends WALRecord {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(DataRecord.class, this, super.toString());
+        return S.toString(DataRecord.class, this, "super", super.toString());
     }
 }

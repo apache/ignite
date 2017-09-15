@@ -31,6 +31,7 @@ import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.jetbrains.annotations.Nullable;
 
@@ -352,13 +353,24 @@ public class DataPageIO extends PageIO {
      * @return String representation.
      */
     private String printPageLayout(long pageAddr, int pageSize) {
+        SB b = new SB();
+
+        printPageLayout(pageAddr, pageSize, b);
+
+        return b.toString();
+    }
+
+    /**
+     * @param pageAddr Page address.
+     * @param pageSize Page size.
+     * @param b B.
+     */
+    private void printPageLayout(long pageAddr, int pageSize, GridStringBuilder b) {
         int directCnt = getDirectCount(pageAddr);
         int indirectCnt = getIndirectCount(pageAddr);
         int free = getRealFreeSpace(pageAddr);
 
         boolean valid = directCnt >= indirectCnt;
-
-        SB b = new SB();
 
         b.appendHex(PageIO.getPageId(pageAddr)).a(" [");
 
@@ -419,8 +431,6 @@ public class DataPageIO extends PageIO {
             b.a("]");
 
         assert valid : b.toString();
-
-        return b.toString();
     }
 
     /**
@@ -1430,6 +1440,13 @@ public class DataPageIO extends PageIO {
         dataOff += 2;
 
         PageUtils.putBytes(pageAddr, dataOff, payload);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void printPage(long addr, int pageSize, GridStringBuilder sb) throws IgniteCheckedException {
+        sb.a("DataPageIO [\n");
+        printPageLayout(addr, 0, sb);
+        sb.a("\n]");
     }
 
     /**
