@@ -101,7 +101,7 @@ public class JdbcConnectionContext implements SqlListenerConnectionContext {
             lazyExec = reader.readBoolean();
 
         handler = new JdbcRequestHandler(ctx, busyLock, maxCursors, distributedJoins,
-            enforceJoinOrder, collocated, replicatedOnly, autoCloseCursors, lazyExec);
+                enforceJoinOrder, collocated, replicatedOnly, autoCloseCursors, lazyExec);
 
         parser = new JdbcMessageParser(ctx);
     }
