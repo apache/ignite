@@ -462,7 +462,7 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
      * @param txId Transaction ID.
      * @return Counter.
      */
-    private synchronized MvccCoordinatorVersionResponse assignTxCounter(GridCacheVersion txId, long futId) {
+    private MvccCoordinatorVersionResponse assignTxCounter(GridCacheVersion txId, long futId) {
         assert crdVer != 0;
 
         long nextCtr = mvccCntr.incrementAndGet();
@@ -495,20 +495,11 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
      * @param txId Transaction ID.
      */
     private void onTxDone(GridCacheVersion txId) {
-        GridFutureAdapter fut; // TODO IGNITE-3478.
+        Long cntr = activeTxs.remove(txId);
 
-        synchronized (this) {
-            Long cntr = activeTxs.remove(txId);
+        assert cntr != null;
 
-            assert cntr != null;
-
-            committedCntr.setIfGreater(cntr);
-
-            fut = waitTxFuts.remove(cntr);
-        }
-
-        if (fut != null)
-            fut.onDone();
+        committedCntr.setIfGreater(cntr);
     }
 
     /**
