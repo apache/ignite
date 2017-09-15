@@ -563,6 +563,6 @@ public class JdbcThinStatement implements Statement {
      */
     protected void ensureNotClosed() throws SQLException {
         if (isClosed())
-            throw new SQLException("Statement is closed.");
+            throw new SQLException("Statement is closed.", SqlStateCode.CONNECTION_CLOSED);
     }
 }
