@@ -941,7 +941,7 @@ public class GridSqlQueryParser {
         int valColsNum = cols.size() - pkCols.size();
 
         if (valColsNum == 0)
-            throw new IgniteSQLException("Table must have at least one non PRIMARY KEY columnn.",
+            throw new IgniteSQLException("Table must have at least one non PRIMARY KEY column.",
                 IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
         res.columns(cols);
