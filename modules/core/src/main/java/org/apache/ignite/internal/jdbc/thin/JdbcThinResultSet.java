@@ -330,8 +330,7 @@ public class JdbcThinResultSet implements ResultSet {
                 return Short.parseShort(val.toString());
             }
             catch (NumberFormatException e) {
-                throw new SQLException("Cannot convert to short: " + val, SqlStateCode.DATA_EXCEPTION,
-                    e);
+                throw new SQLException("Cannot convert to short: " + val, SqlStateCode.DATA_EXCEPTION, e);
             }
         }
         else
@@ -356,8 +355,7 @@ public class JdbcThinResultSet implements ResultSet {
                 return Integer.parseInt(val.toString());
             }
             catch (NumberFormatException e) {
-                throw new SQLException("Cannot convert to int: " + val, SqlStateCode.DATA_EXCEPTION,
-                    e);
+                throw new SQLException("Cannot convert to int: " + val, SqlStateCode.DATA_EXCEPTION, e);
             }
         }
         else
@@ -382,8 +380,7 @@ public class JdbcThinResultSet implements ResultSet {
                 return Long.parseLong(val.toString());
             }
             catch (NumberFormatException e) {
-                throw new SQLException("Cannot convert to long: " + val, SqlStateCode.DATA_EXCEPTION,
-                    e);
+                throw new SQLException("Cannot convert to long: " + val, SqlStateCode.DATA_EXCEPTION, e);
             }
         }
         else
@@ -408,8 +405,7 @@ public class JdbcThinResultSet implements ResultSet {
                 return Float.parseFloat(val.toString());
             }
             catch (NumberFormatException e) {
-                throw new SQLException("Cannot convert to float: " + val, SqlStateCode.DATA_EXCEPTION,
-                    e);
+                throw new SQLException("Cannot convert to float: " + val, SqlStateCode.DATA_EXCEPTION, e);
             }
         }
         else
@@ -434,8 +430,7 @@ public class JdbcThinResultSet implements ResultSet {
                 return Double.parseDouble(val.toString());
             }
             catch (NumberFormatException e) {
-                throw new SQLException("Cannot convert to double: " + val, SqlStateCode.DATA_EXCEPTION,
-                    e);
+                throw new SQLException("Cannot convert to double: " + val, SqlStateCode.DATA_EXCEPTION, e);
             }
         }
         else
@@ -781,8 +776,7 @@ public class JdbcThinResultSet implements ResultSet {
                 return (BigDecimal)decimalFormat.get().parse(val.toString());
             }
             catch (ParseException e) {
-                throw new SQLException("Cannot convert to BigDecimal: " + val,
-                    SqlStateCode.DATA_EXCEPTION, e);
+                throw new SQLException("Cannot convert to BigDecimal: " + val, SqlStateCode.DATA_EXCEPTION, e);
             }
         }
         else

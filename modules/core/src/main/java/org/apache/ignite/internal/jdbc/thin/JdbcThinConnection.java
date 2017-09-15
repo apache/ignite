@@ -753,7 +753,7 @@ public class JdbcThinConnection implements Connection {
             return false;
         else
             throw new SQLException("Failed to parse boolean property [name=" + JdbcThinUtils.trimPrefix(propName) +
-                    ", value=" + strVal + ']', SqlStateCode.CONNECTION_ERROR);
+                ", value=" + strVal + ']', SqlStateCode.CONNECTION_ERROR);
     }
 
     /**
