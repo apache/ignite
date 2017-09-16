@@ -22,17 +22,17 @@ import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 /**
  * SQL listener connection context.
  */
-public interface SqlListenerConnectionContext {
+public interface ClientListenerConnectionContext {
     /**
      * @param ver Version to check.
      * @return {@code true} if version is supported.
      */
-    boolean isVersionSupported(SqlListenerProtocolVersion ver);
+    boolean isVersionSupported(ClientListenerProtocolVersion ver);
 
     /**
      * @return Current context version.
      */
-    SqlListenerProtocolVersion currentVersion();
+    ClientListenerProtocolVersion currentVersion();
 
     /**
      * Initialize from handshake message.
@@ -40,19 +40,19 @@ public interface SqlListenerConnectionContext {
      * @param ver Protocol version.
      * @param reader Reader set to the configuration part of the handshake message.
      */
-    void initializeFromHandshake(SqlListenerProtocolVersion ver, BinaryReaderExImpl reader);
+    void initializeFromHandshake(ClientListenerProtocolVersion ver, BinaryReaderExImpl reader);
 
     /**
      * Handler getter.
      * @return Request handler for the connection.
      */
-    SqlListenerRequestHandler handler();
+    ClientListenerRequestHandler handler();
 
     /**
      * Parser getter
      * @return Message parser for the connection.
      */
-    SqlListenerMessageParser parser();
+    ClientListenerMessageParser parser();
 
     /**
      * Called whenever client is disconnected due to correct connection close

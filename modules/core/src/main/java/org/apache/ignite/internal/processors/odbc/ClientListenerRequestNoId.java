@@ -17,32 +17,12 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
-import org.apache.ignite.internal.binary.BinaryWriterExImpl;
-
 /**
- * SQL listener request handler.
+ * Client request with no ID.
  */
-public interface SqlListenerRequestHandler {
-    /**
-     * Handle request.
-     *
-     * @param req Request.
-     * @return Response.
-     */
-    public SqlListenerResponse handle(SqlListenerRequest req);
-
-    /**
-     * Handle exception.
-     *
-     * @param e Exception.
-     * @return Error response.
-     */
-    public SqlListenerResponse handleException(Exception e);
-
-    /**
-     * Write successful handshake response.
-     *
-     * @param writer Binary writer.
-     */
-    public void writeHandshake(BinaryWriterExImpl writer);
+public abstract class ClientListenerRequestNoId implements ClientListenerRequest {
+    /** {@inheritDoc} */
+    @Override public long requestId() {
+        return 0;
+    }
 }

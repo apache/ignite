@@ -19,17 +19,17 @@ package org.apache.ignite.internal.processors.platform.client;
 
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
-import org.apache.ignite.internal.processors.odbc.SqlListenerConnectionContext;
-import org.apache.ignite.internal.processors.odbc.SqlListenerMessageParser;
-import org.apache.ignite.internal.processors.odbc.SqlListenerProtocolVersion;
-import org.apache.ignite.internal.processors.odbc.SqlListenerRequestHandler;
+import org.apache.ignite.internal.processors.odbc.ClientListenerConnectionContext;
+import org.apache.ignite.internal.processors.odbc.ClientListenerMessageParser;
+import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
+import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
 
 /**
  * Thin Client connection context.
  */
-public class ClientConnectionContext implements SqlListenerConnectionContext {
+public class ClientConnectionContext implements ClientListenerConnectionContext {
     /** Version 1.0.0. */
-    private static final SqlListenerProtocolVersion VER_1_0_0 = SqlListenerProtocolVersion.create(1, 0, 0);
+    private static final ClientListenerProtocolVersion VER_1_0_0 = ClientListenerProtocolVersion.create(1, 0, 0);
 
     /** Message parser. */
     private final ClientMessageParser parser;
@@ -50,27 +50,27 @@ public class ClientConnectionContext implements SqlListenerConnectionContext {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isVersionSupported(SqlListenerProtocolVersion ver) {
+    @Override public boolean isVersionSupported(ClientListenerProtocolVersion ver) {
         return VER_1_0_0.equals(ver);
     }
 
     /** {@inheritDoc} */
-    @Override public SqlListenerProtocolVersion currentVersion() {
+    @Override public ClientListenerProtocolVersion currentVersion() {
         return VER_1_0_0;
     }
 
     /** {@inheritDoc} */
-    @Override public void initializeFromHandshake(SqlListenerProtocolVersion ver, BinaryReaderExImpl reader) {
+    @Override public void initializeFromHandshake(ClientListenerProtocolVersion ver, BinaryReaderExImpl reader) {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public SqlListenerRequestHandler handler() {
+    @Override public ClientListenerRequestHandler handler() {
         return handler;
     }
 
     /** {@inheritDoc} */
-    @Override public SqlListenerMessageParser parser() {
+    @Override public ClientListenerMessageParser parser() {
         return parser;
     }
 
