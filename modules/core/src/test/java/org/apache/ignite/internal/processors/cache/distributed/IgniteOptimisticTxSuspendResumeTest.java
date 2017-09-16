@@ -54,7 +54,7 @@ import static org.apache.ignite.transactions.TransactionState.SUSPENDED;
  */
 public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest {
     /** Transaction timeout. */
-    private static final long TX_TIMEOUT = 100;
+    private static final long TX_TIMEOUT = 300;
 
     /** Future timeout */
     private static final int FUT_TIMEOUT = 5000;

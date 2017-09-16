@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
-import java.util.Collections;
 import java.util.concurrent.CountDownLatch;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
@@ -54,10 +53,7 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
     private static final long TX_MIN_TIMEOUT = 1;
 
     /** */
-    private static final long TX_TIMEOUT = 300;
-
-    /** */
-    private static final long TX_DEFAULT_TIMEOUT = 3_000;
+    private static final long TX_TIMEOUT = 500;
 
     /** */
     private static final String CACHE_NAME = "test";
@@ -83,7 +79,7 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
         TransactionConfiguration txCfg = new TransactionConfiguration();
-        txCfg.setDefaultTxTimeout(TX_DEFAULT_TIMEOUT);
+        txCfg.setDefaultTxTimeout(TX_TIMEOUT);
 
         cfg.setTransactionConfiguration(txCfg);
 
@@ -257,13 +253,13 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
         IgniteInternalFuture<?> fut1 = multithreadedAsync(new Runnable() {
             @Override public void run() {
                 try {
-                    try (Transaction tx = node1.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, TX_TIMEOUT, 2)) {
+                    try (Transaction tx = node1.transactions().txStart()) {
                         node1.cache(CACHE_NAME).put(1, 1);
 
                         l.countDown();
                         U.awaitQuiet(l);
 
-                        node1.cache(CACHE_NAME).putAll(Collections.singletonMap(2, 2));
+                        node1.cache(CACHE_NAME).put(2, 2);
 
                         tx.commit();
 
@@ -294,8 +290,8 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
         fut1.get();
         fut2.get();
 
-        assertTrue(node1.cache(CACHE_NAME).containsKey(1));
-        assertTrue(node1.cache(CACHE_NAME).containsKey(2));
+        assertTrue("Expecting commited key 2", node1.cache(CACHE_NAME).containsKey(2));
+        assertTrue("Expecting commited key 1", node1.cache(CACHE_NAME).containsKey(1));
     }
 
     /**
@@ -350,7 +346,7 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
         try (Transaction tx = near.transactions().txStart(concurrency, isolation, TX_TIMEOUT, 1)) {
             near.cache(CACHE_NAME).put(key, val);
 
-            U.sleep(TX_TIMEOUT * 3);
+            U.sleep(TX_TIMEOUT * 2);
 
             try {
                 tx.commit();
