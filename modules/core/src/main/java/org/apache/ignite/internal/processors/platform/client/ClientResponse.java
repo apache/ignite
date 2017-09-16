@@ -18,12 +18,12 @@
 package org.apache.ignite.internal.processors.platform.client;
 
 import org.apache.ignite.binary.BinaryRawWriter;
-import org.apache.ignite.internal.processors.odbc.SqlListenerResponse;
+import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 
 /**
  * Thin client response.
  */
-public class ClientResponse extends SqlListenerResponse {
+public class ClientResponse extends ClientListenerResponse {
     /** Request id. */
     private final long reqId;
 
