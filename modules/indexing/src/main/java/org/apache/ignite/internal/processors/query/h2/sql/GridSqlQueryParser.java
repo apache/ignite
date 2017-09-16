@@ -941,7 +941,8 @@ public class GridSqlQueryParser {
         int valColsNum = cols.size() - pkCols.size();
 
         if (valColsNum == 0)
-            throw new IgniteSQLException("No cache value related columns found");
+            throw new IgniteSQLException("Table must have at least one non PRIMARY KEY column.",
+                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
         res.columns(cols);
         res.primaryKeyColumns(pkCols);
@@ -1014,8 +1015,36 @@ public class GridSqlQueryParser {
             case CommandInterface.ALTER_TABLE_ADD_COLUMN:
                 return parseAddColumn(stmt);
 
-            default:
-                throw new IgniteSQLException("Unsupported operation code: " + stmt.getType());
+            default: {
+                String stmtName = null;
+
+                switch (stmt.getType()) {
+                    case CommandInterface.ALTER_TABLE_ALTER_COLUMN_CHANGE_TYPE:
+                    case CommandInterface.ALTER_TABLE_ALTER_COLUMN_DEFAULT:
+                    case CommandInterface.ALTER_TABLE_ALTER_COLUMN_NOT_NULL:
+                    case CommandInterface.ALTER_TABLE_ALTER_COLUMN_RENAME:
+                    case CommandInterface.ALTER_TABLE_ALTER_COLUMN_NULL:
+                    case CommandInterface.ALTER_TABLE_ALTER_COLUMN_SELECTIVITY:
+                    case CommandInterface.ALTER_TABLE_ALTER_COLUMN_VISIBILITY:
+                        stmtName = "ALTER COLUMN";
+
+                        break;
+
+                    case CommandInterface.ALTER_TABLE_DROP_COLUMN:
+                        stmtName = "DROP COLUMN";
+
+                        break;
+                }
+
+                if (stmtName == null) {
+                    throw new IgniteSQLException("Unsupported operation: " + stmt.getSQL(),
+                        IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+                }
+                else {
+                    throw new IgniteSQLException(stmtName + " is not supported",
+                        IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+                }
+            }
         }
     }
 
