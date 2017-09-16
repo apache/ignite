@@ -19,14 +19,14 @@ package org.apache.ignite.internal.processors.platform.client;
 
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
-import org.apache.ignite.internal.processors.odbc.SqlListenerRequest;
-import org.apache.ignite.internal.processors.odbc.SqlListenerRequestHandler;
-import org.apache.ignite.internal.processors.odbc.SqlListenerResponse;
+import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
+import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
+import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 
 /**
  * Thin client request handler.
  */
-public class ClientRequestHandler implements SqlListenerRequestHandler {
+public class ClientRequestHandler implements ClientListenerRequestHandler {
     /** Kernal context. */
     private final GridKernalContext ctx;
 
@@ -42,12 +42,12 @@ public class ClientRequestHandler implements SqlListenerRequestHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public SqlListenerResponse handle(SqlListenerRequest req) {
+    @Override public ClientListenerResponse handle(ClientListenerRequest req) {
         return ((ClientRequest)req).process(ctx);
     }
 
     /** {@inheritDoc} */
-    @Override public SqlListenerResponse handleException(Exception e) {
+    @Override public ClientListenerResponse handleException(Exception e) {
         return null;
     }
 

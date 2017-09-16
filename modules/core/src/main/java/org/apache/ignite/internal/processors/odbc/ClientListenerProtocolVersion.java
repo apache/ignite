@@ -22,9 +22,9 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * SQL listener protocol version.
+ * Client listener protocol version.
  */
-public class SqlListenerProtocolVersion implements Comparable<SqlListenerProtocolVersion> {
+public class ClientListenerProtocolVersion implements Comparable<ClientListenerProtocolVersion> {
     /** Major part. */
     private final short major;
 
@@ -42,8 +42,8 @@ public class SqlListenerProtocolVersion implements Comparable<SqlListenerProtoco
      * @param maintenance Maintenance part.
      * @return Version.
      */
-    public static SqlListenerProtocolVersion create(int major, int minor, int maintenance) {
-        return new SqlListenerProtocolVersion((short)major, (short)minor, (short)maintenance);
+    public static ClientListenerProtocolVersion create(int major, int minor, int maintenance) {
+        return new ClientListenerProtocolVersion((short)major, (short)minor, (short)maintenance);
     }
 
     /**
@@ -53,7 +53,7 @@ public class SqlListenerProtocolVersion implements Comparable<SqlListenerProtoco
      * @param minor Minor part.
      * @param maintenance Maintenance part.
      */
-    private SqlListenerProtocolVersion(short major, short minor, short maintenance) {
+    private ClientListenerProtocolVersion(short major, short minor, short maintenance) {
         this.major = major;
         this.minor = minor;
         this.maintenance = maintenance;
@@ -81,7 +81,7 @@ public class SqlListenerProtocolVersion implements Comparable<SqlListenerProtoco
     }
 
     /** {@inheritDoc} */
-    @Override public int compareTo(@NotNull SqlListenerProtocolVersion other) {
+    @Override public int compareTo(@NotNull ClientListenerProtocolVersion other) {
         int res = major - other.major;
 
         if (res == 0)
@@ -100,8 +100,8 @@ public class SqlListenerProtocolVersion implements Comparable<SqlListenerProtoco
 
     /** {@inheritDoc} */
     @Override public boolean equals(Object obj) {
-        if (obj != null && obj instanceof SqlListenerProtocolVersion) {
-            SqlListenerProtocolVersion other = (SqlListenerProtocolVersion)obj;
+        if (obj != null && obj instanceof ClientListenerProtocolVersion) {
+            ClientListenerProtocolVersion other = (ClientListenerProtocolVersion)obj;
 
             return F.eq(major, other.major) && F.eq(minor, other.minor) && F.eq(maintenance, other.maintenance);
         }
@@ -111,6 +111,6 @@ public class SqlListenerProtocolVersion implements Comparable<SqlListenerProtoco
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(SqlListenerProtocolVersion.class, this);
+        return S.toString(ClientListenerProtocolVersion.class, this);
     }
 }

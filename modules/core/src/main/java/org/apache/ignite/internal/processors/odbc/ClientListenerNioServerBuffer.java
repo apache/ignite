@@ -23,9 +23,9 @@ import org.jetbrains.annotations.Nullable;
 import java.nio.ByteBuffer;
 
 /**
- * NIO server buffer.
+ * Client NIO server buffer.
  */
-public class SqlListenerNioServerBuffer {
+public class ClientListenerNioServerBuffer {
     /** Current message data. */
     private byte[] data;
 
