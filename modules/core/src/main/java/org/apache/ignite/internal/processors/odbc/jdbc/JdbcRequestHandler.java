@@ -188,7 +188,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public SqlListenerResponse handleException(Exception e) {
+    @Override public ClientListenerResponse handleException(Exception e) {
         return exceptionToResult(e);
     }
 
