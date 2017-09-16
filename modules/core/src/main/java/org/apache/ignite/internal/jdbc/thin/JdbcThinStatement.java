@@ -29,7 +29,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.query.SqlQuery;
-import org.apache.ignite.internal.processors.odbc.SqlListenerResponse;
+import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBatchExecuteResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQuery;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteResult;
@@ -380,7 +380,7 @@ public class JdbcThinStatement implements Statement {
         try {
             JdbcBatchExecuteResult res = conn.io().batchExecute(conn.getSchema(), batch);
 
-            if (res.errorCode() != SqlListenerResponse.STATUS_SUCCESS)
+            if (res.errorCode() != ClientListenerResponse.STATUS_SUCCESS)
                 throw new BatchUpdateException(res.errorMessage(), null, res.errorCode(), res.updateCounts());
 
             return res.updateCounts();
