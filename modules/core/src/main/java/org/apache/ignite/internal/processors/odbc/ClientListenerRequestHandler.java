@@ -17,23 +17,32 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
+import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+
 /**
- * SQL listener message parser.
+ * Client listener request handler.
  */
-public interface SqlListenerMessageParser {
+public interface ClientListenerRequestHandler {
     /**
-     * Decode request from byte array.
+     * Handle request.
      *
-     * @param msg Message.
-     * @return Request.
+     * @param req Request.
+     * @return Response.
      */
-    public SqlListenerRequest decode(byte[] msg);
+    public ClientListenerResponse handle(ClientListenerRequest req);
 
     /**
-     * Encode response to byte array.
+     * Handle exception.
      *
-     * @param resp Response.
-     * @return Message.
+     * @param e Exception.
+     * @return Error response.
      */
-    public byte[] encode(SqlListenerResponse resp);
+    public ClientListenerResponse handleException(Exception e);
+
+    /**
+     * Write successful handshake response.
+     *
+     * @param writer Binary writer.
+     */
+    public void writeHandshake(BinaryWriterExImpl writer);
 }

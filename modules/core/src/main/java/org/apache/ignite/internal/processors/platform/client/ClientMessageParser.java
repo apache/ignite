@@ -26,9 +26,9 @@ import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
-import org.apache.ignite.internal.processors.odbc.SqlListenerMessageParser;
-import org.apache.ignite.internal.processors.odbc.SqlListenerRequest;
-import org.apache.ignite.internal.processors.odbc.SqlListenerResponse;
+import org.apache.ignite.internal.processors.odbc.ClientListenerMessageParser;
+import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
+import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 import org.apache.ignite.internal.processors.platform.client.binary.ClientBinaryTypeNameGetRequest;
 import org.apache.ignite.internal.processors.platform.client.binary.ClientBinaryTypeGetRequest;
 import org.apache.ignite.internal.processors.platform.client.binary.ClientBinaryTypePutRequest;
@@ -41,7 +41,7 @@ import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheSc
 /**
  * Thin client message parser.
  */
-public class ClientMessageParser implements SqlListenerMessageParser {
+public class ClientMessageParser implements ClientListenerMessageParser {
     /** */
     private static final short OP_CACHE_GET = 1;
 
@@ -85,7 +85,7 @@ public class ClientMessageParser implements SqlListenerMessageParser {
     }
 
     /** {@inheritDoc} */
-    @Override public SqlListenerRequest decode(byte[] msg) {
+    @Override public ClientListenerRequest decode(byte[] msg) {
         assert msg != null;
 
         BinaryInputStream inStream = new BinaryHeapInputStream(msg);
@@ -126,7 +126,7 @@ public class ClientMessageParser implements SqlListenerMessageParser {
     }
 
     /** {@inheritDoc} */
-    @Override public byte[] encode(SqlListenerResponse resp) {
+    @Override public byte[] encode(ClientListenerResponse resp) {
         BinaryHeapOutputStream outStream = new BinaryHeapOutputStream(32);
 
         BinaryRawWriterEx writer = marsh.writer(outStream);
