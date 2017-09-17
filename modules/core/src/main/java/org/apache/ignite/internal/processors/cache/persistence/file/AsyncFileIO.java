@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.persistence.file;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
@@ -27,6 +26,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousFileChannel;
 import java.nio.channels.CompletionHandler;
 import java.nio.file.StandardOpenOption;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -42,9 +42,6 @@ public class AsyncFileIO implements FileIO {
      * Channel's position.
      */
     private long position;
-
-    /** */
-    private static final CompletionHolderImpl H = new CompletionHolderImpl();
 
     /** */
     private AtomicReference<GridFutureAdapter<Integer>> lastFut = new AtomicReference<>();
@@ -73,7 +70,7 @@ public class AsyncFileIO implements FileIO {
     @Override public int read(ByteBuffer destinationBuffer) throws IOException {
         ChannelOpFuture fut = awaitLastFut(true);
 
-        ch.read(destinationBuffer, position, fut, H);
+        ch.read(destinationBuffer, position, null, fut);
 
         try {
             return fut.getUninterruptibly();
@@ -86,7 +83,7 @@ public class AsyncFileIO implements FileIO {
     @Override public int read(ByteBuffer destinationBuffer, long position) throws IOException {
         ChannelOpFuture fut = awaitLastFut(false);
 
-        ch.read(destinationBuffer, position, fut, H);
+        ch.read(destinationBuffer, position, null, fut);
 
         try {
             return fut.getUninterruptibly();
@@ -97,9 +94,9 @@ public class AsyncFileIO implements FileIO {
 
     /** {@inheritDoc} */
     @Override public int read(byte[] buffer, int offset, int length) throws IOException {
-        ChannelOpFuture fut = awaitLastFut(false);
+        ChannelOpFuture fut = awaitLastFut(true);
 
-        ch.read(ByteBuffer.wrap(buffer, offset, length), position, fut, H);
+        ch.read(ByteBuffer.wrap(buffer, offset, length), position, null, fut);
 
         try {
             return fut.getUninterruptibly();
@@ -112,7 +109,7 @@ public class AsyncFileIO implements FileIO {
     @Override public int write(ByteBuffer sourceBuffer) throws IOException {
         ChannelOpFuture fut = awaitLastFut(true);
 
-        ch.write(sourceBuffer, position, fut, H);
+        ch.write(sourceBuffer, position, null, fut);
 
         try {
             return fut.getUninterruptibly();
@@ -125,7 +122,7 @@ public class AsyncFileIO implements FileIO {
     @Override public int write(ByteBuffer sourceBuffer, long position) throws IOException {
         ChannelOpFuture fut = awaitLastFut(false);
 
-        ch.write(sourceBuffer, position, fut, H);
+        ch.write(sourceBuffer, position, null, fut);
 
         try {
             return fut.getUninterruptibly();
@@ -138,7 +135,7 @@ public class AsyncFileIO implements FileIO {
     @Override public void write(byte[] buffer, int offset, int length) throws IOException {
         ChannelOpFuture fut = awaitLastFut(false);
 
-        ch.write(ByteBuffer.wrap(buffer, offset, length), position, fut, H);
+        ch.write(ByteBuffer.wrap(buffer, offset, length), position, null, fut);
 
         try {
             fut.getUninterruptibly();
@@ -155,7 +152,7 @@ public class AsyncFileIO implements FileIO {
             ch.force(false);
         }
         finally {
-            fut.onDone(0);
+            fut.completed(0, null);
         }
     }
 
@@ -167,7 +164,7 @@ public class AsyncFileIO implements FileIO {
             return ch.size();
         }
         finally {
-            fut.onDone(0);
+            fut.completed(0, null);
         }
     }
 
@@ -177,9 +174,11 @@ public class AsyncFileIO implements FileIO {
 
         try {
             ch.truncate(0);
+
+            this.position = 0;
         }
         finally {
-            fut.onDone(0);
+            fut.completed(0, null);
         }
     }
 
@@ -198,11 +197,13 @@ public class AsyncFileIO implements FileIO {
         ChannelOpFuture fut = new ChannelOpFuture(changePos);
 
         while (true) {
-            if (lastFut.compareAndSet(null, fut))
+            GridFutureAdapter<Integer> curFut = lastFut.get();
+
+            if (curFut == null && lastFut.compareAndSet(null, fut))
                 return fut;
-            else
+            else if (curFut != null)
                 try {
-                    fut.getUninterruptibly(); // Wait for future to complete.
+                    curFut.get(); // Wait for future to complete.
                 } catch (IgniteCheckedException e) {
                     throw new IOException(e);
                 }
@@ -210,7 +211,7 @@ public class AsyncFileIO implements FileIO {
     }
 
     /** */
-    private class ChannelOpFuture extends GridFutureAdapter<Integer> {
+    private class ChannelOpFuture extends GridFutureAdapter<Integer> implements CompletionHandler<Integer, Void>  {
         /** */
         private boolean changePos;
 
@@ -222,27 +223,23 @@ public class AsyncFileIO implements FileIO {
         }
 
         /** {@inheritDoc} */
-        @Override public boolean onDone(@Nullable Integer res, @Nullable Throwable err) {
-            if (changePos)
-                AsyncFileIO.this.position += res;
+        @Override public void completed(Integer result, Void attachment) {
+            assert lastFut.get() == this;
+
+            if (changePos && result != -1)
+                AsyncFileIO.this.position += result;
 
             lastFut.set(null);
 
             // Release waiter and allow next operation to begin.
-            return super.onDone(res, err);
-        }
-    }
-
-    /** */
-    private static class CompletionHolderImpl implements CompletionHandler<Integer, GridFutureAdapter<Integer>> {
-        /** {@inheritDoc} */
-        @Override public void completed(Integer result, GridFutureAdapter<Integer> attachment) {
-            attachment.onDone(result);
+            super.onDone(result, null);
         }
 
         /** {@inheritDoc} */
-        @Override public void failed(Throwable exc, GridFutureAdapter<Integer> attachment) {
-            attachment.onDone(exc);
+        @Override public void failed(Throwable exc, Void attachment) {
+            lastFut.set(null);
+
+            super.onDone(exc);
         }
     }
 }
