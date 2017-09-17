@@ -47,7 +47,6 @@ import org.apache.ignite.transactions.TransactionIsolation;
  *
  */
 public class IgniteWalFlushFailoverTest extends GridCommonAbstractTest {
-
     /** */
     private static final String TEST_CACHE = "testCache";
 
@@ -170,20 +169,17 @@ public class IgniteWalFlushFailoverTest extends GridCommonAbstractTest {
 
         private final FileIOFactory delegateFactory = new RandomAccessFileIOFactory();
 
-        @Override
-        public FileIO create(File file) throws IOException {
+        @Override public FileIO create(File file) throws IOException {
             return create(file, "rw");
         }
 
-        @Override
-        public FileIO create(File file, String mode) throws IOException {
+        @Override public FileIO create(File file, String mode) throws IOException {
             FileIO delegate = delegateFactory.create(file, mode);
 
             return new FileIODecorator(delegate) {
                 int writeAttempts = 2;
 
-                @Override
-                public int write(ByteBuffer sourceBuffer) throws IOException {
+                @Override public int write(ByteBuffer sourceBuffer) throws IOException {
                     if (--writeAttempts == 0)
                         throw new RuntimeException("Test exception. Unable to write to file.");
 

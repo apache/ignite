@@ -36,13 +36,14 @@ public class AsyncFileIO implements FileIO {
     /**
      * File channel associated with {@code file}
      */
-    private final AsynchronousFileChannel channel;
+    private final AsynchronousFileChannel ch;
 
     /**
      * Channel's position.
      */
     private long position;
 
+    /** */
     private static final CompletionHolderImpl H = new CompletionHolderImpl();
 
     /** */
@@ -54,7 +55,7 @@ public class AsyncFileIO implements FileIO {
      * @param file Random access file
      */
     public AsyncFileIO(File file) throws IOException {
-        this.channel = AsynchronousFileChannel.open(file.toPath(),
+        this.ch = AsynchronousFileChannel.open(file.toPath(),
                 StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE);
     }
 
@@ -72,7 +73,7 @@ public class AsyncFileIO implements FileIO {
     @Override public int read(ByteBuffer destinationBuffer) throws IOException {
         ChannelOpFuture fut = awaitLastFut(true);
 
-        channel.read(destinationBuffer, position, fut, H);
+        ch.read(destinationBuffer, position, fut, H);
 
         try {
             return fut.getUninterruptibly();
@@ -85,7 +86,7 @@ public class AsyncFileIO implements FileIO {
     @Override public int read(ByteBuffer destinationBuffer, long position) throws IOException {
         ChannelOpFuture fut = awaitLastFut(false);
 
-        channel.read(destinationBuffer, position, fut, H);
+        ch.read(destinationBuffer, position, fut, H);
 
         try {
             return fut.getUninterruptibly();
@@ -98,7 +99,7 @@ public class AsyncFileIO implements FileIO {
     @Override public int read(byte[] buffer, int offset, int length) throws IOException {
         ChannelOpFuture fut = awaitLastFut(false);
 
-        channel.read(ByteBuffer.wrap(buffer, offset, length), position, fut, H);
+        ch.read(ByteBuffer.wrap(buffer, offset, length), position, fut, H);
 
         try {
             return fut.getUninterruptibly();
@@ -111,7 +112,7 @@ public class AsyncFileIO implements FileIO {
     @Override public int write(ByteBuffer sourceBuffer) throws IOException {
         ChannelOpFuture fut = awaitLastFut(true);
 
-        channel.write(sourceBuffer, position, fut, H);
+        ch.write(sourceBuffer, position, fut, H);
 
         try {
             return fut.getUninterruptibly();
@@ -124,7 +125,7 @@ public class AsyncFileIO implements FileIO {
     @Override public int write(ByteBuffer sourceBuffer, long position) throws IOException {
         ChannelOpFuture fut = awaitLastFut(false);
 
-        channel.write(sourceBuffer, position, fut, H);
+        ch.write(sourceBuffer, position, fut, H);
 
         try {
             return fut.getUninterruptibly();
@@ -137,7 +138,7 @@ public class AsyncFileIO implements FileIO {
     @Override public void write(byte[] buffer, int offset, int length) throws IOException {
         ChannelOpFuture fut = awaitLastFut(false);
 
-        channel.write(ByteBuffer.wrap(buffer, offset, length), position, fut, H);
+        ch.write(ByteBuffer.wrap(buffer, offset, length), position, fut, H);
 
         try {
             fut.getUninterruptibly();
@@ -148,22 +149,44 @@ public class AsyncFileIO implements FileIO {
 
     /** {@inheritDoc} */
     @Override public void force() throws IOException {
-        channel.force(false);
+        ChannelOpFuture fut = awaitLastFut(false);
+
+        try {
+            ch.force(false);
+        }
+        finally {
+            fut.onDone(0);
+        }
     }
 
     /** {@inheritDoc} */
     @Override public long size() throws IOException {
-        return channel.size();
+        ChannelOpFuture fut = awaitLastFut(false);
+
+        try {
+            return ch.size();
+        }
+        finally {
+            fut.onDone(0);
+        }
     }
 
     /** {@inheritDoc} */
     @Override public void clear() throws IOException {
-        channel.truncate(0);
+        ChannelOpFuture fut = awaitLastFut(false);
+
+        try {
+            ch.truncate(0);
+        }
+        finally {
+            fut.onDone(0);
+        }
     }
 
     /** {@inheritDoc} */
     @Override public void close() throws IOException {
-        channel.close();
+        // Must be called from kernal lock, no need to wait for future completion.
+        ch.close();
     }
 
     /**
