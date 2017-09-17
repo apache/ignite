@@ -26,7 +26,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousFileChannel;
 import java.nio.channels.CompletionHandler;
 import java.nio.file.StandardOpenOption;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -41,7 +40,7 @@ public class AsyncFileIO implements FileIO {
     /**
      * Channel's position.
      */
-    private long position;
+    private volatile long position;
 
     /** */
     private AtomicReference<GridFutureAdapter<Integer>> lastFut = new AtomicReference<>();
@@ -81,7 +80,7 @@ public class AsyncFileIO implements FileIO {
 
     /** {@inheritDoc} */
     @Override public int read(ByteBuffer destinationBuffer, long position) throws IOException {
-        ChannelOpFuture fut = awaitLastFut(false);
+        ChannelOpFuture fut = new ChannelOpFuture(false);
 
         ch.read(destinationBuffer, position, null, fut);
 
@@ -120,7 +119,7 @@ public class AsyncFileIO implements FileIO {
 
     /** {@inheritDoc} */
     @Override public int write(ByteBuffer sourceBuffer, long position) throws IOException {
-        ChannelOpFuture fut = awaitLastFut(false);
+        ChannelOpFuture fut = new ChannelOpFuture(false);
 
         ch.write(sourceBuffer, position, null, fut);
 
@@ -146,45 +145,23 @@ public class AsyncFileIO implements FileIO {
 
     /** {@inheritDoc} */
     @Override public void force() throws IOException {
-        ChannelOpFuture fut = awaitLastFut(false);
-
-        try {
-            ch.force(false);
-        }
-        finally {
-            fut.completed(0, null);
-        }
+        ch.force(false);
     }
 
     /** {@inheritDoc} */
     @Override public long size() throws IOException {
-        ChannelOpFuture fut = awaitLastFut(false);
-
-        try {
-            return ch.size();
-        }
-        finally {
-            fut.completed(0, null);
-        }
+        return ch.size();
     }
 
     /** {@inheritDoc} */
     @Override public void clear() throws IOException {
-        ChannelOpFuture fut = awaitLastFut(false);
+        ch.truncate(0);
 
-        try {
-            ch.truncate(0);
-
-            this.position = 0;
-        }
-        finally {
-            fut.completed(0, null);
-        }
+        this.position = 0;
     }
 
     /** {@inheritDoc} */
     @Override public void close() throws IOException {
-        // Must be called from kernal lock, no need to wait for future completion.
         ch.close();
     }
 
@@ -216,23 +193,25 @@ public class AsyncFileIO implements FileIO {
     /** */
     private class ChannelOpFuture extends GridFutureAdapter<Integer> implements CompletionHandler<Integer, Void>  {
         /** */
-        private boolean changePos;
+        private boolean advancePos;
 
         /**
-         * @param changePos {@code true} if change channel position.
+         * @param advancePos {@code true} if change channel position.
          */
-        public ChannelOpFuture(boolean changePos) {
-            this.changePos = changePos;
+        public ChannelOpFuture(boolean advancePos) {
+            this.advancePos = advancePos;
         }
 
         /** {@inheritDoc} */
         @Override public void completed(Integer result, Void attachment) {
-            assert lastFut.get() == this;
+            if (advancePos) {
+                assert lastFut.get() == this;
 
-            if (changePos && result != -1)
-                AsyncFileIO.this.position += result;
+                if (result != -1)
+                    AsyncFileIO.this.position += result;
 
-            lastFut.set(null);
+                lastFut.set(null);
+            }
 
             // Release waiter and allow next operation to begin.
             super.onDone(result, null);
@@ -240,7 +219,8 @@ public class AsyncFileIO implements FileIO {
 
         /** {@inheritDoc} */
         @Override public void failed(Throwable exc, Void attachment) {
-            lastFut.set(null);
+            if (advancePos)
+                lastFut.set(null);
 
             super.onDone(exc);
         }

@@ -953,7 +953,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 checkpointLock.readLock().unlock();
 
                 try {
-                    checkpointer.wakeupForCheckpoint(0, "too many dirty pages").cpBeginFut.get();
+                    checkpointer.wakeupForCheckpoint(0, "too many dirty pages").cpBeginFut.getUninterruptibly();
                 }
                 catch (IgniteCheckedException e) {
                     throw new IgniteException("Failed to wait for checkpoint begin.", e);
