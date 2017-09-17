@@ -23,7 +23,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
-import sun.awt.util.IdentityArrayList;
 
 import java.io.Externalizable;
 import java.io.InputStream;
@@ -99,9 +98,9 @@ public class GridToStringBuilder {
         }
     };
 
-    private static ThreadLocal<IdentityLinkedHashMap<Object, Integer>> savedObjects = new ThreadLocal<IdentityLinkedHashMap<Object, Integer>>() {
-        @Override protected IdentityLinkedHashMap<Object, Integer> initialValue() {
-            return new IdentityLinkedHashMap<>();
+    private static ThreadLocal<IdentityHashMap<Object, Integer>> savedObjects = new ThreadLocal<IdentityHashMap<Object, Integer>>() {
+        @Override protected IdentityHashMap<Object, Integer> initialValue() {
+            return new IdentityHashMap<>();
         }
     };
 
@@ -1690,7 +1689,7 @@ public class GridToStringBuilder {
     }
 
     private static boolean addNameWithPositionToBuffer(SB buf, Object val) {
-        IdentityLinkedHashMap<Object, Integer> map = savedObjects.get();
+        IdentityHashMap<Object, Integer> map = savedObjects.get();
 
         if (map.containsKey(val)) {
             Integer position = map.get(val);
@@ -1710,34 +1709,7 @@ public class GridToStringBuilder {
             return false;
     }
 
-    private static class IdentityLinkedHashMap<K, V> extends IdentityHashMap<K, V> {
-        private IdentityArrayList<Object> keys;
-
-        IdentityLinkedHashMap() {
-            super();
-
-            keys = new IdentityArrayList<>();
-        }
-
-        @Override public V put(K key, V value) {
-			V old = super.put(key, value);
-
-            if (old == null)
-                keys.add(key);
-
-            return old;
-        }
-
-        @Override public V remove(Object key) {
-            V old = super.remove(key);
-
-            keys.remove(key);
-
-            return old;
-        }
-    }
-
-    private static void addHashToBuffer(SB buf, int position, Object o, String hash, IdentityLinkedHashMap<Object, Integer> map) {
+    private static void addHashToBuffer(SB buf, int position, Object o, String hash, IdentityHashMap<Object, Integer> map) {
         if (buf.impl().indexOf(hash, position) != position + hash.length()) {
 			buf.i(position + o.getClass().getSimpleName().length(), hash);
 
@@ -1745,16 +1717,14 @@ public class GridToStringBuilder {
         }
     }
 
-    private static void incValues(IdentityLinkedHashMap<Object, Integer> map, Object o, int hashLength) {
-        boolean changeValue = false;
+    private static void incValues(IdentityHashMap<Object, Integer> map, Object o, int hashLength) {
+        int baseline = map.get(o);
 
-        for (Object key : map.keys) {
-            if (changeValue)
-                map.put(key, map.get(key) + hashLength);
+        for (IdentityHashMap.Entry<Object, Integer> entry : map.entrySet()) {
+            Integer position = entry.getValue();
 
-            if (key == o) {
-                changeValue = true;
-            }
+            if (position > baseline)
+                entry.setValue(position + hashLength);
         }
     }
 }
