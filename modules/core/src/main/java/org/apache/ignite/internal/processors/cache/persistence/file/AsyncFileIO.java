@@ -133,7 +133,7 @@ public class AsyncFileIO implements FileIO {
 
     /** {@inheritDoc} */
     @Override public void write(byte[] buffer, int offset, int length) throws IOException {
-        ChannelOpFuture fut = awaitLastFut(false);
+        ChannelOpFuture fut = awaitLastFut(true);
 
         ch.write(ByteBuffer.wrap(buffer, offset, length), position, null, fut);
 
@@ -191,10 +191,13 @@ public class AsyncFileIO implements FileIO {
     /**
      * Awaits last future if it exists.
      *
+     * @param advancePos {@code true} to advance position.
      * @return Future for current async operation.
+     *
+     * @throws IOException
      */
-    private ChannelOpFuture awaitLastFut(boolean changePos) throws IOException {
-        ChannelOpFuture fut = new ChannelOpFuture(changePos);
+    private ChannelOpFuture awaitLastFut(boolean advancePos) throws IOException {
+        ChannelOpFuture fut = new ChannelOpFuture(advancePos);
 
         while (true) {
             GridFutureAdapter<Integer> curFut = lastFut.get();
