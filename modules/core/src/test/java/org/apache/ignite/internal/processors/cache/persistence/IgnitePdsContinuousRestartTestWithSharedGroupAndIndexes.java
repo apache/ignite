@@ -27,9 +27,9 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 
 /**
- *
+ * Adding shared group and indexes to testing. It would impact how we evict partitions.
  */
-public class IgnitePdsContinuousRestartTestWithSharedGroup extends IgnitePdsContinuousRestartTest {
+public class IgnitePdsContinuousRestartTestWithSharedGroupAndIndexes extends IgnitePdsContinuousRestartTest {
     /** Ip finder. */
     private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
@@ -39,7 +39,7 @@ public class IgnitePdsContinuousRestartTestWithSharedGroup extends IgnitePdsCont
     /**
      * Default constructor.
      */
-    public IgnitePdsContinuousRestartTestWithSharedGroup() {
+    public IgnitePdsContinuousRestartTestWithSharedGroupAndIndexes() {
         super(false);
     }
 
@@ -59,8 +59,6 @@ public class IgnitePdsContinuousRestartTestWithSharedGroup extends IgnitePdsCont
         ccfg2.setAffinity(new RendezvousAffinityFunction(false, 32));
         ccfg2.setIndexedTypes(Integer.class, Integer.class);
         ccfg2.setBackups(2);
-
-        System.err.println("FCK7!");
 
         cfg.setCacheConfiguration(ccfg2);
 
