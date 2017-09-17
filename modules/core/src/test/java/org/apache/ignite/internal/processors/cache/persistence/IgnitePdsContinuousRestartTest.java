@@ -228,7 +228,7 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
      * @throws Exception if failed.
      */
     public void testRebalncingDuringLoad_10_500_8_16() throws Exception {
-        checkRebalancingDuringLoad(10, 500, 8, 16);
+        checkRebalancingDuringLoad(10, 500, 1, 16);
     }
 
     /**
