@@ -92,7 +92,7 @@ cd $PSScriptRoot\..
 while (!((Test-Path bin) -and (Test-Path examples) -and ((Test-Path modules) -or (Test-Path platforms)))) { 
 	cd .. 
 	if ((Get-Location).Drive.Root -eq (Get-Location).Path) {
-		exit
+		break
 	}
 }
 
