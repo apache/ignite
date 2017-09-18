@@ -43,6 +43,7 @@ import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
+import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteAsyncCallback;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -471,7 +472,7 @@ public class IgniteConfiguration {
     private SqlConnectorConfiguration sqlConnCfg;
 
     /** Client connector configuration. */
-    private ClientConnectorConfiguration cliConnCfg;
+    private ClientConnectorConfiguration cliConnCfg = ClientListenerProcessor.DFLT_CLI_CFG;
 
     /**
      * Creates valid grid configuration with all default values.
