@@ -628,7 +628,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /** */
-    private long[] calculateFragmentSizes(int concLvl, long cacheSize) {
+    private long[] calculateFragmentSizes(int concLvl, long cacheSize, long chpBufSize) {
         if (concLvl < 2)
             concLvl = Runtime.getRuntime().availableProcessors();
 
@@ -642,7 +642,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         for (int i = 0; i < concLvl; i++)
             sizes[i] = fragmentSize;
 
-        sizes[concLvl] = checkpointPageBufSize;
+        sizes[concLvl] = chpBufSize;
 
         return sizes;
     }
@@ -656,11 +656,22 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     ) {
         memMetrics.persistenceEnabled(true);
 
+        long cacheSize = plcCfg.getMaxSize();
+
+        // Checkpoint buffer size can not be more cache size, it does not make sense.
+        long chpBufSize = Math.min(checkpointPageBufSize, cacheSize);
+
+        if (checkpointPageBufSize > cacheSize)
+            U.quietAndInfo(log,
+                "Checkpoint page buffer size is too big, setting to an adjusted cache size: "
+                    + U.readableSize(cacheSize, false) + " memPlc:" + plcCfg.getName());
+
         PageMemoryImpl pageMem = new PageMemoryImpl(
             memProvider,
             calculateFragmentSizes(
                 memCfg.getConcurrencyLevel(),
-                plcCfg.getMaxSize()
+                cacheSize,
+                chpBufSize
             ),
             cctx,
             memCfg.getPageSize(),
