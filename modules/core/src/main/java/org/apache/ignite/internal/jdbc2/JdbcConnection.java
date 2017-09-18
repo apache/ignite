@@ -224,8 +224,10 @@ public class JdbcConnection implements Connection {
             if (cacheName != null) {
                 DynamicCacheDescriptor cacheDesc = ignite().context().cache().cacheDescriptor(cacheName);
 
-                if (cacheDesc == null)
-                    throw createJdbcSqlException("Cache doesn't exist: " + cacheName, IgniteQueryErrorCode.CACHE_NOT_FOUND);
+                if (cacheDesc == null) {
+                    throw createJdbcSqlException("Cache doesn't exist: " + cacheName,
+                        IgniteQueryErrorCode.CACHE_NOT_FOUND);
+                }
 
                 schemaName = QueryUtils.normalizeSchemaName(cacheName, cacheDesc.cacheConfiguration().getSqlSchema());
             }
