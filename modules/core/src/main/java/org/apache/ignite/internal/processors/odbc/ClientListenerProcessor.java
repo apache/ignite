@@ -45,6 +45,9 @@ import org.jetbrains.annotations.Nullable;
  * Client connector processor.
  */
 public class ClientListenerProcessor extends GridProcessorAdapter {
+    /** Default client connector configuration. */
+    public static final ClientConnectorConfiguration DFLT_CLI_CFG = new ClientConnectorConfigurationEx();
+
     /** Default number of selectors. */
     private static final int DFLT_SELECTOR_CNT = Math.min(4, Runtime.getRuntime().availableProcessors());
 
@@ -207,7 +210,7 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
         if (cliConnCfg == null && sqlConnCfg == null && odbcCfg == null)
             return null;
 
-        if (cliConnCfg != null) {
+        if (isNotDefault(cliConnCfg)) {
             // User set configuration explicitly. User it, but print a warning about ignored SQL/ODBC configs.
             if (odbcCfg != null) {
                 U.warn(log, "Deprecated " + OdbcConfiguration.class.getSimpleName() + " will be ignored because " +
@@ -241,7 +244,7 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
                         SqlConnectorConfiguration.class.getSimpleName() + " is set.");
                 }
             }
-            else {
+            else if (odbcCfg != null) {
                 // Migrate from ODBC configuration.
                 HostAndPortRange hostAndPort = parseOdbcEndpoint(odbcCfg);
 
@@ -303,5 +306,15 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
         }
 
         return res;
+    }
+
+    /**
+     * Check whether configuration is not default.
+     *
+     * @param cliConnCfg Client connector configuration.
+     * @return {@code True} if not default.
+     */
+    private static boolean isNotDefault(ClientConnectorConfiguration cliConnCfg) {
+        return cliConnCfg != null && !(cliConnCfg instanceof ClientConnectorConfigurationEx);
     }
 }
