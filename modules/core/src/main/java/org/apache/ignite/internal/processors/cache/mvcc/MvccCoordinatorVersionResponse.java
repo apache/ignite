@@ -26,7 +26,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
- *
+ * TODO IGNITE-3478: make sure writeTo/readFrom for txs is optimal.
  */
 public class MvccCoordinatorVersionResponse implements MvccCoordinatorMessage, MvccCoordinatorVersion, MvccLongList {
     /** */
@@ -78,18 +78,18 @@ public class MvccCoordinatorVersionResponse implements MvccCoordinatorMessage, M
         txs[txsCnt++] = txId;
     }
 
-    @Override
-    public int size() {
+    /** {@inheritDoc} */
+    @Override public int size() {
         return txsCnt;
     }
 
-    @Override
-    public long get(int i) {
+    /** {@inheritDoc} */
+    @Override public long get(int i) {
         return txs[i];
     }
 
-    @Override
-    public boolean contains(long val) {
+    /** {@inheritDoc} */
+    @Override public boolean contains(long val) {
         for (int i = 0; i < txsCnt; i++) {
             if (txs[i] == val)
                 return true;
