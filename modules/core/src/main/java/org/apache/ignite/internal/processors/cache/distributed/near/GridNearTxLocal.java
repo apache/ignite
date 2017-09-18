@@ -2681,6 +2681,21 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
                         if (val != null) {
                             CacheObject cacheVal = cacheCtx.toCacheObject(val);
 
+                            try {
+                                cacheCtx.validateKeyAndValue(key, cacheVal);
+                            }
+                            catch (Exception e) {
+                                if (log.isDebugEnabled()) {
+                                    log.debug("Value loaded from store can't be used [" +
+                                        "key='" + key + "'" +
+                                        ", error=" + e.getMessage() + ']');
+                                }
+
+                                c.apply(key, null, SER_READ_EMPTY_ENTRY_VER);
+
+                                return;
+                            }
+
                             while (true) {
                                 GridCacheEntryEx entry = cacheCtx.cache().entryEx(key, topVer);
 

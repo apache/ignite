@@ -654,6 +654,18 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
                     CacheObject cacheVal = ctx.toCacheObject(val);
 
+                    try {
+                        ctx.validateKeyAndValue(key, cacheVal);
+                    }
+                    catch (Exception e) {
+                        if (log.isDebugEnabled()) {
+                            log.debug("Value loaded from store can't be used [" +
+                                "key='" + key + "'" +
+                                ", error=" + e.getMessage() + ']');
+                        }
+                        return;
+                    }
+
                     entry = entryEx(key);
 
                     entry.initialValue(cacheVal,

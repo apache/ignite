@@ -1065,6 +1065,19 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                             try {
                                 CacheObject val0 = cctx.toCacheObject(val);
 
+                                try {
+                                    cctx.validateKeyAndValue(key, val0);
+                                }
+                                catch (Exception e) {
+                                    if (log.isDebugEnabled()) {
+                                        log.debug("Value loaded from store can't be used [" +
+                                            "key='" + key + "'" +
+                                            ", error=" + e.getMessage() + ']');
+                                    }
+
+                                    return;
+                                }
+
                                 long ttl = createTtl;
                                 long expireTime;
 

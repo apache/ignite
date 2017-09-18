@@ -2032,6 +2032,18 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
                                         CacheObject cacheVal = ctx.toCacheObject(val);
 
+                                        try {
+                                            ctx.validateKeyAndValue(key, cacheVal);
+                                        }
+                                        catch (Exception e) {
+                                            if (log.isDebugEnabled())
+                                                log.debug("Value loaded from store can't be used [" +
+                                                    "key='" + key + "'" +
+                                                    ", error=" + e.getMessage() + ']');
+
+                                            return;
+                                        }
+
                                         while (true) {
                                             GridCacheEntryEx entry = null;
 
@@ -3472,6 +3484,19 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             return;
 
         CacheObject cacheVal = ctx.toCacheObject(val);
+
+        try {
+            ctx.validateKeyAndValue(key, cacheVal);
+        }
+        catch(Exception e) {
+            if (log.isDebugEnabled()) {
+                log.debug("Value loaded from store can't be used [" +
+                    "key='" + key + "'" +
+                    ", error=" + e.getMessage() + ']');
+            }
+
+            return;
+        }
 
         GridCacheEntryEx entry = entryEx(key);
 

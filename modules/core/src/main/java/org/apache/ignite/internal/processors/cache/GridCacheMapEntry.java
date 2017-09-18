@@ -708,6 +708,21 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             Object storeVal = readThrough(tx0, key, false, subjId, taskName);
 
             ret = cctx.toCacheObject(storeVal);
+
+            if (ret != null) {
+                try {
+                    cctx.validateKeyAndValue(key, ret);
+                }
+                catch (Exception e) {
+                    if (log.isDebugEnabled()) {
+                        log.debug("Value loaded from store can't be used [" +
+                            "key='" + key + "'" +
+                            ", error=" + e.getMessage() + ']');
+                    }
+
+                    return null;
+                }
+            }
         }
 
         if (ret == null && !evt)
@@ -1344,6 +1359,21 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     old0 = readThrough(null, key, false, subjId, taskName);
 
                 old = cctx.toCacheObject(old0);
+
+                if (old != null) {
+                    try {
+                        cctx.validateKeyAndValue(key, old);
+                    }
+                    catch (Exception e) {
+                        if (log.isDebugEnabled()) {
+                            log.debug("Value loaded from store can't be used [" +
+                                "key='" + key + "'" +
+                                ", error=" + e.getMessage() + ']');
+                        }
+
+                        old = null;
+                    }
+                }
 
                 long ttl = CU.TTL_ETERNAL;
                 long expireTime = CU.EXPIRE_TIME_ETERNAL;
@@ -4082,6 +4112,21 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             if (oldVal == null && readThrough) {
                 storeLoadedVal = cctx.toCacheObject(cctx.store().load(null, entry.key));
+
+                if (storeLoadedVal != null) {
+                    try {
+                        cctx.validateKeyAndValue(entry.key, storeLoadedVal);
+                    }
+                    catch (Exception e) {
+                        if (log.isDebugEnabled()) {
+                            log.debug("Value loaded from store can't be used [" +
+                                "key='" + entry.key + "'" +
+                                ", error=" + e.getMessage() + ']');
+                        }
+
+                        storeLoadedVal = null;
+                    }
+                }
 
                 if (storeLoadedVal != null) {
                     oldVal = cctx.kernalContext().cacheObjects().prepareForCache(storeLoadedVal, cctx);
