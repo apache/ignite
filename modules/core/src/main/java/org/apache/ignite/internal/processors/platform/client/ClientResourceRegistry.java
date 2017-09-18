@@ -18,8 +18,11 @@
 package org.apache.ignite.internal.processors.platform.client;
 
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.util.GridConcurrentHashSet;
 
+import java.util.Collection;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -30,8 +33,23 @@ public class ClientResourceRegistry {
     /** Handles. */
     private final Map<Long, Object> res = new ConcurrentHashMap<>();
 
+    /** Cursors. */
+    private final Collection<Object> cursors = new GridConcurrentHashSet<>();
+
     /** ID generator. */
     private final AtomicLong idGen = new AtomicLong();
+
+    /** Max cursors. */
+    private final int maxCursors;
+
+    /**
+     * Ctor.
+     *
+     * @param maxCursors Maximum cursors.
+     */
+    ClientResourceRegistry(int maxCursors) {
+        this.maxCursors = maxCursors;
+    }
 
     /**
      * Allocates server handle for an object.
@@ -39,7 +57,16 @@ public class ClientResourceRegistry {
      * @param obj Object.
      * @return Handle.
      */
-    public long put(Object obj) {
+    public long put(Object obj, boolean isCursor) {
+        if (isCursor) {
+            if (cursors.size() >= maxCursors) {
+                throw new IgniteException("Too many open cursors. Close active cursors or increase " +
+                        "ClientConnectorConfiguration.maxOpenCursorsPerConnection.");
+            }
+
+            cursors.add(obj);
+        }
+
         long id = idGen.incrementAndGet();
 
         res.put(id, obj);
@@ -74,6 +101,8 @@ public class ClientResourceRegistry {
 
         if (obj == null)
             throw new IgniteException("Failed to find resource with id: " + hnd);
+
+        cursors.remove(obj);
 
         closeIfNeeded(obj);
     }

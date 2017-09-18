@@ -17,12 +17,15 @@
 
 package org.apache.ignite.internal.processors.platform.client;
 
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.processors.odbc.ClientListenerConnectionContext;
 import org.apache.ignite.internal.processors.odbc.ClientListenerMessageParser;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
+
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Thin Client connection context.
@@ -38,7 +41,7 @@ public class ClientConnectionContext implements ClientListenerConnectionContext 
     private final ClientRequestHandler handler;
 
     /** Handle registry. */
-    private final ClientResourceRegistry resReg = new ClientResourceRegistry();
+    private final ClientResourceRegistry resReg;
 
     /** Kernal context. */
     private final GridKernalContext kernalCtx;
@@ -47,14 +50,16 @@ public class ClientConnectionContext implements ClientListenerConnectionContext 
      * Ctor.
      *
      * @param ctx Kernal context.
+     * @param maxCursors Max active cursors.
      */
-    public ClientConnectionContext(GridKernalContext ctx) {
+    public ClientConnectionContext(GridKernalContext ctx, int maxCursors) {
         assert ctx != null;
 
         kernalCtx = ctx;
 
         parser = new ClientMessageParser(ctx);
         handler = new ClientRequestHandler(this);
+        resReg = new ClientResourceRegistry(maxCursors);
     }
 
     /**
