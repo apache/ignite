@@ -54,4 +54,9 @@ public interface RecordSerializer {
      * @return Read entry.
      */
     public WALRecord readRecord(FileInput in, WALPointer expPtr) throws IOException, IgniteCheckedException;
+
+    /**
+     * Flag to write (or not) wal pointer to record
+     */
+    public boolean writePointer();
 }

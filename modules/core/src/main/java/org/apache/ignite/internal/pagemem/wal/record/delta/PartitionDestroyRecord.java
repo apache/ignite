@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.pagemem.wal.record.delta;
 
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  *
@@ -69,5 +70,10 @@ public class PartitionDestroyRecord extends WALRecord {
      */
     public void partitionId(int partId) {
         this.partId = partId;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(PartitionDestroyRecord.class, this, "super", super.toString());
     }
 }

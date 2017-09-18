@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
-import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
@@ -29,8 +28,6 @@ import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
 import org.apache.ignite.internal.processors.odbc.odbc.OdbcConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
-import org.apache.ignite.internal.processors.platform.client.ClientMessageParser;
-import org.apache.ignite.internal.processors.platform.client.ClientRequestHandler;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.nio.GridNioServerListenerAdapter;
 import org.apache.ignite.internal.util.nio.GridNioSession;
@@ -38,9 +35,9 @@ import org.apache.ignite.internal.util.nio.GridNioSessionMetaKey;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * SQL message listener.
+ * Client message listener.
  */
-public class SqlListenerNioListener extends GridNioServerListenerAdapter<byte[]> {
+public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte[]> {
     /** ODBC driver handshake code. */
     public static final byte ODBC_CLIENT = 0;
 
@@ -72,7 +69,7 @@ public class SqlListenerNioListener extends GridNioServerListenerAdapter<byte[]>
      * @param busyLock Shutdown busy lock.
      * @param maxCursors Maximum allowed cursors.
      */
-    public SqlListenerNioListener(GridKernalContext ctx, GridSpinBusyLock busyLock, int maxCursors) {
+    public ClientListenerNioListener(GridKernalContext ctx, GridSpinBusyLock busyLock, int maxCursors) {
         this.ctx = ctx;
         this.busyLock = busyLock;
         this.maxCursors = maxCursors;
@@ -83,21 +80,21 @@ public class SqlListenerNioListener extends GridNioServerListenerAdapter<byte[]>
     /** {@inheritDoc} */
     @Override public void onConnected(GridNioSession ses) {
         if (log.isDebugEnabled())
-            log.debug("SQL client connected: " + ses.remoteAddress());
+            log.debug("Client connected: " + ses.remoteAddress());
     }
 
     /** {@inheritDoc} */
     @Override public void onDisconnected(GridNioSession ses, @Nullable Exception e) {
-        SqlListenerConnectionContext connCtx = ses.meta(CONN_CTX_META_KEY);
+        ClientListenerConnectionContext connCtx = ses.meta(CONN_CTX_META_KEY);
 
         if (connCtx != null)
             connCtx.onDisconnected();
 
         if (log.isDebugEnabled()) {
             if (e == null)
-                log.debug("SQL client disconnected: " + ses.remoteAddress());
+                log.debug("Client disconnected: " + ses.remoteAddress());
             else
-                log.debug("SQL client disconnected due to an error [addr=" + ses.remoteAddress() + ", err=" + e + ']');
+                log.debug("Client disconnected due to an error [addr=" + ses.remoteAddress() + ", err=" + e + ']');
         }
     }
 
@@ -105,7 +102,7 @@ public class SqlListenerNioListener extends GridNioServerListenerAdapter<byte[]>
     @Override public void onMessage(GridNioSession ses, byte[] msg) {
         assert msg != null;
 
-        SqlListenerConnectionContext connCtx = ses.meta(CONN_CTX_META_KEY);
+        ClientListenerConnectionContext connCtx = ses.meta(CONN_CTX_META_KEY);
 
         if (connCtx == null) {
             onHandshake(ses, msg);
@@ -113,16 +110,16 @@ public class SqlListenerNioListener extends GridNioServerListenerAdapter<byte[]>
             return;
         }
 
-        SqlListenerMessageParser parser = connCtx.parser();
-        SqlListenerRequestHandler handler = connCtx.handler();
+        ClientListenerMessageParser parser = connCtx.parser();
+        ClientListenerRequestHandler handler = connCtx.handler();
 
-        SqlListenerRequest req;
+        ClientListenerRequest req;
 
         try {
             req = parser.decode(msg);
         }
         catch (Exception e) {
-            log.error("Failed to parse SQL client request.", e);
+            log.error("Failed to parse client request.", e);
 
             ses.close();
 
@@ -141,7 +138,7 @@ public class SqlListenerNioListener extends GridNioServerListenerAdapter<byte[]>
                     ses.remoteAddress() + ", req=" + req + ']');
             }
 
-            SqlListenerResponse resp = handler.handle(req);
+            ClientListenerResponse resp = handler.handle(req);
 
             if (log.isDebugEnabled()) {
                 long dur = (System.nanoTime() - startTime) / 1000;
@@ -174,8 +171,8 @@ public class SqlListenerNioListener extends GridNioServerListenerAdapter<byte[]>
 
         byte cmd = reader.readByte();
 
-        if (cmd != SqlListenerRequest.HANDSHAKE) {
-            log.error("Unexpected SQL client request (will close session): " + ses.remoteAddress());
+        if (cmd != ClientListenerRequest.HANDSHAKE) {
+            log.error("Unexpected client request (will close session): " + ses.remoteAddress());
 
             ses.close();
 
@@ -186,11 +183,11 @@ public class SqlListenerNioListener extends GridNioServerListenerAdapter<byte[]>
         short verMinor = reader.readShort();
         short verMaintenance = reader.readShort();
 
-        SqlListenerProtocolVersion ver = SqlListenerProtocolVersion.create(verMajor, verMinor, verMaintenance);
+        ClientListenerProtocolVersion ver = ClientListenerProtocolVersion.create(verMajor, verMinor, verMaintenance);
 
         byte clientType = reader.readByte();
 
-        SqlListenerConnectionContext connCtx = prepareContext(clientType);
+        ClientListenerConnectionContext connCtx = prepareContext(clientType);
 
         String errMsg = null;
 
@@ -211,7 +208,7 @@ public class SqlListenerNioListener extends GridNioServerListenerAdapter<byte[]>
         if (errMsg == null)
             connCtx.handler().writeHandshake(writer);
         else {
-            SqlListenerProtocolVersion currentVer = connCtx.currentVersion();
+            ClientListenerProtocolVersion currentVer = connCtx.currentVersion();
 
             // Failed handshake response
             writer.writeBoolean(false);
@@ -230,7 +227,7 @@ public class SqlListenerNioListener extends GridNioServerListenerAdapter<byte[]>
      * @param clientType Client type.
      * @return Context.
      */
-    private SqlListenerConnectionContext prepareContext(byte clientType) {
+    private ClientListenerConnectionContext prepareContext(byte clientType) {
         switch (clientType) {
             case ODBC_CLIENT:
                 return new OdbcConnectionContext(ctx, busyLock, maxCursors);

@@ -435,46 +435,40 @@ public interface IgniteServices extends IgniteAsyncSupport {
 
     /**
      * Deploys multiple services described by provided configurations. Depending on specified parameters, multiple
-     * instances of the same service may be deployed (see {@link ServiceConfiguration}).
-     * Whenever topology changes, Ignite will automatically rebalance
-     * the deployed services within cluster to make sure that each node will end up with
-     * about equal number of deployed instances whenever possible.
+     * instances of the same service may be deployed (see {@link ServiceConfiguration}). Whenever topology changes,
+     * Ignite will automatically rebalance the deployed services within cluster to make sure that each node will end up
+     * with about equal number of deployed instances whenever possible.
      *
-     * If deployment fails, then {@link ServiceDeploymentException} containing a list of failed services will be
-     * thrown. It is guaranteed that all services that were provided to this method and are not present in the list of
-     * failed services are successfully deployed by the moment of the exception being thrown.
+     * If deployment of some of the provided services fails, then {@link ServiceDeploymentException} containing a list
+     * of failed services will be thrown. It is guaranteed that all services that were provided to this method and are
+     * not present in the list of failed services are successfully deployed by the moment of the exception being thrown.
+     * Note that if exception is thrown, then partial deployment may have occurred.
      *
      * @param cfgs {@link Collection} of service configurations to be deployed.
-     * @param allOrNone Specifies behavior in case when errors during deployment occur. If {@code true}, then two
-     * outcomes are possible: either all services will be deployed, or none of them. If {@code false}, then partial
-     * deployments are permitted.
      * @throws ServiceDeploymentException If failed to deploy services.
      * @see IgniteServices#deploy(ServiceConfiguration)
-     * @see IgniteServices#deployAllAsync(Collection, boolean)
+     * @see IgniteServices#deployAllAsync(Collection)
      */
-    public void deployAll(Collection<ServiceConfiguration> cfgs, boolean allOrNone) throws ServiceDeploymentException;
+    public void deployAll(Collection<ServiceConfiguration> cfgs) throws ServiceDeploymentException;
 
     /**
      * Asynchronously deploys multiple services described by provided configurations. Depending on specified parameters,
-     * multiple instances of the same service may be deployed (see {@link ServiceConfiguration}).
-     * Whenever topology changes, Ignite will automatically rebalance
-     * the deployed services within cluster to make sure that each node will end up with
-     * about equal number of deployed instances whenever possible.
+     * multiple instances of the same service may be deployed (see {@link ServiceConfiguration}). Whenever topology
+     * changes, Ignite will automatically rebalance the deployed services within cluster to make sure that each node
+     * will end up with about equal number of deployed instances whenever possible.
      *
-     * If deployment fails, then {@link ServiceDeploymentException} containing a list of failed services will be
-     * thrown from {@link IgniteFuture#get get()} method of the returned future. It is guaranteed that all services,
-     * that were provided to this method and are not present in the list of failed services, are successfully deployed
-     * by the moment of the exception being thrown.
+     * If deployment of some of the provided services fails, then {@link ServiceDeploymentException} containing a list
+     * of failed services will be thrown from {@link IgniteFuture#get get()} method of the returned future. It is
+     * guaranteed that all services, that were provided to this method and are not present in the list of failed
+     * services, are successfully deployed by the moment of the exception being thrown. Note that if exception is
+     * thrown, then partial deployment may have occurred.
      *
      * @param cfgs {@link Collection} of service configurations to be deployed.
-     * @param allOrNone Specifies behavior in case when errors during deployment occur. If {@code true}, then two
-     * outcomes are possible: either all services will be deployed, or none of them. If {@code false}, then partial
-     * deployments are permitted.
      * @return a Future representing pending completion of the operation.
      * @see IgniteServices#deploy(ServiceConfiguration)
-     * @see IgniteServices#deployAll(Collection,boolean)
+     * @see IgniteServices#deployAll(Collection)
      */
-    public IgniteFuture<Void> deployAllAsync(Collection<ServiceConfiguration> cfgs, boolean allOrNone);
+    public IgniteFuture<Void> deployAllAsync(Collection<ServiceConfiguration> cfgs);
 
     /**
      * Cancels service deployment. If a service with specified name was deployed on the grid,

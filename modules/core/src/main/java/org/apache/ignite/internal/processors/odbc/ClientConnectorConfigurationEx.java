@@ -17,23 +17,11 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
-/**
- * SQL listener message parser.
- */
-public interface SqlListenerMessageParser {
-    /**
-     * Decode request from byte array.
-     *
-     * @param msg Message.
-     * @return Request.
-     */
-    public SqlListenerRequest decode(byte[] msg);
+import org.apache.ignite.configuration.ClientConnectorConfiguration;
 
-    /**
-     * Encode response to byte array.
-     *
-     * @param resp Response.
-     * @return Message.
-     */
-    public byte[] encode(SqlListenerResponse resp);
+/**
+ * Extended client connector configuration. Needed to distinguish between default and non-default configurations.
+ */
+public class ClientConnectorConfigurationEx extends ClientConnectorConfiguration {
+    // No-op.
 }

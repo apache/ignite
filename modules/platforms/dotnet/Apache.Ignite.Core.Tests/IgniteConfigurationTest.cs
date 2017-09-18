@@ -26,6 +26,7 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Cache.Affinity.Rendezvous;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Eviction;
+    using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Communication.Tcp;
     using Apache.Ignite.Core.Configuration;
@@ -87,6 +88,7 @@ namespace Apache.Ignite.Core.Tests
             CheckDefaultValueAttributes(new MemoryPolicyConfiguration());
             CheckDefaultValueAttributes(new SqlConnectorConfiguration());
             CheckDefaultValueAttributes(new PersistentStoreConfiguration());
+            CheckDefaultValueAttributes(new IgniteClientConfiguration());
         }
 
         /// <summary>
