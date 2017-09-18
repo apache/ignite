@@ -18,16 +18,16 @@
 package org.apache.ignite.internal.processors.odbc;
 
 /**
- * SQL listener message parser.
+ * Client listener message parser.
  */
-public interface SqlListenerMessageParser {
+public interface ClientListenerMessageParser {
     /**
      * Decode request from byte array.
      *
      * @param msg Message.
      * @return Request.
      */
-    public SqlListenerRequest decode(byte[] msg);
+    public ClientListenerRequest decode(byte[] msg);
 
     /**
      * Encode response to byte array.
@@ -35,5 +35,5 @@ public interface SqlListenerMessageParser {
      * @param resp Response.
      * @return Message.
      */
-    public byte[] encode(SqlListenerResponse resp);
+    public byte[] encode(ClientListenerResponse resp);
 }

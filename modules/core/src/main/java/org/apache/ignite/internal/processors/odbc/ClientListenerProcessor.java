@@ -22,6 +22,7 @@ import java.nio.ByteOrder;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.OdbcConfiguration;
 import org.apache.ignite.configuration.SqlConnectorConfiguration;
@@ -41,9 +42,12 @@ import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * SQL processor.
+ * Client connector processor.
  */
-public class SqlListenerProcessor extends GridProcessorAdapter {
+public class ClientListenerProcessor extends GridProcessorAdapter {
+    /** Default client connector configuration. */
+    public static final ClientConnectorConfiguration DFLT_CLI_CFG = new ClientConnectorConfigurationEx();
+
     /** Default number of selectors. */
     private static final int DFLT_SELECTOR_CNT = Math.min(4, Runtime.getRuntime().availableProcessors());
 
@@ -62,7 +66,7 @@ public class SqlListenerProcessor extends GridProcessorAdapter {
     /**
      * @param ctx Kernal context.
      */
-    public SqlListenerProcessor(GridKernalContext ctx) {
+    public ClientListenerProcessor(GridKernalContext ctx) {
         super(ctx);
     }
 
@@ -70,14 +74,14 @@ public class SqlListenerProcessor extends GridProcessorAdapter {
     @Override public void start() throws IgniteCheckedException {
         IgniteConfiguration cfg = ctx.config();
 
-        SqlConnectorConfiguration sqlCfg = prepareConfiguration(cfg);
+        ClientConnectorConfiguration cliConnCfg = prepareConfiguration(cfg);
 
-        if (sqlCfg != null) {
+        if (cliConnCfg != null) {
             try {
-                validateConfiguration(sqlCfg);
+                validateConfiguration(cliConnCfg);
 
                 // Resolve host.
-                String host = sqlCfg.getHost();
+                String host = cliConnCfg.getHost();
 
                 if (host == null)
                     host = cfg.getLocalHost();
@@ -88,25 +92,25 @@ public class SqlListenerProcessor extends GridProcessorAdapter {
                     hostAddr = U.resolveLocalHost(host);
                 }
                 catch (Exception e) {
-                    throw new IgniteCheckedException("Failed to resolve SQL connector host: " + host, e);
+                    throw new IgniteCheckedException("Failed to resolve client connector host: " + host, e);
                 }
 
                 execSvc = new IgniteThreadPoolExecutor(
-                    "sql-connector",
+                    "client-connector",
                     cfg.getIgniteInstanceName(),
-                    sqlCfg.getThreadPoolSize(),
-                    sqlCfg.getThreadPoolSize(),
+                    cliConnCfg.getThreadPoolSize(),
+                    cliConnCfg.getThreadPoolSize(),
                     0,
                     new LinkedBlockingQueue<Runnable>());
 
                 Exception lastErr = null;
 
-                int portTo = sqlCfg.getPort() + sqlCfg.getPortRange();
+                int portTo = cliConnCfg.getPort() + cliConnCfg.getPortRange();
 
                 if (portTo <= 0) // Handle int overflow.
                     portTo = Integer.MAX_VALUE;
 
-                for (int port = sqlCfg.getPort(); port <= portTo && port <= 65535; port++) {
+                for (int port = cliConnCfg.getPort(); port <= portTo && port <= 65535; port++) {
                     try {
                         GridNioFilter[] filters = new GridNioFilter[] {
                             new GridNioAsyncNotifyFilter(ctx.igniteInstanceName(), execSvc, log) {
@@ -115,24 +119,24 @@ public class SqlListenerProcessor extends GridProcessorAdapter {
                                     proceedSessionOpened(ses);
                                 }
                             },
-                            new GridNioCodecFilter(new SqlListenerBufferedParser(), log, false)
+                            new GridNioCodecFilter(new ClientListenerBufferedParser(), log, false)
                         };
 
-                        int maxOpenCursors = sqlCfg.getMaxOpenCursorsPerConnection();
+                        int maxOpenCursors = cliConnCfg.getMaxOpenCursorsPerConnection();
 
                         GridNioServer<byte[]> srv0 = GridNioServer.<byte[]>builder()
                             .address(hostAddr)
                             .port(port)
-                            .listener(new SqlListenerNioListener(ctx, busyLock, maxOpenCursors))
+                            .listener(new ClientListenerNioListener(ctx, busyLock, maxOpenCursors))
                             .logger(log)
                             .selectorCount(DFLT_SELECTOR_CNT)
                             .igniteInstanceName(ctx.igniteInstanceName())
-                            .serverName("sql-listener")
-                            .tcpNoDelay(sqlCfg.isTcpNoDelay())
+                            .serverName("client-listener")
+                            .tcpNoDelay(cliConnCfg.isTcpNoDelay())
                             .directBuffer(DFLT_TCP_DIRECT_BUF)
                             .byteOrder(ByteOrder.nativeOrder())
-                            .socketSendBufferSize(sqlCfg.getSocketSendBufferSize())
-                            .socketReceiveBufferSize(sqlCfg.getSocketReceiveBufferSize())
+                            .socketSendBufferSize(cliConnCfg.getSocketSendBufferSize())
+                            .socketReceiveBufferSize(cliConnCfg.getSocketReceiveBufferSize())
                             .filters(filters)
                             .directMode(false)
                             .idleTimeout(Long.MAX_VALUE)
@@ -145,7 +149,7 @@ public class SqlListenerProcessor extends GridProcessorAdapter {
                         ctx.ports().registerPort(port, IgnitePortProtocol.TCP, getClass());
 
                         if (log.isInfoEnabled())
-                            log.info("SQL connector processor has started on TCP port " + port);
+                            log.info("Client connector processor has started on TCP port " + port);
 
                         lastErr = null;
 
@@ -160,11 +164,11 @@ public class SqlListenerProcessor extends GridProcessorAdapter {
 
                 if (lastErr != null)
                     throw new IgniteCheckedException("Failed to bind to any [host:port] from the range [" +
-                        "host=" + host + ", portFrom=" + sqlCfg.getPort() + ", portTo=" + portTo +
+                        "host=" + host + ", portFrom=" + cliConnCfg.getPort() + ", portTo=" + portTo +
                         ", lastErr=" + lastErr + ']');
             }
             catch (Exception e) {
-                throw new IgniteCheckedException("Failed to start SQL connector processor.", e);
+                throw new IgniteCheckedException("Failed to start client connector processor.", e);
             }
         }
     }
@@ -185,7 +189,7 @@ public class SqlListenerProcessor extends GridProcessorAdapter {
             }
 
             if (log.isDebugEnabled())
-                log.debug("SQL connector processor stopped.");
+                log.debug("Client connector processor stopped.");
         }
     }
 
@@ -197,48 +201,76 @@ public class SqlListenerProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("deprecation")
-    @Nullable private SqlConnectorConfiguration prepareConfiguration(IgniteConfiguration cfg)
+    @Nullable private ClientConnectorConfiguration prepareConfiguration(IgniteConfiguration cfg)
         throws IgniteCheckedException {
-        SqlConnectorConfiguration res = cfg.getSqlConnectorConfiguration();
-
         OdbcConfiguration odbcCfg = cfg.getOdbcConfiguration();
+        SqlConnectorConfiguration sqlConnCfg = cfg.getSqlConnectorConfiguration();
+        ClientConnectorConfiguration cliConnCfg = cfg.getClientConnectorConfiguration();
 
-        if (odbcCfg != null) {
-            if (res == null) {
-                // SQL connector is either default or null, so we replace it with ODBC stuff.
+        if (cliConnCfg == null && sqlConnCfg == null && odbcCfg == null)
+            return null;
+
+        if (isNotDefault(cliConnCfg)) {
+            // User set configuration explicitly. User it, but print a warning about ignored SQL/ODBC configs.
+            if (odbcCfg != null) {
+                U.warn(log, "Deprecated " + OdbcConfiguration.class.getSimpleName() + " will be ignored because " +
+                    ClientConnectorConfiguration.class.getSimpleName() + " is set.");
+            }
+
+            if (sqlConnCfg != null) {
+                U.warn(log, "Deprecated " + SqlConnectorConfiguration.class.getSimpleName() + " will be ignored " +
+                    "because " + ClientConnectorConfiguration.class.getSimpleName() + " is set.");
+            }
+        }
+        else {
+            cliConnCfg = new ClientConnectorConfiguration();
+
+            if (sqlConnCfg != null) {
+                // Migrate from SQL configuration.
+                cliConnCfg.setHost(sqlConnCfg.getHost());
+                cliConnCfg.setMaxOpenCursorsPerConnection(sqlConnCfg.getMaxOpenCursorsPerConnection());
+                cliConnCfg.setPort(sqlConnCfg.getPort());
+                cliConnCfg.setPortRange(sqlConnCfg.getPortRange());
+                cliConnCfg.setSocketSendBufferSize(sqlConnCfg.getSocketSendBufferSize());
+                cliConnCfg.setSocketReceiveBufferSize(sqlConnCfg.getSocketReceiveBufferSize());
+                cliConnCfg.setTcpNoDelay(sqlConnCfg.isTcpNoDelay());
+                cliConnCfg.setThreadPoolSize(sqlConnCfg.getThreadPoolSize());
+
+                U.warn(log, "Automatically converted deprecated " + SqlConnectorConfiguration.class.getSimpleName() +
+                    " to " + ClientConnectorConfiguration.class.getSimpleName() + ".");
+
+                if (odbcCfg != null) {
+                    U.warn(log, "Deprecated " + OdbcConfiguration.class.getSimpleName() + " will be ignored because " +
+                        SqlConnectorConfiguration.class.getSimpleName() + " is set.");
+                }
+            }
+            else if (odbcCfg != null) {
+                // Migrate from ODBC configuration.
                 HostAndPortRange hostAndPort = parseOdbcEndpoint(odbcCfg);
 
-                res = new SqlConnectorConfiguration();
+                cliConnCfg.setHost(hostAndPort.host());
+                cliConnCfg.setPort(hostAndPort.portFrom());
+                cliConnCfg.setPortRange(hostAndPort.portTo() - hostAndPort.portFrom());
+                cliConnCfg.setThreadPoolSize(odbcCfg.getThreadPoolSize());
+                cliConnCfg.setSocketSendBufferSize(odbcCfg.getSocketSendBufferSize());
+                cliConnCfg.setSocketReceiveBufferSize(odbcCfg.getSocketReceiveBufferSize());
+                cliConnCfg.setMaxOpenCursorsPerConnection(odbcCfg.getMaxOpenCursors());
 
-                res.setHost(hostAndPort.host());
-                res.setPort(hostAndPort.portFrom());
-                res.setPortRange(hostAndPort.portTo() - hostAndPort.portFrom());
-                res.setThreadPoolSize(odbcCfg.getThreadPoolSize());
-                res.setSocketSendBufferSize(odbcCfg.getSocketSendBufferSize());
-                res.setSocketReceiveBufferSize(odbcCfg.getSocketReceiveBufferSize());
-                res.setMaxOpenCursorsPerConnection(odbcCfg.getMaxOpenCursors());
-
-                U.warn(log, "Automatically converted deprecated ODBC configuration to SQL connector configuration: " +
-                    res);
-            }
-            else {
-                // Non-default SQL connector is set, ignore ODBC.
-                U.warn(log, "Deprecated ODBC configuration will be ignored because SQL connector configuration is " +
-                    "set (either migrate to new SqlConnectorConfiguration or set " +
-                    "IgniteConfiguration.sqlConnectorConfiguration to null explicitly).");
+                U.warn(log, "Automatically converted deprecated " + OdbcConfiguration.class.getSimpleName() +
+                    " to " + ClientConnectorConfiguration.class.getSimpleName() + ".");
             }
         }
 
-        return res;
+        return cliConnCfg;
     }
 
     /**
-     * Validate SQL connector configuration.
+     * Validate client connector configuration.
      *
      * @param cfg Configuration.
      * @throws IgniteCheckedException If failed.
      */
-    private void validateConfiguration(SqlConnectorConfiguration cfg) throws IgniteCheckedException {
+    private void validateConfiguration(ClientConnectorConfiguration cfg) throws IgniteCheckedException {
         assertParameter(cfg.getPort() > 1024, "port > 1024");
         assertParameter(cfg.getPort() <= 65535, "port <= 65535");
         assertParameter(cfg.getPortRange() >= 0, "portRange > 0");
@@ -269,10 +301,20 @@ public class SqlListenerProcessor extends GridProcessorAdapter {
             res = HostAndPortRange.parse(odbcCfg.getEndpointAddress(),
                 OdbcConfiguration.DFLT_TCP_PORT_FROM,
                 OdbcConfiguration.DFLT_TCP_PORT_TO,
-                "Failed to parse SQL connector endpoint address"
+                "Failed to parse ODBC endpoint address"
             );
         }
 
         return res;
+    }
+
+    /**
+     * Check whether configuration is not default.
+     *
+     * @param cliConnCfg Client connector configuration.
+     * @return {@code True} if not default.
+     */
+    private static boolean isNotDefault(ClientConnectorConfiguration cliConnCfg) {
+        return cliConnCfg != null && !(cliConnCfg instanceof ClientConnectorConfigurationEx);
     }
 }

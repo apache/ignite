@@ -19,12 +19,12 @@ package org.apache.ignite.internal.processors.platform.client;
 
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.odbc.SqlListenerRequest;
+import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
 
 /**
  * Thin client request.
  */
-public class ClientRequest implements SqlListenerRequest {
+public class ClientRequest implements ClientListenerRequest {
     /** Request id. */
     private final long reqId;
 

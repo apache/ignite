@@ -15,33 +15,34 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.platform.client;
+package org.apache.ignite.internal.processors.odbc;
 
-import org.apache.ignite.binary.BinaryRawWriter;
-import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
+import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 
 /**
- * Thin client response.
+ * Client listener request handler.
  */
-public class ClientResponse extends ClientListenerResponse {
-    /** Request id. */
-    private final long reqId;
-
+public interface ClientListenerRequestHandler {
     /**
-     * Constructor.
+     * Handle request.
      *
-     * @param reqId Request id.
+     * @param req Request.
+     * @return Response.
      */
-    public ClientResponse(long reqId) {
-        super(STATUS_SUCCESS, null);
-
-        this.reqId = reqId;
-    }
+    public ClientListenerResponse handle(ClientListenerRequest req);
 
     /**
-     * Encodes the response data.
+     * Handle exception.
+     *
+     * @param e Exception.
+     * @return Error response.
      */
-    public void encode(BinaryRawWriter writer) {
-        writer.writeLong(reqId);
-    }
+    public ClientListenerResponse handleException(Exception e);
+
+    /**
+     * Write successful handshake response.
+     *
+     * @param writer Binary writer.
+     */
+    public void writeHandshake(BinaryWriterExImpl writer);
 }

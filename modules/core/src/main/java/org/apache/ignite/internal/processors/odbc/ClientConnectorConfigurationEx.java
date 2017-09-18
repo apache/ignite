@@ -17,15 +17,11 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
-/**
- * SQL listener command request.
- */
-public interface SqlListenerRequest {
-    /** Handshake request. */
-    public static final int HANDSHAKE = 1;
+import org.apache.ignite.configuration.ClientConnectorConfiguration;
 
-    /**
-     * @return Request ID.
-     */
-    public long requestId();
+/**
+ * Extended client connector configuration. Needed to distinguish between default and non-default configurations.
+ */
+public class ClientConnectorConfigurationEx extends ClientConnectorConfiguration {
+    // No-op.
 }
