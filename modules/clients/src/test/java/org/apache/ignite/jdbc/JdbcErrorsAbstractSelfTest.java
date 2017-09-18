@@ -17,10 +17,18 @@
 
 package org.apache.ignite.jdbc;
 
+import java.net.URL;
 import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.Date;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
+import java.sql.Time;
+import java.sql.Timestamp;
 import java.util.Collections;
+import java.util.List;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.lang.IgniteCallable;
@@ -87,6 +95,413 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
      */
     public void testUnsupportedSql() throws SQLException {
         checkErrorState("ALTER TABLE \"test\".Integer DROP COLUMN _key", "0A000");
+    }
+
+    /**
+     * Test error code for the case when user attempts to use a closed connection.
+     * @throws SQLException if failed.
+     */
+    public void testConnectionClosed() throws SQLException {
+        checkErrorState(new IgniteCallable<Void>() {
+            @Override public Void call() throws Exception {
+                Connection conn = getConnection();
+
+                conn.close();
+
+                conn.prepareStatement("SELECT 1");
+
+                return null;
+            }
+        }, "08003");
+
+        checkErrorState(new IgniteCallable<Void>() {
+            @Override public Void call() throws Exception {
+                Connection conn = getConnection();
+
+                conn.close();
+
+                conn.createStatement();
+
+                return null;
+            }
+        }, "08003");
+
+        checkErrorState(new IgniteCallable<Void>() {
+            @Override public Void call() throws Exception {
+                Connection conn = getConnection();
+
+                conn.close();
+
+                conn.getMetaData();
+
+                return null;
+            }
+        }, "08003");
+
+        checkErrorState(new IgniteCallable<Void>() {
+            @Override public Void call() throws Exception {
+                Connection conn = getConnection();
+
+                DatabaseMetaData meta = conn.getMetaData();
+
+                conn.close();
+
+                meta.getIndexInfo(null, null, null, false, false);
+
+                return null;
+            }
+        }, "08003");
+
+        checkErrorState(new IgniteCallable<Void>() {
+            @Override public Void call() throws Exception {
+                Connection conn = getConnection();
+
+                DatabaseMetaData meta = conn.getMetaData();
+
+                conn.close();
+
+                meta.getColumns(null, null, null, null);
+
+                return null;
+            }
+        }, "08003");
+
+        checkErrorState(new IgniteCallable<Void>() {
+            @Override public Void call() throws Exception {
+                Connection conn = getConnection();
+
+                DatabaseMetaData meta = conn.getMetaData();
+
+                conn.close();
+
+                meta.getPrimaryKeys(null, null, null);
+
+                return null;
+            }
+        }, "08003");
+
+        checkErrorState(new IgniteCallable<Void>() {
+            @Override public Void call() throws Exception {
+                Connection conn = getConnection();
+
+                DatabaseMetaData meta = conn.getMetaData();
+
+                conn.close();
+
+                meta.getSchemas(null, null);
+
+                return null;
+            }
+        }, "08003");
+
+        checkErrorState(new IgniteCallable<Void>() {
+            @Override public Void call() throws Exception {
+                Connection conn = getConnection();
+
+                DatabaseMetaData meta = conn.getMetaData();
+
+                conn.close();
+
+                meta.getTables(null, null, null, null);
+
+                return null;
+            }
+        }, "08003");
+    }
+
+    /**
+     * Test error code for the case when user attempts to use a closed result set.
+     * @throws SQLException if failed.
+     */
+    public void testResultSetClosed() throws SQLException {
+        checkErrorState(new ConnClosure() {
+            @Override public void run(Connection conn) throws Exception {
+                try (PreparedStatement stmt = conn.prepareStatement("SELECT 1")) {
+                    ResultSet rs = stmt.executeQuery();
+
+                    rs.next();
+
+                    rs.close();
+
+                    rs.getInt(1);
+                }
+            }
+        }, "24000");
+    }
+
+    /**
+     * Test error code for the case when user attempts to get {@code int} value
+     * from column whose value can't be converted to an {@code int}.
+     * @throws SQLException if failed.
+     */
+    public void testInvalidIntFormat() throws SQLException {
+        checkErrorState(new ConnClosure() {
+            @Override public void run(Connection conn) throws Exception {
+                try (PreparedStatement stmt = conn.prepareStatement("SELECT 'zzz'")) {
+                    ResultSet rs = stmt.executeQuery();
+
+                    rs.next();
+
+                    rs.getLong(1);
+                }
+            }
+        }, "0700B");
+    }
+
+    /**
+     * Test error code for the case when user attempts to get {@code long} value
+     * from column whose value can't be converted to an {@code long}.
+     * @throws SQLException if failed.
+     */
+    public void testInvalidLongFormat() throws SQLException {
+        checkErrorState(new ConnClosure() {
+            @Override public void run(Connection conn) throws Exception {
+                try (PreparedStatement stmt = conn.prepareStatement("SELECT 'zzz'")) {
+                    ResultSet rs = stmt.executeQuery();
+
+                    rs.next();
+
+                    rs.getLong(1);
+                }
+            }
+        }, "0700B");
+    }
+
+    /**
+     * Test error code for the case when user attempts to get {@code float} value
+     * from column whose value can't be converted to an {@code float}.
+     * @throws SQLException if failed.
+     */
+    public void testInvalidFloatFormat() throws SQLException {
+        checkErrorState(new ConnClosure() {
+            @Override public void run(Connection conn) throws Exception {
+                try (PreparedStatement stmt = conn.prepareStatement("SELECT 'zzz'")) {
+                    ResultSet rs = stmt.executeQuery();
+
+                    rs.next();
+
+                    rs.getFloat(1);
+                }
+            }
+        }, "0700B");
+    }
+
+    /**
+     * Test error code for the case when user attempts to get {@code double} value
+     * from column whose value can't be converted to an {@code double}.
+     * @throws SQLException if failed.
+     */
+    public void testInvalidDoubleFormat() throws SQLException {
+        checkErrorState(new ConnClosure() {
+            @Override public void run(Connection conn) throws Exception {
+                try (PreparedStatement stmt = conn.prepareStatement("SELECT 'zzz'")) {
+                    ResultSet rs = stmt.executeQuery();
+
+                    rs.next();
+
+                    rs.getDouble(1);
+                }
+            }
+        }, "0700B");
+    }
+
+    /**
+     * Test error code for the case when user attempts to get {@code byte} value
+     * from column whose value can't be converted to an {@code byte}.
+     * @throws SQLException if failed.
+     */
+    public void testInvalidByteFormat() throws SQLException {
+        checkErrorState(new ConnClosure() {
+            @Override public void run(Connection conn) throws Exception {
+                try (PreparedStatement stmt = conn.prepareStatement("SELECT 'zzz'")) {
+                    ResultSet rs = stmt.executeQuery();
+
+                    rs.next();
+
+                    rs.getByte(1);
+                }
+            }
+        }, "0700B");
+    }
+
+    /**
+     * Test error code for the case when user attempts to get {@code short} value
+     * from column whose value can't be converted to an {@code short}.
+     * @throws SQLException if failed.
+     */
+    public void testInvalidShortFormat() throws SQLException {
+        checkErrorState(new ConnClosure() {
+            @Override public void run(Connection conn) throws Exception {
+                try (PreparedStatement stmt = conn.prepareStatement("SELECT 'zzz'")) {
+                    ResultSet rs = stmt.executeQuery();
+
+                    rs.next();
+
+                    rs.getShort(1);
+                }
+            }
+        }, "0700B");
+    }
+
+    /**
+     * Test error code for the case when user attempts to get {@code BigDecimal} value
+     * from column whose value can't be converted to an {@code BigDecimal}.
+     * @throws SQLException if failed.
+     */
+    public void testInvalidBigDecimalFormat() throws SQLException {
+        checkErrorState(new ConnClosure() {
+            @Override public void run(Connection conn) throws Exception {
+                try (PreparedStatement stmt = conn.prepareStatement("SELECT 'zzz'")) {
+                    ResultSet rs = stmt.executeQuery();
+
+                    rs.next();
+
+                    rs.getBigDecimal(1);
+                }
+            }
+        }, "0700B");
+    }
+
+    /**
+     * Test error code for the case when user attempts to get {@code boolean} value
+     * from column whose value can't be converted to an {@code boolean}.
+     * @throws SQLException if failed.
+     */
+    public void testInvalidBooleanFormat() throws SQLException {
+        checkErrorState(new ConnClosure() {
+            @Override public void run(Connection conn) throws Exception {
+                try (PreparedStatement stmt = conn.prepareStatement("SELECT 'zzz'")) {
+                    ResultSet rs = stmt.executeQuery();
+
+                    rs.next();
+
+                    rs.getBoolean(1);
+                }
+            }
+        }, "0700B");
+    }
+
+    /**
+     * Test error code for the case when user attempts to get {@code boolean} value
+     * from column whose value can't be converted to an {@code boolean}.
+     * @throws SQLException if failed.
+     */
+    public void testInvalidObjectFormat() throws SQLException {
+        checkErrorState(new ConnClosure() {
+            @Override public void run(Connection conn) throws Exception {
+                try (PreparedStatement stmt = conn.prepareStatement("SELECT 'zzz'")) {
+                    ResultSet rs = stmt.executeQuery();
+
+                    rs.next();
+
+                    rs.getObject(1, List.class);
+                }
+            }
+        }, "0700B");
+    }
+
+    /**
+     * Test error code for the case when user attempts to get {@link Date} value
+     * from column whose value can't be converted to a {@link Date}.
+     * @throws SQLException if failed.
+     */
+    public void testInvalidDateFormat() throws SQLException {
+        checkErrorState(new ConnClosure() {
+            @Override public void run(Connection conn) throws Exception {
+                try (PreparedStatement stmt = conn.prepareStatement("SELECT 'zzz'")) {
+                    ResultSet rs = stmt.executeQuery();
+
+                    rs.next();
+
+                    rs.getDate(1);
+                }
+            }
+        }, "0700B");
+    }
+
+    /**
+     * Test error code for the case when user attempts to get {@link Time} value
+     * from column whose value can't be converted to a {@link Time}.
+     * @throws SQLException if failed.
+     */
+    public void testInvalidTimeFormat() throws SQLException {
+        checkErrorState(new ConnClosure() {
+            @Override public void run(Connection conn) throws Exception {
+                try (PreparedStatement stmt = conn.prepareStatement("SELECT 'zzz'")) {
+                    ResultSet rs = stmt.executeQuery();
+
+                    rs.next();
+
+                    rs.getTime(1);
+                }
+            }
+        }, "0700B");
+    }
+
+    /**
+     * Test error code for the case when user attempts to get {@link Timestamp} value
+     * from column whose value can't be converted to a {@link Timestamp}.
+     * @throws SQLException if failed.
+     */
+    public void testInvalidTimestampFormat() throws SQLException {
+        checkErrorState(new ConnClosure() {
+            @Override public void run(Connection conn) throws Exception {
+                try (PreparedStatement stmt = conn.prepareStatement("SELECT 'zzz'")) {
+                    ResultSet rs = stmt.executeQuery();
+
+                    rs.next();
+
+                    rs.getTimestamp(1);
+                }
+            }
+        }, "0700B");
+    }
+
+    /**
+     * Test error code for the case when user attempts to get {@link URL} value
+     * from column whose value can't be converted to a {@link URL}.
+     * @throws SQLException if failed.
+     */
+    public void testInvalidUrlFormat() throws SQLException {
+        checkErrorState(new ConnClosure() {
+            @Override public void run(Connection conn) throws Exception {
+                try (PreparedStatement stmt = conn.prepareStatement("SELECT 'zzz'")) {
+                    ResultSet rs = stmt.executeQuery();
+
+                    rs.next();
+
+                    rs.getURL(1);
+                }
+            }
+        }, "0700B");
+    }
+
+    /**
+     * Check error code for the case null value is inserted into table field declared as NOT NULL.
+     *
+     * @throws SQLException if failed.
+     */
+    public void testNotNullViolation() throws SQLException {
+        try (Connection conn = getConnection()) {
+            conn.setSchema("PUBLIC");
+
+            try (Statement stmt = conn.createStatement()) {
+                stmt.execute("CREATE TABLE nulltest(id INT PRIMARY KEY, name CHAR NOT NULL)");
+
+                try {
+                    checkErrorState(new IgniteCallable<Void>() {
+                        @Override public Void call() throws Exception {
+                            stmt.execute("INSERT INTO nulltest(id, name) VALUES (1, NULLIF('a', 'a'))");
+
+                            return null;
+                        }
+                    }, "22004");
+                }
+                finally {
+                    stmt.execute("DROP TABLE nulltest");
+                }
+            }
+        }
     }
 
     /**
