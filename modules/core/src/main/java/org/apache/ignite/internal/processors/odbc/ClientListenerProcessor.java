@@ -204,6 +204,9 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
         SqlConnectorConfiguration sqlConnCfg = cfg.getSqlConnectorConfiguration();
         ClientConnectorConfiguration cliConnCfg = cfg.getClientConnectorConfiguration();
 
+        if (cliConnCfg == null && sqlConnCfg == null && odbcCfg == null)
+            return null;
+
         if (cliConnCfg != null) {
             // User set configuration explicitly. User it, but print a warning about ignored SQL/ODBC configs.
             if (odbcCfg != null) {
@@ -221,8 +224,6 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
 
             if (sqlConnCfg != null) {
                 // Migrate from SQL configuration.
-                cliConnCfg = new ClientConnectorConfiguration();
-
                 cliConnCfg.setHost(sqlConnCfg.getHost());
                 cliConnCfg.setMaxOpenCursorsPerConnection(sqlConnCfg.getMaxOpenCursorsPerConnection());
                 cliConnCfg.setPort(sqlConnCfg.getPort());
@@ -240,11 +241,9 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
                         SqlConnectorConfiguration.class.getSimpleName() + " is set.");
                 }
             }
-            else if (odbcCfg != null) {
+            else {
                 // Migrate from ODBC configuration.
                 HostAndPortRange hostAndPort = parseOdbcEndpoint(odbcCfg);
-
-                cliConnCfg = new ClientConnectorConfiguration();
 
                 cliConnCfg.setHost(hostAndPort.host());
                 cliConnCfg.setPort(hostAndPort.portFrom());
