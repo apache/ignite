@@ -39,10 +39,13 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.managers.discovery.ConsistentIdMapper;
+import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheInvokeEntry;
 import org.apache.ignite.internal.processors.cache.CacheLazyEntry;
@@ -94,6 +97,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 import static org.apache.ignite.transactions.TransactionState.ACTIVE;
+import static org.apache.ignite.transactions.TransactionState.COMMITTED;
 import static org.apache.ignite.transactions.TransactionState.COMMITTING;
 import static org.apache.ignite.transactions.TransactionState.MARKED_ROLLBACK;
 import static org.apache.ignite.transactions.TransactionState.PREPARED;
@@ -245,6 +249,9 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     /** Store used flag. */
     protected boolean storeEnabled = true;
 
+    /** UUID to consistent id mapper. */
+    protected ConsistentIdMapper consistentIdMapper;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -308,6 +315,8 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
         if (log == null)
             log = U.logger(cctx.kernalContext(), logRef, this);
+
+        consistentIdMapper = new ConsistentIdMapper(cctx.discovery());
     }
 
     /**
@@ -357,6 +366,8 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
         if (log == null)
             log = U.logger(cctx.kernalContext(), logRef, this);
+
+        consistentIdMapper = new ConsistentIdMapper(cctx.discovery());
     }
 
     /** {@inheritDoc} */
@@ -568,6 +579,13 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
      */
     protected IgniteLogger log() {
         return log;
+    }
+
+    /**
+     * @return True if transaction reflects changes in primary -> backup direction.
+     */
+    public boolean remote() {
+        return false;
     }
 
     /** {@inheritDoc} */
@@ -1075,6 +1093,31 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
             // Seal transactions maps.
             if (state != ACTIVE && state != SUSPENDED)
                 seal();
+
+            if (cctx.wal() != null && cctx.tm().logTxRecords()) {
+                // Log tx state change to WAL.
+                if (state == PREPARED || state == COMMITTED || state == ROLLED_BACK) {
+
+                    Map<Object, Collection<Object>> participatingNodes = consistentIdMapper.mapToConsistentIds(topVer, txNodes);
+
+                    TxRecord txRecord = new TxRecord(
+                            state,
+                            nearXidVersion(),
+                            writeVersion(),
+                            participatingNodes,
+                            remote() ? nodeId() : null,
+                            U.currentTimeMillis()
+                    );
+
+                    try {
+                        cctx.wal().log(txRecord);
+                    } catch (IgniteCheckedException e) {
+                        log.error("Unable to log TxRecord " + txRecord, e);
+
+                        throw new IgniteException("Unable to log TxRecord", e);
+                    }
+                }
+            }
         }
 
         return valid;

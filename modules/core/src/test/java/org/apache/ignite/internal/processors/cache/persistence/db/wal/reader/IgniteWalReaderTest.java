@@ -42,6 +42,7 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
@@ -83,7 +84,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
     /** Cache name. */
     private static final String CACHE_NAME = "cache0";
 
-    /** additional cache for testing different combinations of types in WAL */
+    /** cache for different types storage */
     private static final String CACHE_ADDL_NAME = "cache1";
 
     /** Fill wal with some data before iterating. Should be true for non local run */
@@ -147,6 +148,12 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
             pCfg.setWalAutoArchiveAfterInactivity(archiveIncompleteSegmentAfterInactivityMs);
 
         cfg.setPersistentStoreConfiguration(pCfg);
+
+        final BinaryConfiguration binCfg = new BinaryConfiguration();
+
+        binCfg.setCompactFooter(false);
+
+        cfg.setBinaryConfiguration(binCfg);
         return cfg;
     }
 
@@ -243,11 +250,10 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
             : "Work iterator loaded [" + cntWork + "] " +
             "Archive iterator loaded [" + cntArchiveFileByFile + "]; " +
             "mock iterator [" + cntUsingMockIter + "]";
+
     }
 
     /**
-     * Iterates on records and closes iterator
-     *
      * @param walIter iterator to count, will be closed
      * @return count of records
      * @throws IgniteCheckedException if failed to iterate
@@ -791,7 +797,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
                     final TxRecord txRecord = (TxRecord)walRecord;
                     final GridCacheVersion globalTxId = txRecord.nearXidVersion();
 
-                    log.info("//Tx Record, action: " + txRecord.action() +
+                    log.info("//Tx Record, state: " + txRecord.state() +
                         "; nearTxVersion" + globalTxId);
                 }
             }

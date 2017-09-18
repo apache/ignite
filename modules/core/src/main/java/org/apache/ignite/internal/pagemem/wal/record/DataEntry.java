@@ -25,7 +25,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * Represents Data Entry ({@link #key}, {@link #val value}) pair update {@link #op operation} in WAL log.
+ *
  */
 public class DataEntry {
     /** Cache ID. */

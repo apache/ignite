@@ -60,6 +60,8 @@ public class IgniteWalIteratorFactory {
 
     /**
      * Creates WAL files iterator factory.
+     *
+     * Creates WAL files iterator factory.
      * WAL iterator supports automatic converting from CacheObjects and KeyCacheObject into BinaryObjects
      *
      * @param log Logger.
