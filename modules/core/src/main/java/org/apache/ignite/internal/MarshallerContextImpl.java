@@ -20,6 +20,7 @@ package org.apache.ignite.internal;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
 import java.util.AbstractMap;
@@ -356,8 +357,8 @@ public class MarshallerContextImpl implements MarshallerContext {
 
                     if (mappedName == null) {
                         GridFutureAdapter<MappingExchangeResult> fut = transport.requestMapping(
-                                new MarshallerMappingItem(platformId, typeId, null),
-                                cache);
+                            new MarshallerMappingItem(platformId, typeId, null),
+                            cache);
 
                         clsName = fut.get().className();
                     }
@@ -366,19 +367,19 @@ public class MarshallerContextImpl implements MarshallerContext {
 
                     if (clsName == null)
                         throw new ClassNotFoundException(
-                                "Requesting mapping from grid failed for [platformId="
-                                        + platformId
-                                        + ", typeId="
-                                        + typeId + "]");
+                            "Requesting mapping from grid failed for [platformId="
+                                + platformId
+                                + ", typeId="
+                                + typeId + "]");
 
                     return clsName;
                 }
                 else
                     throw new ClassNotFoundException(
-                            "Unknown pair [platformId="
-                                    + platformId
-                                    + ", typeId="
-                                    + typeId + "]");
+                        "Unknown pair [platformId="
+                            + platformId
+                            + ", typeId="
+                            + typeId + "]");
         }
 
         return clsName;
