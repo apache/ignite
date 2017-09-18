@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
-import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
@@ -60,8 +59,6 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.IncrementalTestObject;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionDeadlockException;
 import org.apache.ignite.transactions.TransactionTimeoutException;
@@ -77,7 +74,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  *
  */
-public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
+public class TxOptimisticDeadlockDetectionTest extends AbstractDeadlockDetectionTest {
     /** Ip finder. */
     private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
@@ -417,24 +414,6 @@ public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
     }
 
     /**
-     * This method added in order to not change the behavior of this test after refactoring.
-     * @param key Key.
-     * @param i I.
-     * @return Incremented key.
-     */
-    private Object incrementKey(Object key, int i) {
-        if(key instanceof Integer){
-            Integer v = (Integer)key;
-
-            return v + i;
-        }
-        else if (key instanceof IncrementalTestObject)
-            return ((IncrementalTestObject)key).increment(i);
-        else
-            throw new IgniteException("Unable to increment objects of class " + key.getClass().getName() + ".");
-    }
-
-    /**
      * @param nodesCnt Nodes count.
      */
     private <T> List<List<T>> generateKeys(int nodesCnt, T startKey, boolean reverse) throws IgniteCheckedException {
@@ -458,58 +437,6 @@ public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
         }
 
         return keySets;
-    }
-
-    /**
-     *
-     */
-    private static class KeyObject implements IncrementalTestObject {
-        /** Id. */
-        private int id;
-
-        /** Name. */
-        private String name;
-
-        /**
-         * @param id Id.
-         */
-        public KeyObject(int id) {
-            this.id = id;
-            this.name = "KeyObject" + id;
-        }
-
-
-        /** {@inheritDoc} */
-        @Override public IncrementalTestObject increment(int times) {
-            return new KeyObject(id + times);
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return "KeyObject{" +
-                "id=" + id +
-                ", name='" + name + '\'' +
-                '}';
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean equals(Object o) {
-            if (this == o)
-                return true;
-
-            if (o == null || getClass() != o.getClass())
-                return false;
-
-            KeyObject obj = (KeyObject)o;
-
-            return id == obj.id && name.equals(obj.name);
-
-        }
-
-        /** {@inheritDoc} */
-        @Override public int hashCode() {
-            return id;
-        }
     }
 
     /**

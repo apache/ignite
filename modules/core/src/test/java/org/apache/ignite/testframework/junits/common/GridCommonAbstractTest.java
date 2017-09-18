@@ -60,8 +60,8 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityFunctionContextImpl;
@@ -97,7 +97,6 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestNode;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.IncrementalTestObject;
 import org.apache.ignite.testframework.junits.GridAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -107,6 +106,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -1054,32 +1054,20 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Collection of keys for which given cache is primary.
      */
     @SuppressWarnings("unchecked")
-    protected <T> List<T> primaryKeys(IgniteCache<?, ?> cache, final int cnt, final T startFrom) {
-        return findKeys(cache, cnt, startFrom, 0);
-    }
-
-    /**
-     * @param cache Cache.
-     * @param cnt Keys count.
-     * @param startFrom Start value for keys search.
-     * @return Collection of keys for which given cache is primary.
-     */
-    @SuppressWarnings("unchecked")
-    protected <T> List<T> findKeys(IgniteCache<?, ?> cache, final int cnt, final T startFrom, final int type) {
+    protected List<Integer> findKeys(IgniteCache<?, ?> cache, final int cnt, final int startFrom, final int type) {
         assert cnt > 0 : cnt;
 
-        final List<T> found = new ArrayList<>(cnt);
+        final List<Integer> found = new ArrayList<>(cnt);
 
         final ClusterNode locNode = localNode(cache);
 
-        final Affinity<T> aff = (Affinity<T>)affinity(cache);
+        final Affinity<Integer> aff = (Affinity<Integer>)affinity(cache);
 
         try {
             GridTestUtils.waitForCondition(new PA() {
                 @Override public boolean apply() {
-                    T key = startFrom;
-
-                    for (int i = 0; i < 100_000; i++) {
+                    for (int i = startFrom; i < startFrom + 100_000; i++) {
+                        Integer key = i;
 
                         boolean ok;
 
@@ -1101,18 +1089,6 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
                             if (found.size() == cnt)
                                 return true;
-                        }
-
-                        if (key instanceof Integer) {
-                            Integer v = ((Integer)key + 1);
-
-                            key = (T)v;
-                        }
-                        else if (key instanceof IncrementalTestObject)
-                            key = (T)((IncrementalTestObject)key).increment(1);
-                        else {
-                            throw new IgniteException("Unable to increment objects of class " +
-                                key.getClass().getName() + ".");
                         }
                     }
 
@@ -1255,16 +1231,6 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     protected Integer primaryKey(IgniteCache<?, ?> cache)
         throws IgniteCheckedException {
         return primaryKeys(cache, 1, 1).get(0);
-    }
-
-    /**
-     * @param cache Cache.
-     * @return Key for which given cache is primary.
-     * @throws IgniteCheckedException If failed.
-     */
-    protected<T> T primaryKey(IgniteCache<?, ?> cache, T startFrom)
-        throws IgniteCheckedException {
-        return primaryKeys(cache, 1, startFrom).get(0);
     }
 
     /**
