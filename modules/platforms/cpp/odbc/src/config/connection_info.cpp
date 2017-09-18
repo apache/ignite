@@ -483,6 +483,69 @@ namespace ignite
 #ifdef SQL_MAX_USER_NAME_LEN
                     DBG_STR_CASE(SQL_MAX_USER_NAME_LEN);
 #endif // SQL_MAX_USER_NAME_LEN
+#ifdef SQL_MULT_RESULT_SETS
+                    DBG_STR_CASE(SQL_MULT_RESULT_SETS);
+#endif // SQL_MULT_RESULT_SETS
+#ifdef SQL_MULTIPLE_ACTIVE_TXN
+                    DBG_STR_CASE(SQL_MULTIPLE_ACTIVE_TXN);
+#endif // SQL_MULTIPLE_ACTIVE_TXN
+#ifdef SQL_NON_NULLABLE_COLUMNS
+                    DBG_STR_CASE(SQL_NON_NULLABLE_COLUMNS);
+#endif // SQL_NON_NULLABLE_COLUMNS
+#ifdef SQL_NULL_COLLATION
+                    DBG_STR_CASE(SQL_NULL_COLLATION);
+#endif // SQL_NULL_COLLATION
+#ifdef SQL_ORDER_BY_COLUMNS_IN_SELECT
+                    DBG_STR_CASE(SQL_ORDER_BY_COLUMNS_IN_SELECT);
+#endif // SQL_ORDER_BY_COLUMNS_IN_SELECT
+#ifdef SQL_PROCEDURE_TERM
+                    DBG_STR_CASE(SQL_PROCEDURE_TERM);
+#endif // SQL_PROCEDURE_TERM
+#ifdef SQL_PROCEDURES
+                    DBG_STR_CASE(SQL_PROCEDURES);
+#endif // SQL_PROCEDURES
+#ifdef SQL_ROW_UPDATES
+                    DBG_STR_CASE(SQL_ROW_UPDATES);
+#endif // SQL_ROW_UPDATES
+#ifdef SQL_SEARCH_PATTERN_ESCAPE
+                    DBG_STR_CASE(SQL_SEARCH_PATTERN_ESCAPE);
+#endif // SQL_SEARCH_PATTERN_ESCAPE
+#ifdef SQL_SERVER_NAME
+                    DBG_STR_CASE(SQL_SERVER_NAME);
+#endif // SQL_SERVER_NAME
+#ifdef SQL_SQL92_FOREIGN_KEY_DELETE_RULE
+                    DBG_STR_CASE(SQL_SQL92_FOREIGN_KEY_DELETE_RULE);
+#endif // SQL_SQL92_FOREIGN_KEY_DELETE_RULE
+#ifdef SQL_SQL92_FOREIGN_KEY_UPDATE_RULE
+                    DBG_STR_CASE(SQL_SQL92_FOREIGN_KEY_UPDATE_RULE);
+#endif // SQL_SQL92_FOREIGN_KEY_UPDATE_RULE
+#ifdef SQL_SQL92_GRANT
+                    DBG_STR_CASE(SQL_SQL92_GRANT);
+#endif // SQL_SQL92_GRANT
+#ifdef SQL_SQL92_REVOKE
+                    DBG_STR_CASE(SQL_SQL92_REVOKE);
+#endif // SQL_SQL92_REVOKE
+#ifdef SQL_SQL92_ROW_VALUE_CONSTRUCTOR
+                    DBG_STR_CASE(SQL_SQL92_ROW_VALUE_CONSTRUCTOR);
+#endif // SQL_SQL92_ROW_VALUE_CONSTRUCTOR
+#ifdef SQL_STANDARD_CLI_CONFORMANCE
+                    DBG_STR_CASE(SQL_STANDARD_CLI_CONFORMANCE);
+#endif // SQL_STANDARD_CLI_CONFORMANCE
+#ifdef SQL_SUBQUERIES
+                    DBG_STR_CASE(SQL_SUBQUERIES);
+#endif // SQL_SUBQUERIES
+#ifdef SQL_TXN_ISOLATION_OPTION
+                    DBG_STR_CASE(SQL_TXN_ISOLATION_OPTION);
+#endif // SQL_TXN_ISOLATION_OPTION
+#ifdef SQL_UNION
+                    DBG_STR_CASE(SQL_UNION);
+#endif // SQL_UNION
+#ifdef SQL_USER_NAME
+                    DBG_STR_CASE(SQL_USER_NAME);
+#endif // SQL_USER_NAME
+#ifdef SQL_ALTER_TABLE
+                    DBG_STR_CASE(SQL_ALTER_TABLE);
+#endif // SQL_ALTER_TABLE
                     default:
                         break;
                 }
@@ -670,6 +733,67 @@ namespace ignite
                 // includes the length of all SQL_LONGVARCHAR and SQL_LONGVARBINARY columns in the row; "N" otherwise.
                 strParams[SQL_MAX_ROW_SIZE_INCLUDES_LONG] = "Y";
 #endif // SQL_MAX_ROW_SIZE_INCLUDES_LONG
+
+#ifdef SQL_MULT_RESULT_SETS
+                // A character string: "Y" if the data source supports multiple result sets, "N" if it does not.
+                strParams[SQL_MULT_RESULT_SETS] = "N";
+#endif // SQL_MULT_RESULT_SETS
+
+#ifdef SQL_MULTIPLE_ACTIVE_TXN
+                // A character string: "Y" if the driver supports more than one active transaction at the same time,
+                // "N" if only one transaction can be active at any time.
+                strParams[SQL_MULTIPLE_ACTIVE_TXN] = "N";
+#endif // SQL_MULTIPLE_ACTIVE_TXN
+
+#ifdef SQL_ORDER_BY_COLUMNS_IN_SELECT
+                // A character string: "Y" if the columns in the ORDER BY clause must be in the select list;
+                // otherwise, "N".
+                strParams[SQL_ORDER_BY_COLUMNS_IN_SELECT] = "N";
+#endif // SQL_ORDER_BY_COLUMNS_IN_SELECT
+
+#ifdef SQL_PROCEDURE_TERM
+                // A character string with the data source vendor's name for a procedure; for example,
+                // "database procedure", "stored procedure", "procedure", "package", or "stored query".
+                strParams[SQL_PROCEDURE_TERM] = "stored procedure";
+#endif // SQL_PROCEDURE_TERM
+
+#ifdef SQL_PROCEDURE_TERM
+                // A character string: "Y" if the data source supports procedures and the driver supports the ODBC
+                // procedure invocation syntax; "N" otherwise.
+                strParams[SQL_PROCEDURE_TERM] = "N";
+#endif // SQL_PROCEDURE_TERM
+
+#ifdef SQL_ROW_UPDATES
+                // A character string: "Y" if a keyset-driven or mixed cursor maintains row versions or values for all
+                // fetched rows and therefore can detect any updates that were made to a row by any user since the row
+                // was last fetched. (This applies only to updates, not to deletions or insertions.) The driver can
+                // return the SQL_ROW_UPDATED flag to the row status array when SQLFetchScroll is called. Otherwise, "N"
+                strParams[SQL_ROW_UPDATES] = "N";
+#endif // SQL_ROW_UPDATES
+
+#ifdef SQL_SEARCH_PATTERN_ESCAPE
+                // A character string specifying what the driver supports as an escape character that allows the use of
+                // the pattern match metacharacters underscore (_) and percent sign (%) as valid characters in search
+                // patterns. This escape character applies only for those catalog function arguments that support search
+                // strings. If this string is empty, the driver does not support a search-pattern escape character.
+                // Because this information type does not indicate general support of the escape character in the LIKE
+                // predicate, SQL-92 does not include requirements for this character string.
+                // This InfoType is limited to catalog functions. For a description of the use of the escape character
+                // in search pattern strings, see Pattern Value Arguments.
+                strParams[SQL_SEARCH_PATTERN_ESCAPE] = "\\";
+#endif // SQL_SEARCH_PATTERN_ESCAPE
+
+#ifdef SQL_SERVER_NAME
+                // A character string with the actual data source-specific server name; useful when a data source name
+                // is used during SQLConnect, SQLDriverConnect, and SQLBrowseConnect.
+                strParams[SQL_SERVER_NAME] = "Apache Ignite";
+#endif // SQL_SERVER_NAME
+
+#ifdef SQL_USER_NAME
+                // A character string with the name used in a particular database, which can be different from the login
+                // name.
+                strParams[SQL_USER_NAME] = "apache_ignite_user";
+#endif // SQL_USER_NAME
 
                 //
                 //====================== Integer Params =======================
@@ -1870,6 +1994,142 @@ namespace ignite
                 intParams[SQL_MAX_STATEMENT_LEN] = 0;
 #endif // SQL_MAX_STATEMENT_LEN
 
+#ifdef SQL_SQL92_FOREIGN_KEY_DELETE_RULE
+                // A bitmask enumerating the rules supported for a foreign key in a DELETE statement, as defined in
+                // SQL-92.
+                //
+                // The following bitmasks are used to determine which clauses are supported by the data source:
+                // SQL_SFKD_CASCADE
+                // SQL_SFKD_NO_ACTION
+                // SQL_SFKD_SET_DEFAULT
+                // SQL_SFKD_SET_NULL
+                //
+                // An FIPS Transitional level-conformant driver will always return all of these options as supported.
+                intParams[SQL_SQL92_FOREIGN_KEY_DELETE_RULE] = 0;
+#endif // SQL_SQL92_FOREIGN_KEY_DELETE_RULE
+
+#ifdef SQL_SQL92_FOREIGN_KEY_UPDATE_RULE
+                // A bitmask enumerating the rules supported for a foreign key in an UPDATE statement, as defined in
+                // SQL-92.
+                //
+                // The following bitmasks are used to determine which clauses are supported by the data source:
+                // SQL_SFKU_CASCADE
+                // SQL_SFKU_NO_ACTION
+                // SQL_SFKU_SET_DEFAULT
+                // SQL_SFKU_SET_NULL
+                //
+                // An SQL-92 Full level-conformant driver will always return all of these options as supported.
+                intParams[SQL_SQL92_FOREIGN_KEY_UPDATE_RULE] = 0;
+#endif // SQL_SQL92_FOREIGN_KEY_UPDATE_RULE
+
+#ifdef SQL_SQL92_GRANT
+                // A bitmask enumerating the clauses supported in the GRANT statement, as defined in SQL-92.
+                // The SQL-92 or FIPS conformance level at which this feature must be supported is shown in parentheses
+                // next to each bitmask.
+                // The following bitmasks are used to determine which clauses are supported by the data source:
+                // SQL_SG_DELETE_TABLE (Entry level)
+                // SQL_SG_INSERT_COLUMN (Intermediate level)
+                // SQL_SG_INSERT_TABLE (Entry level)
+                // SQL_SG_REFERENCES_TABLE (Entry level)
+                // SQL_SG_REFERENCES_COLUMN (Entry level)
+                // SQL_SG_SELECT_TABLE (Entry level)
+                // SQL_SG_UPDATE_COLUMN (Entry level)
+                // SQL_SG_UPDATE_TABLE (Entry level)
+                // SQL_SG_USAGE_ON_DOMAIN (FIPS Transitional level)
+                // SQL_SG_USAGE_ON_CHARACTER_SET (FIPS Transitional level)
+                // SQL_SG_USAGE_ON_COLLATION (FIPS Transitional level)
+                // SQL_SG_USAGE_ON_TRANSLATION (FIPS Transitional level)
+                // SQL_SG_WITH_GRANT_OPTION (Entry level)
+                intParams[SQL_SQL92_GRANT] = 0;
+#endif // SQL_SQL92_GRANT
+
+#ifdef SQL_SQL92_REVOKE
+                // A bitmask enumerating the clauses supported in the REVOKE statement, as defined in SQL-92, supported
+                // by the data source.
+                // The SQL-92 or FIPS conformance level at which this feature must be supported is shown in parentheses
+                // next to each bitmask.
+                //
+                // The following bitmasks are used to determine which clauses are supported by the data source:
+                // SQL_SR_CASCADE (FIPS Transitional level)
+                // SQL_SR_DELETE_TABLE (Entry level)
+                // SQL_SR_GRANT_OPTION_FOR (Intermediate level)
+                // SQL_SR_INSERT_COLUMN (Intermediate level)
+                // SQL_SR_INSERT_TABLE (Entry level)
+                // SQL_SR_REFERENCES_COLUMN (Entry level)
+                // SQL_SR_REFERENCES_TABLE (Entry level)
+                // SQL_SR_RESTRICT (FIPS Transitional level)
+                // SQL_SR_SELECT_TABLE (Entry level)
+                // SQL_SR_UPDATE_COLUMN (Entry level)
+                // SQL_SR_UPDATE_TABLE (Entry level)
+                // SQL_SR_USAGE_ON_DOMAIN (FIPS Transitional level)
+                // SQL_SR_USAGE_ON_CHARACTER_SET (FIPS Transitional level)
+                // SQL_SR_USAGE_ON_COLLATION (FIPS Transitional level)
+                // SQL_SR_USAGE_ON_TRANSLATION (FIPS Transitional level)
+                intParams[SQL_SQL92_REVOKE] = 0;
+#endif // SQL_SQL92_REVOKE
+
+#ifdef SQL_SQL92_ROW_VALUE_CONSTRUCTOR
+                // A bitmask enumerating the row value constructor expressions supported in a SELECT statement, as
+                // defined in SQL-92. The following bitmasks are used to determine which options are supported by the
+                // data source:
+                // SQL_SRVC_VALUE_EXPRESSION
+                // SQL_SRVC_NULL
+                // SQL_SRVC_DEFAULT
+                // SQL_SRVC_ROW_SUBQUERY
+                intParams[SQL_SQL92_ROW_VALUE_CONSTRUCTOR] = SQL_SRVC_VALUE_EXPRESSION | SQL_SRVC_DEFAULT |
+                    SQL_SRVC_NULL | SQL_SRVC_ROW_SUBQUERY;
+#endif // SQL_SQL92_ROW_VALUE_CONSTRUCTOR
+
+#ifdef SQL_STANDARD_CLI_CONFORMANCE
+                // A bitmask enumerating the CLI standard or standards to which the driver conforms. The following
+                // bitmasks are used to determine which levels the driver complies with:
+                // SQL_SCC_XOPEN_CLI_VERSION1: The driver complies with the Open Group CLI version 1.
+                // SQL_SCC_ISO92_CLI: The driver complies with the ISO 92 CLI.
+                intParams[SQL_STANDARD_CLI_CONFORMANCE] = 0;
+#endif // SQL_STANDARD_CLI_CONFORMANCE
+
+#ifdef SQL_SUBQUERIES
+                // A bitmask enumerating the predicates that support subqueries:
+                //
+                // SQL_SQ_CORRELATED_SUBQUERIES
+                // SQL_SQ_COMPARISON
+                // SQL_SQ_EXISTS
+                // SQL_SQ_IN
+                // SQL_SQ_QUANTIFIED
+                //
+                // The SQL_SQ_CORRELATED_SUBQUERIES bitmask indicates that all predicates that support subqueries
+                // support correlated subqueries.
+                // An SQL-92 Entry level-conformant driver will always return a bitmask in which all of these bits are
+                // set.
+                intParams[SQL_SUBQUERIES] = SQL_SQ_CORRELATED_SUBQUERIES | SQL_SQ_COMPARISON | SQL_SQ_EXISTS |
+                    SQL_SQ_IN | SQL_SQ_QUANTIFIED;
+#endif // SQL_SUBQUERIES
+
+#ifdef SQL_TXN_ISOLATION_OPTION
+                // A bitmask enumerating the transaction isolation levels available from the driver or data source.
+                // The following bitmasks are used together with the flag to determine which options are supported:
+                // SQL_TXN_READ_UNCOMMITTED
+                // SQL_TXN_READ_COMMITTED
+                // SQL_TXN_REPEATABLE_READ
+                // SQL_TXN_SERIALIZABLE
+                //
+                // For descriptions of these isolation levels, see the description of SQL_DEFAULT_TXN_ISOLATION.
+                // To set the transaction isolation level, an application calls SQLSetConnectAttr to set the
+                // SQL_ATTR_TXN_ISOLATION attribute. For more information, see SQLSetConnectAttr Function.
+                // An SQL-92 Entry level-conformant driver will always return SQL_TXN_SERIALIZABLE as supported.
+                // A FIPS Transitional level-conformant driver will always return all of these options as supported.
+                intParams[SQL_TXN_ISOLATION_OPTION] = 0;
+#endif // SQL_TXN_ISOLATION_OPTION
+
+#ifdef SQL_UNION
+                // A bitmask enumerating the support for the UNION clause:
+                // SQL_U_UNION = The data source supports the UNION clause.
+                // SQL_U_UNION_ALL = The data source supports the ALL keyword in the UNION clause. (SQLGetInfo returns
+                //     both SQL_U_UNION and SQL_U_UNION_ALL in this case.)
+                // An SQL-92 Entry level-conformant driver will always return both of these options as supported.
+                intParams[SQL_UNION] = SQL_U_UNION | SQL_U_UNION_ALL;
+#endif // SQL_UNION
+
                 //
                 //======================= Short Params ========================
                 //
@@ -2111,6 +2371,27 @@ namespace ignite
                 // length or the length is unknown, this value is set to zero.
                 shortParams[SQL_MAX_USER_NAME_LEN] = 0;
 #endif // SQL_MAX_USER_NAME_LEN
+
+#ifdef SQL_NON_NULLABLE_COLUMNS
+                // Value that specifies whether the data source supports NOT NULL in columns:
+                // SQL_NNC_NULL = All columns must be nullable.
+                // SQL_NNC_NON_NULL = Columns cannot be nullable. (The data source supports the NOT NULL column
+                //     constraint in CREATE TABLE statements.)
+                // An SQL-92 Entry level-conformant driver will return SQL_NNC_NON_NULL.
+                shortParams[SQL_NON_NULLABLE_COLUMNS] = SQL_NNC_NULL;
+#endif // SQL_NON_NULLABLE_COLUMNS
+
+#ifdef SQL_NULL_COLLATION
+                // Value that specifies where NULLs are sorted in a result set:
+                // SQL_NC_END = NULLs are sorted at the end of the result set, regardless of the ASC or DESC keywords.
+                // SQL_NC_HIGH = NULLs are sorted at the high end of the result set, depending on the ASC or DESC
+                //     keywords.
+                // SQL_NC_LOW = NULLs are sorted at the low end of the result set, depending on the ASC or DESC
+                //     keywords.
+                // SQL_NC_START = NULLs are sorted at the start of the result set, regardless of the ASC or DESC
+                //     keywords.
+                shortParams[SQL_NULL_COLLATION] = SQL_NC_END;
+#endif // SQL_NULL_COLLATION
             }
 
             ConnectionInfo::~ConnectionInfo()
