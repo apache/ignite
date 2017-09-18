@@ -38,6 +38,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartit
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxMapping;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheCoordinatorsSharedManager;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccResponseListener;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
@@ -57,7 +58,7 @@ import static org.apache.ignite.transactions.TransactionState.PREPARING;
 /**
  *
  */
-public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureAdapter {
+public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureAdapter implements MvccResponseListener {
     /**
      * @param cctx Context.
      * @param tx Transaction.
@@ -432,13 +433,23 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
                 tx.mvccCoordinatorVersion(mvccVer);
             }
             else {
-                IgniteInternalFuture<Long> cntrFut = cctx.coordinators().requestTxCounter(mvccCrd, tx);
+                IgniteInternalFuture<Long> cntrFut = cctx.coordinators().requestTxCounter(mvccCrd, this, tx.nearXidVersion());
 
                 add((IgniteInternalFuture)cntrFut);
             }
         }
 
         markInitialized();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onMvccResponse(MvccCoordinatorVersion res) {
+        tx.mvccCoordinatorVersion(res);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onMvccError(IgniteCheckedException e) {
+        ERR_UPD.compareAndSet(GridNearPessimisticTxPrepareFuture.this, null, e);
     }
 
     /** {@inheritDoc} */

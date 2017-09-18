@@ -38,6 +38,7 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -51,6 +52,7 @@ import org.apache.ignite.internal.util.lang.GridInClosure3;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
@@ -1349,6 +1351,68 @@ public class CacheMvccTransactionsTest extends GridCommonAbstractTest {
 
         for (int i = 0; i < map.size(); i++)
             assertEquals(i + 2, (Object)resMap.get(i));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCoordinatorFailurePessimisticTx() throws Exception {
+        testSpi = true;
+
+        startGrids(3);
+
+        client = true;
+
+        final Ignite client = startGrid(3);
+
+        final IgniteCache cache = client.createCache(
+            cacheConfiguration(PARTITIONED, FULL_SYNC, 0, DFLT_PARTITION_COUNT));
+
+        final Integer key1 = primaryKey(jcache(1));
+        final Integer key2 = primaryKey(jcache(2));
+
+        TestRecordingCommunicationSpi crdSpi = TestRecordingCommunicationSpi.spi(ignite(0));
+
+        crdSpi.blockMessages(MvccCoordinatorVersionResponse.class, client.name());
+
+        IgniteInternalFuture fut = GridTestUtils.runAsync(new Callable() {
+            @Override public Object call() throws Exception {
+                try {
+                    try (Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                        cache.put(key1, 1);
+                        cache.put(key2, 2);
+
+                        tx.commit();
+                    }
+
+                    fail();
+                }
+                catch (ClusterTopologyException e) {
+                    info("Expected exception: " + e);
+                }
+
+                return null;
+            }
+        }, "tx-thread");
+
+        crdSpi.waitForBlocked();
+
+        stopGrid(0);
+
+        fut.get();
+
+        assertNull(cache.get(key1));
+        assertNull(cache.get(key2));
+
+        try (Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            cache.put(key1, 1);
+            cache.put(key2, 2);
+
+            tx.commit();
+        }
+
+        assertEquals(1, cache.get(key1));
+        assertEquals(2, cache.get(key2));
     }
 
     /**
