@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.jdbc.thin;
+package org.apache.ignite.internal.jdbc2;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -26,10 +26,13 @@ import org.apache.ignite.lang.IgniteCallable;
 /**
  * Test SQLSTATE codes propagation with thin client driver.
  */
-public class JdbcThinErrorsSelfTest extends JdbcErrorsAbstractSelfTest {
+public class JdbcErrorsSelfTest extends JdbcErrorsAbstractSelfTest {
+    /** Path to JDBC configuration for node that is to start. */
+    private static final String CFG_PATH = "modules/clients/src/test/config/jdbc-config.xml";
+
     /** {@inheritDoc} */
     @Override protected Connection getConnection() throws SQLException {
-        return DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1");
+        return DriverManager.getConnection("jdbc:ignite:cfg://cache=test@" + CFG_PATH);
     }
 
     /**
@@ -40,7 +43,7 @@ public class JdbcThinErrorsSelfTest extends JdbcErrorsAbstractSelfTest {
     public void testConnectionError() throws SQLException {
         checkErrorState(new IgniteCallable<Void>() {
             @Override public Void call() throws Exception {
-                DriverManager.getConnection("jdbc:ignite:thin://unknown.host");
+                DriverManager.getConnection("jdbc:ignite:сfg://cache=test@/unknown/path");
 
                 return null;
             }
@@ -54,24 +57,11 @@ public class JdbcThinErrorsSelfTest extends JdbcErrorsAbstractSelfTest {
     public void testInvalidConnectionStringFormat() throws SQLException {
         checkErrorState(new IgniteCallable<Void>() {
             @Override public Void call() throws Exception {
-                // Invalid port number yields an error.
-                DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1:1000000");
+                // Empty config path yields an error.
+                DriverManager.getConnection("jdbc:ignite:cfg://cache=");
 
                 return null;
             }
         }, "08001");
-    }
-
-    /**
-     * Test error code for the case when user attempts to set an invalid isolation level to a connection.
-     * @throws SQLException if failed.
-     */
-    @SuppressWarnings("MagicConstant")
-    public void testInvalidIsolationLevel() throws SQLException {
-        checkErrorState(new ConnClosure() {
-            @Override public void run(Connection conn) throws Exception {
-                conn.setTransactionIsolation(1000);
-            }
-        }, "0700E");
     }
 }
