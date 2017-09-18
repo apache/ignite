@@ -584,9 +584,9 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
         assertCreateTableEquals(
             buildCreateTable("sch1", "Person", "cache", F.asList("id"),
                 false, c("id", Value.INT), c("city", Value.STRING), c("name", Value.STRING),
-                c("surname", Value.STRING), c("age", Value.INT)),
+                c("surname", Value.STRING), cn("age", Value.INT)),
             "CREATE TABLE sch1.\"Person\" (\"id\" integer PRIMARY KEY, \"city\" varchar," +
-                " \"name\" varchar, \"surname\" varchar, \"age\" integer) WITH " +
+                " \"name\" varchar, \"surname\" varchar, \"age\" integer NOT NULL) WITH " +
                 "\"template=cache\"");
 
         assertParseThrows("create table Person (id int)",
@@ -596,10 +596,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
             IgniteSQLException.class, "CREATE TABLE ... AS ... syntax is not supported");
 
         assertParseThrows("create table Person (id int primary key)",
-            IgniteSQLException.class, "No cache value related columns found");
-
-        assertParseThrows("create table Person (id int primary key, age int not null) WITH \"cacheTemplate=cache\"",
-            IgniteSQLException.class, "Non nullable columns are not supported [colName=AGE]");
+            IgniteSQLException.class, "Table must have at least one non PRIMARY KEY column.");
 
         assertParseThrows("create table Person (id int primary key, age int unique) WITH \"template=cache\"",
             IgniteSQLException.class, "Too many constraints - only PRIMARY KEY is supported for CREATE TABLE");
@@ -634,6 +631,9 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
 
         assertAlterTableAddColumnEquals(buildAlterTableAddColumn("SCH2", "City", false, true,
             c("POPULATION", Value.INT)), "ALTER TABLE IF EXISTS SCH2.\"City\" ADD (population int)");
+
+        assertAlterTableAddColumnEquals(buildAlterTableAddColumn("SCH2", "City", false, true,
+            cn("POPULATION", Value.INT)), "ALTER TABLE IF EXISTS SCH2.\"City\" ADD (population int NOT NULL)");
 
         // There's no table with such name, but H2 parsing does not fail just yet.
         assertAlterTableAddColumnEquals(buildAlterTableAddColumn("SCH2", "City", false, false,
@@ -843,6 +843,21 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
      */
     private static GridSqlColumn c(String name, int type) {
         return new GridSqlColumn(new Column(name, type), null, name);
+    }
+
+    /**
+     * Constructs non-nullable column.
+     *
+     * @param name Column name.
+     * @param type Column data type.
+     * @return {@link GridSqlColumn} with given name and type.
+     */
+    private static GridSqlColumn cn(String name, int type) {
+        Column col = new Column(name, type);
+
+        col.setNullable(false);
+
+        return new GridSqlColumn(col, null, name);
     }
 
     /**

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.jdbc.thin;
 
-import java.io.IOException;
 import java.sql.BatchUpdateException;
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -27,12 +26,15 @@ import java.sql.SQLWarning;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.query.SqlQuery;
-import org.apache.ignite.internal.processors.odbc.SqlListenerResponse;
+import org.apache.ignite.internal.processors.odbc.SqlStateCode;
+import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBatchExecuteRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBatchExecuteResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQuery;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteResult;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcStatementType;
 
 import static java.sql.ResultSet.CONCUR_READ_ONLY;
 import static java.sql.ResultSet.FETCH_FORWARD;
@@ -90,23 +92,24 @@ public class JdbcThinStatement implements Statement {
 
     /** {@inheritDoc} */
     @Override public ResultSet executeQuery(String sql) throws SQLException {
-        execute0(sql, null);
+        execute0(JdbcStatementType.SELECT_STATEMENT_TYPE, sql, null);
 
         ResultSet rs = getResultSet();
 
         if (rs == null)
-            throw new SQLException("The query isn't SELECT query: " + sql);
+            throw new SQLException("The query isn't SELECT query: " + sql, SqlStateCode.PARSING_EXCEPTION);
 
         return rs;
     }
 
     /**
+     * @param stmtType Expected statement type.
      * @param sql Sql query.
      * @param args Query parameters.
      *
      * @throws SQLException Onj error.
      */
-    protected void execute0(String sql, List<Object> args) throws SQLException {
+    protected void execute0(JdbcStatementType stmtType, String sql, List<Object> args) throws SQLException {
         ensureNotClosed();
 
         if (rs != null) {
@@ -120,33 +123,23 @@ public class JdbcThinStatement implements Statement {
         if (sql == null || sql.isEmpty())
             throw new SQLException("SQL query is empty.");
 
-        try {
-            JdbcQueryExecuteResult res = conn.io().queryExecute(conn.getSchema(), pageSize, maxRows,
-                sql, args);
+        JdbcQueryExecuteResult res = conn.sendRequest(new JdbcQueryExecuteRequest(stmtType, conn.getSchema(), pageSize,
+            maxRows, sql, args == null ? null : args.toArray(new Object[args.size()])));
 
-            assert res != null;
+        assert res != null;
 
-            rs = new JdbcThinResultSet(this, res.getQueryId(), pageSize, res.last(), res.items(),
-                res.isQuery(), conn.io().autoCloseServerCursor(), res.updateCount(), closeOnCompletion);
-        }
-        catch (IOException e) {
-            conn.close();
-
-            throw new SQLException("Failed to query Ignite.", e);
-        }
-        catch (IgniteCheckedException e) {
-            throw new SQLException("Failed to query Ignite [err=\"" + e.getMessage() + "\"]", e);
-        }
+        rs = new JdbcThinResultSet(this, res.getQueryId(), pageSize, res.last(), res.items(),
+            res.isQuery(), conn.autoCloseServerCursor(), res.updateCount(), closeOnCompletion);
     }
 
     /** {@inheritDoc} */
     @Override public int executeUpdate(String sql) throws SQLException {
-        execute0(sql, null);
+        execute0(JdbcStatementType.UPDATE_STMT_TYPE, sql, null);
 
         int res = getUpdateCount();
 
         if (res == -1)
-            throw new SQLException("The query is not DML statememt: " + sql);
+            throw new SQLException("The query is not DML statement: " + sql, SqlStateCode.PARSING_EXCEPTION);
 
         return res;
     }
@@ -246,7 +239,7 @@ public class JdbcThinStatement implements Statement {
     @Override public boolean execute(String sql) throws SQLException {
         ensureNotClosed();
 
-        execute0(sql, null);
+        execute0(JdbcStatementType.ANY_STATEMENT_TYPE, sql, null);
 
         return rs.isQuery();
     }
@@ -376,20 +369,12 @@ public class JdbcThinStatement implements Statement {
             throw new SQLException("Batch is empty.");
 
         try {
-            JdbcBatchExecuteResult res = conn.io().batchExecute(conn.getSchema(), batch);
+            JdbcBatchExecuteResult res = conn.sendRequest(new JdbcBatchExecuteRequest(conn.getSchema(), batch));
 
-            if (res.errorCode() != SqlListenerResponse.STATUS_SUCCESS)
+            if (res.errorCode() != ClientListenerResponse.STATUS_SUCCESS)
                 throw new BatchUpdateException(res.errorMessage(), null, res.errorCode(), res.updateCounts());
 
             return res.updateCounts();
-        }
-        catch (IOException e) {
-            conn.close();
-
-            throw new SQLException("Failed to query Ignite.", e);
-        }
-        catch (IgniteCheckedException e) {
-            throw new SQLException("Failed to query Ignite.", e);
         }
         finally {
             batch = null;
