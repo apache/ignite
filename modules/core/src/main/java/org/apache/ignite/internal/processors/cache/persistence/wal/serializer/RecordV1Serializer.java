@@ -136,11 +136,22 @@ public class RecordV1Serializer implements RecordSerializer {
     /** Skip CRC calculation/check flag */
     private boolean skipCrc = IgniteSystemProperties.getBoolean(IGNITE_PDS_SKIP_CRC, false);
 
+    /** Write pointer. */
+    private final boolean writePointer;
+
     /**
      * @param cctx Cache shared context.
      */
     public RecordV1Serializer(GridCacheSharedContext cctx) {
+        this(cctx, false);
+    }
+
+    /**
+     * @param cctx Cache shared context.
+     */
+    public RecordV1Serializer(GridCacheSharedContext cctx, boolean writePointer) {
         this.cctx = cctx;
+        this.writePointer = writePointer;
 
         co = cctx.kernalContext().cacheObjects();
         pageSize = cctx.database().pageSize();
@@ -149,6 +160,11 @@ public class RecordV1Serializer implements RecordSerializer {
     /** {@inheritDoc} */
     @Override public int version() {
         return 1;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean writePointer() {
+        return writePointer;
     }
 
     /** {@inheritDoc} */
@@ -674,7 +690,15 @@ public class RecordV1Serializer implements RecordSerializer {
 
             assert res != null;
 
-            res.size((int)(in0.position() - startPos + CRC_SIZE)); // Account for CRC which will be read afterwards.
+            int size = (int) (in0.position() - startPos + CRC_SIZE);
+
+            res.size(size); // Account for CRC which will be read afterwards.
+
+            if (writePointer && expPtr instanceof FileWALPointer) {
+                FileWALPointer ptr = (FileWALPointer) expPtr;
+
+                res.position(new FileWALPointer(ptr.index(), ptr.fileOffset(), size));
+            }
 
             return res;
         }

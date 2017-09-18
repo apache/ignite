@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,17 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.odbc;
-
-/**
- * SQL listener command request.
- */
-public interface SqlListenerRequest {
-    /** Handshake request. */
-    public static final int HANDSHAKE = 1;
-
-    /**
-     * @return Request ID.
-     */
-    public long requestId();
+namespace Apache.Ignite.Core.Impl.Client
+{
+    /// <summary>
+    /// Client op code.
+    /// </summary>
+    internal enum ClientOp : short
+    {
+        CacheGet = 1,
+        BinaryTypeNameGet = 2,
+        BinaryTypeGet = 3,
+        CachePut = 4,
+        BinaryTypeNamePut = 5,
+        BinaryTypePut = 6
+    }
 }

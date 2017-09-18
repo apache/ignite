@@ -27,7 +27,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
 /**
- * This class implements stream parser based on {@link SqlListenerNioServerBuffer}.
+ * This class implements stream parser based on {@link ClientListenerNioServerBuffer}.
  * <p>
  * The rule for this parser is that every message sent over the stream is prepended with
  * 4-byte integer header containing message size. So, the stream structure is as follows:
@@ -37,20 +37,20 @@ import java.nio.ByteOrder;
  *     +--+--+--+--+--+--+...+--+--+--+--+--+--+--+...+--+
  * </pre>
  */
-public class SqlListenerBufferedParser implements GridNioParser {
+public class ClientListenerBufferedParser implements GridNioParser {
     /** Buffer metadata key. */
     private static final int BUF_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
 
     /** {@inheritDoc} */
     @Override public byte[] decode(GridNioSession ses, ByteBuffer buf) throws IOException, IgniteCheckedException {
-        SqlListenerNioServerBuffer nioBuf = ses.meta(BUF_META_KEY);
+        ClientListenerNioServerBuffer nioBuf = ses.meta(BUF_META_KEY);
 
         // Decode for a given session is called per one thread, so there should not be any concurrency issues.
         // However, we make some additional checks.
         if (nioBuf == null) {
-            nioBuf = new SqlListenerNioServerBuffer();
+            nioBuf = new ClientListenerNioServerBuffer();
 
-            SqlListenerNioServerBuffer old = ses.addMeta(BUF_META_KEY, nioBuf);
+            ClientListenerNioServerBuffer old = ses.addMeta(BUF_META_KEY, nioBuf);
 
             assert old == null;
         }
@@ -76,6 +76,6 @@ public class SqlListenerBufferedParser implements GridNioParser {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return SqlListenerBufferedParser.class.getSimpleName();
+        return ClientListenerBufferedParser.class.getSimpleName();
     }
 }

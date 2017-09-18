@@ -28,7 +28,7 @@
     <import resource="queries-default.xml"/>
 
     <bean parent="ignite.cfg">
-        <property name="sqlConnectorConfiguration">
+        <property name="clientConnectorConfiguration">
             <null/>
         </property>
 
