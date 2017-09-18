@@ -89,8 +89,12 @@ param (
 # Detect Ignite root directory
 cd $PSScriptRoot\..
 
-while (!((Test-Path bin) -and (Test-Path examples) -and ((Test-Path modules) -or (Test-Path platforms))))
-{ cd .. }
+while (!((Test-Path bin) -and (Test-Path examples) -and ((Test-Path modules) -or (Test-Path platforms)))) { 
+	cd .. 
+	if ((Get-Location).Drive.Root -eq (Get-Location).Path) {
+		exit
+	}
+}
 
 echo "Ignite home detected at '$pwd'."
 
