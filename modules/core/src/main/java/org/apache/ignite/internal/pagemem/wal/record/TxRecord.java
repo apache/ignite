@@ -25,6 +25,8 @@ import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.Nullable;
 
 /**
+ * Logical data record indented for transaction (tx) related actions.<br>
+ * This record is marker of begin, prepare, commit, and rollback transactions.
  * Transactions WAL record. <br>
  * Logical data record indented for transaction (tx) related actions.<br>
  * This record is marker of begin, prepare, commit, and rollback transactions.

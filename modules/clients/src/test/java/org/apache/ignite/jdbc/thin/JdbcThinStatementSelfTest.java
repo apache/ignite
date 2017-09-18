@@ -44,7 +44,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Statement test.
  */
-@SuppressWarnings("ThrowableNotThrown")
+@SuppressWarnings({"ThrowableNotThrown", "ThrowableResultOfMethodCallIgnored"})
 public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -951,25 +951,6 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void testCloseOnCompletion() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-5344");
-
-        assert !stmt.isCloseOnCompletion() : "Default value of CloseOnCompletion is invalid";
-
-        stmt.execute("select 1");
-
-        stmt.closeOnCompletion();
-
-        assert stmt.isCloseOnCompletion();
-
-        stmt.getResultSet().close();
-
-        assert stmt.isClosed() : "Must be closed on complete";
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testCancel() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-5439");
 
@@ -1011,6 +992,50 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
             },
             SQLException.class,
             "Statement is closed");
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testStatementTypeMismatchSelect() throws Exception {
+        GridTestUtils.assertThrows(log,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    stmt.executeUpdate("select 1;");
+
+                    return null;
+                }
+            },
+            SQLException.class,
+            "Given statement type does not match that declared by JDBC driver");
+
+        assert stmt.getResultSet() == null : "Not results expected. Last statement is executed with exception";
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testStatementTypeMismatchUpdate() throws Exception {
+        GridTestUtils.assertThrows(log,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    stmt.executeQuery("update test set val=28 where _key=1");
+
+                    return null;
+                }
+            },
+            SQLException.class,
+            "Given statement type does not match that declared by JDBC driver");
+
+        ResultSet rs = stmt.executeQuery("select val from test where _key=1");
+
+        boolean next = rs.next();
+
+        assert next;
+
+        assert rs.getInt(1) == 1 : "The data must not be updated. " +
+            "Because update statement is executed via 'executeQuery' method." +
+            " Data [val=" + rs.getInt(1) + ']';
     }
 
     /** */

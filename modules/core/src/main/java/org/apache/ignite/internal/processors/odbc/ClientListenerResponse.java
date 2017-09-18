@@ -20,9 +20,9 @@ package org.apache.ignite.internal.processors.odbc;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * SQL listener response.
+ * Client listener response.
  */
-public abstract class SqlListenerResponse {
+public abstract class ClientListenerResponse {
     /** Command succeeded. */
     public static final int STATUS_SUCCESS = 0;
 
@@ -41,7 +41,7 @@ public abstract class SqlListenerResponse {
      * @param status Response status.
      * @param err Error, {@code null} if success is {@code true}.
      */
-    public SqlListenerResponse(int status, @Nullable String err) {
+    public ClientListenerResponse(int status, @Nullable String err) {
         this.status = status;
         this.err = err;
     }

@@ -51,17 +51,28 @@ final class MarshallerMappingFileStore {
     /** */
     private final IgniteLogger log;
 
-    /** */
+    /** Marshaller mapping directory */
     private final File workDir;
 
     /** */
     private final String FILE_EXTENSION = ".classname";
 
     /**
+     * @param igniteWorkDir Ignite work directory
      * @param log Logger.
      */
     MarshallerMappingFileStore(String igniteWorkDir, IgniteLogger log) throws IgniteCheckedException {
         workDir = U.resolveWorkDirectory(igniteWorkDir, "marshaller", false);
+        this.log = log;
+    }
+
+    /**
+     * Creates marshaller mapping file store with custom predefined work directory
+     * @param log logger.
+     * @param marshallerMappingFileStoreDir custom marshaller work directory
+     */
+    MarshallerMappingFileStore(final IgniteLogger log, final File marshallerMappingFileStoreDir) {
+        this.workDir = marshallerMappingFileStoreDir;
         this.log = log;
     }
 

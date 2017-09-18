@@ -925,12 +925,6 @@ public class JdbcThinPreparedStatementSelfTest extends JdbcThinAbstractSelfTest 
 
         checkNotSupported(new RunnableX() {
             @Override public void run() throws Exception {
-                stmt.setNString(1, "");
-            }
-        });
-
-        checkNotSupported(new RunnableX() {
-            @Override public void run() throws Exception {
                 stmt.setRowId(1, null);
             }
         });

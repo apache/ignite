@@ -27,15 +27,20 @@ public class OdbcQueryExecuteResult {
     private final long queryId;
 
     /** Fields metadata. */
-    private final Collection<OdbcColumnMeta> columnsMeta;
+    private final Collection<OdbcColumnMeta> columnsMetadata;
+
+    /** Rows affected by the query. */
+    private final long affectedRows;
 
     /**
      * @param queryId Query ID.
-     * @param columnsMeta Columns metadata.
+     * @param columnsMetadata Columns metadata.
+     * @param affectedRows Affected rows.
      */
-    public OdbcQueryExecuteResult(long queryId, Collection<OdbcColumnMeta> columnsMeta) {
+    public OdbcQueryExecuteResult(long queryId, Collection<OdbcColumnMeta> columnsMetadata, long affectedRows) {
         this.queryId = queryId;
-        this.columnsMeta = columnsMeta;
+        this.columnsMetadata = columnsMetadata;
+        this.affectedRows = affectedRows;
     }
 
     /**
@@ -48,7 +53,14 @@ public class OdbcQueryExecuteResult {
     /**
      * @return Columns metadata.
      */
-    public Collection<OdbcColumnMeta> getColumnsMetadata() {
-        return columnsMeta;
+    public Collection<OdbcColumnMeta> columnsMetadata() {
+        return columnsMetadata;
+    }
+
+    /**
+     * @return Number of rows affected by the query.
+     */
+    public long affectedRows() {
+        return affectedRows;
     }
 }

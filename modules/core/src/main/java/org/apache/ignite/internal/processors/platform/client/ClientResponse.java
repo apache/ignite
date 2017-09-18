@@ -15,23 +15,33 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.internal.processors.platform.client;
 
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.binary.BinaryRawWriter;
+import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 
 /**
- * Distributed future aware of MVCC locking.
+ * Thin client response.
  */
-public interface GridCacheMvccFuture<T> extends GridCacheFuture<T> {
-    /**
-     * @return Future version.
-     */
-    public GridCacheVersion version();
+public class ClientResponse extends ClientListenerResponse {
+    /** Request id. */
+    private final long reqId;
 
     /**
-     * @param entry Entry which received new owner.
-     * @param owner Owner.
-     * @return {@code True} if future cares about this entry.
+     * Constructor.
+     *
+     * @param reqId Request id.
      */
-    public boolean onOwnerChanged(GridCacheEntryEx entry, GridCacheMvccCandidate owner);
+    public ClientResponse(long reqId) {
+        super(STATUS_SUCCESS, null);
+
+        this.reqId = reqId;
+    }
+
+    /**
+     * Encodes the response data.
+     */
+    public void encode(BinaryRawWriter writer) {
+        writer.writeLong(reqId);
+    }
 }

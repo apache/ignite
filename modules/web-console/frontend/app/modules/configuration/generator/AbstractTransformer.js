@@ -134,8 +134,8 @@ export default class AbstractTransformer {
     }
 
     // Generate memory configuration group.
-    static clusterMemory(memoryConfiguration) {
-        return this.toSection(this.generator.clusterMemory(memoryConfiguration));
+    static clusterMemory(memoryConfiguration, available) {
+        return this.toSection(this.generator.clusterMemory(memoryConfiguration, available));
     }
 
     // Generate marshaller group.

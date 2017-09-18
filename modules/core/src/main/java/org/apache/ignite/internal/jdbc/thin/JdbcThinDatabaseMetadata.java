@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.jdbc.thin;
 
-import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
@@ -29,15 +28,19 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.jdbc2.JdbcUtils;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcColumnMeta;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcIndexMeta;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaColumnsRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaColumnsResult;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaIndexesRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaIndexesResult;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaPrimaryKeysRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaPrimaryKeysResult;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaSchemasRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaSchemasResult;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaTablesRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaTablesResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcPrimaryKeyMeta;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcTableMeta;
@@ -54,6 +57,9 @@ import static java.sql.RowIdLifetime.ROWID_UNSUPPORTED;
  */
 @SuppressWarnings("RedundantCast")
 public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
+    /** Driver name. */
+    public static final String DRIVER_NAME = "Apache Ignite Thin JDBC Driver";
+
     /** Connection. */
     private final JdbcThinConnection conn;
 
@@ -116,12 +122,12 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
 
     /** {@inheritDoc} */
     @Override public String getDatabaseProductVersion() throws SQLException {
-        return conn.io().igniteVersion().toString();
+        return conn.igniteVersion().toString();
     }
 
     /** {@inheritDoc} */
     @Override public String getDriverName() throws SQLException {
-        return "Ignite JDBC Thin Driver";
+        return DRIVER_NAME;
     }
 
     /** {@inheritDoc} */
@@ -699,10 +705,9 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
     }
 
     /** {@inheritDoc} */
-    @Override public ResultSet getTables(String catalog, String schemaPtrn, String tblNamePtrn,
-        String[] tblTypes) throws SQLException {
-        if (conn.isClosed())
-            throw new SQLException("Connection is closed.");
+    @Override public ResultSet getTables(String catalog, String schemaPtrn, String tblNamePtrn, String[] tblTypes)
+        throws SQLException {
+        conn.ensureNotClosed();
 
         final List<JdbcColumnMeta> meta = Arrays.asList(
             new JdbcColumnMeta(null, null, "TABLE_CAT", String.class),
@@ -733,24 +738,14 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
         if (!validCatalogPattern(catalog) || !tblTypeMatch)
             return new JdbcThinResultSet(Collections.<List<Object>>emptyList(), meta);
 
-        try {
-            JdbcMetaTablesResult res = conn.io().tablesMeta(schemaPtrn, tblNamePtrn);
+        JdbcMetaTablesResult res = conn.sendRequest(new JdbcMetaTablesRequest(schemaPtrn, tblNamePtrn));
 
-            List<List<Object>> rows = new LinkedList<>();
+        List<List<Object>> rows = new LinkedList<>();
 
-            for (JdbcTableMeta tblMeta : res.meta())
-                rows.add(tableRow(tblMeta));
+        for (JdbcTableMeta tblMeta : res.meta())
+            rows.add(tableRow(tblMeta));
 
-            return new JdbcThinResultSet(rows, meta);
-        }
-        catch (IOException e) {
-            conn.close();
-
-            throw new SQLException("Failed to query Ignite.", e);
-        }
-        catch (IgniteCheckedException e) {
-            throw new SQLException("Failed to query Ignite.", e);
-        }
+        return new JdbcThinResultSet(rows, meta);
     }
 
     /**
@@ -794,10 +789,9 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
     }
 
     /** {@inheritDoc} */
-    @Override public ResultSet getColumns(String catalog, String schemaPtrn, String tblNamePtrn,
-        String colNamePtrn) throws SQLException {
-        if (conn.isClosed())
-            throw new SQLException("Connection is closed.");
+    @Override public ResultSet getColumns(String catalog, String schemaPtrn, String tblNamePtrn, String colNamePtrn)
+        throws SQLException {
+        conn.ensureNotClosed();
 
         final List<JdbcColumnMeta> meta = Arrays.asList(
             new JdbcColumnMeta(null, null, "TABLE_CAT", String.class),
@@ -824,24 +818,14 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
         if (!validCatalogPattern(catalog))
             return new JdbcThinResultSet(Collections.<List<Object>>emptyList(), meta);
 
-        try {
-            JdbcMetaColumnsResult res = conn.io().columnsMeta(schemaPtrn, tblNamePtrn, colNamePtrn);
+        JdbcMetaColumnsResult res = conn.sendRequest(new JdbcMetaColumnsRequest(schemaPtrn, tblNamePtrn, colNamePtrn));
 
-            List<List<Object>> rows = new LinkedList<>();
+        List<List<Object>> rows = new LinkedList<>();
 
-            for (int i = 0; i < res.meta().size(); ++i)
-                rows.add(columnRow(res.meta().get(i), i + 1));
+        for (int i = 0; i < res.meta().size(); ++i)
+            rows.add(columnRow(res.meta().get(i), i + 1));
 
-            return new JdbcThinResultSet(rows, meta);
-        }
-        catch (IOException e) {
-            conn.close();
-
-            throw new SQLException("Failed to query Ignite.", e);
-        }
-        catch (IgniteCheckedException e) {
-            throw new SQLException("Failed to query Ignite.", e);
-        }
+        return new JdbcThinResultSet(rows, meta);
     }
 
     /**
@@ -936,8 +920,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
 
     /** {@inheritDoc} */
     @Override public ResultSet getPrimaryKeys(String catalog, String schema, String tbl) throws SQLException {
-        if (conn.isClosed())
-            throw new SQLException("Connection is closed.");
+        conn.ensureNotClosed();
 
         final List<JdbcColumnMeta> meta = Arrays.asList(
             new JdbcColumnMeta(null, null, "TABLE_CAT", String.class),
@@ -950,24 +933,14 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
         if (!validCatalogPattern(catalog))
             return new JdbcThinResultSet(Collections.<List<Object>>emptyList(), meta);
 
-        try {
-            JdbcMetaPrimaryKeysResult res = conn.io().primaryKeysMeta(schema, tbl);
+        JdbcMetaPrimaryKeysResult res = conn.sendRequest(new JdbcMetaPrimaryKeysRequest(schema, tbl));
 
-            List<List<Object>> rows = new LinkedList<>();
+        List<List<Object>> rows = new LinkedList<>();
 
-            for (JdbcPrimaryKeyMeta pkMeta : res.meta())
-                rows.addAll(primaryKeyRows(pkMeta));
+        for (JdbcPrimaryKeyMeta pkMeta : res.meta())
+            rows.addAll(primaryKeyRows(pkMeta));
 
-            return new JdbcThinResultSet(rows, meta);
-        }
-        catch (IOException e) {
-            conn.close();
-
-            throw new SQLException("Failed to query Ignite.", e);
-        }
-        catch (IgniteCheckedException e) {
-            throw new SQLException("Failed to query Ignite.", e);
-        }
+        return new JdbcThinResultSet(rows, meta);
     }
 
     /**
@@ -1167,8 +1140,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
     /** {@inheritDoc} */
     @Override public ResultSet getIndexInfo(String catalog, String schema, String tbl, boolean unique,
         boolean approximate) throws SQLException {
-        if (conn.isClosed())
-            throw new SQLException("Connection is closed.");
+        conn.ensureNotClosed();
 
         final List<JdbcColumnMeta> meta = Arrays.asList(
             new JdbcColumnMeta(null, null, "TABLE_CAT", String.class),
@@ -1188,24 +1160,14 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
         if (!validCatalogPattern(catalog))
             return new JdbcThinResultSet(Collections.<List<Object>>emptyList(), meta);
 
-        try {
-            JdbcMetaIndexesResult res = conn.io().indexMeta(schema, tbl);
+        JdbcMetaIndexesResult res = conn.sendRequest(new JdbcMetaIndexesRequest(schema, tbl));
 
-            List<List<Object>> rows = new LinkedList<>();
+        List<List<Object>> rows = new LinkedList<>();
 
-            for (JdbcIndexMeta idxMeta : res.meta())
-                rows.addAll(indexRows(idxMeta));
+        for (JdbcIndexMeta idxMeta : res.meta())
+            rows.addAll(indexRows(idxMeta));
 
-            return new JdbcThinResultSet(rows, meta);
-        }
-        catch (IOException e) {
-            conn.close();
-
-            throw new SQLException("Failed to query Ignite.", e);
-        }
-        catch (IgniteCheckedException e) {
-            throw new SQLException("Failed to query Ignite.", e);
-        }
+        return new JdbcThinResultSet(rows, meta);
     }
 
     /**
@@ -1401,12 +1363,12 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
 
     /** {@inheritDoc} */
     @Override public int getDatabaseMajorVersion() throws SQLException {
-        return conn.io().igniteVersion().major();
+        return conn.igniteVersion().major();
     }
 
     /** {@inheritDoc} */
     @Override public int getDatabaseMinorVersion() throws SQLException {
-        return conn.io().igniteVersion().minor();
+        return conn.igniteVersion().minor();
     }
 
     /** {@inheritDoc} */
@@ -1441,8 +1403,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
 
     /** {@inheritDoc} */
     @Override public ResultSet getSchemas(String catalog, String schemaPtrn) throws SQLException {
-        if (conn.isClosed())
-            throw new SQLException("Connection is closed.");
+        conn.ensureNotClosed();
 
         final List<JdbcColumnMeta> meta = Arrays.asList(
             new JdbcColumnMeta(null, null, "TABLE_SCHEM", String.class),
@@ -1452,30 +1413,20 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
         if (!validCatalogPattern(catalog))
             return new JdbcThinResultSet(Collections.<List<Object>>emptyList(), meta);
 
-        try {
-            JdbcMetaSchemasResult res = conn.io().schemasMeta(schemaPtrn);
+        JdbcMetaSchemasResult res = conn.sendRequest(new JdbcMetaSchemasRequest(schemaPtrn));
 
-            List<List<Object>> rows = new LinkedList<>();
+        List<List<Object>> rows = new LinkedList<>();
 
-            for (String schema : res.schemas()) {
-                List<Object> row = new ArrayList<>(2);
+        for (String schema : res.schemas()) {
+            List<Object> row = new ArrayList<>(2);
 
-                row.add(schema);
-                row.add(null);
+            row.add(schema);
+            row.add(null);
 
-                rows.add(row);
-            }
-
-            return new JdbcThinResultSet(rows, meta);
+            rows.add(row);
         }
-        catch (IOException e) {
-            conn.close();
 
-            throw new SQLException("Failed to query Ignite.", e);
-        }
-        catch (IgniteCheckedException e) {
-            throw new SQLException("Failed to query Ignite.", e);
-        }
+        return new JdbcThinResultSet(rows, meta);
     }
 
     /** {@inheritDoc} */
