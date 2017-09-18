@@ -87,12 +87,9 @@ public class ClientCacheScanQueryRequest extends ClientCacheRequest {
             .setPartition(part)
             .setFilter(createFilter(ctx));
 
-        IgniteCache cache;
-
-        if (filterPlatform == FILTER_PLATFORM_JAVA && !isKeepBinary())
-            cache = rawCache(ctx);
-        else
-            cache = cache(ctx);
+        IgniteCache cache = filterPlatform == FILTER_PLATFORM_JAVA && !isKeepBinary()
+                ? rawCache(ctx)
+                : cache(ctx);
 
         QueryCursor cur = cache.query(qry);
 
