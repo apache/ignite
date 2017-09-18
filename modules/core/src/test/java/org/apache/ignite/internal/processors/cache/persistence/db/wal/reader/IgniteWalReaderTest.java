@@ -85,7 +85,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
     private static final String CACHE_NAME = "cache0";
 
     /** cache for different types storage */
-    private static final String CACHE_ADDL_NAME = "cacheAddl";
+    private static final String CACHE_ADDL_NAME = "cache1";
 
     /** Fill wal with some data before iterating. Should be true for non local run */
     private static final boolean fillWalBeforeTest = true;
@@ -114,7 +114,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         final CacheConfiguration<Integer, IndexedObject> ccfg = new CacheConfiguration<>(CACHE_NAME);
 
-        ccfg.setAtomicityMode(CacheAtomicityMode.ATOMIC);
+        ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
         ccfg.setRebalanceMode(CacheRebalanceMode.SYNC);
         ccfg.setAffinity(new RendezvousAffinityFunction(false, 32));
         ccfg.setIndexedTypes(Integer.class, IndexedObject.class);
