@@ -21,14 +21,9 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * SQL connection configuration.
- * <p>
- * Deprecated as of Apache Ignite 2.3. Please use {@link ClientConnectorConfiguration} and
- * {@link IgniteConfiguration#setClientConnectorConfiguration(ClientConnectorConfiguration)} instead.
+ * Client connector configuration.
  */
-@SuppressWarnings("deprecation")
-@Deprecated
-public class SqlConnectorConfiguration {
+public class ClientConnectorConfiguration {
     /** Default port. */
     public static final int DFLT_PORT = 10800;
 
@@ -74,7 +69,7 @@ public class SqlConnectorConfiguration {
     /**
      * Creates SQL connector configuration with all default values.
      */
-    public SqlConnectorConfiguration() {
+    public ClientConnectorConfiguration() {
         // No-op.
     }
 
@@ -83,7 +78,7 @@ public class SqlConnectorConfiguration {
      *
      * @param cfg Configuration to copy.
      */
-    public SqlConnectorConfiguration(SqlConnectorConfiguration cfg) {
+    public ClientConnectorConfiguration(ClientConnectorConfiguration cfg) {
         assert cfg != null;
 
         host = cfg.getHost();
@@ -111,7 +106,7 @@ public class SqlConnectorConfiguration {
      * @param host Host.
      * @return This instance for chaining.
      */
-    public SqlConnectorConfiguration setHost(@Nullable String host) {
+    public ClientConnectorConfiguration setHost(@Nullable String host) {
         this.host = host;
 
         return this;
@@ -132,7 +127,7 @@ public class SqlConnectorConfiguration {
      * @param port Port.
      * @return This instance for chaining.
      */
-    public SqlConnectorConfiguration setPort(int port) {
+    public ClientConnectorConfiguration setPort(int port) {
         this.port = port;
 
         return this;
@@ -153,7 +148,7 @@ public class SqlConnectorConfiguration {
      * @param portRange Port range.
      * @return This instance for chaining.
      */
-    public SqlConnectorConfiguration setPortRange(int portRange) {
+    public ClientConnectorConfiguration setPortRange(int portRange) {
         this.portRange = portRange;
 
         return this;
@@ -176,7 +171,7 @@ public class SqlConnectorConfiguration {
      * @param sockSndBufSize Socket send buffer size in bytes.
      * @return This instance for chaining.
      */
-    public SqlConnectorConfiguration setSocketSendBufferSize(int sockSndBufSize) {
+    public ClientConnectorConfiguration setSocketSendBufferSize(int sockSndBufSize) {
         this.sockSndBufSize = sockSndBufSize;
 
         return this;
@@ -199,7 +194,7 @@ public class SqlConnectorConfiguration {
      * @param sockRcvBufSize Socket receive buffer size in bytes.
      * @return This instance for chaining.
      */
-    public SqlConnectorConfiguration setSocketReceiveBufferSize(int sockRcvBufSize) {
+    public ClientConnectorConfiguration setSocketReceiveBufferSize(int sockRcvBufSize) {
         this.sockRcvBufSize = sockRcvBufSize;
 
         return this;
@@ -220,7 +215,7 @@ public class SqlConnectorConfiguration {
      * @param tcpNoDelay TCP NO_DELAY flag.
      * @return This instance for chaining.
      */
-    public SqlConnectorConfiguration setTcpNoDelay(boolean tcpNoDelay) {
+    public ClientConnectorConfiguration setTcpNoDelay(boolean tcpNoDelay) {
         this.tcpNoDelay = tcpNoDelay;
 
         return this;
@@ -243,7 +238,7 @@ public class SqlConnectorConfiguration {
      * @param maxOpenCursorsPerConn Maximum number of opened cursors.
      * @return This instance for chaining.
      */
-    public SqlConnectorConfiguration setMaxOpenCursorsPerConnection(int maxOpenCursorsPerConn) {
+    public ClientConnectorConfiguration setMaxOpenCursorsPerConnection(int maxOpenCursorsPerConn) {
         this.maxOpenCursorsPerConn = maxOpenCursorsPerConn;
 
         return this;
@@ -267,7 +262,7 @@ public class SqlConnectorConfiguration {
      * @param threadPoolSize Thread pool that is in charge of processing SQL requests.
      * @return This instance for chaining.
      */
-    public SqlConnectorConfiguration setThreadPoolSize(int threadPoolSize) {
+    public ClientConnectorConfiguration setThreadPoolSize(int threadPoolSize) {
         this.threadPoolSize = threadPoolSize;
 
         return this;
@@ -275,6 +270,6 @@ public class SqlConnectorConfiguration {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(SqlConnectorConfiguration.class, this);
+        return S.toString(ClientConnectorConfiguration.class, this);
     }
 }

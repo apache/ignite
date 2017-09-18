@@ -596,7 +596,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
             IgniteSQLException.class, "CREATE TABLE ... AS ... syntax is not supported");
 
         assertParseThrows("create table Person (id int primary key)",
-            IgniteSQLException.class, "Tables with only key related columns are not supported at the moment");
+            IgniteSQLException.class, "Table must have at least one non PRIMARY KEY column.");
 
         assertParseThrows("create table Person (id int primary key, age int unique) WITH \"template=cache\"",
             IgniteSQLException.class, "Too many constraints - only PRIMARY KEY is supported for CREATE TABLE");

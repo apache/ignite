@@ -21,27 +21,27 @@ import java.util.HashSet;
 import java.util.Set;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
-import org.apache.ignite.internal.processors.odbc.SqlListenerConnectionContext;
-import org.apache.ignite.internal.processors.odbc.SqlListenerMessageParser;
-import org.apache.ignite.internal.processors.odbc.SqlListenerProtocolVersion;
-import org.apache.ignite.internal.processors.odbc.SqlListenerRequestHandler;
+import org.apache.ignite.internal.processors.odbc.ClientListenerConnectionContext;
+import org.apache.ignite.internal.processors.odbc.ClientListenerMessageParser;
+import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
+import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 
 /**
  * ODBC Connection Context.
  */
-public class OdbcConnectionContext implements SqlListenerConnectionContext {
+public class OdbcConnectionContext implements ClientListenerConnectionContext {
     /** Version 2.1.0. */
-    private static final SqlListenerProtocolVersion VER_2_1_0 = SqlListenerProtocolVersion.create(2, 1, 0);
+    private static final ClientListenerProtocolVersion VER_2_1_0 = ClientListenerProtocolVersion.create(2, 1, 0);
 
     /** Version 2.1.5: added "lazy" flag. */
-    private static final SqlListenerProtocolVersion VER_2_1_5 = SqlListenerProtocolVersion.create(2, 1, 5);
+    private static final ClientListenerProtocolVersion VER_2_1_5 = ClientListenerProtocolVersion.create(2, 1, 5);
 
     /** Current version. */
-    private static final SqlListenerProtocolVersion CURRENT_VER = VER_2_1_5;
+    private static final ClientListenerProtocolVersion CURRENT_VER = VER_2_1_5;
 
     /** Supported versions. */
-    private static final Set<SqlListenerProtocolVersion> SUPPORTED_VERS = new HashSet<>();
+    private static final Set<ClientListenerProtocolVersion> SUPPORTED_VERS = new HashSet<>();
 
     /** Context. */
     private final GridKernalContext ctx;
@@ -76,17 +76,17 @@ public class OdbcConnectionContext implements SqlListenerConnectionContext {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isVersionSupported(SqlListenerProtocolVersion ver) {
+    @Override public boolean isVersionSupported(ClientListenerProtocolVersion ver) {
         return SUPPORTED_VERS.contains(ver);
     }
 
     /** {@inheritDoc} */
-    @Override public SqlListenerProtocolVersion currentVersion() {
+    @Override public ClientListenerProtocolVersion currentVersion() {
         return CURRENT_VER;
     }
 
     /** {@inheritDoc} */
-    @Override public void initializeFromHandshake(SqlListenerProtocolVersion ver, BinaryReaderExImpl reader) {
+    @Override public void initializeFromHandshake(ClientListenerProtocolVersion ver, BinaryReaderExImpl reader) {
         assert SUPPORTED_VERS.contains(ver): "Unsupported ODBC protocol version.";
 
         boolean distributedJoins = reader.readBoolean();
@@ -105,12 +105,12 @@ public class OdbcConnectionContext implements SqlListenerConnectionContext {
     }
 
     /** {@inheritDoc} */
-    @Override public SqlListenerRequestHandler handler() {
+    @Override public ClientListenerRequestHandler handler() {
         return handler;
     }
 
     /** {@inheritDoc} */
-    @Override public SqlListenerMessageParser parser() {
+    @Override public ClientListenerMessageParser parser() {
         return parser;
     }
 

@@ -17,17 +17,9 @@
 
 package org.apache.ignite.jdbc.thin;
 
-import java.net.URL;
 import java.sql.Connection;
-import java.sql.DatabaseMetaData;
-import java.sql.Date;
 import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Time;
-import java.sql.Timestamp;
-import java.util.List;
 import org.apache.ignite.jdbc.JdbcErrorsAbstractSelfTest;
 import org.apache.ignite.lang.IgniteCallable;
 

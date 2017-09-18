@@ -38,7 +38,7 @@ import java.util.Properties;
 import java.util.concurrent.Executor;
 import java.util.logging.Logger;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
-import org.apache.ignite.internal.processors.odbc.SqlListenerResponse;
+import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResponse;
@@ -664,7 +664,7 @@ public class JdbcThinConnection implements Connection {
         try {
             JdbcResponse res = cliIo.sendRequest(req);
 
-            if (res.status() != SqlListenerResponse.STATUS_SUCCESS)
+            if (res.status() != ClientListenerResponse.STATUS_SUCCESS)
                 throw new SQLException(res.error(), IgniteQueryErrorCode.codeToSqlState(res.status()));
 
             return (R)res.response();

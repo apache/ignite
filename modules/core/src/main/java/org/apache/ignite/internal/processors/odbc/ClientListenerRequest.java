@@ -18,9 +18,9 @@
 package org.apache.ignite.internal.processors.odbc;
 
 /**
- * SQL listener command request.
+ * Client listener command request.
  */
-public interface SqlListenerRequest {
+public interface ClientListenerRequest {
     /** Handshake request. */
     public static final int HANDSHAKE = 1;
 

@@ -37,9 +37,9 @@ import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.jdbc2.JdbcSqlFieldsQuery;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
-import org.apache.ignite.internal.processors.odbc.SqlListenerRequest;
-import org.apache.ignite.internal.processors.odbc.SqlListenerRequestHandler;
-import org.apache.ignite.internal.processors.odbc.SqlListenerResponse;
+import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
+import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
+import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 import org.apache.ignite.internal.processors.odbc.odbc.OdbcQueryGetColumnsMetaRequest;
 import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
@@ -65,7 +65,7 @@ import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.QRY_ME
 /**
  * JDBC request handler.
  */
-public class JdbcRequestHandler implements SqlListenerRequestHandler {
+public class JdbcRequestHandler implements ClientListenerRequestHandler {
     /** Query ID sequence. */
     private static final AtomicLong QRY_ID_GEN = new AtomicLong();
 
@@ -132,7 +132,7 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public SqlListenerResponse handle(SqlListenerRequest req0) {
+    @Override public ClientListenerResponse handle(ClientListenerRequest req0) {
         assert req0 != null;
 
         assert req0 instanceof JdbcRequest;
@@ -188,7 +188,7 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public SqlListenerResponse handleException(Exception e) {
+    @Override public ClientListenerResponse handleException(Exception e) {
         return exceptionToResult(e);
     }
 
@@ -410,7 +410,7 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
      * @param req Request.
      * @return Response.
      */
-    private SqlListenerResponse executeBatch(JdbcBatchExecuteRequest req) {
+    private ClientListenerResponse executeBatch(JdbcBatchExecuteRequest req) {
         String schemaName = req.schemaName();
 
         if (F.isEmpty(schemaName))
@@ -448,7 +448,7 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
                 updCnts[successQueries++] = ((Long)items.get(0).get(0)).intValue();
             }
 
-            return new JdbcResponse(new JdbcBatchExecuteResult(updCnts, SqlListenerResponse.STATUS_SUCCESS, null));
+            return new JdbcResponse(new JdbcBatchExecuteResult(updCnts, ClientListenerResponse.STATUS_SUCCESS, null));
         }
         catch (Exception e) {
             U.error(log, "Failed to execute batch query [reqId=" + req.requestId() + ", req=" + req + ']', e);
@@ -552,7 +552,7 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
      * @param req Request.
      * @return Response.
      */
-    private SqlListenerResponse getIndexesMeta(JdbcMetaIndexesRequest req) {
+    private ClientListenerResponse getIndexesMeta(JdbcMetaIndexesRequest req) {
         try {
             Collection<JdbcIndexMeta> meta = new HashSet<>();
 
@@ -582,7 +582,7 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
      * @param req Request.
      * @return Response.
      */
-    private SqlListenerResponse getParametersMeta(JdbcMetaParamsRequest req) {
+    private ClientListenerResponse getParametersMeta(JdbcMetaParamsRequest req) {
         try {
             ParameterMetaData paramMeta = ctx.query().prepareNativeStatement(req.schemaName(), req.sql())
                 .getParameterMetaData();
@@ -609,7 +609,7 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
      * @param req Request.
      * @return Response.
      */
-    private SqlListenerResponse getPrimaryKeys(JdbcMetaPrimaryKeysRequest req) {
+    private ClientListenerResponse getPrimaryKeys(JdbcMetaPrimaryKeysRequest req) {
         try {
             Collection<JdbcPrimaryKeyMeta> meta = new HashSet<>();
 
@@ -655,7 +655,7 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
      * @param req Request.
      * @return Response.
      */
-    private SqlListenerResponse getSchemas(JdbcMetaSchemasRequest req) {
+    private ClientListenerResponse getSchemas(JdbcMetaSchemasRequest req) {
         try {
             String schemaPtrn = req.schemaName();
 
