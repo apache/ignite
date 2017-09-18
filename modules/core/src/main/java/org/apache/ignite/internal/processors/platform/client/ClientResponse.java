@@ -39,9 +39,27 @@ public class ClientResponse extends ClientListenerResponse {
     }
 
     /**
+     * Constructor.
+     *
+     * @param reqId Request id.
+     */
+    public ClientResponse(long reqId, String err) {
+        super(STATUS_FAILED, err);
+
+        this.reqId = reqId;
+    }
+
+    /**
      * Encodes the response data.
      */
     public void encode(BinaryRawWriterEx writer) {
         writer.writeLong(reqId);
+
+        if (status() == STATUS_SUCCESS) {
+            writer.writeBoolean(true);
+        } else {
+            writer.writeBoolean(false);
+            writer.writeString(error());
+        }
     }
 }

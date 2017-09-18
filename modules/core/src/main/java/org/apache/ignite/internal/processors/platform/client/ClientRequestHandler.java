@@ -42,7 +42,12 @@ public class ClientRequestHandler implements ClientListenerRequestHandler {
 
     /** {@inheritDoc} */
     @Override public ClientListenerResponse handle(ClientListenerRequest req) {
-        return ((ClientRequest)req).process(ctx);
+        try {
+            return ((ClientRequest)req).process(ctx);
+        }
+        catch (Throwable e) {
+            return new ClientResponse(req.requestId(), e.getMessage());
+        }
     }
 
     /** {@inheritDoc} */

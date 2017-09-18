@@ -88,6 +88,12 @@ namespace Apache.Ignite.Core.Impl.Client
                 var resRequestId = stream.ReadLong();
                 Debug.Assert(requestId == resRequestId);
 
+                if (!stream.ReadBool())
+                {
+                    // Error.
+                    throw new IgniteException(BinaryUtils.Marshaller.StartUnmarshal(stream).ReadString());
+                }
+
                 if (readFunc != null)
                 {
                     return readFunc(stream);
