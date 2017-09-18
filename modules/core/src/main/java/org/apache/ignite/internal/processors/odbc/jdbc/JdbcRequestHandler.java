@@ -236,8 +236,9 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
         if (maxCursors > 0 && cursorCnt >= maxCursors)
             return new JdbcResponse(IgniteQueryErrorCode.UNKNOWN, "Too many opened cursors (either close other " +
-                "opened cursors or increase the limit through OdbcConfiguration.setMaxOpenCursors()) " +
-                "[maximum=" + maxCursors + ", current=" + cursorCnt + ']');
+                "opened cursors or increase the limit through " +
+                "ClientConnectorConfiguration.maxOpenCursorsPerConnection) [maximum=" + maxCursors +
+                ", current=" + cursorCnt + ']');
 
         long qryId = QRY_ID_GEN.getAndIncrement();
 

@@ -120,9 +120,12 @@ public class ClientConnectionContext implements ClientListenerConnectionContext 
      * Increments the cursor count.
      */
     public void incrementCursors() {
-        if (curCnt.get() >= maxCursors) {
-            throw new IgniteException("Too many open cursors. Close active cursors or increase " +
-                    "ClientConnectorConfiguration.maxOpenCursorsPerConnection.");
+        long curCnt0 = curCnt.get();
+
+        if (curCnt0 >= maxCursors) {
+            throw new IgniteException("Too many opened cursors (either close other opened cursors or increase the " +
+                "limit through ClientConnectorConfiguration.maxOpenCursorsPerConnection) [maximum=" + maxCursors +
+                ", current=" + curCnt0 + ']');
         }
 
         curCnt.incrementAndGet();

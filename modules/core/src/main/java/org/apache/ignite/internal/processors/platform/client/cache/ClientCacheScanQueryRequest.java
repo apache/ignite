@@ -81,26 +81,32 @@ public class ClientCacheScanQueryRequest extends ClientCacheRequest {
 
     /** {@inheritDoc} */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
+        IgniteCache cache = filterPlatform == FILTER_PLATFORM_JAVA && !isKeepBinary() ? rawCache(ctx) : cache(ctx);
+
         ScanQuery qry = new ScanQuery()
             .setLocal(loc)
             .setPageSize(pageSize)
             .setPartition(part)
             .setFilter(createFilter(ctx));
 
-        IgniteCache cache = filterPlatform == FILTER_PLATFORM_JAVA && !isKeepBinary()
-                ? rawCache(ctx)
-                : cache(ctx);
+        ctx.incrementCursors();
 
-        QueryCursor cur = cache.query(qry);
+        try {
+            QueryCursor cur = cache.query(qry);
 
-        ClientCacheScanQueryCursor cliCur =
-            new ClientCacheScanQueryCursor((QueryCursorEx) cur, pageSize, ctx);
+            ClientCacheScanQueryCursor cliCur = new ClientCacheScanQueryCursor((QueryCursorEx)cur, pageSize, ctx);
 
-        long cursorId = ctx.resources().put(cliCur);
+            long cursorId = ctx.resources().put(cliCur);
 
-        cliCur.id(cursorId);
+            cliCur.id(cursorId);
 
-        return new ClientCacheScanQueryResponse(requestId(), cliCur);
+            return new ClientCacheScanQueryResponse(requestId(), cliCur);
+        }
+        catch (Exception e) {
+            ctx.decrementCursors();
+
+            throw e;
+        }
     }
 
     /**
@@ -129,6 +135,7 @@ public class ClientCacheScanQueryRequest extends ClientCacheRequest {
 
                 return platformCtx.createCacheEntryFilter(filterObj, 0);
 
+            case FILTER_PLATFORM_CPP:
             default:
                 throw new UnsupportedOperationException("Invalid client ScanQuery filter code: " + filterPlatform);
         }

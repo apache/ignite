@@ -24,6 +24,7 @@ import org.apache.ignite.internal.processors.platform.client.ClientConnectionCon
 
 import javax.cache.Cache;
 import java.util.Iterator;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Query cursor holder.
@@ -44,6 +45,9 @@ class ClientCacheScanQueryCursor implements ClientCloseableResource {
     /** Iterator. */
     private Iterator<Cache.Entry> iterator;
 
+    /** Close guard. */
+    private final AtomicBoolean closeGuard = new AtomicBoolean();
+
     /**
      * Ctor.
      *  @param cursor Cursor.
@@ -58,8 +62,6 @@ class ClientCacheScanQueryCursor implements ClientCloseableResource {
         this.cursor = cursor;
         this.pageSize = pageSize;
         this.ctx = ctx;
-
-        ctx.incrementCursors();
     }
 
     /**
@@ -86,17 +88,19 @@ class ClientCacheScanQueryCursor implements ClientCloseableResource {
 
         writer.writeBoolean(iter.hasNext());
 
-        if (!iter.hasNext()) {
+        if (!iter.hasNext())
             ctx.resources().release(id);
-        }
     }
 
     /**
      * Closes the cursor.
      */
     @Override public void close() {
-        cursor.close();
-        ctx.decrementCursors();
+        if (closeGuard.compareAndSet(false, true)) {
+            cursor.close();
+
+            ctx.decrementCursors();
+        }
     }
 
     /**
