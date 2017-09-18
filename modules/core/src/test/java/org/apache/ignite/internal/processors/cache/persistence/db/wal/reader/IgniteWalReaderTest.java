@@ -42,6 +42,7 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
@@ -83,6 +84,9 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
     /** Cache name. */
     private static final String CACHE_NAME = "cache0";
 
+    /** cache for different types storage */
+    private static final String CACHE_ADDL_NAME = "cacheAddl";
+
     /** Fill wal with some data before iterating. Should be true for non local run */
     private static final boolean fillWalBeforeTest = true;
 
@@ -108,12 +112,12 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         final IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        final CacheConfiguration<Integer, IgniteWalReaderTest.IndexedObject> ccfg = new CacheConfiguration<>(CACHE_NAME);
+        final CacheConfiguration<Integer, IndexedObject> ccfg = new CacheConfiguration<>(CACHE_NAME);
 
         ccfg.setAtomicityMode(CacheAtomicityMode.ATOMIC);
         ccfg.setRebalanceMode(CacheRebalanceMode.SYNC);
         ccfg.setAffinity(new RendezvousAffinityFunction(false, 32));
-        ccfg.setIndexedTypes(Integer.class, IgniteWalReaderTest.IndexedObject.class);
+        ccfg.setIndexedTypes(Integer.class, IndexedObject.class);
 
         cfg.setCacheConfiguration(ccfg);
 
@@ -793,7 +797,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
                     final TxRecord txRecord = (TxRecord)walRecord;
                     final GridCacheVersion globalTxId = txRecord.nearXidVersion();
 
-                    log.info("//Tx Record, action: " + txRecord.action() +
+                    log.info("//Tx Record, state: " + txRecord.state() +
                         "; nearTxVersion" + globalTxId);
                 }
             }
@@ -858,10 +862,6 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
             return "TestSerializable{" +
                 "iVal=" + iVal +
                 '}';
-            int sz = 40;
-            data = new byte[sz];
-            for (int i = 0; i < sz; i++)
-                data[i] = (byte)('A' + (i % 10));
         }
 
         /** {@inheritDoc} */
