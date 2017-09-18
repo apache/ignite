@@ -41,10 +41,16 @@ public class ClientConnectionContext implements ClientListenerConnectionContext 
     private final ClientRequestHandler handler;
 
     /** Handle registry. */
-    private final ClientResourceRegistry resReg;
+    private final ClientResourceRegistry resReg = new ClientResourceRegistry();
 
     /** Kernal context. */
     private final GridKernalContext kernalCtx;
+
+    /** Max cursors. */
+    private final int maxCursors;
+
+    /** Cursor counter. */
+    private final AtomicLong curCnt = new AtomicLong();
 
     /**
      * Ctor.
@@ -59,7 +65,7 @@ public class ClientConnectionContext implements ClientListenerConnectionContext 
 
         parser = new ClientMessageParser(ctx);
         handler = new ClientRequestHandler(this);
-        resReg = new ClientResourceRegistry(maxCursors);
+        this.maxCursors = maxCursors;
     }
 
     /**
@@ -108,5 +114,24 @@ public class ClientConnectionContext implements ClientListenerConnectionContext 
     /** {@inheritDoc} */
     @Override public void onDisconnected() {
         resReg.clean();
+    }
+
+    /**
+     * Increments the cursor count.
+     */
+    public void incrementCursors() {
+        if (curCnt.get() >= maxCursors) {
+            throw new IgniteException("Too many open cursors. Close active cursors or increase " +
+                    "ClientConnectorConfiguration.maxOpenCursorsPerConnection.");
+        }
+
+        curCnt.incrementAndGet();
+    }
+
+    /**
+     * Increments the cursor count.
+     */
+    public void decrementCursors() {
+        curCnt.decrementAndGet();
     }
 }

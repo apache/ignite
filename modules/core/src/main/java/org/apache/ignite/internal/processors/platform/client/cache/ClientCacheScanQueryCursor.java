@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.platform.client.cache;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
 import org.apache.ignite.internal.processors.platform.client.ClientCloseableResource;
-import org.apache.ignite.internal.processors.platform.client.ClientResourceRegistry;
+import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 
 import javax.cache.Cache;
 import java.util.Iterator;
@@ -35,8 +35,8 @@ class ClientCacheScanQueryCursor implements ClientCloseableResource {
     /** Page size. */
     private final int pageSize;
 
-    /** Resources. */
-    private final ClientResourceRegistry resources;
+    /** Context. */
+    private final ClientConnectionContext ctx;
 
     /** Id. */
     private long id;
@@ -46,18 +46,20 @@ class ClientCacheScanQueryCursor implements ClientCloseableResource {
 
     /**
      * Ctor.
-     *
-     * @param cursor Cursor.
+     *  @param cursor Cursor.
      * @param pageSize Page size.
+     * @param ctx Context.
      */
-    ClientCacheScanQueryCursor(QueryCursorEx<Cache.Entry> cursor, int pageSize, ClientResourceRegistry resources) {
+    ClientCacheScanQueryCursor(QueryCursorEx<Cache.Entry> cursor, int pageSize, ClientConnectionContext ctx) {
         assert cursor != null;
         assert pageSize > 0;
-        assert resources != null;
+        assert ctx != null;
 
         this.cursor = cursor;
         this.pageSize = pageSize;
-        this.resources = resources;
+        this.ctx = ctx;
+
+        ctx.incrementCursors();
     }
 
     /**
@@ -84,8 +86,9 @@ class ClientCacheScanQueryCursor implements ClientCloseableResource {
 
         writer.writeBoolean(iter.hasNext());
 
-        if (!iter.hasNext())
-            resources.release(id);
+        if (!iter.hasNext()) {
+            ctx.resources().release(id);
+        }
     }
 
     /**
@@ -93,6 +96,7 @@ class ClientCacheScanQueryCursor implements ClientCloseableResource {
      */
     @Override public void close() {
         cursor.close();
+        ctx.decrementCursors();
     }
 
     /**
