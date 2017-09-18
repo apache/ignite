@@ -19,10 +19,13 @@ package org.apache.ignite.internal.processors.client;
 
 import junit.framework.TestCase;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
+import org.apache.ignite.configuration.OdbcConfiguration;
+import org.apache.ignite.configuration.SqlConnectorConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -33,6 +36,7 @@ import org.jetbrains.annotations.Nullable;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -60,7 +64,7 @@ public class ClientConnectorConfigurationValidationSelfTest extends GridCommonAb
      */
     public void testDefault() throws Exception {
         check(new ClientConnectorConfiguration(), true);
-        assertJdbc(null, ClientConnectorConfiguration.DFLT_PORT);
+        checkJdbc(null, ClientConnectorConfiguration.DFLT_PORT);
     }
 
     /**
@@ -72,10 +76,10 @@ public class ClientConnectorConfigurationValidationSelfTest extends GridCommonAb
         check(new ClientConnectorConfiguration().setHost("126.0.0.1"), false);
 
         check(new ClientConnectorConfiguration().setHost("127.0.0.1"), true);
-        assertJdbc("127.0.0.1", ClientConnectorConfiguration.DFLT_PORT);
+        checkJdbc("127.0.0.1", ClientConnectorConfiguration.DFLT_PORT);
 
         check(new ClientConnectorConfiguration().setHost("0.0.0.0"), true);
-        assertJdbc("0.0.0.0", ClientConnectorConfiguration.DFLT_PORT + 1);
+        checkJdbc("0.0.0.0", ClientConnectorConfiguration.DFLT_PORT + 1);
 
     }
 
@@ -91,10 +95,10 @@ public class ClientConnectorConfigurationValidationSelfTest extends GridCommonAb
         check(new ClientConnectorConfiguration().setPort(65536), false);
 
         check(new ClientConnectorConfiguration().setPort(ClientConnectorConfiguration.DFLT_PORT), true);
-        assertJdbc(null, ClientConnectorConfiguration.DFLT_PORT);
+        checkJdbc(null, ClientConnectorConfiguration.DFLT_PORT);
 
         check(new ClientConnectorConfiguration().setPort(ClientConnectorConfiguration.DFLT_PORT + 200), true);
-        assertJdbc(null, ClientConnectorConfiguration.DFLT_PORT + 200);
+        checkJdbc(null, ClientConnectorConfiguration.DFLT_PORT + 200);
     }
 
 
@@ -107,10 +111,10 @@ public class ClientConnectorConfigurationValidationSelfTest extends GridCommonAb
         check(new ClientConnectorConfiguration().setPortRange(-1), false);
 
         check(new ClientConnectorConfiguration().setPortRange(0), true);
-        assertJdbc(null, ClientConnectorConfiguration.DFLT_PORT);
+        checkJdbc(null, ClientConnectorConfiguration.DFLT_PORT);
 
         check(new ClientConnectorConfiguration().setPortRange(10), true);
-        assertJdbc(null, ClientConnectorConfiguration.DFLT_PORT + 1);
+        checkJdbc(null, ClientConnectorConfiguration.DFLT_PORT + 1);
     }
 
     /**
@@ -123,10 +127,10 @@ public class ClientConnectorConfigurationValidationSelfTest extends GridCommonAb
         check(new ClientConnectorConfiguration().setSocketReceiveBufferSize(-4 * 1024), false);
 
         check(new ClientConnectorConfiguration().setSocketSendBufferSize(4 * 1024), true);
-        assertJdbc(null, ClientConnectorConfiguration.DFLT_PORT);
+        checkJdbc(null, ClientConnectorConfiguration.DFLT_PORT);
 
         check(new ClientConnectorConfiguration().setSocketReceiveBufferSize(4 * 1024), true);
-        assertJdbc(null, ClientConnectorConfiguration.DFLT_PORT + 1);
+        checkJdbc(null, ClientConnectorConfiguration.DFLT_PORT + 1);
     }
 
     /**
@@ -138,10 +142,10 @@ public class ClientConnectorConfigurationValidationSelfTest extends GridCommonAb
         check(new ClientConnectorConfiguration().setMaxOpenCursorsPerConnection(-1), false);
 
         check(new ClientConnectorConfiguration().setMaxOpenCursorsPerConnection(0), true);
-        assertJdbc(null, ClientConnectorConfiguration.DFLT_PORT);
+        checkJdbc(null, ClientConnectorConfiguration.DFLT_PORT);
 
         check(new ClientConnectorConfiguration().setMaxOpenCursorsPerConnection(100), true);
-        assertJdbc(null, ClientConnectorConfiguration.DFLT_PORT + 1);
+        checkJdbc(null, ClientConnectorConfiguration.DFLT_PORT + 1);
     }
 
     /**
@@ -154,24 +158,156 @@ public class ClientConnectorConfigurationValidationSelfTest extends GridCommonAb
         check(new ClientConnectorConfiguration().setThreadPoolSize(-1), false);
 
         check(new ClientConnectorConfiguration().setThreadPoolSize(4), true);
-        assertJdbc(null, ClientConnectorConfiguration.DFLT_PORT);
+        checkJdbc(null, ClientConnectorConfiguration.DFLT_PORT);
     }
 
     /**
-     * Perform check.
+     * Test ODBC connector conversion.
      *
-     * @param sqlCfg SQL configuration.
-     * @param success Success flag. * @throws Exception If failed.
+     * @throws Exception If failed.
      */
-    @SuppressWarnings({"ThrowableResultOfMethodCallIgnored", "unchecked"})
-    private void check(ClientConnectorConfiguration sqlCfg, boolean success) throws Exception {
+    public void testOdbcConnectorConversion() throws Exception {
+        int port = ClientConnectorConfiguration.DFLT_PORT - 1;
+
+        IgniteConfiguration cfg = baseConfiguration();
+
+        cfg.setOdbcConfiguration(new OdbcConfiguration().setEndpointAddress("127.0.0.1:" + port));
+
+        Ignition.start(cfg);
+
+        checkJdbc(null, port);
+    }
+
+    /**
+     * Test SQL connector conversion.
+     *
+     * @throws Exception If failed.
+     */
+    public void testSqlConnectorConversion() throws Exception {
+        int port = ClientConnectorConfiguration.DFLT_PORT - 1;
+
+        IgniteConfiguration cfg = baseConfiguration();
+
+        cfg.setSqlConnectorConfiguration(new SqlConnectorConfiguration().setPort(port));
+
+        Ignition.start(cfg);
+
+        checkJdbc(null, port);
+    }
+
+    /**
+     * Test SQL connector conversion.
+     *
+     * @throws Exception If failed.
+     */
+    public void testIgnoreOdbcWhenSqlSet() throws Exception {
+        int port = ClientConnectorConfiguration.DFLT_PORT - 1;
+
+        IgniteConfiguration cfg = baseConfiguration();
+
+        cfg.setSqlConnectorConfiguration(new SqlConnectorConfiguration().setPort(port));
+        cfg.setOdbcConfiguration(new OdbcConfiguration().setEndpointAddress("127.0.0.1:" + (port - 1)));
+
+        Ignition.start(cfg);
+
+        checkJdbc(null, port);
+    }
+
+    /**
+     * Test SQL connector conversion.
+     *
+     * @throws Exception If failed.
+     */
+    public void testIgnoreOdbcAndSqlWhenClientSet() throws Exception {
+        int cliPort = ClientConnectorConfiguration.DFLT_PORT - 1;
+        int sqlPort = ClientConnectorConfiguration.DFLT_PORT - 2;
+        int odbcPort = ClientConnectorConfiguration.DFLT_PORT - 3;
+
+        IgniteConfiguration cfg = baseConfiguration();
+
+        cfg.setClientConnectorConfiguration(new ClientConnectorConfiguration().setPort(cliPort));
+        cfg.setSqlConnectorConfiguration(new SqlConnectorConfiguration().setPort(sqlPort));
+        cfg.setOdbcConfiguration(new OdbcConfiguration().setEndpointAddress("127.0.0.1:" + odbcPort));
+
+        Ignition.start(cfg);
+
+        checkJdbc(null, cliPort);
+    }
+
+    /**
+     * Test SQL connector conversion.
+     *
+     * @throws Exception If failed.
+     */
+    public void testIgnoreOdbcWhenClientSet() throws Exception {
+        int cliPort = ClientConnectorConfiguration.DFLT_PORT - 1;
+        int odbcPort = ClientConnectorConfiguration.DFLT_PORT - 2;
+
+        IgniteConfiguration cfg = baseConfiguration();
+
+        cfg.setClientConnectorConfiguration(new ClientConnectorConfiguration().setPort(cliPort));
+        cfg.setOdbcConfiguration(new OdbcConfiguration().setEndpointAddress("127.0.0.1:" + odbcPort));
+
+        Ignition.start(cfg);
+
+        checkJdbc(null, cliPort);
+    }
+
+    /**
+     * Test SQL connector conversion.
+     *
+     * @throws Exception If failed.
+     */
+    public void testIgnoreSqlWhenClientSet() throws Exception {
+        int cliPort = ClientConnectorConfiguration.DFLT_PORT - 1;
+        int sqlPort = ClientConnectorConfiguration.DFLT_PORT - 2;
+
+        IgniteConfiguration cfg = baseConfiguration();
+
+        cfg.setClientConnectorConfiguration(new ClientConnectorConfiguration().setPort(cliPort));
+        cfg.setSqlConnectorConfiguration(new SqlConnectorConfiguration().setPort(sqlPort));
+
+        Ignition.start(cfg);
+
+        checkJdbc(null, cliPort);
+    }
+
+    /**
+     * Test disabled client.
+     *
+     * @throws Exception If failed.
+     */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    public void testDisabled() throws Exception {
+        IgniteConfiguration cfg = baseConfiguration();
+
+        cfg.setClientConnectorConfiguration(null);
+
+        Ignition.start(cfg);
+
+        GridTestUtils.assertThrows(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                checkJdbc(null, ClientConnectorConfiguration.DFLT_PORT);
+
+                return null;
+            }
+        }, SQLException.class, null);
+    }
+
+    /**
+     * Get base node configuration.
+     *
+     * @return Configuration.
+     * @throws Exception If failed.
+     */
+    @SuppressWarnings("unchecked")
+    private IgniteConfiguration baseConfiguration() throws Exception {
         final IgniteConfiguration cfg = super.getConfiguration();
 
         cfg.setIgniteInstanceName(ClientConnectorConfigurationValidationSelfTest.class.getName() + "-" +
             NODE_IDX_GEN.incrementAndGet());
 
         cfg.setLocalHost("127.0.0.1");
-        cfg.setClientConnectorConfiguration(sqlCfg);
         cfg.setMarshaller(new BinaryMarshaller());
 
         TcpDiscoverySpi spi = new TcpDiscoverySpi();
@@ -180,9 +316,24 @@ public class ClientConnectorConfigurationValidationSelfTest extends GridCommonAb
         cfg.setDiscoverySpi(spi);
 
         CacheConfiguration ccfg = new CacheConfiguration(CACHE_NAME)
-            .setIndexedTypes(SqlConnectorKey.class, SqlConnectorValue.class);
+            .setIndexedTypes(ClientConnectorKey.class, ClientConnectorValue.class);
 
         cfg.setCacheConfiguration(ccfg);
+
+        return cfg;
+    }
+
+    /**
+     * Perform check.
+     *
+     * @param cliConnCfg Client connector configuration.
+     * @param success Success flag. * @throws Exception If failed.
+     */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    private void check(ClientConnectorConfiguration cliConnCfg, boolean success) throws Exception {
+        final IgniteConfiguration cfg = baseConfiguration();
+
+        cfg.setClientConnectorConfiguration(cliConnCfg);
 
         if (success)
             startGrid(cfg.getIgniteInstanceName(), cfg);
@@ -204,7 +355,7 @@ public class ClientConnectorConfigurationValidationSelfTest extends GridCommonAb
      * @param port Port.
      * @throws Exception If failed.
      */
-    private void assertJdbc(@Nullable String host, int port) throws Exception {
+    private void checkJdbc(@Nullable String host, int port) throws Exception {
         if (host == null)
             host = "127.0.0.1";
 
@@ -226,7 +377,7 @@ public class ClientConnectorConfigurationValidationSelfTest extends GridCommonAb
     /**
      * Key class.
      */
-    private static class SqlConnectorKey {
+    private static class ClientConnectorKey {
         @QuerySqlField
         public int key;
     }
@@ -234,7 +385,7 @@ public class ClientConnectorConfigurationValidationSelfTest extends GridCommonAb
     /**
      * Value class.
      */
-    private static class SqlConnectorValue {
+    private static class ClientConnectorValue {
         @QuerySqlField
         public int val;
     }
