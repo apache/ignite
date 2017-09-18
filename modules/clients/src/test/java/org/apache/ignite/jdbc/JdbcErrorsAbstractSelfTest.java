@@ -477,6 +477,34 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
     }
 
     /**
+     * Check error code for the case null value is inserted into table field declared as NOT NULL.
+     *
+     * @throws SQLException if failed.
+     */
+    public void testNotNullViolation() throws SQLException {
+        try (Connection conn = getConnection()) {
+            conn.setSchema("PUBLIC");
+
+            try (Statement stmt = conn.createStatement()) {
+                stmt.execute("CREATE TABLE nulltest(id INT PRIMARY KEY, name CHAR NOT NULL)");
+
+                try {
+                    checkErrorState(new IgniteCallable<Void>() {
+                        @Override public Void call() throws Exception {
+                            stmt.execute("INSERT INTO nulltest(id, name) VALUES (1, NULLIF('a', 'a'))");
+
+                            return null;
+                        }
+                    }, "22004");
+                }
+                finally {
+                    stmt.execute("DROP TABLE nulltest");
+                }
+            }
+        }
+    }
+
+    /**
      * @return Connection to execute statements on.
      * @throws SQLException if failed.
      */
