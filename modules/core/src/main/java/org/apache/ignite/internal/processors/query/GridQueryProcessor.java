@@ -554,16 +554,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             // Clean stale IO messages from just-joined nodes.
             cleanStaleStatusMessages(opId);
         }
-
-        // Complete client future (if any).
-        SchemaOperationClientFuture cliFut = schemaCliFuts.remove(opId);
-
-        if (cliFut != null) {
-            if (msg.hasError())
-                cliFut.onDone(msg.error());
-            else
-                cliFut.onDone();
-        }
     }
 
     /**
@@ -2717,6 +2707,16 @@ private IgniteInternalFuture<Object> rebuildIndexesFromHash(@Nullable final Stri
 
                         assert op != null;
                         assert F.eq(op.id(), opId);
+
+                        // Complete client future (if any).
+                        SchemaOperationClientFuture cliFut = schemaCliFuts.remove(opId);
+
+                        if (cliFut != null) {
+                            if (finishMsg.hasError())
+                                cliFut.onDone(finishMsg.error());
+                            else
+                                cliFut.onDone();
+                        }
 
                         // Chain to the next operation (if any).
                         final SchemaOperation nextOp = op.next();
