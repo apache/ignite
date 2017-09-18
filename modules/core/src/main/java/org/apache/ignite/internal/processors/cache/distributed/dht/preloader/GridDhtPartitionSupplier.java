@@ -29,6 +29,7 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
+import org.apache.ignite.internal.processors.cache.GridCacheMvccEntryInfo;
 import org.apache.ignite.internal.processors.cache.IgniteRebalanceIterator;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
@@ -371,13 +372,16 @@ class GridDhtPartitionSupplier {
 
                             CacheDataRow row = iter.next();
 
-                            GridCacheEntryInfo info = new GridCacheEntryInfo();
+                            GridCacheEntryInfo info = grp.mvccEnabled() ?
+                                new GridCacheMvccEntryInfo() : new GridCacheEntryInfo();
 
                             info.key(row.key());
                             info.expireTime(row.expireTime());
                             info.version(row.version());
                             info.value(row.value());
                             info.cacheId(row.cacheId());
+                            info.mvccCoordinatorVersion(row.mvccCoordinatorVersion());
+                            info.mvccCounter(row.mvccCounter());
 
                             if (preloadPred == null || preloadPred.apply(info))
                                 s.addEntry0(part, info, grp.shared(), grp.cacheObjectContext());

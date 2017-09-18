@@ -1077,8 +1077,10 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                                     expireTime = CU.toExpireTime(ttl);
                                 }
 
+                                // TODO IGNITE-3478 (mvcc ver)
                                 entry0.initialValue(val0,
                                     ver,
+                                    null,
                                     ttl,
                                     expireTime,
                                     false,
@@ -1258,9 +1260,11 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                         try {
                             if (entry.initialValue(info.value(),
                                 info.version(),
+                                info,
                                 info.ttl(),
                                 info.expireTime(),
-                                true, topVer,
+                                true,
+                                topVer,
                                 replicate ? DR_PRELOAD : DR_NONE,
                                 false)) {
                                 if (rec && !entry.isInternal())

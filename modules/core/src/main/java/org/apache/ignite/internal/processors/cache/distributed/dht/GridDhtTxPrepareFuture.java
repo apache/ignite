@@ -1878,6 +1878,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                         try {
                             if (entry.initialValue(info.value(),
                                 info.version(),
+                                info,
                                 info.ttl(),
                                 info.expireTime(),
                                 true,

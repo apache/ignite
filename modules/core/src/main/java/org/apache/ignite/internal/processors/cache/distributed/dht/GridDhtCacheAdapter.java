@@ -657,8 +657,10 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
                     entry = entryEx(key);
 
+                    // TODO IGNITE-3478 (mvcc ver)
                     entry.initialValue(cacheVal,
                         ver,
+                        null,
                         ttl,
                         CU.EXPIRE_TIME_CALCULATE,
                         false,

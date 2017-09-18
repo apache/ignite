@@ -659,6 +659,7 @@ public interface GridCacheEntryEx {
      *
      * @param val New value.
      * @param ver Version to use.
+     * @param mvccVer Mvcc version.
      * @param ttl Time to live.
      * @param expireTime Expiration time.
      * @param preload Flag indicating whether entry is being preloaded.
@@ -671,6 +672,7 @@ public interface GridCacheEntryEx {
      */
     public boolean initialValue(CacheObject val,
         GridCacheVersion ver,
+        @Nullable MvccCoordinatorVersion mvccVer,
         long ttl,
         long expireTime,
         boolean preload,

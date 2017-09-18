@@ -643,6 +643,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     @Override public boolean initialValue(
         CacheObject val,
         GridCacheVersion ver,
+        MvccCoordinatorVersion mvccVer,
         long ttl,
         long expireTime,
         boolean preload,

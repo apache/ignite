@@ -80,7 +80,10 @@ public class CacheMvccTransactionsTest extends GridCommonAbstractTest {
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** */
-    private static final long DEFAULT_TEST_TIME = 30_000;
+    private static final int DFLT_PARTITION_COUNT = RendezvousAffinityFunction.DFLT_PARTITION_COUNT;
+
+    /** */
+    private static final long DFLT_TEST_TIME = 30_000;
 
     /** */
     private static final int SRVS = 4;
@@ -109,7 +112,7 @@ public class CacheMvccTransactionsTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
-        return DEFAULT_TEST_TIME + 60_000;
+        return DFLT_TEST_TIME + 60_000;
     }
 
     /** {@inheritDoc} */
@@ -864,7 +867,7 @@ public class CacheMvccTransactionsTest extends GridCommonAbstractTest {
             cacheParts,
             writers,
             readers,
-            DEFAULT_TEST_TIME,
+            DFLT_TEST_TIME,
             null,
             writer,
             reader);
@@ -1095,7 +1098,7 @@ public class CacheMvccTransactionsTest extends GridCommonAbstractTest {
             cacheParts,
             writers,
             readers,
-            DEFAULT_TEST_TIME,
+            DFLT_TEST_TIME,
             init,
             writer,
             reader);
@@ -1283,6 +1286,69 @@ public class CacheMvccTransactionsTest extends GridCommonAbstractTest {
         catch (Exception ignore) {
             // No-op.
         }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testRebalance1() throws Exception {
+        Ignite srv0 = startGrid(0);
+
+        IgniteCache<Integer, Integer> cache =  (IgniteCache)srv0.createCache(
+            cacheConfiguration(PARTITIONED, FULL_SYNC, 0, DFLT_PARTITION_COUNT));
+
+        Map<Integer, Integer> map;
+        Map<Integer, Integer> resMap;
+
+        try (Transaction tx = srv0.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            map = new HashMap<>();
+
+            for (int i = 0; i < DFLT_PARTITION_COUNT * 3; i++)
+                map.put(i, i);
+
+            cache.putAll(map);
+
+            tx.commit();
+        }
+
+        startGrid(1);
+
+        awaitPartitionMapExchange();
+
+        resMap = cache.getAll(map.keySet());
+
+        assertEquals(map.size(), resMap.size());
+
+        for (int i = 0; i < map.size(); i++)
+            assertEquals(i, (Object)resMap.get(i));
+
+        try (Transaction tx = srv0.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            for (int i = 0; i < DFLT_PARTITION_COUNT * 3; i++)
+                map.put(i, i + 1);
+
+            cache.putAll(map);
+
+            tx.commit();
+        }
+        try (Transaction tx = srv0.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            for (int i = 0; i < DFLT_PARTITION_COUNT * 3; i++)
+                map.put(i, i + 2);
+
+            cache.putAll(map);
+
+            tx.commit();
+        }
+
+        startGrid(2);
+
+        awaitPartitionMapExchange();
+
+        resMap = cache.getAll(map.keySet());
+
+        assertEquals(map.size(), map.size());
+
+        for (int i = 0; i < map.size(); i++)
+            assertEquals(i + 2, (Object)resMap.get(i));
     }
 
     /**

@@ -3482,8 +3482,10 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         GridCacheEntryEx entry = entryEx(key);
 
         try {
+            // TODO IGNITE-3478 (mvcc ver)
             entry.initialValue(cacheVal,
                 ver,
+                null,
                 ttl,
                 CU.EXPIRE_TIME_CALCULATE,
                 false,

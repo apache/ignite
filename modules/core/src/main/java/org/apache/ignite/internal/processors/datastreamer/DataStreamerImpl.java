@@ -2067,8 +2067,10 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
                     boolean primary = cctx.affinity().primaryByKey(cctx.localNode(), entry.key(), topVer);
 
+                    // TODO IGNITE-3478 (mvcc version).
                     entry.initialValue(e.getValue(),
                         ver,
+                        null,
                         ttl,
                         expiryTime,
                         false,

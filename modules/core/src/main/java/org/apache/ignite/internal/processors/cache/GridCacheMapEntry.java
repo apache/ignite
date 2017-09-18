@@ -46,7 +46,6 @@ import org.apache.ignite.internal.processors.cache.extras.GridCacheEntryExtras;
 import org.apache.ignite.internal.processors.cache.extras.GridCacheMvccEntryExtras;
 import org.apache.ignite.internal.processors.cache.extras.GridCacheObsoleteEntryExtras;
 import org.apache.ignite.internal.processors.cache.extras.GridCacheTtlEntryExtras;
-import org.apache.ignite.internal.processors.cache.mvcc.CacheCoordinatorsSharedManager;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorVersion;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
@@ -2553,6 +2552,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     @Override public boolean initialValue(
         CacheObject val,
         GridCacheVersion ver,
+        MvccCoordinatorVersion mvccVer,
         long ttl,
         long expireTime,
         boolean preload,
@@ -2591,8 +2591,12 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 val = cctx.kernalContext().cacheObjects().prepareForCache(val, cctx);
 
-                if (val != null)
-                    storeValue(val, expTime, ver, null);
+                if (val != null) {
+                    if (cctx.mvccEnabled())
+                        cctx.offheap().mvccUpdate(this, val, ver, mvccVer);
+                    else
+                        storeValue(val, expTime, ver, null);
+                }
 
                 update(val, expTime, ttl, ver, true);
 
