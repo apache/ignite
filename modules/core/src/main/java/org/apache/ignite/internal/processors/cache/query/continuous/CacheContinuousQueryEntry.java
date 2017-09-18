@@ -200,13 +200,6 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
     }
 
     /**
-     * @param topVer Topology version.
-     */
-    void topologyVersion(AffinityTopologyVersion topVer) {
-        this.topVer = topVer;
-    }
-
-    /**
      * @return Size include this event and filtered.
      */
     public int size() {
@@ -222,7 +215,7 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
             return this;
 
         CacheContinuousQueryEntry e =
-            new CacheContinuousQueryEntry(cacheId, null, null, null, null, keepBinary, part, updateCntr, null);
+            new CacheContinuousQueryEntry(cacheId, null, null, null, null, keepBinary, part, updateCntr, topVer);
 
         e.flags = flags;
 

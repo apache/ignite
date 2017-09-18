@@ -244,9 +244,8 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
 
         CacheMemoryMode memMode = ccfg.getMemoryMode();
 
-        boolean storeVal = ctx.config().isPeerClassLoadingEnabled() ||
-            GridQueryProcessor.isEnabled(ccfg) ||
-            !ccfg.isCopyOnRead();
+        boolean storeVal = !ccfg.isCopyOnRead() || (!isBinaryEnabled(ccfg) &&
+            (GridQueryProcessor.isEnabled(ccfg) || ctx.config().isPeerClassLoadingEnabled()));
 
         CacheObjectContext res = new CacheObjectContext(ctx,
             ccfg.getName(),
