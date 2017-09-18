@@ -162,7 +162,7 @@ public class JdbcUtils {
      * Convert exception to {@link SQLException}.
      *
      * @param e Converted Exception.
-     * @param msgForUnknown Message non-convertable exception.
+     * @param msgForUnknown Message for non-convertable exception.
      * @param sqlStateForUnknown SQLSTATE for non-convertable exception.
      * @return JDBC {@link SQLException}.
      * @see IgniteQueryErrorCode
@@ -175,15 +175,12 @@ public class JdbcUtils {
         while (sqlEx == null && t != null) {
             if (t instanceof SQLException)
                 return (SQLException)t;
-            else if (t instanceof IgniteSQLException) {
-                sqlEx = ((IgniteSQLException)t).toJdbcException();
-
-                break;
-            }
+            else if (t instanceof IgniteSQLException)
+                return ((IgniteSQLException)t).toJdbcException();
 
             t = t.getCause();
         }
 
-        return sqlEx != null ? sqlEx : new SQLException(msgForUnknown, sqlStateForUnknown, e);
+        return new SQLException(msgForUnknown, sqlStateForUnknown, e);
     }
 }

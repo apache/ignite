@@ -191,9 +191,10 @@ public class JdbcConnection implements Connection {
 
         stream = Boolean.parseBoolean(props.getProperty(PROP_STREAMING));
 
-        if (stream && cacheName == null)
+        if (stream && cacheName == null) {
             throw new SQLException("Cache name cannot be null when streaming is enabled.",
                 SqlStateCode.CLIENT_CONNECTION_FAILED);
+        }
 
         streamAllowOverwrite = Boolean.parseBoolean(props.getProperty(PROP_STREAMING_ALLOW_OVERWRITE));
         streamFlushTimeout = Long.parseLong(props.getProperty(PROP_STREAMING_FLUSH_FREQ, "0"));
@@ -215,9 +216,10 @@ public class JdbcConnection implements Connection {
 
             ignite = getIgnite(cfg);
 
-            if (!isValid(2))
+            if (!isValid(2)) {
                 throw new SQLException("Client is invalid. Probably cache name is wrong.",
                     SqlStateCode.CLIENT_CONNECTION_FAILED);
+            }
 
             if (cacheName != null) {
                 DynamicCacheDescriptor cacheDesc = ignite().context().cache().cacheDescriptor(cacheName);
@@ -597,10 +599,11 @@ public class JdbcConnection implements Connection {
 
             PreparedStatement nativeStmt = prepareNativeStatement(sql);
 
-            if (!idx.isInsertStatement(nativeStmt))
+            if (!idx.isInsertStatement(nativeStmt)) {
                 throw new SQLException("Only INSERT operations are supported in streaming mode",
                     SqlStateCode.INTERNAL_ERROR,
                     IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+            }
 
             IgniteDataStreamer streamer = ignite().dataStreamer(cacheName);
 
@@ -891,6 +894,7 @@ public class JdbcConnection implements Connection {
     /**
      * @param sql Query.
      * @return {@link PreparedStatement} from underlying engine to supply metadata to Prepared - most likely H2.
+     * @throws SQLException On error.
      */
     PreparedStatement prepareNativeStatement(String sql) throws SQLException {
         return ignite().context().query().prepareNativeStatement(schemaName(), sql);
