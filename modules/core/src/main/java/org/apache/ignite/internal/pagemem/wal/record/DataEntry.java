@@ -20,40 +20,39 @@ package org.apache.ignite.internal.pagemem.wal.record;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- *
+ * Represents Data Entry ({@link #key}, {@link #val value}) pair update {@link #op operation} in WAL log.
  */
 public class DataEntry {
-    /** */
+    /** Cache ID. */
+    @GridToStringInclude
     protected int cacheId;
 
-    /** */
+    /** Cache object key */
     protected KeyCacheObject key;
 
-    /** */
+    /** Cache object value */
     protected CacheObject val;
 
-    /** */
+    /** Entry operation performed */
     @GridToStringInclude
     protected GridCacheOperation op;
 
-    /** */
+    /** Near transaction version. */
     protected GridCacheVersion nearXidVer;
 
-    /** */
+    /** Write version. */
     @GridToStringInclude
     protected GridCacheVersion writeVer;
 
-    /** */
+    /** Expire time. */
     protected long expireTime;
 
-    /** */
+    /** Partition ID. */
     @GridToStringInclude
     protected int partId;
 

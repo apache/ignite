@@ -36,6 +36,7 @@ import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlIndexMetadata;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlMetadata;
+import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
@@ -45,6 +46,7 @@ import static java.sql.Connection.TRANSACTION_NONE;
 import static java.sql.ResultSet.CONCUR_READ_ONLY;
 import static java.sql.ResultSet.HOLD_CURSORS_OVER_COMMIT;
 import static java.sql.RowIdLifetime.ROWID_UNSUPPORTED;
+import static org.apache.ignite.internal.jdbc2.JdbcUtils.convertToSqlException;
 
 /**
  * JDBC database metadata implementation.
@@ -1334,7 +1336,7 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
     @SuppressWarnings("unchecked")
     private void updateMetaData() throws SQLException {
         if (conn.isClosed())
-            throw new SQLException("Connection is closed.");
+            throw new SQLException("Connection is closed.", SqlStateCode.CONNECTION_CLOSED);
 
         try {
             Ignite ignite = conn.ignite();
@@ -1378,7 +1380,7 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
             }
         }
         catch (Exception e) {
-            throw new SQLException("Failed to get meta data from Ignite.", e);
+            throw convertToSqlException(e, "Failed to get meta data from Ignite.");
         }
     }
 

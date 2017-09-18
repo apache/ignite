@@ -1303,9 +1303,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             List<GridQueryFieldMetadata> meta = cachedQry.meta();
 
-            return Collections.singletonList(executeTwoStepsQuery(schemaName, qry.getPageSize(), qry.getPartitions(),
+            List<FieldsQueryCursor<List<?>>> res = Collections.singletonList(executeTwoStepsQuery(schemaName, qry.getPageSize(), qry.getPartitions(),
                 qry.getArgs(), keepBinary, qry.isLazy(), qry.getTimeout(), cancel, sqlQry, enforceJoinOrder,
-                twoStepQry, meta, cachedQryKey, cachedQry));
+                twoStepQry, meta));
+
+            return res;
         }
 
         List<FieldsQueryCursor<List<?>>> res = new ArrayList<>(1);
@@ -1401,7 +1403,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                         res.add(executeTwoStepsQuery(schemaName, qry.getPageSize(), qry.getPartitions(), args, keepBinary,
                             qry.isLazy(), qry.getTimeout(), cancel, sqlQry, enforceJoinOrder,
-                            twoStepQry, meta, cachedQryKey, cachedQry));
+                            twoStepQry, meta));
 
                         continue;
                     }
@@ -1495,7 +1497,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             res.add(executeTwoStepsQuery(schemaName, qry.getPageSize(), qry.getPartitions(), args, keepBinary,
                 qry.isLazy(), qry.getTimeout(), cancel, sqlQry, enforceJoinOrder,
-                twoStepQry, meta, cachedQryKey, cachedQry));
+                twoStepQry, meta));
+
+            if (cachedQry == null && !twoStepQry.explain()) {
+                cachedQry = new H2TwoStepCachedQuery(meta, twoStepQry.copy());
+
+                twoStepCache.putIfAbsent(cachedQryKey, cachedQry);
+            }
         }
 
         return res;
@@ -1526,14 +1534,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param enforceJoinOrder Enforce join orded flag.
      * @param twoStepQry Two-steps query.
      * @param meta Metadata.
-     * @param cachedQryKey Cached query key.
-     * @param cachedQry Cached query.
      * @return Cursor.
      */
     private FieldsQueryCursor<List<?>> executeTwoStepsQuery(String schemaName, int pageSize, int partitions[],
         Object[] args, boolean keepBinary, boolean lazy, int timeout,
         GridQueryCancel cancel, String sqlQry, boolean enforceJoinOrder, GridCacheTwoStepQuery twoStepQry,
-        List<GridQueryFieldMetadata> meta, H2TwoStepCachedQueryKey cachedQryKey, H2TwoStepCachedQuery cachedQry) {
+        List<GridQueryFieldMetadata> meta) {
         if (log.isDebugEnabled())
             log.debug("Parsed query: `" + sqlQry + "` into two step query: " + twoStepQry);
 
@@ -1556,12 +1562,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 args, partitions, lazy), cancel);
 
         cursor.fieldsMeta(meta);
-
-        if (cachedQry == null && !twoStepQry.explain()) {
-            cachedQry = new H2TwoStepCachedQuery(meta, twoStepQry.copy());
-
-            twoStepCache.putIfAbsent(cachedQryKey, cachedQry);
-        }
 
         return cursor;
     }

@@ -47,6 +47,7 @@ import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.PriorityQueue;
 import java.util.Properties;
 import java.util.Queue;
@@ -57,11 +58,6 @@ import java.util.Vector;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.marshaller.optimized.OptimizedClassDescriptor;
-import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
-import org.apache.ignite.internal.marshaller.optimized.OptimizedObjectInputStream;
-import org.apache.ignite.internal.marshaller.optimized.OptimizedObjectOutputStream;
-import org.apache.ignite.internal.marshaller.optimized.OptimizedObjectStreamRegistry;
 import org.apache.ignite.internal.util.io.GridUnsafeDataInput;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -1047,6 +1043,21 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testNestedReadWriteObject() throws Exception {
+        NestedReadWriteObject[] arr = new NestedReadWriteObject[5];
+
+        arr[0] = new NestedReadWriteObject(null, null, 1, "n1");
+        arr[1] = new NestedReadWriteObject(arr[0], null, 2, "n2");
+        arr[2] = new NestedReadWriteObject(null, arr[0], 3, "n3");
+        arr[3] = new NestedReadWriteObject(arr[1], arr[2], 4, "n4");
+        arr[4] = new NestedReadWriteObject(arr[3], arr[0], 5, "n4");
+
+        assertTrue(Objects.deepEquals(arr, marshalUnmarshal(arr)));
+    }
+
+    /**
      * Marshals and unmarshals object.
      *
      * @param obj Original object.
@@ -1663,9 +1674,9 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
          * @throws IOException In case of error.
          */
         private void writeObject(ObjectOutputStream out) throws IOException {
-            out.defaultWriteObject();
+            out.writeObject("Optional data");
 
-            out.writeUTF("Optional data");
+            out.defaultWriteObject();
         }
 
         /**
@@ -1674,9 +1685,9 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
          * @throws ClassNotFoundException If class not found.
          */
         private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
-            in.defaultReadObject();
+            strA = (String)in.readObject();
 
-            strA = in.readUTF();
+            in.defaultReadObject();
         }
     }
 
@@ -2157,6 +2168,85 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
             fields.put("name", "test");
 
             stream.writeFields();
+        }
+    }
+
+    /**
+     * Class with custom {@link #writeObject(ObjectOutputStream)} and/or
+     * {@link #readObject(ObjectInputStream)} implementation uses {@link ObjectOutputStream#writeObject(Object)} and/or
+     * {@link ObjectInputStream#readObject()} internally.
+     */
+    private static class NestedReadWriteObject implements Serializable {
+        /** */
+        private transient NestedReadWriteObject obj1;
+
+        /** */
+        private transient NestedReadWriteObject obj2;
+
+        /** */
+        private int val;
+
+        /** */
+        private String str;
+
+        /** */
+        public NestedReadWriteObject(NestedReadWriteObject obj1, NestedReadWriteObject obj2, int val, String str) {
+            this.obj1 = obj1;
+            this.obj2 = obj2;
+            this.val = val;
+            this.str = str;
+        }
+
+        /**
+         * @param out Output stream.
+         * @throws IOException In case of error.
+         */
+        private void writeObject(ObjectOutputStream out) throws IOException {
+            out.writeObject(obj1);
+
+            out.defaultWriteObject();
+
+            out.writeObject(obj2);
+        }
+
+        /**
+         * @param in Input stream.
+         * @throws IOException In case of error.
+         * @throws ClassNotFoundException If class not found.
+         */
+        private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
+            obj1 = (NestedReadWriteObject)in.readObject();
+
+            in.defaultReadObject();
+
+            obj2 = (NestedReadWriteObject)in.readObject();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object obj) {
+            if (obj == this)
+                return true;
+
+            if (!(obj instanceof NestedReadWriteObject))
+                return false;
+
+            NestedReadWriteObject o = (NestedReadWriteObject) obj;
+
+            return o.val == val && Objects.equals(o.str, str) && Objects.equals(o.obj1, obj1)
+                && Objects.equals(o.obj2, obj2);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            int res = obj1 != null ? obj1.hashCode() : 0;
+
+            res = 31 * res + (obj2 != null ? obj2.hashCode() : 0);
+
+            res = 31 * res + val;
+
+            res = 31 * res + (str != null ? str.hashCode() : 0);
+
+            return res;
         }
     }
 }

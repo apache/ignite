@@ -149,7 +149,22 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
 
     /** {@inheritDoc} */
     @Override protected void writeObjectOverride(Object obj) throws IOException {
-        writeObject0(obj);
+        Object oldObj = curObj;
+
+        OptimizedClassDescriptor.ClassFields oldFields = curFields;
+
+        PutFieldImpl oldPut = curPut;
+
+        try {
+            writeObject0(obj);
+        }
+        finally {
+            curObj = oldObj;
+
+            curFields = oldFields;
+
+            curPut = oldPut;
+        }
     }
 
     /**

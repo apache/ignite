@@ -217,7 +217,7 @@ public class JdbcThinNoDefaultSchemaTest extends JdbcThinAbstractSelfTest {
 
                     return null;
                 }
-            }, SQLException.class, "Failed to query Ignite");
+            }, SQLException.class, "Failed to parse query");
 
             conn.setSchema("cache1");
 

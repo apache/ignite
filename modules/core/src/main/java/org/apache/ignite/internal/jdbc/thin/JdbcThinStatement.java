@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.jdbc.thin;
 
-import java.io.IOException;
 import java.sql.BatchUpdateException;
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -28,12 +27,14 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.query.SqlQuery;
-import org.apache.ignite.internal.processors.odbc.SqlListenerResponse;
+import org.apache.ignite.internal.processors.odbc.SqlStateCode;
+import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBatchExecuteRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBatchExecuteResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQuery;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteMultipleStatementsResult;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcStatementType;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResult;
@@ -100,7 +101,7 @@ public class JdbcThinStatement implements Statement {
         ResultSet rs = getResultSet();
 
         if (rs == null)
-            throw new SQLException("The query isn't SELECT query: " + sql);
+            throw new SQLException("The query isn't SELECT query: " + sql, SqlStateCode.PARSING_EXCEPTION);
 
         return rs;
     }
@@ -120,63 +121,53 @@ public class JdbcThinStatement implements Statement {
         if (sql == null || sql.isEmpty())
             throw new SQLException("SQL query is empty.");
 
-        try {
-            JdbcResult res0 = conn.io().queryExecute(stmtType, conn.getSchema(), pageSize, maxRows,
-                sql, args);
+        JdbcResult res0 = conn.sendRequest(new JdbcQueryExecuteRequest(stmtType, conn.getSchema(), pageSize,
+            maxRows, sql, args == null ? null : args.toArray(new Object[args.size()])));
 
-            assert res0 != null;
+        assert res0 != null;
 
-            if (res0 instanceof JdbcQueryExecuteResult) {
-                JdbcQueryExecuteResult res = (JdbcQueryExecuteResult)res0;
+        if (res0 instanceof JdbcQueryExecuteResult) {
+            JdbcQueryExecuteResult res = (JdbcQueryExecuteResult)res0;
 
-                resultSets = Collections.singletonList(new JdbcThinResultSet(this, res.getQueryId(), pageSize,
-                    res.last(), res.items(), res.isQuery(), conn.io().autoCloseServerCursor(), res.updateCount(),
-                    closeOnCompletion));
-            }
-            else if (res0 instanceof JdbcQueryExecuteMultipleStatementsResult) {
-                JdbcQueryExecuteMultipleStatementsResult res = (JdbcQueryExecuteMultipleStatementsResult)res0;
+            resultSets = Collections.singletonList(new JdbcThinResultSet(this, res.getQueryId(), pageSize,
+                res.last(), res.items(), res.isQuery(), conn.autoCloseServerCursor(), res.updateCount(),
+                closeOnCompletion));
+        }
+        else if (res0 instanceof JdbcQueryExecuteMultipleStatementsResult) {
+            JdbcQueryExecuteMultipleStatementsResult res = (JdbcQueryExecuteMultipleStatementsResult)res0;
 
-                List<JdbcResultInfo> resInfos = res.results();
+            List<JdbcResultInfo> resInfos = res.results();
 
-                resultSets = new ArrayList<>(resInfos.size());
+            resultSets = new ArrayList<>(resInfos.size());
 
-                boolean firstRes = true;
+            boolean firstRes = true;
 
-                for(JdbcResultInfo rsInfo : resInfos) {
-                    if (!rsInfo.isQuery()) {
-                        resultSets.add(new JdbcThinResultSet(this, -1, pageSize,
-                            true, Collections.<List<Object>>emptyList(), false,
-                            conn.io().autoCloseServerCursor(), rsInfo.updateCount(), closeOnCompletion));
+            for(JdbcResultInfo rsInfo : resInfos) {
+                if (!rsInfo.isQuery()) {
+                    resultSets.add(new JdbcThinResultSet(this, -1, pageSize,
+                        true, Collections.<List<Object>>emptyList(), false,
+                        conn.autoCloseServerCursor(), rsInfo.updateCount(), closeOnCompletion));
+                }
+                else {
+                    if (firstRes) {
+                        firstRes = false;
+
+                        resultSets.add(new JdbcThinResultSet(this, rsInfo.queryId(), pageSize,
+                            res.isLast(), res.items(), true,
+                            conn.autoCloseServerCursor(), -1, closeOnCompletion));
                     }
                     else {
-                        if (firstRes) {
-                            firstRes = false;
-
-                            resultSets.add(new JdbcThinResultSet(this, rsInfo.queryId(), pageSize,
-                                res.isLast(), res.items(), true,
-                                conn.io().autoCloseServerCursor(), -1, closeOnCompletion));
-                        }
-                        else {
-                            resultSets.add(new JdbcThinResultSet(this, rsInfo.queryId(), pageSize,
-                                false, null, true,
-                                conn.io().autoCloseServerCursor(), -1, closeOnCompletion));
-                        }
+                        resultSets.add(new JdbcThinResultSet(this, rsInfo.queryId(), pageSize,
+                            false, null, true,
+                            conn.autoCloseServerCursor(), -1, closeOnCompletion));
                     }
                 }
             }
-            else
-                throw new SQLException("Unexpected result [res=" + res0 + ']');
+        }
+        else
+            throw new SQLException("Unexpected result [res=" + res0 + ']');
 
-            assert resultSets.size() > 0 : "At least one results set is expected";
-        }
-        catch (IOException e) {
-            conn.close();
-
-            throw new SQLException("Failed to query Ignite.", e);
-        }
-        catch (IgniteCheckedException e) {
-            throw new SQLException("Failed to query Ignite [err=\"" + e.getMessage() + "\"]", e);
-        }
+        assert resultSets.size() > 0 : "At least one results set is expected";
     }
 
     /** {@inheritDoc} */
@@ -431,20 +422,12 @@ public class JdbcThinStatement implements Statement {
             throw new SQLException("Batch is empty.");
 
         try {
-            JdbcBatchExecuteResult res = conn.io().batchExecute(conn.getSchema(), batch);
+            JdbcBatchExecuteResult res = conn.sendRequest(new JdbcBatchExecuteRequest(conn.getSchema(), batch));
 
-            if (res.errorCode() != SqlListenerResponse.STATUS_SUCCESS)
+            if (res.errorCode() != ClientListenerResponse.STATUS_SUCCESS)
                 throw new BatchUpdateException(res.errorMessage(), null, res.errorCode(), res.updateCounts());
 
             return res.updateCounts();
-        }
-        catch (IOException e) {
-            conn.close();
-
-            throw new SQLException("Failed to query Ignite.", e);
-        }
-        catch (IgniteCheckedException e) {
-            throw new SQLException("Failed to query Ignite.", e);
         }
         finally {
             batch = null;

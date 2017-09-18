@@ -45,9 +45,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.jdbc2.JdbcUtils.convertToSqlException;
 
 /**
  * JDBC result set implementation.
@@ -219,11 +221,8 @@ public class JdbcResultSet implements ResultSet {
                 types = res.getTypes();
             }
         }
-        catch (IgniteSQLException e) {
-            throw e.toJdbcException();
-        }
         catch (Exception e) {
-            throw new SQLException("Failed to query Ignite.", e);
+            throw convertToSqlException(e, "Failed to query Ignite.");
         }
     }
 
@@ -1551,13 +1550,13 @@ public class JdbcResultSet implements ResultSet {
             else if (cls == String.class)
                 return (T)String.valueOf(val);
             else
-                return (T)val;
+                return cls.cast(val);
         }
         catch (IndexOutOfBoundsException ignored) {
             throw new SQLException("Invalid column index: " + colIdx);
         }
         catch (ClassCastException ignored) {
-            throw new SQLException("Value is an not instance of " + cls.getName());
+            throw new SQLException("Value is an not instance of " + cls.getName(), SqlStateCode.CONVERSION_FAILED);
         }
     }
 
@@ -1568,7 +1567,7 @@ public class JdbcResultSet implements ResultSet {
      */
     private void ensureNotClosed() throws SQLException {
         if (closed)
-            throw new SQLException("Result set is closed.");
+            throw new SQLException("Result set is closed.", SqlStateCode.INVALID_CURSOR_STATE);
     }
 
     /**
