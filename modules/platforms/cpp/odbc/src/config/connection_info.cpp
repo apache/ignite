@@ -390,6 +390,99 @@ namespace ignite
 #ifdef SQL_FORWARD_ONLY_CURSOR_ATTRIBUTES2
                     DBG_STR_CASE(SQL_FORWARD_ONLY_CURSOR_ATTRIBUTES2);
 #endif // SQL_FORWARD_ONLY_CURSOR_ATTRIBUTES2
+#ifdef SQL_GROUP_BY
+                    DBG_STR_CASE(SQL_GROUP_BY);
+#endif // SQL_GROUP_BY
+#ifdef SQL_IDENTIFIER_CASE
+                    DBG_STR_CASE(SQL_IDENTIFIER_CASE);
+#endif // SQL_IDENTIFIER_CASE
+#ifdef SQL_INDEX_KEYWORDS
+                    DBG_STR_CASE(SQL_INDEX_KEYWORDS);
+#endif // SQL_INDEX_KEYWORDS
+#ifdef SQL_INFO_SCHEMA_VIEWS
+                    DBG_STR_CASE(SQL_INFO_SCHEMA_VIEWS);
+#endif // SQL_INFO_SCHEMA_VIEWS
+#ifdef SQL_INSERT_STATEMENT
+                    DBG_STR_CASE(SQL_INSERT_STATEMENT);
+#endif // SQL_INSERT_STATEMENT
+#ifdef SQL_INTEGRITY
+                    DBG_STR_CASE(SQL_INTEGRITY);
+#endif // SQL_INTEGRITY
+#ifdef SQL_KEYSET_CURSOR_ATTRIBUTES1
+                    DBG_STR_CASE(SQL_KEYSET_CURSOR_ATTRIBUTES1);
+#endif // SQL_KEYSET_CURSOR_ATTRIBUTES1
+#ifdef SQL_KEYSET_CURSOR_ATTRIBUTES2
+                    DBG_STR_CASE(SQL_KEYSET_CURSOR_ATTRIBUTES2);
+#endif // SQL_KEYSET_CURSOR_ATTRIBUTES2
+#ifdef SQL_KEYWORDS
+                    DBG_STR_CASE(SQL_KEYWORDS);
+#endif // SQL_KEYWORDS
+#ifdef SQL_LIKE_ESCAPE_CLAUSE
+                    DBG_STR_CASE(SQL_LIKE_ESCAPE_CLAUSE);
+#endif // SQL_LIKE_ESCAPE_CLAUSE
+#ifdef SQL_MAX_ASYNC_CONCURRENT_STATEMENTS
+                    DBG_STR_CASE(SQL_MAX_ASYNC_CONCURRENT_STATEMENTS);
+#endif // SQL_MAX_ASYNC_CONCURRENT_STATEMENTS
+#ifdef SQL_MAX_BINARY_LITERAL_LEN
+                    DBG_STR_CASE(SQL_MAX_BINARY_LITERAL_LEN);
+#endif // SQL_MAX_BINARY_LITERAL_LEN
+#ifdef SQL_MAX_CATALOG_NAME_LEN
+                    DBG_STR_CASE(SQL_MAX_CATALOG_NAME_LEN);
+#endif // SQL_MAX_CATALOG_NAME_LEN
+#ifdef SQL_MAX_CHAR_LITERAL_LEN
+                    DBG_STR_CASE(SQL_MAX_CHAR_LITERAL_LEN);
+#endif // SQL_MAX_CHAR_LITERAL_LEN
+#ifdef SQL_MAX_COLUMN_NAME_LEN
+                    DBG_STR_CASE(SQL_MAX_COLUMN_NAME_LEN);
+#endif // SQL_MAX_COLUMN_NAME_LEN
+#ifdef SQL_MAX_COLUMNS_IN_GROUP_BY
+                    DBG_STR_CASE(SQL_MAX_COLUMNS_IN_GROUP_BY);
+#endif // SQL_MAX_COLUMNS_IN_GROUP_BY
+#ifdef SQL_MAX_COLUMNS_IN_INDEX
+                    DBG_STR_CASE(SQL_MAX_COLUMNS_IN_INDEX);
+#endif // SQL_MAX_COLUMNS_IN_INDEX
+#ifdef SQL_MAX_COLUMNS_IN_ORDER_BY
+                    DBG_STR_CASE(SQL_MAX_COLUMNS_IN_ORDER_BY);
+#endif // SQL_MAX_COLUMNS_IN_ORDER_BY
+#ifdef SQL_MAX_COLUMNS_IN_SELECT
+                    DBG_STR_CASE(SQL_MAX_COLUMNS_IN_SELECT);
+#endif // SQL_MAX_COLUMNS_IN_SELECT
+#ifdef SQL_MAX_COLUMNS_IN_TABLE
+                    DBG_STR_CASE(SQL_MAX_COLUMNS_IN_TABLE);
+#endif // SQL_MAX_COLUMNS_IN_TABLE
+#ifdef SQL_MAX_CURSOR_NAME_LEN
+                    DBG_STR_CASE(SQL_MAX_CURSOR_NAME_LEN);
+#endif // SQL_MAX_CURSOR_NAME_LEN
+#ifdef SQL_MAX_DRIVER_CONNECTIONS
+                    DBG_STR_CASE(SQL_MAX_DRIVER_CONNECTIONS);
+#endif // SQL_MAX_DRIVER_CONNECTIONS
+#ifdef SQL_MAX_INDEX_SIZE
+                    DBG_STR_CASE(SQL_MAX_INDEX_SIZE);
+#endif // SQL_MAX_INDEX_SIZE
+#ifdef SQL_MAX_PROCEDURE_NAME_LEN
+                    DBG_STR_CASE(SQL_MAX_PROCEDURE_NAME_LEN);
+#endif // SQL_MAX_PROCEDURE_NAME_LEN
+#ifdef SQL_MAX_ROW_SIZE
+                    DBG_STR_CASE(SQL_MAX_ROW_SIZE);
+#endif // SQL_MAX_ROW_SIZE
+#ifdef SQL_MAX_ROW_SIZE_INCLUDES_LONG
+                    DBG_STR_CASE(SQL_MAX_ROW_SIZE_INCLUDES_LONG);
+#endif // SQL_MAX_ROW_SIZE_INCLUDES_LONG
+#ifdef SQL_MAX_SCHEMA_NAME_LEN
+                    DBG_STR_CASE(SQL_MAX_SCHEMA_NAME_LEN);
+#endif // SQL_MAX_SCHEMA_NAME_LEN
+#ifdef SQL_MAX_STATEMENT_LEN
+                    DBG_STR_CASE(SQL_MAX_STATEMENT_LEN);
+#endif // SQL_MAX_STATEMENT_LEN
+#ifdef SQL_MAX_TABLE_NAME_LEN
+                    DBG_STR_CASE(SQL_MAX_TABLE_NAME_LEN);
+#endif // SQL_MAX_TABLE_NAME_LEN
+#ifdef SQL_MAX_TABLES_IN_SELECT
+                    DBG_STR_CASE(SQL_MAX_TABLES_IN_SELECT);
+#endif // SQL_MAX_TABLES_IN_SELECT
+#ifdef SQL_MAX_USER_NAME_LEN
+                    DBG_STR_CASE(SQL_MAX_USER_NAME_LEN);
+#endif // SQL_MAX_USER_NAME_LEN
                     default:
                         break;
                 }
@@ -550,6 +643,34 @@ namespace ignite
                 strParams[SQL_EXPRESSIONS_IN_ORDERBY] = "Y";
 #endif // SQL_EXPRESSIONS_IN_ORDERBY
 
+#ifdef SQL_INTEGRITY
+                // A character string: "Y" if the data source supports the Integrity Enhancement Facility; "N" if it
+                // does not.
+                strParams[SQL_INTEGRITY] = "N";
+#endif // SQL_INTEGRITY
+
+#ifdef SQL_KEYWORDS
+                // A character string that contains a comma-separated list of all data source-specific keywords. This
+                // list does not contain keywords specific to ODBC or keywords used by both the data source and ODBC.
+                // This list represents all the reserved keywords; interoperable applications should not use these words
+                // in object names.
+                // The #define value SQL_ODBC_KEYWORDS contains a comma - separated list of ODBC keywords.
+                strParams[SQL_KEYWORDS] = "LIMIT,MINUS,OFFSET,ROWNUM,SYSDATE,SYSTIME,SYSTIMESTAMP,TODAY";
+#endif // SQL_KEYWORDS
+
+#ifdef SQL_LIKE_ESCAPE_CLAUSE
+                // A character string: "Y" if the data source supports an escape character for the percent character (%)
+                // and underscore character (_) in a LIKE predicate and the driver supports the ODBC syntax for defining
+                // a LIKE predicate escape character; "N" otherwise.
+                strParams[SQL_LIKE_ESCAPE_CLAUSE] = "N";
+#endif // SQL_LIKE_ESCAPE_CLAUSE
+
+#ifdef SQL_MAX_ROW_SIZE_INCLUDES_LONG
+                // A character string: "Y" if the maximum row size returned for the SQL_MAX_ROW_SIZE information type
+                // includes the length of all SQL_LONGVARCHAR and SQL_LONGVARBINARY columns in the row; "N" otherwise.
+                strParams[SQL_MAX_ROW_SIZE_INCLUDES_LONG] = "Y";
+#endif // SQL_MAX_ROW_SIZE_INCLUDES_LONG
+
                 //
                 //====================== Integer Params =======================
                 //
@@ -689,11 +810,6 @@ namespace ignite
                 intParams[SQL_SCHEMA_USAGE] = SQL_SU_DML_STATEMENTS | SQL_SU_TABLE_DEFINITION |
                     SQL_SU_PRIVILEGE_DEFINITION;
 #endif // SQL_SCHEMA_USAGE
-
-#ifdef SQL_MAX_IDENTIFIER_LEN
-                // Indicates the maximum size in characters that the data source supports for user-defined names.
-                intParams[SQL_MAX_IDENTIFIER_LEN] = 128;
-#endif // SQL_MAX_IDENTIFIER_LEN
 
 #ifdef SQL_AGGREGATE_FUNCTIONS
                 // Bitmask enumerating support for aggregation functions.
@@ -1564,6 +1680,196 @@ namespace ignite
                 intParams[SQL_FORWARD_ONLY_CURSOR_ATTRIBUTES2] = SQL_CA2_READ_ONLY_CONCURRENCY;
 #endif // SQL_FORWARD_ONLY_CURSOR_ATTRIBUTES2
 
+#ifdef SQL_INDEX_KEYWORDS
+                // A bitmask that enumerates keywords in the CREATE INDEX statement that are supported by the driver:
+                //
+                // SQL_IK_NONE = None of the keywords is supported.
+                // SQL_IK_ASC = ASC keyword is supported.
+                // SQL_IK_DESC = DESC keyword is supported.
+                // SQL_IK_ALL = All keywords are supported.
+                //
+                // To see whether the CREATE INDEX statement is supported, an application calls SQLGetInfo with the
+                // SQL_DLL_INDEX information type.
+                intParams[SQL_INDEX_KEYWORDS] = SQL_IK_ALL;
+#endif // SQL_INDEX_KEYWORDS
+
+#ifdef SQL_INFO_SCHEMA_VIEWS
+                // A bitmask enumerating the views in the INFORMATION_SCHEMA that are supported by the driver. The views
+                // in, and the contents of, INFORMATION_SCHEMA are as defined in SQL-92. The SQL-92 or FIPS conformance
+                // level at which this feature must be supported is shown in parentheses next to each bitmask.
+                //
+                // The following bitmasks are used to determine which views are supported:
+                // SQL_ISV_ASSERTIONS = Identifies the catalog's assertions that are owned by a given user. (Full level)
+                // SQL_ISV_CHARACTER_SETS = Identifies the catalog's character sets that can be accessed by a given
+                //     user. (Intermediate level)
+                // SQL_ISV_CHECK_CONSTRAINTS = Identifies the CHECK constraints that are owned by a given user.
+                //     (Intermediate level)
+                // SQL_ISV_COLLATIONS = Identifies the character collations for the catalog that can be accessed by a
+                //     given user. (Full level)
+                // SQL_ISV_COLUMN_DOMAIN_USAGE = Identifies columns for the catalog that depend on domains defined in
+                //     the catalog and are owned by a given user. (Intermediate level)
+                // SQL_ISV_COLUMN_PRIVILEGES = Identifies the privileges on columns of persistent tables that are
+                //     available to or granted by a given user. (FIPS Transitional level)
+                // SQL_ISV_COLUMNS = Identifies the columns of persistent tables that can be accessed by a given user.
+                //     (FIPS Transitional level)
+                // SQL_ISV_CONSTRAINT_COLUMN_USAGE = Similar to CONSTRAINT_TABLE_USAGE view, columns are identified for
+                //     the various constraints that are owned by a given user. (Intermediate level)
+                // SQL_ISV_CONSTRAINT_TABLE_USAGE = Identifies the tables that are used by constraints (referential,
+                //     unique, and assertions), and are owned by a given user. (Intermediate level)
+                // SQL_ISV_DOMAIN_CONSTRAINTS = Identifies the domain constraints (of the domains in the catalog) that
+                //     can be accessed by a given user. (Intermediate level)
+                // SQL_ISV_DOMAINS = Identifies the domains defined in a catalog that can be accessed by the user.
+                //     (Intermediate level)
+                // SQL_ISV_KEY_COLUMN_USAGE = Identifies columns defined in the catalog that are constrained as keys
+                //     by a given user. (Intermediate level)
+                // SQL_ISV_REFERENTIAL_CONSTRAINTS = Identifies the referential constraints that are owned by a given
+                //     user. (Intermediate level)
+                // SQL_ISV_SCHEMATA = Identifies the schemas that are owned by a given user. (Intermediate level)
+                // SQL_ISV_SQL_LANGUAGES = Identifies the SQL conformance levels, options, and dialects supported by
+                //     the SQL implementation. (Intermediate level)
+                // SQL_ISV_TABLE_CONSTRAINTS = Identifies the table constraints that are owned by a given user.
+                //     (Intermediate level)
+                // SQL_ISV_TABLE_PRIVILEGES = Identifies the privileges on persistent tables that are available to or
+                //     granted by a given user. (FIPS Transitional level)
+                // SQL_ISV_TABLES = Identifies the persistent tables defined in a catalog that can be accessed by a
+                //     given user. (FIPS Transitional level)
+                // SQL_ISV_TRANSLATIONS = Identifies character translations for the catalog that can be accessed by a
+                //     given user. (Full level)
+                // SQL_ISV_USAGE_PRIVILEGES = Identifies the USAGE privileges on catalog objects that are available to
+                //     or owned by a given user. (FIPS Transitional level)
+                // SQL_ISV_VIEW_COLUMN_USAGE = Identifies the columns on which the catalog's views that are owned by a
+                //     given user are dependent. (Intermediate level)
+                // SQL_ISV_VIEW_TABLE_USAGE = Identifies the tables on which the catalog's views that are owned by a
+                //     given user are dependent. (Intermediate level)
+                // SQL_ISV_VIEWS = Identifies the viewed tables defined in this catalog that can be accessed by a given
+                //     user. (FIPS Transitional level)
+                intParams[SQL_INFO_SCHEMA_VIEWS] = 0;
+#endif // SQL_INFO_SCHEMA_VIEWS
+
+#ifdef SQL_INSERT_STATEMENT
+                // A bitmask that indicates support for INSERT statements:
+                // SQL_IS_INSERT_LITERALS
+                // SQL_IS_INSERT_SEARCHED
+                // SQL_IS_SELECT_INTO
+                // An SQL-92 Entry level-conformant driver will always return all of these options as supported.
+                intParams[SQL_INSERT_STATEMENT] = SQL_IS_INSERT_LITERALS;
+#endif // SQL_INSERT_STATEMENT
+
+#ifdef SQL_KEYSET_CURSOR_ATTRIBUTES1
+                // A bitmask that describes the attributes of a keyset cursor that are supported by the driver.
+                // This bitmask contains the first subset of attributes; for the second subset, see
+                // SQL_KEYSET_CURSOR_ATTRIBUTES2.
+                //
+                // The following bitmasks are used to determine which attributes are supported:
+                // SQL_CA1_NEXT
+                // SQL_CA1_ABSOLUTE
+                // SQL_CA1_RELATIVE
+                // SQL_CA1_BOOKMARK
+                // SQL_CA1_LOCK_EXCLUSIVE
+                // SQL_CA1_LOCK_NO_CHANGE
+                // SQL_CA1_LOCK_UNLOCK
+                // SQL_CA1_POS_POSITION
+                // SQL_CA1_POS_UPDATE
+                // SQL_CA1_POS_DELETE
+                // SQL_CA1_POS_REFRESH
+                // SQL_CA1_POSITIONED_UPDATE
+                // SQL_CA1_POSITIONED_DELETE
+                // SQL_CA1_SELECT_FOR_UPDATE
+                // SQL_CA1_BULK_ADD
+                // SQL_CA1_BULK_UPDATE_BY_BOOKMARK
+                // SQL_CA1_BULK_DELETE_BY_BOOKMARK
+                // SQL_CA1_BULK_FETCH_BY_BOOKMARK
+                //
+                // For descriptions of these bitmasks, see SQL_DYNAMIC_CURSOR_ATTRIBUTES1 (and substitute "keyset-driven
+                // cursor" for "dynamic cursor" in the descriptions).
+                //
+                // An SQL-92 Intermediate level-conformant driver will usually return the SQL_CA1_NEXT,
+                // SQL_CA1_ABSOLUTE, and SQL_CA1_RELATIVE options as supported, because the driver supports scrollable
+                // cursors through the embedded SQL FETCH statement. Because this does not directly determine the
+                // underlying SQL support, however, scrollable cursors may not be supported, even for an SQL-92
+                // Intermediate level-conformant driver.
+                intParams[SQL_KEYSET_CURSOR_ATTRIBUTES1] = SQL_CA1_NEXT;
+#endif // SQL_KEYSET_CURSOR_ATTRIBUTES1
+
+#ifdef SQL_KEYSET_CURSOR_ATTRIBUTES2
+                // A bitmask that describes the attributes of a keyset cursor that are supported by the driver.
+                // This bitmask contains the second subset of attributes; for the first subset, see
+                // SQL_KEYSET_CURSOR_ATTRIBUTES1.
+                //
+                // The following bitmasks are used to determine which attributes are supported:
+                // SQL_CA2_READ_ONLY_CONCURRENCY
+                // SQL_CA2_LOCK_CONCURRENCY
+                // SQL_CA2_OPT_ROWVER_CONCURRENCY
+                // SQL_CA2_OPT_VALUES_CONCURRENCY
+                // SQL_CA2_SENSITIVITY_ADDITIONS
+                // SQL_CA2_SENSITIVITY_DELETIONS
+                // SQL_CA2_SENSITIVITY_UPDATES
+                // SQL_CA2_MAX_ROWS_SELECT
+                // SQL_CA2_MAX_ROWS_INSERT
+                // SQL_CA2_MAX_ROWS_DELETE
+                // SQL_CA2_MAX_ROWS_UPDATE
+                // SQL_CA2_MAX_ROWS_CATALOG
+                // SQL_CA2_MAX_ROWS_AFFECTS_ALL
+                // SQL_CA2_CRC_EXACTSQL_CA2_CRC_APPROXIMATE
+                // SQL_CA2_SIMULATE_NON_UNIQUE
+                // SQL_CA2_SIMULATE_TRY_UNIQUE
+                // SQL_CA2_SIMULATE_UNIQUE
+                //
+                // For descriptions of these bitmasks, see SQL_DYNAMIC_CURSOR_ATTRIBUTES1 (and substitute "keyset-driven
+                // cursor" for "dynamic cursor" in the descriptions).
+                intParams[SQL_KEYSET_CURSOR_ATTRIBUTES2] = 0;
+#endif // SQL_KEYSET_CURSOR_ATTRIBUTES2
+
+#ifdef SQL_MAX_ASYNC_CONCURRENT_STATEMENTS
+                // Value that specifies the maximum number of active concurrent statements in asynchronous mode that the
+                // driver can support on a given connection. If there is no specific limit or the limit is unknown, this
+                // value is zero.
+                intParams[SQL_MAX_ASYNC_CONCURRENT_STATEMENTS] = 0;
+#endif // SQL_MAX_ASYNC_CONCURRENT_STATEMENTS
+
+#ifdef SQL_MAX_BINARY_LITERAL_LEN
+                // Value that specifies the maximum length (number of hexadecimal characters, excluding the literal
+                // prefix and suffix returned by SQLGetTypeInfo) of a binary literal in an SQL statement. For example,
+                // the binary literal 0xFFAA has a length of 4. If there is no maximum length or the length is unknown,
+                // this value is set to zero.
+                intParams[SQL_MAX_BINARY_LITERAL_LEN] = 0;
+#endif // SQL_MAX_BINARY_LITERAL_LEN
+
+#ifdef SQL_MAX_CATALOG_NAME_LEN
+                // Value that specifies the maximum length of a catalog name in the data source. If there is no maximum
+                // length or the length is unknown, this value is set to zero.
+                // An FIPS Full level-conformant driver will return at least 128.
+                // This InfoType has been renamed for ODBC 3.0 from the ODBC 2.0 InfoType SQL_MAX_QUALIFIER_NAME_LEN.
+                intParams[SQL_MAX_CATALOG_NAME_LEN] = 0;
+#endif // SQL_MAX_CATALOG_NAME_LEN
+
+#ifdef SQL_MAX_CHAR_LITERAL_LEN
+                // Value that specifies the maximum length (number of characters, excluding the literal prefix and
+                // suffix returned by SQLGetTypeInfo) of a character literal in an SQL statement. If there is no maximum
+                // length or the length is unknown, this value is set to zero.
+                intParams[SQL_MAX_CHAR_LITERAL_LEN] = 0;
+#endif // SQL_MAX_CHAR_LITERAL_LEN
+
+#ifdef SQL_MAX_INDEX_SIZE
+                // Value that specifies the maximum number of bytes allowed in the combined fields of an index.
+                // If there is no specified limit or the limit is unknown, this value is set to zero.
+                intParams[SQL_MAX_INDEX_SIZE] = 0;
+#endif // SQL_MAX_INDEX_SIZE
+
+#ifdef SQL_MAX_ROW_SIZE
+                // Value that specifies the maximum length of a single row in a table. If there is no specified limit or
+                // the limit is unknown, this value is set to zero.
+                // An FIPS Entry level-conformant driver will return at least 2,000. An FIPS Intermediate
+                // level-conformant driver will return at least 8,000.
+                intParams[SQL_MAX_ROW_SIZE] = 0;
+#endif // SQL_MAX_ROW_SIZE
+
+#ifdef SQL_MAX_STATEMENT_LEN
+                // Value that specifies the maximum length (number of characters, including white space) of an SQL
+                // statement. If there is no maximum length or the length is unknown, this value is set to zero.
+                intParams[SQL_MAX_STATEMENT_LEN] = 0;
+#endif // SQL_MAX_STATEMENT_LEN
+
                 //
                 //======================= Short Params ========================
                 //
@@ -1658,6 +1964,153 @@ namespace ignite
                 // display a custom Select Table dialog box.
                 shortParams[SQL_FILE_USAGE] = SQL_FILE_NOT_SUPPORTED;
 #endif // SQL_FILE_USAGE
+
+#ifdef SQL_GROUP_BY
+                // Value that specifies the relationship between the columns in the GROUP BY clause and the
+                // nonaggregated columns in the select list:
+                //
+                // SQL_GB_COLLATE = A COLLATE clause can be specified at the end of each grouping column. (ODBC 3.0)
+                // SQL_GB_NOT_SUPPORTED = GROUP BY clauses are not supported. (ODBC 2.0)
+                // SQL_GB_GROUP_BY_EQUALS_SELECT = The GROUP BY clause must contain all nonaggregated columns in the
+                //     select list. It cannot contain any other columns.
+                //     For example, SELECT DEPT, MAX(SALARY) FROM EMPLOYEE GROUP BY DEPT. (ODBC 2.0)
+                // SQL_GB_GROUP_BY_CONTAINS_SELECT = The GROUP BY clause must contain all nonaggregated columns in the
+                //     select list. It can contain columns that are not in the select list.
+                //     For example, SELECT DEPT, MAX(SALARY) FROM EMPLOYEE GROUP BY DEPT, AGE. (ODBC 2.0)
+                // SQL_GB_NO_RELATION = The columns in the GROUP BY clause and the select list are not related.
+                //     The meaning of nongrouped, nonaggregated columns in the select list is data source-dependent.
+                //     For example, SELECT DEPT, SALARY FROM EMPLOYEE GROUP BY DEPT, AGE. (ODBC 2.0)
+                //
+                // An SQL-92 Entry level-conformant driver will always return the SQL_GB_GROUP_BY_EQUALS_SELECT option
+                // as supported. An SQL-92 Full level-conformant driver will always return the SQL_GB_COLLATE option as
+                // supported. If none of the options is supported, the GROUP BY clause is not supported by the data
+                // source.
+                shortParams[SQL_GROUP_BY] = SQL_GB_GROUP_BY_EQUALS_SELECT;
+#endif // SQL_GROUP_BY
+
+#ifdef SQL_IDENTIFIER_CASE
+                // Value as follows:
+                //
+                // SQL_IC_UPPER = Identifiers in SQL are not case-sensitive and are stored in uppercase in system
+                //     catalog.
+                // SQL_IC_LOWER = Identifiers in SQL are not case-sensitive and are stored in lowercase in system
+                //     catalog.
+                // SQL_IC_SENSITIVE = Identifiers in SQL are case sensitive and are stored in mixed case in system
+                //     catalog.
+                // SQL_IC_MIXED = Identifiers in SQL are not case-sensitive and are stored in mixed case in system
+                //     catalog.
+                //
+                // Because identifiers in SQL-92 are never case-sensitive, a driver that conforms strictly to SQL-92
+                // (any level) will never return the SQL_IC_SENSITIVE option as supported.
+                shortParams[SQL_IDENTIFIER_CASE] = SQL_IC_UPPER;
+#endif // SQL_IDENTIFIER_CASE
+
+#ifdef SQL_MAX_COLUMN_NAME_LEN
+                // Value that specifies the maximum length of a column name in the data source. If there is no maximum
+                // length or the length is unknown, this value is set to zero.
+                // An FIPS Entry level-conformant driver will return at least 18. An FIPS Intermediate level-conformant
+                // driver will return at least 128.
+                shortParams[SQL_MAX_COLUMN_NAME_LEN] = 0;
+#endif // SQL_MAX_COLUMN_NAME_LEN
+
+#ifdef SQL_MAX_COLUMNS_IN_GROUP_BY
+                // Value that specifies the maximum number of columns allowed in a GROUP BY clause. If there is no
+                // specified limit or the limit is unknown, this value is set to zero.
+                // An FIPS Entry level-conformant driver will return at least 6. An FIPS Intermediate level-conformant
+                // driver will return at least 15.
+                shortParams[SQL_MAX_COLUMNS_IN_GROUP_BY] = 0;
+#endif // SQL_MAX_COLUMNS_IN_GROUP_BY
+
+#ifdef SQL_MAX_COLUMNS_IN_INDEX
+                // Value that specifies the maximum number of columns allowed in an index.
+                // If there is no specified limit or the limit is unknown, this value is set to zero.
+                shortParams[SQL_MAX_COLUMNS_IN_INDEX] = 0;
+#endif // SQL_MAX_COLUMNS_IN_INDEX
+
+#ifdef SQL_MAX_COLUMNS_IN_ORDER_BY
+                // Value that specifies the maximum number of columns allowed in an ORDER BY clause.
+                // If there is no specified limit or the limit is unknown, this value is set to zero.
+                // An FIPS Entry level-conformant driver will return at least 6. An FIPS Intermediate level-conformant
+                // driver will return at least 15.
+                shortParams[SQL_MAX_COLUMNS_IN_ORDER_BY] = 0;
+#endif // SQL_MAX_COLUMNS_IN_ORDER_BY
+
+#ifdef SQL_MAX_COLUMNS_IN_SELECT
+                // Value that specifies the maximum number of columns allowed in a select list. If there is no specified
+                // limit or the limit is unknown, this value is set to zero.
+                // An FIPS Entry level-conformant driver will return at least 100. An FIPS Intermediate level-conformant
+                // driver will return at least 250.
+                shortParams[SQL_MAX_COLUMNS_IN_SELECT] = 0;
+#endif // SQL_MAX_COLUMNS_IN_SELECT
+
+#ifdef SQL_MAX_COLUMNS_IN_TABLE
+                // Value that specifies the maximum number of columns allowed in a table. If there is no specified limit
+                // or the limit is unknown, this value is set to zero.
+                // An FIPS Entry level-conformant driver will return at least 100. An FIPS Intermediate level-conformant
+                // driver will return at least 250.
+                shortParams[SQL_MAX_COLUMNS_IN_TABLE] = 0;
+#endif // SQL_MAX_COLUMNS_IN_TABLE
+
+#ifdef SQL_MAX_CURSOR_NAME_LEN
+                // Value that specifies the maximum length of a cursor name in the data source. If there is no maximum
+                // length or the length is unknown, this value is set to zero.
+                // An FIPS Entry level-conformant driver will return at least 18. An FIPS Intermediate level-conformant
+                // driver will return at least 128.
+                shortParams[SQL_MAX_CURSOR_NAME_LEN] = 0;
+#endif // SQL_MAX_CURSOR_NAME_LEN
+
+#ifdef SQL_MAX_DRIVER_CONNECTIONS
+                // Value that specifies the maximum number of active connections that the driver can support for an
+                // environment. This value can reflect a limitation imposed by either the driver or the data source.
+                // If there is no specified limit or the limit is unknown, this value is set to zero.
+                // This InfoType has been renamed for ODBC 3.0 from the ODBC 2.0 InfoType SQL_ACTIVE_CONNECTIONS.
+                shortParams[SQL_MAX_DRIVER_CONNECTIONS] = 0;
+#endif // SQL_MAX_DRIVER_CONNECTIONS
+
+#ifdef SQL_MAX_IDENTIFIER_LEN
+                // Value that indicates the maximum size in characters that the data source supports for user-defined
+                // names.
+                // An FIPS Entry level-conformant driver will return at least 18. An FIPS Intermediate level-conformant
+                // driver will return at least 128.
+                shortParams[SQL_MAX_IDENTIFIER_LEN] = 128;
+#endif // SQL_MAX_IDENTIFIER_LEN
+
+#ifdef SQL_MAX_PROCEDURE_NAME_LEN
+                // Value that specifies the maximum length of a procedure name in the data source. If there is no
+                // maximum length or the length is unknown, this value is set to zero.
+                shortParams[SQL_MAX_PROCEDURE_NAME_LEN] = 0;
+#endif // SQL_MAX_PROCEDURE_NAME_LEN
+
+#ifdef SQL_MAX_SCHEMA_NAME_LEN
+                // Value that specifies the maximum length of a schema name in the data source. If there is no maximum
+                // length or the length is unknown, this value is set to zero.
+                // An FIPS Entry level-conformant driver will return at least 18. An FIPS Intermediate level-conformant
+                // driver will return at least 128.
+                // This InfoType has been renamed for ODBC 3.0 from the ODBC 2.0 InfoType SQL_MAX_OWNER_NAME_LEN.
+                shortParams[SQL_MAX_SCHEMA_NAME_LEN] = 0;
+#endif // SQL_MAX_SCHEMA_NAME_LEN
+
+#ifdef SQL_MAX_TABLE_NAME_LEN
+                // Value that specifies the maximum length of a table name in the data source. If there is no maximum
+                // length or the length is unknown, this value is set to zero.
+                // An FIPS Entry level-conformant driver will return at least 18. An FIPS Intermediate level-conformant
+                // driver will return at least 128.
+                shortParams[SQL_MAX_TABLE_NAME_LEN] = 0;
+#endif // SQL_MAX_TABLE_NAME_LEN
+
+#ifdef SQL_MAX_TABLES_IN_SELECT
+                // Value that specifies the maximum number of tables allowed in the FROM clause of a SELECT statement.
+                // If there is no specified limit or the limit is unknown, this value is set to zero.
+                // An FIPS Entry level-conformant driver will return at least 15. An FIPS Intermediate level-conformant
+                // driver will return at least 50.
+                shortParams[SQL_MAX_TABLES_IN_SELECT] = 0;
+#endif // SQL_MAX_TABLES_IN_SELECT
+
+#ifdef SQL_MAX_USER_NAME_LEN
+                // Value that specifies the maximum length of a user name in the data source. If there is no maximum
+                // length or the length is unknown, this value is set to zero.
+                shortParams[SQL_MAX_USER_NAME_LEN] = 0;
+#endif // SQL_MAX_USER_NAME_LEN
             }
 
             ConnectionInfo::~ConnectionInfo()
