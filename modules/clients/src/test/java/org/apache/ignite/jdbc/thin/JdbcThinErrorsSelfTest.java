@@ -25,6 +25,7 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.List;
@@ -463,5 +464,31 @@ public class JdbcThinErrorsSelfTest extends JdbcErrorsAbstractSelfTest {
                 }
             }
         }, "0700B");
+    }
+
+    /**
+     * Check error code for the case null value is inserted into table field declared as NOT NULL.
+     *
+     * @throws SQLException if failed.
+     */
+    public void testNotNullViolation() throws SQLException {
+        try (Connection conn = getConnection()) {
+            try (Statement stmt = conn.createStatement()) {
+                stmt.execute("CREATE TABLE nulltest(id INT PRIMARY KEY, name CHAR NOT NULL)");
+
+                try {
+                    checkErrorState(new IgniteCallable<Void>() {
+                        @Override public Void call() throws Exception {
+                            stmt.execute("INSERT INTO nulltest(id, name) VALUES (1, NULLIF('a', 'a'))");
+
+                            return null;
+                        }
+                    }, "22004");
+                }
+                finally {
+                    stmt.execute("DROP TABLE nulltest");
+                }
+            }
+        }
     }
 }
