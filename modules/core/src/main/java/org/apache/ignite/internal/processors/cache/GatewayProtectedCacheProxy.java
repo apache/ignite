@@ -36,6 +36,7 @@ import javax.cache.integration.CompletionListener;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorResult;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.CacheMetrics;
@@ -49,6 +50,7 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.internal.AsyncSupportAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
@@ -1652,8 +1654,18 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
      */
     private CacheOperationContext onEnter(@Nullable GridCacheGateway<K, V> gate, CacheOperationContext opCtx) {
         checkProxyIsValid(gate);
-        
-        return lock ? gate.enter(opCtx) : gate.enterNoLock(opCtx);
+
+        try {
+            return lock ? gate.enter(opCtx) : gate.enterNoLock(opCtx);
+        }
+        catch (IgniteException e) {
+            if (X.hasCause(e, CacheStoppedException.class) || X.hasSuppressed(e, CacheStoppedException.class)) {
+                if (delegate instanceof IgniteCacheProxyImpl)
+                    ((IgniteCacheProxyImpl)delegate).checkRestart();
+            }
+
+            throw e;
+        }
     }
 
     /**

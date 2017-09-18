@@ -85,7 +85,7 @@ public class GridCacheGateway<K, V> {
 
             if (state == State.STOPPED) {
                 if (stopErr)
-                    throw new IllegalStateException(new CacheStoppedException(ctx.name()));
+                    throw new IgniteException(new CacheStoppedException(ctx.name()));
                 else
                     return false;
             }
@@ -161,7 +161,7 @@ public class GridCacheGateway<K, V> {
             GridCachePreloader preldr = cache != null ? cache.preloader() : null;
 
             if (preldr == null)
-                throw new IllegalStateException(new CacheStoppedException(ctx.name()));
+                throw new IgniteException(new CacheStoppedException(ctx.name()));
 
             preldr.startFuture().get();
         }
