@@ -22,7 +22,6 @@ import org.apache.ignite.internal.util.GridConcurrentHashSet;
 
 import java.util.Collection;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
