@@ -138,6 +138,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         /// Tests multiple cursors with the same client.
         /// </summary>
         [Test]
+        [SuppressMessage("ReSharper", "GenericEnumeratorNotDisposed")]
         public void TestMultipleCursors()
         {
             var cache = GetPersonCache();
@@ -170,9 +171,21 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 
                 Assert.AreEqual(cache.GetSize(), count);
 
-                cur1.Dispose();
-                cur2.Dispose();
-                cur3.Dispose();
+                // Old cursors were auto-closed on last page, we can open new cursors now.
+                var c1 = clientCache.Query(qry);
+                var c2 = clientCache.Query(qry);
+                var c3 = clientCache.Query(qry);
+
+                Assert.Throws<IgniteException>(() => clientCache.Query(qry));
+
+                // Close one of the cursors.
+                c1.Dispose();
+                c1 = clientCache.Query(qry);
+                Assert.Throws<IgniteException>(() => clientCache.Query(qry));
+
+                c1.Dispose();
+                c2.Dispose();
+                c3.Dispose();
             }
         }
 
