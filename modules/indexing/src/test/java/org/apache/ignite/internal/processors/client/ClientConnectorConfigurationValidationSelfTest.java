@@ -19,10 +19,13 @@ package org.apache.ignite.internal.processors.client;
 
 import junit.framework.TestCase;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
+import org.apache.ignite.configuration.OdbcConfiguration;
+import org.apache.ignite.configuration.SqlConnectorConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -158,20 +161,71 @@ public class ClientConnectorConfigurationValidationSelfTest extends GridCommonAb
     }
 
     /**
-     * Perform check.
+     * Test ODBC connector conversion.
      *
-     * @param sqlCfg SQL configuration.
-     * @param success Success flag. * @throws Exception If failed.
+     * @throws Exception If failed.
      */
-    @SuppressWarnings({"ThrowableResultOfMethodCallIgnored", "unchecked"})
-    private void check(ClientConnectorConfiguration sqlCfg, boolean success) throws Exception {
+    public void testOdbcConnectorConversion() throws Exception {
+        int port = ClientConnectorConfiguration.DFLT_PORT - 1;
+
+        IgniteConfiguration cfg = baseConfiguration();
+
+        cfg.setOdbcConfiguration(new OdbcConfiguration().setEndpointAddress("127.0.0.1:" + port));
+
+        Ignition.start(cfg);
+
+        assertJdbc(null, port);
+    }
+
+    /**
+     * Test SQL connector conversion.
+     *
+     * @throws Exception If failed.
+     */
+    public void testSqlConnectorConversion() throws Exception {
+        int port = ClientConnectorConfiguration.DFLT_PORT - 1;
+
+        IgniteConfiguration cfg = baseConfiguration();
+
+        cfg.setSqlConnectorConfiguration(new SqlConnectorConfiguration().setPort(port));
+
+        Ignition.start(cfg);
+
+        assertJdbc(null, port);
+    }
+
+    /**
+     * Test SQL connector conversion.
+     *
+     * @throws Exception If failed.
+     */
+    public void testIgnoreOdbcWhenSqlSet() throws Exception {
+        int port = ClientConnectorConfiguration.DFLT_PORT - 1;
+
+        IgniteConfiguration cfg = baseConfiguration();
+
+        cfg.setSqlConnectorConfiguration(new SqlConnectorConfiguration().setPort(port));
+        cfg.setOdbcConfiguration(new OdbcConfiguration().setEndpointAddress("127.0.0.1:" + (port - 1)));
+
+        Ignition.start(cfg);
+
+        assertJdbc(null, port);
+    }
+
+    /**
+     * Get base node configuration.
+     *
+     * @return Configuration.
+     * @throws Exception If failed.
+     */
+    @SuppressWarnings("unchecked")
+    private IgniteConfiguration baseConfiguration() throws Exception {
         final IgniteConfiguration cfg = super.getConfiguration();
 
         cfg.setIgniteInstanceName(ClientConnectorConfigurationValidationSelfTest.class.getName() + "-" +
             NODE_IDX_GEN.incrementAndGet());
 
         cfg.setLocalHost("127.0.0.1");
-        cfg.setClientConnectorConfiguration(sqlCfg);
         cfg.setMarshaller(new BinaryMarshaller());
 
         TcpDiscoverySpi spi = new TcpDiscoverySpi();
@@ -180,9 +234,24 @@ public class ClientConnectorConfigurationValidationSelfTest extends GridCommonAb
         cfg.setDiscoverySpi(spi);
 
         CacheConfiguration ccfg = new CacheConfiguration(CACHE_NAME)
-            .setIndexedTypes(SqlConnectorKey.class, SqlConnectorValue.class);
+            .setIndexedTypes(ClientConnectorKey.class, ClientConnectorValue.class);
 
         cfg.setCacheConfiguration(ccfg);
+
+        return cfg;
+    }
+
+    /**
+     * Perform check.
+     *
+     * @param cliConnCfg Client connector configuration.
+     * @param success Success flag. * @throws Exception If failed.
+     */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    private void check(ClientConnectorConfiguration cliConnCfg, boolean success) throws Exception {
+        final IgniteConfiguration cfg = baseConfiguration();
+
+        cfg.setClientConnectorConfiguration(cliConnCfg);
 
         if (success)
             startGrid(cfg.getIgniteInstanceName(), cfg);
@@ -226,7 +295,7 @@ public class ClientConnectorConfigurationValidationSelfTest extends GridCommonAb
     /**
      * Key class.
      */
-    private static class SqlConnectorKey {
+    private static class ClientConnectorKey {
         @QuerySqlField
         public int key;
     }
@@ -234,7 +303,7 @@ public class ClientConnectorConfigurationValidationSelfTest extends GridCommonAb
     /**
      * Value class.
      */
-    private static class SqlConnectorValue {
+    private static class ClientConnectorValue {
         @QuerySqlField
         public int val;
     }
