@@ -183,6 +183,11 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 c1 = clientCache.Query(qry);
                 Assert.Throws<IgniteException>(() => clientCache.Query(qry));
 
+                // Close cursor via GetAll.
+                c1.GetAll();
+                c1 = clientCache.Query(qry);
+                Assert.Throws<IgniteException>(() => clientCache.Query(qry));
+
                 c1.Dispose();
                 c2.Dispose();
                 c3.Dispose();
