@@ -24,6 +24,8 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
     using System.Linq;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Query;
+    using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Configuration;
     using NUnit.Framework;
 
     /// <summary>
@@ -37,6 +39,19 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         public ScanQueryTest() : base(2)
         {
             // No-op.
+        }
+
+        /** <inheritdoc /> */
+        protected override IgniteConfiguration GetIgniteConfiguration()
+        {
+            var cfg = base.GetIgniteConfiguration();
+
+            cfg.SqlConnectorConfiguration = new SqlConnectorConfiguration
+            {
+                MaxOpenCursorsPerConnection = 3
+            };
+
+            return cfg;
         }
 
         /// <summary>
@@ -116,6 +131,48 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 // No results.
                 res = clientCache.Query(new ScanQuery<int, Person>(new PersonFilter(x => x == null))).ToList();
                 Assert.AreEqual(0, res.Count);
+            }
+        }
+
+        /// <summary>
+        /// Tests multiple cursors with the same client.
+        /// </summary>
+        [Test]
+        public void TestMultipleCursors()
+        {
+            var cache = GetPersonCache();
+
+            using (var client = GetClient())
+            {
+                var clientCache = client.GetCache<int, Person>(CacheName);
+
+                var qry = new ScanQuery<int, Person>();
+
+                var cur1 = clientCache.Query(qry).GetEnumerator();
+                var cur2 = clientCache.Query(qry).GetEnumerator();
+                var cur3 = clientCache.Query(qry).GetEnumerator();
+
+                // MaxCursors = 3
+                Assert.Throws<IgniteException>(() => clientCache.Query(qry));
+
+                var count = 0;
+
+                while (cur1.MoveNext())
+                {
+                    count++;
+
+                    Assert.IsTrue(cur2.MoveNext());
+                    Assert.IsTrue(cur3.MoveNext());
+
+                    Assert.AreEqual(cur1.Current.Key, cur2.Current.Key);
+                    Assert.AreEqual(cur1.Current.Key, cur3.Current.Key);
+                }
+
+                Assert.AreEqual(cache.GetSize(), count);
+
+                cur1.Dispose();
+                cur2.Dispose();
+                cur3.Dispose();
             }
         }
 

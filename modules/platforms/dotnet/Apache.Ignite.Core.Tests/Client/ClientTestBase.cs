@@ -55,7 +55,7 @@ namespace Apache.Ignite.Core.Tests.Client
         [TestFixtureSetUp]
         public void FixtureSetUp()
         {
-            var cfg = TestUtils.GetTestConfiguration();
+            var cfg = GetIgniteConfiguration();
             Ignition.Start(cfg);
 
             cfg.AutoGenerateIgniteInstanceName = true;
@@ -100,6 +100,14 @@ namespace Apache.Ignite.Core.Tests.Client
             {
                 Host = IPAddress.Loopback.ToString()
             };
+        }
+
+        /// <summary>
+        /// Gets the Ignite configuration.
+        /// </summary>
+        protected virtual IgniteConfiguration GetIgniteConfiguration()
+        {
+            return TestUtils.GetTestConfiguration();
         }
     }
 }
