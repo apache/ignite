@@ -57,6 +57,9 @@ Custom Maven options, default is "-U -P-lgpl,-scala,-examples,-test,-benchmarks 
 .PARAMETER jarDirs
 Java jar files source folders, default is "modules\indexing\target,modules\core\target,modules\spring\target"
 
+.PARAMETER asmDirs
+.NET assembly directories to copy pre-build binaries from. Default is "", which means no copy.
+
 .EXAMPLE
 .\build.ps1 -clean  
 # Full rebuild of Java, .NET and NuGet packages.
@@ -78,7 +81,8 @@ param (
     [ValidateSet("Release", "Debug")]
     [string]$configuration="Release",
     [string]$mavenOpts="-U -P-lgpl,-scala,-examples,-test,-benchmarks -Dmaven.javadoc.skip=true",
-	[string]$jarDirs="modules\indexing\target,modules\core\target,modules\spring\target"
+	[string]$jarDirs="modules\indexing\target,modules\core\target,modules\spring\target",
+    [string]$asmDirs=""
  )
 
 # 1) Build Java (Maven)
@@ -177,6 +181,24 @@ if (!$skipDotNet) {
 		echo ".NET build failed."
 		exit -1
 	}
+}
+
+if ($asmDirs) {
+    ls $asmDirs.Split(',') | % `
+    {
+        $projName = [System.IO.Path]::GetFileNameWithoutExtension($_.Name);
+
+        if ($_.Name.EndsWith(".exe.config")) {
+            $projName = [System.IO.Path]::GetFileNameWithoutExtension($projName);
+        }
+
+        if ($projName.StartsWith("Apache.Ignite")) {
+            $target = "$projName\bin\Release"
+            mkdir -Force $target
+
+            xcopy /s /y $_.FullName $target
+        }
+    }    
 }
 
 # Copy binaries
