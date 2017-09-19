@@ -18,15 +18,12 @@
 package org.apache.ignite.internal.processors.database;
 
 import java.io.Serializable;
-import java.util.Arrays;
-import java.util.LinkedHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.QueryEntity;
-import org.apache.ignite.cache.QueryIndex;
-import org.apache.ignite.cache.QueryIndexType;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -36,6 +33,8 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListener;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.query.QuerySchema;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -53,20 +52,15 @@ public class IgnitePersistentStoreSchemaLoadTest extends GridCommonAbstractTest 
     /** */
     private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
-    /** Index name. */
-    private static final String IDX_NAME = "my_idx";
-
     /** Cache name. */
     private static final String TMPL_NAME = "test_cache*";
 
     /** Table name. */
     private static final String TBL_NAME = Person.class.getSimpleName();
 
-    /** Schema name. */
-    private static final String SCHEMA_NAME = "PUBLIC";
-
     /** Cache name. */
-    private static final String CACHE_NAME = TBL_NAME;
+    private static final String CACHE_NAME = QueryUtils.createTableCacheName(QueryUtils.DFLT_SCHEMA,
+        TBL_NAME);
 
 
     /** {@inheritDoc} */
@@ -83,6 +77,8 @@ public class IgnitePersistentStoreSchemaLoadTest extends GridCommonAbstractTest 
 
         cfg.setPersistentStoreConfiguration(pCfg);
 
+        cfg.setActiveOnStart(true);
+
         return cfg;
     }
 
@@ -97,20 +93,6 @@ public class IgnitePersistentStoreSchemaLoadTest extends GridCommonAbstractTest 
         cfg.setAtomicityMode(CacheAtomicityMode.ATOMIC);
 
         return cfg;
-    }
-
-    /** */
-    private QueryEntity getEntity() {
-        LinkedHashMap<String, String> fields = new LinkedHashMap<>();
-
-        fields.put("id", Integer.class.getName());
-        fields.put("name", String.class.getName());
-
-        QueryEntity entity = new QueryEntity(Integer.class.getName(), Person.class.getName());
-        entity.setFields(fields);
-        entity.setTableName(TBL_NAME);
-
-        return entity;
     }
 
     /** {@inheritDoc} */
@@ -134,7 +116,6 @@ public class IgnitePersistentStoreSchemaLoadTest extends GridCommonAbstractTest 
     /** */
     public void testPersistIndex() throws Exception {
         IgniteEx ig0 = startGrid(0);
-        startGrid(1);
 
         final AtomicInteger cnt = new AtomicInteger();
 
@@ -146,26 +127,25 @@ public class IgnitePersistentStoreSchemaLoadTest extends GridCommonAbstractTest 
             }
         });
 
-        QueryIndex idx = new QueryIndex("name");
+        ig0.active(true);
 
-        idx.setName(IDX_NAME);
+        ig0.context().query().querySqlFieldsNoCache(
+            new SqlFieldsQuery("create table \"Person\" (\"id\" int primary key, \"name\" varchar)"), false).getAll();
 
-        ig0.context().query().dynamicTableCreate(SCHEMA_NAME, getEntity(), TMPL_NAME, null, null, null,
-            null, 1, true);
+        assertEquals(0, indexCnt(ig0, CACHE_NAME));
 
-        assert indexCnt(ig0, CACHE_NAME) == 0;
+        ig0.context().query().querySqlFieldsNoCache(
+            new SqlFieldsQuery("Create index \"my_idx\" on \"Person\" (\"name\")"), false).getAll();
 
-        ig0.context().query().dynamicIndexCreate(CACHE_NAME, SCHEMA_NAME, TBL_NAME, idx, false).get();
-
-        assert indexCnt(ig0, CACHE_NAME) == 1;
+        assertEquals(1, indexCnt(ig0, CACHE_NAME));
 
         waitForCheckpoint(cnt);
 
-        stopGrid(1);
+        stopGrid(0);
 
-        IgniteEx ig1 = startGrid(1);
+        IgniteEx ig1 = startGrid(0);
 
-        assert indexCnt(ig1, CACHE_NAME) == 1;
+        assertEquals(1, indexCnt(ig1, CACHE_NAME));
     }
 
     /** */
@@ -173,6 +153,8 @@ public class IgnitePersistentStoreSchemaLoadTest extends GridCommonAbstractTest 
         IgniteEx ig0 = startGrid(0);
         startGrid(1);
 
+        ig0.active(true);
+
         final AtomicInteger cnt = new AtomicInteger();
 
         GridCacheDatabaseSharedManager db = (GridCacheDatabaseSharedManager)ig0.context().cache().context().database();
@@ -183,17 +165,20 @@ public class IgnitePersistentStoreSchemaLoadTest extends GridCommonAbstractTest 
             }
         });
 
-        ig0.context().query().dynamicTableCreate(SCHEMA_NAME, getEntity(), TMPL_NAME, null, null, null, null, 1, true);
+        ig0.context().query().querySqlFieldsNoCache(
+            new SqlFieldsQuery("create table \"Person\" (\"id\" int primary key, \"name\" varchar)"), false).getAll();
 
-        assert indexCnt(ig0, CACHE_NAME) == 0;
+        assertEquals(0, indexCnt(ig0, CACHE_NAME));
 
-        QueryIndex idx = new QueryIndex(Arrays.asList("id", "name"), QueryIndexType.SORTED);
+        ig0.context().query().querySqlFieldsNoCache(
+            new SqlFieldsQuery("Create index \"my_idx\" on \"Person\" (\"id\", \"name\")"), false).getAll();
 
-        idx.setName(IDX_NAME);
+        assertEquals(1, indexCnt(ig0, CACHE_NAME));
 
-        ig0.context().query().dynamicIndexCreate(CACHE_NAME, SCHEMA_NAME, TBL_NAME, idx, false).get();
+        ig0.context().query().querySqlFieldsNoCache(
+            new SqlFieldsQuery("alter table \"Person\" add column \"age\" int"), false).getAll();
 
-        assert indexCnt(ig0, CACHE_NAME) == 1;
+        assertEquals(3, colsCnt(ig0, CACHE_NAME));
 
         waitForCheckpoint(cnt);
 
@@ -201,7 +186,9 @@ public class IgnitePersistentStoreSchemaLoadTest extends GridCommonAbstractTest 
 
         IgniteEx ig1 = startGrid(1);
 
-        assert indexCnt(ig1, CACHE_NAME) == 1;
+        assertEquals(1, indexCnt(ig1, CACHE_NAME));
+
+        assertEquals(3, colsCnt(ig0, CACHE_NAME));
     }
 
     /** */
@@ -217,13 +204,34 @@ public class IgnitePersistentStoreSchemaLoadTest extends GridCommonAbstractTest 
 
     /** */
     private int indexCnt(IgniteEx node, String cacheName) {
-
         DynamicCacheDescriptor desc = node.context().cache().cacheDescriptor(cacheName);
 
         int cnt = 0;
 
-        for (QueryEntity entity : desc.schema().entities())
-            cnt += entity.getIndexes().size();
+        if (desc != null) {
+            QuerySchema schema = desc.schema();
+            if (schema != null) {
+                for (QueryEntity entity : schema.entities())
+                    cnt += entity.getIndexes().size();
+            }
+        }
+        return cnt;
+    }
+
+    /** */
+    private int colsCnt(IgniteEx node, String cacheName) {
+        DynamicCacheDescriptor desc = node.context().cache().cacheDescriptor(cacheName);
+
+        int cnt = 0;
+
+        if (desc != null) {
+            QuerySchema schema = desc.schema();
+            if (schema != null) {
+
+                for (QueryEntity entity : schema.entities())
+                    cnt += entity.getFields().size();
+            }
+        }
 
         return cnt;
     }
