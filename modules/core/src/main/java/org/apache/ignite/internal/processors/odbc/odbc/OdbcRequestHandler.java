@@ -219,8 +219,8 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
         int cursorCnt = qryCursors.size();
 
         if (maxCursors > 0 && cursorCnt >= maxCursors)
-            return new OdbcResponse(ClientListenerResponse.STATUS_FAILED, "Too many opened cursors (either close " +
-                "other opened cursors or increase the limit through " +
+            return new OdbcResponse(ClientListenerResponse.STATUS_FAILED, "Too many open cursors (either close " +
+                "other open cursors or increase the limit through " +
                 "ClientConnectorConfiguration.maxOpenCursorsPerConnection) [maximum=" + maxCursors +
                 ", current=" + cursorCnt + ']');
 
