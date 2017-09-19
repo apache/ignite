@@ -135,7 +135,7 @@ namespace Apache.Ignite.Core.Tests.Client
         {
             var servCfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                SqlConnectorConfigurationEnabled = false
+                ClientConnectorConfigurationEnabled = false
             };
 
             var clientCfg = new IgniteClientConfiguration

@@ -122,9 +122,9 @@ namespace Apache.Ignite.Core
         public static readonly TimeSpan DefaultLongQueryWarningTimeout = TimeSpan.FromMilliseconds(3000);
 
         /// <summary>
-        /// Default value for <see cref="SqlConnectorConfigurationEnabled"/>.
+        /// Default value for <see cref="ClientConnectorConfigurationEnabled"/>.
         /// </summary>
-        public const bool DefaultSqlConnectorConfigurationEnabled = true;
+        public const bool DefaultClientConnectorConfigurationEnabled = true;
 
         /** */
         private TimeSpan? _metricsExpireTime;
@@ -441,7 +441,7 @@ namespace Apache.Ignite.Core
                 writer.WriteBoolean(false);
             }
 
-            // SQL
+            // SQL connector.
             if (SqlConnectorConfiguration != null)
             {
                 writer.WriteBoolean(true);
@@ -452,7 +452,18 @@ namespace Apache.Ignite.Core
                 writer.WriteBoolean(false);
             }
 
-            writer.WriteBoolean(SqlConnectorConfigurationEnabled);
+            // Client connector.
+            if (ClientConnectorConfiguration != null)
+            {
+                writer.WriteBoolean(true);
+                ClientConnectorConfiguration.Write(writer);
+            }
+            else
+            {
+                writer.WriteBoolean(false);
+            }
+
+            writer.WriteBoolean(ClientConnectorConfigurationEnabled);
 
             // Persistence.
             if (PersistentStoreConfiguration != null)
@@ -1206,12 +1217,17 @@ namespace Apache.Ignite.Core
         public SqlConnectorConfiguration SqlConnectorConfiguration { get; set; }
 
         /// <summary>
-        /// Gets or sets a value indicating whether Sql Connector is enabled
-        /// (see <see cref="SqlConnectorConfiguration"/>).
-        /// Default is <see cref="DefaultSqlConnectorConfigurationEnabled"/>.
+        /// Gets or sets the client connector configuration (for JDBC, ODBC, and thin clients).
         /// </summary>
-        [DefaultValue(DefaultSqlConnectorConfigurationEnabled)]
-        public bool SqlConnectorConfigurationEnabled { get; set; }
+        public ClientConnectorConfiguration ClientConnectorConfiguration { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether Sql Connector is enabled
+        /// (see <see cref="ClientConnectorConfiguration"/>).
+        /// Default is <see cref="DefaultClientConnectorConfigurationEnabled"/>.
+        /// </summary>
+        [DefaultValue(DefaultClientConnectorConfigurationEnabled)]
+        public bool ClientConnectorConfigurationEnabled { get; set; }
 
         /// <summary>
         /// Gets or sets the timeout after which long query warning will be printed.
