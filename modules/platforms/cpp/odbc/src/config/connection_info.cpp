@@ -575,15 +575,16 @@ namespace ignite
                 // ODBC version.
 #ifdef SQL_DRIVER_ODBC_VER
                 strParams[SQL_DRIVER_ODBC_VER] = "03.00";
+#endif // SQL_DRIVER_ODBC_VER
 
 #ifdef SQL_DRIVER_VER
                 // Driver version. At a minimum, the version is of the form ##.##.####, where the first two digits are
                 // the major version, the next two digits are the minor version, and the last four digits are the
                 // release version.
-                strParams[SQL_DRIVER_VER] = "02.02.0000";
+                strParams[SQL_DRIVER_VER] = "02.03.0000";
 #endif // SQL_DRIVER_VER
 #ifdef SQL_DBMS_VER
-                strParams[SQL_DBMS_VER] = "02.02.0000";
+                strParams[SQL_DBMS_VER] = "02.03.0000";
 #endif // SQL_DBMS_VER
 
 #ifdef SQL_COLUMN_ALIAS
@@ -1365,7 +1366,7 @@ namespace ignite
                 // SQL_AT_CONSTRAINT_INITIALLY_IMMEDIATE (Full level) (ODBC 3.0)
                 // SQL_AT_CONSTRAINT_DEFERRABLE (Full level) (ODBC 3.0)
                 // SQL_AT_CONSTRAINT_NON_DEFERRABLE (Full level) (ODBC 3.0)
-                intParams[SQL_ALTER_TABLE] = 0;
+                intParams[SQL_ALTER_TABLE] = SQL_AT_ADD_COLUMN_SINGLE;
 #endif // SQL_ALTER_TABLE
 
 #ifdef SQL_CREATE_ASSERTION
@@ -1478,7 +1479,7 @@ namespace ignite
                 // SQL_CT_CONSTRAINT_INITIALLY_IMMEDIATE (Full level)
                 // SQL_CT_CONSTRAINT_DEFERRABLE (Full level)
                 // SQL_CT_CONSTRAINT_NON_DEFERRABLE (Full level)
-                intParams[SQL_CREATE_TABLE] = SQL_CT_CREATE_TABLE;
+                intParams[SQL_CREATE_TABLE] = SQL_CT_CREATE_TABLE | SQL_CT_COLUMN_CONSTRAINT;
 #endif // SQL_CREATE_TABLE
 
 #ifdef SQL_CREATE_TRANSLATION
