@@ -46,7 +46,8 @@ namespace ignite
             socket(),
             connected(false),
             parser(),
-            config()
+            config(),
+            info(config)
         {
             // No-op.
         }
@@ -58,9 +59,6 @@ namespace ignite
 
         const config::ConnectionInfo& Connection::GetInfo() const
         {
-            // Connection info is constant and the same for all connections now.
-            const static config::ConnectionInfo info;
-
             return info;
         }
 
