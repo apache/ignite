@@ -20,8 +20,8 @@ package org.apache.ignite.internal.processors.platform.client.binary;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryRawReader;
-import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.platform.client.ClientBooleanResponse;
+import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 
@@ -52,9 +52,9 @@ public class ClientBinaryTypeNamePutRequest extends ClientRequest {
     }
 
     /** {@inheritDoc} */
-    @Override public ClientResponse process(GridKernalContext ctx) {
+    @Override public ClientResponse process(ClientConnectionContext ctx) {
         try {
-            boolean res = ctx.marshallerContext().registerClassName(platformId, typeId, typeName);
+            boolean res = ctx.kernalContext().marshallerContext().registerClassName(platformId, typeId, typeName);
 
             return new ClientBooleanResponse(requestId(), res);
         }

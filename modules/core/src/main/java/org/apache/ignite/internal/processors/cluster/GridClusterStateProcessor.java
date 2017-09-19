@@ -418,7 +418,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
 
         if (cacheProc.transactions().tx() != null || sharedCtx.lockedTopologyVersion(null) != null) {
             return new GridFinishedFuture<>(new IgniteCheckedException("Failed to " + prettyStr(activate) +
-                " cluster (must invoke the method outside of an active transaction)."));
+                " cluster (must invoke the method outside of an active transaction or lock)."));
         }
 
         DiscoveryDataClusterState curState = globalState;
