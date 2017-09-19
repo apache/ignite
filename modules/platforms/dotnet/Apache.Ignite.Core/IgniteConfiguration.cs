@@ -644,6 +644,8 @@ namespace Apache.Ignite.Core
                 ClientConnectorConfiguration = new ClientConnectorConfiguration(r);
             }
 
+            ClientConnectorConfigurationEnabled = r.ReadBoolean();
+
             // Persistence.
             if (r.ReadBoolean())
             {

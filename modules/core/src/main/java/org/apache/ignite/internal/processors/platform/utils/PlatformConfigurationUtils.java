@@ -1156,6 +1156,8 @@ public class PlatformConfigurationUtils {
 
         writeClientConnectorConfiguration(w, cfg.getClientConnectorConfiguration());
 
+        w.writeBoolean(cfg.getClientConnectorConfiguration() != null);
+
         writePersistentStoreConfiguration(w, cfg.getPersistentStoreConfiguration());
 
         w.writeString(cfg.getIgniteHome());
