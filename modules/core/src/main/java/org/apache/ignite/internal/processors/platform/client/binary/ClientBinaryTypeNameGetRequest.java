@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.platform.client.binary;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryRawReader;
-import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 import org.apache.ignite.internal.processors.platform.client.ClientStringResponse;
@@ -48,9 +48,9 @@ public class ClientBinaryTypeNameGetRequest extends ClientRequest {
     }
 
     /** {@inheritDoc} */
-    @Override public ClientResponse process(GridKernalContext ctx) {
+    @Override public ClientResponse process(ClientConnectionContext ctx) {
         try {
-            String typeName = ctx.marshallerContext().getClassName(platformId, typeId);
+            String typeName = ctx.kernalContext().marshallerContext().getClassName(platformId, typeId);
 
             return new ClientStringResponse(requestId(), typeName);
         }
