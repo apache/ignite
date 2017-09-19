@@ -82,9 +82,6 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
     /** Local deployment. */
     private final AtomicReference<GridDeployment> locDep = new AtomicReference<>();
 
-    /** Local deployment ownership flag. */
-    private volatile boolean locDepOwner;
-
     /** */
     private final ThreadLocal<Boolean> ignoreOwnership = new ThreadLocal<Boolean>() {
         @Override protected Boolean initialValue() {
@@ -164,16 +161,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
      * Callback on method enter.
      */
     public void onEnter() {
-        if (depEnabled && !locDepOwner && !ignoreOwnership.get()
-            && !cctx.kernalContext().job().internal()) {
-            ClassLoader ldr = Thread.currentThread().getContextClassLoader();
 
-            // We mark node as deployment owner if accessing cache not from p2p deployed job
-            // and not from internal job.
-            if (!U.p2pLoader(ldr))
-                // If not deployment class loader, classes can be loaded from this node.
-                locDepOwner = true;
-        }
     }
 
     /**
@@ -691,7 +679,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
                     // Will copy sequence number to bean.
                     dep = new GridDeploymentInfoBean(locDep0);
 
-                    dep.localDeploymentOwner(locDepOwner);
+                    dep.localDeploymentOwner(false);
                 }
             }
 
@@ -708,9 +696,6 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
      */
     @Nullable public GridDeploymentInfoBean globalDeploymentInfo() {
         assert depEnabled;
-
-        if (locDepOwner)
-            return null;
 
         // Do not return info if mode is CONTINUOUS.
         // In this case deployment info will be set by GridCacheMessage.prepareObject().
@@ -730,7 +715,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
                     if (cctx.discovery().node(id) != null) {
                         // At least 1 participant is still in the grid.
                         return new GridDeploymentInfoBean(d.loaderId(), d.userVersion(), d.mode(),
-                            participants, locDepOwner);
+                            participants, false);
                     }
                 }
             }
