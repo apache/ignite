@@ -1,0 +1,23 @@
+{
+    "server": {
+        "port": 3000,
+        "sessionSecret": "CHANGE ME",
+        "ssl": false,
+        "key": "serve/keys/test.key",
+        "cert": "serve/keys/test.crt",
+        "keyPassphrase": "password"
+    },
+    "mongodb": {
+        "url": "mongodb://localhost/console"
+    },
+    "mail": {
+        "service": "",
+        "sign": "Kind regards,<br>Apache Ignite Team",
+        "greeting": "Apache Ignite Web Console",
+        "from": "Apache Ignite Web Console <someusername@somecompany.tld>",
+        "auth": {
+            "user": "someusername@somecompany.tld",
+            "pass": ""
+        }
+    }
+}

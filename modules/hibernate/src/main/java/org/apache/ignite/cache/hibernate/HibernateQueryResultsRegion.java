@@ -18,7 +18,6 @@
 package org.apache.ignite.cache.hibernate;
 
 import org.apache.ignite.Ignite;
-import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.hibernate.Query;
 import org.hibernate.cache.spi.QueryResultsRegion;
 
@@ -65,7 +64,7 @@ public class HibernateQueryResultsRegion extends HibernateGeneralDataRegion impl
      * @param cache Region cache.
      */
     public HibernateQueryResultsRegion(HibernateRegionFactory factory, String name,
-        Ignite ignite, IgniteInternalCache<Object, Object> cache) {
+        Ignite ignite, HibernateCacheProxy cache) {
         super(factory, name, ignite, cache);
     }
 }

@@ -123,7 +123,7 @@ public class PojoDescriptor {
             String colName = col.name();
 
             PojoField fld = new PojoField(colName, col.type(),
-                toJavaFieldName(colName), toJavaType(col.type(), col.nullable()).getName(),
+                toJavaFieldName(colName), toJavaType(col).getName(),
                 col.key(), col.nullable());
 
             fld.owner(this);
@@ -427,24 +427,32 @@ public class PojoDescriptor {
     /**
      * Convert JDBC data type to java type.
      *
-     * @param type JDBC SQL data type.
-     * @param nullable {@code true} if {@code NULL} is allowed for this field in database.
+     * @param col Database column descriptor.
      * @return Java data type.
      */
-    private static Class<?> toJavaType(int type, boolean nullable) {
-        switch (type) {
+    private static Class<?> toJavaType(DbColumn col) {
+        boolean nullable = col.nullable();
+        boolean unsigned = col.unsigned();
+
+        switch (col.type()) {
             case BIT:
             case BOOLEAN:
                 return nullable ? Boolean.class : boolean.class;
 
             case TINYINT:
-                return nullable ? Byte.class : byte.class;
+                return unsigned
+                    ? (nullable ? Short.class : short.class)
+                    : (nullable ? Byte.class : byte.class);
 
             case SMALLINT:
-                return nullable ? Short.class : short.class;
+                return unsigned
+                    ? (nullable ? Integer.class : int.class)
+                    : (nullable ? Short.class : short.class);
 
             case INTEGER:
-                return nullable ? Integer.class : int.class;
+                return unsigned
+                    ? (nullable ? Long.class : long.class)
+                    : (nullable ? Integer.class : int.class);
 
             case BIGINT:
                 return nullable ? Long.class : long.class;

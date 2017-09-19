@@ -162,30 +162,21 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// </summary>
         /// <param name="path">Path to Java XML configuration.</param>
         /// <returns>Node configuration.</returns>
-        protected IgniteConfiguration Configuration(string path)
+        private IgniteConfiguration Configuration(string path)
         {
-            IgniteConfiguration cfg = new IgniteConfiguration();
-
-            if (!_fork)
+            return new IgniteConfiguration
             {
-                BinaryConfiguration portCfg = new BinaryConfiguration();
-
-                ICollection<BinaryTypeConfiguration> portTypeCfgs = new List<BinaryTypeConfiguration>();
-
-                GetBinaryTypeConfigurations(portTypeCfgs);
-
-                portCfg.TypeConfigurations = portTypeCfgs;
-
-                cfg.BinaryConfiguration = portCfg;
-            }
-
-            cfg.JvmClasspath = TestUtils.CreateTestClasspath();
-
-            cfg.JvmOptions = TestUtils.TestJavaOptions();
-
-            cfg.SpringConfigUrl = path;
-
-            return cfg;
+                JvmClasspath = TestUtils.CreateTestClasspath(),
+                JvmOptions = TestUtils.TestJavaOptions(),
+                SpringConfigUrl = path,
+                BinaryConfiguration = _fork
+                    ? null
+                    : new BinaryConfiguration
+                    {
+                        TypeConfigurations =
+                            (GetBinaryTypes() ?? new Type[0]).Select(t => new BinaryTypeConfiguration(t)).ToList()
+                    }
+            };
         }
 
         /// <summary>
@@ -209,10 +200,9 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Define binary types.
         /// </summary>
-        /// <param name="portTypeCfgs">Binary type configurations.</param>
-        protected virtual void GetBinaryTypeConfigurations(ICollection<BinaryTypeConfiguration> portTypeCfgs)
+        protected virtual ICollection<Type> GetBinaryTypes()
         {
-            // No-op.
+            return null;
         }
 
         /// <summary>

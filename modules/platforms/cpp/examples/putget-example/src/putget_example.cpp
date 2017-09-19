@@ -117,7 +117,7 @@ int main()
     }
 
     std::cout << std::endl;
-    std::cout << ">>> Example finished, press any key to exit ..." << std::endl;
+    std::cout << ">>> Example finished, press 'Enter' to exit ..." << std::endl;
     std::cout << std::endl;
 
     std::cin.get();

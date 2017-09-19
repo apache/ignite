@@ -95,7 +95,7 @@ class StartRequestData implements Externalizable {
     void p2pMarshal(Marshaller marsh) throws IgniteCheckedException {
         assert marsh != null;
 
-        prjPredBytes = marsh.marshal(prjPred);
+        prjPredBytes = U.marshal(marsh, prjPred);
     }
 
     /**
@@ -109,7 +109,7 @@ class StartRequestData implements Externalizable {
         assert prjPred == null;
         assert prjPredBytes != null;
 
-        prjPred = marsh.unmarshal(prjPredBytes, ldr);
+        prjPred = U.unmarshal(marsh, prjPredBytes, ldr);
     }
 
     /**

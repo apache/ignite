@@ -87,48 +87,40 @@ public class GridCacheClearAllRunnable<K, V> implements Runnable {
         // Clear swapped entries.
         if (!ctx.isNear()) {
             if (ctx.swap().offHeapEnabled()) {
-                if (GridQueryProcessor.isEnabled(ctx.config())) {
-                    for (Iterator<KeyCacheObject> it =
-                        ctx.swap().offHeapKeyIterator(true, true, AffinityTopologyVersion.NONE); it.hasNext();) {
-                        KeyCacheObject key = it.next();
+                for (Iterator<KeyCacheObject> it = ctx.swap().offHeapKeyIterator(true, true, AffinityTopologyVersion.NONE); it.hasNext();) {
+                    KeyCacheObject key = it.next();
 
-                        if (owns(key))
-                            clearEntry(cache.entryEx(key));
-
-                    }
+                    if (owns(key))
+                        clearEntry(cache.entryEx(key));
                 }
-                else if (id == 0)
-                    ctx.swap().clearOffHeap();
             }
 
-            if (ctx.isSwapOrOffheapEnabled()) {
-                if (ctx.swap().swapEnabled()) {
-                    if (GridQueryProcessor.isEnabled(ctx.config())) {
-                        Iterator<KeyCacheObject> it = null;
+            if (ctx.swap().swapEnabled()) {
+                if (GridQueryProcessor.isEnabled(ctx.config())) {
+                    Iterator<KeyCacheObject> it = null;
 
-                        try {
-                            it = ctx.swap().swapKeyIterator(true, true, AffinityTopologyVersion.NONE);
-                        }
-                        catch (IgniteCheckedException e) {
-                            U.error(log, "Failed to get iterator over swap.", e);
-                        }
+                    try {
+                        it = ctx.swap().swapKeyIterator(true, true, AffinityTopologyVersion.NONE);
+                    }
+                    catch (IgniteCheckedException e) {
+                        U.error(log, "Failed to get iterator over swap.", e);
+                    }
 
-                        if (it != null) {
-                            while (it.hasNext()) {
-                                KeyCacheObject key = it.next();
+                    if (it != null) {
+                        while (it.hasNext()) {
+                            KeyCacheObject key = it.next();
 
-                                if (owns(key))
-                                    clearEntry(cache.entryEx(key));
-                            }
+                            if (owns(key))
+                                clearEntry(cache.entryEx(key));
                         }
                     }
-                    else if (id == 0) {
-                        try {
-                            ctx.swap().clearSwap();
-                        }
-                        catch (IgniteCheckedException e) {
-                            U.error(log, "Failed to clearLocally entries from swap storage.", e);
-                        }
+                }
+                else if (id == 0) {
+                    try {
+                        ctx.swap().clearSwap();
+                    }
+                    catch (IgniteCheckedException e) {
+                        U.error(log, "Failed to clearLocally entries from swap storage.", e);
                     }
                 }
             }

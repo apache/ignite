@@ -149,11 +149,16 @@ public class BasicJdbcDialect implements JdbcDialect {
     }
 
     /** {@inheritDoc} */
+    @Override public String escape(String ident) {
+        return '"' + ident + '"';
+    }
+
+    /** {@inheritDoc} */
     @Override public String loadCacheSelectRangeQuery(String fullTblName, Collection<String> keyCols) {
         String cols = mkString(keyCols, ",");
 
-        return String.format("SELECT %s FROM (SELECT %s, ROWNUM() AS rn FROM %s ORDER BY %s) WHERE mod(rn, ?) = 0",
-            cols, cols, fullTblName, cols);
+        return String.format("SELECT %1$s FROM (SELECT %1$s, ROW_NUMBER() OVER() AS rn FROM (SELECT %1$s FROM %2$s ORDER BY %1$s) AS tbl) AS tbl WHERE mod(rn, ?) = 0",
+            cols, fullTblName);
     }
 
     /** {@inheritDoc} */
@@ -168,13 +173,15 @@ public class BasicJdbcDialect implements JdbcDialect {
         if (appendLowerBound) {
             sb.a("(");
 
-            for (int cnt = keyCols.size(); cnt > 0; cnt--) {
-                for (int j = 0; j < cnt; j++)
-                    if (j == cnt - 1)
-                        sb.a(cols[j]).a(" > ? ");
+            for (int keyCnt = keyCols.size(); keyCnt > 0; keyCnt--) {
+                for (int idx = 0; idx < keyCnt; idx++) {
+                    if (idx == keyCnt - 1)
+                        sb.a(cols[idx]).a(" > ? ");
                     else
-                        sb.a(cols[j]).a(" = ? AND ");
-                if (cnt != 1)
+                        sb.a(cols[idx]).a(" = ? AND ");
+                }
+
+                if (keyCnt != 1)
                     sb.a("OR ");
             }
 
@@ -187,13 +194,18 @@ public class BasicJdbcDialect implements JdbcDialect {
         if (appendUpperBound) {
             sb.a("(");
 
-            for (int cnt = keyCols.size(); cnt > 0; cnt--) {
-                for (int j = 0; j < cnt; j++)
-                    if (j == cnt - 1)
-                        sb.a(cols[j]).a(" <= ? ");
+            for (int keyCnt = keyCols.size(); keyCnt > 0; keyCnt--) {
+                for (int idx = 0, lastIdx = keyCnt - 1; idx < keyCnt; idx++) {
+                    sb.a(cols[idx]);
+
+                    // For composite key when not all of the key columns are constrained should use < (strictly less).
+                    if (idx == lastIdx)
+                        sb.a(keyCnt == keyCols.size() ? " <= ? " : " < ? ");
                     else
-                        sb.a(cols[j]).a(" = ? AND ");
-                if (cnt != 1)
+                        sb.a(" = ? AND ");
+                }
+
+                if (keyCnt != 1)
                     sb.a(" OR ");
             }
 
@@ -245,8 +257,7 @@ public class BasicJdbcDialect implements JdbcDialect {
     }
 
     /** {@inheritDoc} */
-    @Override public String mergeQuery(String fullTblName, Collection<String> keyCols,
-        Collection<String> uniqCols) {
+    @Override public String mergeQuery(String fullTblName, Collection<String> keyCols, Collection<String> uniqCols) {
         return "";
     }
 
@@ -273,5 +284,10 @@ public class BasicJdbcDialect implements JdbcDialect {
      */
     public void setMaxParameterCount(int maxParamsCnt) {
         this.maxParamsCnt = maxParamsCnt;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getFetchSize() {
+        return 0;
     }
 }

@@ -154,7 +154,7 @@ namespace ignite
          * @param err Error.
          */
         static void StopAll(bool cancel, IgniteError* err);
-    };    
+    };
 }
 
 #endif //_IGNITE_IGNITION
