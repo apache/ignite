@@ -62,8 +62,8 @@ namespace Apache.Ignite.Core.Client.Cache
         /// <summary>
         /// Executes a Scan query.
         /// </summary>
-        /// <param name="query">Scan query.</param>
+        /// <param name="scanQuery">Scan query.</param>
         /// <returns>Query cursor.</returns>
-        IQueryCursor<ICacheEntry<TK, TV>> Query(ScanQuery<TK, TV> query);
+        IQueryCursor<ICacheEntry<TK, TV>> Query(ScanQuery<TK, TV> scanQuery);
     }
 }

@@ -113,13 +113,13 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         }
 
         /** <inheritDoc /> */
-        public IQueryCursor<ICacheEntry<TK, TV>> Query(ScanQuery<TK, TV> query)
+        public IQueryCursor<ICacheEntry<TK, TV>> Query(ScanQuery<TK, TV> scanQuery)
         {
-            IgniteArgumentCheck.NotNull(query, "query");
+            IgniteArgumentCheck.NotNull(scanQuery, "query");
 
             // Filter is a binary object for all platforms.
             // For .NET it is a CacheEntryFilterHolder with a predefined id (BinaryTypeId.CacheEntryPredicateHolder).
-            return DoOutInOp(ClientOp.QueryScan, w => WriteScanQuery(w, query),
+            return DoOutInOp(ClientOp.QueryScan, w => WriteScanQuery(w, scanQuery),
                 s => new ClientQueryCursor<TK, TV>(_ignite, s.ReadLong(), _keepBinary, s));
         }
 
