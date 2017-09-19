@@ -285,6 +285,7 @@ namespace Apache.Ignite.Core.Tests
 
             Assert.AreEqual(PeerAssemblyLoadingMode.CurrentAppDomain, cfg.PeerAssemblyLoadingMode);
 
+#pragma warning disable 618  // Obsolete
             var sql = cfg.SqlConnectorConfiguration;
             Assert.IsNotNull(sql);
             Assert.AreEqual("bar", sql.Host);
@@ -295,6 +296,7 @@ namespace Apache.Ignite.Core.Tests
             Assert.IsTrue(sql.TcpNoDelay);
             Assert.AreEqual(14, sql.MaxOpenCursorsPerConnection);
             Assert.AreEqual(15, sql.ThreadPoolSize);
+#pragma warning restore 618
 
             var pers = cfg.PersistentStoreConfiguration;
 
@@ -879,6 +881,7 @@ namespace Apache.Ignite.Core.Tests
                     }
                 },
                 PeerAssemblyLoadingMode = PeerAssemblyLoadingMode.CurrentAppDomain,
+#pragma warning disable 618  // Obsolete
                 SqlConnectorConfiguration = new SqlConnectorConfiguration
                 {
                     Host = "foo",
@@ -890,6 +893,7 @@ namespace Apache.Ignite.Core.Tests
                     TcpNoDelay = false,
                     ThreadPoolSize = 7
                 },
+#pragma warning restore 618
                 PersistentStoreConfiguration = new PersistentStoreConfiguration
                 {
                     AlwaysWriteFullPages = true,

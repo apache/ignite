@@ -443,11 +443,13 @@ namespace Apache.Ignite.Core
             }
 
             // SQL connector.
+#pragma warning disable 618  // Obsolete
             if (SqlConnectorConfiguration != null)
             {
                 writer.WriteBoolean(true);
                 SqlConnectorConfiguration.Write(writer);
             }
+#pragma warning restore 618
             else
             {
                 writer.WriteBoolean(false);
@@ -631,7 +633,9 @@ namespace Apache.Ignite.Core
             // SQL.
             if (r.ReadBoolean())
             {
+#pragma warning disable 618  // Obsolete
                 SqlConnectorConfiguration = new SqlConnectorConfiguration(r);
+#pragma warning restore 618
             }
 
             // Client.
@@ -1221,6 +1225,7 @@ namespace Apache.Ignite.Core
         /// <summary>
         /// Gets or sets the SQL connector configuration (for JDBC and ODBC).
         /// </summary>
+        [Obsolete("Use ClientConnectorConfiguration instead.")]
         public SqlConnectorConfiguration SqlConnectorConfiguration { get; set; }
 
         /// <summary>

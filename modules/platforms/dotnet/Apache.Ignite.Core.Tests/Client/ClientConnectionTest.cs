@@ -79,7 +79,7 @@ namespace Apache.Ignite.Core.Tests.Client
         {
             var servCfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                SqlConnectorConfiguration = new SqlConnectorConfiguration
+                ClientConnectorConfiguration = new ClientConnectorConfiguration
                 {
                     Host = "localhost",
                     Port = 2000,
