@@ -326,8 +326,7 @@ namespace Apache.Ignite.Core.Tests
                 CheckDefaultProperties(resCfg.PersistentStoreConfiguration);
 
                 // Connector defaults.
-                CheckDefaultProperties(cfg.SqlConnectorConfiguration);
-                CheckDefaultProperties(cfg.ClientConnectorConfiguration);
+                CheckDefaultProperties(resCfg.ClientConnectorConfiguration);
             }
         }
 
