@@ -138,6 +138,8 @@ namespace ignite
 
             if (res == SqlResult::AI_ERROR)
                 Close();
+            else
+                parser.SetProtocolVersion(config.GetProtocolVersion());
 
             return res;
         }

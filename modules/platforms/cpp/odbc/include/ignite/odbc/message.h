@@ -494,7 +494,7 @@ namespace ignite
              * Read response using provided reader.
              * @param reader Reader.
              */
-            void Read(impl::binary::BinaryReaderImpl& reader);
+            void Read(impl::binary::BinaryReaderImpl& reader, const ProtocolVersion&);
 
         private:
             /** Handshake accepted. */
@@ -650,6 +650,7 @@ namespace ignite
             /**
              * Read response using provided reader.
              * @param reader Reader.
+             * @param ver Protocol version.
              */
             virtual void ReadOnSuccess(impl::binary::BinaryReaderImpl& reader, const ProtocolVersion& ver);
 

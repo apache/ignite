@@ -15,22 +15,22 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_ODBC_DIAGNOSTIC_ODBC_ERROR
-#define _IGNITE_ODBC_DIAGNOSTIC_ODBC_ERROR
+#ifndef _IGNITE_ODBC_ODBC_ERROR
+#define _IGNITE_ODBC_ODBC_ERROR
 
 namespace ignite
 {
     namespace odbc
     {
         /**
-            * ODBC error.
-            */
+         * ODBC error.
+         */
         class OdbcError
         {
         public:
             /**
-                * Destructor.
-                */
+             * Destructor.
+             */
             ~OdbcError()
             {
                 // No-op.
@@ -41,4 +41,4 @@ namespace ignite
     }
 }
 
-#endif //_IGNITE_ODBC_DIAGNOSTIC_ODBC_ERROR
+#endif //_IGNITE_ODBC_ODBC_ERROR

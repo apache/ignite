@@ -247,7 +247,7 @@ namespace ignite
             // No-op.
         }
 
-        void HandshakeResponse::Read(impl::binary::BinaryReaderImpl& reader)
+        void HandshakeResponse::Read(impl::binary::BinaryReaderImpl& reader, const ProtocolVersion&)
         {
             accepted = reader.ReadBool();
 
