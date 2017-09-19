@@ -278,7 +278,7 @@ namespace ignite
                     case SqlState::SHYC00_OPTIONAL_FEATURE_NOT_IMPLEMENTED:
                         return STATE_HYC00;
 
-                    case SqlState::SHYT01_CONNECTIOIN_TIMEOUT:
+                    case SqlState::SHYT01_CONNECTION_TIMEOUT:
                         return STATE_HYT01;
 
                     case SqlState::SIM001_FUNCTION_NOT_SUPPORTED:

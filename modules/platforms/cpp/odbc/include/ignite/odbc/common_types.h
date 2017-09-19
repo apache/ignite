@@ -155,7 +155,7 @@ namespace ignite
                  * The connection timeout period expired before the data source
                  * responded to the request.
                  */
-                SHYT01_CONNECTIOIN_TIMEOUT,
+                SHYT01_CONNECTION_TIMEOUT,
 
                 /**
                  * Driver does not support this function.

@@ -211,6 +211,7 @@
     <ClInclude Include="..\..\include\ignite\odbc\diagnostic\diagnosable_adapter.h" />
     <ClInclude Include="..\..\include\ignite\odbc\diagnostic\diagnostic_record.h" />
     <ClInclude Include="..\..\include\ignite\odbc\diagnostic\diagnostic_record_storage.h" />
+    <ClInclude Include="..\..\include\ignite\odbc\diagnostic\odbc_error.h" />
     <ClInclude Include="..\..\include\ignite\odbc\dsn_config.h" />
     <ClInclude Include="..\..\include\ignite\odbc\environment.h" />
     <ClInclude Include="..\..\include\ignite\odbc\message.h" />

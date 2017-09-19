@@ -1106,7 +1106,7 @@ namespace ignite
             }
             catch (const IgniteError& err)
             {
-                AddStatusRecord(SqlState::SHYT01_CONNECTIOIN_TIMEOUT, err.GetText());
+                AddStatusRecord(SqlState::SHYT01_CONNECTION_TIMEOUT, err.GetText());
 
                 return SqlResult::AI_ERROR;
             }
