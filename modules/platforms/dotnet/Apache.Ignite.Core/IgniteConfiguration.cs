@@ -1234,7 +1234,8 @@ namespace Apache.Ignite.Core
         public ClientConnectorConfiguration ClientConnectorConfiguration { get; set; }
 
         /// <summary>
-        /// Gets or sets a value indicating whether Sql Connector is enabled
+        /// Gets or sets a value indicating whether client connector is enabled:
+        /// allow thin clients, ODBC and JDBC drivers to work with Ignite
         /// (see <see cref="ClientConnectorConfiguration"/>).
         /// Default is <see cref="DefaultClientConnectorConfigurationEnabled"/>.
         /// </summary>
