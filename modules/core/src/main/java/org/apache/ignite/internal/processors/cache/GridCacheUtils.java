@@ -121,6 +121,9 @@ public class GridCacheUtils {
     private static final int TTL_BATCH_SIZE = IgniteSystemProperties.getInteger(
         IgniteSystemProperties.IGNITE_TTL_EXPIRE_BATCH_SIZE, 5);
 
+    /** */
+    public static final int UNDEFINED_CACHE_ID = 0;
+
     /*
      *
      */
@@ -438,59 +441,14 @@ public class GridCacheUtils {
     }
 
     /**
-     * Gets all nodes on which cache with the same name is started.
-     *
-     * @param ctx Cache context.
-     * @param topOrder Maximum allowed node order.
-     * @return All nodes on which cache with the same name is started (including nodes
-     *      that may have already left).
-     */
-    public static Collection<ClusterNode> allNodes(GridCacheContext ctx, AffinityTopologyVersion topOrder) {
-        return ctx.discovery().cacheNodes(ctx.cacheId(), topOrder);
-    }
-
-    /**
-     * Gets all nodes with at least one cache configured.
-     *
-     * @param ctx Shared cache context.
-     * @param topOrder Maximum allowed node order.
-     * @return All nodes on which cache with the same name is started (including nodes
-     *      that may have already left).
-     */
-    public static Collection<ClusterNode> allNodes(GridCacheSharedContext ctx, AffinityTopologyVersion topOrder) {
-        return ctx.discovery().cacheNodes(topOrder);
-    }
-
-    /**
-     * Gets remote nodes with at least one cache configured.
-     *
-     * @param ctx Cache shared context.
-     * @param topVer Topology version.
-     * @return Collection of remote nodes with at least one cache configured.
-     */
-    public static Collection<ClusterNode> remoteNodes(final GridCacheSharedContext ctx, AffinityTopologyVersion topVer) {
-        return ctx.discovery().remoteCacheNodes(topVer);
-    }
-
-    /**
-     * Gets all nodes on which cache with the same name is started and the local DHT storage is enabled.
-     *
-     * @param ctx Cache context.
-     * @return All nodes on which cache with the same name is started.
-     */
-    public static Collection<ClusterNode> affinityNodes(final GridCacheContext ctx) {
-        return ctx.discovery().cacheGroupAffinityNodes(ctx.groupId(), AffinityTopologyVersion.NONE);
-    }
-
-    /**
      * Gets DHT affinity nodes.
      *
      * @param ctx Cache context.
-     * @param topOrder Maximum allowed node order.
-     * @return Affinity nodes.
+     * @param topVer Topology version.
+     * @return Cache affinity nodes for given topology version.
      */
-    public static Collection<ClusterNode> affinityNodes(GridCacheContext ctx, AffinityTopologyVersion topOrder) {
-        return ctx.discovery().cacheGroupAffinityNodes(ctx.groupId(), topOrder);
+    public static Collection<ClusterNode> affinityNodes(GridCacheContext ctx, AffinityTopologyVersion topVer) {
+        return ctx.discovery().cacheGroupAffinityNodes(ctx.groupId(), topVer);
     }
 
     /**

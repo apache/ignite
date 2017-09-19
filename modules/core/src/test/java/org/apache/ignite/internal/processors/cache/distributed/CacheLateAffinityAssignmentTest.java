@@ -184,7 +184,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         MemoryConfiguration cfg1 = new MemoryConfiguration();
 
-        cfg1.setDefaultMemoryPolicySize(100 * 1024 * 1024L);
+        cfg1.setDefaultMemoryPolicySize(150 * 1024 * 1024L);
 
         cfg.setMemoryConfiguration(cfg1);
 
@@ -2826,7 +2826,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         assertNotNull("Failed to find exchange future:", evt);
 
-        Collection<ClusterNode> allNodes = ctx.discovery().cacheNodes(topVer0);
+        Collection<ClusterNode> allNodes = ctx.discovery().serverNodes(topVer0);
 
         for (DynamicCacheDescriptor cacheDesc : ctx.cache().cacheDescriptors().values()) {
             if (assignments.get(cacheDesc.cacheId()) != null)

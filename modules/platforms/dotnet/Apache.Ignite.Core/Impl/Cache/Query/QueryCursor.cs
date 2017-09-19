@@ -24,7 +24,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
     /// <summary>
     /// Cursor for entry-based queries.
     /// </summary>
-    internal class QueryCursor<TK, TV> : AbstractQueryCursor<ICacheEntry<TK, TV>>
+    internal class QueryCursor<TK, TV> : PlatformQueryQursorBase<ICacheEntry<TK, TV>>
     {
         /// <summary>
         /// Constructor.

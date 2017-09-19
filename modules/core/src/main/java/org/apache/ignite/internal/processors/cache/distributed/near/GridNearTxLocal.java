@@ -47,7 +47,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
-import org.apache.ignite.internal.processors.cache.GridCacheMvccFuture;
+import org.apache.ignite.internal.processors.cache.GridCacheVersionedFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -105,14 +105,12 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRA
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPDATE;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry.SER_READ_EMPTY_ENTRY_VER;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry.SER_READ_NOT_EMPTY_VER;
-import static org.apache.ignite.transactions.TransactionState.ACTIVE;
 import static org.apache.ignite.transactions.TransactionState.COMMITTED;
 import static org.apache.ignite.transactions.TransactionState.COMMITTING;
 import static org.apache.ignite.transactions.TransactionState.PREPARED;
 import static org.apache.ignite.transactions.TransactionState.PREPARING;
 import static org.apache.ignite.transactions.TransactionState.ROLLED_BACK;
 import static org.apache.ignite.transactions.TransactionState.ROLLING_BACK;
-import static org.apache.ignite.transactions.TransactionState.SUSPENDED;
 import static org.apache.ignite.transactions.TransactionState.UNKNOWN;
 
 /**
@@ -1254,8 +1252,13 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
                         break; // While.
                     }
 
+                    CacheObject cVal = cacheCtx.toCacheObject(val);
+
+                    if (op == CREATE || op == UPDATE)
+                        cacheCtx.validateKeyAndValue(cacheKey, cVal);
+
                     txEntry = addEntry(op,
-                        cacheCtx.toCacheObject(val),
+                        cVal,
                         entryProcessor,
                         invokeArgs,
                         entry,
@@ -1358,8 +1361,13 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
                 GridCacheOperation op = rmv ? DELETE : entryProcessor != null ? TRANSFORM :
                     v != null ? UPDATE : CREATE;
 
+                CacheObject cVal = cacheCtx.toCacheObject(val);
+
+                if (op == CREATE || op == UPDATE)
+                    cacheCtx.validateKeyAndValue(cacheKey, cVal);
+
                 txEntry = addEntry(op,
-                    cacheCtx.toCacheObject(val),
+                    cVal,
                     entryProcessor,
                     invokeArgs,
                     entry,
@@ -2957,7 +2965,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
 
     /** {@inheritDoc} */
     @Override public boolean onOwnerChanged(GridCacheEntryEx entry, GridCacheMvccCandidate owner) {
-        GridCacheMvccFuture<IgniteInternalTx> fut = (GridCacheMvccFuture<IgniteInternalTx>)prepFut;
+        GridCacheVersionedFuture<IgniteInternalTx> fut = (GridCacheVersionedFuture<IgniteInternalTx>)prepFut;
 
         return fut != null && fut.onOwnerChanged(entry, owner);
     }
@@ -3210,7 +3218,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
 
         GridNearTxFinishFuture fut = commitFut;
 
-        if (fut == null &&
+        if (fut != null ||
             !COMMIT_FUT_UPD.compareAndSet(this, null, fut = new GridNearTxFinishFuture<>(cctx, this, true)))
             return commitFut;
 
@@ -3338,19 +3346,11 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
     /**
      * Prepares next batch of entries in dht transaction.
      *
-     * @param reads Read entries.
-     * @param writes Write entries.
-     * @param txNodes Transaction nodes mapping.
-     * @param last {@code True} if this is last prepare request.
+     * @param req Prepare request.
      * @return Future that will be completed when locks are acquired.
      */
     @SuppressWarnings("TypeMayBeWeakened")
-    public IgniteInternalFuture<GridNearTxPrepareResponse> prepareAsyncLocal(
-        @Nullable Collection<IgniteTxEntry> reads,
-        @Nullable Collection<IgniteTxEntry> writes,
-        Map<UUID, Collection<UUID>> txNodes,
-        boolean last
-    ) {
+    public IgniteInternalFuture<GridNearTxPrepareResponse> prepareAsyncLocal(GridNearTxPrepareRequest req) {
         long timeout = remainingTime();
 
         if (state() != PREPARING) {
@@ -3375,11 +3375,11 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
             timeout,
             0,
             Collections.<IgniteTxKey, GridCacheVersion>emptyMap(),
-            last,
+            req.last(),
             needReturnValue() && implicit());
 
         try {
-            userPrepare((serializable() && optimistic()) ? F.concat(false, writes, reads) : writes);
+            userPrepare((serializable() && optimistic()) ? F.concat(false, req.writes(), req.reads()) : req.writes());
 
             // Make sure to add future before calling prepare on it.
             cctx.mvcc().addFuture(fut);
@@ -3387,7 +3387,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
             if (isSystemInvalidate())
                 fut.complete();
             else
-                fut.prepare(reads, writes, txNodes);
+                fut.prepare(req);
         }
         catch (IgniteTxTimeoutCheckedException | IgniteTxOptimisticCheckedException e) {
             fut.onError(e);

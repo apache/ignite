@@ -129,7 +129,7 @@ import org.apache.ignite.internal.processors.jobmetrics.GridJobMetricsProcessor;
 import org.apache.ignite.internal.processors.marshaller.GridMarshallerMappingProcessor;
 import org.apache.ignite.internal.processors.nodevalidation.DiscoveryNodeValidationProcessor;
 import org.apache.ignite.internal.processors.nodevalidation.OsDiscoveryNodeValidationProcessor;
-import org.apache.ignite.internal.processors.odbc.SqlListenerProcessor;
+import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.processors.platform.PlatformNoopProcessor;
 import org.apache.ignite.internal.processors.platform.PlatformProcessor;
 import org.apache.ignite.internal.processors.platform.plugin.PlatformPluginProcessor;
@@ -458,6 +458,18 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /** {@inheritDoc} */
     @Override public String getStartTimestampFormatted() {
         return DateFormat.getDateTimeInstance().format(new Date(startTime));
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public boolean isRebalanceEnabled() {
+        return ctx.cache().context().isRebalanceEnabled();
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public void rebalanceEnabled(boolean rebalanceEnabled) {
+        ctx.cache().context().rebalanceEnabled(rebalanceEnabled);
     }
 
     /** {@inheritDoc} */
@@ -932,7 +944,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 startProcessor(new GridClusterStateProcessor(ctx));
                 startProcessor(new GridCacheProcessor(ctx));
                 startProcessor(new GridQueryProcessor(ctx));
-                startProcessor(new SqlListenerProcessor(ctx));
+                startProcessor(new ClientListenerProcessor(ctx));
                 startProcessor(new GridServiceProcessor(ctx));
                 startProcessor(new GridTaskSessionProcessor(ctx));
                 startProcessor(new GridJobProcessor(ctx));
@@ -1242,7 +1254,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
                             String msg = NL +
                                 "Metrics for local node (to disable set 'metricsLogFrequency' to 0)" + NL +
-                                "    ^-- Node [id=" + id + ", name=" + name() + ", uptime=" + getUpTimeFormatted() + "]" + NL +
+                                "    ^-- Node [id=" + id + (name() != null ? ", name=" + name() : "") + ", uptime=" +
+                                getUpTimeFormatted() + "]" + NL +
                                 "    ^-- H/N/C [hosts=" + hosts + ", nodes=" + nodes + ", CPUs=" + cpus + "]" + NL +
                                 "    ^-- CPU [cur=" + dblFmt.format(cpuLoadPct) + "%, avg=" +
                                 dblFmt.format(avgCpuLoadPct) + "%, GC=" + dblFmt.format(gcPct) + "%]" + NL +
@@ -3752,7 +3765,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         if (!ctx.state().publicApiActiveState()) {
             throw new IgniteException("Can not perform the operation because the cluster is inactive. Note, that " +
                 "the cluster is considered inactive by default if Ignite Persistent Store is used to let all the nodes " +
-                "join the cluster. To activate the cluster call Ignite.activate(true).");
+                "join the cluster. To activate the cluster call Ignite.active(true).");
         }
     }
 

@@ -32,6 +32,9 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.query.QueryTable;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.QueryField;
+import org.apache.ignite.internal.processors.query.h2.H2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.database.H2RowFactory;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
@@ -49,9 +52,11 @@ import org.h2.result.Row;
 import org.h2.result.SearchRow;
 import org.h2.result.SortOrder;
 import org.h2.schema.SchemaObject;
+import org.h2.table.Column;
 import org.h2.table.IndexColumn;
 import org.h2.table.TableBase;
 import org.h2.table.TableType;
+import org.h2.value.DataType;
 import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
@@ -68,7 +73,7 @@ public class GridH2Table extends TableBase {
     private final GridCacheContext cctx;
 
     /** */
-    private final GridH2RowDescriptor desc;
+    private final H2RowDescriptor desc;
 
     /** */
     private volatile ArrayList<Index> idxs;
@@ -121,7 +126,7 @@ public class GridH2Table extends TableBase {
      * @param idxsFactory Indexes factory.
      * @param cctx Cache context.
      */
-    public GridH2Table(CreateTableData createTblData, GridH2RowDescriptor desc, H2RowFactory rowFactory,
+    public GridH2Table(CreateTableData createTblData, H2RowDescriptor desc, H2RowFactory rowFactory,
         GridH2SystemIndexFactory idxsFactory, GridCacheContext cctx) {
         super(createTblData);
 
@@ -948,5 +953,55 @@ public class GridH2Table extends TableBase {
         }
 
         return null;
+    }
+
+    /**
+     * Add new columns to this table.
+     *
+     * @param cols Columns to add.
+     * @param ifNotExists Ignore this command if {@code cols} has size of 1 and column with given name already exists.
+     */
+    public void addColumns(List<QueryField> cols, boolean ifNotExists) {
+        assert !ifNotExists || cols.size() == 1;
+
+        lock(true);
+
+        try {
+            int pos = columns.length;
+
+            Column[] newCols = new Column[columns.length + cols.size()];
+
+            // First, let's copy existing columns to new array
+            System.arraycopy(columns, 0, newCols, 0, columns.length);
+
+            // And now, let's add new columns
+            for (QueryField col : cols) {
+                if (doesColumnExist(col.name())) {
+                    if (ifNotExists && cols.size() == 1)
+                        return;
+                    else
+                        throw new IgniteSQLException("Column already exists [tblName=" + getName() +
+                            ", colName=" + col.name() + ']');
+                }
+
+                try {
+                    Column c = new Column(col.name(), DataType.getTypeFromClass(Class.forName(col.typeName())));
+
+                    c.setNullable(col.isNullable());
+
+                    newCols[pos++] = c;
+                }
+                catch (ClassNotFoundException e) {
+                    throw new IgniteSQLException("H2 data type not found for class: " + col.typeName(), e);
+                }
+            }
+
+            setColumns(newCols);
+
+            desc.refreshMetadataFromTypeDescriptor();
+        }
+        finally {
+            unlock(true);
+        }
     }
 }

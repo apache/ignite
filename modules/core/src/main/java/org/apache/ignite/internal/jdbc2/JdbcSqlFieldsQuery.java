@@ -35,7 +35,7 @@ public final class JdbcSqlFieldsQuery extends SqlFieldsQuery {
      * @param sql SQL query.
      * @param isQry Flag indicating whether this object denotes a query or an update operation.
      */
-    JdbcSqlFieldsQuery(String sql, boolean isQry) {
+    public JdbcSqlFieldsQuery(String sql, boolean isQry) {
         super(sql);
         this.isQry = isQry;
     }

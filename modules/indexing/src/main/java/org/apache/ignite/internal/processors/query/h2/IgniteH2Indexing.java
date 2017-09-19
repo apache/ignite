@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.h2;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.math.BigInteger;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -90,6 +91,7 @@ import org.apache.ignite.internal.processors.query.GridQueryIndexing;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.QueryIndexDescriptorImpl;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.database.H2RowFactory;
@@ -508,6 +510,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         try {
             if (obj == null)
                 stmt.setNull(idx, Types.VARCHAR);
+            else if (obj instanceof BigInteger)
+                stmt.setObject(idx, obj, Types.JAVA_OBJECT);
             else
                 stmt.setObject(idx, obj);
         }
@@ -706,6 +710,25 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         String sql = H2Utils.indexDropSql(schemaName, idxName, ifExists);
 
         executeSql(schemaName, sql);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void dynamicAddColumn(String schemaName, String tblName, List<QueryField> cols,
+        boolean ifTblExists, boolean ifColNotExists) throws IgniteCheckedException {
+        // Locate table.
+        H2Schema schema = schemas.get(schemaName);
+
+        H2TableDescriptor desc = (schema != null ? schema.tableByName(tblName) : null);
+
+        if (desc == null) {
+            if (!ifTblExists)
+                throw new IgniteCheckedException("Table not found in internal H2 database [schemaName=" + schemaName +
+                    ", tblName=" + tblName + ']');
+            else
+                return;
+        }
+
+        desc.table().addColumns(cols, ifColNotExists);
     }
 
     /**
@@ -1621,14 +1644,15 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         sql.a(',').a(VER_FIELD_NAME).a(" OTHER INVISIBLE");
 
         for (Map.Entry<String, Class<?>> e : tbl.type().fields().entrySet())
-            sql.a(',').a(H2Utils.withQuotes(e.getKey())).a(' ').a(dbTypeFromClass(e.getValue()));
+            sql.a(',').a(H2Utils.withQuotes(e.getKey())).a(' ').a(dbTypeFromClass(e.getValue()))
+            .a(tbl.type().property(e.getKey()).notNull()? " NOT NULL" : "");
 
         sql.a(')');
 
         if (log.isDebugEnabled())
             log.debug("Creating DB table with SQL: " + sql);
 
-        GridH2RowDescriptor rowDesc = new H2RowDescriptor(this, tbl, tbl.type(), schema);
+        H2RowDescriptor rowDesc = new H2RowDescriptor(this, tbl, tbl.type(), schema);
 
         H2RowFactory rowFactory = tbl.rowFactory(rowDesc);
 
@@ -2355,7 +2379,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         assert partInfo != null;
         assert partInfo.partition() < 0;
 
-        GridH2RowDescriptor desc = dataTable(partInfo.cacheName(),
+        GridH2RowDescriptor desc = dataTable(schema(partInfo.cacheName()),
                 partInfo.tableName()).rowDescriptor();
 
         Object param = H2Utils.convert(params[partInfo.paramIdx()],
