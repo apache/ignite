@@ -114,81 +114,47 @@ public class IgnitePersistentStoreSchemaLoadTest extends GridCommonAbstractTest 
     }
 
     /** */
-    public void testPersistIndex() throws Exception {
-        IgniteEx ig0 = startGrid(0);
+    public void testPersistCompositeIndex() throws Exception {
+        IgniteEx node = startGrid(0);
+
+        node.active(true);
 
         final AtomicInteger cnt = new AtomicInteger();
 
-        GridCacheDatabaseSharedManager db = (GridCacheDatabaseSharedManager)ig0.context().cache().context().database();
+        GridCacheDatabaseSharedManager db = (GridCacheDatabaseSharedManager)node.context().cache().context().database();
 
         db.addCheckpointListener(new DbCheckpointListener() {
-            @Override public void onCheckpointBegin(Context context) {
+            @Override public void onCheckpointBegin(Context ctx) {
                 cnt.incrementAndGet();
             }
         });
 
-        ig0.active(true);
-
-        ig0.context().query().querySqlFieldsNoCache(
+        node.context().query().querySqlFieldsNoCache(
             new SqlFieldsQuery("create table \"Person\" (\"id\" int primary key, \"name\" varchar)"), false).getAll();
 
-        assertEquals(0, indexCnt(ig0, CACHE_NAME));
+        assertEquals(0, indexCnt(node, CACHE_NAME));
 
-        ig0.context().query().querySqlFieldsNoCache(
-            new SqlFieldsQuery("Create index \"my_idx\" on \"Person\" (\"name\")"), false).getAll();
+        node.context().query().querySqlFieldsNoCache(
+            new SqlFieldsQuery("Create index \"my_idx\" on \"Person\" (\"id\", \"name\")"), false).getAll();
 
-        assertEquals(1, indexCnt(ig0, CACHE_NAME));
+        assertEquals(1, indexCnt(node, CACHE_NAME));
+
+        node.context().query().querySqlFieldsNoCache(
+            new SqlFieldsQuery("alter table \"Person\" add column \"age\" int"), false).getAll();
+
+        assertEquals(3, colsCnt(node, CACHE_NAME));
 
         waitForCheckpoint(cnt);
 
         stopGrid(0);
 
-        IgniteEx ig1 = startGrid(0);
+        node = startGrid(0);
 
-        assertEquals(1, indexCnt(ig1, CACHE_NAME));
-    }
+        node.active(true);
 
-    /** */
-    public void testPersistCompositeIndex() throws Exception {
-        IgniteEx ig0 = startGrid(0);
-        startGrid(1);
+        assertEquals(1, indexCnt(node, CACHE_NAME));
 
-        ig0.active(true);
-
-        final AtomicInteger cnt = new AtomicInteger();
-
-        GridCacheDatabaseSharedManager db = (GridCacheDatabaseSharedManager)ig0.context().cache().context().database();
-
-        db.addCheckpointListener(new DbCheckpointListener() {
-            @Override public void onCheckpointBegin(Context context) {
-                cnt.incrementAndGet();
-            }
-        });
-
-        ig0.context().query().querySqlFieldsNoCache(
-            new SqlFieldsQuery("create table \"Person\" (\"id\" int primary key, \"name\" varchar)"), false).getAll();
-
-        assertEquals(0, indexCnt(ig0, CACHE_NAME));
-
-        ig0.context().query().querySqlFieldsNoCache(
-            new SqlFieldsQuery("Create index \"my_idx\" on \"Person\" (\"id\", \"name\")"), false).getAll();
-
-        assertEquals(1, indexCnt(ig0, CACHE_NAME));
-
-        ig0.context().query().querySqlFieldsNoCache(
-            new SqlFieldsQuery("alter table \"Person\" add column \"age\" int"), false).getAll();
-
-        assertEquals(3, colsCnt(ig0, CACHE_NAME));
-
-        waitForCheckpoint(cnt);
-
-        stopGrid(1);
-
-        IgniteEx ig1 = startGrid(1);
-
-        assertEquals(1, indexCnt(ig1, CACHE_NAME));
-
-        assertEquals(3, colsCnt(ig0, CACHE_NAME));
+        assertEquals(3, colsCnt(node, CACHE_NAME));
     }
 
     /** */
@@ -277,21 +243,19 @@ public class IgnitePersistentStoreSchemaLoadTest extends GridCommonAbstractTest 
             if (o == null || getClass() != o.getClass())
                 return false;
 
-            IgnitePersistentStoreSchemaLoadTest.Person person = (IgnitePersistentStoreSchemaLoadTest.Person)o;
+            IgnitePersistentStoreSchemaLoadTest.Person person = (IgnitePersistentStoreSchemaLoadTest.Person) o;
 
-            if (id != person.id)
-                return false;
+            return id == person.id && (name != null ? name.equals(person.name) : person.name == null);
 
-            return name != null ? name.equals(person.name) : person.name == null;
         }
 
         /** {@inheritDoc} */
         @Override public int hashCode() {
-            int result = id;
+            int res = id;
 
-            result = 31 * result + (name != null ? name.hashCode() : 0);
+            res = 31 * res + (name != null ? name.hashCode() : 0);
 
-            return result;
+            return res;
         }
     }
 }

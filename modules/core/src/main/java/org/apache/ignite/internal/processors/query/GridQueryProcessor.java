@@ -64,7 +64,9 @@ import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
@@ -503,8 +505,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             if (!msg.hasError()) {
                 DynamicCacheDescriptor cacheDesc = ctx.cache().cacheDescriptor(msg.operation().cacheName());
 
-                if (cacheDesc != null && F.eq(cacheDesc.deploymentId(), proposeMsg.deploymentId()))
+                if (cacheDesc != null && F.eq(cacheDesc.deploymentId(), proposeMsg.deploymentId())) {
                     cacheDesc.schemaChangeFinish(msg);
+
+                    saveCacheConfiguration(cacheDesc);
+                }
             }
 
             // Propose message will be used from exchange thread to
@@ -2514,6 +2519,29 @@ private IgniteInternalFuture<Object> rebuildIndexesFromHash(@Nullable final Stri
                     ", sndNodeId=" + msg.senderNodeId() + ']');
         }
     }
+    /**
+     * @param desc cache descriptor.
+     */
+    private void saveCacheConfiguration(DynamicCacheDescriptor desc) {
+        GridCacheSharedContext cctx = ctx.cache().context();
+
+        if (cctx.pageStore() != null && cctx.database().persistenceEnabled() && !cctx.kernalContext().clientNode()) {
+            CacheConfiguration cfg = desc.cacheConfiguration();
+
+            try {
+                StoredCacheData data = new StoredCacheData(cfg);
+
+                if (desc.schema() != null)
+                    data.queryEntities(desc.schema().entities());
+
+                cctx.pageStore().storeCacheData(data, true);
+            }
+            catch (IgniteCheckedException e) {
+                U.error(log, "Error while saving cache configuration on disk, cfg = " + cfg, e);
+            }
+        }
+    }
+
 
     /**
      * Unwind pending messages for particular operation.
