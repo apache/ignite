@@ -121,6 +121,11 @@ namespace Apache.Ignite.Core
         /// </summary>
         public static readonly TimeSpan DefaultLongQueryWarningTimeout = TimeSpan.FromMilliseconds(3000);
 
+        /// <summary>
+        /// Default value for <see cref="SqlConnectorConfigurationEnabled"/>.
+        /// </summary>
+        public const bool DefaultSqlConnectorConfigurationEnabled = true;
+
         /** */
         private TimeSpan? _metricsExpireTime;
 
@@ -1197,6 +1202,14 @@ namespace Apache.Ignite.Core
         /// Gets or sets the SQL connector configuration (for JDBC and ODBC).
         /// </summary>
         public SqlConnectorConfiguration SqlConnectorConfiguration { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether Sql Connector is enabled
+        /// (see <see cref="SqlConnectorConfiguration"/>).
+        /// Default is <see cref="DefaultSqlConnectorConfigurationEnabled"/>.
+        /// </summary>
+        [DefaultValue(DefaultSqlConnectorConfigurationEnabled)]
+        public bool SqlConnectorConfigurationEnabled { get; set; }
 
         /// <summary>
         /// Gets or sets the timeout after which long query warning will be printed.
