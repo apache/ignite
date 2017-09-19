@@ -125,8 +125,6 @@ public class CompatibilityTestIgniteNodeRunner extends IgniteNodeRunner {
 
         cfg.setLocalEventListeners(lsnrs);
 
-        cfg.setDiscoverySpi().
-
         return rmtNodeStartedLatch;
     }
 
