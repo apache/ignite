@@ -128,6 +128,28 @@ namespace Apache.Ignite.Core.Tests.Client
         }
 
         /// <summary>
+        /// Tests that connector can be disabled.
+        /// </summary>
+        [Test]
+        public void TestDisabledConnector()
+        {
+            var servCfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                SqlConnectorConfigurationEnabled = false
+            };
+
+            var clientCfg = new IgniteClientConfiguration
+            {
+                Host = "localhost"
+            };
+
+            using (Ignition.Start(servCfg))
+            {
+                Assert.Throws<IgniteException>(() => Ignition.StartClient(clientCfg));
+            }
+        }
+
+        /// <summary>
         /// Starts the client.
         /// </summary>
         private static IIgniteClient StartClient()
