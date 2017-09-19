@@ -575,17 +575,16 @@ namespace ignite
                 // ODBC version.
 #ifdef SQL_DRIVER_ODBC_VER
                 strParams[SQL_DRIVER_ODBC_VER] = "03.00";
-#endif // SQL_DRIVER_ODBC_VER
-#ifdef SQL_DBMS_VER
-                strParams[SQL_DBMS_VER]        = "03.00";
-#endif // SQL_DBMS_VER
 
 #ifdef SQL_DRIVER_VER
                 // Driver version. At a minimum, the version is of the form ##.##.####, where the first two digits are
                 // the major version, the next two digits are the minor version, and the last four digits are the
                 // release version.
-                strParams[SQL_DRIVER_VER] = "01.05.0000";
+                strParams[SQL_DRIVER_VER] = "02.02.0000";
 #endif // SQL_DRIVER_VER
+#ifdef SQL_DBMS_VER
+                strParams[SQL_DBMS_VER] = "02.02.0000";
+#endif // SQL_DBMS_VER
 
 #ifdef SQL_COLUMN_ALIAS
                 // A character string: "Y" if the data source supports column aliases; otherwise, "N".
@@ -932,7 +931,7 @@ namespace ignite
 #ifdef SQL_SCHEMA_USAGE
                 // Bitmask enumerating the statements in which schemas can be used.
                 intParams[SQL_SCHEMA_USAGE] = SQL_SU_DML_STATEMENTS | SQL_SU_TABLE_DEFINITION |
-                    SQL_SU_PRIVILEGE_DEFINITION;
+                    SQL_SU_PRIVILEGE_DEFINITION | SQL_SU_INDEX_DEFINITION;
 #endif // SQL_SCHEMA_USAGE
 
 #ifdef SQL_AGGREGATE_FUNCTIONS
@@ -1009,8 +1008,17 @@ namespace ignite
 #endif // SQL_POS_OPERATIONS
 
 #ifdef SQL_SQL92_NUMERIC_VALUE_FUNCTIONS
-                // Bitmask enumerating the numeric value scalar functions.
-                intParams[SQL_SQL92_NUMERIC_VALUE_FUNCTIONS] = 0;
+                // Bitmask enumerating the numeric value scalar functions that are supported by the driver and the
+                // associated data source, as defined in SQL-92.
+                // The following bitmasks are used to determine which numeric functions are supported :
+                // SQL_SNVF_BIT_LENGTH
+                // SQL_SNVF_CHAR_LENGTH
+                // SQL_SNVF_CHARACTER_LENGTH
+                // SQL_SNVF_EXTRACT
+                // SQL_SNVF_OCTET_LENGTH
+                // SQL_SNVF_POSITION
+                intParams[SQL_SQL92_NUMERIC_VALUE_FUNCTIONS] = SQL_SNVF_BIT_LENGTH | SQL_SNVF_CHARACTER_LENGTH |
+                    SQL_SNVF_EXTRACT | SQL_SNVF_OCTET_LENGTH | SQL_SNVF_POSITION;
 #endif // SQL_SQL92_NUMERIC_VALUE_FUNCTIONS
 
 #ifdef SQL_SQL92_STRING_FUNCTIONS
@@ -1644,7 +1652,7 @@ namespace ignite
                 //     in a forward-only cursor, only SQL_FETCH_NEXT is supported.)
                 // SQL_CA1_BOOKMARK = A FetchOrientation argument of SQL_FETCH_BOOKMARK is supported in a call to
                 //     SQLFetchScroll when the cursor is a dynamic cursor.
-                // SQL_CA1_LOCK_EXCLUSIVE = A LockType argument of SQL_LOCK_EXCLUSIVE is supported in a call to 
+                // SQL_CA1_LOCK_EXCLUSIVE = A LockType argument of SQL_LOCK_EXCLUSIVE is supported in a call to
                 //     SQLSetPos when the cursor is a dynamic cursor.
                 // SQL_CA1_LOCK_NO_CHANGE = A LockType argument of SQL_LOCK_NO_CHANGE is supported in a call to
                 //     SQLSetPos when the cursor is a dynamic cursor.
@@ -1876,7 +1884,7 @@ namespace ignite
                 // SQL_IS_INSERT_SEARCHED
                 // SQL_IS_SELECT_INTO
                 // An SQL-92 Entry level-conformant driver will always return all of these options as supported.
-                intParams[SQL_INSERT_STATEMENT] = SQL_IS_INSERT_LITERALS;
+                intParams[SQL_INSERT_STATEMENT] = SQL_IS_INSERT_LITERALS | SQL_IS_INSERT_SEARCHED;
 #endif // SQL_INSERT_STATEMENT
 
 #ifdef SQL_KEYSET_CURSOR_ATTRIBUTES1
