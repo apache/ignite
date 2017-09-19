@@ -214,6 +214,7 @@ namespace Apache.Ignite.Core
         {
             JvmInitialMemoryMb = DefaultJvmInitMem;
             JvmMaxMemoryMb = DefaultJvmMaxMem;
+            ClientConnectorConfigurationEnabled = DefaultClientConnectorConfigurationEnabled;
         }
 
         /// <summary>
