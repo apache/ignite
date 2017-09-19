@@ -681,6 +681,9 @@ public class PlatformConfigurationUtils {
         if (in.readBoolean())
             cfg.setSqlConnectorConfiguration(readSqlConnectorConfiguration(in));
 
+        if (!in.readBoolean())  // SqlConnectorConfigurationEnabled override
+            cfg.setSqlConnectorConfiguration(null);
+
         if (in.readBoolean())
             cfg.setPersistentStoreConfiguration(readPersistentStoreConfiguration(in));
 

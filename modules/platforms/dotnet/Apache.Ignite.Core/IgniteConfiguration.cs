@@ -452,6 +452,8 @@ namespace Apache.Ignite.Core
                 writer.WriteBoolean(false);
             }
 
+            writer.WriteBoolean(SqlConnectorConfigurationEnabled);
+
             // Persistence.
             if (PersistentStoreConfiguration != null)
             {
