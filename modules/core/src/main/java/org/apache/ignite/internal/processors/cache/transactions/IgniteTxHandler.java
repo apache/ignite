@@ -525,22 +525,33 @@ public class IgniteTxHandler {
 
             final GridDhtTxLocal tx0 = tx;
 
-            fut.listen(new CI1<IgniteInternalFuture<?>>() {
-                @Override public void apply(IgniteInternalFuture<?> txFut) {
+            return fut.chain(new C1<IgniteInternalFuture<GridNearTxPrepareResponse>, GridNearTxPrepareResponse>() {
+                @Override public GridNearTxPrepareResponse apply(IgniteInternalFuture<GridNearTxPrepareResponse> txFut) {
                     try {
-                        txFut.get();
+                        return txFut.get();
                     }
-                    catch (IgniteCheckedException e) {
+                    catch (Exception e) {
                         tx0.setRollbackOnly(); // Just in case.
 
                         if (!X.hasCause(e, IgniteTxOptimisticCheckedException.class) &&
                             !X.hasCause(e, IgniteFutureCancelledException.class) && !ctx.kernalContext().isStopping())
                             U.error(log, "Failed to prepare DHT transaction: " + tx0, e);
+
+                        return new GridNearTxPrepareResponse(
+                            req.partition(),
+                            req.version(),
+                            req.futureId(),
+                            req.miniId(),
+                            req.version(),
+                            req.version(),
+                            null,
+                            e,
+                            null,
+                            req.onePhaseCommit(),
+                            req.deployInfo() != null);
                     }
                 }
             });
-
-            return fut;
         }
         else
             return new GridFinishedFuture<>((GridNearTxPrepareResponse)null);
