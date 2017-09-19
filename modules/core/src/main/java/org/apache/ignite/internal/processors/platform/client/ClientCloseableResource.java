@@ -17,30 +17,12 @@
 
 package org.apache.ignite.internal.processors.platform.client;
 
-import org.apache.ignite.internal.binary.BinaryRawWriterEx;
-
 /**
- * Single object response.
+ * Client closeable resource.
  */
-public class ClientObjectResponse extends ClientResponse {
-    /** */
-    private final Object val;
-
+public interface ClientCloseableResource {
     /**
-     * Constructor.
-     *
-     * @param reqId Request id.
+     * Closes the resource.
      */
-    public ClientObjectResponse(long reqId, Object val) {
-        super(reqId);
-
-        this.val = val;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void encode(BinaryRawWriterEx writer) {
-        super.encode(writer);
-
-        writer.writeObject(val);
-    }
+    void close();
 }

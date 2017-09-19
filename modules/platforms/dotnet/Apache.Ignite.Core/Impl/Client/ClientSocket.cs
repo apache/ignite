@@ -88,6 +88,12 @@ namespace Apache.Ignite.Core.Impl.Client
                 var resRequestId = stream.ReadLong();
                 Debug.Assert(requestId == resRequestId);
 
+                if (!stream.ReadBool())
+                {
+                    // Error.
+                    throw new IgniteException(BinaryUtils.Marshaller.StartUnmarshal(stream).ReadString());
+                }
+
                 if (readFunc != null)
                 {
                     return readFunc(stream);
@@ -159,7 +165,11 @@ namespace Apache.Ignite.Core.Impl.Client
                     
                     buf = new byte[size];
                     received = sock.Receive(buf);
-                    Debug.Assert(received == buf.Length);
+
+                    while (received < size)
+                    {
+                        received += sock.Receive(buf, received, size - received, SocketFlags.None);
+                    }
 
                     return buf;
                 }

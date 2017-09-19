@@ -17,37 +17,33 @@
 
 package org.apache.ignite.internal.processors.platform.client.cache;
 
-import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
+import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 
 /**
- * Cache put request.
+ * Query cursor next page request.
  */
-public class ClientCachePutRequest extends ClientCacheRequest {
-    /** Key. */
-    private final Object key;
-
-    /** Value. */
-    private final Object val;
+public class ClientCacheScanQueryNextPageRequest extends ClientRequest {
+    /** Cursor id. */
+    private final long cursorId;
 
     /**
      * Ctor.
      *
      * @param reader Reader.
      */
-    public ClientCachePutRequest(BinaryRawReaderEx reader) {
+    public ClientCacheScanQueryNextPageRequest(BinaryRawReader reader) {
         super(reader);
 
-        key = reader.readObjectDetached();
-        val = reader.readObjectDetached();
+        cursorId = reader.readLong();
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public ClientResponse process(ClientConnectionContext ctx) {
-        cache(ctx).put(key, val);
+        ClientCacheScanQueryCursor cur = ctx.resources().get(cursorId);
 
-        return super.process(ctx);
+        return new ClientCacheScanQueryNextPageResponse(requestId(), cur);
     }
 }
