@@ -628,10 +628,16 @@ namespace Apache.Ignite.Core
                 MemoryConfiguration = new MemoryConfiguration(r);
             }
 
-            // SQL
+            // SQL.
             if (r.ReadBoolean())
             {
                 SqlConnectorConfiguration = new SqlConnectorConfiguration(r);
+            }
+
+            // Client.
+            if (r.ReadBoolean())
+            {
+                ClientConnectorConfiguration = new ClientConnectorConfiguration(r);
             }
 
             // Persistence.
