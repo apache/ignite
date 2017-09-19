@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -41,12 +40,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
-import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
-import org.apache.ignite.internal.processors.cache.GridCacheConcurrentMap;
-import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
-import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -350,53 +344,7 @@ public class TxOptimisticDeadlockDetectionTest extends AbstractDeadlockDetection
 
         assertNotNull("Failed to detect deadlock", deadlockE);
 
-        boolean fail = false;
-
-        // Check transactions, futures and entry locks state.
-        for (int i = 0; i < NODES_CNT * 2; i++) {
-            Ignite ignite = ignite(i);
-
-            int cacheId = ((IgniteCacheProxy)ignite.cache(CACHE_NAME)).context().cacheId();
-
-            GridCacheSharedContext<Object, Object> cctx = ((IgniteKernal)ignite).context().cache().context();
-
-            IgniteTxManager txMgr = cctx.tm();
-
-            Collection<IgniteInternalTx> activeTxs = txMgr.activeTransactions();
-
-            for (IgniteInternalTx tx : activeTxs) {
-                Collection<IgniteTxEntry> entries = tx.allEntries();
-
-                for (IgniteTxEntry entry : entries) {
-                    if (entry.cacheId() == cacheId) {
-                        fail = true;
-
-                        U.error(log, "Transaction still exists: " + "\n" + tx.xidVersion() +
-                            "\n" + tx.nearXidVersion() + "\n nodeId=" + cctx.localNodeId() + "\n tx=" + tx);
-                    }
-                }
-            }
-
-            Collection<IgniteInternalFuture<?>> futs = txMgr.deadlockDetectionFutures();
-
-            assertTrue(futs.isEmpty());
-
-            GridCacheAdapter<Object, Integer> intCache = internalCache(i, CACHE_NAME);
-
-            GridCacheConcurrentMap map = intCache.map();
-
-            for (Object key : involvedKeys) {
-                KeyCacheObject keyCacheObj = intCache.context().toCacheKeyObject(key);
-
-                GridCacheMapEntry entry = map.getEntry(intCache.context(), keyCacheObj);
-
-                if (entry != null)
-                    assertNull("Entry still has locks " + entry, entry.mvccAllLocal());
-            }
-        }
-
-        if (fail)
-            fail("Some transactions still exist");
+        checkAllTransactionsCompleted(involvedKeys, NODES_CNT * 2, CACHE_NAME);
 
         // Check deadlock report
         String msg = deadlockE.getMessage();
