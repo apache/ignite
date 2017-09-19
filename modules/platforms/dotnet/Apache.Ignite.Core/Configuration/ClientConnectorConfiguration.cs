@@ -15,25 +15,26 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Client
+namespace Apache.Ignite.Core.Configuration
 {
     using System.ComponentModel;
+    using System.Diagnostics;
     using Apache.Ignite.Core.Binary;
-    using Apache.Ignite.Core.Impl.Binary;
 
     /// <summary>
-    /// Ignite thin client configuration.
-    /// <para />
-    /// Ignite thin client connects to a specific Ignite node with a socket and does not start JVM in process.
-    /// This configuration should correspond to <see cref="IgniteConfiguration.ClientConnectorConfiguration"/>
-    /// on a target node.
+    /// Client connector configuration (ODBC, JDBC, Thin Client).
     /// </summary>
-    public class IgniteClientConfiguration
+    public class ClientConnectorConfiguration
     {
         /// <summary>
         /// Default port.
         /// </summary>
         public const int DefaultPort = 10800;
+
+        /// <summary>
+        /// Default port range.
+        /// </summary>
+        public const int DefaultPortRange = 100;
 
         /// <summary>
         /// Default socket buffer size.
@@ -46,18 +47,65 @@ namespace Apache.Ignite.Core.Client
         public const bool DefaultTcpNoDelay = true;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="IgniteClientConfiguration"/> class.
+        /// Default maximum number of open cursors per connection.
         /// </summary>
-        public IgniteClientConfiguration()
+        public const int DefaultMaxOpenCursorsPerConnection = 128;
+
+        /// <summary>
+        /// Default SQL connector thread pool size.
+        /// </summary>
+        public static readonly int DefaultThreadPoolSize = IgniteConfiguration.DefaultThreadPoolSize;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ClientConnectorConfiguration"/> class.
+        /// </summary>
+        public ClientConnectorConfiguration()
         {
             Port = DefaultPort;
+            PortRange = DefaultPortRange;
             SocketSendBufferSize = DefaultSocketBufferSize;
             SocketReceiveBufferSize = DefaultSocketBufferSize;
             TcpNoDelay = DefaultTcpNoDelay;
+            MaxOpenCursorsPerConnection = DefaultMaxOpenCursorsPerConnection;
+            ThreadPoolSize = DefaultThreadPoolSize;
         }
 
         /// <summary>
-        /// Gets or sets the host. Should not be null.
+        /// Initializes a new instance of the <see cref="ClientConnectorConfiguration"/> class.
+        /// </summary>
+        internal ClientConnectorConfiguration(IBinaryRawReader reader)
+        {
+            Debug.Assert(reader != null);
+
+            Host = reader.ReadString();
+            Port = reader.ReadInt();
+            PortRange = reader.ReadInt();
+            SocketSendBufferSize = reader.ReadInt();
+            SocketReceiveBufferSize = reader.ReadInt();
+            TcpNoDelay = reader.ReadBoolean();
+            MaxOpenCursorsPerConnection = reader.ReadInt();
+            ThreadPoolSize = reader.ReadInt();
+        }
+
+        /// <summary>
+        /// Writes to the specified writer.
+        /// </summary>
+        internal void Write(IBinaryRawWriter writer)
+        {
+            Debug.Assert(writer != null);
+            
+            writer.WriteString(Host);
+            writer.WriteInt(Port);
+            writer.WriteInt(PortRange);
+            writer.WriteInt(SocketSendBufferSize);
+            writer.WriteInt(SocketReceiveBufferSize);
+            writer.WriteBoolean(TcpNoDelay);
+            writer.WriteInt(MaxOpenCursorsPerConnection);
+            writer.WriteInt(ThreadPoolSize);
+        }
+
+        /// <summary>
+        /// Gets or sets the host.
         /// </summary>
         public string Host { get; set; }
 
@@ -66,6 +114,12 @@ namespace Apache.Ignite.Core.Client
         /// </summary>
         [DefaultValue(DefaultPort)]
         public int Port { get; set; }
+
+        /// <summary>
+        /// Gets or sets the port range.
+        /// </summary>
+        [DefaultValue(DefaultPortRange)]
+        public int PortRange { get; set; }
 
         /// <summary>
         /// Gets or sets the size of the socket send buffer. When set to 0, operating system default is used.
@@ -92,13 +146,14 @@ namespace Apache.Ignite.Core.Client
         public bool TcpNoDelay { get; set; }
 
         /// <summary>
-        /// Gets or sets the binary configuration.
+        /// Gets or sets the maximum open cursors per connection.
         /// </summary>
-        public BinaryConfiguration BinaryConfiguration { get; set; }
+        [DefaultValue(DefaultMaxOpenCursorsPerConnection)]
+        public int MaxOpenCursorsPerConnection { get; set; }
 
         /// <summary>
-        /// Gets or sets custom binary processor. Internal property for tests.
+        /// Gets or sets the size of the thread pool.
         /// </summary>
-        internal IBinaryProcessor BinaryProcessor { get; set; }
+        public int ThreadPoolSize { get; set; }
     }
 }
