@@ -1849,6 +1849,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             if (updateRes.success())
                 updateMetrics(c.op, metrics);
 
+            Map<UUID, CacheContinuousQueryListener> newLsnrs = cctx.continuousQueries().updateListeners(internal, false);
+
             // Continuous query filter should be perform under lock.
             if (lsnrs != null) {
                 CacheObject evtVal = cctx.unwrapTemporary(updateVal);
@@ -1865,7 +1867,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     c.updateRes.updateCounter(),
                     fut,
                     topVer);
-            }
+            } else if (newLsnrs != null)
+                cctx.continuousQueries().skipUpdateEvent(newLsnrs, key, partition(), c.updateRes.updateCounter(), primary, topVer);
+
 
             cctx.dataStructures().onEntryUpdated(key, c.op == GridCacheOperation.DELETE, keepBinary);
 

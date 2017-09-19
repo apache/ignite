@@ -175,7 +175,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
      * @param primary Primary.
      * @param topVer Topology version.
      */
-    private void skipUpdateEvent(Map<UUID, CacheContinuousQueryListener> lsnrs,
+    public void skipUpdateEvent(Map<UUID, CacheContinuousQueryListener> lsnrs,
         KeyCacheObject key,
         int partId,
         long updCntr,
