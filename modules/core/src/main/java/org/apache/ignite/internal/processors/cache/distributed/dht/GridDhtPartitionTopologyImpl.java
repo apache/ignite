@@ -1793,6 +1793,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                         if (!marked && locPart.state() == RENTING)
                             try {
+                                //TODO https://issues.apache.org/jira/browse/IGNITE-6433
                                 locPart.tryEvict();
                                 locPart.rent(false).get();
                             } catch (IgniteCheckedException e) {
