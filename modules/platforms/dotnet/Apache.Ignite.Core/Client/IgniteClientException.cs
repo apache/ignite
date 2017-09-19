@@ -24,6 +24,7 @@ namespace Apache.Ignite.Core.Client
     /// <summary>
     /// Ignite thin client exception.
     /// </summary>
+    [Serializable]
     public class IgniteClientException : IgniteException
     {
         /** Error code field. */
@@ -53,6 +54,16 @@ namespace Apache.Ignite.Core.Client
         /// </summary>
         /// <param name="message">The message that describes the error.</param>
         public IgniteClientException(string message) : base(message)
+        {
+            // No-op.
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="IgniteClientException" /> class.
+        /// </summary>
+        /// <param name="message">The message.</param>
+        /// <param name="cause">The cause.</param>
+        public IgniteClientException(string message, Exception cause) : base(message, cause)
         {
             // No-op.
         }
