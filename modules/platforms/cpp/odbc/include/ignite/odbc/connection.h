@@ -316,6 +316,9 @@ namespace ignite
 
             /** Configuration. */
             config::Configuration config;
+
+            /** Connection info. */
+            config::ConnectionInfo info;
         };
     }
 }
