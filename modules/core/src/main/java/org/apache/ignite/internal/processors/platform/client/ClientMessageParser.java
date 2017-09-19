@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.platform.client;
 
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
@@ -29,10 +28,10 @@ import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProce
 import org.apache.ignite.internal.processors.odbc.ClientListenerMessageParser;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
-import org.apache.ignite.internal.processors.platform.client.binary.ClientBinaryTypeNameGetRequest;
 import org.apache.ignite.internal.processors.platform.client.binary.ClientBinaryTypeGetRequest;
-import org.apache.ignite.internal.processors.platform.client.binary.ClientBinaryTypePutRequest;
+import org.apache.ignite.internal.processors.platform.client.binary.ClientBinaryTypeNameGetRequest;
 import org.apache.ignite.internal.processors.platform.client.binary.ClientBinaryTypeNamePutRequest;
+import org.apache.ignite.internal.processors.platform.client.binary.ClientBinaryTypePutRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheGetRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCachePutRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheScanQueryNextPageRequest;
@@ -88,9 +87,26 @@ public class ClientMessageParser implements ClientListenerMessageParser {
     @Override public ClientListenerRequest decode(byte[] msg) {
         assert msg != null;
 
-        BinaryInputStream inStream = new BinaryHeapInputStream(msg);
-        BinaryRawReaderEx reader = marsh.reader(inStream);
+        try {
+            BinaryInputStream inStream = new BinaryHeapInputStream(msg);
+            BinaryRawReaderEx reader = marsh.reader(inStream);
 
+            return decode(reader);
+        }
+        catch (Throwable e) {
+            return new ClientRawRequest(0, ClientStatus.PARSING_FAILED,
+                    "Failed to parse request: " + e.getMessage());
+        }
+    }
+
+
+    /**
+     * Decodes the request.
+     *
+     * @param reader Reader.
+     * @return Request.
+     */
+    public ClientListenerRequest decode(BinaryRawReaderEx reader) {
         short opCode = reader.readShort();
 
         switch (opCode) {
@@ -122,16 +138,34 @@ public class ClientMessageParser implements ClientListenerMessageParser {
                 return new ClientResourceCloseRequest(reader);
         }
 
-        throw new IgniteException("Invalid operation: " + opCode);
+        return new ClientRawRequest(reader.readLong(), ClientStatus.INVALID_OP_CODE,
+                "Invalid request op code: " + opCode);
     }
 
     /** {@inheritDoc} */
     @Override public byte[] encode(ClientListenerResponse resp) {
+        assert resp != null;
+
         BinaryHeapOutputStream outStream = new BinaryHeapOutputStream(32);
 
         BinaryRawWriterEx writer = marsh.writer(outStream);
 
-        ((ClientResponse)resp).encode(writer);
+        try {
+            ((ClientResponse)resp).encode(writer);
+        }
+        catch (Throwable e) {
+            long reqId = 0;
+
+            if (resp instanceof ClientResponse) {
+                reqId = ((ClientResponse)resp).requestId();
+            }
+
+            //  Reset stream and writer.
+            outStream = new BinaryHeapOutputStream(32);
+            writer = marsh.writer(outStream);
+
+            new ClientResponse(reqId, ClientStatus.FAILED, e.getMessage()).encode(writer);
+        }
 
         return outStream.arrayCopy();
     }
