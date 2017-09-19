@@ -19,13 +19,18 @@ package org.apache.ignite.internal.processors.cache.distributed.rebalancing;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -33,12 +38,15 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.CacheRebalancingEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.NotNull;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_DATA_LOST;
 
@@ -47,7 +55,7 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_DATA_L
  */
 public class GridLostPartitionRebalanceTest extends GridCommonAbstractTest {
     /** Cache name. */
-    private static final String CACHE_NAME = "cache";
+    private static final String CACHE_NAME = "test";
 
     /** Latch. */
     private static CountDownLatch latch;
@@ -58,6 +66,12 @@ public class GridLostPartitionRebalanceTest extends GridCommonAbstractTest {
     /** Failed flag. */
     private static boolean failed;
 
+    /** Backups. */
+    private int backups;
+
+    /** Expected events. */
+    private int expEvts;
+
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -67,6 +81,8 @@ public class GridLostPartitionRebalanceTest extends GridCommonAbstractTest {
 
         ccfg.setAffinity(new RendezvousAffinityFunction(false, 32));
         ccfg.setNodeFilter(NODE_FILTER);
+        ccfg.setBackups(backups);
+        ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
 
         cfg.setCacheConfiguration(ccfg);
 
@@ -106,14 +122,34 @@ public class GridLostPartitionRebalanceTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        latch = new CountDownLatch(4);
+        latch = new CountDownLatch(expEvts);
         cnt = new AtomicInteger(0);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testPartDataLostEvent() throws Exception {
+    public void testPartDataLostEvent1Backup() throws Exception {
+        expEvts = 3;
+        backups = 1;
+
+        checkEvents();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPartDataLostEventNoBackups() throws Exception {
+        expEvts = 4;
+        backups = 0;
+
+        checkEvents();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void checkEvents() throws Exception {
         List<Ignite> srvrs = new ArrayList<>();
 
         // Client router. It always up, so client is guaranteed to get
@@ -134,17 +170,9 @@ public class GridLostPartitionRebalanceTest extends GridCommonAbstractTest {
             cache.put(i, i);
 
         // Stop node with 0 partition.
-        ClusterNode node = client.affinity(CACHE_NAME).mapPartitionToNode(0);
+        Set<ClusterNode> nodes = new HashSet<>(client.affinity(CACHE_NAME).mapPartitionToPrimaryAndBackups(0));
 
-        for (Ignite srv : srvrs) {
-            if (node.equals(srv.cluster().localNode())) {
-                srv.close();
-
-                System.out.println(">> Stopped " + srv.name());
-
-                break;
-            }
-        }
+        final List<String> stopped = stopAffinityNodes(srvrs, nodes);
 
         // Check that all nodes (and clients) got notified.
         assert latch.await(15, TimeUnit.SECONDS) : latch.getCount();
@@ -154,7 +182,68 @@ public class GridLostPartitionRebalanceTest extends GridCommonAbstractTest {
 
         U.sleep(4_000);
 
-        assertEquals("Fired more events than expected",4, cnt.get());
+        assertEquals("Fired more events than expected", expEvts, cnt.get());
+
+        startNodes(stopped);
+
+        assertEquals("Fired unexpected events", expEvts, cnt.get());
+    }
+
+    /**
+     * @param nodeNames Node names.
+     */
+    private void startNodes(List<String> nodeNames) throws Exception {
+        List<IgniteInternalFuture<?>> futs = new ArrayList<>();
+
+        for (final String nodeName : nodeNames) {
+            IgniteInternalFuture<Object> fut = GridTestUtils.runAsync(new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    startGrid(nodeName);
+
+                    return null;
+                }
+            });
+
+            futs.add(fut);
+        }
+
+        for (IgniteInternalFuture<?> fut : futs)
+            fut.get();
+    }
+
+    /**
+     * @param srvrs Servers.
+     * @param nodes Nodes.
+     */
+    @NotNull private List<String> stopAffinityNodes(List<Ignite> srvrs, Set<ClusterNode> nodes) throws IgniteCheckedException {
+        List<IgniteInternalFuture<?>> futs = new ArrayList<>();
+
+        final List<String> stopped = new ArrayList<>();
+
+        for (final Ignite srv : srvrs) {
+            final ClusterNode node = srv.cluster().localNode();
+
+            if (nodes.contains(node)) {
+                IgniteInternalFuture<Object> fut = GridTestUtils.runAsync(new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        srv.close();
+
+                        System.out.println(">> Stopped " + srv.name() + " " + node.id());
+
+                        stopped.add(srv.name());
+
+                        return null;
+                    }
+                });
+
+                futs.add(fut);
+            }
+        }
+
+        for (IgniteInternalFuture<?> fut : futs)
+            fut.get();
+
+        return stopped;
     }
 
     /**

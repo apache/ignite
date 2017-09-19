@@ -1229,6 +1229,10 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
     /** {@inheritDoc} */
     @Override public void detectLostPartitions(DiscoveryEvent discoEvt) {
+        // Method generates events only.
+        if (!cctx.events().isRecordable(EventType.EVT_CACHE_REBALANCE_PART_DATA_LOST))
+            return;
+
         lock.writeLock().lock();
 
         try {
@@ -1247,7 +1251,9 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                         GridDhtPartitionState state = partMap.get(p);
 
-                        if (state == OWNING) {
+                        // We need to extra check owners() using discovery,
+                        // because on coordinator a new owner is already determined.
+                        if (state == OWNING && !F.isEmpty(owners(p))) {
                             foundOwner = true;
 
                             break;
@@ -1264,11 +1270,9 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             }
 
             if (lost != null) {
-                // Update partition state on all nodes.
                 for (Integer part : lost) {
-                    if (cctx.events().isRecordable(EventType.EVT_CACHE_REBALANCE_PART_DATA_LOST))
-                        cctx.events().addPreloadEvent(part, EVT_CACHE_REBALANCE_PART_DATA_LOST,
-                            discoEvt.eventNode(), discoEvt.type(), discoEvt.timestamp());
+                    cctx.events().addPreloadEvent(part, EVT_CACHE_REBALANCE_PART_DATA_LOST,
+                        discoEvt.eventNode(), discoEvt.type(), discoEvt.timestamp());
                 }
             }
         }
