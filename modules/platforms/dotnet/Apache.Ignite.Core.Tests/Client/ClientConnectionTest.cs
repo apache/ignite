@@ -79,7 +79,7 @@ namespace Apache.Ignite.Core.Tests.Client
         {
             var servCfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                SqlConnectorConfiguration = new SqlConnectorConfiguration
+                ClientConnectorConfiguration = new ClientConnectorConfiguration
                 {
                     Host = "localhost",
                     Port = 2000,
@@ -124,6 +124,30 @@ namespace Apache.Ignite.Core.Tests.Client
 
                 Assert.AreEqual("Client handhsake failed: 'Unsupported version.'. " +
                                 "Client version: -1.-1.-1. Server version: 1.0.0", ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Tests that connector can be disabled.
+        /// </summary>
+        [Test]
+        public void TestDisabledConnector()
+        {
+            var servCfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                ClientConnectorConfigurationEnabled = false
+            };
+
+            var clientCfg = new IgniteClientConfiguration
+            {
+                Host = "localhost"
+            };
+
+            using (Ignition.Start(servCfg))
+            {
+                var ex = Assert.Throws<AggregateException>(() => Ignition.StartClient(clientCfg));
+                Assert.AreEqual("Failed to establish Ignite thin client connection, " +
+                                "examine inner exceptions for details.", ex.Message);
             }
         }
 
