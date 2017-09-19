@@ -17,13 +17,25 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
+import java.util.Collection;
+import java.util.Set;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
+import org.apache.ignite.internal.processors.cache.GridCacheConcurrentMap;
+import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -34,6 +46,59 @@ import java.util.List;
  *
  */
 public abstract class AbstractDeadlockDetectionTest extends GridCommonAbstractTest {
+    /**
+     * Checks that transactions and futures are completed and entries are not locked.
+     * @param involvedKeys Involved keys.
+     */
+    protected void checkAllTransactionsCompleted(Set<Object> involvedKeys, int nodesCnt, String cacheName) {
+        boolean fail = false;
+
+        for (int i = 0; i < nodesCnt; i++) {
+            Ignite ignite = ignite(i);
+
+            int cacheId = ((IgniteCacheProxy)ignite.cache(cacheName)).context().cacheId();
+
+            GridCacheSharedContext<Object, Object> cctx = ((IgniteKernal)ignite).context().cache().context();
+
+            IgniteTxManager txMgr = cctx.tm();
+
+            Collection<IgniteInternalTx> activeTxs = txMgr.activeTransactions();
+
+            for (IgniteInternalTx tx : activeTxs) {
+                Collection<IgniteTxEntry> entries = tx.allEntries();
+
+                for (IgniteTxEntry entry : entries) {
+                    if (entry.cacheId() == cacheId) {
+                        fail = true;
+
+                        U.error(log, "Transaction still exists: " + "\n" + tx.xidVersion() +
+                            "\n" + tx.nearXidVersion() + "\n nodeId=" + cctx.localNodeId() + "\n tx=" + tx);
+                    }
+                }
+            }
+
+            Collection<IgniteInternalFuture<?>> futs = txMgr.deadlockDetectionFutures();
+
+            assertTrue(futs.isEmpty());
+
+            GridCacheAdapter<Object, Integer> intCache = internalCache(i, cacheName);
+
+            GridCacheConcurrentMap map = intCache.map();
+
+            for (Object key : involvedKeys) {
+                KeyCacheObject keyCacheObj = intCache.context().toCacheKeyObject(key);
+
+                GridCacheMapEntry entry = map.getEntry(intCache.context(), keyCacheObj);
+
+                if (entry != null)
+                    assertNull("Entry still has locks " + entry, entry.mvccAllLocal());
+            }
+        }
+
+        if (fail)
+            fail("Some transactions still exist");
+    }
+
     /**
      * @param cache Cache.
      * @param cnt Keys count.
