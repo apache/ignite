@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,32 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.platform.client;
+namespace Apache.Ignite.Core.Impl.Client.Cache
+{
+    using System;
 
-import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+    /// <summary>
+    /// Cache operation flags.
+    /// </summary>
+    [Flags]
+    internal enum CacheFlags : byte
+    {
+        /// <summary>
+        /// No flags.
+        /// </summary>
+        None = 0x00,
 
-/**
- * Single object response.
- */
-public class ClientObjectResponse extends ClientResponse {
-    /** */
-    private final Object val;
-
-    /**
-     * Constructor.
-     *
-     * @param reqId Request id.
-     */
-    public ClientObjectResponse(long reqId, Object val) {
-        super(reqId);
-
-        this.val = val;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void encode(BinaryRawWriterEx writer) {
-        super.encode(writer);
-
-        writer.writeObject(val);
+        /// <summary>
+        /// Keep binary.
+        /// </summary>
+        KeepBinary = 0x01
     }
 }
