@@ -894,19 +894,6 @@ namespace Apache.Ignite.Core.Tests
                     }
                 },
                 PeerAssemblyLoadingMode = PeerAssemblyLoadingMode.CurrentAppDomain,
-#pragma warning disable 618  // Obsolete
-                SqlConnectorConfiguration = new SqlConnectorConfiguration
-                {
-                    Host = "foo",
-                    Port = 2,
-                    PortRange = 3,
-                    MaxOpenCursorsPerConnection = 4,
-                    SocketReceiveBufferSize = 5,
-                    SocketSendBufferSize = 6,
-                    TcpNoDelay = false,
-                    ThreadPoolSize = 7
-                },
-#pragma warning restore 618
                 ClientConnectorConfiguration = new ClientConnectorConfiguration
                 {
                     Host = "foo",
