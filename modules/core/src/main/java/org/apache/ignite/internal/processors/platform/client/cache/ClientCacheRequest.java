@@ -19,15 +19,21 @@ package org.apache.ignite.internal.processors.platform.client.cache;
 
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryRawReader;
-import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 
 /**
  * Cache get request.
  */
 class ClientCacheRequest extends ClientRequest {
+    /** Flag: keep binary. */
+    private static final byte FLAG_KEEP_BINARY = 1;
+
     /** Cache ID. */
     private final int cacheId;
+
+    /** Flags. */
+    private final byte flags;
 
     /**
      * Constructor.
@@ -39,18 +45,37 @@ class ClientCacheRequest extends ClientRequest {
 
         cacheId = reader.readInt();
 
-        reader.readByte();  // Flags (skipStore, etc);
+        flags = reader.readByte();
     }
 
     /**
-     * Gets the cache for current cache id.
+     * Gets the cache for current cache id, with binary mode enabled.
      *
      * @param ctx Kernal context.
      * @return Cache.
      */
-    protected IgniteCache cache(GridKernalContext ctx) {
-        String cacheName = ctx.cache().context().cacheContext(cacheId).cache().name();
+    protected IgniteCache cache(ClientConnectionContext ctx) {
+        return rawCache(ctx).withKeepBinary();
+    }
 
-        return ctx.grid().cache(cacheName).withKeepBinary();
+    /**
+     *  Gets a value indicating whether keepBinary flag is set in this request.
+     *
+     * @return keepBinary flag value.
+     */
+    protected boolean isKeepBinary() {
+        return (flags & FLAG_KEEP_BINARY) == FLAG_KEEP_BINARY;
+    }
+
+    /**
+     * Gets the cache for current cache id, ignoring any flags.
+     *
+     * @param ctx Kernal context.
+     * @return Cache.
+     */
+    protected IgniteCache rawCache(ClientConnectionContext ctx) {
+        String cacheName = ctx.kernalContext().cache().context().cacheContext(cacheId).cache().name();
+
+        return ctx.kernalContext().grid().cache(cacheName);
     }
 }

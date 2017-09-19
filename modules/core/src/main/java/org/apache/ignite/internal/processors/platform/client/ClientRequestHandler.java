@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.platform.client;
 
-import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
@@ -27,15 +26,15 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
  * Thin client request handler.
  */
 public class ClientRequestHandler implements ClientListenerRequestHandler {
-    /** Kernal context. */
-    private final GridKernalContext ctx;
+    /** Client context. */
+    private final ClientConnectionContext ctx;
 
     /**
      * Constructor.
      *
      * @param ctx Kernal context.
      */
-    ClientRequestHandler(GridKernalContext ctx) {
+    ClientRequestHandler(ClientConnectionContext ctx) {
         assert ctx != null;
 
         this.ctx = ctx;
@@ -43,7 +42,12 @@ public class ClientRequestHandler implements ClientListenerRequestHandler {
 
     /** {@inheritDoc} */
     @Override public ClientListenerResponse handle(ClientListenerRequest req) {
-        return ((ClientRequest)req).process(ctx);
+        try {
+            return ((ClientRequest)req).process(ctx);
+        }
+        catch (Throwable e) {
+            return new ClientResponse(req.requestId(), e.getMessage());
+        }
     }
 
     /** {@inheritDoc} */

@@ -104,6 +104,8 @@
     <Compile Include="Configuration\Package-Info.cs" />
     <Compile Include="Configuration\ClientConnectorConfiguration.cs" />
     <Compile Include="Impl\Binary\BinaryTypeId.cs" />
+    <Compile Include="Impl\Client\Cache\CacheFlags.cs" />
+    <Compile Include="Impl\Client\Cache\Query\ClientQueryCursor.cs" />
     <Compile Include="Impl\Cache\Query\PlatformQueryQursorBase.cs" />
     <Compile Include="Impl\Binary\BinaryProcessorClient.cs" />
     <Compile Include="Impl\Binary\IBinaryProcessor.cs" />
