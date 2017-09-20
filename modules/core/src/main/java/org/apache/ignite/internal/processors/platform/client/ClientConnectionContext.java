@@ -125,7 +125,7 @@ public class ClientConnectionContext implements ClientListenerConnectionContext 
             throw new IgniteClientException(ClientStatus.TOO_MANY_CURSORS,
                 "Too many open cursors (either close other open cursors or increase the " +
                 "limit through ClientConnectorConfiguration.maxOpenCursorsPerConnection) [maximum=" + maxCursors +
-                ", current=" + curCnt0 + ']', null);
+                ", current=" + curCnt0 + ']');
         }
 
         curCnt.incrementAndGet();

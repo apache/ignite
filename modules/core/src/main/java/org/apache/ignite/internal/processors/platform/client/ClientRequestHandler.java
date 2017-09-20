@@ -50,9 +50,8 @@ public class ClientRequestHandler implements ClientListenerRequestHandler {
         assert req != null;
         assert e != null;
 
-        int status = e instanceof IgniteClientException
-                ? ((IgniteClientException) e).statusCode()
-                : ClientStatus.FAILED;
+        int status = e instanceof IgniteClientException ?
+            ((IgniteClientException)e).statusCode() : ClientStatus.FAILED;
 
         return new ClientResponse(req.requestId(), status, e.getMessage());
     }

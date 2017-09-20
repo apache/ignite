@@ -132,7 +132,7 @@ public class ClientMessageParser implements ClientListenerMessageParser {
         }
 
         return new ClientRawRequest(reader.readLong(), ClientStatus.INVALID_OP_CODE,
-                "Invalid request op code: " + opCode);
+            "Invalid request op code: " + opCode);
     }
 
     /** {@inheritDoc} */

@@ -79,9 +79,9 @@ class ClientCacheRequest extends ClientRequest {
     protected IgniteCache rawCache(ClientConnectionContext ctx) {
         GridCacheContext<Object, Object> cacheCtx = ctx.kernalContext().cache().context().cacheContext(cacheId);
 
-        if (cacheCtx == null) {
-            throw new IgniteClientException(ClientStatus.CACHE_DOES_NOT_EXIST, "Cache does not exist: " + cacheId, null);
-        }
+        if (cacheCtx == null)
+            throw new IgniteClientException(ClientStatus.CACHE_DOES_NOT_EXIST, "Cache does not exist [cacheId= " +
+                cacheId + "]", null);
 
         String cacheName = cacheCtx.cache().name();
 

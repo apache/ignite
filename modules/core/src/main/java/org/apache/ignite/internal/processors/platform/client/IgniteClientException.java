@@ -32,7 +32,17 @@ public class IgniteClientException extends IgniteException {
     private final int statusCode;
 
     /**
-     * Ctor.
+     * Constructor.
+     *
+     * @param statusCode Status code (see {@link ClientStatus}).
+     * @param msg Message.
+     */
+    public IgniteClientException(int statusCode, String msg) {
+        this(statusCode, msg, null);
+    }
+
+    /**
+     * Constructor.
      *
      * @param statusCode Status code (see {@link ClientStatus}).
      * @param msg Message.
@@ -40,6 +50,7 @@ public class IgniteClientException extends IgniteException {
      */
     public IgniteClientException(int statusCode, String msg, Exception cause) {
         super(msg, cause);
+
         this.statusCode = statusCode;
     }
 
