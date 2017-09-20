@@ -33,7 +33,7 @@ public class MultiVersionClusterTest extends IgniteCompatibilityAbstractTest {
 
             assertEquals(1, topologyVersion(ignite));
 
-            startGrid("testMultiVersion", "2.1.0", new PostConfigurationClosure());
+            startGrid("testMultiVersion", "2.3.0-SNAPSHOT", new PostConfigurationClosure());
 
             assertEquals(2, topologyVersion(ignite));
         }
@@ -49,15 +49,15 @@ public class MultiVersionClusterTest extends IgniteCompatibilityAbstractTest {
 
             assertEquals(1, topologyVersion(ignite));
 
-            startGrid(1, "2.1.0", new PostConfigurationClosure());
+            startGrid(1, "2.3.0-SNAPSHOT", new PostConfigurationClosure());
 
             assertEquals(2, topologyVersion(ignite));
 
-            startGrid(2, "2.1.0", new PostConfigurationClosure());
+            startGrid(2, "2.3.0-SNAPSHOT", new PostConfigurationClosure());
 
             assertEquals(3, topologyVersion(ignite));
 
-            startGrid(3, "2.1.0", new PostConfigurationClosure());
+            startGrid(3, "2.3.0-SNAPSHOT", new PostConfigurationClosure());
 
             assertEquals(4, topologyVersion(ignite));
         }
@@ -69,7 +69,7 @@ public class MultiVersionClusterTest extends IgniteCompatibilityAbstractTest {
     /** */
     public void testJoinMultiVersionTopologyRemoteFirst() throws Exception {
         try {
-            startGrid(1, "2.1.0", new PostConfigurationClosure());
+            startGrid(1, "2.3.0-SNAPSHOT", new PostConfigurationClosure());
 
             IgniteEx ignite = startGrid(0);
 
@@ -83,13 +83,13 @@ public class MultiVersionClusterTest extends IgniteCompatibilityAbstractTest {
     /** */
     public void testJoinMultiVersionTopologyRemoteFirst2() throws Exception {
         try {
-            startGrid(1, "2.1.0", new PostConfigurationClosure());
+            startGrid(1, "2.3.0-SNAPSHOT", new PostConfigurationClosure());
 
             IgniteEx ignite = startGrid(0);
 
             assertEquals(2, topologyVersion(ignite));
 
-            startGrid(3, "2.1.0", new PostConfigurationClosure());
+            startGrid(3, "2.3.0-SNAPSHOT", new PostConfigurationClosure());
 
             assertEquals(3, topologyVersion(ignite));
 
@@ -105,19 +105,19 @@ public class MultiVersionClusterTest extends IgniteCompatibilityAbstractTest {
     /** */
     public void testJoinMultiVersionTopologyRemoteFirst3() throws Exception {
         try {
-            startGrid(1, "2.1.0", new PostConfigurationClosure());
+            startGrid(1, "2.3.0-SNAPSHOT", new PostConfigurationClosure());
 
-            startGrid(2, "2.1.0", new PostConfigurationClosure());
+            startGrid(2, "2.3.0-SNAPSHOT", new PostConfigurationClosure());
 
             IgniteEx ignite = startGrid(0);
 
             assertEquals(3, topologyVersion(ignite));
 
-            startGrid(3, "2.1.0", new PostConfigurationClosure());
+            startGrid(3, "2.3.0-SNAPSHOT", new PostConfigurationClosure());
 
             assertEquals(4, topologyVersion(ignite));
 
-            startGrid(4, "2.1.0", new PostConfigurationClosure());
+            startGrid(4, "2.3.0-SNAPSHOT", new PostConfigurationClosure());
 
             assertEquals(5, topologyVersion(ignite));
         }

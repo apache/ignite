@@ -82,6 +82,8 @@ public class CompatibilityTestIgniteNodeRunner extends IgniteNodeRunner {
 
         final Ignite ignite = Ignition.start(cfg);
 
+        // If 'id' equals 'syncId' then the starting node is the first node and
+        // there was no need to check the join to topology.
         if (!id.equals(syncId)) {
             GridTestUtils.waitForCondition(new GridAbsPredicate() {
                 @Override public boolean apply() {

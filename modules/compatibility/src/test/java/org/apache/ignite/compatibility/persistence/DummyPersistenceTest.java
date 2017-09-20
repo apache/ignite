@@ -25,6 +25,7 @@ import org.apache.ignite.compatibility.testframework.junits.IgniteCompatibilityA
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.PersistentStoreConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractFullApiSelfTest;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -68,20 +69,19 @@ public class DummyPersistenceTest extends IgniteCompatibilityAbstractTest {
     public void testNodeStartByOldVersionPersistenceData() throws Exception {
         try {
             startGrid(1, "2.2.0", new PostConfigurationClosure(), new PostActionClosure());
-            startGrid(2, "2.2.0", new PostConfigurationClosure());
 
-//            stopAllGrids();
-//
-//            IgniteEx ignite = startGrid(0);
-//
-//            assertEquals(1, ignite.context().discovery().topologyVersion());
-//
-//            ignite.active(true);
-//
-//            IgniteCache<Integer, String> cache = ignite.getOrCreateCache(TEST_CACHE_NAME);
-//
-//            for (int i = 0; i < 10; i++)
-//                assertEquals("data" + i, cache.get(i));
+            stopAllGrids();
+
+            IgniteEx ignite = startGrid(0);
+
+            assertEquals(1, ignite.context().discovery().topologyVersion());
+
+            ignite.active(true);
+
+            IgniteCache<Integer, String> cache = ignite.getOrCreateCache(TEST_CACHE_NAME);
+
+            for (int i = 0; i < 10; i++)
+                assertEquals("data" + i, cache.get(i));
         }
         finally {
             stopAllGrids();
