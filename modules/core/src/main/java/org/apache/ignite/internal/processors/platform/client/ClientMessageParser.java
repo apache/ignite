@@ -150,22 +150,7 @@ public class ClientMessageParser implements ClientListenerMessageParser {
 
         BinaryRawWriterEx writer = marsh.writer(outStream);
 
-        try {
-            ((ClientResponse)resp).encode(writer);
-        }
-        catch (Throwable e) {
-            long reqId = 0;
-
-            if (resp instanceof ClientResponse) {
-                reqId = ((ClientResponse)resp).requestId();
-            }
-
-            //  Reset stream and writer.
-            outStream = new BinaryHeapOutputStream(32);
-            writer = marsh.writer(outStream);
-
-            new ClientResponse(reqId, ClientStatus.FAILED, e.getMessage()).encode(writer);
-        }
+        ((ClientResponse)resp).encode(writer);
 
         return outStream.arrayCopy();
     }
