@@ -55,7 +55,7 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
     public static final String SYNCHRONIZATION_LOG_MESSAGE_PREPARED = "Remote node has prepared, id: ";
 
     /** Waiting seconds of the join of a node to topology. */
-    private static final int NODE_JOIN_TIMEOUT = 30;
+    protected static final int NODE_JOIN_TIMEOUT = 30;
 
     /** Local JVM Ignite node. */
     protected Ignite locJvmInstance = null;
@@ -110,7 +110,7 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
     }
 
     /**
-     * Starts new grid of given version and index <b>in separate JVM</b>.
+     * Starts new Ignite instance of given version and index <b>in separate JVM</b>.
      *
      * Uses an ignite-core artifact in the Maven local repository, if it isn't exists there, it will be downloaded and
      * stored via Maven.
@@ -126,7 +126,7 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
     }
 
     /**
-     * Starts new grid of given version and name <b>in separate JVM</b>.
+     * Starts new Ignite instance of given version and name <b>in separate JVM</b>.
      *
      * Uses an ignite-core artifact in the Maven local repository, if it isn't exists there, it will be downloaded and
      * stored via Maven.
@@ -143,7 +143,7 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
     }
 
     /**
-     * Starts new grid of given version and index <b>in separate JVM</b>.
+     * Starts new Ignite instance of given version and index <b>in separate JVM</b>.
      *
      * Uses an ignite-core artifact in the Maven local repository, if it isn't exists there, it will be downloaded and
      * stored via Maven.
@@ -152,7 +152,7 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
      * @param ver Ignite version.
      * @param cfgClos IgniteInClosure for post-configuration.
      * @return Started grid.
-     * @throws Exception If failed.
+     * @throws Exception In case of an error.
      */
     protected IgniteEx startGrid(int idx, final String ver,
         IgniteInClosure<IgniteConfiguration> cfgClos, IgniteInClosure<Ignite> iClos) throws Exception {
@@ -169,7 +169,7 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
      * @param ver Ignite version.
      * @param cfgClos IgniteInClosure for post-configuration.
      * @return Started grid.
-     * @throws Exception If failed.
+     * @throws Exception In case of an error.
      */
     protected IgniteEx startGrid(final String igniteInstanceName, final String ver,
         IgniteInClosure<IgniteConfiguration> cfgClos, IgniteInClosure<Ignite> iClos) throws Exception {
@@ -316,7 +316,7 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
          * @param nodeJoinedLatch Nodes startup synchronization latch.
          * @param nodeId Expected node id.
          */
-        public LoggedJoinNodeClosure(CountDownLatch nodeJoinedLatch, UUID nodeId) {
+        LoggedJoinNodeClosure(CountDownLatch nodeJoinedLatch, UUID nodeId) {
             this.nodeJoinedLatch = nodeJoinedLatch;
             this.patterns.add(SYNCHRONIZATION_LOG_MESSAGE_JOINED + nodeId);
             this.patterns.add(SYNCHRONIZATION_LOG_MESSAGE_PREPARED + nodeId);

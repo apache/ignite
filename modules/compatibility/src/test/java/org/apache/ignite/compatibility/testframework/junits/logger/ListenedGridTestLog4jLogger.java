@@ -59,7 +59,7 @@ public class ListenedGridTestLog4jLogger extends GridTestLog4jLogger {
     /**
      * Notifies registered listeners.
      *
-     * @param msg Messaged.
+     * @param msg Message.
      */
     protected void notifyListeners(String msg) {
         for (IgniteInClosure<String> lsnr : lsnrs.values())

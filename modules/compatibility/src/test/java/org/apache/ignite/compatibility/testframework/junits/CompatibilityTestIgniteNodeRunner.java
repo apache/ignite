@@ -51,13 +51,17 @@ public class CompatibilityTestIgniteNodeRunner extends IgniteNodeRunner {
     /**
      * Starts {@link Ignite} with test's default configuration.
      *
-     * @param args Arguments.
+     * Command-line arguments specification:
+     * <pre>
      * args[0] - required - path to closure for tuning IgniteConfiguration before node startup;
      * args[1] - required - name of the starting node;
      * args[2] - required - id of the starting node;
      * args[3] - required - id of a node for synchronization of startup. Must be equals
      * to arg[2] in case of starting the first node in the Ignite cluster;
      * args[4] - optional - path to closure for actions after node startup.
+     * </pre>
+     *
+     * @param args Command-line arguments.
      * @throws Exception In case of an error.
      */
     public static void main(String[] args) throws Exception {
@@ -65,9 +69,10 @@ public class CompatibilityTestIgniteNodeRunner extends IgniteNodeRunner {
 
         X.println("Starting Ignite Node... Args=" + Arrays.toString(args));
 
-        if (args.length < 3)
+        if (args.length < 3) {
             throw new IllegalArgumentException("At least four arguments expected:" +
                 " [path/to/closure/file] [ignite-instance-name] [node-uuid] [sync-node-uuid] [optional/path/to/closure/file]");
+        }
 
         IgniteConfiguration cfg = CompatibilityTestsFacade.getConfiguration();
 
@@ -161,7 +166,7 @@ public class CompatibilityTestIgniteNodeRunner extends IgniteNodeRunner {
             return (IgniteInClosure<T>)new XStream().fromXML(reader);
         }
         finally {
-            new File(fileName).delete();
+            U.delete(new File(fileName));
         }
     }
 }
