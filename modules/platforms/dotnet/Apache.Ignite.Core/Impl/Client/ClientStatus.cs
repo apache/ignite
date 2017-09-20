@@ -25,7 +25,6 @@ namespace Apache.Ignite.Core.Impl.Client
         Success = 0,
         Fail = 1,
         InvalidOpCode = 2,
-        ParsingFailed = 3,
         CacheDoesNotExist = 1000,
         TooManyCursors = 1010
     }
