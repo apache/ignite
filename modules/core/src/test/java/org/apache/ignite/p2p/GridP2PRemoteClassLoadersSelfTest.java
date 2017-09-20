@@ -84,7 +84,7 @@ public class GridP2PRemoteClassLoadersSelfTest extends GridCommonAbstractTest {
                 new GridTestClassLoader(
                     Collections.<String, String>emptyMap(), getClass().getClassLoader(),
                     GridP2PRemoteTestTask.class.getName(), GridP2PRemoteTestTask1.class.getName(),
-                    GridP2PRemoteTestJob.class.getName());
+                    GridP2PRemoteTestJob.class.getName(), GridP2PRemoteClassLoadersSelfTest.class.getName());
 
             Class<? extends ComputeTask<?, ?>> task1 =
                 (Class<? extends ComputeTask<?, ?>>) tstClsLdr.loadClass(GridP2PRemoteTestTask.class.getName());
@@ -135,13 +135,14 @@ public class GridP2PRemoteClassLoadersSelfTest extends GridCommonAbstractTest {
             ClassLoader tstClsLdr1 =
                 new GridTestClassLoader(
                     Collections.EMPTY_MAP, getClass().getClassLoader(),
-                    GridP2PRemoteTestTask.class.getName(), GridP2PRemoteTestJob.class.getName()
-                );
+                    GridP2PRemoteTestTask.class.getName(), GridP2PRemoteTestJob.class.getName(),
+                    GridP2PRemoteClassLoadersSelfTest.class.getName());
 
             ClassLoader tstClsLdr2 =
                 new GridTestClassLoader(
                     Collections.EMPTY_MAP, getClass().getClassLoader(),
-                    GridP2PRemoteTestTask1.class.getName(), GridP2PRemoteTestJob.class.getName());
+                    GridP2PRemoteTestTask1.class.getName(), GridP2PRemoteTestJob.class.getName(),
+                    GridP2PRemoteClassLoadersSelfTest.class.getName());
 
             Class<? extends ComputeTask<?, ?>> task1 =
                 (Class<? extends ComputeTask<?, ?>>) tstClsLdr1.loadClass(GridP2PRemoteTestTask.class.getName());
@@ -272,13 +273,13 @@ public class GridP2PRemoteClassLoadersSelfTest extends GridCommonAbstractTest {
             assert results.size() == 1;
 
             ComputeJobResult res = results.get(0);
-
+            System.out.println("asd123 " + Thread.currentThread().getName() + " reduce before info()");
             if (log.isInfoEnabled())
                 log.info("Got job result for aggregation: " + res);
 
             if (res.getException() != null)
                 throw res.getException();
-
+            System.out.println("asd123 done " + Thread.currentThread().getName() + " reduce after info()");
             return res.getData();
         }
     }
