@@ -160,7 +160,7 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public ClientListenerResponse handleException(Exception e) {
+    @Override public ClientListenerResponse handleException(Exception e, ClientListenerRequest req) {
         return new OdbcResponse(ClientListenerResponse.STATUS_FAILED, e.toString());
     }
 

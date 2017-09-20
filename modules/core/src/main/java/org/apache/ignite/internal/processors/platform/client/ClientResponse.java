@@ -33,7 +33,7 @@ public class ClientResponse extends ClientListenerResponse {
      * @param reqId Request id.
      */
     public ClientResponse(long reqId) {
-        super(STATUS_SUCCESS, null);
+        super(ClientStatus.SUCCESS, null);
 
         this.reqId = reqId;
     }
@@ -42,9 +42,23 @@ public class ClientResponse extends ClientListenerResponse {
      * Constructor.
      *
      * @param reqId Request id.
+     * @param err Error message.
      */
     public ClientResponse(long reqId, String err) {
-        super(STATUS_FAILED, err);
+        super(ClientStatus.FAILED, err);
+
+        this.reqId = reqId;
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param reqId Request id.
+     * @param status Status code.
+     * @param err Error message.
+     */
+    public ClientResponse(long reqId, int status, String err) {
+        super(status, err);
 
         this.reqId = reqId;
     }
@@ -54,12 +68,19 @@ public class ClientResponse extends ClientListenerResponse {
      */
     public void encode(BinaryRawWriterEx writer) {
         writer.writeLong(reqId);
+        writer.writeInt(status());
 
-        if (status() == STATUS_SUCCESS) {
-            writer.writeBoolean(true);
-        } else {
-            writer.writeBoolean(false);
+        if (status() != ClientStatus.SUCCESS) {
             writer.writeString(error());
         }
+    }
+
+    /**
+     * Gets the request id.
+     *
+     * @return Request id.
+     */
+    public long requestId() {
+        return reqId;
     }
 }

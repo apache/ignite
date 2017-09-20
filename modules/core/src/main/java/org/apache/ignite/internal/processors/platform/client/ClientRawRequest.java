@@ -17,45 +17,29 @@
 
 package org.apache.ignite.internal.processors.platform.client;
 
-import org.apache.ignite.binary.BinaryRawReader;
-import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
-
 /**
- * Thin client request.
+ * Raw request, produces a ClientResponse directly.
  */
-public class ClientRequest implements ClientListenerRequest {
-    /** Request id. */
-    private final long reqId;
+public class ClientRawRequest extends ClientRequest {
+    /** Status code. */
+    private final int status;
+
+    /** Message. */
+    private final String msg;
 
     /**
-     * Constructor.
-     *
-     * @param reader Reader.
-     */
-    public ClientRequest(BinaryRawReader reader) {
-        reqId = reader.readLong();
-    }
-
-    /**
-     * Constructor.
-     *
+     * Initializes a new instance of ClientRawRequest class.
      * @param reqId Request id.
+     * @param msg Message.
      */
-    public ClientRequest(long reqId) {
-        this.reqId = reqId;
+    public ClientRawRequest(long reqId, int status, String msg) {
+        super(reqId);
+        this.status = status;
+        this.msg = msg;
     }
 
     /** {@inheritDoc} */
-    @Override public long requestId() {
-        return reqId;
-    }
-
-    /**
-     * Processes the request.
-     *
-     * @return Response.
-     */
-    public ClientResponse process(ClientConnectionContext ctx) {
-        return new ClientResponse(reqId);
+    @Override public ClientResponse process(ClientConnectionContext ctx) {
+        return new ClientResponse(requestId(), status, msg);
     }
 }

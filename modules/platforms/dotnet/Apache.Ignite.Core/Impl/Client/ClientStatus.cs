@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,35 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.odbc;
-
-import org.apache.ignite.internal.binary.BinaryWriterExImpl;
-
-/**
- * Client listener request handler.
- */
-public interface ClientListenerRequestHandler {
-    /**
-     * Handle request.
-     *
-     * @param req Request.
-     * @return Response.
-     */
-    public ClientListenerResponse handle(ClientListenerRequest req);
-
-    /**
-     * Handle exception.
-     *
-     * @param e Exception.
-     * @param req Request.
-     * @return Error response.
-     */
-    public ClientListenerResponse handleException(Exception e, ClientListenerRequest req);
-
-    /**
-     * Write successful handshake response.
-     *
-     * @param writer Binary writer.
-     */
-    public void writeHandshake(BinaryWriterExImpl writer);
+namespace Apache.Ignite.Core.Impl.Client
+{
+    /// <summary>
+    /// Client status codes.
+    /// </summary>
+    internal enum ClientStatus
+    {
+        Success = 0,
+        Fail = 1,
+        InvalidOpCode = 2,
+        CacheDoesNotExist = 1000,
+        TooManyCursors = 1010
+    }
 }
