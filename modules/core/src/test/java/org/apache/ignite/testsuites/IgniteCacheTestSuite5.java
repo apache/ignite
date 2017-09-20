@@ -19,6 +19,7 @@ package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
 import org.apache.ignite.compatibility.persistence.DummyPersistenceTest;
+import org.apache.ignite.compatibility.persistence.VarintPersistenceTest;
 import org.apache.ignite.compatibility.spi.MultiVersionClusterTest;
 
 /**
@@ -34,6 +35,7 @@ public class IgniteCacheTestSuite5 extends TestSuite {
 
         suite.addTestSuite(DummyPersistenceTest.class);
         suite.addTestSuite(MultiVersionClusterTest.class);
+        suite.addTestSuite(VarintPersistenceTest.class);
 
         return suite;
     }
