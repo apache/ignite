@@ -17,45 +17,29 @@
 
 package org.apache.ignite.internal.processors.platform.client;
 
-import org.apache.ignite.binary.BinaryRawReader;
-import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
-
 /**
- * Thin client request.
+ * Client status codes.
  */
-public class ClientRequest implements ClientListenerRequest {
-    /** Request id. */
-    private final long reqId;
-
+public final class ClientStatus {
     /**
-     * Constructor.
-     *
-     * @param reader Reader.
+     * No-op constructor to prevent instantiation.
      */
-    public ClientRequest(BinaryRawReader reader) {
-        reqId = reader.readLong();
+    private ClientStatus (){
+        // No-op.
     }
 
-    /**
-     * Constructor.
-     *
-     * @param reqId Request id.
-     */
-    public ClientRequest(long reqId) {
-        this.reqId = reqId;
-    }
+    /** Command succeeded. */
+    public static final int SUCCESS = 0;
 
-    /** {@inheritDoc} */
-    @Override public long requestId() {
-        return reqId;
-    }
+    /** Command failed. */
+    public static final int FAILED = 1;
 
-    /**
-     * Processes the request.
-     *
-     * @return Response.
-     */
-    public ClientResponse process(ClientConnectionContext ctx) {
-        return new ClientResponse(reqId);
-    }
+    /** Invalid op code. */
+    public static final int INVALID_OP_CODE = 2;
+
+    /** Cache does not exist. */
+    public static final int CACHE_DOES_NOT_EXIST = 1000;
+
+    /** Too many cursors. */
+    public static final int TOO_MANY_CURSORS = 1010;
 }

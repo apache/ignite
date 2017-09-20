@@ -154,7 +154,7 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
         catch (Exception e) {
             log.error("Failed to process client request [req=" + req + ']', e);
 
-            ses.send(parser.encode(handler.handleException(e)));
+            ses.send(parser.encode(handler.handleException(e, req)));
         }
     }
 
