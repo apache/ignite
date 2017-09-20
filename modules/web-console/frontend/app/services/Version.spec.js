@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import VersionService from '../../app/modules/configuration/Version.service';
+import VersionService from './Version.service';
 
 const INSTANCE = new VersionService();
 
