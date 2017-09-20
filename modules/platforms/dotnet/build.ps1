@@ -60,6 +60,9 @@ Java jar files source folders, default is "modules\indexing\target,modules\core\
 .PARAMETER asmDirs
 .NET assembly directories to copy pre-build binaries from. Default is "", which means no copy.
 
+.PARAMETER nugetPath
+Path to nuget.exe.
+
 .EXAMPLE
 .\build.ps1 -clean  
 # Full rebuild of Java, .NET and NuGet packages.
@@ -82,7 +85,8 @@ param (
     [string]$configuration="Release",
     [string]$mavenOpts="-U -P-lgpl,-scala,-examples,-test,-benchmarks -Dmaven.javadoc.skip=true",
 	[string]$jarDirs="modules\indexing\target,modules\core\target,modules\spring\target",
-    [string]$asmDirs=""
+    [string]$asmDirs="",
+    [string]$nugetPath=""
  )
 
 # 1) Build Java (Maven)
@@ -144,7 +148,8 @@ cd $PSScriptRoot
 # 2) Build .NET
 
 # Detect NuGet
-$ng = "nuget"
+$ng = if ($nugetPath) { $nugetPath } else { "nuget" }
+
 if ((Get-Command $ng -ErrorAction SilentlyContinue) -eq $null) { 
 	$ng = ".\nuget.exe"
 
