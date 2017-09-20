@@ -2244,6 +2244,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
     }
 
+    /**
+     * Remove all cached queries from cached two-steps queries.
+     */
+    public void clearCachedQueries() {
+        twoStepCache.clear();
+    }
+
     /** {@inheritDoc} */
     @Override public IndexingQueryFilter backupFilter(@Nullable final AffinityTopologyVersion topVer,
         @Nullable final int[] parts) {
