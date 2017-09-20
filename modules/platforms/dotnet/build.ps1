@@ -159,6 +159,8 @@ if ((Get-Command $ng -ErrorAction SilentlyContinue) -eq $null) {
 	}
 }
 
+echo "Using NuGet from: $ng"
+
 if (!$skipDotNet) {
 	# Detect MSBuild 4.0+
 	for ($i=20; $i -ge 4; $i--) {
