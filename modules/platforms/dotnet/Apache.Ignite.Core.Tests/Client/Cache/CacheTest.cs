@@ -25,6 +25,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
     using System.Threading;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Client;
+    using Apache.Ignite.Core.Impl.Client;
     using NUnit.Framework;
 
     /// <summary>
@@ -150,6 +151,25 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 Environment.ProcessorCount, 5);
 
             clients.ToList().ForEach(x => x.Value.Dispose());
+        }
+
+        /// <summary>
+        /// Tests the cache exceptions.
+        /// </summary>
+        [Test]
+        public void TestExceptions()
+        {
+            using (var client = GetClient())
+            {
+                // Getting the cache instance does not throw.
+                var cache = client.GetCache<int, int>("foobar");
+
+                // Accessing non-existent cache throws.
+                var ex = Assert.Throws<IgniteClientException>(() => cache.Put(1, 1));
+
+                Assert.AreEqual("Cache doesn't exist: foobar", ex.Message);
+                Assert.AreEqual((int) ClientStatus.CacheDoesNotExist, ex.ErrorCode);
+            }
         }
     }
 }

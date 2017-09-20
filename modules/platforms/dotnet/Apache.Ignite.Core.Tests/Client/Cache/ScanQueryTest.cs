@@ -24,8 +24,9 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
     using System.Linq;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Query;
-    using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Configuration;
+    using Apache.Ignite.Core.Impl.Client;
     using NUnit.Framework;
 
     /// <summary>
@@ -135,6 +136,28 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         }
 
         /// <summary>
+        /// Tests the exception in filter.
+        /// </summary>
+        [Test]
+        public void TestExceptionInFilter()
+        {
+            GetPersonCache();
+
+            using (var client = GetClient())
+            {
+                var clientCache = client.GetCache<int, Person>(CacheName);
+
+                var qry = new ScanQuery<int, Person>(new PersonFilter(x =>
+                {
+                    throw new ArithmeticException("foo");
+                }));
+
+                var ex = Assert.Throws<IgniteClientException>(() => clientCache.Query(qry).GetAll());
+                Assert.AreEqual("foo", ex.Message);
+            }
+        }
+
+        /// <summary>
         /// Tests multiple cursors with the same client.
         /// </summary>
         [Test]
@@ -154,8 +177,9 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 var cur3 = clientCache.Query(qry).GetEnumerator();
 
                 // MaxCursors = 3
-                var ex = Assert.Throws<IgniteException>(() => clientCache.Query(qry));
+                var ex = Assert.Throws<IgniteClientException>(() => clientCache.Query(qry));
                 Assert.AreEqual("Too many open cursors", ex.Message.Substring(0, 21));
+                Assert.AreEqual((int) ClientStatus.TooManyCursors, ex.ErrorCode);
 
                 var count = 0;
 
@@ -177,17 +201,17 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 var c2 = clientCache.Query(qry);
                 var c3 = clientCache.Query(qry);
 
-                Assert.Throws<IgniteException>(() => clientCache.Query(qry));
+                Assert.Throws<IgniteClientException>(() => clientCache.Query(qry));
 
                 // Close one of the cursors.
                 c1.Dispose();
                 c1 = clientCache.Query(qry);
-                Assert.Throws<IgniteException>(() => clientCache.Query(qry));
+                Assert.Throws<IgniteClientException>(() => clientCache.Query(qry));
 
                 // Close cursor via GetAll.
                 c1.GetAll();
                 c1 = clientCache.Query(qry);
-                Assert.Throws<IgniteException>(() => clientCache.Query(qry));
+                Assert.Throws<IgniteClientException>(() => clientCache.Query(qry));
 
                 c1.Dispose();
                 c2.Dispose();
