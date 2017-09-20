@@ -121,7 +121,7 @@ public class IgnitePdsThreadInterruptionTest extends GridCommonAbstractTest {
      *
      * @throws Exception
      */
-    public void testInterrupts() throws Exception {
+    public void testInterruptsOnWALWrite() throws Exception {
         final Ignite ignite = startGrid();
 
         ignite.active(true);

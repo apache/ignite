@@ -63,6 +63,13 @@ public final class FileInput implements ByteBufferBackedDataInput {
     }
 
     /**
+     * FileIO.
+     */
+    public FileIO io() {
+        return io;
+    }
+
+    /**
      * Clear buffer.
      */
     private void clearBuffer() {

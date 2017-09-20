@@ -26,6 +26,8 @@ import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousFileChannel;
 import java.nio.channels.CompletionHandler;
 import java.nio.file.StandardOpenOption;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -43,7 +45,14 @@ public class AsyncFileIO implements FileIO {
     private volatile long position;
 
     /** */
-    private AtomicReference<GridFutureAdapter<Integer>> lastFut = new AtomicReference<>();
+    private ConcurrentLinkedQueue<ChannelOpFuture> asyncFuts = new ConcurrentLinkedQueue<>();
+
+    /** */
+    private ThreadLocal<ChannelOpFuture> cachedFut = new ThreadLocal<ChannelOpFuture>() {
+        @Override protected ChannelOpFuture initialValue() {
+            return new ChannelOpFuture(true);
+        }
+    };
 
     /**
      * Creates I/O implementation for specified {@code file}
@@ -67,7 +76,8 @@ public class AsyncFileIO implements FileIO {
 
     /** {@inheritDoc} */
     @Override public int read(ByteBuffer destinationBuffer) throws IOException {
-        ChannelOpFuture fut = awaitLastFut(true);
+        ChannelOpFuture fut = cachedFut.get();
+        fut.reset();
 
         ch.read(destinationBuffer, position, null, fut);
 
@@ -93,7 +103,8 @@ public class AsyncFileIO implements FileIO {
 
     /** {@inheritDoc} */
     @Override public int read(byte[] buffer, int offset, int length) throws IOException {
-        ChannelOpFuture fut = awaitLastFut(true);
+        ChannelOpFuture fut = cachedFut.get();
+        fut.reset();
 
         ch.read(ByteBuffer.wrap(buffer, offset, length), position, null, fut);
 
@@ -106,7 +117,8 @@ public class AsyncFileIO implements FileIO {
 
     /** {@inheritDoc} */
     @Override public int write(ByteBuffer sourceBuffer) throws IOException {
-        ChannelOpFuture fut = awaitLastFut(true);
+        ChannelOpFuture fut = cachedFut.get();
+        fut.reset();
 
         ch.write(sourceBuffer, position, null, fut);
 
@@ -121,6 +133,8 @@ public class AsyncFileIO implements FileIO {
     @Override public int write(ByteBuffer sourceBuffer, long position) throws IOException {
         ChannelOpFuture fut = new ChannelOpFuture(false);
 
+        asyncFuts.add(fut);
+
         ch.write(sourceBuffer, position, null, fut);
 
         try {
@@ -132,7 +146,8 @@ public class AsyncFileIO implements FileIO {
 
     /** {@inheritDoc} */
     @Override public void write(byte[] buffer, int offset, int length) throws IOException {
-        ChannelOpFuture fut = awaitLastFut(true);
+        ChannelOpFuture fut = cachedFut.get();
+        fut.reset();
 
         ch.write(ByteBuffer.wrap(buffer, offset, length), position, null, fut);
 
@@ -162,32 +177,15 @@ public class AsyncFileIO implements FileIO {
 
     /** {@inheritDoc} */
     @Override public void close() throws IOException {
-        ch.close();
-    }
-
-    /**
-     * Awaits last future if it exists.
-     *
-     * @param advancePos {@code true} to advance position.
-     * @return Future for current async operation.
-     *
-     * @throws IOException
-     */
-    private ChannelOpFuture awaitLastFut(boolean advancePos) throws IOException {
-        ChannelOpFuture fut = new ChannelOpFuture(advancePos);
-
-        while (true) {
-            GridFutureAdapter<Integer> curFut = lastFut.get();
-
-            if (curFut == null && lastFut.compareAndSet(null, fut))
-                return fut;
-            else if (curFut != null)
-                try {
-                    curFut.get(); // Wait for future to complete.
-                } catch (IgniteCheckedException e) {
-                    throw new IOException(e);
-                }
+        for (ChannelOpFuture asyncFut : asyncFuts) {
+            try {
+                asyncFut.getUninterruptibly(); // Ignore interrupts while waiting for channel close.
+            } catch (IgniteCheckedException e) {
+                throw new IOException(e);
+            }
         }
+
+        ch.close();
     }
 
     /** */
@@ -205,13 +203,11 @@ public class AsyncFileIO implements FileIO {
         /** {@inheritDoc} */
         @Override public void completed(Integer result, Void attachment) {
             if (advancePos) {
-                assert lastFut.get() == this;
-
                 if (result != -1)
                     AsyncFileIO.this.position += result;
-
-                lastFut.set(null);
             }
+            else
+                asyncFuts.remove(this);
 
             // Release waiter and allow next operation to begin.
             super.onDone(result, null);
@@ -219,8 +215,8 @@ public class AsyncFileIO implements FileIO {
 
         /** {@inheritDoc} */
         @Override public void failed(Throwable exc, Void attachment) {
-            if (advancePos)
-                lastFut.set(null);
+            if (!advancePos)
+                asyncFuts.remove(this);
 
             super.onDone(exc);
         }
