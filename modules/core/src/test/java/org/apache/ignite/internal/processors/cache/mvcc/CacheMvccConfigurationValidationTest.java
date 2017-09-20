@@ -34,7 +34,7 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 /**
  *
  */
-public class CacheMvccTransactionsConfigurationValidationTest extends GridCommonAbstractTest {
+public class CacheMvccConfigurationValidationTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
