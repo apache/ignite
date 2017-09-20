@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Client
     using System;
     using System.Runtime.Serialization;
     using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Impl.Client;
 
     /// <summary>
     /// Ignite thin client exception.
@@ -31,7 +32,7 @@ namespace Apache.Ignite.Core.Client
         private const string ErrorCodeField = "ErrorCode";
 
         /** Error code. */
-        private readonly int _errorCode;
+        private readonly int _errorCode = (int) ClientStatus.Fail;
 
         /// <summary>
         /// Gets the error code.

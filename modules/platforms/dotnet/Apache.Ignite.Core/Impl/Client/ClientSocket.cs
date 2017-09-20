@@ -139,7 +139,7 @@ namespace Apache.Ignite.Core.Impl.Client
 
                 var errMsg = BinaryUtils.Marshaller.Unmarshal<string>(stream);
 
-                throw new IgniteException(string.Format(
+                throw new IgniteClientException(string.Format(
                     "Client handhsake failed: '{0}'. Client version: {1}. Server version: {2}",
                     errMsg, version, serverVersion));
             }
