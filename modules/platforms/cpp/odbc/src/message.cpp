@@ -206,7 +206,9 @@ namespace ignite
             writer.WriteObject<std::string>(sqlQuery);
         }
 
-        Response::Response(): status(ResponseStatus::FAILED), error()
+        Response::Response() :
+            status(ResponseStatus::UNKNOWN_ERROR),
+            error()
         {
             // No-op.
         }

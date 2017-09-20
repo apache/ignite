@@ -171,7 +171,7 @@ namespace ignite
                 {
                     LOG_MSG("Error: " << rsp.GetError());
 
-                    diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, rsp.GetError());
+                    diag.AddStatusRecord(ResponseStatusToSqlState(rsp.GetStatus()), rsp.GetError());
 
                     return SqlResult::AI_ERROR;
                 }
@@ -186,7 +186,7 @@ namespace ignite
                     setsProcessed += rsp.GetErrorSetIdx();
                     LOG_MSG("setsProcessed: " << setsProcessed);
 
-                    diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, rsp.GetErrorMessage(),
+                    diag.AddStatusRecord(ResponseStatusToSqlState(rsp.GetErrorCode()), rsp.GetErrorMessage(),
                         static_cast<int32_t>(setsProcessed), 0);
 
                     return SqlResult::AI_SUCCESS_WITH_INFO;

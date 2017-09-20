@@ -1115,7 +1115,7 @@ namespace ignite
             {
                 LOG_MSG("Error: " << rsp.GetError());
 
-                AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, rsp.GetError());
+                AddStatusRecord(ResponseStatusToSqlState(rsp.GetStatus()), rsp.GetError());
 
                 return SqlResult::AI_ERROR;
             }

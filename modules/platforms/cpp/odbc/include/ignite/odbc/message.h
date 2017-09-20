@@ -64,16 +64,6 @@ namespace ignite
             };
         };
 
-        struct ResponseStatus
-        {
-            enum Type
-            {
-                SUCCESS = 0,
-
-                FAILED = 1
-            };
-        };
-
         /**
          * Handshake request.
          */
@@ -419,7 +409,7 @@ namespace ignite
              * Get request processing status.
              * @return Status.
              */
-            int8_t GetStatus() const
+            int32_t GetStatus() const
             {
                 return status;
             }
@@ -441,7 +431,7 @@ namespace ignite
 
         private:
             /** Request processing status. */
-            int8_t status;
+            int32_t status;
 
             /** Error message. */
             std::string error;
@@ -644,6 +634,15 @@ namespace ignite
             const std::string& GetErrorMessage() const
             {
                 return errorMessage;
+            }
+
+            /**
+             * Get error code.
+             * @return Error code.
+             */
+            int32_t GetErrorCode() const
+            {
+                return errorCode;
             }
 
         private:
