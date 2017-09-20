@@ -45,6 +45,9 @@ import org.jetbrains.annotations.Nullable;
  * Client connector processor.
  */
 public class ClientListenerProcessor extends GridProcessorAdapter {
+    /** Default client connector configuration. */
+    public static final ClientConnectorConfiguration DFLT_CLI_CFG = new ClientConnectorConfigurationEx();
+
     /** Default number of selectors. */
     private static final int DFLT_SELECTOR_CNT = Math.min(4, Runtime.getRuntime().availableProcessors());
 
@@ -204,7 +207,10 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
         SqlConnectorConfiguration sqlConnCfg = cfg.getSqlConnectorConfiguration();
         ClientConnectorConfiguration cliConnCfg = cfg.getClientConnectorConfiguration();
 
-        if (cliConnCfg != null) {
+        if (cliConnCfg == null && sqlConnCfg == null && odbcCfg == null)
+            return null;
+
+        if (isNotDefault(cliConnCfg)) {
             // User set configuration explicitly. User it, but print a warning about ignored SQL/ODBC configs.
             if (odbcCfg != null) {
                 U.warn(log, "Deprecated " + OdbcConfiguration.class.getSimpleName() + " will be ignored because " +
@@ -221,8 +227,6 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
 
             if (sqlConnCfg != null) {
                 // Migrate from SQL configuration.
-                cliConnCfg = new ClientConnectorConfiguration();
-
                 cliConnCfg.setHost(sqlConnCfg.getHost());
                 cliConnCfg.setMaxOpenCursorsPerConnection(sqlConnCfg.getMaxOpenCursorsPerConnection());
                 cliConnCfg.setPort(sqlConnCfg.getPort());
@@ -243,8 +247,6 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
             else if (odbcCfg != null) {
                 // Migrate from ODBC configuration.
                 HostAndPortRange hostAndPort = parseOdbcEndpoint(odbcCfg);
-
-                cliConnCfg = new ClientConnectorConfiguration();
 
                 cliConnCfg.setHost(hostAndPort.host());
                 cliConnCfg.setPort(hostAndPort.portFrom());
@@ -304,5 +306,15 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
         }
 
         return res;
+    }
+
+    /**
+     * Check whether configuration is not default.
+     *
+     * @param cliConnCfg Client connector configuration.
+     * @return {@code True} if not default.
+     */
+    private static boolean isNotDefault(ClientConnectorConfiguration cliConnCfg) {
+        return cliConnCfg != null && !(cliConnCfg instanceof ClientConnectorConfigurationEx);
     }
 }
