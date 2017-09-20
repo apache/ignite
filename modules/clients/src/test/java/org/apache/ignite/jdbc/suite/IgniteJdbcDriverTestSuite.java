@@ -54,6 +54,7 @@ import org.apache.ignite.jdbc.thin.JdbcThinMissingLongArrayResultsTest;
 import org.apache.ignite.jdbc.thin.JdbcThinNoDefaultSchemaTest;
 import org.apache.ignite.jdbc.thin.JdbcThinPreparedStatementSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinResultSetSelfTest;
+import org.apache.ignite.jdbc.thin.JdbcThinSelectAfterAlterTable;
 import org.apache.ignite.jdbc.thin.JdbcThinStatementSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinUpdateStatementSelfTest;
 
@@ -146,6 +147,8 @@ public class IgniteJdbcDriverTestSuite extends TestSuite {
 
         // New thin JDBC driver, full SQL tests
         suite.addTest(new TestSuite(JdbcThinComplexDmlDdlSelfTest.class));
+
+        suite.addTest(new TestSuite(JdbcThinSelectAfterAlterTable.class));
 
         return suite;
     }
