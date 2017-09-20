@@ -98,6 +98,8 @@ public class IgniteNode implements BenchmarkServer {
 
         CacheConfiguration[] ccfgs = c.getCacheConfiguration();
 
+        c.setMvccEnabled(args.mvccEnabled());
+
         if (ccfgs != null) {
             for (CacheConfiguration cc : ccfgs) {
                 // IgniteNode can not run in CLIENT_ONLY mode,
@@ -143,9 +145,7 @@ public class IgniteNode implements BenchmarkServer {
                 if (args.mvccEnabled()) {
                     if (cc.getAtomicityMode() == CacheAtomicityMode.TRANSACTIONAL &&
                         cc.getCacheMode() != CacheMode.LOCAL)
-                        cc.setMvccEnabled(true);
-
-                    cc.setNodeFilter(new TmpMvccNodeFilter());
+                        cc.setNodeFilter(new TmpMvccNodeFilter());
                 }
 
                 BenchmarkUtils.println(cfg, "Cache configured with the following parameters: " + cc);

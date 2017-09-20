@@ -52,7 +52,6 @@ import org.apache.ignite.internal.util.lang.GridInClosure3;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
@@ -75,6 +74,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 
 /**
  * TODO IGNITE-3478: extend tests to use single/mutiple nodes, all tx types.
+ * TODO IGNITE-3478: test with cache groups.
  */
 @SuppressWarnings("unchecked")
 public class CacheMvccTransactionsTest extends GridCommonAbstractTest {
@@ -99,6 +99,8 @@ public class CacheMvccTransactionsTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
+
+        cfg.setMvccEnabled(true);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
@@ -1732,7 +1734,6 @@ public class CacheMvccTransactionsTest extends GridCommonAbstractTest {
         ccfg.setCacheMode(cacheMode);
         ccfg.setAtomicityMode(TRANSACTIONAL);
         ccfg.setWriteSynchronizationMode(syncMode);
-        ccfg.setMvccEnabled(true);
         ccfg.setAffinity(new RendezvousAffinityFunction(false, parts));
 
         if (cacheMode == PARTITIONED)

@@ -465,16 +465,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         ctx.igfsHelper().validateCacheConfiguration(cc);
 
-        if (cc.getAtomicityMode() == ATOMIC) {
-            assertParameter(cc.getTransactionManagerLookupClassName() == null,
-                "transaction manager can not be used with ATOMIC cache");
-
-            assertParameter(!cc.isMvccEnabled(), "MVCC can not used with ATOMIC cache");
-        }
-
-        if (cc.getCacheMode() == LOCAL)
-            assertParameter(!cc.isMvccEnabled(), "MVCC can not used with LOCAL cache");
-
         if (cc.getEvictionPolicy() != null && !cc.isOnheapCacheEnabled())
             throw new IgniteCheckedException("Onheap cache must be enabled if eviction policy is configured [cacheName="
                 + U.maskName(cc.getName()) + "]");
@@ -1131,8 +1121,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 (cfg.getGroupName() != null ? ", group=" + cfg.getGroupName() : "") +
                 ", memoryPolicyName=" + memPlcName +
                 ", mode=" + cfg.getCacheMode() +
-                ", atomicity=" + cfg.getAtomicityMode() +
-                ", mvcc=" + cfg.isMvccEnabled() + ']');
+                ", atomicity=" + cfg.getAtomicityMode() + ']');
         }
     }
 

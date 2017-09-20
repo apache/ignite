@@ -237,9 +237,6 @@ class ClusterCachesInfo {
         CU.checkAttributeMismatch(log, rmtAttr.groupName(), rmt, "groupName", "Cache group name",
             locAttr.groupName(), rmtAttr.groupName(), true);
 
-        CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "mvccEnabled", "MVCC mode",
-            locAttr.mvccEnabled(), rmtAttr.mvccEnabled(), true);
-
         if (rmtAttr.cacheMode() != LOCAL) {
             CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "interceptor", "Cache Interceptor",
                 locAttr.interceptorClassName(), rmtAttr.interceptorClassName(), true);
@@ -1552,6 +1549,9 @@ class ClusterCachesInfo {
 
         CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg, "cacheMode", "Cache mode",
             cfg.getCacheMode(), startCfg.getCacheMode(), true);
+
+        CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg, "mvccEnabled", "MVCC mode",
+            CacheGroupContext.mvccEnabled(ctx.config(), cfg), CacheGroupContext.mvccEnabled(ctx.config(), startCfg), true);
 
         CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg, "affinity", "Affinity function",
             attr1.cacheAffinityClassName(), attr2.cacheAffinityClassName(), true);
