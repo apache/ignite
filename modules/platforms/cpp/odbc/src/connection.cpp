@@ -451,7 +451,7 @@ namespace ignite
             }
             catch (const IgniteError& err)
             {
-                AddStatusRecord(SqlState::SHYT01_CONNECTION_TIMEOUT, err.GetText());
+                AddStatusRecord(SqlState::S08004_CONNECTION_REJECTED, err.GetText());
 
                 return SqlResult::AI_ERROR;
             }
@@ -471,7 +471,7 @@ namespace ignite
                             << "driver protocol version introduced in version: "
                             << config.GetProtocolVersion().ToString() << ".";
 
-                AddStatusRecord(SqlState::S08001_CANNOT_CONNECT, constructor.str());
+                AddStatusRecord(SqlState::S08004_CONNECTION_REJECTED, constructor.str());
 
                 return SqlResult::AI_ERROR;
             }

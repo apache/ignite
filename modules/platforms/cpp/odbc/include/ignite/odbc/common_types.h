@@ -129,6 +129,9 @@ namespace ignite
                 /** The connection specified was not open. */
                 S08003_NOT_CONNECTED,
 
+                /** Server rejected the connection. */
+                S08004_CONNECTION_REJECTED,
+
                 /**
                  * An error occurred for which there was no specific SQLSTATE
                  * and for which no implementation-specific SQLSTATE was defined.
