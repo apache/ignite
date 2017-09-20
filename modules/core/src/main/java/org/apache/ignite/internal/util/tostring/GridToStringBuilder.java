@@ -831,6 +831,8 @@ public class GridToStringBuilder {
         assert addNames.length == addVals.length;
         assert addLen <= addNames.length;
 
+        IdentityHashMap<Object, Integer> svdObjects = savedObjects.get();
+
         try {
             GridToStringClassDescriptor cd = getClassDescriptor(cls);
 
@@ -838,7 +840,7 @@ public class GridToStringBuilder {
 
             buf.setLength(0);
 
-            savedObjects.get().put(obj, buf.length());
+            svdObjects.put(obj, buf.length());
 
             buf.a(cd.getSimpleClassName()).a(" [");
 
@@ -883,21 +885,17 @@ public class GridToStringBuilder {
                         val = tmp;
                     }
 
-                    if (val == null) {
-                        buf.a("null");
-                    }
-                    else {
-                        if (!addNameWithPositionToBuffer(buf, val))
-                            toStringAddVal(val.getClass(), val, buf);
-                    }
+                    if (!addNameWithHashToBuffer(buf, val, svdObjects))
+                        if (val != null)
+                            toStringAddVal(val.getClass(), val, buf, svdObjects);
+                        else
+                            buf.a("null");
                 }
             }
 
             appendVals(buf, first, addNames, addVals, addSens, addLen);
 
             buf.a(']');
-
-            savedObjects.get().remove(obj);
 
             return buf.toString();
         }
@@ -916,6 +914,8 @@ public class GridToStringBuilder {
 
             // No other option here.
             throw new IgniteException(e);
+        } finally {
+            svdObjects.remove(obj);
         }
     }
 
@@ -923,12 +923,13 @@ public class GridToStringBuilder {
      * Creates an uniformed string presentation for the given object.
      * We need this method to count every Object to prevent infinite toString() loops.
      *
+     * @param <T> Type of object.
      * @param cls Class of the object.
      * @param obj Object for which to get string presentation.
-     * @param <T> Type of object.
+     * @param svdObjects Map with objects already presented in the buffer.
      */
     @SuppressWarnings({"unchecked"})
-    private static <T> void toStringAddVal(Class cls, T obj, SB buf) {
+    private static <T> void toStringAddVal(Class cls, T obj, SB buf, IdentityHashMap<Object, Integer> svdObjects) {
         assert cls != null;
         assert obj != null;
 
@@ -938,7 +939,7 @@ public class GridToStringBuilder {
             return;
         }
 
-        savedObjects.get().put(obj, buf.length());
+        svdObjects.put(obj, buf.length());
 
         try {
             GridToStringClassDescriptor cd = getClassDescriptor(cls);
@@ -989,17 +990,15 @@ public class GridToStringBuilder {
                         val = tmp;
                     }
 
-                    if (!addNameWithPositionToBuffer(buf, val))
+                    if (!addNameWithHashToBuffer(buf, val, svdObjects))
                         if (val != null)
-                            toStringAddVal(val.getClass(), val, buf);
+                            toStringAddVal(val.getClass(), val, buf, svdObjects);
                         else
-                            buf.a(val);
+                            buf.a("null");
                 }
             }
 
             buf.a(']');
-
-            savedObjects.get().remove(obj);
         }
         // Specifically catching all exceptions.
         catch (Exception e) {
@@ -1016,6 +1015,8 @@ public class GridToStringBuilder {
 
             // No other option here.
             throw new IgniteException(e);
+        } finally {
+            svdObjects.remove(obj);
         }
     }
 
@@ -1581,10 +1582,11 @@ public class GridToStringBuilder {
                     first = false;
 
                 buf.a(addNames[i]).a('=');
+
                 if (addVal != null)
-                    toStringAddVal(addVal.getClass(), addVal, buf);
+                    toStringAddVal(addVal.getClass(), addVal, buf, savedObjects.get());
                 else
-                    buf.a(addVal);
+                    buf.a("null");
             }
         }
     }
@@ -1688,37 +1690,45 @@ public class GridToStringBuilder {
         return cd;
     }
 
-    private static boolean addNameWithPositionToBuffer(SB buf, Object val) {
-        IdentityHashMap<Object, Integer> map = savedObjects.get();
-
-        if (map.containsKey(val)) {
-            Integer position = map.get(val);
+    /**
+     * @param buf String builder.
+     * @param obj Object.
+     * @param map Map with objects already presented in the buffer.
+     * @return True if object is already presented and simple class name with identity hash code
+     */
+    private static boolean addNameWithHashToBuffer(SB buf, Object obj, IdentityHashMap<Object, Integer> map) {
+        if (map.containsKey(obj)) {
+            Integer position = map.get(obj);
 
             if (position == null)
                 throw new IllegalStateException("Method \"getPosition(Object o)\" must be called " +
                     "only after method isSaved(object) returned true.");
 
-            String hash = '@' + Integer.toHexString(System.identityHashCode(val));
+            String hash = '@' + Integer.toHexString(System.identityHashCode(obj));
 
-            addHashToBuffer(buf, position, val, hash, map);
+            if (buf.impl().indexOf(hash, position) != position + obj.getClass().getSimpleName().length()) {
+                buf.i(position + obj.getClass().getSimpleName().length(), hash);
 
-            buf.a(val.getClass().getSimpleName() + hash);
+                incValues(map, obj, hash.length());
+            }
+
+            buf.a(obj.getClass().getSimpleName() + hash);
 
             return true;
-        } else
-            return false;
-    }
-
-    private static void addHashToBuffer(SB buf, int position, Object o, String hash, IdentityHashMap<Object, Integer> map) {
-        if (buf.impl().indexOf(hash, position) != position + hash.length()) {
-			buf.i(position + o.getClass().getSimpleName().length(), hash);
-
-            incValues(map, o, hash.length());
         }
+
+        return false;
     }
 
+    /**
+     * Increment positions of already presented objects afterward object.
+     *
+     * @param map Map with objects already presented in the buffer.
+     * @param o Object.
+     * @param hashLength Length of the object's hash.
+     */
     private static void incValues(IdentityHashMap<Object, Integer> map, Object o, int hashLength) {
-        int baseline = map.get(o);
+        Integer baseline = map.get(o);
 
         for (IdentityHashMap.Entry<Object, Integer> entry : map.entrySet()) {
             Integer position = entry.getValue();

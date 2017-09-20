@@ -95,21 +95,7 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testToStringCheckAdvancedRecursionPrevention2() throws Exception {
-        Node n1 = new Node();
-        Node n2 = new Node();
-
-        n1.next = n2;
-        n2.next = n1;
-
-        System.out.println(n1);
-        System.out.println(n2);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testToStringCheckAdvancedRecursionPrevention3() throws Exception {
+    public void testToStringCheckObjectRecursionPrevention() throws Exception {
         Node n1 = new Node();
         Node n2 = new Node();
         Node n3 = new Node();
