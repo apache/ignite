@@ -37,8 +37,10 @@ import org.apache.ignite.compatibility.testframework.util.MavenUtils;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
 import org.jetbrains.annotations.Nullable;
@@ -47,6 +49,12 @@ import org.jetbrains.annotations.Nullable;
  * Super class for all compatibility tests.
  */
 public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstractTest {
+    /** */
+    public static final String SYNCHRONIZATION_MESSAGE_JOINED = "Remote node has joined, id: ";
+
+    /** */
+    public static final String SYNCHRONIZATION_MESSAGE_PREPARED = "Remote node has prepared, id: ";
+
     /** Local JVM Ignite node. */
     protected Ignite locJvmInstance = null;
 
@@ -196,7 +204,10 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
             }
 
             @Override protected String params(IgniteConfiguration cfg, boolean resetDiscovery) throws Exception {
-                return cfgClosPath + " " + igniteInstanceName + " " + getId() + (iClosPath == null ? "" : " " + iClosPath);
+                return cfgClosPath + " " + igniteInstanceName + " "
+                    + getId() + " "
+                    + (rmJvmInstance == null ? getId() : ((IgniteProcessProxy)rmJvmInstance).getId())
+                    + (iClosPath == null ? "" : " " + iClosPath);
             }
 
             @Override protected Collection<String> filteredJvmArgs() throws Exception {
@@ -236,15 +247,12 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
             }
         };
 
-        if (rmJvmInstance == null)
-            rmJvmInstance = ignite;
-
         if (locJvmInstance == null) {
-            CountDownLatch nodeJoinedLatch = new CountDownLatch(1);
+            CountDownLatch nodeJoinedLatch = rmJvmInstance == null ? new CountDownLatch(1) : new CountDownLatch(2);
 
             UUID nodeId = ignite.getId();
 
-            ListenedGridTestLog4jLogger log = (ListenedGridTestLog4jLogger)rmJvmInstance.log();
+            ListenedGridTestLog4jLogger log = (ListenedGridTestLog4jLogger)ignite.log();
 
             log.addListener(nodeId, new LoggedJoinNodeClosure(nodeJoinedLatch, nodeId));
 
@@ -253,18 +261,21 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
             log.removeListener(nodeId);
         }
 
+        if (rmJvmInstance == null)
+            rmJvmInstance = ignite;
+
         return ignite;
     }
 
     /** {@inheritDoc} */
     @Override protected Ignite startGrid(String igniteInstanceName, IgniteConfiguration cfg,
         GridSpringResourceContext ctx) throws Exception {
-        Ignite ignite;
+        final Ignite ignite;
 
         // if started node isn't first node in the local JVM then it was checked earlier for join to topology
         // in IgniteProcessProxy constructor.
         if (locJvmInstance == null && rmJvmInstance != null) {
-            CountDownLatch nodeJoinedLatch = new CountDownLatch(1);
+            final CountDownLatch nodeJoinedLatch = new CountDownLatch(1);
 
             UUID nodeId = cfg.getNodeId();
 
@@ -274,7 +285,20 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
 
             ignite = super.startGrid(igniteInstanceName, cfg, ctx);
 
-            assert ignite.configuration().getNodeId() == cfg.getNodeId() : "Started node have unexpected node id.";
+            final UUID syncId = ((IgniteProcessProxy)rmJvmInstance).getId();
+            
+            GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                @Override public boolean apply() {
+                    boolean found = ignite.cluster().node(syncId) != null;
+
+                    if (found)
+                        nodeJoinedLatch.countDown();
+
+                    return found;
+                }
+            }, 20);
+
+            assert ignite.configuration().getNodeId() == cfg.getNodeId() : "Started node has unexpected node id.";
 
             assert nodeJoinedLatch.await(30, TimeUnit.SECONDS) : "Node has not joined [id=" + nodeId + "]";
 
@@ -317,13 +341,13 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
         private Set<String> patterns = new HashSet<>();
 
         /**
-         * @param nodeJoinedLatch Node joined latch.
+         * @param nodeJoinedLatch Nodes startup synchronization latch.
          * @param nodeId Expected node id.
          */
         public LoggedJoinNodeClosure(CountDownLatch nodeJoinedLatch, UUID nodeId) {
             this.nodeJoinedLatch = nodeJoinedLatch;
-            this.patterns.add("Remote node has joined [id=" + nodeId + "]");
-            this.patterns.add("Remote node has prepared [id=" + nodeId + "]");
+            this.patterns.add(SYNCHRONIZATION_MESSAGE_JOINED + nodeId);
+            this.patterns.add(SYNCHRONIZATION_MESSAGE_PREPARED + nodeId);
         }
 
         /** {@inheritDoc} */
