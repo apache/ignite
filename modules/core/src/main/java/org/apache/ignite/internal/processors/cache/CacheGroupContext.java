@@ -200,16 +200,18 @@ public class CacheGroupContext {
 
         caches = new ArrayList<>();
 
-        mvccEnabled = mvccEnabled(ctx.gridConfig(), ccfg);
+        mvccEnabled = mvccEnabled(ctx.gridConfig(), ccfg, cacheType);
     }
 
     /**
      * @param cfg Ignite configuration.
      * @param ccfg Cache configuration.
+     * @param cacheType Cache typr.
      * @return {@code True} if mvcc is enabled for given cache.
      */
-    public static boolean mvccEnabled(IgniteConfiguration cfg, CacheConfiguration ccfg) {
+    public static boolean mvccEnabled(IgniteConfiguration cfg, CacheConfiguration ccfg, CacheType cacheType) {
         return cfg.isMvccEnabled() &&
+            cacheType == CacheType.USER &&
             ccfg.getCacheMode() != LOCAL &&
             ccfg.getAtomicityMode() == TRANSACTIONAL;
     }

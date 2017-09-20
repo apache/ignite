@@ -137,7 +137,7 @@ class ClusterCachesInfo {
             if (ccfg == null)
                 grpCfgs.put(info.cacheData().config().getGroupName(), info.cacheData().config());
             else
-                validateCacheGroupConfiguration(ccfg, info.cacheData().config());
+                validateCacheGroupConfiguration(ccfg, info.cacheData().config(), info.cacheType());
         }
 
         String conflictErr = processJoiningNode(joinDiscoData, ctx.localNodeId(), true);
@@ -210,7 +210,7 @@ class ClusterCachesInfo {
                 }
 
                 if (checkConsistency)
-                    validateStartCacheConfiguration(locCfg);
+                    validateStartCacheConfiguration(locCfg, cacheData.cacheType());
             }
         }
 
@@ -1523,16 +1523,17 @@ class ClusterCachesInfo {
 
     /**
      * @param ccfg Cache configuration to start.
+     * @param cacheType Cache type.
      * @throws IgniteCheckedException If failed.
      */
-    public void validateStartCacheConfiguration(CacheConfiguration ccfg) throws IgniteCheckedException {
+    void validateStartCacheConfiguration(CacheConfiguration ccfg, CacheType cacheType) throws IgniteCheckedException {
         if (ccfg.getGroupName() != null) {
             CacheGroupDescriptor grpDesc = cacheGroupByName(ccfg.getGroupName());
 
             if (grpDesc != null) {
                 assert ccfg.getGroupName().equals(grpDesc.groupName());
 
-                validateCacheGroupConfiguration(grpDesc.config(), ccfg);
+                validateCacheGroupConfiguration(grpDesc.config(), ccfg, cacheType);
             }
         }
     }
@@ -1540,9 +1541,10 @@ class ClusterCachesInfo {
     /**
      * @param cfg Existing configuration.
      * @param startCfg Cache configuration to start.
+     * @param cacheType Cache type.
      * @throws IgniteCheckedException If validation failed.
      */
-    private void validateCacheGroupConfiguration(CacheConfiguration cfg, CacheConfiguration startCfg)
+    private void validateCacheGroupConfiguration(CacheConfiguration cfg, CacheConfiguration startCfg, CacheType cacheType)
         throws IgniteCheckedException {
         GridCacheAttributes attr1 = new GridCacheAttributes(cfg);
         GridCacheAttributes attr2 = new GridCacheAttributes(startCfg);
@@ -1551,7 +1553,9 @@ class ClusterCachesInfo {
             cfg.getCacheMode(), startCfg.getCacheMode(), true);
 
         CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg, "mvccEnabled", "MVCC mode",
-            CacheGroupContext.mvccEnabled(ctx.config(), cfg), CacheGroupContext.mvccEnabled(ctx.config(), startCfg), true);
+            CacheGroupContext.mvccEnabled(ctx.config(), cfg, cacheType),
+            CacheGroupContext.mvccEnabled(ctx.config(), startCfg, cacheType),
+            true);
 
         CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg, "affinity", "Affinity function",
             attr1.cacheAffinityClassName(), attr2.cacheAffinityClassName(), true);
