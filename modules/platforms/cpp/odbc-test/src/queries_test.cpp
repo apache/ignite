@@ -2119,7 +2119,7 @@ BOOST_AUTO_TEST_CASE(TestErrorMessage)
     BOOST_REQUIRE_EQUAL(ret, SQL_ERROR);
 
     std::string error = GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt);
-    std::string pattern = "HY000: Table \"B\" not found; SQL statement:\\vSELECT a FROM B.*";
+    std::string pattern = "42000: Table \"B\" not found; SQL statement:\\vSELECT a FROM B.*";
 
     boost::cmatch what;
     if (!boost::regex_match(error.c_str(), what, boost::regex(pattern)))
