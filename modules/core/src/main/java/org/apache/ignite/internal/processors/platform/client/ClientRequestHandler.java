@@ -42,20 +42,19 @@ public class ClientRequestHandler implements ClientListenerRequestHandler {
 
     /** {@inheritDoc} */
     @Override public ClientListenerResponse handle(ClientListenerRequest req) {
-        try {
-            return ((ClientRequest)req).process(ctx);
-        }
-        catch (IgniteClientException e) {
-            return new ClientResponse(req.requestId(), e.statusCode(), e.getMessage());
-        }
-        catch (Throwable e) {
-            return new ClientResponse(req.requestId(), e.getMessage());
-        }
+        return ((ClientRequest) req).process(ctx);
     }
 
     /** {@inheritDoc} */
-    @Override public ClientListenerResponse handleException(Exception e) {
-        return null;
+    @Override public ClientListenerResponse handleException(Exception e, ClientListenerRequest req) {
+        assert req != null;
+        assert e != null;
+
+        if (e instanceof IgniteClientException) {
+            return new ClientResponse(req.requestId(), ((IgniteClientException) e).statusCode(), e.getMessage());
+        }
+
+        return new ClientResponse(req.requestId(), e.getMessage());
     }
 
     /** {@inheritDoc} */
