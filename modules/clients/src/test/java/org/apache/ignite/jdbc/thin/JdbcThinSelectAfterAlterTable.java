@@ -23,8 +23,6 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
-import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
@@ -110,7 +108,7 @@ public class JdbcThinSelectAfterAlterTable extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    @SuppressWarnings({"ThrowableResultOfMethodCallIgnored", "unchecked"})
     public void testSelectAfterAlterTable() throws Exception {
         Statement stmt = conn.createStatement();
 
@@ -120,19 +118,19 @@ public class JdbcThinSelectAfterAlterTable extends GridCommonAbstractTest {
 
         stmt.executeQuery("select * from person");
 
-        stmt.executeUpdate("alter table person add field1 varchar;");
+        stmt.executeUpdate("alter table person add age int");
 
         ResultSet rs = stmt.executeQuery("select * from person");
 
         ResultSetMetaData meta = rs.getMetaData();
 
-        assert meta.getColumnCount() == 4;
+        assertEquals(4, meta.getColumnCount());
 
         IgnitePredicate newColExists = new IgnitePredicate<ResultSetMetaData>() {
             @Override public boolean apply(ResultSetMetaData meta) {
                 try {
-                    for (int i = 0; i < meta.getColumnCount(); ++i) {
-                        if ("field1".equalsIgnoreCase(meta.getColumnName(i)))
+                    for (int i = 1; i <= meta.getColumnCount(); ++i) {
+                        if ("age".equalsIgnoreCase(meta.getColumnName(i)))
                             return true;
                     }
                 }
@@ -146,6 +144,6 @@ public class JdbcThinSelectAfterAlterTable extends GridCommonAbstractTest {
             }
         };
 
-        assert newColExists.apply(meta);
+        assertTrue(newColExists.apply(meta));
     }
 }
