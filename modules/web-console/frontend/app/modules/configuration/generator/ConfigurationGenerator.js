@@ -25,7 +25,7 @@ import IgniteCacheDefaults from './defaults/Cache.service';
 import IgniteIGFSDefaults from './defaults/IGFS.service';
 
 import JavaTypes from '../../../services/JavaTypes.service';
-import VersionService from 'app/modules/configuration/Version.service';
+import VersionService from 'app/services/Version.service';
 
 const clusterDflts = new IgniteClusterDefaults();
 const cacheDflts = new IgniteCacheDefaults();
