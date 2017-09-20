@@ -49,6 +49,7 @@ import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
@@ -663,48 +664,56 @@ public class DmlStatementsProcessor {
 
         Class<?> currCls = val.getClass();
 
-        if (val instanceof Date && currCls != Date.class && expCls == Date.class) {
-            // H2 thinks that java.util.Date is always a Timestamp, while binary marshaller expects
-            // precise Date instance. Let's satisfy it.
-            return new Date(((Date) val).getTime());
+        try {
+            if (val instanceof Date && currCls != Date.class && expCls == Date.class) {
+                // H2 thinks that java.util.Date is always a Timestamp, while binary marshaller expects
+                // precise Date instance. Let's satisfy it.
+                return new Date(((Date) val).getTime());
+            }
+
+            // User-given UUID is always serialized by H2 to byte array, so we have to deserialize manually
+            if (type == Value.UUID && currCls == byte[].class)
+                return U.unmarshal(desc.context().marshaller(), (byte[]) val,
+                    U.resolveClassLoader(desc.context().gridConfig()));
+
+            if (LocalDateTimeUtils.isJava8DateApiPresent()) {
+                if (val instanceof Timestamp && LocalDateTimeUtils.isLocalDateTime(expCls))
+                    return LocalDateTimeUtils.valueToLocalDateTime(ValueTimestamp.get((Timestamp) val));
+
+                if (val instanceof Date && LocalDateTimeUtils.isLocalDate(expCls))
+                    return LocalDateTimeUtils.valueToLocalDate(ValueDate.fromDateValue(
+                        DateTimeUtils.dateValueFromDate(((Date) val).getTime())));
+
+                if (val instanceof Time && LocalDateTimeUtils.isLocalTime(expCls))
+                    return LocalDateTimeUtils.valueToLocalTime(ValueTime.get((Time) val));
+            }
+
+            // We have to convert arrays of reference types manually -
+            // see https://issues.apache.org/jira/browse/IGNITE-4327
+            // Still, we only can convert from Object[] to something more precise.
+            if (type == Value.ARRAY && currCls != expCls) {
+                if (currCls != Object[].class)
+                    throw new IgniteCheckedException("Unexpected array type - only conversion from Object[] " +
+                        "is assumed");
+
+                // Why would otherwise type be Value.ARRAY?
+                assert expCls.isArray();
+
+                Object[] curr = (Object[]) val;
+
+                Object newArr = Array.newInstance(expCls.getComponentType(), curr.length);
+
+                System.arraycopy(curr, 0, newArr, 0, curr.length);
+
+                return newArr;
+            }
+
+            return H2Utils.convert(val, desc, type);
         }
-
-        // User-given UUID is always serialized by H2 to byte array, so we have to deserialize manually
-        if (type == Value.UUID && currCls == byte[].class)
-            return U.unmarshal(desc.context().marshaller(), (byte[]) val,
-                U.resolveClassLoader(desc.context().gridConfig()));
-
-        if (LocalDateTimeUtils.isJava8DateApiPresent()) {
-            if (val instanceof Timestamp && LocalDateTimeUtils.isLocalDateTime(expCls))
-                return LocalDateTimeUtils.valueToLocalDateTime(ValueTimestamp.get((Timestamp)val));
-
-            if (val instanceof Date && LocalDateTimeUtils.isLocalDate(expCls))
-                return LocalDateTimeUtils.valueToLocalDate(ValueDate.fromDateValue(
-                    DateTimeUtils.dateValueFromDate(((Date)val).getTime())));
-
-            if (val instanceof Time && LocalDateTimeUtils.isLocalTime(expCls))
-                return LocalDateTimeUtils.valueToLocalTime(ValueTime.get((Time)val));
+        catch (Exception e) {
+            throw new IgniteSQLException("Value conversion failed [from=" + currCls.getName() + ", to=" +
+                expCls.getName() +']', IgniteQueryErrorCode.CONVERSION_FAILED, e);
         }
-
-        // We have to convert arrays of reference types manually - see https://issues.apache.org/jira/browse/IGNITE-4327
-        // Still, we only can convert from Object[] to something more precise.
-        if (type == Value.ARRAY && currCls != expCls) {
-            if (currCls != Object[].class)
-                throw new IgniteCheckedException("Unexpected array type - only conversion from Object[] is assumed");
-
-            // Why would otherwise type be Value.ARRAY?
-            assert expCls.isArray();
-
-            Object[] curr = (Object[]) val;
-
-            Object newArr = Array.newInstance(expCls.getComponentType(), curr.length);
-
-            System.arraycopy(curr, 0, newArr, 0, curr.length);
-
-            return newArr;
-        }
-
-        return H2Utils.convert(val, desc, type);
     }
 
     /**
@@ -839,7 +848,7 @@ public class DmlStatementsProcessor {
                 String msg = "Failed to INSERT some keys because they are already in cache " +
                     "[keys=" + sender.failedKeys() + ']';
 
-                SQLException dupEx = new SQLException(msg, null, IgniteQueryErrorCode.DUPLICATE_KEY);
+                SQLException dupEx = new SQLException(msg, SqlStateCode.CONSTRAINT_VIOLATION);
 
                 if (resEx == null)
                     resEx = dupEx;
@@ -972,7 +981,8 @@ public class DmlStatementsProcessor {
         }
 
         /** {@inheritDoc} */
-        @Override public Boolean process(MutableEntry<Object, Object> entry, Object... arguments) throws EntryProcessorException {
+        @Override public Boolean process(MutableEntry<Object, Object> entry, Object... arguments)
+            throws EntryProcessorException {
             if (entry.exists())
                 return false;
 
@@ -1000,7 +1010,8 @@ public class DmlStatementsProcessor {
         }
 
         /** {@inheritDoc} */
-        @Override public Boolean process(MutableEntry<Object, Object> entry, Object... arguments) throws EntryProcessorException {
+        @Override public Boolean process(MutableEntry<Object, Object> entry, Object... arguments)
+            throws EntryProcessorException {
             if (!entry.exists())
                 return null; // Someone got ahead of us and removed this entry, let's skip it.
 

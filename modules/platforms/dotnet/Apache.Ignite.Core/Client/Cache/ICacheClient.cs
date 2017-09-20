@@ -18,10 +18,13 @@
 namespace Apache.Ignite.Core.Client.Cache
 {
     using System.Collections.Generic;
+    using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Cache.Query;
 
     /// <summary>
     /// Client cache API. See <see cref="IIgniteClient.GetCache{K, V}"/>.
     /// </summary>
+    // ReSharper disable once TypeParameterCanBeVariant (ICache shoul not be variant, more methods will be added)
     public interface ICacheClient<TK, TV>
     {
         /// <summary>
@@ -55,5 +58,12 @@ namespace Apache.Ignite.Core.Client.Cache
         /// <returns>Cache value with the specified key.</returns>
         /// <exception cref="KeyNotFoundException">If the key is not present in the cache.</exception>
         TV this[TK key] { get; set; }
+
+        /// <summary>
+        /// Executes a Scan query.
+        /// </summary>
+        /// <param name="scanQuery">Scan query.</param>
+        /// <returns>Query cursor.</returns>
+        IQueryCursor<ICacheEntry<TK, TV>> Query(ScanQuery<TK, TV> scanQuery);
     }
 }

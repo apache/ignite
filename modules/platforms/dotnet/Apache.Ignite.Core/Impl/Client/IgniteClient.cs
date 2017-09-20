@@ -144,9 +144,16 @@ namespace Apache.Ignite.Core.Impl.Client
         /// <summary>
         /// Gets the client not supported exception.
         /// </summary>
-        private static NotSupportedException GetClientNotSupportedException()
+        public static NotSupportedException GetClientNotSupportedException(string info = null)
         {
-            return new NotSupportedException("Operation is not supported in thin client mode.");
+            var msg = "Operation is not supported in thin client mode.";
+
+            if (info != null)
+            {
+                msg += " " + info;
+            }
+
+            return new NotSupportedException(msg);
         }
     }
 }

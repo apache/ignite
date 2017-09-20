@@ -154,7 +154,7 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
         catch (Exception e) {
             log.error("Failed to process client request [req=" + req + ']', e);
 
-            ses.send(parser.encode(handler.handleException(e)));
+            ses.send(parser.encode(handler.handleException(e, req)));
         }
     }
 
@@ -236,7 +236,7 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
                 return new JdbcConnectionContext(ctx, busyLock, maxCursors);
 
             case THIN_CLIENT:
-                return new ClientConnectionContext(ctx);
+                return new ClientConnectionContext(ctx, maxCursors);
 
             default:
                 throw new IgniteException("Unknown client type: " + clientType);
