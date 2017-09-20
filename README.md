@@ -66,13 +66,13 @@ You can view Apache Ignite as a collection of independent, well-integrated compo
  scalability of your application.
 
 Some of these components include:
-•	Advanced Clustering
-•	Data Grid
-•	SQL Database
-•	Compute Grid
-•	Service Grid
-•	Hadoop Accelerator
-•	Spark Shared RDDs and SQL indexes
+*	Advanced Clustering
+*	Data Grid
+*	SQL Database
+*	Compute Grid
+*	Service Grid
+*	Hadoop Accelerator
+*	Spark Shared RDDs and SQL indexes
 
 Below you’ll find a brief coverage for each some of them.
 
@@ -183,7 +183,7 @@ Hadoop file system implementations) acting as a caching layer.
 
 In addition, IGFS provides API to execute map-reduce tasks over file system data.
 
-## Distributed Data Structures
+### Distributed Data Structures
 
 Ignite supports complex data structures in a distributed fashion:
 
