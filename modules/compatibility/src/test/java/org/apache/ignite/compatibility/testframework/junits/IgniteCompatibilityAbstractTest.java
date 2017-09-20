@@ -55,6 +55,9 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
     /** */
     public static final String SYNCHRONIZATION_MESSAGE_PREPARED = "Remote node has prepared, id: ";
 
+    /** */
+    private static final int NODE_JOIN_TIMEOUT = 30;
+
     /** Local JVM Ignite node. */
     protected Ignite locJvmInstance = null;
 
@@ -256,7 +259,7 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
 
             log.addListener(nodeId, new LoggedJoinNodeClosure(nodeJoinedLatch, nodeId));
 
-            assert nodeJoinedLatch.await(30, TimeUnit.SECONDS) : "Node has not joined [id=" + nodeId + "]";
+            assert nodeJoinedLatch.await(NODE_JOIN_TIMEOUT, TimeUnit.SECONDS) : "Node has not joined [id=" + nodeId + "]";
 
             log.removeListener(nodeId);
         }
@@ -275,34 +278,18 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
         // if started node isn't first node in the local JVM then it was checked earlier for join to topology
         // in IgniteProcessProxy constructor.
         if (locJvmInstance == null && rmJvmInstance != null) {
-            final CountDownLatch nodeJoinedLatch = new CountDownLatch(1);
-
-            UUID nodeId = cfg.getNodeId();
-
-            ListenedGridTestLog4jLogger log = (ListenedGridTestLog4jLogger)rmJvmInstance.log();
-
-            log.addListener(nodeId, new LoggedJoinNodeClosure(nodeJoinedLatch, nodeId));
+            final UUID syncId = ((IgniteProcessProxy)rmJvmInstance).getId();
+            final UUID nodeId = cfg.getNodeId();
 
             ignite = super.startGrid(igniteInstanceName, cfg, ctx);
 
-            final UUID syncId = ((IgniteProcessProxy)rmJvmInstance).getId();
-            
-            GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            assert ignite.configuration().getNodeId() == nodeId : "Started node has unexpected node id.";
+
+            assert GridTestUtils.waitForCondition(new GridAbsPredicate() {
                 @Override public boolean apply() {
-                    boolean found = ignite.cluster().node(syncId) != null;
-
-                    if (found)
-                        nodeJoinedLatch.countDown();
-
-                    return found;
+                    return ignite.cluster().node(syncId) != null;
                 }
-            }, 20);
-
-            assert ignite.configuration().getNodeId() == cfg.getNodeId() : "Started node has unexpected node id.";
-
-            assert nodeJoinedLatch.await(30, TimeUnit.SECONDS) : "Node has not joined [id=" + nodeId + "]";
-
-            log.removeListener(nodeId);
+            }, NODE_JOIN_TIMEOUT) : "Node has not joined [id=" + nodeId + "]";
         }
         else
             ignite = super.startGrid(igniteInstanceName, cfg, ctx);
