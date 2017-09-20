@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -55,6 +56,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -597,12 +599,12 @@ public class CacheMvccTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testCleanupWaitsForGet() throws Exception {
+    public void testCleanupWaitsForGet1() throws Exception {
         boolean vals[] = {true, false};
 
         for (boolean otherPuts : vals) {
             for (boolean putOnStart : vals) {
-                cleanupWaitsForGet(otherPuts, putOnStart);
+                cleanupWaitsForGet1(otherPuts, putOnStart);
 
                 afterTest();
             }
@@ -614,7 +616,7 @@ public class CacheMvccTransactionsTest extends GridCommonAbstractTest {
      * @param putOnStart {@code True} to put data in cache before getAll.
      * @throws Exception If failed.
      */
-    private void cleanupWaitsForGet(boolean otherPuts, final boolean putOnStart) throws Exception {
+    private void cleanupWaitsForGet1(boolean otherPuts, final boolean putOnStart) throws Exception {
         info("cleanupWaitsForGet [otherPuts=" + otherPuts + ", putOnStart=" + putOnStart + "]");
 
         testSpi = true;
@@ -698,6 +700,108 @@ public class CacheMvccTransactionsTest extends GridCommonAbstractTest {
         assertEquals(2, vals.size());
         assertEquals(5, (Object)vals.get(key1));
         assertEquals(5, (Object)vals.get(key2));
+    }
+
+
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCleanupWaitsForGet2() throws Exception {
+        testSpi = true;
+
+        client = false;
+
+        startGrids(2);
+
+        client = true;
+
+        final Ignite client = startGrid(2);
+
+        awaitPartitionMapExchange();
+
+        final IgniteCache<Object, Object> cache = client.createCache(cacheConfiguration(PARTITIONED, FULL_SYNC, 0, 16).
+            setNodeFilter(new TestCacheNodeExcludingFilter(ignite(0).name())));
+
+        final Integer key1 = 1;
+        final Integer key2 = 2;
+
+        try (Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            cache.put(key1, 0);
+            cache.put(key2, 0);
+
+            tx.commit();
+        }
+
+        TestRecordingCommunicationSpi crdSpi = TestRecordingCommunicationSpi.spi(grid(0));
+
+        TestRecordingCommunicationSpi clientSpi = TestRecordingCommunicationSpi.spi(client);
+
+        final CountDownLatch getLatch = new CountDownLatch(1);
+
+        clientSpi.closure(new IgniteBiInClosure<ClusterNode, Message>() {
+            @Override public void apply(ClusterNode node, Message msg) {
+                if (msg instanceof CoordinatorTxAckRequest)
+                    doSleep(2000);
+            }
+        });
+
+        crdSpi.closure(new IgniteBiInClosure<ClusterNode, Message>() {
+            /** */
+            private AtomicInteger cntr = new AtomicInteger();
+
+            @Override public void apply(ClusterNode node, Message msg) {
+                if (msg instanceof MvccCoordinatorVersionResponse) {
+                    if (cntr.incrementAndGet() == 2) {
+                        getLatch.countDown();
+
+                        doSleep(1000);
+                    }
+                }
+            }
+        });
+
+        final IgniteInternalFuture<?> putFut1 = GridTestUtils.runAsync(new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                try (Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                    cache.put(key1, 1);
+
+                    tx.commit();
+                }
+
+                return null;
+            }
+        }, "put1");
+
+        final IgniteInternalFuture<?> putFut2 = GridTestUtils.runAsync(new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                try (Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                    cache.put(key1, 2);
+
+                    tx.commit();
+                }
+
+                return null;
+            }
+        }, "put2");
+
+        IgniteInternalFuture<?> getFut = GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                U.await(getLatch);
+
+                while (!putFut1.isDone() || !putFut2.isDone()) {
+                    Map<Object, Object> vals = cache.getAll(F.asSet(key1, key2));
+
+                    assertEquals(2, vals.size());
+                }
+
+                return null;
+            }
+        }, 4, "get-thread");
+
+        putFut1.get();
+        putFut2.get();
+        getFut.get();
     }
 
     /**

@@ -30,6 +30,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -60,6 +61,9 @@ public class TestRecordingCommunicationSpi extends TcpCommunicationSpi {
     /** */
     private IgniteBiPredicate<ClusterNode, Message> blockP;
 
+    /** */
+    private volatile IgniteBiInClosure<ClusterNode, Message> c;
+
     /**
      * @param node Node.
      * @return Test SPI.
@@ -75,6 +79,9 @@ public class TestRecordingCommunicationSpi extends TcpCommunicationSpi {
             GridIoMessage ioMsg = (GridIoMessage)msg;
 
             Message msg0 = ioMsg.message();
+
+            if (c != null)
+                c.apply(node, msg0);
 
             synchronized (this) {
                 boolean record = (recordClasses != null && recordClasses.contains(msg0.getClass())) ||
@@ -209,6 +216,13 @@ public class TestRecordingCommunicationSpi extends TcpCommunicationSpi {
         }
 
         return false;
+    }
+
+    /**
+     * @param c Message closure.
+     */
+    public void closure(IgniteBiInClosure<ClusterNode, Message> c) {
+        this.c = c;
     }
 
     /**

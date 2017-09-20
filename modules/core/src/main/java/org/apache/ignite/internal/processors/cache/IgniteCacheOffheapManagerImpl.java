@@ -1400,7 +1400,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                         activeTx = true;
                     }
 
-                    // Should not delete oldest version which is less than cleanup version .
+                    // Should not delete oldest version which is less than cleanup version.
                     int cmp = compare(oldVal, mvccVer.coordinatorVersion(), mvccVer.cleanupVersion());
 
                     if (cmp <= 0) {
