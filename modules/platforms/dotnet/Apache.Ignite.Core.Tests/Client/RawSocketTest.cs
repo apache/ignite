@@ -114,7 +114,7 @@ namespace Apache.Ignite.Core.Tests.Client
         }
 
         /// <summary>
-        /// Tests invalid operation code.
+        /// Tests invalid message (can't be parsed).
         /// </summary>
         [Test]
         public void TestInvalidMessage()
@@ -127,20 +127,7 @@ namespace Apache.Ignite.Core.Tests.Client
 
             var msg = ReceiveMessage(sock);
 
-            using (var stream = new BinaryHeapStream(msg))
-            {
-                var reader = BinaryUtils.Marshaller.StartUnmarshal(stream);
-
-                var requestId = reader.ReadLong();
-                Assert.AreEqual(0, requestId);
-
-                var status = reader.ReadInt();
-                Assert.AreEqual((int) ClientStatus.ParsingFailed, status);
-
-                var err = reader.ReadObject<string>();
-                Assert.AreEqual("Failed to parse request: Not enough data to read the value " +
-                                "[position=2, requiredBytes=8, remainingBytes=0]", err);
-            }
+            Assert.AreEqual(0, msg.Length);
         }
 
         /// <summary>

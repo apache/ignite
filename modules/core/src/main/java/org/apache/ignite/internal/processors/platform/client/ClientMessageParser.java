@@ -87,18 +87,11 @@ public class ClientMessageParser implements ClientListenerMessageParser {
     @Override public ClientListenerRequest decode(byte[] msg) {
         assert msg != null;
 
-        try {
-            BinaryInputStream inStream = new BinaryHeapInputStream(msg);
-            BinaryRawReaderEx reader = marsh.reader(inStream);
+        BinaryInputStream inStream = new BinaryHeapInputStream(msg);
+        BinaryRawReaderEx reader = marsh.reader(inStream);
 
-            return decode(reader);
-        }
-        catch (Throwable e) {
-            return new ClientRawRequest(0, ClientStatus.PARSING_FAILED,
-                    "Failed to parse request: " + e.getMessage());
-        }
+        return decode(reader);
     }
-
 
     /**
      * Decodes the request.
