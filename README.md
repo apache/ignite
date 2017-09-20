@@ -60,7 +60,7 @@ Ignite is an elastic, horizontally scalable distributed system that supports add
 
 [Read More](https://apacheignite.readme.io/docs/clustering)
 
-## Main Features
+## Ignite Components
 
 You can view Apache Ignite as a collection of independent, well-integrated components geared to improve performance and
  scalability of your application.
