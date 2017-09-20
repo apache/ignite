@@ -32,7 +32,6 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.compatibility.testframework.junits.logger.ListenedGridTestLog4jLogger;
-import org.apache.ignite.compatibility.testframework.plugins.TestCompatibilityPluginProvider;
 import org.apache.ignite.compatibility.testframework.util.MavenUtils;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -49,13 +48,13 @@ import org.jetbrains.annotations.Nullable;
  * Super class for all compatibility tests.
  */
 public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstractTest {
-    /** */
-    public static final String SYNCHRONIZATION_MESSAGE_JOINED = "Remote node has joined, id: ";
+    /** Using for synchronization of nodes startup in case of starting remote nodes first. */
+    public static final String SYNCHRONIZATION_LOG_MESSAGE_JOINED = "Remote node has joined, id: ";
 
-    /** */
-    public static final String SYNCHRONIZATION_MESSAGE_PREPARED = "Remote node has prepared, id: ";
+    /** Using for synchronization of nodes startup in case of starting remote nodes first. */
+    public static final String SYNCHRONIZATION_LOG_MESSAGE_PREPARED = "Remote node has prepared, id: ";
 
-    /** */
+    /** Waiting seconds of the join of a node to topology. */
     private static final int NODE_JOIN_TIMEOUT = 30;
 
     /** Local JVM Ignite node. */
@@ -63,20 +62,6 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
 
     /** Remote JVM Ignite instance. */
     protected Ignite rmJvmInstance = null;
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
-        TestCompatibilityPluginProvider.enable();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        TestCompatibilityPluginProvider.disable();
-    }
 
     /**
      * Gets a path to the default DB working directory.
@@ -333,8 +318,8 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
          */
         public LoggedJoinNodeClosure(CountDownLatch nodeJoinedLatch, UUID nodeId) {
             this.nodeJoinedLatch = nodeJoinedLatch;
-            this.patterns.add(SYNCHRONIZATION_MESSAGE_JOINED + nodeId);
-            this.patterns.add(SYNCHRONIZATION_MESSAGE_PREPARED + nodeId);
+            this.patterns.add(SYNCHRONIZATION_LOG_MESSAGE_JOINED + nodeId);
+            this.patterns.add(SYNCHRONIZATION_LOG_MESSAGE_PREPARED + nodeId);
         }
 
         /** {@inheritDoc} */

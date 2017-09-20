@@ -29,7 +29,6 @@ import java.util.Arrays;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.compatibility.testframework.plugins.TestCompatibilityPluginProvider;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.GridJavaProcess;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
@@ -53,6 +52,12 @@ public class CompatibilityTestIgniteNodeRunner extends IgniteNodeRunner {
      * Starts {@link Ignite} with test's default configuration.
      *
      * @param args Arguments.
+     * args[0] - required - path to closure for tuning IgniteConfiguration before node startup;
+     * args[1] - required - name of the starting node;
+     * args[2] - required - id of the starting node;
+     * args[3] - required - id of a node for synchronization of startup. Must be equals
+     * to arg[2] in case of starting the first node in the Ignite cluster;
+     * args[4] - optional - path to closure for actions after node startup.
      * @throws Exception In case of an error.
      */
     public static void main(String[] args) throws Exception {
@@ -63,8 +68,6 @@ public class CompatibilityTestIgniteNodeRunner extends IgniteNodeRunner {
         if (args.length < 3)
             throw new IllegalArgumentException("At least four arguments expected:" +
                 " [path/to/closure/file] [ignite-instance-name] [node-uuid] [sync-node-uuid] [optional/path/to/closure/file]");
-
-        TestCompatibilityPluginProvider.enable();
 
         IgniteConfiguration cfg = CompatibilityTestsFacade.getConfiguration();
 
@@ -90,7 +93,7 @@ public class CompatibilityTestIgniteNodeRunner extends IgniteNodeRunner {
                     boolean found = ignite.cluster().node(syncId) != null;
 
                     if (found)
-                        X.println(IgniteCompatibilityAbstractTest.SYNCHRONIZATION_MESSAGE_JOINED + id);
+                        X.println(IgniteCompatibilityAbstractTest.SYNCHRONIZATION_LOG_MESSAGE_JOINED + id);
 
                     return found;
                 }
@@ -106,7 +109,7 @@ public class CompatibilityTestIgniteNodeRunner extends IgniteNodeRunner {
             iClos.apply(ignite);
         }
 
-        X.println(IgniteCompatibilityAbstractTest.SYNCHRONIZATION_MESSAGE_PREPARED + id);
+        X.println(IgniteCompatibilityAbstractTest.SYNCHRONIZATION_LOG_MESSAGE_PREPARED + id);
     }
 
     /**

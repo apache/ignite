@@ -40,25 +40,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public class TestCompatibilityPluginProvider implements PluginProvider {
     /** */
-    private static volatile boolean enabled;
-
-    /** */
     private GridKernalContext kCtx;
-
-    /** */
-    public static boolean isEnabled() {
-        return enabled;
-    }
-
-    /** */
-    public static void enable() {
-        enabled = true;
-    }
-
-    /** */
-    public static void disable() {
-        enabled = false;
-    }
 
     /** {@inheritDoc} */
     @Override public String name() {
@@ -122,7 +104,7 @@ public class TestCompatibilityPluginProvider implements PluginProvider {
 
     /** {@inheritDoc} */
     @Nullable @Override public Object createComponent(PluginContext ctx, Class cls) {
-        if (enabled && DiscoveryNodeValidationProcessor.class == cls)
+        if (DiscoveryNodeValidationProcessor.class == cls)
             return new NoNodeValidationProcessor(kCtx);
 
         return null;
