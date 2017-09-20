@@ -118,9 +118,6 @@ public class JdbcThinTcpIo {
     /** Ignite server version. */
     private IgniteProductVersion igniteVer;
 
-    /** Ignite server protocol version. */
-    private ClientListenerProtocolVersion srvProtocolVer;
-
     /**
      * Constructor.
      *
@@ -228,8 +225,6 @@ public class JdbcThinTcpIo {
             }
             else
                 igniteVer = new IgniteProductVersion((byte)2, (byte)0, (byte)0, "Unknown", 0L, null);
-
-            srvProtocolVer = CURRENT_VER;
         }
         else {
             short maj = reader.readShort();
@@ -238,7 +233,7 @@ public class JdbcThinTcpIo {
 
             String err = reader.readString();
 
-            srvProtocolVer = ClientListenerProtocolVersion.create(maj, min, maintenance);
+            ClientListenerProtocolVersion srvProtocolVer = ClientListenerProtocolVersion.create(maj, min, maintenance);
 
             if (VER_2_1_0.equals(srvProtocolVer))
                 handshake_2_1_0();
