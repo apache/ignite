@@ -40,7 +40,7 @@ namespace Apache.Ignite.Core.Tests.Client
         {
             var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                SqlConnectorConfiguration = new SqlConnectorConfiguration()
+                ClientConnectorConfiguration = new ClientConnectorConfiguration()
             };
 
             using (var ignite = Ignition.Start(cfg))
@@ -53,7 +53,7 @@ namespace Apache.Ignite.Core.Tests.Client
                 cache[1] = "bar";
 
                 // Connect socket.
-                var sock = GetSocket(SqlConnectorConfiguration.DefaultPort);
+                var sock = GetSocket(ClientConnectorConfiguration.DefaultPort);
                 Assert.IsTrue(sock.Connected);
 
                 DoHandshake(sock);

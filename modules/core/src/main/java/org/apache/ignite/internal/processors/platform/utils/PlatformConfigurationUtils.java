@@ -53,6 +53,7 @@ import org.apache.ignite.cache.eviction.lru.LruEvictionPolicy;
 import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
@@ -682,6 +683,12 @@ public class PlatformConfigurationUtils {
             cfg.setSqlConnectorConfiguration(readSqlConnectorConfiguration(in));
 
         if (in.readBoolean())
+            cfg.setClientConnectorConfiguration(readClientConnectorConfiguration(in));
+
+        if (!in.readBoolean())  // ClientConnectorConfigurationEnabled override
+            cfg.setClientConnectorConfiguration(null);
+
+        if (in.readBoolean())
             cfg.setPersistentStoreConfiguration(readPersistentStoreConfiguration(in));
 
         readPluginConfiguration(cfg, in);
@@ -1147,6 +1154,10 @@ public class PlatformConfigurationUtils {
 
         writeSqlConnectorConfiguration(w, cfg.getSqlConnectorConfiguration());
 
+        writeClientConnectorConfiguration(w, cfg.getClientConnectorConfiguration());
+
+        w.writeBoolean(cfg.getClientConnectorConfiguration() != null);
+
         writePersistentStoreConfiguration(w, cfg.getPersistentStoreConfiguration());
 
         w.writeString(cfg.getIgniteHome());
@@ -1464,6 +1475,48 @@ public class PlatformConfigurationUtils {
      */
     @SuppressWarnings("deprecation")
     private static void writeSqlConnectorConfiguration(BinaryRawWriter w, SqlConnectorConfiguration cfg) {
+        assert w != null;
+
+        if (cfg != null) {
+            w.writeBoolean(true);
+
+            w.writeString(cfg.getHost());
+            w.writeInt(cfg.getPort());
+            w.writeInt(cfg.getPortRange());
+            w.writeInt(cfg.getSocketSendBufferSize());
+            w.writeInt(cfg.getSocketReceiveBufferSize());
+            w.writeBoolean(cfg.isTcpNoDelay());
+            w.writeInt(cfg.getMaxOpenCursorsPerConnection());
+            w.writeInt(cfg.getThreadPoolSize());
+        } else {
+            w.writeBoolean(false);
+        }
+    }
+
+    /**
+     * Reads the client connector configuration.
+     *
+     * @param in Reader.
+     * @return Config.
+     */
+    private static ClientConnectorConfiguration readClientConnectorConfiguration(BinaryRawReader in) {
+        return new ClientConnectorConfiguration()
+                .setHost(in.readString())
+                .setPort(in.readInt())
+                .setPortRange(in.readInt())
+                .setSocketSendBufferSize(in.readInt())
+                .setSocketReceiveBufferSize(in.readInt())
+                .setTcpNoDelay(in.readBoolean())
+                .setMaxOpenCursorsPerConnection(in.readInt())
+                .setThreadPoolSize(in.readInt());
+    }
+
+    /**
+     * Writes the client connector configuration.
+     *
+     * @param w Writer.
+     */
+    private static void writeClientConnectorConfiguration(BinaryRawWriter w, ClientConnectorConfiguration cfg) {
         assert w != null;
 
         if (cfg != null) {
