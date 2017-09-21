@@ -24,8 +24,6 @@ import java.nio.ByteOrder;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.MemoryConfiguration;
 
-import static java.nio.file.StandardOpenOption.READ;
-
 /**
  * Checks version in files if it's present on the disk, creates store with latest version otherwise.
  */
@@ -57,7 +55,7 @@ public class FileVersionCheckingFactory implements FilePageStoreFactory {
         if (!file.exists())
             return createPageStore(type, file, latestVersion());
 
-        try (FileIO fileIO = fileIOFactory.create(file, READ)) {
+        try (FileIO fileIO = fileIOFactory.create(file)) {
             int minHdr = FilePageStore.HEADER_SIZE;
 
             if (fileIO.size() < minHdr)

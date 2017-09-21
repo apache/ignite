@@ -22,19 +22,10 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousFileChannel;
 import java.nio.channels.CompletionHandler;
-import java.util.EnumSet;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.nio.file.OpenOption;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.jetbrains.annotations.NotNull;
-
-import static java.nio.file.StandardOpenOption.CREATE;
-import static java.nio.file.StandardOpenOption.READ;
-import static java.nio.file.StandardOpenOption.WRITE;
 
 /**
  * File I/O implementation based on {@link AsynchronousFileChannel}.
@@ -53,30 +44,13 @@ public class AsyncFileIO implements FileIO {
     /** */
     private GridConcurrentHashSet<ChannelOpFuture> asyncFuts = new GridConcurrentHashSet<>();
 
-    /** */
-    private ThreadLocal<ChannelOpFuture> cachedFut = new ThreadLocal<ChannelOpFuture>() {
-        @Override protected ChannelOpFuture initialValue() {
-            return new ChannelOpFuture(true);
-        }
-    };
-
     /**
      * Creates I/O implementation for specified {@code file}
-     *
      * @param file Random access file
-     * @param concurrency Async I/O concurrency hint.
+     * @param modes Open modes.
      */
-    public AsyncFileIO(File file, int concurrency) throws IOException {
-        ExecutorService execSvc = Executors.newFixedThreadPool(concurrency, new ThreadFactory() {
-            AtomicInteger threadNum = new AtomicInteger();
-
-            @Override public Thread newThread(@NotNull Runnable r) {
-                return new Thread(Thread.currentThread().getThreadGroup(), r,
-                    "ignite-async-io-thread-" + threadNum.getAndIncrement());
-            }
-        });
-
-        this.ch = AsynchronousFileChannel.open(file.toPath(), EnumSet.of(CREATE, READ, WRITE), execSvc);
+    public AsyncFileIO(File file, OpenOption... modes) throws IOException {
+        this.ch = AsynchronousFileChannel.open(file.toPath(), modes);
     }
 
     /** {@inheritDoc} */
@@ -91,7 +65,7 @@ public class AsyncFileIO implements FileIO {
 
     /** {@inheritDoc} */
     @Override public int read(ByteBuffer destinationBuffer) throws IOException {
-        ChannelOpFuture fut = cachedFut.get();
+        ChannelOpFuture fut = new ChannelOpFuture(false);
         fut.reset();
 
         ch.read(destinationBuffer, position, null, fut);
@@ -120,8 +94,7 @@ public class AsyncFileIO implements FileIO {
 
     /** {@inheritDoc} */
     @Override public int read(byte[] buffer, int offset, int length) throws IOException {
-        ChannelOpFuture fut = cachedFut.get();
-        fut.reset();
+        ChannelOpFuture fut = new ChannelOpFuture(true);
 
         ch.read(ByteBuffer.wrap(buffer, offset, length), position, null, fut);
 
@@ -135,8 +108,7 @@ public class AsyncFileIO implements FileIO {
 
     /** {@inheritDoc} */
     @Override public int write(ByteBuffer sourceBuffer) throws IOException {
-        ChannelOpFuture fut = cachedFut.get();
-        fut.reset();
+        ChannelOpFuture fut = new ChannelOpFuture(true);
 
         ch.write(sourceBuffer, position, null, fut);
 
@@ -166,8 +138,7 @@ public class AsyncFileIO implements FileIO {
 
     /** {@inheritDoc} */
     @Override public void write(byte[] buffer, int offset, int length) throws IOException {
-        ChannelOpFuture fut = cachedFut.get();
-        fut.reset();
+        ChannelOpFuture fut = new ChannelOpFuture(true);
 
         ch.write(ByteBuffer.wrap(buffer, offset, length), position, null, fut);
 

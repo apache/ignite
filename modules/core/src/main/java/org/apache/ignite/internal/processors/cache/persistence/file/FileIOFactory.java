@@ -33,16 +33,16 @@ public interface FileIOFactory extends Serializable {
      * @return File I/O interface.
      * @throws IOException If I/O interface creation was failed.
      */
-    FileIO create(File file) throws IOException;
+    public FileIO create(File file) throws IOException;
 
     /**
      * Creates I/O interface for file with specified mode.
      *
      * @param file File
-     * @param modes I/O modes.
+     * @param modes Open modes.
      * @return File I/O interface.
      * @throws IOException If I/O interface creation was failed.
      */
-    FileIO create(File file, OpenOption... modes) throws IOException;
+    public FileIO create(File file, OpenOption... modes) throws IOException;
 
 }

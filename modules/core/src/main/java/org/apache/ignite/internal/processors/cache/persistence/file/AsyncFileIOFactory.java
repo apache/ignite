@@ -33,16 +33,6 @@ public class AsyncFileIOFactory implements FileIOFactory {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** */
-    private final transient int concurrency;
-
-    /**
-     * @param concurrency Async I/O concurrency hint.
-     */
-    public AsyncFileIOFactory(int concurrency) {
-        this.concurrency = concurrency;
-    }
-
     /** {@inheritDoc} */
     @Override public FileIO create(File file) throws IOException {
         return create(file, CREATE, READ, WRITE);
@@ -50,6 +40,6 @@ public class AsyncFileIOFactory implements FileIOFactory {
 
     /** {@inheritDoc} */
     @Override public FileIO create(File file, OpenOption... modes) throws IOException {
-        return new AsyncFileIO(file, concurrency);
+        return new AsyncFileIO(file, modes);
     }
 }

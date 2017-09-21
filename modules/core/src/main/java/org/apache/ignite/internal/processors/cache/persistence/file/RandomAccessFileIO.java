@@ -22,6 +22,9 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.OpenOption;
+import java.util.Collections;
+import java.util.Set;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * File I/O implementation based on {@link FileChannel}.
@@ -36,6 +39,7 @@ public class RandomAccessFileIO implements FileIO {
      * Creates I/O implementation for specified {@code file}
      *
      * @param file File.
+     * @param modes Open modes.
      */
     public RandomAccessFileIO(File file, OpenOption... modes) throws IOException {
         this.ch = FileChannel.open(file.toPath(), modes);

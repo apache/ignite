@@ -36,8 +36,6 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static java.nio.file.StandardOpenOption.READ;
-
 /**
  * Iterator over WAL segments. This abstract class provides most functionality for reading records in log.
  * Subclasses are to override segment switching functionality
@@ -260,7 +258,7 @@ public abstract class AbstractWalRecordsIterator
         @Nullable final FileWALPointer start)
         throws IgniteCheckedException, FileNotFoundException {
         try {
-            FileIO fileIO = ioFactory.create(desc.file, READ);
+            FileIO fileIO = ioFactory.create(desc.file);
 
             try {
                 FileInput in = new FileInput(fileIO, buf);

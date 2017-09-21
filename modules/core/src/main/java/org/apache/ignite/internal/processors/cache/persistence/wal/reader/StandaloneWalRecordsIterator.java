@@ -52,7 +52,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static java.nio.file.StandardOpenOption.READ;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.HEADER_RECORD_SIZE;
 
 /**
@@ -203,7 +202,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
             FileWALPointer ptr;
 
             try (
-                FileIO fileIO = ioFactory.create(file, READ);
+                FileIO fileIO = ioFactory.create(file);
                 ByteBufferExpander buf = new ByteBufferExpander(HEADER_RECORD_SIZE, ByteOrder.nativeOrder())
             ) {
                 final DataInput in = new FileInput(fileIO, buf);
