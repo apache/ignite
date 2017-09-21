@@ -18,19 +18,19 @@
 package org.apache.ignite.compatibility.testframework.junits.logger;
 
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
 import org.apache.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
-import org.jsr166.ConcurrentHashMap8;
 
 /**
  * Listened version of {@link GridTestLog4jLogger} logger. Provides methods of registering and notifying listeners.
  */
 public class ListenedGridTestLog4jLogger extends GridTestLog4jLogger {
     /** Listeners. */
-    private final ConcurrentMap<UUID, IgniteInClosure<String>> lsnrs = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<UUID, IgniteInClosure<String>> lsnrs = new ConcurrentHashMap<>();
 
     /** {@inheritDoc} */
     public ListenedGridTestLog4jLogger(Logger impl) {
