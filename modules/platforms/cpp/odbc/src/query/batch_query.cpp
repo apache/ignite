@@ -164,6 +164,8 @@ namespace ignite
                 catch (const OdbcError& err)
                 {
                     diag.AddStatusRecord(err);
+
+                    return SqlResult::AI_ERROR;
                 }
                 catch (const IgniteError& err)
                 {

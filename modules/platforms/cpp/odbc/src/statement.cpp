@@ -1108,6 +1108,8 @@ namespace ignite
             catch (const OdbcError& err)
             {
                 AddStatusRecord(err);
+
+                return SqlResult::AI_ERROR;
             }
             catch (const IgniteError& err)
             {
