@@ -652,7 +652,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
 
     /**
      * IMPORTANT!
-     * Only purpose of this constructor is creating node which contains only necessary data to store on disc
+     * Only purpose of this constructor is creating node which contains necessary data to store on disc only
      * @param node to copy data from
      */
     public TcpDiscoveryNode(
@@ -667,6 +667,6 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
         this.daemon = node.isDaemon();
         this.clientRouterNodeId = node.isClient() ? node.id() : null;
 
-        attrs = Collections.emptyMap();
+        attrs = Collections.singletonMap(ATTR_NODE_CONSISTENT_ID, consistentId);
     }
 }
