@@ -32,10 +32,10 @@ import org.apache.ignite.internal.util.GridSpinBusyLock;
  */
 public class OdbcConnectionContext implements ClientListenerConnectionContext {
     /** Version 2.1.0. */
-    private static final ClientListenerProtocolVersion VER_2_1_0 = ClientListenerProtocolVersion.create(2, 1, 0);
+    public static final ClientListenerProtocolVersion VER_2_1_0 = ClientListenerProtocolVersion.create(2, 1, 0);
 
     /** Version 2.1.5: added "lazy" flag. */
-    private static final ClientListenerProtocolVersion VER_2_1_5 = ClientListenerProtocolVersion.create(2, 1, 5);
+    public static final ClientListenerProtocolVersion VER_2_1_5 = ClientListenerProtocolVersion.create(2, 1, 5);
 
     /** Current version. */
     private static final ClientListenerProtocolVersion CURRENT_VER = VER_2_1_5;
@@ -101,7 +101,7 @@ public class OdbcConnectionContext implements ClientListenerConnectionContext {
         handler = new OdbcRequestHandler(ctx, busyLock, maxCursors, distributedJoins,
                 enforceJoinOrder, replicatedOnly, collocated, lazy);
 
-        parser = new OdbcMessageParser(ctx);
+        parser = new OdbcMessageParser(ctx, ver);
     }
 
     /** {@inheritDoc} */
