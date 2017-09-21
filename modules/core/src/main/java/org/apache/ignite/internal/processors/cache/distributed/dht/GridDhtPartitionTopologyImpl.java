@@ -1786,10 +1786,21 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 for (Integer part : lost) {
                     long updSeq = updateSeq.incrementAndGet();
 
-                    GridDhtLocalPartition locPart = localPartition(part, resTopVer, false);
+                    GridDhtLocalPartition locPart = localPartition(part, resTopVer, false, true);
 
                     if (locPart != null) {
                         boolean marked = plc == PartitionLossPolicy.IGNORE ? locPart.own() : locPart.markLost();
+
+                        if (!marked && locPart.state() == RENTING)
+                            try {
+                                //TODO https://issues.apache.org/jira/browse/IGNITE-6433
+                                locPart.tryEvict();
+                                locPart.rent(false).get();
+                            }
+                            catch (IgniteCheckedException e) {
+                                U.error(log, "Failed to wait for RENTING partition eviction after partition LOST event",
+                                    e);
+                            }
 
                         if (marked)
                             updateLocal(locPart.id(), locPart.state(), updSeq, resTopVer);
