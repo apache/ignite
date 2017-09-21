@@ -538,6 +538,6 @@ public class FilePageStore implements PageStore {
         if (!inited)
             return 0;
 
-        return (int)(allocated.get() - headerSize()) / pageSize;
+        return (int)((allocated.get() - headerSize()) / pageSize);
     }
 }
