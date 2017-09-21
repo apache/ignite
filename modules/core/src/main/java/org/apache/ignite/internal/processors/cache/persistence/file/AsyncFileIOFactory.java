@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.file;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.channels.AsynchronousFileChannel;
 import java.nio.file.OpenOption;
 
 import static java.nio.file.StandardOpenOption.CREATE;
@@ -26,9 +27,9 @@ import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.WRITE;
 
 /**
- * File I/O factory which provides RandomAccessFileIO implementation of FileIO.
+ * File I/O factory which uses {@link AsynchronousFileChannel} based implementation of FileIO.
  */
-public class RandomAccessFileIOFactory implements FileIOFactory {
+public class AsyncFileIOFactory implements FileIOFactory {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -37,8 +38,15 @@ public class RandomAccessFileIOFactory implements FileIOFactory {
         return create(file, CREATE, READ, WRITE);
     }
 
+    /** */
+    private ThreadLocal<AsyncFileIO.ChannelOpFuture> holder = new ThreadLocal<AsyncFileIO.ChannelOpFuture>() {
+        @Override protected AsyncFileIO.ChannelOpFuture initialValue() {
+            return new AsyncFileIO.ChannelOpFuture();
+        }
+    };
+
     /** {@inheritDoc} */
     @Override public FileIO create(File file, OpenOption... modes) throws IOException {
-        return new RandomAccessFileIO(file, modes);
+        return new AsyncFileIO(file, holder, modes);
     }
 }
