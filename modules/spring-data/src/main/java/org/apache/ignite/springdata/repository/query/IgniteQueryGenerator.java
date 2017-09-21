@@ -29,7 +29,6 @@ import org.springframework.data.repository.query.parser.PartTree;
  * Ignite query generator for Spring Data framework.
  */
 public class IgniteQueryGenerator {
-
     /**
      * @param mtd Method.
      * @param metadata Metadata.
