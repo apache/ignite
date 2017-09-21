@@ -67,6 +67,9 @@ namespace
     /** SQL state 22026 constant. */
     const std::string STATE_22026 = "22026";
 
+    /** SQL state 23000 constant. */
+    const std::string STATE_23000 = "23000";
+
     /** SQL state 24000 constant. */
     const std::string STATE_24000 = "24000";
 
@@ -280,6 +283,9 @@ namespace ignite
 
                     case SqlState::S22026_DATA_LENGTH_MISMATCH:
                         return STATE_22026;
+
+                    case SqlState::S23000_INTEGRITY_CONSTRAINT_VIOLATION:
+                        return STATE_23000;
 
                     case SqlState::S24000_INVALID_CURSOR_STATE:
                         return STATE_24000;

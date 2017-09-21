@@ -83,6 +83,9 @@ namespace ignite
                 /** String data, length mismatch. */
                 S22026_DATA_LENGTH_MISMATCH,
 
+                /** Integrity constraint violation. */
+                S23000_INTEGRITY_CONSTRAINT_VIOLATION,
+
                 /** Invalid cursor state. */
                 S24000_INVALID_CURSOR_STATE,
 

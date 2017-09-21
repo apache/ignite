@@ -212,7 +212,7 @@ BOOST_AUTO_TEST_CASE(TestDuplicateKey)
     ret = SQLExecDirect(stmt, insertReq, SQL_NTS);
 
     BOOST_REQUIRE_EQUAL(ret, SQL_ERROR);
-    BOOST_CHECK_EQUAL(GetOdbcErrorState(SQL_HANDLE_STMT, stmt), "07006");
+    BOOST_CHECK_EQUAL(GetOdbcErrorState(SQL_HANDLE_STMT, stmt), "23000");
 }
 
 BOOST_AUTO_TEST_CASE(TestUpdateKey)

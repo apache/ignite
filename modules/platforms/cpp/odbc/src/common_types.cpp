@@ -136,6 +136,8 @@ namespace ignite
                     return SqlState::SHY004_INVALID_SQL_DATA_TYPE;
 
                 case ResponseStatus::DUPLICATE_KEY:
+                    return SqlState::S23000_INTEGRITY_CONSTRAINT_VIOLATION;
+
                 case ResponseStatus::KEY_UPDATE:
                     return SqlState::S07006_RESTRICTION_VIOLATION;
 
