@@ -729,6 +729,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
 
         desc.table().addColumns(cols, ifColNotExists);
+
+        clearCachedQueries();
     }
 
     /**

@@ -252,9 +252,6 @@ public class DdlStatementsProcessor {
 
                         fut = ctx.query().dynamicColumnAdd(tbl.cacheName(), cmd.schemaName(),
                             tbl.rowDescriptor().type().tableName(), cols, cmd.ifTableExists(), cmd.ifNotExists());
-
-                        // Clear cache query on ADD columns.
-                        idx.clearCachedQueries();
                     }
                 }
             }
