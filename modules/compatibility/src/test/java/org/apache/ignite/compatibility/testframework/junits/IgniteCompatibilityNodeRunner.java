@@ -95,9 +95,9 @@ public class IgniteCompatibilityNodeRunner extends IgniteNodeRunner {
         GridTestUtils.setFieldValue(new IgniteNodeRunner(), "ignite", ignite);
 
         if (args.length == 5) {
-            IgniteInClosure<Ignite> iClo = readClosureFromFileAndDelete(args[4]);
+            IgniteInClosure<Ignite> clo = readClosureFromFileAndDelete(args[4]);
 
-            iClo.apply(ignite);
+            clo.apply(ignite);
         }
 
         X.println(IgniteCompatibilityAbstractTest.SYNCHRONIZATION_LOG_MESSAGE_PREPARED + nodeId);

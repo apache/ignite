@@ -101,13 +101,13 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
      * @param idx Index of the grid to start.
      * @param ver Ignite version.
      * @param cfgClo IgniteInClosure for post-configuration.
-     * @param iClo IgniteInClosure for actions on started Ignite.
+     * @param clo IgniteInClosure for actions on started Ignite.
      * @return Started grid.
      * @throws Exception In case of an error.
      */
     protected IgniteEx startGrid(int idx, final String ver,
-        IgniteInClosure<IgniteConfiguration> cfgClo, IgniteInClosure<Ignite> iClo) throws Exception {
-        return startGrid(getTestIgniteInstanceName(idx), ver, cfgClo, iClo);
+        IgniteInClosure<IgniteConfiguration> cfgClo, IgniteInClosure<Ignite> clo) throws Exception {
+        return startGrid(getTestIgniteInstanceName(idx), ver, cfgClo, clo);
     }
 
     /**
@@ -119,18 +119,18 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
      * @param igniteInstanceName Instance name.
      * @param ver Ignite version.
      * @param cfgClo IgniteInClosure for post-configuration.
-     * @param iClo IgniteInClosure for actions on started Ignite.
+     * @param clo IgniteInClosure for actions on started Ignite.
      * @return Started grid.
      * @throws Exception In case of an error.
      */
     protected IgniteEx startGrid(final String igniteInstanceName, final String ver,
-        IgniteInClosure<IgniteConfiguration> cfgClo, IgniteInClosure<Ignite> iClo) throws Exception {
+        IgniteInClosure<IgniteConfiguration> cfgClo, IgniteInClosure<Ignite> clo) throws Exception {
         assert isMultiJvm() : "MultiJvm mode must be switched on for the node stop properly.";
 
         assert !igniteInstanceName.equals(getTestIgniteInstanceName(0)) : "Use default instance name for local nodes only.";
 
         final String cfgCloPath = IgniteCompatibilityNodeRunner.storeToFile(cfgClo);
-        final String iCloPath = IgniteCompatibilityNodeRunner.storeToFile(iClo);
+        final String cloPath = IgniteCompatibilityNodeRunner.storeToFile(clo);
 
         final IgniteConfiguration cfg = getConfiguration(igniteInstanceName); // stub - won't be used at node startup
 
@@ -147,7 +147,7 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
                 return cfgCloPath + " " + igniteInstanceName + " "
                     + getId() + " "
                     + (rmJvmInstance == null ? getId() : ((IgniteProcessProxy)rmJvmInstance).getId())
-                    + (iCloPath == null ? "" : " " + iCloPath);
+                    + (cloPath == null ? "" : " " + cloPath);
             }
 
             @Override protected Collection<String> filteredJvmArgs() throws Exception {
