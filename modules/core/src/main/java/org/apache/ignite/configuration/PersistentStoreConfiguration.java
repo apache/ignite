@@ -83,7 +83,7 @@ public class PersistentStoreConfiguration implements Serializable {
     public static final String DFLT_WAL_ARCHIVE_PATH = "db/wal/archive";
 
     /** Default write throttling enabled. */
-    public static final boolean DFLT_WRITE_THROTTLING_ENABLED = false;
+    public static final boolean DFLT_WRITE_THROTTLING_ENABLED = true;
 
     /** */
     private String persistenceStorePath;
