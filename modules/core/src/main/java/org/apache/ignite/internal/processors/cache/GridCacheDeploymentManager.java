@@ -161,7 +161,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
      * Callback on method enter.
      */
     public void onEnter() {
-
+        // No-op.
     }
 
     /**
@@ -707,8 +707,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
                             d.loaderId(),
                             d.userVersion(),
                             d.mode(),
-                            participants,
-                            false
+                            participants
                         );
                     }
                 }

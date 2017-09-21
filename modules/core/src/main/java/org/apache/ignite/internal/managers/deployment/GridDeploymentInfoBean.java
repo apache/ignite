@@ -72,20 +72,17 @@ public class GridDeploymentInfoBean implements Message, GridDeploymentInfo, Exte
      * @param userVer User version.
      * @param depMode Deployment mode.
      * @param participants Participants.
-     * @param locDepOwner Local deployment owner flag.
      */
     public GridDeploymentInfoBean(
         IgniteUuid clsLdrId,
         String userVer,
         DeploymentMode depMode,
-        Map<UUID, IgniteUuid> participants,
-        boolean locDepOwner
+        Map<UUID, IgniteUuid> participants
     ) {
         this.clsLdrId = clsLdrId;
         this.depMode = depMode;
         this.userVer = userVer;
         this.participants = participants;
-        this.locDepOwner = locDepOwner;
     }
 
     /**
