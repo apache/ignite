@@ -76,8 +76,7 @@ public class AsyncFileIO implements FileIO {
             }
         });
 
-        this.ch = AsynchronousFileChannel.open(file.toPath(),
-            EnumSet.of(CREATE, READ, WRITE), execSvc);
+        this.ch = AsynchronousFileChannel.open(file.toPath(), EnumSet.of(CREATE, READ, WRITE), execSvc);
     }
 
     /** {@inheritDoc} */
