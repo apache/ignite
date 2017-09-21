@@ -1652,11 +1652,8 @@ public class IgniteTxHandler {
                                             if (val == null)
                                                 val = cacheCtx.toCacheObject(cacheCtx.store().load(null, entry.key()));
 
-                                            if (val != null) {
-                                                cacheCtx.validateKeyAndValue(entry.key(), val);
-
+                                            if (val != null)
                                                 entry.readValue(val);
-                                            }
 
                                         break;
                                     }
