@@ -672,6 +672,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 "Checkpoint page buffer size is too big, setting to an adjusted cache size [size="
                     + U.readableSize(cacheSize, false) + ",  memPlc=" + plcCfg.getName() + ']');
 
+        boolean writeThrottlingEnabled = persistenceCfg.isWriteThrottlingEnabled();
+
+        if (IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_OVERRIDE_WRITE_THROTTLING_ENABLED, false))
+            writeThrottlingEnabled = true;
+
         PageMemoryImpl pageMem = new PageMemoryImpl(
             memProvider,
             calculateFragmentSizes(
@@ -705,7 +710,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             },
             this,
             memMetrics,
-            persistenceCfg.isWriteThrottlingEnabled()
+            writeThrottlingEnabled
         );
 
         memMetrics.pageMemory(pageMem);

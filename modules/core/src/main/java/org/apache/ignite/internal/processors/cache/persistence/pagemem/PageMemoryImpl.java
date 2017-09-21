@@ -38,6 +38,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.DirectMemoryRegion;
@@ -319,9 +320,12 @@ public class PageMemoryImpl implements PageMemoryEx {
 
             totalAllocated += reg.size();
 
-            boolean throttleEnabled = sharedCtx.gridConfig().getPersistentStoreConfiguration().isWriteThrottlingEnabled();
+            boolean throttlingEnabled = sharedCtx.gridConfig().getPersistentStoreConfiguration().isWriteThrottlingEnabled();
 
-            segments[i] = new Segment(i, regions.get(i), checkpointPool.pages() / segments.length, throttleEnabled);
+            if (IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_OVERRIDE_WRITE_THROTTLING_ENABLED, false))
+                throttlingEnabled = true;
+
+            segments[i] = new Segment(i, regions.get(i), checkpointPool.pages() / segments.length, throttlingEnabled);
 
             pages += segments[i].pages();
             totalTblSize += segments[i].tableSize();
