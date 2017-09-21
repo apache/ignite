@@ -106,6 +106,7 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
      * @param idx Index of the grid to start.
      * @param ver Ignite version.
      * @param cfgClos IgniteInClosure for post-configuration.
+     * @param iClos IgniteInClosure for actions on started Ignite.
      * @return Started grid.
      * @throws Exception In case of an error.
      */
@@ -123,6 +124,7 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
      * @param igniteInstanceName Instance name.
      * @param ver Ignite version.
      * @param cfgClos IgniteInClosure for post-configuration.
+     * @param iClos IgniteInClosure for actions on started Ignite.
      * @return Started grid.
      * @throws Exception In case of an error.
      */
