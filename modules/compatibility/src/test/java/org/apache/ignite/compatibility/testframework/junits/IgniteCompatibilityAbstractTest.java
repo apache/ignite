@@ -160,7 +160,7 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
     }
 
     /**
-     * Starts new grid of given version and name <b>in separate JVM</b>.
+     * Starts new Ignite instance of given version and name <b>in separate JVM</b>.
      *
      * Uses an ignite-core artifact in the Maven local repository, if it isn't exists there, it will be downloaded and
      * stored via Maven.
