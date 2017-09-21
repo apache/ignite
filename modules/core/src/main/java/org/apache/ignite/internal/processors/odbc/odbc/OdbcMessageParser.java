@@ -30,6 +30,7 @@ import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.odbc.ClientListenerMessageParser;
+import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 import org.apache.ignite.internal.processors.odbc.SqlListenerUtils;
@@ -51,11 +52,16 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
     /** Logger. */
     private final IgniteLogger log;
 
+    /** Protocol version */
+    private final ClientListenerProtocolVersion ver;
+
     /**
      * @param ctx Context.
+     * @param ver Protocol version.
      */
-    public OdbcMessageParser(GridKernalContext ctx) {
+    public OdbcMessageParser(GridKernalContext ctx, ClientListenerProtocolVersion ver) {
         this.ctx = ctx;
+        this.ver = ver;
 
         log = ctx.log(getClass());
 
@@ -194,7 +200,11 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
             BinaryThreadLocalContext.get().schemaHolder(), null);
 
         // Writing status.
-        writer.writeByte((byte) msg.status());
+        if (ver.compareTo(OdbcConnectionContext.VER_2_1_5) < 0) {
+            writer.writeByte((byte) (msg.status() == ClientListenerResponse.STATUS_SUCCESS ?
+                ClientListenerResponse.STATUS_SUCCESS : ClientListenerResponse.STATUS_FAILED));
+        } else
+            writer.writeInt(msg.status());
 
         if (msg.status() != ClientListenerResponse.STATUS_SUCCESS) {
             writer.writeString(msg.error());
@@ -234,6 +244,9 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
             if (res.errorMessage() != null) {
                 writer.writeLong(res.errorSetIdx());
                 writer.writeString(res.errorMessage());
+
+                if (ver.compareTo(OdbcConnectionContext.VER_2_1_5) >= 0)
+                    writer.writeInt(res.errorCode());
             }
         }
         else if (res0 instanceof OdbcQueryFetchResult) {

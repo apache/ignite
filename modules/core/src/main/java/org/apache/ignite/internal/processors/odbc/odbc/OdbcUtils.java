@@ -18,7 +18,9 @@
 package org.apache.ignite.internal.processors.odbc.odbc;
 
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.odbc.SqlListenerDataTypes;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 
 /**
  * Various ODBC utility methods.
@@ -141,11 +143,29 @@ public class OdbcUtils {
     }
 
     /**
-     * Retrieves error message from exception.
+     * Tries to retrieve SQL error code of the exception. If the exception is not {@link IgniteSQLException} returns
+     * {@link IgniteQueryErrorCode#UNKNOWN}.
+     *
+     * @param err Error to retrieve code from.
+     * @return Error code.
+     */
+    public static int tryRetrieveSqlErrorCode(Throwable err) {
+        int errorCode = IgniteQueryErrorCode.UNKNOWN;
+
+        if (err instanceof IgniteSQLException)
+            errorCode = ((IgniteSQLException) err).statusCode();
+
+        return errorCode;
+    }
+
+    /**
+     * Tries to retrieve H2 engine error message from exception. If the exception is not of type
+     * "org.h2.jdbc.JdbcSQLException" returns original error message.
+     *
      * @param err Exception.
      * @return Error message.
      */
-    public static String retrieveH2ErrorMessage(Throwable err) {
+    public static String tryRetrieveH2ErrorMessage(Throwable err) {
         String msg = err.getMessage();
 
         Throwable e = err.getCause();
