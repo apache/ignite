@@ -447,11 +447,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /** {@inheritDoc} */
-    @Override protected void initPageMemoryDataStructures(MemoryConfiguration dbCfg) throws IgniteCheckedException {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
     @Override public void onActivate(GridKernalContext ctx) throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("Activate database manager [id=" + cctx.localNodeId() +
@@ -527,6 +522,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** {@inheritDoc} */
     @Override protected IgniteOutClosure<Float> fillFactorProvider(final String memPlcName) {
+        if (freeListMap != null && freeListMap.containsKey(memPlcName))
+            return super.fillFactorProvider(memPlcName);
+
         return new IgniteOutClosure<Float>() {
             @Override public Float apply() {
                 long loadSize = 0L;
@@ -654,6 +652,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         MemoryPolicyConfiguration plcCfg,
         MemoryMetricsImpl memMetrics
     ) {
+        if (!plcCfg.isPersistenceEnabled())
+            return super.createPageMemory(memProvider, memCfg, plcCfg, memMetrics);
+
         memMetrics.persistenceEnabled(true);
 
         long cacheSize = plcCfg.getMaxSize();
@@ -709,6 +710,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** {@inheritDoc} */
     @Override protected void checkPolicyEvictionProperties(MemoryPolicyConfiguration plcCfg, MemoryConfiguration dbCfg)
         throws IgniteCheckedException {
+        if (!plcCfg.isPersistenceEnabled())
+            super.checkPolicyEvictionProperties(plcCfg, dbCfg);
+
         if (plcCfg.getPageEvictionMode() != DataPageEvictionMode.DISABLED)
             U.warn(log, "Page eviction mode for [" + plcCfg.getName() + "] memory region is ignored " +
                 "because Ignite Native Persistence is enabled");
@@ -993,6 +997,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             return true;
 
         for (MemoryPolicy memPlc : memPlcs) {
+            if (!memPlc.config().isPersistenceEnabled())
+                continue;
+
             PageMemoryEx pageMemEx = (PageMemoryEx)memPlc.pageMemory();
 
             if (!pageMemEx.safeToUpdate())
@@ -1016,6 +1023,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             if (memPlcs != null) {
                 for (MemoryPolicy memPlc : memPlcs) {
+                    if (!memPlc.config().isPersistenceEnabled())
+                        continue;
+
                     PageMemoryEx mem = (PageMemoryEx)memPlc.pageMemory();
 
                     if (mem != null && !mem.safeToUpdate()) {
@@ -1650,6 +1660,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 // Local cache has no partitions and its states.
                 continue;
             }
+
+            if (!grp.memoryPolicy().config().isPersistenceEnabled())
+                continue;
 
             int grpId = grp.groupId();
 
@@ -2375,6 +2388,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             int pagesNum = 0;
 
             for (MemoryPolicy memPlc : memoryPolicies()) {
+                if (!memPlc.config().isPersistenceEnabled())
+                    continue;
+
                 GridMultiCollectionWrapper<FullPageId> nextCpPagesCol = ((PageMemoryEx)memPlc.pageMemory()).beginCheckpoint();
 
                 pagesNum += nextCpPagesCol.size();
@@ -2390,8 +2406,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          */
         private void markCheckpointEnd(Checkpoint chp) throws IgniteCheckedException {
             synchronized (this) {
-                for (MemoryPolicy memPlc : memoryPolicies())
+                for (MemoryPolicy memPlc : memoryPolicies()) {
+                    if (!memPlc.config().isPersistenceEnabled())
+                        continue;
+
                     ((PageMemoryEx)memPlc.pageMemory()).finishCheckpoint();
+                }
 
                 if (chp.hasDelta())
                     writeCheckpointEntry(
@@ -2550,6 +2570,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     CacheGroupContext grp = context().cache().cacheGroup(grpId);
 
                     if (grp == null)
+                        continue;
+
+                    if (!grp.memoryPolicy().config().isPersistenceEnabled())
                         continue;
 
                     PageMemoryEx pageMem = (PageMemoryEx)grp.memoryPolicy().pageMemory();

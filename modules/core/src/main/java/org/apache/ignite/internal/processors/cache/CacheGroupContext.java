@@ -862,7 +862,7 @@ public class CacheGroupContext {
         else
             preldr = new GridCachePreloaderAdapter(this);
 
-        if (ctx.kernalContext().config().getPersistentStoreConfiguration() != null) {
+        if (persistenceEnabled()) {
             try {
                 offheapMgr = new GridCacheOffheapManager();
             }
@@ -876,6 +876,14 @@ public class CacheGroupContext {
         offheapMgr.start(ctx, this);
 
         ctx.affinity().onCacheGroupCreated(this);
+    }
+
+    /**
+     * @return Persistence enabled flag.
+     */
+    public boolean persistenceEnabled() {
+        return ctx.kernalContext().config().getPersistentStoreConfiguration() != null &&
+            memPlc.config().isPersistenceEnabled();
     }
 
     /**

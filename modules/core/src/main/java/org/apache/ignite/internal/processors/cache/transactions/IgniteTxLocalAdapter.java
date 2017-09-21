@@ -647,7 +647,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                     if (dhtVer == null)
                                         dhtVer = explicitVer != null ? explicitVer : writeVersion();
 
-                                    if (cctx.wal() != null && !writeEntries().isEmpty()
+                                    if (cacheCtx.group().persistenceEnabled() && !writeEntries().isEmpty()
                                         && op != NOOP && op != RELOAD && op != READ)
                                         ptr = cctx.wal().log(new DataRecord(new DataEntry(
                                             cacheCtx.cacheId(),
