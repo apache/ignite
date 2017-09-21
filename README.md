@@ -41,7 +41,7 @@ With the Ignite Persistence enabled, you no longer need to keep all the data and
 
 <p align="center">
     <a href="https://apacheignite.readme.io/docs/distributed-persistent-store">
-        <img src="https://ignite.apache.org/images/native_persistence.png" width="400px"/>
+        <img src="https://ignite.apache.org/images/native_persistence.png?renew" width="400px"/>
     </a>
 </p>
 
