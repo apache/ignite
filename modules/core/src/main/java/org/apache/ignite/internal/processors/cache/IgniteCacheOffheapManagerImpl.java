@@ -1381,9 +1381,9 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
                 boolean first = true;
 
-                while (cur.next()) {
-                    boolean activeTx = false;
+                boolean activeTx = false;
 
+                while (cur.next()) {
                     CacheDataRow oldVal = cur.get();
 
                     assert oldVal.link() != 0 : oldVal;
