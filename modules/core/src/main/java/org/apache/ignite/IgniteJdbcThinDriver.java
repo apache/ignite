@@ -34,8 +34,6 @@ import org.apache.ignite.internal.jdbc.thin.JdbcThinConnection;
 import org.apache.ignite.internal.jdbc.thin.JdbcThinUtils;
 import org.apache.ignite.internal.util.typedef.F;
 
-import static org.apache.ignite.internal.processors.query.QueryUtils.normalizeSchemaName;
-
 /**
  * JDBC driver thin implementation for In-Memory Data Grid.
  * <p>
@@ -258,10 +256,8 @@ public class IgniteJdbcThinDriver implements Driver {
                 "'host:port[/schemaName]'): " + url);
         }
 
-        // Gets schema from URL string.
-        String schemaName = pathParts.length == 2 ? pathParts[1] : null;
-
-        return normalizeSchemaName(null, schemaName);
+        // Gets schema from URL string & returns.
+        return pathParts.length == 2 ? pathParts[1] : null;
     }
 
     /**
