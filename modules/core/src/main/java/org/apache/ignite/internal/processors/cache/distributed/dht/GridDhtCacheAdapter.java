@@ -658,11 +658,11 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                         ctx.validateKeyAndValue(key, cacheVal);
                     }
                     catch (Exception e) {
-                        if (log.isDebugEnabled()) {
+                        if (log.isDebugEnabled())
                             log.debug("Value loaded from store can't be used [" +
                                 "key='" + key + "'" +
                                 ", error=" + e.getMessage() + ']');
-                        }
+
                         return;
                     }
 

@@ -3489,11 +3489,10 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             ctx.validateKeyAndValue(key, cacheVal);
         }
         catch(Exception e) {
-            if (log.isDebugEnabled()) {
+            if (log.isDebugEnabled())
                 log.debug("Value loaded from store can't be used [" +
                     "key='" + key + "'" +
                     ", error=" + e.getMessage() + ']');
-            }
 
             return;
         }

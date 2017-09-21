@@ -1069,11 +1069,10 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                                     cctx.validateKeyAndValue(key, val0);
                                 }
                                 catch (Exception e) {
-                                    if (log.isDebugEnabled()) {
+                                    if (log.isDebugEnabled())
                                         log.debug("Value loaded from store can't be used [" +
                                             "key='" + key + "'" +
                                             ", error=" + e.getMessage() + ']');
-                                    }
 
                                     return;
                                 }

@@ -154,6 +154,8 @@ public class IgniteCacheStoreReadThroughNotNullConstraintTest extends GridCommon
         if (writeThrough)
             cfg.setWriteThrough(true);
 
+        cfg.setLoadPreviousValue(true);
+
         return cfg;
     }
 

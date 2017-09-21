@@ -714,11 +714,10 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     cctx.validateKeyAndValue(key, ret);
                 }
                 catch (Exception e) {
-                    if (log.isDebugEnabled()) {
+                    if (log.isDebugEnabled())
                         log.debug("Value loaded from store can't be used [" +
                             "key='" + key + "'" +
                             ", error=" + e.getMessage() + ']');
-                    }
 
                     return null;
                 }
@@ -1365,11 +1364,10 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                         cctx.validateKeyAndValue(key, old);
                     }
                     catch (Exception e) {
-                        if (log.isDebugEnabled()) {
+                        if (log.isDebugEnabled())
                             log.debug("Value loaded from store can't be used [" +
                                 "key='" + key + "'" +
                                 ", error=" + e.getMessage() + ']');
-                        }
 
                         old = null;
                     }
@@ -4118,11 +4116,10 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                         cctx.validateKeyAndValue(entry.key, storeLoadedVal);
                     }
                     catch (Exception e) {
-                        if (log.isDebugEnabled()) {
+                        if (log.isDebugEnabled())
                             log.debug("Value loaded from store can't be used [" +
                                 "key='" + entry.key + "'" +
                                 ", error=" + e.getMessage() + ']');
-                        }
 
                         storeLoadedVal = null;
                     }
