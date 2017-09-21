@@ -82,6 +82,9 @@ public class PersistentStoreConfiguration implements Serializable {
     /** Default wal archive directory. */
     public static final String DFLT_WAL_ARCHIVE_PATH = "db/wal/archive";
 
+    /** Default write throttling enabled. */
+    public static final boolean DFLT_WRITE_THROTTLING_ENABLED = false;
+
     /** */
     private String persistenceStorePath;
 
@@ -156,6 +159,11 @@ public class PersistentStoreConfiguration implements Serializable {
      *  Time interval (in milliseconds) for running auto archiving for incompletely WAL segment
      */
     private long walAutoArchiveAfterInactivity = -1;
+
+    /**
+     * If true, threads that generate dirty pages too fast during ongoing checkpoint will be throttled.
+     */
+    private boolean writeThrottlingEnabled = DFLT_WRITE_THROTTLING_ENABLED;
 
     /**
      * Returns a path the root directory where the Persistent Store will persist data and indexes.
@@ -236,7 +244,7 @@ public class PersistentStoreConfiguration implements Serializable {
     /**
      * Sets a number of threads to use for the checkpointing purposes.
      *
-     * @param checkpointingThreads Number of checkpointing threads. One thread is used by default.
+     * @param checkpointingThreads Number of checkpointing threads. Four threads are used by default.
      * @return {@code this} for chaining.
      */
     public PersistentStoreConfiguration setCheckpointingThreads(int checkpointingThreads) {
@@ -393,6 +401,24 @@ public class PersistentStoreConfiguration implements Serializable {
      */
     public PersistentStoreConfiguration setMetricsEnabled(boolean metricsEnabled) {
         this.metricsEnabled = metricsEnabled;
+
+        return this;
+    }
+
+    /**
+     * Gets flag indicating whether write throttling is enabled.
+     */
+    public boolean isWriteThrottlingEnabled() {
+        return writeThrottlingEnabled;
+    }
+
+    /**
+     * Sets flag indicating whether write throttling is enabled.
+     *
+     * @param writeThrottlingEnabled Write throttling enabled flag.
+     */
+    public PersistentStoreConfiguration setWriteThrottlingEnabled(boolean writeThrottlingEnabled) {
+        this.writeThrottlingEnabled = writeThrottlingEnabled;
 
         return this;
     }
