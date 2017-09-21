@@ -17,45 +17,49 @@
 
 package org.apache.ignite.internal.processors.platform.client;
 
-import org.apache.ignite.binary.BinaryRawReader;
-import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
+import org.apache.ignite.IgniteException;
+
+import java.sql.SQLException;
 
 /**
- * Thin client request.
+ * Client exception.
  */
-public class ClientRequest implements ClientListenerRequest {
-    /** Request id. */
-    private final long reqId;
+public class IgniteClientException extends IgniteException {
+    /** */
+    private static final long serialVersionUID = 0L;
+
+    /** Code to return as {@link SQLException#vendorCode} */
+    private final int statusCode;
 
     /**
      * Constructor.
      *
-     * @param reader Reader.
+     * @param statusCode Status code (see {@link ClientStatus}).
+     * @param msg Message.
      */
-    public ClientRequest(BinaryRawReader reader) {
-        reqId = reader.readLong();
+    public IgniteClientException(int statusCode, String msg) {
+        this(statusCode, msg, null);
     }
 
     /**
      * Constructor.
      *
-     * @param reqId Request id.
+     * @param statusCode Status code (see {@link ClientStatus}).
+     * @param msg Message.
+     * @param cause Cause.
      */
-    public ClientRequest(long reqId) {
-        this.reqId = reqId;
-    }
+    public IgniteClientException(int statusCode, String msg, Exception cause) {
+        super(msg, cause);
 
-    /** {@inheritDoc} */
-    @Override public long requestId() {
-        return reqId;
+        this.statusCode = statusCode;
     }
 
     /**
-     * Processes the request.
+     * Gets the status code.
      *
-     * @return Response.
+     * @return Status code.
      */
-    public ClientResponse process(ClientConnectionContext ctx) {
-        return new ClientResponse(reqId);
+    public int statusCode() {
+        return statusCode;
     }
 }

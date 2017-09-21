@@ -54,6 +54,7 @@ import org.apache.ignite.jdbc.thin.JdbcThinMissingLongArrayResultsTest;
 import org.apache.ignite.jdbc.thin.JdbcThinNoDefaultSchemaTest;
 import org.apache.ignite.jdbc.thin.JdbcThinPreparedStatementSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinResultSetSelfTest;
+import org.apache.ignite.jdbc.thin.JdbcThinSchemaCaseTest;
 import org.apache.ignite.jdbc.thin.JdbcThinStatementSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinUpdateStatementSelfTest;
 
@@ -124,6 +125,7 @@ public class IgniteJdbcDriverTestSuite extends TestSuite {
         suite.addTest(new TestSuite(JdbcThinStatementSelfTest.class));
         suite.addTest(new TestSuite(JdbcThinComplexQuerySelfTest.class));
         suite.addTest(new TestSuite(JdbcThinNoDefaultSchemaTest.class));
+        suite.addTest(new TestSuite(JdbcThinSchemaCaseTest.class));
         suite.addTest(new TestSuite(JdbcThinEmptyCacheSelfTest.class));
         suite.addTest(new TestSuite(JdbcThinMetadataSelfTest.class));
         suite.addTest(new TestSuite(JdbcThinErrorsSelfTest.class));

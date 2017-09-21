@@ -15,11 +15,31 @@
  * limitations under the License.
  */
 
-import angular from 'angular';
-import component from './component';
+package org.apache.ignite.internal.processors.platform.client;
 
-export default angular
-    .module('ignite-console.version-picker', [
-        'ignite-console.services'
-    ])
-    .component('versionPicker', component);
+/**
+ * Raw request, produces a ClientResponse directly.
+ */
+public class ClientRawRequest extends ClientRequest {
+    /** Status code. */
+    private final int status;
+
+    /** Message. */
+    private final String msg;
+
+    /**
+     * Initializes a new instance of ClientRawRequest class.
+     * @param reqId Request id.
+     * @param msg Message.
+     */
+    public ClientRawRequest(long reqId, int status, String msg) {
+        super(reqId);
+        this.status = status;
+        this.msg = msg;
+    }
+
+    /** {@inheritDoc} */
+    @Override public ClientResponse process(ClientConnectionContext ctx) {
+        return new ClientResponse(requestId(), status, msg);
+    }
+}
