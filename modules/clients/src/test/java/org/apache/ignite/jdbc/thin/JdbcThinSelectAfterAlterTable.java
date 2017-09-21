@@ -100,7 +100,6 @@ public class JdbcThinSelectAfterAlterTable extends GridCommonAbstractTest {
         stmt = conn.createStatement();
 
         stmt.executeUpdate("CREATE TABLE person (id LONG, name VARCHAR, city_id LONG, PRIMARY KEY (id, city_id))");
-
         stmt.executeUpdate("INSERT INTO person (id, name, city_id) values (1, 'name_1', 11)");
 
         stmt.executeQuery("select * from person");
@@ -138,8 +137,9 @@ public class JdbcThinSelectAfterAlterTable extends GridCommonAbstractTest {
     @SuppressWarnings({"ThrowableResultOfMethodCallIgnored", "unchecked"})
     public void testSelectAfterAlterTableMultiNode() throws Exception {
         try (Connection conn2 = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1:"
-            + Integer.toString(ClientConnectorConfiguration.DFLT_PORT + 1))) {
-            try(Statement stmt2 = conn2.createStatement()) {
+            + (ClientConnectorConfiguration.DFLT_PORT + 1))) {
+
+            try (Statement stmt2 = conn2.createStatement()) {
                 stmt2.executeUpdate("alter table person add age int");
             }
         }
