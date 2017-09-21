@@ -24,6 +24,7 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -40,8 +41,14 @@ public class JdbcThinSelectAfterAlterTable extends GridCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
+    /** Client connection port. */
+    private int cliPort = ClientConnectorConfiguration.DFLT_PORT;
+
     /** JDBC connection. */
     private Connection conn;
+
+    /** JDBC statement. */
+    private Statement stmt;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -54,6 +61,8 @@ public class JdbcThinSelectAfterAlterTable extends GridCommonAbstractTest {
         disco.setIpFinder(IP_FINDER);
 
         cfg.setDiscoverySpi(disco);
+
+        cfg.setClientConnectorConfiguration(new ClientConnectorConfiguration().setPort(cliPort++));
 
         return cfg;
     }
@@ -88,10 +97,19 @@ public class JdbcThinSelectAfterAlterTable extends GridCommonAbstractTest {
         super.beforeTest();
 
         conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1");
+
+        stmt = conn.createStatement();
+
+        stmt.executeUpdate("CREATE TABLE person (id LONG, name VARCHAR, city_id LONG, PRIMARY KEY (id, city_id))");
+
+        stmt.executeUpdate("INSERT INTO person (id, name, city_id) values (1, 'name_1', 11)");
+
+        stmt.executeQuery("select * from person");
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
+        stmt.close();
         conn.close();
 
         // Destroy all SQL caches after test.
@@ -109,41 +127,48 @@ public class JdbcThinSelectAfterAlterTable extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings({"ThrowableResultOfMethodCallIgnored", "unchecked"})
-    public void testSelectAfterAlterTable() throws Exception {
-        Statement stmt = conn.createStatement();
-
-        stmt.executeUpdate("CREATE TABLE person (id LONG, name VARCHAR, city_id LONG, PRIMARY KEY (id, city_id))");
-
-        stmt.executeUpdate("INSERT INTO person (id, name, city_id) values (1, 'name_1', 11)");
-
-        stmt.executeQuery("select * from person");
-
+    public void testSelectAfterAlterTableSingleNode() throws Exception {
         stmt.executeUpdate("alter table person add age int");
 
+        checkNewColumn(stmt);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @SuppressWarnings({"ThrowableResultOfMethodCallIgnored", "unchecked"})
+    public void testSelectAfterAlterTableMultiNode() throws Exception {
+        try (Connection conn2 = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1:"
+            + Integer.toString(ClientConnectorConfiguration.DFLT_PORT + 1))) {
+            try(Statement stmt2 = conn2.createStatement()) {
+                stmt2.executeUpdate("alter table person add age int");
+            }
+        }
+
+        checkNewColumn(stmt);
+    }
+
+    /**
+     * @param stmt Statement to check new column.
+     * @throws SQLException If failed.
+     */
+    public void checkNewColumn(Statement stmt) throws SQLException {
         ResultSet rs = stmt.executeQuery("select * from person");
 
         ResultSetMetaData meta = rs.getMetaData();
 
         assertEquals(4, meta.getColumnCount());
 
-        IgnitePredicate newColExists = new IgnitePredicate<ResultSetMetaData>() {
-            @Override public boolean apply(ResultSetMetaData meta) {
-                try {
-                    for (int i = 1; i <= meta.getColumnCount(); ++i) {
-                        if ("age".equalsIgnoreCase(meta.getColumnName(i)))
-                            return true;
-                    }
-                }
-                catch (SQLException e) {
-                    e.printStackTrace(System.err);
+        boolean newColExists = false;
 
-                    fail("Unexpected exception");
-                }
+        for (int i = 1; i <= meta.getColumnCount(); ++i) {
+            if ("age".equalsIgnoreCase(meta.getColumnName(i))) {
+                newColExists = true;
 
-                return false;
+                break;
             }
-        };
+        }
 
-        assertTrue(newColExists.apply(meta));
+        assertTrue(newColExists);
     }
 }
