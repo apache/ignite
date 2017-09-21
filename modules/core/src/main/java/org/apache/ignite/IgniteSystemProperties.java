@@ -706,6 +706,11 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_ENABLE_FORCIBLE_NODE_KILL = "IGNITE_ENABLE_FORCIBLE_NODE_KILL";
 
     /**
+     * If this property is set, then Ignite will use Async File IO factory by default.
+     */
+    public static final String IGNITE_USE_ASYNC_FILE_IO_FACTORY = "IGNITE_USE_ASYNC_FILE_IO_FACTORY";
+
+    /**
      * If the property is set {@link org.apache.ignite.internal.pagemem.wal.record.TxRecord} records
      * will be logged to WAL.
      *

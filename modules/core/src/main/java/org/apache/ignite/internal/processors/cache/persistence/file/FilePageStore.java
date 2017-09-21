@@ -35,6 +35,9 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDat
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.PureJavaCrc32;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
+import static java.nio.file.StandardOpenOption.CREATE;
+import static java.nio.file.StandardOpenOption.READ;
+import static java.nio.file.StandardOpenOption.WRITE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_SKIP_CRC;
 
 /**
@@ -400,7 +403,7 @@ public class FilePageStore implements PageStore {
                     IgniteCheckedException err = null;
 
                     try {
-                        this.fileIO = fileIO = ioFactory.create(cfgFile, "rw");
+                        this.fileIO = fileIO = ioFactory.create(cfgFile, CREATE, READ, WRITE);
 
                         if (cfgFile.length() == 0)
                             allocated.set(initFile());
