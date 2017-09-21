@@ -39,8 +39,6 @@ public class DummyPersistenceTest extends IgniteCompatibilityAbstractTest {
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        System.out.println("*****" + System.getProperty("java.class.path"));
-
         if (!defaultDBWorkDirectoryIsEmpty())
             deleteDefaultDBWorkDirectory();
 

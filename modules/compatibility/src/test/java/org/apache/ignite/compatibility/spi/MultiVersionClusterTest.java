@@ -24,7 +24,9 @@ import org.apache.ignite.internal.processors.cache.GridCacheAbstractFullApiSelfT
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 
-/** */
+/**
+ * TODO: remove at completion.
+ */
 public class MultiVersionClusterTest extends IgniteCompatibilityAbstractTest {
     /** */
     public void testJoinMultiVersionTopologyLocalFirst() throws Exception {
