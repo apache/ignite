@@ -18,9 +18,34 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
-import org.apache.ignite.compatibility.persistence.DummyPersistenceTest;
-import org.apache.ignite.compatibility.persistence.VarintPersistenceTest;
-import org.apache.ignite.compatibility.spi.MultiVersionClusterTest;
+import org.apache.ignite.GridCacheAffinityBackupsSelfTest;
+import org.apache.ignite.cache.affinity.AffinityClientNodeSelfTest;
+import org.apache.ignite.cache.affinity.AffinityHistoryCleanupTest;
+import org.apache.ignite.cache.affinity.local.LocalAffinityFunctionTest;
+import org.apache.ignite.internal.GridCachePartitionExchangeManagerHistSizeTest;
+import org.apache.ignite.internal.processors.cache.CacheKeepBinaryTransactionTest;
+import org.apache.ignite.internal.processors.cache.CacheNearReaderUpdateTest;
+import org.apache.ignite.internal.processors.cache.CacheRebalancingSelfTest;
+import org.apache.ignite.internal.processors.cache.CacheSerializableTransactionsTest;
+import org.apache.ignite.internal.processors.cache.ClusterStatePartitionedSelfTest;
+import org.apache.ignite.internal.processors.cache.ClusterStateReplicatedSelfTest;
+import org.apache.ignite.internal.processors.cache.ConcurrentCacheStartTest;
+import org.apache.ignite.internal.processors.cache.EntryVersionConsistencyReadThroughTest;
+import org.apache.ignite.internal.processors.cache.IgniteCachePutStackOverflowSelfTest;
+import org.apache.ignite.internal.processors.cache.IgniteCacheReadThroughEvictionsVariationsSuite;
+import org.apache.ignite.internal.processors.cache.IgniteCacheStoreCollectionTest;
+import org.apache.ignite.internal.processors.cache.PartitionsExchangeOnDiscoveryHistoryOverflowTest;
+import org.apache.ignite.internal.processors.cache.distributed.Cache64kPartitionsTest;
+import org.apache.ignite.internal.processors.cache.distributed.CacheLateAffinityAssignmentNodeJoinValidationTest;
+import org.apache.ignite.internal.processors.cache.distributed.CacheLateAffinityAssignmentTest;
+import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheGroupsPartitionLossPolicySelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.IgniteCachePartitionLossPolicySelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheTxIteratorSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.NotMappedPartitionInTxTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.IgniteCacheAtomicProtocolTest;
+import org.apache.ignite.internal.processors.cache.distributed.rebalancing.CacheManualRebalancingTest;
+import org.apache.ignite.internal.processors.cache.distributed.replicated.IgniteCacheSyncRebalanceModeSelfTest;
+import org.apache.ignite.internal.processors.cache.store.IgniteCacheWriteBehindNoUpdateSelfTest;
 
 /**
  * Test suite.
@@ -33,9 +58,47 @@ public class IgniteCacheTestSuite5 extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("IgniteCache Test Suite part 5");
 
-        suite.addTestSuite(DummyPersistenceTest.class);
-        suite.addTestSuite(MultiVersionClusterTest.class);
-        suite.addTestSuite(VarintPersistenceTest.class);
+        suite.addTestSuite(CacheSerializableTransactionsTest.class);
+        suite.addTestSuite(CacheNearReaderUpdateTest.class);
+        suite.addTestSuite(IgniteCacheStoreCollectionTest.class);
+        suite.addTestSuite(IgniteCacheWriteBehindNoUpdateSelfTest.class);
+        suite.addTestSuite(IgniteCachePutStackOverflowSelfTest.class);
+        suite.addTestSuite(CacheKeepBinaryTransactionTest.class);
+
+        suite.addTestSuite(CacheLateAffinityAssignmentTest.class);
+        suite.addTestSuite(CacheLateAffinityAssignmentNodeJoinValidationTest.class);
+        suite.addTestSuite(EntryVersionConsistencyReadThroughTest.class);
+        suite.addTestSuite(IgniteCacheSyncRebalanceModeSelfTest.class);
+
+        suite.addTest(IgniteCacheReadThroughEvictionsVariationsSuite.suite());
+        suite.addTestSuite(IgniteCacheTxIteratorSelfTest.class);
+
+        suite.addTestSuite(ClusterStatePartitionedSelfTest.class);
+        suite.addTestSuite(ClusterStateReplicatedSelfTest.class);
+        suite.addTestSuite(IgniteCachePartitionLossPolicySelfTest.class);
+        suite.addTestSuite(IgniteCacheGroupsPartitionLossPolicySelfTest.class);
+
+        suite.addTestSuite(CacheRebalancingSelfTest.class);
+        suite.addTestSuite(CacheManualRebalancingTest.class);
+
+        // Affinity tests.
+        suite.addTestSuite(GridCacheAffinityBackupsSelfTest.class);
+        suite.addTestSuite(IgniteCacheAffinitySelfTest.class);
+        suite.addTestSuite(AffinityClientNodeSelfTest.class);
+        suite.addTestSuite(LocalAffinityFunctionTest.class);
+        suite.addTestSuite(AffinityHistoryCleanupTest.class);
+
+        suite.addTestSuite(IgniteCacheAtomicProtocolTest.class);
+
+        suite.addTestSuite(PartitionsExchangeOnDiscoveryHistoryOverflowTest.class);
+
+        suite.addTestSuite(GridCachePartitionExchangeManagerHistSizeTest.class);
+
+        suite.addTestSuite(NotMappedPartitionInTxTest.class);
+
+        suite.addTestSuite(ConcurrentCacheStartTest.class);
+
+        suite.addTestSuite(Cache64kPartitionsTest.class);
 
         return suite;
     }
