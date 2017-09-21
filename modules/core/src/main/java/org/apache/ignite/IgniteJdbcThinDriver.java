@@ -26,7 +26,6 @@ import java.sql.SQLFeatureNotSupportedException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.ignite.cache.affinity.AffinityKey;
 import org.apache.ignite.internal.IgniteVersionUtils;
@@ -34,6 +33,8 @@ import org.apache.ignite.internal.jdbc.JdbcDriverPropertyInfo;
 import org.apache.ignite.internal.jdbc.thin.JdbcThinConnection;
 import org.apache.ignite.internal.jdbc.thin.JdbcThinUtils;
 import org.apache.ignite.internal.util.typedef.F;
+
+import static org.apache.ignite.internal.processors.query.QueryUtils.normalizeSchemaName;
 
 /**
  * JDBC driver thin implementation for In-Memory Data Grid.
@@ -257,8 +258,10 @@ public class IgniteJdbcThinDriver implements Driver {
                 "'host:port[/schemaName]'): " + url);
         }
 
-        // Gets schema from URL string & returns.
-        return pathParts.length == 2 ? pathParts[1] : null;
+        // Gets schema from URL string.
+        String schemaName = pathParts.length == 2 ? pathParts[1] : null;
+
+        return normalizeSchemaName(null, schemaName);
     }
 
     /**
