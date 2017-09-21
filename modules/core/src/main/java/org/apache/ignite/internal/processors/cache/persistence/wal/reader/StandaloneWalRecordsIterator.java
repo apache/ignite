@@ -160,7 +160,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
 
     /**
      * This methods checks all provided files to be correct WAL segment.
-     * Header record and its position is checked. WAL position is used to deremine real index.
+     * Header record and its position is checked. WAL position is used to determine real index.
      * File index from file name is ignored.
      *
      * @param allFiles files to scan
@@ -181,7 +181,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
             FileWALPointer ptr;
 
             try (
-                FileIO fileIO = ioFactory.create(file, "r");
+                FileIO fileIO = ioFactory.create(file);
                 ByteBufferExpander buf = new ByteBufferExpander(HEADER_RECORD_SIZE, ByteOrder.nativeOrder())
             ) {
                 final DataInput in = new FileInput(fileIO, buf);
