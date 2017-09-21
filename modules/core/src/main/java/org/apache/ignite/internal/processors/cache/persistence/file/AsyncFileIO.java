@@ -65,8 +65,7 @@ public class AsyncFileIO implements FileIO {
 
     /** {@inheritDoc} */
     @Override public int read(ByteBuffer destinationBuffer) throws IOException {
-        ChannelOpFuture fut = new ChannelOpFuture(false);
-        fut.reset();
+        ChannelOpFuture fut = new ChannelOpFuture(true);
 
         ch.read(destinationBuffer, position, null, fut);
 
