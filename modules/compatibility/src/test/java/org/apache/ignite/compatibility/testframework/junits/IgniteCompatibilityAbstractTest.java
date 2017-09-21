@@ -193,15 +193,15 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
         if (locJvmInstance == null) {
             CountDownLatch nodeJoinedLatch = rmJvmInstance == null ? new CountDownLatch(1) : new CountDownLatch(2);
 
-            UUID nodeId = ignite.getId();
+            UUID uid = ignite.getId();
 
             ListenedGridTestLog4jLogger log = (ListenedGridTestLog4jLogger)ignite.log();
 
-            log.addListener(nodeId, new LoggedJoinNodeClosure(nodeJoinedLatch, nodeId));
+            log.addListener(uid, new LoggedJoinNodeClosure(nodeJoinedLatch, uid));
 
-            assert nodeJoinedLatch.await(NODE_JOIN_TIMEOUT, TimeUnit.MILLISECONDS) : "Node has not joined [id=" + nodeId + "]";
+            assert nodeJoinedLatch.await(NODE_JOIN_TIMEOUT, TimeUnit.MILLISECONDS) : "Node has not joined [id=" + uid + "]";
 
-            log.removeListener(nodeId);
+            log.removeListener(uid);
         }
 
         if (rmJvmInstance == null)
@@ -218,18 +218,18 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
         // if started node isn't first node in the local JVM then it was checked earlier for join to topology
         // in IgniteProcessProxy constructor.
         if (locJvmInstance == null && rmJvmInstance != null) {
-            final UUID syncId = ((IgniteProcessProxy)rmJvmInstance).getId();
-            final UUID nodeId = cfg.getNodeId();
+            final UUID syncUid = ((IgniteProcessProxy)rmJvmInstance).getId();
+            final UUID uid = cfg.getNodeId();
 
             ignite = super.startGrid(igniteInstanceName, cfg, ctx);
 
-            assert ignite.configuration().getNodeId() == nodeId : "Started node has unexpected node id.";
+            assert ignite.configuration().getNodeId() == uid : "Started node has unexpected node id.";
 
             assert GridTestUtils.waitForCondition(new GridAbsPredicate() {
                 @Override public boolean apply() {
-                    return ignite.cluster().node(syncId) != null;
+                    return ignite.cluster().node(syncUid) != null;
                 }
-            }, NODE_JOIN_TIMEOUT) : "Node has not joined [id=" + nodeId + "]";
+            }, NODE_JOIN_TIMEOUT) : "Node has not joined [id=" + uid + "]";
         }
         else
             ignite = super.startGrid(igniteInstanceName, cfg, ctx);
@@ -269,12 +269,12 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
 
         /**
          * @param nodeJoinedLatch Nodes startup synchronization latch.
-         * @param nodeId Expected node id.
+         * @param uid Expected node id.
          */
-        LoggedJoinNodeClosure(CountDownLatch nodeJoinedLatch, UUID nodeId) {
+        LoggedJoinNodeClosure(CountDownLatch nodeJoinedLatch, UUID uid) {
             this.nodeJoinedLatch = nodeJoinedLatch;
-            this.patterns.add(SYNCHRONIZATION_LOG_MESSAGE_JOINED + nodeId);
-            this.patterns.add(SYNCHRONIZATION_LOG_MESSAGE_PREPARED + nodeId);
+            this.patterns.add(SYNCHRONIZATION_LOG_MESSAGE_JOINED + uid);
+            this.patterns.add(SYNCHRONIZATION_LOG_MESSAGE_PREPARED + uid);
         }
 
         /** {@inheritDoc} */

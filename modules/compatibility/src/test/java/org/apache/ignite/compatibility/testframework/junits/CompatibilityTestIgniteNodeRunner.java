@@ -56,7 +56,7 @@ public class CompatibilityTestIgniteNodeRunner extends IgniteNodeRunner {
      * args[0] - required - path to closure for tuning IgniteConfiguration before node startup;
      * args[1] - required - name of the starting node;
      * args[2] - required - id of the starting node;
-     * args[3] - required - id of a node for synchronization of startup. Must be equals
+     * args[3] - required - sync-id of a node for synchronization of startup. Must be equals
      * to arg[2] in case of starting the first node in the Ignite cluster;
      * args[4] - optional - path to closure for actions after node startup.
      * </pre>
@@ -80,25 +80,25 @@ public class CompatibilityTestIgniteNodeRunner extends IgniteNodeRunner {
 
         cfgClos.apply(cfg);
 
-        final UUID id = UUID.fromString(args[2]);
-        final UUID syncId = UUID.fromString(args[3]);
+        final UUID uid = UUID.fromString(args[2]);
+        final UUID syncUid = UUID.fromString(args[3]);
 
         // Ignite instance name and id must be set according to arguments
         // it's used for nodes managing: start, stop etc.
         cfg.setIgniteInstanceName(args[1]);
-        cfg.setNodeId(id);
+        cfg.setNodeId(uid);
 
         final Ignite ignite = Ignition.start(cfg);
 
-        // If 'id' equals 'syncId' then the starting node is the first node and
+        // If 'id' equals 'syncUid' then the starting node is the first node and
         // there was no need to check the join to topology.
-        if (!id.equals(syncId)) {
+        if (!uid.equals(syncUid)) {
             GridTestUtils.waitForCondition(new GridAbsPredicate() {
                 @Override public boolean apply() {
-                    boolean found = ignite.cluster().node(syncId) != null;
+                    boolean found = ignite.cluster().node(syncUid) != null;
 
                     if (found)
-                        X.println(IgniteCompatibilityAbstractTest.SYNCHRONIZATION_LOG_MESSAGE_JOINED + id);
+                        X.println(IgniteCompatibilityAbstractTest.SYNCHRONIZATION_LOG_MESSAGE_JOINED + uid);
 
                     return found;
                 }
@@ -114,7 +114,7 @@ public class CompatibilityTestIgniteNodeRunner extends IgniteNodeRunner {
             iClos.apply(ignite);
         }
 
-        X.println(IgniteCompatibilityAbstractTest.SYNCHRONIZATION_LOG_MESSAGE_PREPARED + id);
+        X.println(IgniteCompatibilityAbstractTest.SYNCHRONIZATION_LOG_MESSAGE_PREPARED + uid);
     }
 
     /**
@@ -160,8 +160,7 @@ public class CompatibilityTestIgniteNodeRunner extends IgniteNodeRunner {
      * @see #storeToFile(IgniteInClosure, String)
      */
     @SuppressWarnings("unchecked")
-    public static <T> IgniteInClosure<T> readClosureFromFileAndDelete(
-        String fileName) throws IOException {
+    public static <T> IgniteInClosure<T> readClosureFromFileAndDelete(String fileName) throws IOException {
         try (BufferedReader reader = Files.newBufferedReader(Paths.get(fileName), StandardCharsets.UTF_8)) {
             return (IgniteInClosure<T>)new XStream().fromXML(reader);
         }
