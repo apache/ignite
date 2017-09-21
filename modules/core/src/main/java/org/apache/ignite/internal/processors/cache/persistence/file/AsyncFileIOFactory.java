@@ -19,30 +19,27 @@ package org.apache.ignite.internal.processors.cache.persistence.file;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.Serializable;
+import java.nio.channels.AsynchronousFileChannel;
 import java.nio.file.OpenOption;
 
+import static java.nio.file.StandardOpenOption.CREATE;
+import static java.nio.file.StandardOpenOption.READ;
+import static java.nio.file.StandardOpenOption.WRITE;
+
 /**
- * {@link FileIO} factory definition.
+ * File I/O factory which uses {@link AsynchronousFileChannel} based implementation of FileIO.
  */
-public interface FileIOFactory extends Serializable {
-    /**
-     * Creates I/O interface for file with default I/O mode.
-     *
-     * @param file File.
-     * @return File I/O interface.
-     * @throws IOException If I/O interface creation was failed.
-     */
-    FileIO create(File file) throws IOException;
+public class AsyncFileIOFactory implements FileIOFactory {
+    /** */
+    private static final long serialVersionUID = 0L;
 
-    /**
-     * Creates I/O interface for file with specified mode.
-     *
-     * @param file File
-     * @param modes I/O modes.
-     * @return File I/O interface.
-     * @throws IOException If I/O interface creation was failed.
-     */
-    FileIO create(File file, OpenOption... modes) throws IOException;
+    /** {@inheritDoc} */
+    @Override public FileIO create(File file) throws IOException {
+        return create(file, CREATE, READ, WRITE);
+    }
 
+    /** {@inheritDoc} */
+    @Override public FileIO create(File file, OpenOption... modes) throws IOException {
+        return new AsyncFileIO(file);
+    }
 }
