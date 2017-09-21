@@ -122,13 +122,13 @@ public class PagesWriteThrottleSandboxTest extends GridCommonAbstractTest {
         startGrids(1).active(true);
 
         try {
-            Ignite ig = ignite(0);
+            final Ignite ig = ignite(0);
 
             final int keyCnt = 4_000_000;
 
             final AtomicBoolean run = new AtomicBoolean(true);
 
-            HitRateMetrics getRate = new HitRateMetrics(5000, 5);
+            final HitRateMetrics getRate = new HitRateMetrics(5000, 5);
 
             GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
                 @Override public Object call() throws Exception {
