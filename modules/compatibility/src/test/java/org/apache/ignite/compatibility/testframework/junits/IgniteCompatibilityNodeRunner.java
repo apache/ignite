@@ -31,7 +31,6 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.GridJavaProcess;
-import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -71,67 +70,54 @@ public class IgniteCompatibilityNodeRunner extends IgniteNodeRunner {
 
         if (args.length < 3) {
             throw new IllegalArgumentException("At least four arguments expected:" +
-                " [path/to/closure/file] [ignite-instance-name] [node-uuid] [sync-node-uuid] [optional/path/to/closure/file]");
+                " [path/to/closure/file] [ignite-instance-name] [node-id] [sync-node-id] [optional/path/to/closure/file]");
         }
 
         IgniteConfiguration cfg = CompatibilityTestsFacade.getConfiguration();
 
-        IgniteInClosure<IgniteConfiguration> cfgClos = readClosureFromFileAndDelete(args[0]);
+        IgniteInClosure<IgniteConfiguration> cfgClo = readClosureFromFileAndDelete(args[0]);
 
-        cfgClos.apply(cfg);
+        cfgClo.apply(cfg);
 
-        final UUID uid = UUID.fromString(args[2]);
-        final UUID syncUid = UUID.fromString(args[3]);
+        final UUID nodeId = UUID.fromString(args[2]);
+        final UUID syncNodeId = UUID.fromString(args[3]);
 
         // Ignite instance name and id must be set according to arguments
         // it's used for nodes managing: start, stop etc.
         cfg.setIgniteInstanceName(args[1]);
-        cfg.setNodeId(uid);
+        cfg.setNodeId(nodeId);
 
         final Ignite ignite = Ignition.start(cfg);
 
-        // If 'id' equals 'syncUid' then the starting node is the first node and
-        // there was no need to check the join to topology.
-        if (!uid.equals(syncUid)) {
-            GridTestUtils.waitForCondition(new GridAbsPredicate() {
-                @Override public boolean apply() {
-                    boolean found = ignite.cluster().node(syncUid) != null;
-
-                    if (found)
-                        X.println(IgniteCompatibilityAbstractTest.SYNCHRONIZATION_LOG_MESSAGE_JOINED + uid);
-
-                    return found;
-                }
-            }, 20);
-        }
+        assert ignite.cluster().node(syncNodeId) != null : "Node has not joined [id=" + nodeId + "]";
 
         // It needs to set private static field 'ignite' of the IgniteNodeRunner class via reflection
         GridTestUtils.setFieldValue(new IgniteNodeRunner(), "ignite", ignite);
 
         if (args.length == 5) {
-            IgniteInClosure<Ignite> iClos = readClosureFromFileAndDelete(args[4]);
+            IgniteInClosure<Ignite> iClo = readClosureFromFileAndDelete(args[4]);
 
-            iClos.apply(ignite);
+            iClo.apply(ignite);
         }
 
-        X.println(IgniteCompatibilityAbstractTest.SYNCHRONIZATION_LOG_MESSAGE_PREPARED + uid);
+        X.println(IgniteCompatibilityAbstractTest.SYNCHRONIZATION_LOG_MESSAGE_PREPARED + nodeId);
     }
 
     /**
      * Stores {@link IgniteInClosure} to file as xml.
      *
-     * @param clos IgniteInClosure.
+     * @param clo IgniteInClosure.
      * @return A name of file where the closure was stored.
      * @throws IOException In case of an error.
      * @see #readClosureFromFileAndDelete(String)
      */
-    @Nullable public static String storeToFile(@Nullable IgniteInClosure clos) throws IOException {
-        if (clos == null)
+    @Nullable public static String storeToFile(@Nullable IgniteInClosure clo) throws IOException {
+        if (clo == null)
             return null;
 
-        String fileName = IGNITE_COMPATIBILITY_CLOSURE_FILE + clos.hashCode();
+        String fileName = IGNITE_COMPATIBILITY_CLOSURE_FILE + clo.hashCode();
 
-        storeToFile(clos, fileName);
+        storeToFile(clo, fileName);
 
         return fileName;
     }
@@ -139,14 +125,14 @@ public class IgniteCompatibilityNodeRunner extends IgniteNodeRunner {
     /**
      * Stores {@link IgniteInClosure} to file as xml.
      *
-     * @param clos IgniteInClosure.
+     * @param clo IgniteInClosure.
      * @param fileName A name of file where the closure was stored.
      * @throws IOException In case of an error.
      * @see #readClosureFromFileAndDelete(String)
      */
-    public static void storeToFile(@NotNull IgniteInClosure clos, @NotNull String fileName) throws IOException {
+    public static void storeToFile(@NotNull IgniteInClosure clo, @NotNull String fileName) throws IOException {
         try (BufferedWriter writer = Files.newBufferedWriter(Paths.get(fileName), StandardCharsets.UTF_8)) {
-            new XStream().toXML(clos, writer);
+            new XStream().toXML(clo, writer);
         }
     }
 

@@ -72,12 +72,12 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
      *
      * @param idx Index of the grid to start.
      * @param ver Ignite version.
-     * @param cfgClos IgniteInClosure for post-configuration.
+     * @param cfgClo IgniteInClosure for post-configuration.
      * @return Started grid.
      * @throws Exception If failed.
      */
-    protected IgniteEx startGrid(int idx, String ver, IgniteInClosure<IgniteConfiguration> cfgClos) throws Exception {
-        return startGrid(getTestIgniteInstanceName(idx), ver, cfgClos, null);
+    protected IgniteEx startGrid(int idx, String ver, IgniteInClosure<IgniteConfiguration> cfgClo) throws Exception {
+        return startGrid(getTestIgniteInstanceName(idx), ver, cfgClo, null);
     }
 
     /**
@@ -88,13 +88,13 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
      *
      * @param igniteInstanceName Instance name.
      * @param ver Ignite version.
-     * @param cfgClos IgniteInClosure for post-configuration.
+     * @param cfgClo IgniteInClosure for post-configuration.
      * @return Started grid.
      * @throws Exception If failed.
      */
     protected IgniteEx startGrid(String igniteInstanceName, String ver,
-        IgniteInClosure<IgniteConfiguration> cfgClos) throws Exception {
-        return startGrid(igniteInstanceName, ver, cfgClos, null);
+        IgniteInClosure<IgniteConfiguration> cfgClo) throws Exception {
+        return startGrid(igniteInstanceName, ver, cfgClo, null);
     }
 
     /**
@@ -105,14 +105,14 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
      *
      * @param idx Index of the grid to start.
      * @param ver Ignite version.
-     * @param cfgClos IgniteInClosure for post-configuration.
-     * @param iClos IgniteInClosure for actions on started Ignite.
+     * @param cfgClo IgniteInClosure for post-configuration.
+     * @param iClo IgniteInClosure for actions on started Ignite.
      * @return Started grid.
      * @throws Exception In case of an error.
      */
     protected IgniteEx startGrid(int idx, final String ver,
-        IgniteInClosure<IgniteConfiguration> cfgClos, IgniteInClosure<Ignite> iClos) throws Exception {
-        return startGrid(getTestIgniteInstanceName(idx), ver, cfgClos, iClos);
+        IgniteInClosure<IgniteConfiguration> cfgClo, IgniteInClosure<Ignite> iClo) throws Exception {
+        return startGrid(getTestIgniteInstanceName(idx), ver, cfgClo, iClo);
     }
 
     /**
@@ -123,19 +123,19 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
      *
      * @param igniteInstanceName Instance name.
      * @param ver Ignite version.
-     * @param cfgClos IgniteInClosure for post-configuration.
-     * @param iClos IgniteInClosure for actions on started Ignite.
+     * @param cfgClo IgniteInClosure for post-configuration.
+     * @param iClo IgniteInClosure for actions on started Ignite.
      * @return Started grid.
      * @throws Exception In case of an error.
      */
     protected IgniteEx startGrid(final String igniteInstanceName, final String ver,
-        IgniteInClosure<IgniteConfiguration> cfgClos, IgniteInClosure<Ignite> iClos) throws Exception {
+        IgniteInClosure<IgniteConfiguration> cfgClo, IgniteInClosure<Ignite> iClo) throws Exception {
         assert isMultiJvm() : "MultiJvm mode must be switched on for the node stop properly.";
 
         assert !igniteInstanceName.equals(getTestIgniteInstanceName(0)) : "Use default instance name for local nodes only.";
 
-        final String cfgClosPath = IgniteCompatibilityNodeRunner.storeToFile(cfgClos);
-        final String iClosPath = IgniteCompatibilityNodeRunner.storeToFile(iClos);
+        final String cfgCloPath = IgniteCompatibilityNodeRunner.storeToFile(cfgClo);
+        final String iCloPath = IgniteCompatibilityNodeRunner.storeToFile(iClo);
 
         final IgniteConfiguration cfg = getConfiguration(igniteInstanceName); // stub - won't be used at node startup
 
@@ -149,10 +149,10 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
             }
 
             @Override protected String params(IgniteConfiguration cfg, boolean resetDiscovery) throws Exception {
-                return cfgClosPath + " " + igniteInstanceName + " "
+                return cfgCloPath + " " + igniteInstanceName + " "
                     + getId() + " "
                     + (rmJvmInstance == null ? getId() : ((IgniteProcessProxy)rmJvmInstance).getId())
-                    + (iClosPath == null ? "" : " " + iClosPath);
+                    + (iCloPath == null ? "" : " " + iCloPath);
             }
 
             @Override protected Collection<String> filteredJvmArgs() throws Exception {
@@ -193,17 +193,17 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
         };
 
         if (locJvmInstance == null) {
-            CountDownLatch nodeJoinedLatch = rmJvmInstance == null ? new CountDownLatch(1) : new CountDownLatch(2);
+            CountDownLatch nodeJoinedLatch = new CountDownLatch(1);
 
-            UUID uid = ignite.getId();
+            UUID nodeId = ignite.getId();
 
             ListenedGridTestLog4jLogger log = (ListenedGridTestLog4jLogger)ignite.log();
 
-            log.addListener(uid, new LoggedJoinNodeClosure(nodeJoinedLatch, uid));
+            log.addListener(nodeId, new LoggedJoinNodeClosure(nodeJoinedLatch, nodeId));
 
-            assert nodeJoinedLatch.await(NODE_JOIN_TIMEOUT, TimeUnit.MILLISECONDS) : "Node has not joined [id=" + uid + "]";
+            assert nodeJoinedLatch.await(NODE_JOIN_TIMEOUT, TimeUnit.MILLISECONDS) : "Node has not joined [id=" + nodeId + "]";
 
-            log.removeListener(uid);
+            log.removeListener(nodeId);
         }
 
         if (rmJvmInstance == null)
@@ -220,18 +220,18 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
         // if started node isn't first node in the local JVM then it was checked earlier for join to topology
         // in IgniteProcessProxy constructor.
         if (locJvmInstance == null && rmJvmInstance != null) {
-            final UUID syncUid = ((IgniteProcessProxy)rmJvmInstance).getId();
-            final UUID uid = cfg.getNodeId();
+            final UUID nodeId = cfg.getNodeId();
+            final UUID syncNodeId = ((IgniteProcessProxy)rmJvmInstance).getId();
 
             ignite = super.startGrid(igniteInstanceName, cfg, ctx);
 
-            assert ignite.configuration().getNodeId() == uid : "Started node has unexpected node id.";
+            assert ignite.configuration().getNodeId() == nodeId : "Started node has unexpected node id.";
 
             assert GridTestUtils.waitForCondition(new GridAbsPredicate() {
                 @Override public boolean apply() {
-                    return ignite.cluster().node(syncUid) != null;
+                    return ignite.cluster().node(syncNodeId) != null;
                 }
-            }, NODE_JOIN_TIMEOUT) : "Node has not joined [id=" + uid + "]";
+            }, NODE_JOIN_TIMEOUT) : "Node has not joined [id=" + nodeId + "]";
         }
         else
             ignite = super.startGrid(igniteInstanceName, cfg, ctx);
@@ -271,12 +271,12 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
 
         /**
          * @param nodeJoinedLatch Nodes startup synchronization latch.
-         * @param uid Expected node id.
+         * @param nodeId Expected node id.
          */
-        LoggedJoinNodeClosure(CountDownLatch nodeJoinedLatch, UUID uid) {
+        LoggedJoinNodeClosure(CountDownLatch nodeJoinedLatch, UUID nodeId) {
             this.nodeJoinedLatch = nodeJoinedLatch;
-            this.patterns.add(SYNCHRONIZATION_LOG_MESSAGE_JOINED + uid);
-            this.patterns.add(SYNCHRONIZATION_LOG_MESSAGE_PREPARED + uid);
+            this.patterns.add(SYNCHRONIZATION_LOG_MESSAGE_JOINED + nodeId);
+            this.patterns.add(SYNCHRONIZATION_LOG_MESSAGE_PREPARED + nodeId);
         }
 
         /** {@inheritDoc} */
