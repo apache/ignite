@@ -175,7 +175,7 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
                 }
 
                 String pathToArtifact = MavenUtils.getPathToIgniteCoreArtifact(ver);
-                
+
                 pathBuilder.append(pathToArtifact).append(File.pathSeparator);
 
                 String pathToTestsArtifact = MavenUtils.getPathToIgniteCoreArtifact(ver, "tests");
