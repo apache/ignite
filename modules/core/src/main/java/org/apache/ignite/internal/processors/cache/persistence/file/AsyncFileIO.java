@@ -42,6 +42,9 @@ public class AsyncFileIO implements FileIO {
     private volatile long position;
 
     /** */
+    private final ThreadLocal<ChannelOpFuture> holder;
+
+    /** */
     private GridConcurrentHashSet<ChannelOpFuture> asyncFuts = new GridConcurrentHashSet<>();
 
     /**
@@ -49,8 +52,10 @@ public class AsyncFileIO implements FileIO {
      * @param file Random access file
      * @param modes Open modes.
      */
-    public AsyncFileIO(File file, OpenOption... modes) throws IOException {
+    public AsyncFileIO(File file, ThreadLocal<ChannelOpFuture> holder, OpenOption... modes) throws IOException {
         this.ch = AsynchronousFileChannel.open(file.toPath(), modes);
+
+        this.holder = holder;
     }
 
     /** {@inheritDoc} */
@@ -65,9 +70,10 @@ public class AsyncFileIO implements FileIO {
 
     /** {@inheritDoc} */
     @Override public int read(ByteBuffer destinationBuffer) throws IOException {
-        ChannelOpFuture fut = new ChannelOpFuture(true);
+        ChannelOpFuture fut = holder.get();
+        fut.reset();
 
-        ch.read(destinationBuffer, position, null, fut);
+        ch.read(destinationBuffer, position, this, fut);
 
         try {
             return fut.getUninterruptibly();
@@ -79,7 +85,8 @@ public class AsyncFileIO implements FileIO {
 
     /** {@inheritDoc} */
     @Override public int read(ByteBuffer destinationBuffer, long position) throws IOException {
-        ChannelOpFuture fut = new ChannelOpFuture(false);
+        ChannelOpFuture fut = holder.get();
+        fut.reset();
 
         ch.read(destinationBuffer, position, null, fut);
 
@@ -89,13 +96,17 @@ public class AsyncFileIO implements FileIO {
         catch (IgniteCheckedException e) {
             throw new IOException(e);
         }
+        finally {
+            asyncFuts.remove(fut);
+        }
     }
 
     /** {@inheritDoc} */
     @Override public int read(byte[] buffer, int offset, int length) throws IOException {
-        ChannelOpFuture fut = new ChannelOpFuture(true);
+        ChannelOpFuture fut = holder.get();
+        fut.reset();
 
-        ch.read(ByteBuffer.wrap(buffer, offset, length), position, null, fut);
+        ch.read(ByteBuffer.wrap(buffer, offset, length), position, this, fut);
 
         try {
             return fut.getUninterruptibly();
@@ -107,9 +118,10 @@ public class AsyncFileIO implements FileIO {
 
     /** {@inheritDoc} */
     @Override public int write(ByteBuffer sourceBuffer) throws IOException {
-        ChannelOpFuture fut = new ChannelOpFuture(true);
+        ChannelOpFuture fut = holder.get();
+        fut.reset();
 
-        ch.write(sourceBuffer, position, null, fut);
+        ch.write(sourceBuffer, position, this, fut);
 
         try {
             return fut.getUninterruptibly();
@@ -121,7 +133,8 @@ public class AsyncFileIO implements FileIO {
 
     /** {@inheritDoc} */
     @Override public int write(ByteBuffer sourceBuffer, long position) throws IOException {
-        ChannelOpFuture fut = new ChannelOpFuture(false);
+        ChannelOpFuture fut = holder.get();
+        fut.reset();
 
         asyncFuts.add(fut);
 
@@ -133,13 +146,17 @@ public class AsyncFileIO implements FileIO {
         catch (IgniteCheckedException e) {
             throw new IOException(e);
         }
+        finally {
+            asyncFuts.remove(fut);
+        }
     }
 
     /** {@inheritDoc} */
     @Override public void write(byte[] buffer, int offset, int length) throws IOException {
-        ChannelOpFuture fut = new ChannelOpFuture(true);
+        ChannelOpFuture fut = holder.get();
+        fut.reset();
 
-        ch.write(ByteBuffer.wrap(buffer, offset, length), position, null, fut);
+        ch.write(ByteBuffer.wrap(buffer, offset, length), position, this, fut);
 
         try {
             fut.getUninterruptibly();
@@ -181,35 +198,20 @@ public class AsyncFileIO implements FileIO {
     }
 
     /** */
-    private class ChannelOpFuture extends GridFutureAdapter<Integer> implements CompletionHandler<Integer, Void>  {
-        /** */
-        private boolean advancePos;
-
-        /**
-         * @param advancePos {@code true} if change channel position.
-         */
-        public ChannelOpFuture(boolean advancePos) {
-            this.advancePos = advancePos;
-        }
-
+    static class ChannelOpFuture extends GridFutureAdapter<Integer> implements CompletionHandler<Integer, AsyncFileIO>  {
         /** {@inheritDoc} */
-        @Override public void completed(Integer result, Void attachment) {
-            if (advancePos) {
+        @Override public void completed(Integer result, AsyncFileIO attachment) {
+            if (attachment != null) {
                 if (result != -1)
-                    AsyncFileIO.this.position += result;
+                    attachment.position += result;
             }
-            else
-                asyncFuts.remove(this);
 
             // Release waiter and allow next operation to begin.
             super.onDone(result, null);
         }
 
         /** {@inheritDoc} */
-        @Override public void failed(Throwable exc, Void attachment) {
-            if (!advancePos)
-                asyncFuts.remove(this);
-
+        @Override public void failed(Throwable exc, AsyncFileIO attachment) {
             super.onDone(exc);
         }
     }

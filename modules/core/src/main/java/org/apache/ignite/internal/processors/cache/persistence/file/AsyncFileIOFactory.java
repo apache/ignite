@@ -38,8 +38,15 @@ public class AsyncFileIOFactory implements FileIOFactory {
         return create(file, CREATE, READ, WRITE);
     }
 
+    /** */
+    private ThreadLocal<AsyncFileIO.ChannelOpFuture> holder = new ThreadLocal<AsyncFileIO.ChannelOpFuture>() {
+        @Override protected AsyncFileIO.ChannelOpFuture initialValue() {
+            return new AsyncFileIO.ChannelOpFuture();
+        }
+    };
+
     /** {@inheritDoc} */
     @Override public FileIO create(File file, OpenOption... modes) throws IOException {
-        return new AsyncFileIO(file, modes);
+        return new AsyncFileIO(file, holder, modes);
     }
 }
