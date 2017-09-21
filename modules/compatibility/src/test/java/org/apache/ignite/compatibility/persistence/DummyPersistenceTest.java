@@ -50,7 +50,7 @@ public class DummyPersistenceTest extends IgnitePersistenceAbstractTest {
      */
     public void testNodeStartByOldVersionPersistenceData() throws Exception {
         try {
-            startGrid(1, "2.2.0", new PostConfigurationClosure(), new PostActionClosure());
+            startGrid(1, "2.2.0", new ConfigurationClosure(), new PostStartupClosure());
 
             stopAllGrids();
 
@@ -71,7 +71,7 @@ public class DummyPersistenceTest extends IgnitePersistenceAbstractTest {
     }
 
     /** */
-    private static class PostActionClosure implements IgniteInClosure<Ignite> {
+    private static class PostStartupClosure implements IgniteInClosure<Ignite> {
         /** {@inheritDoc} */
         @Override public void apply(Ignite ignite) {
             ignite.active(true);
@@ -90,7 +90,7 @@ public class DummyPersistenceTest extends IgnitePersistenceAbstractTest {
     }
 
     /** */
-    private static class PostConfigurationClosure implements IgniteInClosure<IgniteConfiguration> {
+    private static class ConfigurationClosure implements IgniteInClosure<IgniteConfiguration> {
         /** {@inheritDoc} */
         @Override public void apply(IgniteConfiguration cfg) {
             cfg.setLocalHost("127.0.0.1");
