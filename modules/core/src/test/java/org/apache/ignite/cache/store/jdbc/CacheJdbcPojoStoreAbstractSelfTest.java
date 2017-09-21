@@ -243,7 +243,7 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
      * @return Flag indicate keep value in binary format or not.
      */
     protected boolean storeKeepBinary(){
-        return false;
+        return marshaller() instanceof BinaryMarshaller;
     }
 
     /**
