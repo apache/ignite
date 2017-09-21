@@ -63,7 +63,7 @@ public final class FileInput implements ByteBufferBackedDataInput {
     }
 
     /**
-     * FileIO.
+     * File I/O.
      */
     public FileIO io() {
         return io;

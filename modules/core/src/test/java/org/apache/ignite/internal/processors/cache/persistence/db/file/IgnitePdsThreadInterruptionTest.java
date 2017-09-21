@@ -194,13 +194,6 @@ public class IgnitePdsThreadInterruptionTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Tests interruptions of checkpoint threads.
-     */
-    public void testInterruptsOnCheckpoint() {
-        // No-op.
-    }
-
-    /**
      * @throws IgniteCheckedException If fail.
      */
     private void deleteWorkFiles() throws IgniteCheckedException {

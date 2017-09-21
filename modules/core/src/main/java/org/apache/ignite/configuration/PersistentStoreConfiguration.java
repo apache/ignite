@@ -18,12 +18,9 @@ package org.apache.ignite.configuration;
 
 import java.io.Serializable;
 
-import java.util.concurrent.Executors;
 import org.apache.ignite.internal.processors.cache.persistence.file.AsyncFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
-import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.thread.IgniteThreadFactory;
 
 /**
  * Configures Apache Ignite Persistent store.
