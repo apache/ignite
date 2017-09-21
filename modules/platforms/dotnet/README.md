@@ -74,7 +74,7 @@ Ignite is an elastic, horizontally scalable distributed system that supports add
 
 [Read More](https://apacheignite-net.readme.io/docs/cluster)
 
-##Ignite and Ignite.NET
+## Ignite and Ignite.NET
 
 * Ignite.NET is built on top of Ignite.
 * .NET starts the JVM in the same process and communicates with it via JNI & C++.
@@ -261,3 +261,9 @@ Ignite is a distributed system and, therefore, it is important to be able to col
 ## Contribute to Ignite.NET
 
 See [Ignite.NET Development](https://cwiki.apache.org/confluence/display/IGNITE/Ignite.NET+Development) on wiki.
+
+## Ignite On Other Platforms
+
+<a href="https://github.com/apache/ignite">Java</a>
+
+<a href="https://github.com/apache/ignite/tree/master/modules/platforms/cpp">Ignite C++</a>

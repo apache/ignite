@@ -210,6 +210,13 @@ Ignite is a distributed system and, therefore, it is important to be able to col
 [Read More](https://apacheignite.readme.io/docs/collocate-compute-and-data)
 
 
+## Ignite On Other Platforms
+
+<a href="https://github.com/apache/ignite">Java</a>
+
+<a href="https://github.com/apache/ignite/tree/master/modules/platforms/dotnet">Ignite.Net</a>
+
+
 [apache-ignite-homepage]: https://ignite.apache.org/
 [getting-started]: https://apacheignite-cpp.readme.io/docs/getting-started-1
 [docs]: https://apacheignite-cpp.readme.io/docs
