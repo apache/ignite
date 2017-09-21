@@ -235,7 +235,7 @@ BOOST_AUTO_TEST_CASE(TestUpdateKey)
     ret = SQLExecDirect(stmt, updateReq, SQL_NTS);
 
     BOOST_REQUIRE_EQUAL(ret, SQL_ERROR);
-    BOOST_CHECK_EQUAL(GetOdbcErrorState(SQL_HANDLE_STMT, stmt), "07006");
+    BOOST_CHECK_EQUAL(GetOdbcErrorState(SQL_HANDLE_STMT, stmt), "42000");
 }
 
 BOOST_AUTO_TEST_CASE(TestTableNotFound)
