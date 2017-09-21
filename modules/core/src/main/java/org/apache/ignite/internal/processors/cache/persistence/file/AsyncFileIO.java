@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousFileChannel;
 import java.nio.channels.CompletionHandler;
-import java.nio.file.StandardOpenOption;
 import java.util.EnumSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -32,6 +31,10 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.jetbrains.annotations.NotNull;
+
+import static java.nio.file.StandardOpenOption.CREATE;
+import static java.nio.file.StandardOpenOption.READ;
+import static java.nio.file.StandardOpenOption.WRITE;
 
 /**
  * File I/O implementation based on {@link AsynchronousFileChannel}.
@@ -74,7 +77,7 @@ public class AsyncFileIO implements FileIO {
         });
 
         this.ch = AsynchronousFileChannel.open(file.toPath(),
-            EnumSet.of(StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE), execSvc);
+            EnumSet.of(CREATE, READ, WRITE), execSvc);
     }
 
     /** {@inheritDoc} */
