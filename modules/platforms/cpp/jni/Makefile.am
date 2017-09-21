@@ -29,7 +29,9 @@ AM_CPPFLAGS = \
     -I@top_srcdir@/common/os/linux/include \
     -I$(JAVA_HOME)/include \
     -I$(JAVA_HOME)/include/linux \
-    -DIGNITE_IMPL
+    -DIGNITE_IMPL \
+    -D__STDC_LIMIT_MACROS \
+    -D__STDC_CONSTANT_MACROS
 
 AM_CXXFLAGS = \
     -Wall \

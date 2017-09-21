@@ -31,13 +31,13 @@
     </parent>
 
     <artifactId>ignite-benchmarks</artifactId>
-    <version>1.7.0-SNAPSHOT</version>
+    <version>1.8.0-SNAPSHOT</version>
     <url>http://ignite.apache.org</url>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <jmh.version>1.11.3</jmh.version>
-        <javac.target>1.6</javac.target>
+        <jmh.version>1.13</jmh.version>
+        <javac.target>1.7</javac.target>
         <uberjar.name>benchmarks</uberjar.name>
     </properties>
 

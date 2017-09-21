@@ -17,9 +17,12 @@
 
 package org.apache.ignite.cache.store.jdbc;
 
+import java.math.BigDecimal;
 import java.nio.ByteBuffer;
+import java.sql.Date;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.UUID;
 
@@ -35,56 +38,71 @@ public class JdbcTypesDefaultTransformer implements JdbcTypesTransformer {
 
     /** {@inheritDoc} */
     @Override public Object getColumnValue(ResultSet rs, int colIdx, Class<?> type) throws SQLException {
-        Object val = rs.getObject(colIdx);
+        if (type == String.class)
+            return rs.getString(colIdx);
 
-        if (val == null)
-            return null;
+        if (type == int.class || type == Integer.class) {
+            int res = rs.getInt(colIdx);
 
-        if (type == int.class)
-            return rs.getInt(colIdx);
-
-        if (type == long.class)
-            return rs.getLong(colIdx);
-
-        if (type == double.class)
-            return rs.getDouble(colIdx);
-
-        if (type == boolean.class || type == Boolean.class)
-            return rs.getBoolean(colIdx);
-
-        if (type == byte.class)
-            return rs.getByte(colIdx);
-
-        if (type == short.class)
-            return rs.getShort(colIdx);
-
-        if (type == float.class)
-            return rs.getFloat(colIdx);
-
-        if (type == Integer.class || type == Long.class || type == Double.class ||
-            type == Byte.class || type == Short.class ||  type == Float.class) {
-            Number num = (Number)val;
-
-            if (type == Integer.class)
-                return num.intValue();
-            else if (type == Long.class)
-                return num.longValue();
-            else if (type == Double.class)
-                return num.doubleValue();
-            else if (type == Byte.class)
-                return num.byteValue();
-            else if (type == Short.class)
-                return num.shortValue();
-            else if (type == Float.class)
-                return num.floatValue();
+            return rs.wasNull() && type == Integer.class ? null : res;
         }
 
-        if (type == UUID.class) {
-            if (val instanceof UUID)
-                return val;
+        if (type == long.class || type == Long.class) {
+            long res = rs.getLong(colIdx);
 
-            if (val instanceof byte[]) {
-                ByteBuffer bb = ByteBuffer.wrap((byte[])val);
+            return rs.wasNull() && type == Long.class ? null : res;
+        }
+
+        if (type == double.class || type == Double.class) {
+            double res = rs.getDouble(colIdx);
+
+            return rs.wasNull() && type == Double.class ? null : res;
+        }
+
+        if (type == Date.class || type == java.util.Date.class)
+            return rs.getDate(colIdx);
+
+        if (type == Timestamp.class)
+            return rs.getTimestamp(colIdx);
+
+        if (type == Time.class)
+            return rs.getTime(colIdx);
+
+        if (type == boolean.class || type == Boolean.class) {
+            boolean res = rs.getBoolean(colIdx);
+
+            return rs.wasNull() && type == Boolean.class ? null : res;
+        }
+
+        if (type == byte.class || type == Byte.class) {
+            byte res = rs.getByte(colIdx);
+
+            return rs.wasNull() && type == Byte.class ? null : res;
+        }
+
+        if (type == short.class || type == Short.class) {
+            short res = rs.getShort(colIdx);
+
+            return rs.wasNull() && type == Short.class ? null : res;
+        }
+
+        if (type == float.class || type == Float.class) {
+            float res = rs.getFloat(colIdx);
+
+            return rs.wasNull() && type == Float.class ? null : res;
+        }
+
+        if (type == BigDecimal.class)
+            return rs.getBigDecimal(colIdx);
+
+        if (type == UUID.class) {
+            Object res = rs.getObject(colIdx);
+
+            if (res instanceof UUID)
+                return res;
+
+            if (res instanceof byte[]) {
+                ByteBuffer bb = ByteBuffer.wrap((byte[])res);
 
                 long most = bb.getLong();
                 long least = bb.getLong();
@@ -92,26 +110,29 @@ public class JdbcTypesDefaultTransformer implements JdbcTypesTransformer {
                 return new UUID(most, least);
             }
 
-            if (val instanceof String)
-                return UUID.fromString((String)val);
+            if (res instanceof String)
+                return UUID.fromString((String)res);
         }
 
-        // Workaround for known issue with Oracle JDBC driver https://community.oracle.com/thread/2355464?tstart=0
-        if (type == java.sql.Date.class && val instanceof java.util.Date)
-            return new java.sql.Date(((java.util.Date)val).getTime());
+        if (type.isEnum()) {
+            if (NUMERIC_TYPES.contains(rs.getMetaData().getColumnType(colIdx))) {
+                int ordinal = rs.getInt(colIdx);
 
-        // Workaround for known issue with Oracle JDBC driver and timestamp.
-        // http://stackoverflow.com/questions/13269564/java-lang-classcastexception-oracle-sql-timestamp-cannot-be-cast-to-java-sql-ti
-        if (type == Timestamp.class && !(val instanceof Timestamp) &&
-            val.getClass().getName().startsWith("oracle.sql.TIMESTAMP")) {
+                Object[] values = type.getEnumConstants();
+
+                return rs.wasNull() || ordinal >= values.length ? null : values[ordinal];
+            }
+
+            String str = rs.getString(colIdx);
+
             try {
-                return val.getClass().getMethod("timestampValue").invoke(val);
+                return rs.wasNull() ? null : Enum.valueOf((Class<? extends Enum>) type, str.trim());
             }
-            catch (Exception e) {
-                throw new SQLException("Failed to read data of oracle.sql.TIMESTAMP type.", e);
+            catch (IllegalArgumentException ignore) {
+                return null;
             }
         }
 
-        return val;
+        return rs.getObject(colIdx);
     }
 }

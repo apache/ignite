@@ -20,15 +20,28 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
+import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
+
+import static org.apache.ignite.internal.processors.cache.QueryCursorImpl.State.CLOSED;
+import static org.apache.ignite.internal.processors.cache.QueryCursorImpl.State.EXECUTION;
+import static org.apache.ignite.internal.processors.cache.QueryCursorImpl.State.IDLE;
+import static org.apache.ignite.internal.processors.cache.QueryCursorImpl.State.RESULT_READY;
 
 /**
  * Query cursor implementation.
  */
 public class QueryCursorImpl<T> implements QueryCursorEx<T> {
+    /** */
+    private final static AtomicReferenceFieldUpdater<QueryCursorImpl, State> STATE_UPDATER =
+        AtomicReferenceFieldUpdater.newUpdater(QueryCursorImpl.class, State.class, "state");
+
     /** Query executor. */
     private Iterable<T> iterExec;
 
@@ -36,29 +49,43 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T> {
     private Iterator<T> iter;
 
     /** */
-    private boolean iterTaken;
+    private volatile State state = IDLE;
 
     /** */
     private List<GridQueryFieldMetadata> fieldsMeta;
+
+    /** */
+    private final GridQueryCancel cancel;
+
+    /**
+     * @param iterExec Query executor.
+     * @param cancel Cancellation closure.
+     */
+    public QueryCursorImpl(Iterable<T> iterExec, GridQueryCancel cancel) {
+        this.iterExec = iterExec;
+        this.cancel = cancel;
+    }
 
     /**
      * @param iterExec Query executor.
      */
     public QueryCursorImpl(Iterable<T> iterExec) {
-        this.iterExec = iterExec;
+        this(iterExec, null);
     }
 
     /** {@inheritDoc} */
     @Override public Iterator<T> iterator() {
-        if (iter == null && iterTaken)
-            throw new IgniteException("Cursor is closed.");
-
-        if (iterTaken)
-            throw new IgniteException("Iterator is already taken from this cursor.");
-
-        iterTaken = true;
+        if (!STATE_UPDATER.compareAndSet(this, IDLE, EXECUTION))
+            throw new IgniteException("Iterator is already fetched or query was cancelled.");
 
         iter = iterExec.iterator();
+
+        if (!STATE_UPDATER.compareAndSet(this, EXECUTION, RESULT_READY)) {
+            // Handle race with cancel and make sure the iterator resources are freed correctly.
+            closeIter();
+
+            throw new CacheException(new QueryCancelledException());
+        }
 
         assert iter != null;
 
@@ -93,18 +120,35 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T> {
 
     /** {@inheritDoc} */
     @Override public void close() {
-        Iterator<T> i;
+        while(state != CLOSED) {
+            if (STATE_UPDATER.compareAndSet(this, RESULT_READY, CLOSED)) {
+                closeIter();
 
-        if ((i = iter) != null) {
-            iter = null;
+                return;
+            }
 
-            if (i instanceof AutoCloseable) {
-                try {
-                    ((AutoCloseable)i).close();
-                }
-                catch (Exception e) {
-                    throw new IgniteException(e);
-                }
+            if (STATE_UPDATER.compareAndSet(this, EXECUTION, CLOSED)) {
+                if (cancel != null)
+                    cancel.cancel();
+
+                return;
+            }
+
+            if (STATE_UPDATER.compareAndSet(this, IDLE, CLOSED))
+                return;
+        }
+    }
+
+    /**
+     * Closes iterator.
+     */
+    private void closeIter() {
+        if (iter instanceof AutoCloseable) {
+            try {
+                ((AutoCloseable)iter).close();
+            }
+            catch (Exception e) {
+                throw new IgniteException(e);
             }
         }
     }
@@ -121,5 +165,13 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T> {
      */
     @Override public List<GridQueryFieldMetadata> fieldsMeta() {
         return fieldsMeta;
+    }
+
+    /** Query cursor state */
+    protected enum State {
+        /** Idle. */IDLE,
+        /** Executing. */EXECUTION,
+        /** Result ready. */RESULT_READY,
+        /** Closed. */CLOSED,
     }
 }

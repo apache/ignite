@@ -20,6 +20,10 @@ package org.apache.ignite.testsuites;
 import junit.framework.TestSuite;
 import org.apache.ignite.igfs.IgfsFragmentizerSelfTest;
 import org.apache.ignite.igfs.IgfsFragmentizerTopologySelfTest;
+import org.apache.ignite.internal.processors.igfs.IgfsAtomicPrimaryMultiNodeSelfTest;
+import org.apache.ignite.internal.processors.igfs.IgfsAtomicPrimaryOffheapTieredSelfTest;
+import org.apache.ignite.internal.processors.igfs.IgfsAtomicPrimaryOffheapValuesSelfTest;
+import org.apache.ignite.internal.processors.igfs.IgfsAtomicPrimarySelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsAttributesSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsBackupsDualAsyncSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsBackupsDualSyncSelfTest;
@@ -29,6 +33,8 @@ import org.apache.ignite.internal.processors.igfs.IgfsCachePerBlockLruEvictionPo
 import org.apache.ignite.internal.processors.igfs.IgfsCacheSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsDualAsyncClientSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsDualSyncClientSelfTest;
+import org.apache.ignite.internal.processors.igfs.IgfsLocalSecondaryFileSystemProxyClientSelfTest;
+import org.apache.ignite.internal.processors.igfs.IgfsMaxSizeSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsPrimaryClientSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsDataManagerSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsDualAsyncSelfTest;
@@ -51,11 +57,17 @@ import org.apache.ignite.internal.processors.igfs.IgfsPrimaryRelaxedConsistencyS
 import org.apache.ignite.internal.processors.igfs.IgfsPrimarySelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsProcessorSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsProcessorValidationSelfTest;
+import org.apache.ignite.internal.processors.igfs.IgfsProxySelfTest;
+import org.apache.ignite.internal.processors.igfs.IgfsLocalSecondaryFileSystemProxySelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsServerManagerIpcEndpointRegistrationOnWindowsSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsSizeSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsStartCacheTest;
 import org.apache.ignite.internal.processors.igfs.IgfsStreamsSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsTaskSelfTest;
+import org.apache.ignite.internal.processors.igfs.IgfsLocalSecondaryFileSystemDualAsyncClientSelfTest;
+import org.apache.ignite.internal.processors.igfs.IgfsLocalSecondaryFileSystemDualAsyncSelfTest;
+import org.apache.ignite.internal.processors.igfs.IgfsLocalSecondaryFileSystemDualSyncClientSelfTest;
+import org.apache.ignite.internal.processors.igfs.IgfsLocalSecondaryFileSystemDualSyncSelfTest;
 import org.apache.ignite.internal.processors.igfs.split.IgfsByteDelimiterRecordResolverSelfTest;
 import org.apache.ignite.internal.processors.igfs.split.IgfsFixedLengthRecordResolverSelfTest;
 import org.apache.ignite.internal.processors.igfs.split.IgfsNewLineDelimiterRecordResolverSelfTest;
@@ -87,6 +99,11 @@ public class IgniteIgfsTestSuite extends TestSuite {
 
         suite.addTest(new TestSuite(IgfsDualSyncSelfTest.class));
         suite.addTest(new TestSuite(IgfsDualAsyncSelfTest.class));
+
+        suite.addTest(new TestSuite(IgfsLocalSecondaryFileSystemDualSyncSelfTest.class));
+        suite.addTest(new TestSuite(IgfsLocalSecondaryFileSystemDualAsyncSelfTest.class));
+        suite.addTest(new TestSuite(IgfsLocalSecondaryFileSystemDualSyncClientSelfTest.class));
+        suite.addTest(new TestSuite(IgfsLocalSecondaryFileSystemDualAsyncClientSelfTest.class));
 
         suite.addTest(new TestSuite(IgfsSizeSelfTest.class));
         suite.addTest(new TestSuite(IgfsAttributesSelfTest.class));
@@ -138,6 +155,17 @@ public class IgniteIgfsTestSuite extends TestSuite {
 
         // TODO: Enable when IGFS failover is fixed.
         //suite.addTestSuite(IgfsBackupFailoverSelfTest.class);
+
+        suite.addTestSuite(IgfsMaxSizeSelfTest.class);
+
+        suite.addTestSuite(IgfsProxySelfTest.class);
+        suite.addTestSuite(IgfsLocalSecondaryFileSystemProxySelfTest.class);
+        suite.addTestSuite(IgfsLocalSecondaryFileSystemProxyClientSelfTest.class);
+
+        suite.addTestSuite(IgfsAtomicPrimarySelfTest.class);
+        suite.addTestSuite(IgfsAtomicPrimaryMultiNodeSelfTest.class);
+        suite.addTestSuite(IgfsAtomicPrimaryOffheapTieredSelfTest.class);
+        suite.addTestSuite(IgfsAtomicPrimaryOffheapValuesSelfTest.class);
 
         return suite;
     }

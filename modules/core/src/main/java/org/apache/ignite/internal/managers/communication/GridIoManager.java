@@ -18,26 +18,33 @@
 package org.apache.ignite.internal.managers.communication;
 
 import java.io.Serializable;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.UUID;
+import java.util.concurrent.BrokenBarrierException;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.Executor;
+import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
@@ -47,6 +54,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteComponentType;
 import org.apache.ignite.internal.IgniteDeploymentCheckedException;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.direct.DirectMessageReader;
 import org.apache.ignite.internal.direct.DirectMessageWriter;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
@@ -54,10 +62,14 @@ import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.platform.message.PlatformMessageFilter;
+import org.apache.ignite.internal.processors.pool.PoolProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashSet;
 import org.apache.ignite.internal.util.GridSpinReadWriteLock;
+import org.apache.ignite.internal.util.future.GridFinishedFuture;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridTuple3;
+import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -68,7 +80,6 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.plugin.extensions.communication.IoPool;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFormatter;
@@ -78,15 +89,16 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.CommunicationListener;
 import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 import org.jsr166.ConcurrentLinkedDeque8;
+import org.jsr166.LongAdder8;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.GridTopic.TOPIC_COMM_USER;
+import static org.apache.ignite.internal.GridTopic.TOPIC_IO_TEST;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.AFFINITY_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.IDX_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.IGFS_POOL;
@@ -131,35 +143,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     /** Disconnect listeners. */
     private final Collection<GridDisconnectListener> disconnectLsnrs = new ConcurrentLinkedQueue<>();
 
-    /** Map of {@link IoPool}-s injected by Ignite plugins. */
-    private final IoPool[] ioPools = new IoPool[128];
-
-    /** Public pool. */
-    private ExecutorService pubPool;
-
-    /** Internal P2P pool. */
-    private ExecutorService p2pPool;
-
-    /** Internal system pool. */
-    private ExecutorService sysPool;
-
-    /** Internal management pool. */
-    private ExecutorService mgmtPool;
-
-    /** Affinity assignment executor service. */
-    private ExecutorService affPool;
-
-    /** Utility cache pool. */
-    private ExecutorService utilityCachePool;
-
-    /** Marshaller cache pool. */
-    private ExecutorService marshCachePool;
-
-    /** IGFS pool. */
-    private ExecutorService igfsPool;
-
-    /** Index pool. */
-    private ExecutorService idxPool;
+    /** Pool processor. */
+    private PoolProcessor pools;
 
     /** Discovery listener. */
     private GridLocalEventListener discoLsnr;
@@ -207,12 +192,22 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     /** Stopping flag. */
     private boolean stopping;
 
+    /** */
+    private final AtomicReference<ConcurrentHashMap<Long, IoTestFuture>> ioTestMap = new AtomicReference<>();
+
+    /** */
+    private final AtomicLong ioTestId = new AtomicLong();
+
     /**
      * @param ctx Grid kernal context.
      */
     @SuppressWarnings("deprecation")
     public GridIoManager(GridKernalContext ctx) {
         super(ctx, ctx.config().getCommunicationSpi());
+
+        pools = ctx.pools();
+
+        assert pools != null;
 
         locNodeId = ctx.localNodeId();
 
@@ -256,28 +251,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         assertParameter(discoDelay > 0, "discoveryStartupDelay > 0");
 
         startSpi();
-
-        pubPool = ctx.getExecutorService();
-        p2pPool = ctx.getPeerClassLoadingExecutorService();
-        sysPool = ctx.getSystemExecutorService();
-        mgmtPool = ctx.getManagementExecutorService();
-        utilityCachePool = ctx.utilityCachePool();
-        marshCachePool = ctx.marshallerCachePool();
-        igfsPool = ctx.getIgfsExecutorService();
-        affPool = new IgniteThreadPoolExecutor(
-            "aff",
-            ctx.gridName(),
-            1,
-            1,
-            0,
-            new LinkedBlockingQueue<Runnable>());
-
-        if (IgniteComponentType.INDEXING.inClassPath()) {
-            int cpus = Runtime.getRuntime().availableProcessors();
-
-            idxPool = new IgniteThreadPoolExecutor("idx", ctx.gridName(),
-                cpus, cpus * 2, 3000L, new LinkedBlockingQueue<Runnable>(1000));
-        }
 
         getSpi().setListener(commLsnr = new CommunicationListener<Serializable>() {
             @Override public void onMessage(UUID nodeId, Serializable msg, IgniteRunnable msgC) {
@@ -347,39 +320,397 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         if (log.isDebugEnabled())
             log.debug(startInfo());
 
-        registerIoPoolExtensions();
+        addMessageListener(TOPIC_IO_TEST, new GridMessageListener() {
+            @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
+                ClusterNode node = ctx.discovery().node(nodeId);
+
+                if (node == null)
+                    return;
+
+                IgniteIoTestMessage msg0 = (IgniteIoTestMessage)msg;
+
+                msg0.senderNodeId(nodeId);
+
+                if (msg0.request()) {
+                    IgniteIoTestMessage res = new IgniteIoTestMessage(msg0.id(), false, null);
+
+                    res.flags(msg0.flags());
+                    res.onRequestProcessed();
+
+                    res.copyDataFromRequest(msg0);
+
+                    try {
+                        send(node, TOPIC_IO_TEST, res, GridIoPolicy.SYSTEM_POOL);
+                    }
+                    catch (IgniteCheckedException e) {
+                        U.error(log, "Failed to send IO test response [msg=" + msg0 + "]", e);
+                    }
+                }
+                else {
+                    IoTestFuture fut = ioTestMap().get(msg0.id());
+
+                    msg0.onResponseProcessed();
+
+                    if (fut == null)
+                        U.warn(log, "Failed to find IO test future [msg=" + msg0 + ']');
+                    else
+                        fut.onResponse(msg0);
+                }
+            }
+        });
     }
 
     /**
-     * Processes IO messaging pool extensions.
-     * @throws IgniteCheckedException On error.
+     * @param nodes Nodes.
+     * @param payload Payload.
+     * @param procFromNioThread If {@code true} message is processed from NIO thread.
+     * @return Response future.
      */
-    private void registerIoPoolExtensions() throws IgniteCheckedException {
-        // Process custom IO messaging pool extensions:
-        final IoPool[] executorExtensions = ctx.plugins().extensions(IoPool.class);
+    public IgniteInternalFuture sendIoTest(List<ClusterNode> nodes, byte[] payload, boolean procFromNioThread) {
+        long id = ioTestId.getAndIncrement();
 
-        if (executorExtensions != null) {
-            // Store it into the map and check for duplicates:
-            for (IoPool ex : executorExtensions) {
-                final byte id = ex.id();
+        IoTestFuture fut = new IoTestFuture(id, nodes.size());
 
-                // 1. Check the pool id is non-negative:
-                if (id < 0)
-                    throw new IgniteCheckedException("Failed to register IO executor pool because its Id is negative " +
-                        "[id=" + id + ']');
+        IgniteIoTestMessage msg = new IgniteIoTestMessage(id, true, payload);
 
-                // 2. Check the pool id is in allowed range:
-                if (isReservedGridIoPolicy(id))
-                    throw new IgniteCheckedException("Failed to register IO executor pool because its Id in in the " +
-                        "reserved range (0-31) [id=" + id + ']');
+        msg.processFromNioThread(procFromNioThread);
 
-                // 3. Check the pool for duplicates:
-                if (ioPools[id] != null)
-                    throw new IgniteCheckedException("Failed to register IO executor pool because its " +
-                        "Id as already used [id=" + id + ']');
+        ioTestMap().put(id, fut);
 
-                ioPools[id] = ex;
+        for (int i = 0; i < nodes.size(); i++) {
+            ClusterNode node = nodes.get(i);
+
+            try {
+                send(node, TOPIC_IO_TEST, msg, GridIoPolicy.SYSTEM_POOL);
             }
+            catch (IgniteCheckedException e) {
+                ioTestMap().remove(msg.id());
+
+                return new GridFinishedFuture(e);
+            }
+        }
+
+        return fut;
+    }
+
+    /**
+     * @param node Node.
+     * @param payload Payload.
+     * @param procFromNioThread If {@code true} message is processed from NIO thread.
+     * @return Response future.
+     */
+    public IgniteInternalFuture<List<IgniteIoTestMessage>> sendIoTest(
+        ClusterNode node,
+        byte[] payload,
+        boolean procFromNioThread
+    ) {
+        long id = ioTestId.getAndIncrement();
+
+        IoTestFuture fut = new IoTestFuture(id, 1);
+
+        IgniteIoTestMessage msg = new IgniteIoTestMessage(id, true, payload);
+
+        msg.processFromNioThread(procFromNioThread);
+
+        ioTestMap().put(id, fut);
+
+        try {
+            send(node, TOPIC_IO_TEST, msg, GridIoPolicy.SYSTEM_POOL);
+        }
+        catch (IgniteCheckedException e) {
+            ioTestMap().remove(msg.id());
+
+            return new GridFinishedFuture(e);
+        }
+
+        return fut;
+    }
+
+    /**
+     * @return IO test futures map.
+     */
+    private ConcurrentHashMap<Long, IoTestFuture> ioTestMap() {
+        ConcurrentHashMap<Long, IoTestFuture> map = ioTestMap.get();
+
+        if (map == null) {
+            if (!ioTestMap.compareAndSet(null, map = new ConcurrentHashMap<>()))
+                map = ioTestMap.get();
+        }
+
+        return map;
+    }
+
+    /**
+     * @param warmup Warmup duration in milliseconds.
+     * @param duration Test duration in milliseconds.
+     * @param threads Thread count.
+     * @param latencyLimit Max latency in nanoseconds.
+     * @param rangesCnt Ranges count in resulting histogram.
+     * @param payLoadSize Payload size in bytes.
+     * @param procFromNioThread {@code True} to process requests in NIO threads.
+     * @param nodes Nodes participating in test.
+     */
+    public void runIoTest(
+        final long warmup,
+        final long duration,
+        final int threads,
+        final long latencyLimit,
+        final int rangesCnt,
+        final int payLoadSize,
+        final boolean procFromNioThread,
+        final List<ClusterNode> nodes
+    ) {
+        final ExecutorService svc = Executors.newFixedThreadPool(threads + 1);
+
+        final AtomicBoolean warmupFinished = new AtomicBoolean();
+        final AtomicBoolean done = new AtomicBoolean();
+        final CyclicBarrier bar = new CyclicBarrier(threads + 1);
+        final LongAdder8 cnt = new LongAdder8();
+        final long sleepDuration = 5000;
+        final byte[] payLoad = new byte[payLoadSize];
+        final Map<UUID, IoTestThreadLocalNodeResults>[] res = new Map[threads];
+
+        boolean failed = true;
+
+        try {
+            svc.execute(new Runnable() {
+                @Override public void run() {
+                    boolean failed = true;
+
+                    try {
+                        bar.await();
+
+                        long start = System.currentTimeMillis();
+
+                        if (log.isInfoEnabled())
+                            log.info("IO test started " +
+                                "[warmup=" + warmup +
+                                ", duration=" + duration +
+                                ", threads=" + threads +
+                                ", latencyLimit=" + latencyLimit +
+                                ", rangesCnt=" + rangesCnt +
+                                ", payLoadSize=" + payLoadSize +
+                                ", procFromNioThreads=" + procFromNioThread + ']'
+                            );
+
+                        for (;;) {
+                            if (!warmupFinished.get() && System.currentTimeMillis() - start > warmup) {
+                                if (log.isInfoEnabled())
+                                    log.info("IO test warmup finished.");
+
+                                warmupFinished.set(true);
+
+                                start = System.currentTimeMillis();
+                            }
+
+                            if (warmupFinished.get() && System.currentTimeMillis() - start > duration) {
+                                if (log.isInfoEnabled())
+                                    log.info("IO test finished, will wait for all threads to finish.");
+
+                                done.set(true);
+
+                                bar.await();
+
+                                failed = false;
+
+                                break;
+                            }
+
+                            if (log.isInfoEnabled())
+                                log.info("IO test [opsCnt/sec=" + (cnt.sumThenReset() * 1000 / sleepDuration) +
+                                    ", warmup=" + !warmupFinished.get() +
+                                    ", elapsed=" + (System.currentTimeMillis() - start) + ']');
+
+                            Thread.sleep(sleepDuration);
+                        }
+
+                        // At this point all threads have finished the test and
+                        // stored data to the resulting array of maps.
+                        // Need to iterate it over and sum values for all threads.
+                        printIoTestResults(res);
+                    }
+                    catch (InterruptedException | BrokenBarrierException e) {
+                        U.error(log, "IO test failed.", e);
+                    }
+                    finally {
+                        if (failed)
+                            bar.reset();
+
+                        svc.shutdown();
+                    }
+                }
+            });
+
+            for (int i = 0; i < threads; i++) {
+                final int i0 = i;
+
+                res[i] = U.newHashMap(nodes.size());
+
+                svc.execute(new Runnable() {
+                    @Override public void run() {
+                        boolean failed = true;
+                        ThreadLocalRandom rnd = ThreadLocalRandom.current();
+                        int size = nodes.size();
+                        Map<UUID, IoTestThreadLocalNodeResults> res0 = res[i0];
+
+                        try {
+                            boolean warmupFinished0 = false;
+
+                            bar.await();
+
+                            for (;;) {
+                                if (done.get())
+                                    break;
+
+                                if (!warmupFinished0)
+                                    warmupFinished0 = warmupFinished.get();
+
+                                ClusterNode node = nodes.get(rnd.nextInt(size));
+
+                                List<IgniteIoTestMessage> msgs = sendIoTest(node, payLoad, procFromNioThread).get();
+
+                                cnt.increment();
+
+                                for (IgniteIoTestMessage msg : msgs) {
+                                    UUID nodeId = msg.senderNodeId();
+
+                                    assert nodeId != null;
+
+                                    IoTestThreadLocalNodeResults nodeRes = res0.get(nodeId);
+
+                                    if (nodeRes == null)
+                                        res0.put(nodeId,
+                                            nodeRes = new IoTestThreadLocalNodeResults(rangesCnt, latencyLimit));
+
+                                    nodeRes.onResult(msg);
+                                }
+                            }
+
+                            bar.await();
+
+                            failed = false;
+                        }
+                        catch (Exception e) {
+                            U.error(log, "IO test worker thread failed.", e);
+                        }
+                        finally {
+                            if (failed)
+                                bar.reset();
+                        }
+                    }
+                });
+            }
+
+            failed = false;
+        }
+        finally {
+            if (failed)
+                U.shutdownNow(GridIoManager.class, svc, log);
+        }
+    }
+
+    /**
+     * @param rawRes Resulting map.
+     */
+    private void printIoTestResults(
+        Map<UUID, IoTestThreadLocalNodeResults>[] rawRes
+    ) {
+        Map<UUID, IoTestNodeResults> res = new HashMap<>();
+
+        for (Map<UUID, IoTestThreadLocalNodeResults> r : rawRes) {
+            for (Entry<UUID, IoTestThreadLocalNodeResults> e : r.entrySet()) {
+                IoTestNodeResults r0 = res.get(e.getKey());
+
+                if (r0 == null)
+                    res.put(e.getKey(), r0 = new IoTestNodeResults());
+
+                r0.add(e.getValue());
+            }
+        }
+
+        SimpleDateFormat dateFmt = new SimpleDateFormat("HH:mm:ss,SSS");
+
+        StringBuilder b = new StringBuilder(U.nl())
+            .append("IO test results (round-trip count per each latency bin).")
+            .append(U.nl());
+
+        for (Entry<UUID, IoTestNodeResults> e : res.entrySet()) {
+            ClusterNode node = ctx.discovery().node(e.getKey());
+
+            long binLatencyMcs = e.getValue().binLatencyMcs();
+
+            b.append("Node ID: ").append(e.getKey()).append(" (addrs=")
+                .append(node != null ? node.addresses().toString() : "n/a")
+                .append(", binLatency=").append(binLatencyMcs).append("mcs")
+                .append(')').append(U.nl());
+
+            b.append("Latency bin, mcs | Count exclusive | Percentage exclusive | " +
+                "Count inclusive | Percentage inclusive ").append(U.nl());
+
+            long[] nodeRes = e.getValue().resLatency;
+
+            long sum = 0;
+
+            for (int i = 0; i < nodeRes.length; i++)
+                sum += nodeRes[i];
+
+            long curSum = 0;
+
+            for (int i = 0; i < nodeRes.length; i++) {
+                curSum += nodeRes[i];
+
+                if (i < nodeRes.length - 1)
+                    b.append(String.format("<%11d mcs | %15d | %19.6f%% | %15d | %19.6f%%\n",
+                        (i + 1) * binLatencyMcs,
+                        nodeRes[i], (100.0 * nodeRes[i]) / sum,
+                        curSum, (100.0 * curSum) / sum));
+                else
+                    b.append(String.format(">%11d mcs | %15d | %19.6f%% | %15d | %19.6f%%\n",
+                        i * binLatencyMcs,
+                        nodeRes[i], (100.0 * nodeRes[i]) / sum,
+                        curSum, (100.0 * curSum) / sum));
+            }
+
+            b.append(U.nl()).append("Total latency (ns): ").append(U.nl())
+                .append(String.format("%15d", e.getValue().totalLatency)).append(U.nl());
+
+            b.append(U.nl()).append("Max latencies (ns):").append(U.nl());
+            format(b, e.getValue().maxLatency, dateFmt);
+
+            b.append(U.nl()).append("Max request send queue times (ns):").append(U.nl());
+            format(b, e.getValue().maxReqSendQueueTime, dateFmt);
+
+            b.append(U.nl()).append("Max request receive queue times (ns):").append(U.nl());
+            format(b, e.getValue().maxReqRcvQueueTime, dateFmt);
+
+            b.append(U.nl()).append("Max response send queue times (ns):").append(U.nl());
+            format(b, e.getValue().maxResSendQueueTime, dateFmt);
+
+            b.append(U.nl()).append("Max response receive queue times (ns):").append(U.nl());
+            format(b, e.getValue().maxResRcvQueueTime, dateFmt);
+
+            b.append(U.nl()).append("Max request wire times (millis):").append(U.nl());
+            format(b, e.getValue().maxReqWireTimeMillis, dateFmt);
+
+            b.append(U.nl()).append("Max response wire times (millis):").append(U.nl());
+            format(b, e.getValue().maxResWireTimeMillis, dateFmt);
+
+            b.append(U.nl());
+        }
+
+        if (log.isInfoEnabled())
+            log.info(b.toString());
+    }
+
+    /**
+     * @param b Builder.
+     * @param pairs Pairs to format.
+     * @param dateFmt Formatter.
+     */
+    private void format(StringBuilder b, Collection<IgnitePair<Long>> pairs, SimpleDateFormat dateFmt) {
+        for (IgnitePair<Long> p : pairs) {
+            b.append(String.format("%15d", p.get1())).append(" ")
+                .append(dateFmt.format(new Date(p.get2()))).append(U.nl());
         }
     }
 
@@ -557,10 +888,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             if (interrupted)
                 Thread.currentThread().interrupt();
 
-            U.shutdownNow(getClass(), affPool, log);
-
-            U.shutdownNow(getClass(), idxPool, log);
-
             GridEventStorageManager evtMgr = ctx.event();
 
             if (evtMgr != null && discoLsnr != null)
@@ -579,8 +906,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
         if (log.isDebugEnabled())
             log.debug(stopInfo());
-
-        Arrays.fill(ioPools, null);
     }
 
     /**
@@ -618,7 +943,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 int topicOrd = msg.topicOrdinal();
 
                 msg.topic(topicOrd >= 0 ? GridTopic.fromOrdinal(topicOrd) :
-                    marsh.unmarshal(msg.topicBytes(), U.resolveClassLoader(ctx.config())));
+                    U.unmarshal(marsh, msg.topicBytes(), U.resolveClassLoader(ctx.config())));
             }
 
             if (!started) {
@@ -697,72 +1022,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     }
 
     /**
-     * Gets execution pool for policy.
-     *
-     * @param plc Policy.
-     * @return Execution pool.
-     * @throws IgniteCheckedException If failed.
-     */
-    public Executor pool(byte plc) throws IgniteCheckedException {
-        switch (plc) {
-            case P2P_POOL:
-                return p2pPool;
-            case SYSTEM_POOL:
-                return sysPool;
-            case PUBLIC_POOL:
-                return pubPool;
-            case MANAGEMENT_POOL:
-                return mgmtPool;
-            case AFFINITY_POOL:
-                return affPool;
-
-            case UTILITY_CACHE_POOL:
-                assert utilityCachePool != null : "Utility cache pool is not configured.";
-
-                return utilityCachePool;
-
-            case MARSH_CACHE_POOL:
-                assert marshCachePool != null : "Marshaller cache pool is not configured.";
-
-                return marshCachePool;
-
-            case IGFS_POOL:
-                assert igfsPool != null : "IGFS pool is not configured.";
-
-                return igfsPool;
-
-            case IDX_POOL:
-                assert idxPool != null : "Indexing pool is not configured.";
-
-                return idxPool;
-
-            default: {
-                assert plc >= 0 : "Negative policy: " + plc;
-
-                if (isReservedGridIoPolicy(plc))
-                    throw new IgniteCheckedException("Failed to process message with policy of reserved" +
-                        " range (0-31), [policy=" + plc + ']');
-
-                IoPool pool = ioPools[plc];
-
-                if (pool == null)
-                    throw new IgniteCheckedException("Failed to process message because no pool is registered " +
-                        "for policy. [policy=" + plc + ']');
-
-                assert plc == pool.id();
-
-                Executor ex = pool.executor();
-
-                if (ex == null)
-                    throw new IgniteCheckedException("Failed to process message because corresponding executor " +
-                        "is null. [id=" + plc + ']');
-
-                return ex;
-            }
-        }
-    }
-
-    /**
      * @param nodeId Node ID.
      * @param msg Message.
      * @param msgC Closure to call when message processing finished.
@@ -797,7 +1056,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         };
 
         try {
-            p2pPool.execute(c);
+            pools.p2pPool().execute(c);
         }
         catch (RejectedExecutionException e) {
             U.error(log, "Failed to process P2P message due to execution rejection. Increase the upper bound " +
@@ -834,10 +1093,24 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                     msgC.run();
                 }
             }
+
+            @Override public String toString() {
+                return "Message closure [msg=" + msg + ']';
+            }
         };
 
+        if (msg.topicOrdinal() == TOPIC_IO_TEST.ordinal()) {
+            IgniteIoTestMessage msg0 = (IgniteIoTestMessage)msg.message();
+
+            if (msg0.processFromNioThread()) {
+                c.run();
+
+                return;
+            }
+        }
+
         try {
-            pool(plc).execute(c);
+            pools.poolForPolicy(plc).execute(c);
         }
         catch (RejectedExecutionException e) {
             U.error(log, "Failed to process regular message due to execution rejection. Increase the upper bound " +
@@ -1173,7 +1446,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         };
 
         try {
-            pool(plc).execute(c);
+            pools.poolForPolicy(plc).execute(c);
         }
         catch (RejectedExecutionException e) {
             U.error(log, "Failed to process ordered message due to execution rejection. " +
@@ -1235,7 +1508,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             CUR_PLC.set(plc);
 
         try {
-            lsnr.onMessage(nodeId, msg);
+            lsnr.onMessage(nodeId, msg, plc);
         }
         finally {
             if (change)
@@ -1297,7 +1570,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         }
         else {
             if (topicOrd < 0)
-                ioMsg.topicBytes(marsh.marshal(topic));
+                ioMsg.topicBytes(U.marshal(marsh, topic));
 
             try {
                 if ((CommunicationSpi)getSpi() instanceof TcpCommunicationSpi)
@@ -1570,10 +1843,10 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         byte[] serTopic = null;
 
         if (!loc) {
-            serMsg = marsh.marshal(msg);
+            serMsg = U.marshal(marsh, msg);
 
             if (topic != null)
-                serTopic = marsh.marshal(topic);
+                serTopic = U.marshal(marsh, topic);
         }
 
         GridDeployment dep = null;
@@ -1813,7 +2086,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
             try {
                 for (final GridCommunicationMessageSet msgSet : msgSets) {
-                    pool(msgSet.policy()).execute(
+                    pools.poolForPolicy(msgSet.policy()).execute(
                         new Runnable() {
                             @Override public void run() {
                                 unwindMessageSet(msgSet, lsnrs0);
@@ -1952,8 +2225,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         if (rmv && log.isDebugEnabled())
             log.debug("Removed message listener [topic=" + topic + ", lsnr=" + lsnr + ']');
 
-        if (lsnr instanceof ArrayListener)
-        {
+        if (lsnr instanceof ArrayListener) {
             for (GridMessageListener childLsnr : ((ArrayListener)lsnr).arr)
                 closeListener(childLsnr);
         }
@@ -2061,14 +2333,14 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
          * @param nodeId Node ID.
          * @param msg Message.
          */
-        @Override public void onMessage(UUID nodeId, Object msg) {
+        @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
             GridMessageListener[] arr0 = arr;
 
             if (arr0 == null)
                 return;
 
             for (GridMessageListener l : arr0)
-                l.onMessage(nodeId, msg);
+                l.onMessage(nodeId, msg, plc);
         }
 
         /**
@@ -2168,7 +2440,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         /** {@inheritDoc} */
         @SuppressWarnings({"SynchronizationOnLocalVariableOrMethodParameter", "ConstantConditions",
             "OverlyStrongTypeCast"})
-        @Override public void onMessage(UUID nodeId, Object msg) {
+        @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
             if (!(msg instanceof GridIoUserMessage)) {
                 U.error(log, "Received unknown message (potentially fatal problem): " + msg);
 
@@ -2230,7 +2502,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
                     // Unmarshall message topic if needed.
                     if (msgTopic == null && msgTopicBytes != null) {
-                        msgTopic = marsh.unmarshal(msgTopicBytes,
+                        msgTopic = U.unmarshal(marsh, msgTopicBytes,
                             U.resolveClassLoader(dep != null ? dep.classLoader() : null, ctx.config()));
 
                         ioMsg.topic(msgTopic); // Save topic to avoid future unmarshallings.
@@ -2240,7 +2512,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                         return;
 
                     if (msgBody == null) {
-                        msgBody = marsh.unmarshal(ioMsg.bodyBytes(),
+                        msgBody = U.unmarshal(marsh, ioMsg.bodyBytes(),
                             U.resolveClassLoader(dep != null ? dep.classLoader() : null, ctx.config()));
 
                         ioMsg.body(msgBody); // Save body to avoid future unmarshallings.
@@ -2614,6 +2886,271 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(DelayedMessage.class, this, super.toString());
+        }
+    }
+
+    /**
+     *
+     */
+    private class IoTestFuture extends GridFutureAdapter<List<IgniteIoTestMessage>> {
+        /** */
+        private final long id;
+
+        /** */
+        private final int cntr;
+
+        /** */
+        private final List<IgniteIoTestMessage> ress;
+
+        /**
+         * @param id ID.
+         * @param cntr Counter.
+         */
+        IoTestFuture(long id, int cntr) {
+            assert cntr > 0 : cntr;
+
+            this.id = id;
+            this.cntr = cntr;
+
+            ress = new ArrayList<>(cntr);
+        }
+
+        /**
+         *
+         */
+        void onResponse(IgniteIoTestMessage res) {
+            boolean complete;
+
+            synchronized (this) {
+                ress.add(res);
+
+                complete = cntr == ress.size();
+            }
+
+            if (complete)
+                onDone(ress);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean onDone(List<IgniteIoTestMessage> res, @Nullable Throwable err) {
+            if (super.onDone(res, err)) {
+                ioTestMap().remove(id);
+
+                return true;
+            }
+
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(IoTestFuture.class, this);
+        }
+    }
+
+    /**
+     *
+     */
+    private static class IoTestThreadLocalNodeResults {
+        /** */
+        private final long[] resLatency;
+
+        /** */
+        private final int rangesCnt;
+
+        /** */
+        private long totalLatency;
+
+        /** */
+        private long maxLatency;
+
+        /** */
+        private long maxLatencyTs;
+
+        /** */
+        private long maxReqSendQueueTime;
+
+        /** */
+        private long maxReqSendQueueTimeTs;
+
+        /** */
+        private long maxReqRcvQueueTime;
+
+        /** */
+        private long maxReqRcvQueueTimeTs;
+
+        /** */
+        private long maxResSendQueueTime;
+
+        /** */
+        private long maxResSendQueueTimeTs;
+
+        /** */
+        private long maxResRcvQueueTime;
+
+        /** */
+        private long maxResRcvQueueTimeTs;
+
+        /** */
+        private long maxReqWireTimeMillis;
+
+        /** */
+        private long maxReqWireTimeTs;
+
+        /** */
+        private long maxResWireTimeMillis;
+
+        /** */
+        private long maxResWireTimeTs;
+
+        /** */
+        private final long latencyLimit;
+
+        /**
+         * @param rangesCnt Ranges count.
+         * @param latencyLimit
+         */
+        public IoTestThreadLocalNodeResults(int rangesCnt, long latencyLimit) {
+            this.rangesCnt = rangesCnt;
+            this.latencyLimit = latencyLimit;
+
+            resLatency = new long[rangesCnt + 1];
+        }
+
+        /**
+         * @param msg
+         */
+        public void onResult(IgniteIoTestMessage msg) {
+            long now = System.currentTimeMillis();
+
+            long latency = msg.responseProcessedTs() - msg.requestCreateTs();
+
+            int idx = latency >= latencyLimit ?
+                rangesCnt /* Timed out. */ :
+                (int)Math.floor((1.0 * latency) / ((1.0 * latencyLimit) / rangesCnt));
+
+            resLatency[idx]++;
+
+            totalLatency += latency;
+
+            if (maxLatency < latency) {
+                maxLatency = latency;
+                maxLatencyTs = now;
+            }
+
+            long reqSndQueueTime = msg.requestSendTs() - msg.requestCreateTs();
+
+            if (maxReqSendQueueTime < reqSndQueueTime) {
+                maxReqSendQueueTime = reqSndQueueTime;
+                maxReqSendQueueTimeTs = now;
+            }
+
+            long reqRcvQueueTime = msg.requestProcessTs() - msg.requestReceiveTs();
+
+            if (maxReqRcvQueueTime < reqRcvQueueTime) {
+                maxReqRcvQueueTime = reqRcvQueueTime;
+                maxReqRcvQueueTimeTs = now;
+            }
+
+            long resSndQueueTime = msg.responseSendTs() - msg.requestProcessTs();
+
+            if (maxResSendQueueTime < resSndQueueTime) {
+                maxResSendQueueTime = resSndQueueTime;
+                maxResSendQueueTimeTs = now;
+            }
+
+            long resRcvQueueTime = msg.responseProcessedTs() - msg.responseReceiveTs();
+
+            if (maxResRcvQueueTime < resRcvQueueTime) {
+                maxResRcvQueueTime = resRcvQueueTime;
+                maxResRcvQueueTimeTs = now;
+            }
+
+            long reqWireTimeMillis = msg.requestReceivedTsMillis() - msg.requestSendTsMillis();
+
+            if (maxReqWireTimeMillis < reqWireTimeMillis) {
+                maxReqWireTimeMillis = reqWireTimeMillis;
+                maxReqWireTimeTs = now;
+            }
+
+            long resWireTimeMillis = msg.responseReceivedTsMillis() - msg.requestSendTsMillis();
+
+            if (maxResWireTimeMillis < resWireTimeMillis) {
+                maxResWireTimeMillis = resWireTimeMillis;
+                maxResWireTimeTs = now;
+            }
+        }
+    }
+
+    /**
+     *
+     */
+    private static class IoTestNodeResults {
+        /** */
+        private long latencyLimit;
+
+        /** */
+        private long[] resLatency;
+
+        /** */
+        private long totalLatency;
+
+        /** */
+        private Collection<IgnitePair<Long>> maxLatency = new ArrayList<>();
+
+        /** */
+        private Collection<IgnitePair<Long>> maxReqSendQueueTime = new ArrayList<>();
+
+        /** */
+        private Collection<IgnitePair<Long>> maxReqRcvQueueTime = new ArrayList<>();
+
+        /** */
+        private Collection<IgnitePair<Long>> maxResSendQueueTime = new ArrayList<>();
+
+        /** */
+        private Collection<IgnitePair<Long>> maxResRcvQueueTime = new ArrayList<>();
+
+        /** */
+        private Collection<IgnitePair<Long>> maxReqWireTimeMillis = new ArrayList<>();
+
+        /** */
+        private Collection<IgnitePair<Long>> maxResWireTimeMillis = new ArrayList<>();
+
+        /**
+         * @param res Node results to add.
+         */
+        public void add(IoTestThreadLocalNodeResults res) {
+            if (resLatency == null) {
+                resLatency = res.resLatency.clone();
+                latencyLimit = res.latencyLimit;
+            }
+            else {
+                assert latencyLimit == res.latencyLimit;
+                assert resLatency.length == res.resLatency.length;
+
+                for (int i = 0; i < resLatency.length; i++)
+                    resLatency[i] += res.resLatency[i];
+            }
+
+            totalLatency += res.totalLatency;
+
+            maxLatency.add(F.pair(res.maxLatency, res.maxLatencyTs));
+            maxReqSendQueueTime.add(F.pair(res.maxReqSendQueueTime, res.maxReqSendQueueTimeTs));
+            maxReqRcvQueueTime.add(F.pair(res.maxReqRcvQueueTime, res.maxReqRcvQueueTimeTs));
+            maxResSendQueueTime.add(F.pair(res.maxResSendQueueTime, res.maxResSendQueueTimeTs));
+            maxResRcvQueueTime.add(F.pair(res.maxResRcvQueueTime, res.maxResRcvQueueTimeTs));
+            maxReqWireTimeMillis.add(F.pair(res.maxReqWireTimeMillis, res.maxReqWireTimeTs));
+            maxResWireTimeMillis.add(F.pair(res.maxResWireTimeMillis, res.maxResWireTimeTs));
+        }
+
+        /**
+         * @return Bin latency in microseconds.
+         */
+        public long binLatencyMcs() {
+            if (resLatency == null)
+                throw new IllegalStateException();
+
+            return latencyLimit / (1000 * (resLatency.length - 1));
         }
     }
 }

@@ -2,7 +2,7 @@ Apache Ignite C++
 ==================================
 
 Apache Ignite C++ provides data grid functionality.
-Using Apache Ignite C++ APIs you can execute perform concurrent operations on
+Using Apache Ignite C++ APIs you can perform concurrent operations on
 the data stored in cache.
 
 Apache Ignite C++ can access cluster and share data with .Net and
@@ -11,13 +11,17 @@ Java applications using binary object format.
 Support for the following will be added in next releases:
  * ACID transactions management.
  * Distributed locks.
- * Async operations.
+ * Asynchronous operations.
  * Cache SQL continuous queries.
  * Event listening.
  * Compute grid functionality.
 
 Full source code is provided. Users should build the library for intended platform.
+
 For build instructions please refer to DEVNOTES.txt.
+
+For details on ODBC driver installation and usage please refer to
+$IGNITE_HOME/platforms/cpp/odbc/README.txt.
 
 Linux info
 ==============
@@ -49,7 +53,7 @@ Files list:
 
  * ignite.exe - executable to start standalone Ignite C++ node.
  * ignite.core.dll - Ignite C++ API library.
- * odbc.dll - Ignite ODBC driver.
+ * ignite.odbc.dll - Ignite ODBC driver.
  
 Development:
 

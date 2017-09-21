@@ -22,7 +22,6 @@ namespace Apache.Ignite.Core.Tests.Compute
     using System;
     using System.Collections.Generic;
     using System.Linq;
-    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Compute;
     using Apache.Ignite.Core.Resource;
     using NUnit.Framework;
@@ -102,9 +101,9 @@ namespace Apache.Ignite.Core.Tests.Compute
         }
 
         /** <inheritDoc /> */
-        override protected void GetBinaryTypeConfigurations(ICollection<BinaryTypeConfiguration> portTypeCfgs)
+        protected override ICollection<Type> GetBinaryTypes()
         {
-            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(BinarizableJob)));
+            return new[] { typeof(BinarizableJob) };
         }
 
         /// <summary>

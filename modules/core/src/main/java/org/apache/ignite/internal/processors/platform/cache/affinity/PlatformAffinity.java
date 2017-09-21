@@ -82,6 +82,9 @@ public class PlatformAffinity extends PlatformAbstractTarget {
     public static final int OP_PRIMARY_PARTITIONS = 14;
 
     /** */
+    public static final int OP_PARTITIONS = 15;
+
+    /** */
     private static final C1<ClusterNode, UUID> TO_NODE_ID = new C1<ClusterNode, UUID>() {
         @Nullable @Override public UUID apply(ClusterNode node) {
             return node != null ? node.id() : null;
@@ -288,10 +291,11 @@ public class PlatformAffinity extends PlatformAbstractTarget {
         }
     }
 
-    /**
-     * @return Gets number of partitions in cache.
-     */
-    public int partitions() {
-        return aff.partitions();
+    /** {@inheritDoc} */
+    @Override public long processInLongOutLong(int type, long val) throws IgniteCheckedException {
+        if (type == OP_PARTITIONS)
+            return aff.partitions();
+
+        return super.processInLongOutLong(type, val);
     }
 }

@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.compute.ComputeJobSibling;
 import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.compute.ComputeTaskFuture;
@@ -59,6 +60,9 @@ public class ComputeTaskInternalFuture<R> extends GridFutureAdapter<R> {
     @GridToStringExclude
     private ComputeFuture<R> userFut;
 
+    /** */
+    private transient IgniteLogger log;
+
     /**
      * @param ses Task session instance.
      * @param ctx Kernal context.
@@ -71,6 +75,8 @@ public class ComputeTaskInternalFuture<R> extends GridFutureAdapter<R> {
         this.ctx = ctx;
 
         userFut = new ComputeFuture<>(this);
+
+        log = ctx.log(ComputeTaskInternalFuture.class);
     }
 
     /**
@@ -245,6 +251,11 @@ public class ComputeTaskInternalFuture<R> extends GridFutureAdapter<R> {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(ComputeTaskInternalFuture.class, this, "super", super.toString());
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteLogger logger() {
+        return log;
     }
 
     /**
