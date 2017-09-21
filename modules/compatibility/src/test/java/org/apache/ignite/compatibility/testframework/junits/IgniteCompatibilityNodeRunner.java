@@ -43,10 +43,10 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Runs Ignite node.
  */
-public class CompatibilityTestIgniteNodeRunner extends IgniteNodeRunner {
+public class IgniteCompatibilityNodeRunner extends IgniteNodeRunner {
     /** */
-    private static final String IGNITE_CLOSURE_FILE = System.getProperty("java.io.tmpdir") +
-        File.separator + "igniteClosure.tmp_";
+    private static final String IGNITE_COMPATIBILITY_CLOSURE_FILE = System.getProperty("java.io.tmpdir") +
+        File.separator + "igniteCompatibilityClosure.tmp_";
 
     /**
      * Starts {@link Ignite} with test's default configuration.
@@ -129,7 +129,7 @@ public class CompatibilityTestIgniteNodeRunner extends IgniteNodeRunner {
         if (clos == null)
             return null;
 
-        String fileName = IGNITE_CLOSURE_FILE + clos.hashCode();
+        String fileName = IGNITE_COMPATIBILITY_CLOSURE_FILE + clos.hashCode();
 
         storeToFile(clos, fileName);
 

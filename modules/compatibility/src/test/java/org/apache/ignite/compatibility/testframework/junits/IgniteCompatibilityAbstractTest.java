@@ -132,8 +132,8 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
 
         assert !igniteInstanceName.equals(getTestIgniteInstanceName(0)) : "Use default instance name for local nodes only.";
 
-        final String cfgClosPath = CompatibilityTestIgniteNodeRunner.storeToFile(cfgClos);
-        final String iClosPath = CompatibilityTestIgniteNodeRunner.storeToFile(iClos);
+        final String cfgClosPath = IgniteCompatibilityNodeRunner.storeToFile(cfgClos);
+        final String iClosPath = IgniteCompatibilityNodeRunner.storeToFile(iClos);
 
         final IgniteConfiguration cfg = getConfiguration(igniteInstanceName); // stub - won't be used at node startup
 
@@ -143,7 +143,7 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
             }
 
             @Override protected String igniteNodeRunnerClassName() throws Exception {
-                return CompatibilityTestIgniteNodeRunner.class.getCanonicalName();
+                return IgniteCompatibilityNodeRunner.class.getCanonicalName();
             }
 
             @Override protected String params(IgniteConfiguration cfg, boolean resetDiscovery) throws Exception {
