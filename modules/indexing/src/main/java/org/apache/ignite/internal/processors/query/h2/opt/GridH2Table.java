@@ -999,6 +999,8 @@ public class GridH2Table extends TableBase {
             setColumns(newCols);
 
             desc.refreshMetadataFromTypeDescriptor();
+
+            setModified();
         }
         finally {
             unlock(true);
