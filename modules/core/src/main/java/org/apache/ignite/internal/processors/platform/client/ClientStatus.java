@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,34 +15,31 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Tests.Client
-{
-    /// <summary>
-    /// Test person.
-    /// </summary>
-    public class Person
-    {
-        /// <summary>
-        /// Gets or sets the identifier.
-        /// </summary>
-        public int Id { get; set; }
+package org.apache.ignite.internal.processors.platform.client;
 
-        /// <summary>
-        /// Gets or sets the name.
-        /// </summary>
-        public string Name { get; set; }
-
-        /// <summary>
-        /// Gets or sets the parent.
-        /// </summary>
-        public Person Parent { get;set; }
-    }
-
-    /// <summary>
-    /// Test person 2.
-    /// </summary>
-    public class Person2 : Person
-    {
+/**
+ * Client status codes.
+ */
+public final class ClientStatus {
+    /**
+     * No-op constructor to prevent instantiation.
+     */
+    private ClientStatus (){
         // No-op.
     }
+
+    /** Command succeeded. */
+    public static final int SUCCESS = 0;
+
+    /** Command failed. */
+    public static final int FAILED = 1;
+
+    /** Invalid op code. */
+    public static final int INVALID_OP_CODE = 2;
+
+    /** Cache does not exist. */
+    public static final int CACHE_DOES_NOT_EXIST = 1000;
+
+    /** Too many cursors. */
+    public static final int TOO_MANY_CURSORS = 1010;
 }
