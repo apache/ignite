@@ -146,7 +146,7 @@ public class PagesWriteThrottleSandboxTest extends GridCommonAbstractTest {
                 }
             }, 2, "read-loader");
 
-            HitRateMetrics putRate = new HitRateMetrics(1000, 5);
+            final HitRateMetrics putRate = new HitRateMetrics(1000, 5);
 
             GridTestUtils.runAsync(new Runnable() {
                 @Override public void run() {
