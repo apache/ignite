@@ -147,7 +147,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
 
     /**
      * Gets distributed class loader. Note that
-     * {@link #p2pContext(UUID, IgniteUuid, String, DeploymentMode, Map, boolean)} must be
+     * {@link #p2pContext(UUID, IgniteUuid, String, DeploymentMode, Map)} must be
      * called from the same thread prior to using this class loader, or the
      * loading may happen for the wrong node or context.
      *
@@ -357,10 +357,14 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
      * @param userVer User version.
      * @param mode Deployment mode.
      * @param participants Node participants.
-     * @param locDepOwner {@code True} if local deployment owner.
      */
-    public void p2pContext(UUID sndId, IgniteUuid ldrId, String userVer, DeploymentMode mode,
-        Map<UUID, IgniteUuid> participants, boolean locDepOwner) {
+    public void p2pContext(
+        UUID sndId,
+        IgniteUuid ldrId,
+        String userVer,
+        DeploymentMode mode,
+        Map<UUID, IgniteUuid> participants
+    ) {
         assert depEnabled;
 
         if (mode == PRIVATE || mode == ISOLATED) {
@@ -402,7 +406,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
         if (log.isDebugEnabled())
             log.debug("Setting p2p context [sndId=" + sndId + ", ldrId=" +  ldrId + ", userVer=" + userVer +
                 ", seqNum=" + ldrId.localId() + ", mode=" + mode + ", participants=" + participants +
-                ", locDepOwner=" + locDepOwner + ']');
+                ", locDepOwner=false]");
 
         CachedDeploymentInfo<K, V> depInfo;
 
@@ -431,17 +435,9 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
             break;
         }
 
-        Map<UUID, IgniteUuid> added = null;
-
-        if (locDepOwner)
-            added = addGlobalParticipants(sndId, ldrId, participants, locDepOwner);
-
         if (cctx.discovery().node(sndId) == null) {
             // Sender has left.
             deps.remove(ldrId, depInfo);
-
-            if (added != null)
-                added.remove(sndId);
 
             allParticipants.remove(sndId);
         }
@@ -452,16 +448,11 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
                     if (depInfo.removeParticipant(id))
                         deps.remove(ldrId, depInfo);
 
-                    if (added != null)
-                        added.remove(id);
 
                     allParticipants.remove(id);
                 }
             }
         }
-
-        if (added != null && !added.isEmpty())
-            cctx.gridDeploy().addCacheParticipants(allParticipants, added);
     }
 
     /**
@@ -678,8 +669,6 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
                 if (locDep0 != null) {
                     // Will copy sequence number to bean.
                     dep = new GridDeploymentInfoBean(locDep0);
-
-                    dep.localDeploymentOwner(false);
                 }
             }
 
@@ -714,8 +703,13 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
                 for (UUID id : participants.keySet()) {
                     if (cctx.discovery().node(id) != null) {
                         // At least 1 participant is still in the grid.
-                        return new GridDeploymentInfoBean(d.loaderId(), d.userVersion(), d.mode(),
-                            participants, false);
+                        return new GridDeploymentInfoBean(
+                            d.loaderId(),
+                            d.userVersion(),
+                            d.mode(),
+                            participants,
+                            false
+                        );
                     }
                 }
             }

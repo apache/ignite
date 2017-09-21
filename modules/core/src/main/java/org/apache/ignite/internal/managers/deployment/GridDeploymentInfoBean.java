@@ -52,6 +52,7 @@ public class GridDeploymentInfoBean implements Message, GridDeploymentInfo, Exte
     private String userVer;
 
     /** */
+    @Deprecated // Left for backward compatibility only.
     private boolean locDepOwner;
 
     /** Node class loader participant map. */
@@ -73,8 +74,13 @@ public class GridDeploymentInfoBean implements Message, GridDeploymentInfo, Exte
      * @param participants Participants.
      * @param locDepOwner Local deployment owner flag.
      */
-    public GridDeploymentInfoBean(IgniteUuid clsLdrId, String userVer, DeploymentMode depMode,
-        Map<UUID, IgniteUuid> participants, boolean locDepOwner) {
+    public GridDeploymentInfoBean(
+        IgniteUuid clsLdrId,
+        String userVer,
+        DeploymentMode depMode,
+        Map<UUID, IgniteUuid> participants,
+        boolean locDepOwner
+    ) {
         this.clsLdrId = clsLdrId;
         this.depMode = depMode;
         this.userVer = userVer;
@@ -89,7 +95,6 @@ public class GridDeploymentInfoBean implements Message, GridDeploymentInfo, Exte
         clsLdrId = dep.classLoaderId();
         depMode = dep.deployMode();
         userVer = dep.userVersion();
-        locDepOwner = dep.localDeploymentOwner();
         participants = dep.participants();
     }
 
@@ -121,15 +126,6 @@ public class GridDeploymentInfoBean implements Message, GridDeploymentInfo, Exte
     /** {@inheritDoc} */
     @Override public Map<UUID, IgniteUuid> participants() {
         return participants;
-    }
-
-    /**
-     * Sets local deployment ownership flag.
-     *
-     * @param locDepOwner Local deployment ownership flag.
-     */
-    public void localDeploymentOwner(boolean locDepOwner) {
-        this.locDepOwner = locDepOwner;
     }
 
     /** {@inheritDoc} */
