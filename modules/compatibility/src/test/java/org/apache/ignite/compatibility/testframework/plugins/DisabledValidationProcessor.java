@@ -27,11 +27,11 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Disabled node validation.
  */
-public class NoNodeValidationProcessor extends GridProcessorAdapter implements DiscoveryNodeValidationProcessor {
+public class DisabledValidationProcessor extends GridProcessorAdapter implements DiscoveryNodeValidationProcessor {
     /**
      * @param ctx Kernal context.
      */
-    public NoNodeValidationProcessor(GridKernalContext ctx) {
+    public DisabledValidationProcessor(GridKernalContext ctx) {
         super(ctx);
     }
 

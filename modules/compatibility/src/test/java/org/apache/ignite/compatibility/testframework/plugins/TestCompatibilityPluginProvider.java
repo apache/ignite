@@ -35,7 +35,7 @@ import org.apache.ignite.plugin.PluginValidationException;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Creates {@link NoNodeValidationProcessor} to allow for nodes with different
+ * Creates {@link DisabledValidationProcessor} to allow for nodes with different
  * versions {@link IgniteNodeAttributes#ATTR_BUILD_VER} join to topology.
  */
 public class TestCompatibilityPluginProvider implements PluginProvider {
@@ -105,7 +105,7 @@ public class TestCompatibilityPluginProvider implements PluginProvider {
     /** {@inheritDoc} */
     @Nullable @Override public Object createComponent(PluginContext ctx, Class cls) {
         if (DiscoveryNodeValidationProcessor.class == cls)
-            return new NoNodeValidationProcessor(kCtx);
+            return new DisabledValidationProcessor(kCtx);
 
         return null;
     }
