@@ -25,6 +25,8 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.compatibility.testframework.junits.IgniteCompatibilityAbstractTest;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DEFAULT_PERSISTENCE_STORE_DIR_NAME;
+
 /**
  * Super class for all persistence tests.
  */
@@ -55,7 +57,7 @@ public class IgnitePersistenceAbstractTest extends IgniteCompatibilityAbstractTe
      * @see #isDefaultDBWorkDirectoryEmpty()
      */
     protected Path getDefaultDbWorkPath() throws IgniteCheckedException {
-        return Paths.get(U.defaultWorkDirectory() + File.separator + "db");
+        return Paths.get(U.defaultWorkDirectory() + File.separator + DEFAULT_PERSISTENCE_STORE_DIR_NAME);
     }
 
     /**
