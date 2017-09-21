@@ -77,9 +77,6 @@ public class CacheOsStoreManager extends GridCacheStoreManagerAdapter {
 
     /** {@inheritDoc} */
     @Override public boolean convertBinary() {
-        if (alwaysKeepBinary)
-            return false;
-
         return configuredConvertBinary() && !(cfgStore instanceof PlatformCacheStore);
     }
 

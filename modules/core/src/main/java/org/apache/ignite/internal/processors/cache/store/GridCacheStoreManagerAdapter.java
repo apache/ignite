@@ -115,9 +115,6 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
     /** */
     private boolean globalSesLsnrs;
 
-    /** Always keep binary. */
-    protected boolean alwaysKeepBinary;
-
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public void initialize(@Nullable CacheStore cfgStore, Map sesHolders) throws IgniteCheckedException {
@@ -153,9 +150,6 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
         sesHolder = sesHolder0;
 
         locStore = U.hasAnnotation(cfgStore, CacheLocalStore.class);
-
-        if (cfgStore instanceof CacheJdbcPojoStore)
-            alwaysKeepBinary = true;
     }
 
     /** {@inheritDoc} */
