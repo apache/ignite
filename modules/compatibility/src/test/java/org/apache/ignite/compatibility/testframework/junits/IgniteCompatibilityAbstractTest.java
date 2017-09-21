@@ -20,8 +20,6 @@ package org.apache.ignite.compatibility.testframework.junits;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -44,9 +42,6 @@ import org.jetbrains.annotations.Nullable;
  * Super class for all compatibility tests.
  */
 public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstractTest {
-    /** Using for synchronization of nodes startup in case of starting remote nodes first. */
-    public static final String SYNCHRONIZATION_LOG_MESSAGE_JOINED = "Remote node has joined, id: ";
-
     /** Using for synchronization of nodes startup in case of starting remote nodes first. */
     public static final String SYNCHRONIZATION_LOG_MESSAGE_PREPARED = "Remote node has prepared, id: ";
 
@@ -266,8 +261,8 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
         /** Node joined latch. */
         private CountDownLatch nodeJoinedLatch;
 
-        /** Patterns for comparing. */
-        private Set<String> patterns = new HashSet<>();
+        /** Pattern for comparing. */
+        private String pattern;
 
         /**
          * @param nodeJoinedLatch Nodes startup synchronization latch.
@@ -275,13 +270,12 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
          */
         LoggedJoinNodeClosure(CountDownLatch nodeJoinedLatch, UUID nodeId) {
             this.nodeJoinedLatch = nodeJoinedLatch;
-            this.patterns.add(SYNCHRONIZATION_LOG_MESSAGE_JOINED + nodeId);
-            this.patterns.add(SYNCHRONIZATION_LOG_MESSAGE_PREPARED + nodeId);
+            this.pattern = SYNCHRONIZATION_LOG_MESSAGE_PREPARED + nodeId;
         }
 
         /** {@inheritDoc} */
         @Override public void apply(String s) {
-            if (nodeJoinedLatch.getCount() > 0 && patterns.contains(s))
+            if (nodeJoinedLatch.getCount() > 0 && s.contains(pattern))
                 nodeJoinedLatch.countDown();
         }
     }
