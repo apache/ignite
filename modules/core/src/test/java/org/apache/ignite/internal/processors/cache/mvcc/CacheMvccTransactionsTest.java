@@ -708,6 +708,11 @@ public class CacheMvccTransactionsTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCleanupWaitsForGet2() throws Exception {
+        /*
+        Simulate case when there are two active transactions modifying the same key
+        (it is possible if key lock is released but ack message is delayed), and at this moment
+        query is started.
+         */
         testSpi = true;
 
         client = false;
