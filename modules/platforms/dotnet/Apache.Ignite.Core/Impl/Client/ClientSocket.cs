@@ -68,7 +68,7 @@ namespace Apache.Ignite.Core.Impl.Client
         /// Performs a send-receive operation.
         /// </summary>
         public T DoOutInOp<T>(ClientOp opId, Action<IBinaryStream> writeAction,
-            Func<IBinaryStream, T> readFunc)
+            Func<IBinaryStream, T> readFunc, Func<ClientStatus, string, T> errorFunc = null)
         {
             var requestId = Interlocked.Increment(ref _requestId);
 
@@ -88,19 +88,22 @@ namespace Apache.Ignite.Core.Impl.Client
                 var resRequestId = stream.ReadLong();
                 Debug.Assert(requestId == resRequestId);
 
-                if (!stream.ReadBool())
+                var statusCode = (ClientStatus) stream.ReadInt();
+
+                if (statusCode == ClientStatus.Success)
                 {
-                    // Error.
-                    throw new IgniteException(BinaryUtils.Marshaller.StartUnmarshal(stream).ReadString());
+                    return readFunc != null ? readFunc(stream) : default(T);
                 }
 
-                if (readFunc != null)
+                var msg = BinaryUtils.Marshaller.StartUnmarshal(stream).ReadString();
+
+                if (errorFunc != null)
                 {
-                    return readFunc(stream);
+                    return errorFunc(statusCode, msg);
                 }
+
+                throw new IgniteClientException(msg, null, (int) statusCode);
             }
-
-            return default(T);
         }
 
         /// <summary>
@@ -136,7 +139,7 @@ namespace Apache.Ignite.Core.Impl.Client
 
                 var errMsg = BinaryUtils.Marshaller.Unmarshal<string>(stream);
 
-                throw new IgniteException(string.Format(
+                throw new IgniteClientException(string.Format(
                     "Client handhsake failed: '{0}'. Client version: {1}. Server version: {2}",
                     errMsg, version, serverVersion));
             }

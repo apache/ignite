@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,11 +15,17 @@
  * limitations under the License.
  */
 
-import angular from 'angular';
-import component from './component';
-
-export default angular
-    .module('ignite-console.version-picker', [
-        'ignite-console.services'
-    ])
-    .component('versionPicker', component);
+namespace Apache.Ignite.Core.Impl.Client
+{
+    /// <summary>
+    /// Client status codes.
+    /// </summary>
+    internal enum ClientStatus
+    {
+        Success = 0,
+        Fail = 1,
+        InvalidOpCode = 2,
+        CacheDoesNotExist = 1000,
+        TooManyCursors = 1010
+    }
+}

@@ -22,7 +22,6 @@ namespace Apache.Ignite.Core.Tests.Client
     using System.Net;
     using System.Net.Sockets;
     using Apache.Ignite.Core.Client;
-    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Configuration;
     using Apache.Ignite.Core.Impl.Client;
     using NUnit.Framework;
@@ -119,8 +118,10 @@ namespace Apache.Ignite.Core.Tests.Client
             using (Ignition.Start(TestUtils.GetTestConfiguration()))
             {
                 // ReSharper disable once ObjectCreationAsStatement
-                var ex = Assert.Throws<IgniteException>(() => new ClientSocket(GetClientConfiguration(),
+                var ex = Assert.Throws<IgniteClientException>(() => new ClientSocket(GetClientConfiguration(),
                     new ClientProtocolVersion(-1, -1, -1)));
+
+                Assert.AreEqual((int) ClientStatus.Fail, ex.ErrorCode);
 
                 Assert.AreEqual("Client handhsake failed: 'Unsupported version.'. " +
                                 "Client version: -1.-1.-1. Server version: 1.0.0", ex.Message);

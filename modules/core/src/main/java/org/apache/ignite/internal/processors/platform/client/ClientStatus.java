@@ -15,11 +15,31 @@
  * limitations under the License.
  */
 
-import angular from 'angular';
-import component from './component';
+package org.apache.ignite.internal.processors.platform.client;
 
-export default angular
-    .module('ignite-console.version-picker', [
-        'ignite-console.services'
-    ])
-    .component('versionPicker', component);
+/**
+ * Client status codes.
+ */
+public final class ClientStatus {
+    /**
+     * No-op constructor to prevent instantiation.
+     */
+    private ClientStatus (){
+        // No-op.
+    }
+
+    /** Command succeeded. */
+    public static final int SUCCESS = 0;
+
+    /** Command failed. */
+    public static final int FAILED = 1;
+
+    /** Invalid op code. */
+    public static final int INVALID_OP_CODE = 2;
+
+    /** Cache does not exist. */
+    public static final int CACHE_DOES_NOT_EXIST = 1000;
+
+    /** Too many cursors. */
+    public static final int TOO_MANY_CURSORS = 1010;
+}
