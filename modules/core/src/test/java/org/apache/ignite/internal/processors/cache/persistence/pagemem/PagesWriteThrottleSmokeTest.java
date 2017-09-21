@@ -293,7 +293,7 @@ public class PagesWriteThrottleSmokeTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public FileIO create(File file, String mode) throws IOException {
-            FileIO delegate = delegateFactory.create(file, mode);
+            final FileIO delegate = delegateFactory.create(file, mode);
 
             return new FileIODecorator(delegate) {
                 @Override public int write(ByteBuffer srcBuf) throws IOException {
