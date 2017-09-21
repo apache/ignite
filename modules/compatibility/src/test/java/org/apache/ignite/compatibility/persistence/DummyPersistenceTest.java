@@ -21,7 +21,6 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
-import org.apache.ignite.compatibility.testframework.junits.IgniteCompatibilityAbstractTest;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.PersistentStoreConfiguration;
@@ -31,26 +30,9 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 
 /** */
-public class DummyPersistenceTest extends IgniteCompatibilityAbstractTest {
+public class DummyPersistenceTest extends IgnitePersistenceAbstractTest {
     /** */
     private static final String TEST_CACHE_NAME = DummyPersistenceTest.class.getSimpleName();
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
-
-        if (!defaultDBWorkDirectoryIsEmpty())
-            deleteDefaultDBWorkDirectory();
-
-        assert defaultDBWorkDirectoryIsEmpty() : "DB work directory is not empty.";
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
-        super.afterTest();
-
-        assert deleteDefaultDBWorkDirectory() : "Couldn't delete DB work directory.";
-    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {

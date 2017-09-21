@@ -15,24 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.compatibility.testsuites;
-
-import junit.framework.TestSuite;
-import org.apache.ignite.compatibility.persistence.DummyPersistenceTest;
-
 /**
- * Compatibility tests basic test suite.
+ * <!-- Package description. -->
+ * Contains compatibility test framework related classes and interfaces.
  */
-public class IgniteCompatibilityBasicTestSuite {
-    /**
-     * @return Test suite.
-     * @throws Exception In case of an error.
-     */
-    public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Ignite Compatibility Basic Test Suite");
-
-        suite.addTestSuite(DummyPersistenceTest.class);
-
-        return suite;
-    }
-}
+package org.apache.ignite.compatibility.testframework.junits.logger;

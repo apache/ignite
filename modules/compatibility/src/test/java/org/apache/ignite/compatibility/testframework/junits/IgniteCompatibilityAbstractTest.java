@@ -18,9 +18,6 @@
 package org.apache.ignite.compatibility.testframework.junits;
 
 import java.io.File;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -29,7 +26,6 @@ import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.compatibility.testframework.junits.logger.ListenedGridTestLog4jLogger;
 import org.apache.ignite.compatibility.testframework.util.MavenUtils;
@@ -54,55 +50,14 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
     /** Using for synchronization of nodes startup in case of starting remote nodes first. */
     public static final String SYNCHRONIZATION_LOG_MESSAGE_PREPARED = "Remote node has prepared, id: ";
 
-    /** Waiting seconds of the join of a node to topology. */
-    protected static final int NODE_JOIN_TIMEOUT = 30;
+    /** Waiting milliseconds of the join of a node to topology. */
+    protected static final int NODE_JOIN_TIMEOUT = 30_000;
 
     /** Local JVM Ignite node. */
     protected Ignite locJvmInstance = null;
 
     /** Remote JVM Ignite instance. */
     protected Ignite rmJvmInstance = null;
-
-    /**
-     * Gets a path to the default DB working directory.
-     *
-     * @return Path to the default DB working directory.
-     * @throws IgniteCheckedException In case of an error.
-     * @see #deleteDefaultDBWorkDirectory()
-     * @see #defaultDBWorkDirectoryIsEmpty()
-     */
-    protected Path getDefaultDbWorkPath() throws IgniteCheckedException {
-        return Paths.get(U.defaultWorkDirectory() + File.separator + "db");
-    }
-
-    /**
-     * Deletes the default DB working directory with all sub-directories and files.
-     *
-     * @return {@code true} if and only if the file or directory is successfully deleted, otherwise {@code false}.
-     * @throws IgniteCheckedException In case of an error.
-     * @see #getDefaultDbWorkPath()
-     * @see #deleteDefaultDBWorkDirectory()
-     */
-    protected boolean deleteDefaultDBWorkDirectory() throws IgniteCheckedException {
-        Path dir = getDefaultDbWorkPath();
-
-        return Files.notExists(dir) || U.delete(dir.toFile());
-    }
-
-    /**
-     * Checks if the default DB working directory is empty.
-     *
-     * @return {@code true} if the default DB working directory is empty or doesn't exist, otherwise {@code false}.
-     * @throws IgniteCheckedException In case of an error.
-     * @see #getDefaultDbWorkPath()
-     * @see #deleteDefaultDBWorkDirectory()
-     */
-    @SuppressWarnings("ConstantConditions")
-    protected boolean defaultDBWorkDirectoryIsEmpty() throws IgniteCheckedException {
-        File dir = getDefaultDbWorkPath().toFile();
-
-        return !dir.exists() || (dir.isDirectory() && dir.list().length == 0);
-    }
 
     /** {@inheritDoc} */
     @Override protected boolean isMultiJvm() {
@@ -244,7 +199,7 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
 
             log.addListener(nodeId, new LoggedJoinNodeClosure(nodeJoinedLatch, nodeId));
 
-            assert nodeJoinedLatch.await(NODE_JOIN_TIMEOUT, TimeUnit.SECONDS) : "Node has not joined [id=" + nodeId + "]";
+            assert nodeJoinedLatch.await(NODE_JOIN_TIMEOUT, TimeUnit.MILLISECONDS) : "Node has not joined [id=" + nodeId + "]";
 
             log.removeListener(nodeId);
         }

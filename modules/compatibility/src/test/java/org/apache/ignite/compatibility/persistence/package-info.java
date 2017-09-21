@@ -17,6 +17,6 @@
 
 /**
  * <!-- Package description. -->
- * Contains compatibility tests or compatibility test related classes and interfaces.
+ * Contains compatibility test framework related classes and interfaces.
  */
-package org.apache.ignite.compatibility.spi;
+package org.apache.ignite.compatibility.persistence;
