@@ -18,6 +18,7 @@
 #include "ignite/odbc/connection.h"
 #include "ignite/odbc/message.h"
 #include "ignite/odbc/log.h"
+#include "ignite/odbc/odbc_error.h"
 #include "ignite/odbc/query/data_query.h"
 #include "ignite/odbc/query/batch_query.h"
 
@@ -193,9 +194,13 @@ namespace ignite
                 {
                     connection.SyncMessage(req, rsp);
                 }
+                catch (const OdbcError& err)
+                {
+                    diag.AddStatusRecord(err);
+                }
                 catch (const IgniteError& err)
                 {
-                    diag.AddStatusRecord(SqlState::SHYT01_CONNECTION_TIMEOUT, err.GetText());
+                    diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, err.GetText());
 
                     return SqlResult::AI_ERROR;
                 }
@@ -241,9 +246,13 @@ namespace ignite
                 {
                     connection.SyncMessage(req, rsp);
                 }
+                catch (const OdbcError& err)
+                {
+                    diag.AddStatusRecord(err);
+                }
                 catch (const IgniteError& err)
                 {
-                    diag.AddStatusRecord(SqlState::SHYT01_CONNECTION_TIMEOUT, err.GetText());
+                    diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, err.GetText());
 
                     return SqlResult::AI_ERROR;
                 }
@@ -273,9 +282,13 @@ namespace ignite
                 {
                     connection.SyncMessage(req, rsp);
                 }
+                catch (const OdbcError& err)
+                {
+                    diag.AddStatusRecord(err);
+                }
                 catch (const IgniteError& err)
                 {
-                    diag.AddStatusRecord(SqlState::SHYT01_CONNECTION_TIMEOUT, err.GetText());
+                    diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, err.GetText());
 
                     return SqlResult::AI_ERROR;
                 }

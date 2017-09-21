@@ -132,6 +132,9 @@ namespace ignite
                 /** Server rejected the connection. */
                 S08004_CONNECTION_REJECTED,
 
+                /** Communication link failure. */
+                S08S01_LINK_FAILURE,
+
                 /**
                  * An error occurred for which there was no specific SQLSTATE
                  * and for which no implementation-specific SQLSTATE was defined.

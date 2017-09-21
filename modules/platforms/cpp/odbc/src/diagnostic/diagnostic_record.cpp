@@ -61,6 +61,9 @@ namespace
     /** SQL state 08004 constant. */
     const std::string STATE_08004 = "08004";
 
+    /** SQL state 08S01 constant. */
+    const std::string STATE_08S01 = "08S01";
+
     /** SQL state 22026 constant. */
     const std::string STATE_22026 = "22026";
 
@@ -319,6 +322,9 @@ namespace ignite
 
                     case SqlState::S08004_CONNECTION_REJECTED:
                         return STATE_08004;
+
+                    case SqlState::S08S01_LINK_FAILURE:
+                        return STATE_08S01;
 
                     case SqlState::SHY000_GENERAL_ERROR:
                         return STATE_HY000;

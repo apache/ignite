@@ -18,6 +18,10 @@
 #ifndef _IGNITE_ODBC_ODBC_ERROR
 #define _IGNITE_ODBC_ODBC_ERROR
 
+#include <string>
+
+#include "ignite/odbc/common_types.h"
+
 namespace ignite
 {
     namespace odbc
@@ -29,6 +33,29 @@ namespace ignite
         {
         public:
             /**
+             * Constructor.
+             *
+             * @param status SQL status.
+             * @param message Error message.
+             */
+            OdbcError(SqlState::Type status, const std::string& message) :
+                status(status),
+                errMessage(message)
+            {
+                // No-op.
+            }
+
+            /**
+             * Default constructor.
+             */
+            OdbcError() :
+                status(SqlState::UNKNOWN),
+                errMessage()
+            {
+                // No-op.
+            }
+
+            /**
              * Destructor.
              */
             ~OdbcError()
@@ -36,7 +63,30 @@ namespace ignite
                 // No-op.
             }
 
-        protected:
+            /**
+             * Get status.
+             * @return Status.
+             */
+            SqlState::Type GetStatus() const
+            {
+                return status;
+            }
+
+            /**
+             * Get error message.
+             * @return Error message.
+             */
+            const std::string& GetErrorMessage() const
+            {
+                return errMessage;
+            }
+
+        private:
+            /** Status. */
+            SqlState::Type status;
+
+            /** Error message. */
+            std::string errMessage;
         };
     }
 }

@@ -27,6 +27,7 @@
 #include "ignite/odbc/connection.h"
 #include "ignite/odbc/message.h"
 #include "ignite/odbc/config/configuration.h"
+#include "ignite/odbc/odbc_error.h"
 
 namespace
 {
@@ -196,7 +197,7 @@ namespace ignite
         void Connection::Send(const int8_t* data, size_t len)
         {
             if (!connected)
-                IGNITE_ERROR_1(IgniteError::IGNITE_ERR_ILLEGAL_STATE, "Connection is not established");
+                throw OdbcError(SqlState::S08003_NOT_CONNECTED, "Connection is not established");
 
             int32_t newLen = static_cast<int32_t>(len + sizeof(OdbcProtocolHeader));
 
@@ -211,7 +212,7 @@ namespace ignite
             size_t sent = SendAll(msg.GetData(), msg.GetSize());
 
             if (sent != len + sizeof(OdbcProtocolHeader))
-                IGNITE_ERROR_1(IgniteError::IGNITE_ERR_GENERIC, "Can not send message");
+                throw OdbcError(SqlState::S08S01_LINK_FAILURE, "Can not send message due to connection failure");
 
             LOG_MSG("message sent: (" <<  msg.GetSize() << " bytes)" << utility::HexDump(msg.GetData(), msg.GetSize()));
         }
@@ -242,7 +243,7 @@ namespace ignite
         void Connection::Receive(std::vector<int8_t>& msg)
         {
             if (!connected)
-                IGNITE_ERROR_1(IgniteError::IGNITE_ERR_ILLEGAL_STATE, "Connection is not established");
+                throw OdbcError(SqlState::S08003_NOT_CONNECTED, "Connection is not established");
 
             msg.clear();
 
@@ -251,13 +252,13 @@ namespace ignite
             size_t received = ReceiveAll(reinterpret_cast<int8_t*>(&hdr), sizeof(hdr));
 
             if (received != sizeof(hdr))
-                IGNITE_ERROR_1(IgniteError::IGNITE_ERR_GENERIC, "Can not receive message header");
+                throw OdbcError(SqlState::S08S01_LINK_FAILURE, "Can not receive message header");
 
             if (hdr.len < 0)
             {
                 Close();
 
-                IGNITE_ERROR_1(IgniteError::IGNITE_ERR_GENERIC, "Message length is negative");
+                throw OdbcError(SqlState::S08S01_LINK_FAILURE, "Protocol error: Message length is negative");
             }
 
             if (hdr.len == 0)
@@ -271,7 +272,7 @@ namespace ignite
             {
                 msg.resize(received);
 
-                IGNITE_ERROR_1(IgniteError::IGNITE_ERR_GENERIC, "Can not receive message body");
+                throw OdbcError(SqlState::S08S01_LINK_FAILURE, "Can not receive message body");
             }
 
             LOG_MSG("Message received: " << utility::HexDump(&msg[0], msg.size()));
@@ -448,6 +449,10 @@ namespace ignite
             try
             {
                 SyncMessage(req, rsp);
+            }
+            catch (const OdbcError& err)
+            {
+                AddStatusRecord(err);
             }
             catch (const IgniteError& err)
             {
