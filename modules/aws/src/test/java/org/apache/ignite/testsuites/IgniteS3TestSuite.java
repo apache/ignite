@@ -18,6 +18,9 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
+import org.apache.ignite.compatibility.persistence.DummyPersistenceTest;
+import org.apache.ignite.compatibility.persistence.VarintPersistenceTest;
+import org.apache.ignite.compatibility.spi.MultiVersionClusterTest;
 import org.apache.ignite.spi.checkpoint.s3.S3CheckpointManagerSelfTest;
 import org.apache.ignite.spi.checkpoint.s3.S3CheckpointSpiConfigSelfTest;
 import org.apache.ignite.spi.checkpoint.s3.S3CheckpointSpiSelfTest;
@@ -38,16 +41,9 @@ public class IgniteS3TestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new IgniteTestSuite("S3 Integration Test Suite");
 
-        // Checkpoint SPI.
-        suite.addTestSuite(S3CheckpointSpiConfigSelfTest.class);
-        suite.addTestSuite(S3CheckpointSpiSelfTest.class);
-        suite.addTestSuite(S3CheckpointSpiStartStopSelfTest.class);
-        suite.addTestSuite(S3CheckpointManagerSelfTest.class);
-        suite.addTestSuite(S3SessionCheckpointSelfTest.class);
-
-        // S3 IP finder.
-        suite.addTestSuite(TcpDiscoveryS3IpFinderAwsCredentialsSelfTest.class);
-        suite.addTestSuite(TcpDiscoveryS3IpFinderAwsCredentialsProviderSelfTest.class);
+        suite.addTestSuite(DummyPersistenceTest.class);
+        suite.addTestSuite(MultiVersionClusterTest.class);
+        suite.addTestSuite(VarintPersistenceTest.class);
 
         return suite;
     }
