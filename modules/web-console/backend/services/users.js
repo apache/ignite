@@ -51,6 +51,7 @@ module.exports.factory = (_, errors, settings, mongo, spacesService, mailsServic
     class UsersService {
         /**
          * Save profile information.
+         *
          * @param {String} host - The host
          * @param {Object} user - The user
          * @returns {Promise.<mongo.ObjectId>} that resolves account id of merge operation.
@@ -93,10 +94,13 @@ module.exports.factory = (_, errors, settings, mongo, spacesService, mailsServic
 
         /**
          * Save user.
+         *
          * @param {Object} changed - The user
          * @returns {Promise.<mongo.ObjectId>} that resolves account id of merge operation.
          */
         static save(changed) {
+            delete changed.admin;
+
             return mongo.Account.findById(changed._id).exec()
                 .then((user) => {
                     if (!changed.password)
@@ -207,6 +211,7 @@ module.exports.factory = (_, errors, settings, mongo, spacesService, mailsServic
 
         /**
          * Remove account.
+         *
          * @param {String} host.
          * @param {mongo.ObjectId|String} userId - The account id for remove.
          * @returns {Promise.<{rowsAffected}>} - The number of affected rows.
