@@ -95,7 +95,6 @@
         <module>modules/kubernetes</module>
         <module>modules/zeromq</module>
         <module>modules/rocketmq</module>
-        <module>modules/compatibility</module>
     </modules>
 
     <profiles>
@@ -168,9 +167,8 @@
         </profile>
 
         <profile>
-            <id>compatibility-tests</id>
+            <id>compatibility</id>
             <modules>
-                <module>modules/core</module>
                 <module>modules/compatibility</module>
             </modules>
         </profile>
