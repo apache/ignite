@@ -43,7 +43,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstractTest {
     /** Using for synchronization of nodes startup in case of starting remote nodes first. */
-    public static final String SYNCHRONIZATION_LOG_MESSAGE_PREPARED = "Remote node has prepared, id: ";
+    public static final String SYNCHRONIZATION_LOG_MESSAGE_PREPARED = "[Compatibility] Node has been started, id=";
 
     /** Waiting milliseconds of the join of a node to topology. */
     protected static final int NODE_JOIN_TIMEOUT = 30_000;
