@@ -734,11 +734,25 @@ BOOST_FIXTURE_TEST_SUITE(QueriesTestSuite, QueriesTestSuiteFixture)
 BOOST_AUTO_TEST_CASE(TestLegacyConnection)
 {
     Connect("DRIVER={Apache Ignite};SERVER=127.0.0.1;PORT=11110;SCHEMA=cache");
+
+    InsertTestStrings(10, false);
+    InsertTestBatch(10, 20, 10);
 }
 
 BOOST_AUTO_TEST_CASE(TestConnectionProtocolVersion_2_1_0)
 {
     Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache;PROTOCOL_VERSION=2.1.0");
+
+    InsertTestStrings(10, false);
+    InsertTestBatch(10, 20, 10);
+}
+
+BOOST_AUTO_TEST_CASE(TestConnectionProtocolVersion_2_1_5)
+{
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache;PROTOCOL_VERSION=2.1.5");
+
+    InsertTestStrings(10, false);
+    InsertTestBatch(10, 20, 10);
 }
 
 BOOST_AUTO_TEST_CASE(TestTwoRowsInt8)
