@@ -55,7 +55,7 @@ public class FileVersionCheckingFactory implements FilePageStoreFactory {
         if (!file.exists())
             return createPageStore(type, file, latestVersion());
 
-        try (FileIO fileIO = fileIOFactory.create(file, "r")) {
+        try (FileIO fileIO = fileIOFactory.create(file)) {
             int minHdr = FilePageStore.HEADER_SIZE;
 
             if (fileIO.size() < minHdr)
