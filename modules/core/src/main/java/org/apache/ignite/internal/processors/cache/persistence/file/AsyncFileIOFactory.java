@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.channels.AsynchronousFileChannel;
 import java.nio.file.OpenOption;
+import java.util.concurrent.ExecutorService;
 
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.READ;
@@ -33,6 +34,16 @@ public class AsyncFileIOFactory implements FileIOFactory {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** */
+    private final transient int concurrency;
+
+    /**
+     * @param concurrency Async I/O concurrency hint.
+     */
+    public AsyncFileIOFactory(int concurrency) {
+        this.concurrency = concurrency;
+    }
+
     /** {@inheritDoc} */
     @Override public FileIO create(File file) throws IOException {
         return create(file, CREATE, READ, WRITE);
@@ -40,6 +51,6 @@ public class AsyncFileIOFactory implements FileIOFactory {
 
     /** {@inheritDoc} */
     @Override public FileIO create(File file, OpenOption... modes) throws IOException {
-        return new AsyncFileIO(file);
+        return new AsyncFileIO(file, concurrency);
     }
 }

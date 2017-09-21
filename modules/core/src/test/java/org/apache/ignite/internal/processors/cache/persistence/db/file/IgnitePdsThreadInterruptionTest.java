@@ -33,7 +33,7 @@ import org.jsr166.ThreadLocalRandom8;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * Test what transaction thread interruptions do not affect PDS.
+ * Test what interruptions of writing threads do not affect PDS.
  */
 public class IgnitePdsThreadInterruptionTest extends GridCommonAbstractTest {
     /** */
@@ -85,7 +85,7 @@ public class IgnitePdsThreadInterruptionTest extends GridCommonAbstractTest {
         final MemoryConfiguration memCfg = new MemoryConfiguration();
 
         MemoryPolicyConfiguration memPlcCfg = new MemoryPolicyConfiguration();
-//        memPlcCfg.setPageEvictionMode(DataPageEvictionMode.RANDOM_LRU); TODO FIXME Activation fails if property is set.
+        // memPlcCfg.setPageEvictionMode(RANDOM_LRU); TODO Fix NPE on start.
         memPlcCfg.setName("dfltMemPlc");
 
         memCfg.setPageSize(PAGE_SIZE);
@@ -191,6 +191,13 @@ public class IgnitePdsThreadInterruptionTest extends GridCommonAbstractTest {
         }
 
         log.info("Verified keys: " + verifiedKeys);
+    }
+
+    /**
+     * Tests interruptions of checkpoint threads.
+     */
+    public void testInterruptsOnCheckpoint() {
+        // No-op.
     }
 
     /**

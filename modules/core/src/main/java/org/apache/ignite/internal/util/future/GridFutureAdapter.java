@@ -500,7 +500,7 @@ public class GridFutureAdapter<R> implements IgniteInternalFuture<R> {
     }
 
     /**
-     * Reset future for
+     * Resets future for subsequent reuse.
      */
     public void reset() {
         final Object oldState = state;

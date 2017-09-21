@@ -17,18 +17,24 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.file;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousFileChannel;
 import java.nio.channels.CompletionHandler;
 import java.nio.file.StandardOpenOption;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ConcurrentSkipListSet;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.EnumSet;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.util.GridConcurrentHashSet;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.thread.IgniteThreadFactory;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * File I/O implementation based on {@link AsynchronousFileChannel}.
@@ -45,7 +51,7 @@ public class AsyncFileIO implements FileIO {
     private volatile long position;
 
     /** */
-    private ConcurrentLinkedQueue<ChannelOpFuture> asyncFuts = new ConcurrentLinkedQueue<>();
+    private GridConcurrentHashSet<ChannelOpFuture> asyncFuts = new GridConcurrentHashSet<>();
 
     /** */
     private ThreadLocal<ChannelOpFuture> cachedFut = new ThreadLocal<ChannelOpFuture>() {
@@ -58,10 +64,20 @@ public class AsyncFileIO implements FileIO {
      * Creates I/O implementation for specified {@code file}
      *
      * @param file Random access file
+     * @param concurrency Async I/O concurrency hint.
      */
-    public AsyncFileIO(File file) throws IOException {
+    public AsyncFileIO(File file, int concurrency) throws IOException {
+        ExecutorService execSvc = Executors.newFixedThreadPool(concurrency, new ThreadFactory() {
+            AtomicInteger threadNum = new AtomicInteger();
+
+            @Override public Thread newThread(@NotNull Runnable r) {
+                return new Thread(Thread.currentThread().getThreadGroup(), r,
+                    "ignite-async-io-thread-" + threadNum.getAndIncrement());
+            }
+        });
+
         this.ch = AsynchronousFileChannel.open(file.toPath(),
-                StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE);
+            EnumSet.of(StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE), execSvc);
     }
 
     /** {@inheritDoc} */
@@ -83,7 +99,8 @@ public class AsyncFileIO implements FileIO {
 
         try {
             return fut.getUninterruptibly();
-        } catch (IgniteCheckedException e) {
+        }
+        catch (IgniteCheckedException e) {
             throw new IOException(e);
         }
     }
@@ -96,7 +113,8 @@ public class AsyncFileIO implements FileIO {
 
         try {
             return fut.getUninterruptibly();
-        } catch (IgniteCheckedException e) {
+        }
+        catch (IgniteCheckedException e) {
             throw new IOException(e);
         }
     }
@@ -110,7 +128,8 @@ public class AsyncFileIO implements FileIO {
 
         try {
             return fut.getUninterruptibly();
-        } catch (IgniteCheckedException e) {
+        }
+        catch (IgniteCheckedException e) {
             throw new IOException(e);
         }
     }
@@ -124,7 +143,8 @@ public class AsyncFileIO implements FileIO {
 
         try {
             return fut.getUninterruptibly();
-        } catch (IgniteCheckedException e) {
+        }
+        catch (IgniteCheckedException e) {
             throw new IOException(e);
         }
     }
@@ -139,7 +159,8 @@ public class AsyncFileIO implements FileIO {
 
         try {
             return fut.getUninterruptibly();
-        } catch (IgniteCheckedException e) {
+        }
+        catch (IgniteCheckedException e) {
             throw new IOException(e);
         }
     }
@@ -153,7 +174,8 @@ public class AsyncFileIO implements FileIO {
 
         try {
             fut.getUninterruptibly();
-        } catch (IgniteCheckedException e) {
+        }
+        catch (IgniteCheckedException e) {
             throw new IOException(e);
         }
     }
@@ -180,7 +202,8 @@ public class AsyncFileIO implements FileIO {
         for (ChannelOpFuture asyncFut : asyncFuts) {
             try {
                 asyncFut.getUninterruptibly(); // Ignore interrupts while waiting for channel close.
-            } catch (IgniteCheckedException e) {
+            }
+            catch (IgniteCheckedException e) {
                 throw new IOException(e);
             }
         }
