@@ -714,6 +714,11 @@ public final class IgniteSystemProperties {
             "IGNITE_DATA_STREAMING_EXECUTOR_SERVICE_TASKS_STEALING_THRESHOLD";
 
     /**
+     * If this property is set, then Ignite will use Async File IO factory by default.
+     */
+    public static final String IGNITE_USE_ASYNC_FILE_IO_FACTORY = "IGNITE_USE_ASYNC_FILE_IO_FACTORY";
+
+    /**
      * If the property is set {@link org.apache.ignite.internal.pagemem.wal.record.TxRecord} records
      * will be logged to WAL.
      *
