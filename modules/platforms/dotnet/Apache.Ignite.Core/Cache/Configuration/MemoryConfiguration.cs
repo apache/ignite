@@ -58,7 +58,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// <summary>
         /// The default page size.
         /// </summary>
-        public const int DefaultPageSize = 2 * 1024;
+        public const int DefaultPageSize = 4 * 1024;
 
         /// <summary>
         /// The default value for <see cref="DefaultMemoryPolicyName"/>.

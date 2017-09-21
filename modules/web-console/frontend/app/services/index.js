@@ -15,25 +15,9 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.odbc;
+import angular from 'angular';
+import IgniteVersion from './Version.service';
 
-/**
- * SQL listener message parser.
- */
-public interface SqlListenerMessageParser {
-    /**
-     * Decode request from byte array.
-     *
-     * @param msg Message.
-     * @return Request.
-     */
-    public SqlListenerRequest decode(byte[] msg);
-
-    /**
-     * Encode response to byte array.
-     *
-     * @param resp Response.
-     * @return Message.
-     */
-    public byte[] encode(SqlListenerResponse resp);
-}
+export default angular
+    .module('ignite-console.services', [])
+    .service('IgniteVersion', IgniteVersion);

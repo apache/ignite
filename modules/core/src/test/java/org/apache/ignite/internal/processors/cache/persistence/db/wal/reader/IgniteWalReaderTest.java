@@ -105,7 +105,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
      * Field for transferring setting from test to getConfig method
      * Archive incomplete segment after inactivity milliseconds.
      */
-    private int archiveIncompleteSegmentAfterInactivityMs = 0;
+    private int archiveIncompleteSegmentAfterInactivityMs;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -791,7 +791,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
                     final TxRecord txRecord = (TxRecord)walRecord;
                     final GridCacheVersion globalTxId = txRecord.nearXidVersion();
 
-                    log.info("//Tx Record, action: " + txRecord.action() +
+                    log.info("//Tx Record, state: " + txRecord.state() +
                         "; nearTxVersion" + globalTxId);
                 }
             }

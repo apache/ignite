@@ -15,34 +15,38 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.odbc;
+package org.apache.ignite.internal.processors.platform.client.cache;
 
-import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 
 /**
- * SQL listener request handler.
+ * Scan query response.
  */
-public interface SqlListenerRequestHandler {
-    /**
-     * Handle request.
-     *
-     * @param req Request.
-     * @return Response.
-     */
-    public SqlListenerResponse handle(SqlListenerRequest req);
+class ClientCacheScanQueryResponse extends ClientResponse {
+    /** Cursor. */
+    private final ClientCacheScanQueryCursor cursor;
 
     /**
-     * Handle exception.
+     * Ctor.
      *
-     * @param e Exception.
-     * @return Error response.
+     * @param requestId Request id.
+     * @param cursor Cursor.
      */
-    public SqlListenerResponse handleException(Exception e);
+    ClientCacheScanQueryResponse(long requestId, ClientCacheScanQueryCursor cursor) {
+        super(requestId);
 
-    /**
-     * Write successful handshake response.
-     *
-     * @param writer Binary writer.
-     */
-    public void writeHandshake(BinaryWriterExImpl writer);
+        assert cursor != null;
+
+        this.cursor = cursor;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void encode(BinaryRawWriterEx writer) {
+        super.encode(writer);
+
+        writer.writeLong(cursor.id());
+
+        cursor.writePage(writer);
+    }
 }

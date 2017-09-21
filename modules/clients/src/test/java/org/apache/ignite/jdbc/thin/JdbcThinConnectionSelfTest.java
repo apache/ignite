@@ -346,7 +346,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     private static JdbcThinTcpIo io(Connection conn) throws Exception {
         JdbcThinConnection conn0 = conn.unwrap(JdbcThinConnection.class);
 
-        return conn0.io();
+        return GridTestUtils.getFieldValue(conn0, JdbcThinConnection.class, "cliIo");
     }
 
     /**

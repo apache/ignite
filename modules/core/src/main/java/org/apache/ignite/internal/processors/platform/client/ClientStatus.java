@@ -15,17 +15,31 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.odbc;
+package org.apache.ignite.internal.processors.platform.client;
 
 /**
- * SQL listener command request.
+ * Client status codes.
  */
-public interface SqlListenerRequest {
-    /** Handshake request. */
-    public static final int HANDSHAKE = 1;
-
+public final class ClientStatus {
     /**
-     * @return Request ID.
+     * No-op constructor to prevent instantiation.
      */
-    public long requestId();
+    private ClientStatus (){
+        // No-op.
+    }
+
+    /** Command succeeded. */
+    public static final int SUCCESS = 0;
+
+    /** Command failed. */
+    public static final int FAILED = 1;
+
+    /** Invalid op code. */
+    public static final int INVALID_OP_CODE = 2;
+
+    /** Cache does not exist. */
+    public static final int CACHE_DOES_NOT_EXIST = 1000;
+
+    /** Too many cursors. */
+    public static final int TOO_MANY_CURSORS = 1010;
 }

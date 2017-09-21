@@ -29,16 +29,16 @@ import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
-import org.apache.ignite.internal.processors.odbc.SqlListenerMessageParser;
-import org.apache.ignite.internal.processors.odbc.SqlListenerRequest;
-import org.apache.ignite.internal.processors.odbc.SqlListenerResponse;
+import org.apache.ignite.internal.processors.odbc.ClientListenerMessageParser;
+import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
+import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 import org.apache.ignite.internal.processors.odbc.SqlListenerUtils;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * JDBC message parser.
  */
-public class OdbcMessageParser implements SqlListenerMessageParser {
+public class OdbcMessageParser implements ClientListenerMessageParser {
     /** Marshaller. */
     private final GridBinaryMarshaller marsh;
 
@@ -71,7 +71,7 @@ public class OdbcMessageParser implements SqlListenerMessageParser {
     }
 
     /** {@inheritDoc} */
-    @Override public SqlListenerRequest decode(byte[] msg) {
+    @Override public ClientListenerRequest decode(byte[] msg) {
         assert msg != null;
 
         BinaryInputStream stream = new BinaryHeapInputStream(msg);
@@ -80,7 +80,7 @@ public class OdbcMessageParser implements SqlListenerMessageParser {
 
         byte cmd = reader.readByte();
 
-        SqlListenerRequest res;
+        ClientListenerRequest res;
 
         switch (cmd) {
             case OdbcRequest.QRY_EXEC: {
@@ -182,7 +182,7 @@ public class OdbcMessageParser implements SqlListenerMessageParser {
     }
 
     /** {@inheritDoc} */
-    @Override public byte[] encode(SqlListenerResponse msg0) {
+    @Override public byte[] encode(ClientListenerResponse msg0) {
         assert msg0 != null;
 
         assert msg0 instanceof OdbcResponse;
@@ -196,7 +196,7 @@ public class OdbcMessageParser implements SqlListenerMessageParser {
         // Writing status.
         writer.writeByte((byte) msg.status());
 
-        if (msg.status() != SqlListenerResponse.STATUS_SUCCESS) {
+        if (msg.status() != ClientListenerResponse.STATUS_SUCCESS) {
             writer.writeString(msg.error());
 
             return writer.array();

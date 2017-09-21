@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,34 +15,14 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Tests.Client
-{
-    /// <summary>
-    /// Test person.
-    /// </summary>
-    public class Person
-    {
-        /// <summary>
-        /// Gets or sets the identifier.
-        /// </summary>
-        public int Id { get; set; }
+package org.apache.ignite.internal.processors.odbc;
 
-        /// <summary>
-        /// Gets or sets the name.
-        /// </summary>
-        public string Name { get; set; }
-
-        /// <summary>
-        /// Gets or sets the parent.
-        /// </summary>
-        public Person Parent { get;set; }
-    }
-
-    /// <summary>
-    /// Test person 2.
-    /// </summary>
-    public class Person2 : Person
-    {
-        // No-op.
+/**
+ * Client request with no ID.
+ */
+public abstract class ClientListenerRequestNoId implements ClientListenerRequest {
+    /** {@inheritDoc} */
+    @Override public long requestId() {
+        return 0;
     }
 }
