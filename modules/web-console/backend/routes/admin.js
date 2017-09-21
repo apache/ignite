@@ -33,6 +33,7 @@ module.exports = {
  * @param {MailsService} mailsService
  * @param {SessionsService} sessionsService
  * @param {UsersService} usersService
+ * @param {NotificationsService} notificationsService
  * @returns {Promise}
  */
 module.exports.factory = function(_, express, settings, mongo, spacesService, mailsService, sessionsService, usersService, notificationsService) {
@@ -55,8 +56,8 @@ module.exports.factory = function(_, express, settings, mongo, spacesService, ma
                 .catch(res.api.error);
         });
 
-        // Save user.
-        router.post('/save', (req, res) => {
+        // Grant or revoke admin access to user.
+        router.post('/toggle', (req, res) => {
             const params = req.body;
 
             mongo.Account.findByIdAndUpdate(params.userId, {admin: params.adminFlag}).exec()
