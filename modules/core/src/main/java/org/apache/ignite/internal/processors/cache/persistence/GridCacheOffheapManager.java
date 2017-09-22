@@ -199,7 +199,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                     else {
                         // localPartition will not acquire writeLock here because create=false.
                         GridDhtLocalPartition part = grp.topology().localPartition(store.partId(),
-                            AffinityTopologyVersion.NONE, false);
+                            AffinityTopologyVersion.NONE, false, true);
 
                         if (part != null && part.state() != GridDhtPartitionState.EVICTED)
                             state = part.state();

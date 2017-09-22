@@ -83,7 +83,8 @@ public class BPlusTreeReuseListPageMemoryImplTest extends BPlusTreeReuseSelfTest
                     return true;
                 }
             },
-            new MemoryMetricsImpl(new MemoryPolicyConfiguration())
+            new MemoryMetricsImpl(new MemoryPolicyConfiguration()),
+            false
         );
 
         mem.start();

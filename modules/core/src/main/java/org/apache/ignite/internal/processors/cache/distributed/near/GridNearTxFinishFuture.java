@@ -136,6 +136,11 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public boolean commit() {
+        return commit;
+    }
+
     /**
      * @return Cache context.
      */
@@ -286,6 +291,13 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
         }
     }
 
+    /**
+     *
+     */
+    void forceFinish() {
+        super.onDone(tx, null, false);
+    }
+
     /** {@inheritDoc} */
     @Override public boolean onDone(IgniteInternalTx tx0, Throwable err) {
         if (isDone())
@@ -318,7 +330,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
                         err = new TransactionRollbackException("Failed to commit transaction.", err);
 
                     try {
-                        tx.localFinish(err == null);
+                        tx.localFinish(err == null, true);
                     }
                     catch (IgniteCheckedException e) {
                         if (err != null)
@@ -335,7 +347,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
                         finishOnePhase(commit);
 
                     try {
-                        tx.tmFinish(commit, nodeStop);
+                        tx.tmFinish(commit, nodeStop, true);
                     }
                     catch (IgniteCheckedException e) {
                         U.error(log, "Failed to finish tx: " + tx, e);
@@ -390,9 +402,15 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
             fut.getClass() == CheckRemoteTxMiniFuture.class;
     }
 
+    /**
+     * Initializes future.
+     *
+     * @param commit Commit flag.
+     * @param clearThreadMap If {@code true} removes {@link GridNearTxLocal} from thread map.
+     */
     @SuppressWarnings("ForLoopReplaceableByForEach")
     /** {@inheritDoc} */
-    public void finish(boolean commit) {
+    public void finish(boolean commit, boolean clearThreadMap) {
         if (tx.onNeedCheckBackup()) {
             assert tx.onePhaseCommit();
 
@@ -414,7 +432,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
         }
 
         try {
-            if (tx.localFinish(commit) || (!commit && tx.state() == UNKNOWN)) {
+            if (tx.localFinish(commit, clearThreadMap) || (!commit && tx.state() == UNKNOWN)) {
                 GridLongList waitTxs = tx.mvccWaitTransactions();
 
                 if (waitTxs != null) {
@@ -426,7 +444,6 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
 
                     add(fut);
                 }
-
                 if ((tx.onePhaseCommit() && needFinishOnePhase(commit)) || (!tx.onePhaseCommit() && mappings != null)) {
                     if (mappings.single()) {
                         GridDistributedTxMapping mapping = mappings.singleMapping();

@@ -89,7 +89,9 @@ public class PageMemoryImplNoLoadTest extends PageMemoryNoLoadSelfTest {
                     return true;
                 }
             },
-            new MemoryMetricsImpl(new MemoryPolicyConfiguration()));
+            new MemoryMetricsImpl(new MemoryPolicyConfiguration()),
+            false
+        );
     }
 
     /** {@inheritDoc} */

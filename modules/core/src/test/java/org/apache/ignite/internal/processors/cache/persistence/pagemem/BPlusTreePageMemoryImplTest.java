@@ -83,7 +83,9 @@ public class BPlusTreePageMemoryImplTest extends BPlusTreeSelfTest {
                     return true;
                 }
             },
-            new MemoryMetricsImpl(new MemoryPolicyConfiguration()));
+            new MemoryMetricsImpl(new MemoryPolicyConfiguration()),
+            false
+        );
 
         mem.start();
 

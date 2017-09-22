@@ -25,6 +25,11 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx
  */
 public interface NearTxFinishFuture extends IgniteInternalFuture<IgniteInternalTx>  {
     /**
+     * @return Commit flag.
+     */
+    boolean commit();
+
+    /**
      * @param commit {@code True} to commit, otherwise rollback.
      */
     public void finish(boolean commit);
