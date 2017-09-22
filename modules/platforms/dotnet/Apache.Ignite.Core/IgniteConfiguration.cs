@@ -1269,5 +1269,10 @@ namespace Apache.Ignite.Core
             get { return _isActiveOnStart ?? DefaultIsActiveOnStart; }
             set { _isActiveOnStart = value; }
         }
+
+        /// <summary>
+        /// Gets or sets consistent globally unique node identifier which survives node restarts.
+        /// </summary>
+        public object ConsistentId { get; set; }
     }
 }

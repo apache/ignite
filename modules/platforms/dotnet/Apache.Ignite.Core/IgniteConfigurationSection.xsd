@@ -1705,6 +1705,11 @@
                     <xs:documentation>Whether client connector should be enabled (allow thin clients, ODBC and JDBC drivers to work with Ignite).</xs:documentation>
                 </xs:annotation>
             </xs:attribute>
+            <xs:attribute name="consistentId">
+                <xs:annotation>
+                    <xs:documentation>Consistent globally unique node identifier which survives node restarts.</xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
         </xs:complexType>
     </xs:element>
 </xs:schema>
