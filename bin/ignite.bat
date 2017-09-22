@@ -98,7 +98,6 @@ set PROG_NAME=ignite.bat
 if "%OS%" == "Windows_NT" set PROG_NAME=%~nx0%
 
 :run
-
 ::
 :: Set IGNITE_LIBS
 ::

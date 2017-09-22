@@ -41,7 +41,11 @@ goto :eof
 :: The following libraries are required for Ignite.
 set IGNITE_LIBS=%IGNITE_HOME%\libs\*
 
-for /F %%F in ('dir /A:D /b "%IGNITE_LIBS%"') do if not "%%F" == "optional" call :concat "%IGNITE_HOME%\libs\%%F\*"
+if not exist "%IGNITE_LIBS%" goto :eof
+ 
+for /F %%F in ('dir /A:D /b "%IGNITE_LIBS%"') do (
+	if not "%%F" == "optional" call :concat "%IGNITE_HOME%\libs\%%F\*"
+)
 
 if defined USER_LIBS set IGNITE_LIBS=%USER_LIBS%;%IGNITE_LIBS%
 
