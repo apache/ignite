@@ -952,33 +952,8 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void testCancel() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-5439");
-
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    stmt.execute("select sleep_func(3)");
-
-                    return null;
-                }
-            },
-            SQLException.class,
-            "The query is canceled");
-
-        IgniteInternalFuture f = GridTestUtils.runAsync(new Runnable() {
-            @Override public void run() {
-                try {
-                    stmt.cancel();
-                }
-                catch (SQLException e) {
-                    log.error("Unexpected exception", e);
-
-                    fail("Unexpected exception.");
-                }
-            }
-        });
-
-        f.get();
+        // Must do nothing on idle statement.
+        stmt.cancel();
 
         stmt.close();
 
