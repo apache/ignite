@@ -118,22 +118,12 @@ namespace Apache.Ignite.Core.Tests.Cache
                 PersistentStoreConfiguration = new PersistentStoreConfiguration()
             };
 
-            // Default config, inactive by default.
+            // Default config, inactive by default (IsActiveOnStart is ignored when persistence is enabled).
             using (var ignite = Ignition.Start(cfg))
             {
                 CheckIsActive(ignite, false);
 
                 ignite.SetActive(true);
-                CheckIsActive(ignite, true);
-
-                ignite.SetActive(false);
-                CheckIsActive(ignite, false);
-            }
-
-            cfg.IsActiveOnStart = true;
-
-            using (var ignite = Ignition.Start(cfg))
-            {
                 CheckIsActive(ignite, true);
 
                 ignite.SetActive(false);
