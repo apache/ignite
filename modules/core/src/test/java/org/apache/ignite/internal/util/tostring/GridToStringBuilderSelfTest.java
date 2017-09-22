@@ -74,10 +74,10 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
         list1.add(list2);
 
         try {
-            assertTrue("Wrong toString behaviour",
-                GridToStringBuilder.toString(ArrayList.class, list1).length() == 18);
-            assertTrue("Wrong toString behaviour",
-                GridToStringBuilder.toString(ArrayList.class, list2).length() == 18);
+            assertEquals("Wrong toString behaviour", 18,
+                GridToStringBuilder.toString(ArrayList.class, list1).length());
+            assertEquals("Wrong toString behaviour", 18,
+                GridToStringBuilder.toString(ArrayList.class, list2).length());
         } catch (StackOverflowError e) {
             fail("Recursion happened.");
         }
@@ -94,10 +94,10 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
         list1.add(list2);
 
         try {
-            assertTrue("Wrong toString behaviour",
-                GridToStringBuilder.toString(ArrayList.class, list1, "name", list2).length() == 43);
-            assertTrue("Wrong toString behaviour",
-                GridToStringBuilder.toString(ArrayList.class, list2, "name", list1).length() == 43);
+            assertEquals("Wrong toString behaviour", 43,
+                GridToStringBuilder.toString(ArrayList.class, list1, "name", list2).length());
+            assertEquals("Wrong toString behaviour", 43,
+                GridToStringBuilder.toString(ArrayList.class, list2, "name", list1).length());
         } catch (StackOverflowError e) {
             fail("Recursion happened.");
         }
@@ -123,14 +123,10 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
         n4.next = n3;
 
         try {
-            assertTrue("Wrong toString behaviour",
-                n1.toString().length() == 106);
-            assertTrue("Wrong toString behaviour",
-                n2.toString().length() == 85);
-            assertTrue("Wrong toString behaviour",
-                n3.toString().length() == 64);
-            assertTrue("Wrong toString behaviour",
-                n4.toString().length() == 64);
+            assertEquals("Wrong toString behaviour", 106, n1.toString().length());
+            assertEquals("Wrong toString behaviour", 85, n2.toString().length());
+            assertEquals("Wrong toString behaviour", 64, n3.toString().length());
+            assertEquals("Wrong toString behaviour", 64, n4.toString().length());
         } catch (StackOverflowError e) {
             fail("Recursion happened.");
         }
@@ -138,11 +134,14 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
 
     /** */
     private static class Node {
+        /** */
         @GridToStringInclude
         String name;
+        /** */
         @GridToStringInclude
         Node next;
 
+        /** {@inheritDoc}*/
         @Override public String toString() {
             return GridToStringBuilder.toString(Node.class, this);
         }
