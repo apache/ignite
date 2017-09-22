@@ -118,6 +118,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                 PersistentStoreConfiguration = new PersistentStoreConfiguration()
             };
 
+            // Default config, inactive by default.
             using (var ignite = Ignition.Start(cfg))
             {
                 CheckIsActive(ignite, false);
@@ -128,8 +129,18 @@ namespace Apache.Ignite.Core.Tests.Cache
                 ignite.SetActive(false);
                 CheckIsActive(ignite, false);
             }
+
+            cfg.IsActiveOnStart = true;
+
+            using (var ignite = Ignition.Start(cfg))
+            {
+                CheckIsActive(ignite, true);
+
+                ignite.SetActive(false);
+                CheckIsActive(ignite, false);
+            }
         }
-        
+
         /// <summary>
         /// Tests the grid activation without persistence (active by default).
         /// </summary>
