@@ -585,7 +585,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                     cctx.io().removeOrderedHandler(false, topic);
 
                     if (mvccCrd != null)
-                        cctx.shared().coordinators().ackQueryDone(mvccCrd, mvccVer.counter());
+                        cctx.shared().coordinators().ackQueryDone(mvccCrd, mvccVer);
                 }
             });
 

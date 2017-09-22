@@ -176,13 +176,26 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
 
     /**
      * @param crd Coordinator.
-     * @param cntr Counter assigned to query.
+     * @param mvccVer Query version.
      */
-    public void ackQueryDone(ClusterNode crd, long cntr) {
+    public void ackQueryDone(ClusterNode crd, MvccCoordinatorVersion mvccVer) {
         try {
+            long trackCntr = mvccVer.counter();
+
+            MvccLongList txs = mvccVer.activeTransactions();
+
+            if (txs != null) {
+                for (int i = 0; i < txs.size(); i++) {
+                    long txId = txs.get(i);
+
+                    if (txId < trackCntr)
+                        trackCntr = txId;
+                }
+            }
+
             cctx.gridIO().sendToGridTopic(crd,
                 MSG_TOPIC,
-                new CoordinatorQueryAckRequest(cntr),
+                new CoordinatorQueryAckRequest(trackCntr),
                 MSG_POLICY);
         }
         catch (ClusterTopologyCheckedException e) {
@@ -190,7 +203,7 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
                 log.debug("Failed to send query ack, node left [crd=" + crd + ']');
         }
         catch (IgniteCheckedException e) {
-            U.error(log, "Failed to send query ack [crd=" + crd + ", cntr=" + cntr + ']', e);
+            U.error(log, "Failed to send query ack [crd=" + crd + ", cntr=" + mvccVer + ']', e);
         }
     }
 
@@ -519,15 +532,21 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
 
         MvccCoordinatorVersionResponse res = new MvccCoordinatorVersionResponse();
 
-        for (Long txVer : activeTxs.values())
-            res.addTx(txVer);
+        Long trackCntr = mvccCntr;
 
-        Integer queries = activeQueries.get(mvccCntr);
+        for (Long txVer : activeTxs.values()) {
+            if (txVer < trackCntr)
+                trackCntr = txVer;
+
+            res.addTx(txVer);
+        }
+
+        Integer queries = activeQueries.get(trackCntr);
 
         if (queries != null)
-            activeQueries.put(mvccCntr, queries + 1);
+            activeQueries.put(trackCntr, queries + 1);
         else
-            activeQueries.put(mvccCntr, 1);
+            activeQueries.put(trackCntr, 1);
 
         res.init(futId, crdVer, mvccCntr, COUNTER_NA);
 

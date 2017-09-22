@@ -3004,7 +3004,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         /** {@inheritDoc} */
         @Override protected void onClose() {
             if (mvccCrd != null)
-                dht.context().shared().coordinators().ackQueryDone(mvccCrd, mvccVer.counter());
+                dht.context().shared().coordinators().ackQueryDone(mvccCrd, mvccVer);
 
             if (expiryPlc != null && dht != null) {
                 dht.sendTtlUpdateRequest(expiryPlc);
