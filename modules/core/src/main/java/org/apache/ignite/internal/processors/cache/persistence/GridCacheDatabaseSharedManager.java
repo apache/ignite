@@ -860,7 +860,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             restoreState();
 
         if (cctx.kernalContext().query().moduleEnabled()) {
-            for (GridCacheContext cacheCtx : (Collection<GridCacheContext>)cctx.cacheContexts()) {
+            for (final GridCacheContext cacheCtx : (Collection<GridCacheContext>)cctx.cacheContexts()) {
                 if (cacheCtx.startTopologyVersion().equals(fut.initialVersion()) &&
                     !cctx.pageStore().hasIndexStore(cacheCtx.groupId()) && cacheCtx.affinityNode()) {
                     final int cacheId = cacheCtx.cacheId();
@@ -873,6 +873,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     rebuildFut.listen(new CI1<IgniteInternalFuture>() {
                         @Override public void apply(IgniteInternalFuture igniteInternalFut) {
                             idxRebuildFuts.remove(cacheId, rebuildFut);
+
+                            log().info("Finished indexes rebuilding for cache: [name=" + cacheCtx.config().getName()
+                                    + ", grpName=" + cacheCtx.config().getGroupName());
                         }
                     });
                 }
