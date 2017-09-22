@@ -50,6 +50,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetR
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishResponse;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.lang.GridInClosure3;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
@@ -242,29 +243,42 @@ public class CacheMvccTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testGetAll1() throws Exception {
+    public void testActiveQueriesCleanup() throws Exception {
         startGridsMultiThreaded(SRVS);
 
-        try {
-            client = true;
+        client = true;
 
-            Ignite ignite = startGrid(SRVS);
+        Ignite srv0 = startGrid(SRVS);
 
-            CacheConfiguration ccfg = cacheConfiguration(PARTITIONED, FULL_SYNC, 1, 512);
+        final int NODES = SRVS + 1;
 
-            IgniteCache<Integer, Integer> cache = ignite.createCache(ccfg);
+        CacheConfiguration ccfg = cacheConfiguration(PARTITIONED, FULL_SYNC, 1, 512);
 
-            Set<Integer> keys = new HashSet<>();
+        srv0.createCache(ccfg);
 
-            keys.addAll(primaryKeys(ignite(0).cache(ccfg.getName()), 2));
+        final long stopTime = System.currentTimeMillis() + 5000;
 
-            Map<Integer, Integer> res = cache.getAll(keys);
+        GridTestUtils.runMultiThreaded(new IgniteInClosure<Integer>() {
+            @Override public void apply(Integer idx) {
+                ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
-            verifyCoordinatorInternalState();
-        }
-        finally {
-            stopAllGrids();
-        }
+                IgniteCache cache = ignite(idx % NODES).cache(DEFAULT_CACHE_NAME);
+
+                while (System.currentTimeMillis() < stopTime) {
+                    int keyCnt = rnd.nextInt(10) + 1;
+
+                    Set<Integer> keys = new HashSet<>();
+
+                    for (int i = 0; i < keyCnt; i++)
+                        keys.add(rnd.nextInt());
+
+                    cache.getAll(keys);
+                }
+            }
+        }, NODES * 2, "get-thread");
+
+        for (Ignite node : G.allGrids())
+            checkActiveQueriesCleanup(node);
     }
 
     /**
@@ -811,6 +825,18 @@ public class CacheMvccTransactionsTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCleanupWaitsForGet3() throws Exception {
+        for (int i = 0; i < 4; i++) {
+            cleanupWaitsForGet3(i + 1);
+
+            afterTest();
+        }
+    }
+
+    /**
+     * @param updates Number of updates.
+     * @throws Exception If failed.
+     */
+    private void cleanupWaitsForGet3(int updates) throws Exception {
         /*
         Simulate case when coordinator assigned query version has active transaction,
         query is delayed, after this active transaction finish and the same key is
@@ -833,7 +859,7 @@ public class CacheMvccTransactionsTest extends GridCommonAbstractTest {
         final Integer key1 = 1;
         final Integer key2 = 2;
 
-        for (int i = 0; i < 3; i++) {
+        for (int i = 0; i < updates; i++) {
             try (Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                 cache.put(key1, i);
                 cache.put(key2, i);
@@ -874,7 +900,7 @@ public class CacheMvccTransactionsTest extends GridCommonAbstractTest {
 
         clientSpi.waitForBlocked();
 
-        for (int i = 0; i < 3; i++) {
+        for (int i = 0; i < updates; i++) {
             try (Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                 cache.put(key1, i + 3);
 
@@ -913,7 +939,7 @@ public class CacheMvccTransactionsTest extends GridCommonAbstractTest {
 
         putFut.get();
 
-        for (int i = 0; i < 3; i++) {
+        for (int i = 0; i < updates; i++) {
             try (Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                 cache.put(key2, i + 4);
 
@@ -2082,16 +2108,26 @@ public class CacheMvccTransactionsTest extends GridCommonAbstractTest {
             assertTrue(ackFuts.isEmpty());
 
             // TODO IGNITE-3478
-//            assertTrue(GridTestUtils.waitForCondition(
-//                new GridAbsPredicate() {
-//                    @Override public boolean apply() {
-//                        Map activeQrys = GridTestUtils.getFieldValue(crd, "activeQueries");
-//
-//                        return activeQrys.isEmpty();
-//                    }
-//                }, 5000)
-//            );
+            // checkActiveQueriesCleanup(node);
         }
+    }
+
+    /**
+     * @param node Node.
+     * @throws Exception If failed.
+     */
+    private void checkActiveQueriesCleanup(Ignite node) throws Exception {
+        final CacheCoordinatorsSharedManager crd = ((IgniteKernal)node).context().cache().context().coordinators();
+
+        assertTrue(GridTestUtils.waitForCondition(
+            new GridAbsPredicate() {
+                @Override public boolean apply() {
+                    Map activeQrys = GridTestUtils.getFieldValue(crd, "activeQueries");
+
+                    return activeQrys.isEmpty();
+                }
+            }, 5000)
+        );
     }
 
     /**

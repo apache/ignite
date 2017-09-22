@@ -64,7 +64,7 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
     public static final long COUNTER_NA = 0L;
 
     /** */
-    public static final boolean STAT_CNTRS = true;
+    private static final boolean STAT_CNTRS = false;
 
     /** */
     private static final GridTopic MSG_TOPIC = TOPIC_CACHE_COORDINATOR;
@@ -489,10 +489,10 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
 
         assert old == null : txId;
 
-        long cleanupVer = Long.MAX_VALUE;
+        long cleanupVer = committedCntr.get() - 1;
 
         for (Long qryVer : activeQueries.keySet()) {
-            if (qryVer < cleanupVer)
+            if (qryVer <= cleanupVer)
                 cleanupVer = qryVer - 1;
         }
 
