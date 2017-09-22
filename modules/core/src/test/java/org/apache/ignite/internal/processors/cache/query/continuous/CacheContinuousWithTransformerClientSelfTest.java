@@ -27,7 +27,9 @@ public class CacheContinuousWithTransformerClientSelfTest extends CacheContinuou
         super.beforeTestsStarted();
 
         client = true;
+
         startGrid("client");
+
         client = false;
     }
 
