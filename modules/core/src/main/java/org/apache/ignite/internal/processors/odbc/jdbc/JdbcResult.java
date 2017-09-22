@@ -56,9 +56,6 @@ public class JdbcResult implements JdbcRawBinarylizable {
     /** Database schemas metadata result. */
     static final byte META_SCHEMAS = 12;
 
-    /** Query ID intermediate result. */
-    static final byte QRY_ID = 14;
-
     /** Success status. */
     private byte type;
 
@@ -139,11 +136,6 @@ public class JdbcResult implements JdbcRawBinarylizable {
 
             case META_SCHEMAS:
                 res = new JdbcMetaSchemasResult();
-
-                break;
-
-            case QRY_ID:
-                res = new JdbcQueryIdResult();
 
                 break;
 

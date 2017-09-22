@@ -35,8 +35,6 @@ import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBatchExecuteRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryCloseRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryFetchRequest;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryFetchResult;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryIdResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryMetadataRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResponse;
@@ -122,9 +120,6 @@ public class JdbcThinTcpIo implements AutoCloseable {
 
     /** Connection ID. */
     private long connId;
-
-    /** Current query ID. */
-    private long qryId = -1;
 
     /**
      * Constructor.
@@ -494,13 +489,6 @@ public class JdbcThinTcpIo implements AutoCloseable {
      */
     public long connectionId() {
         return connId;
-    }
-
-    /**
-     * @return Current query ID.
-     */
-    public long queryId() {
-        return qryId;
     }
 
     /**

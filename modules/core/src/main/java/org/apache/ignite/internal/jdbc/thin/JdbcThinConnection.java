@@ -36,6 +36,7 @@ import java.sql.Struct;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Logger;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
@@ -71,6 +72,9 @@ import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_TCP_NO_DEL
 public class JdbcThinConnection implements Connection {
     /** Logger. */
     private static final Logger LOG = Logger.getLogger(JdbcThinConnection.class.getName());
+
+    /** Query ID sequence. */
+    private final AtomicLong QRY_ID_GEN = new AtomicLong();
 
     /** Connection URL. */
     private String url;
@@ -681,6 +685,32 @@ public class JdbcThinConnection implements Connection {
     }
 
     /**
+     * Send request for execution via {@link #cliIo}.
+     * @param req Request.
+     * @return Server response.
+     * @throws SQLException On any error.
+     */
+    @SuppressWarnings("unchecked")
+    <R extends JdbcResult> R sendRequestThroughNewConnection(JdbcRequest req) throws SQLException {
+        try {
+            JdbcThinTcpIo newIo = JdbcThinTcpIo.newIo(cliIo);
+
+            JdbcResponse res = newIo.sendRequest(req);
+
+            if (res.status() != ClientListenerResponse.STATUS_SUCCESS)
+                throw new SQLException(res.error(), IgniteQueryErrorCode.codeToSqlState(res.status()));
+
+            return (R)res.response();
+        }
+        catch (SQLException e) {
+            throw e;
+        }
+        catch (Exception e) {
+            throw new SQLException("Failed to communicate with Ignite cluster.", SqlStateCode.CONNECTION_FAILURE, e);
+        }
+    }
+
+    /**
      * Extract host.
      *
      * @param props Properties.
@@ -831,7 +861,14 @@ public class JdbcThinConnection implements Connection {
     /**
      * @return Executing query ID.
      */
-    long queryId() {
-        return cliIo.queryId();
+    long currentQueryId() {
+        return QRY_ID_GEN.get();
+    }
+
+    /**
+     * @return Executing query ID.
+     */
+    long nextQueryId() {
+        return QRY_ID_GEN.incrementAndGet();
     }
 }

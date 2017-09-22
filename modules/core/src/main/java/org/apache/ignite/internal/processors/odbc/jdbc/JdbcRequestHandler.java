@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.odbc.jdbc;
 
 import java.sql.ParameterMetaData;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -256,7 +257,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                 "ClientConnectorConfiguration.maxOpenCursorsPerConnection) [maximum=" + maxCursors +
                 ", current=" + cursorCnt + ']');
 
-        long qryId = QRY_ID_GEN.getAndIncrement();
+        long qryId = req.queryId() < 0 ? QRY_ID_GEN.getAndIncrement() : req.queryId();
 
         try {
             String sql = req.sqlQuery();
@@ -719,10 +720,24 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @return resulting {@link JdbcResponse}.
      */
     private JdbcResponse exceptionToResult(Exception e) {
-        if (e instanceof IgniteSQLException)
-            return new JdbcResponse(((IgniteSQLException) e).statusCode(), e.getMessage());
-        else
-            return new JdbcResponse(IgniteQueryErrorCode.UNKNOWN, e.toString());
+        JdbcResponse sqlEx = null;
+
+        Throwable t = e;
+
+        while (sqlEx == null && t != null) {
+            if (t instanceof SQLException)
+                return new JdbcResponse(((SQLException) e).getErrorCode(), e.getMessage());
+            else if (t instanceof IgniteSQLException)
+                return new JdbcResponse(((IgniteSQLException) e).statusCode(), e.getMessage());
+            else if (t instanceof QueryCancelledException) {
+                return new JdbcResponse(IgniteQueryErrorCode.QUERY_CANCELED,
+                    "The query was cancelled while executing");
+            }
+
+            t = t.getCause();
+        }
+
+        return new JdbcResponse(IgniteQueryErrorCode.UNKNOWN, e.toString());
     }
 
     /**

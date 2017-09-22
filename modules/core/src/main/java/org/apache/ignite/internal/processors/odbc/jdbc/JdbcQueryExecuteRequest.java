@@ -51,6 +51,9 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
     /** Expected statement type. */
     private JdbcStatementType stmtType;
 
+    /** Query ID. */
+    private long qryId;
+
     /**
      */
     JdbcQueryExecuteRequest() {
@@ -58,6 +61,7 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
     }
 
     /**
+     * @param qryId Query ID.
      * @param stmtType Expected statement type.
      * @param schemaName Cache name.
      * @param pageSize Fetch size.
@@ -65,10 +69,11 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
      * @param sqlQry SQL query.
      * @param args Arguments list.
      */
-    public JdbcQueryExecuteRequest(JdbcStatementType stmtType, String schemaName, int pageSize, int maxRows,
+    public JdbcQueryExecuteRequest(long qryId, JdbcStatementType stmtType, String schemaName, int pageSize, int maxRows,
         String sqlQry, Object[] args) {
         super(QRY_EXEC);
 
+        this.qryId = qryId;
         this.schemaName = F.isEmpty(schemaName) ? null : schemaName;
         this.pageSize = pageSize;
         this.maxRows = maxRows;
@@ -119,6 +124,13 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
         return stmtType;
     }
 
+    /**
+     * @return Query ID.
+     */
+    public long queryId() {
+        return qryId;
+    }
+
     /** {@inheritDoc} */
     @Override public void writeBinary(BinaryWriterExImpl writer) throws BinaryObjectException {
         super.writeBinary(writer);
@@ -136,6 +148,7 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
         }
 
         writer.writeByte((byte)stmtType.ordinal());
+        writer.writeLong(qryId);
     }
 
     /** {@inheritDoc} */
@@ -159,6 +172,13 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
                 stmtType = JdbcStatementType.values()[reader.readByte()];
             else
                 stmtType = JdbcStatementType.ANY_STATEMENT_TYPE;
+        }
+        catch (IOException e) {
+            throw new BinaryObjectException(e);
+        }
+
+        try {
+            qryId = reader.available() >= 8 ? reader.readLong() : -1L;
         }
         catch (IOException e) {
             throw new BinaryObjectException(e);

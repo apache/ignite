@@ -20,6 +20,7 @@ package org.apache.ignite.jdbc.thin;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCheckedException;
@@ -141,14 +142,14 @@ public class JdbcThinQueryCancelSelfTest extends JdbcThinAbstractSelfTest {
                 }
             });
 
-            GridTestUtils.assertThrowsAnyCause(log, new Callable<Object>() {
+            GridTestUtils.assertThrows(log, new Callable<Object>() {
                 @Override public Object call() throws Exception {
                     // Execute long running query
                     stmt.executeQuery("select * from (select _val, sleep(500) as s from Integer limit 50)");
 
                     return null;
                 }
-            }, IgniteCheckedException.class, "The query was cancelled while executing");
+            }, SQLException.class, "The query was cancelled while executing");
 
             assert rs.next() : "The other cursor mustn't be closed";
         } finally {

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.odbc.jdbc;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.binary.BinaryObjectException;
@@ -38,6 +39,9 @@ public class JdbcBatchExecuteRequest extends JdbcRequest {
     @GridToStringInclude(sensitive = true)
     private List<JdbcQuery> queries;
 
+    /** Query ID. */
+    private long qryId;
+
     /**
      * Default constructor.
      */
@@ -49,13 +53,14 @@ public class JdbcBatchExecuteRequest extends JdbcRequest {
      * @param schemaName Schema name.
      * @param queries Queries.
      */
-    public JdbcBatchExecuteRequest(String schemaName, List<JdbcQuery> queries) {
+    public JdbcBatchExecuteRequest(long qryId, String schemaName, List<JdbcQuery> queries) {
         super(BATCH_EXEC);
 
         assert !F.isEmpty(queries);
 
         this.schemaName = schemaName;
         this.queries = queries;
+        this.qryId = qryId;
     }
 
     /**
@@ -72,6 +77,13 @@ public class JdbcBatchExecuteRequest extends JdbcRequest {
         return queries;
     }
 
+    /**
+     * @return Query ID.
+     */
+    public long queryId() {
+        return qryId;
+    }
+
     /** {@inheritDoc} */
     @Override public void writeBinary(BinaryWriterExImpl writer) throws BinaryObjectException {
         super.writeBinary(writer);
@@ -81,6 +93,8 @@ public class JdbcBatchExecuteRequest extends JdbcRequest {
 
         for (JdbcQuery q : queries)
             q.writeBinary(writer);
+
+        writer.writeLong(qryId);
     }
 
     /** {@inheritDoc} */
@@ -99,6 +113,13 @@ public class JdbcBatchExecuteRequest extends JdbcRequest {
             qry.readBinary(reader);
 
             queries.add(qry);
+        }
+
+        try {
+            qryId = reader.available() >= 8 ? reader.readLong() : -1L;
+        }
+        catch (IOException e) {
+            throw new BinaryObjectException(e);
         }
     }
 
