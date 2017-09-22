@@ -70,6 +70,7 @@ import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -77,6 +78,10 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import static java.nio.file.StandardOpenOption.CREATE;
+import static java.nio.file.StandardOpenOption.READ;
+import static java.nio.file.StandardOpenOption.WRITE;
 
 /**
  * File WAL manager.
@@ -939,7 +944,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         if (log.isDebugEnabled())
             log.debug("Formatting file [exists=" + file.exists() + ", file=" + file.getAbsolutePath() + ']');
 
-        try (FileIO fileIO = ioFactory.create(file, "rw")) {
+        try (FileIO fileIO = ioFactory.create(file, CREATE, READ, WRITE)) {
             int left = psCfg.getWalSegmentSize();
 
             if (mode == WALMode.DEFAULT) {
@@ -1009,12 +1014,20 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      * @return Entry serializer.
      */
     static RecordSerializer forVersion(GridCacheSharedContext cctx, int ver) throws IgniteCheckedException {
+        return forVersion(cctx, ver, false);
+    }
+
+    /**
+     * @param ver Serializer version.
+     * @return Entry serializer.
+     */
+    static RecordSerializer forVersion(GridCacheSharedContext cctx, int ver, boolean writePointer) throws IgniteCheckedException {
         if (ver <= 0)
             throw new IgniteCheckedException("Failed to create a serializer (corrupted WAL file).");
 
         switch (ver) {
             case 1:
-                return new RecordV1Serializer(cctx);
+                return new RecordV1Serializer(cctx, writePointer);
 
             default:
                 throw new IgniteCheckedException("Failed to create a serializer with the given version " +
@@ -1356,7 +1369,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 Files.move(dstTmpFile.toPath(), dstFile.toPath());
 
                 if (mode == WALMode.DEFAULT) {
-                    try (FileIO f0 = ioFactory.create(dstFile, "rw")) {
+                    try (FileIO f0 = ioFactory.create(dstFile, CREATE, READ, WRITE)) {
                         f0.force();
                     }
                 }
@@ -2335,6 +2348,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         /** {@inheritDoc} */
         @Override public FileWALPointer position() {
             return (FileWALPointer) super.position();
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(FakeRecord.class, this, "super", super.toString());
         }
     }
 

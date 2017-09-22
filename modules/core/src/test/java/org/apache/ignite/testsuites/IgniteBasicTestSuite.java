@@ -45,6 +45,7 @@ import org.apache.ignite.internal.processors.cache.IgniteMarshallerCacheClientRe
 import org.apache.ignite.internal.processors.cache.IgniteMarshallerCacheConcurrentReadWriteTest;
 import org.apache.ignite.internal.processors.cache.IgniteMarshallerCacheFSRestoreTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteRejectConnectOnNodeStopTest;
+import org.apache.ignite.internal.processors.closure.GridClosureProcessorRemoteTest;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessorSelfTest;
 import org.apache.ignite.internal.processors.closure.GridClosureSerializationTest;
 import org.apache.ignite.internal.processors.continuous.GridEventConsumeSelfTest;
@@ -127,6 +128,7 @@ public class IgniteBasicTestSuite extends TestSuite {
         suite.addTestSuite(GridProductVersionSelfTest.class);
         suite.addTestSuite(GridAffinityProcessorRendezvousSelfTest.class);
         suite.addTestSuite(GridClosureProcessorSelfTest.class);
+        suite.addTestSuite(GridClosureProcessorRemoteTest.class);
         suite.addTestSuite(GridClosureSerializationTest.class);
         suite.addTestSuite(ClosureServiceClientsNodesTest.class);
         suite.addTestSuite(GridStartStopSelfTest.class);

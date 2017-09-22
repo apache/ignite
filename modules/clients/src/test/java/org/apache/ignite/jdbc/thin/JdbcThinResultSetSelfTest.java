@@ -695,7 +695,7 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
 
                 return null;
             }
-        }, IgniteCheckedException.class, "Custom objects are not supported");
+        }, SQLException.class, "Custom objects are not supported");
     }
 
     /**

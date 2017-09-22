@@ -32,13 +32,14 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.util.typedef.F;
 
 import static java.sql.ResultSet.CONCUR_READ_ONLY;
 import static java.sql.ResultSet.FETCH_FORWARD;
 import static java.sql.ResultSet.HOLD_CURSORS_OVER_COMMIT;
 import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
+import static org.apache.ignite.internal.jdbc2.JdbcUtils.convertToSqlException;
 
 /**
  * JDBC statement implementation.
@@ -125,11 +126,8 @@ public class JdbcStatement implements Statement {
 
             return rs;
         }
-        catch (IgniteSQLException e) {
-            throw e.toJdbcException();
-        }
         catch (Exception e) {
-            throw new SQLException("Failed to query Ignite.", e);
+            throw convertToSqlException(e, "Failed to query Ignite.");
         }
     }
 
@@ -176,14 +174,8 @@ public class JdbcStatement implements Statement {
 
             return updateCnt = updateCounterFromQueryResult(qryRes.getRows());
         }
-        catch (IgniteSQLException e) {
-            throw e.toJdbcException();
-        }
-        catch (SQLException e) {
-            throw e;
-        }
         catch (Exception e) {
-            throw new SQLException("Failed to query Ignite.", e);
+            throw convertToSqlException(e, "Failed to query Ignite.");
         }
     }
 
@@ -358,11 +350,8 @@ public class JdbcStatement implements Statement {
 
             return res.isQuery();
         }
-        catch (IgniteSQLException e) {
-            throw e.toJdbcException();
-        }
         catch (Exception e) {
-            throw new SQLException("Failed to query Ignite.", e);
+            throw convertToSqlException(e, "Failed to query Ignite.");
         }
     }
 
@@ -510,14 +499,8 @@ public class JdbcStatement implements Statement {
 
             return res;
         }
-        catch (IgniteSQLException e) {
-            throw e.toJdbcException();
-        }
-        catch (SQLException e) {
-            throw e;
-        }
         catch (Exception e) {
-            throw new SQLException("Failed to query Ignite.", e);
+            throw convertToSqlException(e, "Failed to query Ignite.");
         }
     }
 
@@ -672,6 +655,6 @@ public class JdbcStatement implements Statement {
      */
     void ensureNotClosed() throws SQLException {
         if (closed)
-            throw new SQLException("Statement is closed.");
+            throw new SQLException("Connection is closed.", SqlStateCode.CONNECTION_CLOSED);
     }
 }

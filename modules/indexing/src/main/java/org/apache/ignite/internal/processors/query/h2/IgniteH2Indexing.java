@@ -729,6 +729,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
 
         desc.table().addColumns(cols, ifColNotExists);
+
+        clearCachedQueries();
     }
 
     /**
@@ -1644,7 +1646,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         sql.a(',').a(VER_FIELD_NAME).a(" OTHER INVISIBLE");
 
         for (Map.Entry<String, Class<?>> e : tbl.type().fields().entrySet())
-            sql.a(',').a(H2Utils.withQuotes(e.getKey())).a(' ').a(dbTypeFromClass(e.getValue()));
+            sql.a(',').a(H2Utils.withQuotes(e.getKey())).a(' ').a(dbTypeFromClass(e.getValue()))
+            .a(tbl.type().property(e.getKey()).notNull()? " NOT NULL" : "");
 
         sql.a(')');
 
@@ -2241,6 +2244,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     it.remove();
             }
         }
+    }
+
+    /**
+     * Remove all cached queries from cached two-steps queries.
+     */
+    public void clearCachedQueries() {
+        twoStepCache.clear();
     }
 
     /** {@inheritDoc} */

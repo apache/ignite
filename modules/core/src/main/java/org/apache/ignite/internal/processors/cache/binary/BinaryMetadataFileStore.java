@@ -25,6 +25,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Class handles saving/restoring binary metadata to/from disk.
@@ -49,8 +50,14 @@ class BinaryMetadataFileStore {
      * @param metadataLocCache Metadata locale cache.
      * @param ctx Context.
      * @param log Logger.
+     * @param binaryMetadataFileStoreDir Path to binary metadata store configured by user, should include binary_meta and consistentId
      */
-    BinaryMetadataFileStore(ConcurrentMap<Integer, BinaryMetadataHolder> metadataLocCache, GridKernalContext ctx, IgniteLogger log) throws IgniteCheckedException {
+    BinaryMetadataFileStore(
+        final ConcurrentMap<Integer, BinaryMetadataHolder> metadataLocCache,
+        final GridKernalContext ctx,
+        final IgniteLogger log,
+        @Nullable final File binaryMetadataFileStoreDir) throws IgniteCheckedException {
+
         this.metadataLocCache = metadataLocCache;
         this.ctx = ctx;
         this.log = log;
@@ -58,14 +65,18 @@ class BinaryMetadataFileStore {
         if (!ctx.config().isPersistentStoreEnabled())
             return;
 
-        String consId = U.maskForFileName(ctx.discovery().consistentId().toString());
+        if (binaryMetadataFileStoreDir != null)
+            workDir = binaryMetadataFileStoreDir;
+        else {
+            String consId = U.maskForFileName(ctx.discovery().consistentId().toString());
 
-        workDir = new File(U.resolveWorkDirectory(
-            ctx.config().getWorkDirectory(),
-            "binary_meta",
-            false
-        ),
-            consId);
+            workDir = new File(U.resolveWorkDirectory(
+                ctx.config().getWorkDirectory(),
+                "binary_meta",
+                false
+            ),
+                consId);
+        }
 
         U.ensureDirectory(workDir, "directory for serialized binary metadata", log);
     }
