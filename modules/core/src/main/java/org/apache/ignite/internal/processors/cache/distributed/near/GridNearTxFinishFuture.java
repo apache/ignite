@@ -425,7 +425,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
 
             assert crd != null;
 
-            cctx.coordinators().ackTxRollback(crd, tx.nearXidVersion());
+            cctx.coordinators().ackTxRollback(crd, tx.mvccCoordinatorVersion());
         }
 
         try {

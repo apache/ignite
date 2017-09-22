@@ -38,7 +38,7 @@ public class CoordinatorTxAckRequest implements MvccCoordinatorMessage {
     private long futId;
 
     /** */
-    private GridCacheVersion txId;
+    private long txCntr;
 
     /** */
     private byte flags;
@@ -52,11 +52,11 @@ public class CoordinatorTxAckRequest implements MvccCoordinatorMessage {
 
     /**
      * @param futId Future ID.
-     * @param txId Transaction ID.
+     * @param txCntr Counter assigned to transaction.
      */
-    CoordinatorTxAckRequest(long futId, GridCacheVersion txId) {
+    CoordinatorTxAckRequest(long futId, long txCntr) {
         this.futId = futId;
-        this.txId = txId;
+        this.txCntr = txCntr;
     }
 
     /** {@inheritDoc} */
@@ -94,10 +94,10 @@ public class CoordinatorTxAckRequest implements MvccCoordinatorMessage {
     }
 
     /**
-     * @return Transaction ID.s
+     * @return Counter assigned tp transaction.
      */
-    public GridCacheVersion txId() {
-        return txId;
+    public long txCounter() {
+        return txCntr;
     }
 
     /** {@inheritDoc} */
@@ -125,7 +125,7 @@ public class CoordinatorTxAckRequest implements MvccCoordinatorMessage {
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeMessage("txId", txId))
+                if (!writer.writeLong("txCntr", txCntr))
                     return false;
 
                 writer.incrementState();
@@ -160,7 +160,7 @@ public class CoordinatorTxAckRequest implements MvccCoordinatorMessage {
                 reader.incrementState();
 
             case 2:
-                txId = reader.readMessage("txId");
+                txCntr = reader.readLong("txCntr");
 
                 if (!reader.isLastRead())
                     return false;

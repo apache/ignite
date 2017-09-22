@@ -59,7 +59,7 @@ public class GridNearTxFinishAndAckFuture extends GridFutureAdapter<IgniteIntern
                         assert crd != null;
 
                         IgniteInternalFuture<Void> ackFut = fut.context().coordinators().ackTxCommit(
-                            crd, tx.nearXidVersion());
+                            crd, tx.mvccCoordinatorVersion());
 
                         ackFut.listen(new IgniteInClosure<IgniteInternalFuture<Void>>() {
                             @Override public void apply(IgniteInternalFuture<Void> ackFut) {

@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
@@ -82,7 +83,7 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
     private final GridAtomicLong committedCntr = new GridAtomicLong(1L);
 
     /** */
-    private final ConcurrentHashMap<GridCacheVersion, Long> activeTxs = new ConcurrentHashMap<>();
+    private final ConcurrentSkipListMap<Long, GridCacheVersion> activeTxs = new ConcurrentSkipListMap<>();
 
     /** */
     private final Map<Long, Integer> activeQueries = new HashMap<>();
@@ -268,12 +269,12 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
 
     /**
      * @param crd Coordinator.
-     * @param txId Transaction ID.
+     * @param mvccVer Transaction version.
      * @return Acknowledge future.
      */
-    public IgniteInternalFuture<Void> ackTxCommit(ClusterNode crd, GridCacheVersion txId) {
+    public IgniteInternalFuture<Void> ackTxCommit(ClusterNode crd, MvccCoordinatorVersion mvccVer) {
         assert crd != null;
-        assert txId != null;
+        assert mvccVer != null;
 
         WaitAckFuture fut = new WaitAckFuture(futIdCntr.incrementAndGet(), crd, true);
 
@@ -282,7 +283,7 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
         try {
             cctx.gridIO().sendToGridTopic(crd,
                 MSG_TOPIC,
-                new CoordinatorTxAckRequest(fut.id, txId),
+                new CoordinatorTxAckRequest(fut.id, mvccVer.counter()),
                 MSG_POLICY);
         }
         catch (ClusterTopologyCheckedException e) {
@@ -299,10 +300,10 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
 
     /**
      * @param crd Coordinator.
-     * @param txId Transaction ID.
+     * @param mvccVer Transaction version.
      */
-    public void ackTxRollback(ClusterNode crd, GridCacheVersion txId) {
-        CoordinatorTxAckRequest msg = new CoordinatorTxAckRequest(0, txId);
+    public void ackTxRollback(ClusterNode crd, MvccCoordinatorVersion mvccVer) {
+        CoordinatorTxAckRequest msg = new CoordinatorTxAckRequest(0, mvccVer.counter());
 
         msg.skipResponse(true);
 
@@ -424,7 +425,7 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
      * @param msg Message.
      */
     private void processCoordinatorTxAckRequest(UUID nodeId, CoordinatorTxAckRequest msg) {
-        onTxDone(msg.txId());
+        onTxDone(msg.txCounter());
 
         if (STAT_CNTRS)
             statCntrs[2].update();
@@ -482,10 +483,10 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
         // TODO IGNITE-3478 sorted? + change GridLongList.writeTo?
         MvccCoordinatorVersionResponse res = new MvccCoordinatorVersionResponse();
 
-        for (Long txVer : activeTxs.values())
+        for (Long txVer : activeTxs.keySet())
             res.addTx(txVer);
 
-        Object old = activeTxs.put(txId, nextCtr);
+        Object old = activeTxs.put(nextCtr, txId);
 
         assert old == null : txId;
 
@@ -502,19 +503,19 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
     }
 
     /**
-     * @param txId Transaction ID.
+     * @param txCntr Counter assigned to transaction.
      */
-    private void onTxDone(GridCacheVersion txId) {
+    private void onTxDone(Long txCntr) {
         GridFutureAdapter fut; // TODO IGNITE-3478.
 
         synchronized (this) {
-            Long cntr = activeTxs.remove(txId);
+            GridCacheVersion ver = activeTxs.remove(txCntr);
 
-            assert cntr != null;
+            assert ver != null;
 
-            committedCntr.setIfGreater(cntr);
+            committedCntr.setIfGreater(txCntr);
 
-            fut = waitTxFuts.remove(cntr);
+            fut = waitTxFuts.remove(txCntr);
         }
 
         if (fut != null)
@@ -534,7 +535,7 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
 
         Long trackCntr = mvccCntr;
 
-        for (Long txVer : activeTxs.values()) {
+        for (Long txVer : activeTxs.keySet()) {
             if (txVer < trackCntr)
                 trackCntr = txVer;
 
@@ -592,7 +593,7 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
             for (int i = 0; i < txs.size(); i++) {
                 long txId = txs.get(i);
 
-                if (hasActiveTx(txId)) {
+                if (activeTxs.containsKey(txId)) {
                     GridFutureAdapter fut0 = waitTxFuts.get(txId);
 
                     if (fut0 == null) {
@@ -641,15 +642,6 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
         catch (IgniteCheckedException e) {
             U.error(log, "Failed to send tx ack response [msg=" + msg + ", node=" + nodeId + ']', e);
         }
-    }
-
-    private boolean hasActiveTx(long txId) {
-        for (Long id : activeTxs.values()) {
-            if (id == txId)
-                return true;
-        }
-
-        return false;
     }
 
     /**
