@@ -290,7 +290,8 @@ public class GridToStringBuilder {
         addSens[4] = sens4;
 
         try {
-            return toStringImpl(cls, tmp.getStringBuilder(), obj, addNames, addVals, addSens, 5);
+            return toStringImpl(cls, tmp.getStringBuilder(), obj, addNames, addVals, addSens, 5, true,
+                savedObjects.get());
         }
         finally {
             queue.offer(tmp);
@@ -372,7 +373,8 @@ public class GridToStringBuilder {
         addSens[5] = sens5;
 
         try {
-            return toStringImpl(cls, tmp.getStringBuilder(), obj, addNames, addVals, addSens, 6);
+            return toStringImpl(cls, tmp.getStringBuilder(), obj, addNames, addVals, addSens, 6, true,
+                savedObjects.get());
         }
         finally {
             queue.offer(tmp);
@@ -462,7 +464,8 @@ public class GridToStringBuilder {
         addSens[6] = sens6;
 
         try {
-            return toStringImpl(cls, tmp.getStringBuilder(), obj, addNames, addVals, addSens, 7);
+            return toStringImpl(cls, tmp.getStringBuilder(), obj, addNames, addVals, addSens, 7, true,
+                savedObjects.get());
         }
         finally {
             queue.offer(tmp);
@@ -556,7 +559,8 @@ public class GridToStringBuilder {
         addSens[3] = sens3;
 
         try {
-            return toStringImpl(cls, tmp.getStringBuilder(), obj, addNames, addVals, addSens, 4);
+            return toStringImpl(cls, tmp.getStringBuilder(), obj, addNames, addVals, addSens, 4, true,
+                savedObjects.get());
         }
         finally {
             queue.offer(tmp);
@@ -639,7 +643,8 @@ public class GridToStringBuilder {
         addSens[2] = sens2;
 
         try {
-            return toStringImpl(cls, tmp.getStringBuilder(), obj, addNames, addVals, addSens, 3);
+            return toStringImpl(cls, tmp.getStringBuilder(), obj, addNames, addVals, addSens, 3, true,
+                savedObjects.get());
         }
         finally {
             queue.offer(tmp);
@@ -707,7 +712,8 @@ public class GridToStringBuilder {
         addSens[1] = sens1;
 
         try {
-            return toStringImpl(cls, tmp.getStringBuilder(), obj, addNames, addVals, addSens, 2);
+            return toStringImpl(cls, tmp.getStringBuilder(), obj, addNames, addVals, addSens, 2, true,
+                savedObjects.get());
         }
         finally {
             queue.offer(tmp);
@@ -762,7 +768,8 @@ public class GridToStringBuilder {
         addSens[0] = sens;
 
         try {
-            return toStringImpl(cls, tmp.getStringBuilder(), obj, addNames, addVals, addSens, 1);
+            return toStringImpl(cls, tmp.getStringBuilder(), obj, addNames, addVals, addSens, 1, true,
+                savedObjects.get());
         }
         finally {
             queue.offer(tmp);
@@ -792,7 +799,7 @@ public class GridToStringBuilder {
 
         try {
             return toStringImpl(cls, tmp.getStringBuilder(), obj, tmp.getAdditionalNames(),
-                tmp.getAdditionalValues(), null, 0);
+                tmp.getAdditionalValues(), null, 0, true, savedObjects.get());
         }
         finally {
             queue.offer(tmp);
@@ -815,6 +822,8 @@ public class GridToStringBuilder {
     /**
      * Creates an uniformed string presentation for the given object.
      *
+     *
+     * @param <T> Type of object.
      * @param cls Class of the object.
      * @param buf String builder buffer.
      * @param obj Object for which to get string presentation.
@@ -822,15 +831,17 @@ public class GridToStringBuilder {
      * @param addVals Additional values to be included.
      * @param addSens Sensitive flag of values or {@code null} if all values are not sensitive.
      * @param addLen How many additional values will be included.
+     * @param resetBuffer Flag to reset string builder.
      * @return String presentation of the given object.
-     * @param <T> Type of object.
      */
     @SuppressWarnings({"unchecked"})
     private static <T> String toStringImpl(Class<T> cls, SB buf, T obj,
         Object[] addNames,
         Object[] addVals,
         @Nullable boolean[] addSens,
-        int addLen) {
+        int addLen,
+        boolean resetBuffer,
+        IdentityHashMap<Object, Integer> savedObjects) {
         assert cls != null;
         assert buf != null;
         assert obj != null;
@@ -839,16 +850,21 @@ public class GridToStringBuilder {
         assert addNames.length == addVals.length;
         assert addLen <= addNames.length;
 
-        IdentityHashMap<Object, Integer> svdObjects = savedObjects.get();
+        if (isPrimitiveWraper(cls)) {
+            buf.a(String.valueOf(obj));
+
+            return null;
+        }
 
         try {
             GridToStringClassDescriptor cd = getClassDescriptor(cls);
 
             assert cd != null;
 
-            buf.setLength(0);
+            if (resetBuffer)
+                buf.setLength(0);
 
-            svdObjects.put(obj, buf.length());
+            savedObjects.put(obj, buf.length());
 
             buf.a(cd.getSimpleClassName()).a(" [");
 
@@ -893,8 +909,12 @@ public class GridToStringBuilder {
                         val = tmp;
                     }
 
-                    if (!addNameWithHashToBuffer(buf, val, svdObjects))
-                        toStringAddVal(val, buf, svdObjects);
+                    if (!addNameWithHashToBuffer(buf, val, savedObjects))
+                        if (val == null)
+                            buf.a("null");
+                        else
+                            toStringImpl((Class)val.getClass(), buf, val, new Object[]{}, new Object[]{}, null,
+                                0, false, savedObjects);
                 }
             }
 
@@ -920,110 +940,7 @@ public class GridToStringBuilder {
             // No other option here.
             throw new IgniteException(e);
         } finally {
-            svdObjects.remove(obj);
-        }
-    }
-
-    /**
-     * Creates an uniformed string presentation for the given object.
-     * We need this method to count every Object to prevent infinite toString() loops.
-     *
-     * @param <T> Type of object.
-     * @param buf String builder.
-     * @param obj Object for which to get string presentation.
-     * @param svdObjects Map with objects already presented in the buffer.
-     */
-    @SuppressWarnings({"unchecked"})
-    private static <T> void toStringAddVal(T obj, SB buf, IdentityHashMap<Object, Integer> svdObjects) {
-        if (obj == null) {
-            buf.a("null");
-
-            return;
-        }
-
-        Class cls = obj.getClass();
-
-        if (isPrimitiveWraper(cls)) {
-            buf.a(String.valueOf(obj));
-
-            return;
-        }
-
-        svdObjects.put(obj, buf.length());
-
-        try {
-            GridToStringClassDescriptor cd = getClassDescriptor(cls);
-
-            assert cd != null;
-
-            buf.a(cd.getSimpleClassName()).a(" [");
-
-            boolean first = true;
-
-            for (GridToStringFieldDescriptor fd : cd.getFields()) {
-                if (!first)
-                    buf.a(", ");
-                else
-                    first = false;
-
-                String name = fd.getName();
-
-                Field field = cls.getDeclaredField(name);
-
-                field.setAccessible(true);
-
-                buf.a(name).a('=');
-
-                Class<?> fieldType = field.getType();
-
-                if (fieldType.isArray())
-                    buf.a(arrayToString(fieldType, field.get(obj)));
-                else {
-                    Object val = field.get(obj);
-
-                    if (val instanceof Collection && ((Collection)val).size() > MAX_COL_SIZE)
-                        val = F.retain((Collection)val, true, MAX_COL_SIZE);
-                    else if (val instanceof Map && ((Map)val).size() > MAX_COL_SIZE) {
-                        Map tmp = U.newHashMap(MAX_COL_SIZE);
-
-                        int cntr = 0;
-
-                        for (Object o : ((Map)val).entrySet()) {
-                            Map.Entry e = (Map.Entry)o;
-
-                            tmp.put(e.getKey(), e.getValue());
-
-                            if (++cntr >= MAX_COL_SIZE)
-                                break;
-                        }
-
-                        val = tmp;
-                    }
-
-                    if (!addNameWithHashToBuffer(buf, val, svdObjects))
-                        toStringAddVal(val, buf, svdObjects);
-                }
-            }
-
-            buf.a(']');
-        }
-        // Specifically catching all exceptions.
-        catch (Exception e) {
-            rwLock.writeLock().lock();
-
-            // Remove entry from cache to avoid potential memory leak
-            // in case new class loader got loaded under the same identity hash.
-            try {
-                classCache.remove(cls.getName() + System.identityHashCode(cls.getClassLoader()));
-            }
-            finally {
-                rwLock.writeLock().unlock();
-            }
-
-            // No other option here.
-            throw new IgniteException(e);
-        } finally {
-            svdObjects.remove(obj);
+            savedObjects.remove(obj);
         }
     }
 
@@ -1594,7 +1511,11 @@ public class GridToStringBuilder {
 
                 buf.a(addNames[i]).a('=');
 
-                toStringAddVal(addVal, buf, savedObjects.get());
+                if (addVal == null)
+                    buf.a("null");
+                else
+                    toStringImpl((Class)addVal.getClass(), buf, addVal, new Object[]{}, new Object[]{}, null,
+                        0, false, savedObjects.get());
             }
         }
     }
