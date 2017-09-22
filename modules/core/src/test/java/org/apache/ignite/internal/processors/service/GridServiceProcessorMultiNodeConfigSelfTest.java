@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.lang.GridAbsPredicateX;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -56,14 +55,14 @@ public class GridServiceProcessorMultiNodeConfigSelfTest extends GridServiceProc
 
     /** {@inheritDoc} */
     @Override protected ServiceConfiguration[] services() {
-        List<ServiceConfiguration> cfgs = new ArrayList<>();
-
         ServiceConfiguration cfg = new ServiceConfiguration();
 
         cfg.setName(CLUSTER_SINGLE);
         cfg.setMaxPerNodeCount(1);
         cfg.setTotalCount(1);
         cfg.setService(new DummyService());
+
+        List<ServiceConfiguration> cfgs = new ArrayList<>();
 
         cfgs.add(cfg);
 
@@ -202,16 +201,18 @@ public class GridServiceProcessorMultiNodeConfigSelfTest extends GridServiceProc
 
         checkCount(name, g.services().serviceDescriptors(), nodeCount());
 
-        int extraNodes = 2;
-
         CountDownLatch latch = new CountDownLatch(1);
 
         DummyService.exeLatch(name, latch);
+
+        int extraNodes = 2;
 
         startExtraNodes(extraNodes);
 
         try {
             latch.await();
+
+            waitForDeployment(name, nodeCount() + 1);
 
             checkCount(name, g.services().serviceDescriptors(), nodeCount() + 1);
         }
@@ -219,26 +220,12 @@ public class GridServiceProcessorMultiNodeConfigSelfTest extends GridServiceProc
             stopExtraNodes(extraNodes);
         }
 
-        assertEquals(name, 1, DummyService.cancelled(name));
-
         waitForDeployment(name, nodeCount());
 
+        // Service can be redeployed when nodes is stopping one-by-one.
+        assertEquals(0, DummyService.started(name) - DummyService.cancelled(name));
+
         checkCount(name, g.services().serviceDescriptors(), nodeCount());
-    }
-
-    /**
-     * @param srvcName Service name
-     * @param expectedDeps Expected number of service deployments
-     *
-     */
-    private boolean waitForDeployment(final String srvcName, final int expectedDeps) throws IgniteInterruptedCheckedException {
-        final Ignite g = randomGrid();
-
-        return GridTestUtils.waitForCondition(new GridAbsPredicateX() {
-            @Override public boolean applyx() {
-                return actualCount(srvcName, g.services().serviceDescriptors())  == expectedDeps;
-            }
-        }, 1500);
     }
 
     /**
@@ -247,6 +234,8 @@ public class GridServiceProcessorMultiNodeConfigSelfTest extends GridServiceProc
      */
     private void checkSingletonUpdateTopology(String name) throws Exception {
         Ignite g = randomGrid();
+
+        int newNodes = 4;
 
         startExtraNodes(2, 2);
 
@@ -259,7 +248,7 @@ public class GridServiceProcessorMultiNodeConfigSelfTest extends GridServiceProc
             checkCount(name, g.services().serviceDescriptors(), 1);
         }
         finally {
-            stopExtraNodes(4);
+            stopExtraNodes(newNodes);
         }
     }
 
@@ -281,8 +270,12 @@ public class GridServiceProcessorMultiNodeConfigSelfTest extends GridServiceProc
         try {
             latch.await();
 
-            assertEquals(name, newNodes, DummyService.started(name));
-            assertEquals(name, 0, DummyService.cancelled(name));
+            waitForDeployment(name, nodeCount() + newNodes);
+
+            // Since we start extra nodes, there may be extra start and cancel events,
+            // so we check only the difference between start and cancel and
+            // not start and cancel events individually.
+            assertEquals(name, newNodes,  DummyService.started(name) - DummyService.cancelled(name));
 
             checkCount(name, g.services().serviceDescriptors(), nodeCount() + newNodes);
         }
@@ -303,19 +296,24 @@ public class GridServiceProcessorMultiNodeConfigSelfTest extends GridServiceProc
         Ignite g = randomGrid();
 
         int servers = 2;
-        int clients = 2;
 
         CountDownLatch latch = new CountDownLatch(servers);
 
         DummyService.exeLatch(name, latch);
+
+        int clients = 2;
 
         startExtraNodes(servers, clients);
 
         try {
             latch.await();
 
-            assertEquals(name, servers, DummyService.started(name));
-            assertEquals(name, 0, DummyService.cancelled(name));
+            waitForDeployment(name, nodeCount() + servers);
+
+            // Since we start extra nodes, there may be extra start and cancel events,
+            // so we check only the difference between start and cancel and
+            // not start and cancel events individually.
+            assertEquals(name, servers,  DummyService.started(name) - DummyService.cancelled(name));
 
             checkCount(name, g.services().serviceDescriptors(), nodeCount() + servers);
         }

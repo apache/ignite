@@ -76,8 +76,8 @@ public class GridServiceProcessorStopSelfTest extends GridCommonAbstractTest {
                 try {
                     services.future().get();
                 }
-                catch (IgniteException e) {
-                    finishLatch.countDown();
+                catch (IgniteException ignored) {
+                    //No op
                 }
                 finally {
                     finishLatch.countDown();

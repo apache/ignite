@@ -466,7 +466,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      * @param name Service name.
      * @param svc Service.
      * @param cacheName Cache name.
-     * @param  affKey Affinity key.
+     * @param affKey Affinity key.
      * @return Future.
      */
     public IgniteInternalFuture<?> deployKeyAffinitySingleton(String name, Service svc, String cacheName, Object affKey) {
@@ -499,15 +499,12 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         }
 
         try {
-
             ServicesCompatibilityState state = markCompatibilityStateAsUsed();
 
             validate(cfg);
 
-
-
-        if (!state.srvcCompatibility) {
-            Marshaller marsh = ctx.config().getMarshaller();
+            if (!state.srvcCompatibility) {
+                Marshaller marsh = ctx.config().getMarshaller();
 
                 LazyServiceConfiguration cfg0;
 
@@ -897,7 +894,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         Collection<ServiceContextImpl> ctxs;
 
         synchronized (locSvcs) {
-             ctxs = locSvcs.get(name);
+            ctxs = locSvcs.get(name);
         }
 
         if (ctxs == null)
@@ -940,9 +937,9 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         while (true) {
             GridServiceAssignments assigns = new GridServiceAssignments(cfg, dep.nodeId(), topVer.topologyVersion());
 
-             Collection<ClusterNode> nodes;
+            Collection<ClusterNode> nodes;
 
-             // Call node filter outside of transaction.
+            // Call node filter outside of transaction.
             if (affKey == null) {
                 nodes = ctx.discovery().nodes(topVer);
 
@@ -1301,7 +1298,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                 GridCloseableIterator<Map.Entry<Object, Object>> iter = qry.executeScanQuery();
 
                 return cache.context().itHolder().iterator(iter,
-                    new CacheIteratorConverter<Cache.Entry<Object, Object>, Map.Entry<Object,Object>>() {
+                    new CacheIteratorConverter<Cache.Entry<Object, Object>, Map.Entry<Object, Object>>() {
                         @Override protected Cache.Entry<Object, Object> convert(Map.Entry<Object, Object> e) {
                             return new CacheEntryImpl<>(e.getKey(), e.getValue());
                         }
@@ -1525,60 +1522,60 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         }
     }
 
-        /**
-         * Deployment callback.
-         *
-         * @param dep Service deployment.
-         * @param topVer Topology version.
-         */
-        private void onDeployment(final GridServiceDeployment dep, final AffinityTopologyVersion topVer) {
-            // Retry forever.
-            try {
-                AffinityTopologyVersion newTopVer = ctx.discovery().topologyVersionEx();
+    /**
+     * Deployment callback.
+     *
+     * @param dep Service deployment.
+     * @param topVer Topology version.
+     */
+    private void onDeployment(final GridServiceDeployment dep, final AffinityTopologyVersion topVer) {
+        // Retry forever.
+        try {
+            AffinityTopologyVersion newTopVer = ctx.discovery().topologyVersionEx();
 
-                // If topology version changed, reassignment will happen from topology event.
-                if (newTopVer.equals(topVer))
-                    reassign(dep, topVer);
+            // If topology version changed, reassignment will happen from topology event.
+            if (newTopVer.equals(topVer))
+                reassign(dep, topVer);
+        }
+        catch (IgniteCheckedException e) {
+            if (!(e instanceof ClusterTopologyCheckedException))
+                log.error("Failed to do service reassignment (will retry): " + dep.configuration().getName(), e);
+
+            AffinityTopologyVersion newTopVer = ctx.discovery().topologyVersionEx();
+
+            if (!newTopVer.equals(topVer)) {
+                assert newTopVer.compareTo(topVer) > 0;
+
+                // Reassignment will happen from topology event.
+                return;
             }
-            catch (IgniteCheckedException e) {
-                if (!(e instanceof ClusterTopologyCheckedException))
-                    log.error("Failed to do service reassignment (will retry): " + dep.configuration().getName(), e);
 
-                AffinityTopologyVersion newTopVer = ctx.discovery().topologyVersionEx();
+            ctx.timeout().addTimeoutObject(new GridTimeoutObject() {
+                private IgniteUuid id = IgniteUuid.randomUuid();
 
-                if (!newTopVer.equals(topVer)) {
-                    assert newTopVer.compareTo(topVer) > 0;
+                private long start = System.currentTimeMillis();
 
-                    // Reassignment will happen from topology event.
-                    return;
+                @Override public IgniteUuid timeoutId() {
+                    return id;
                 }
 
-                ctx.timeout().addTimeoutObject(new GridTimeoutObject() {
-                    private IgniteUuid id = IgniteUuid.randomUuid();
+                @Override public long endTime() {
+                    return start + RETRY_TIMEOUT;
+                }
 
-                    private long start = System.currentTimeMillis();
+                @Override public void onTimeout() {
+                    if (!busyLock.enterBusy())
+                        return;
 
-                    @Override public IgniteUuid timeoutId() {
-                        return id;
+                    try {
+                        // Try again.
+                        onDeployment(dep, topVer);
                     }
-
-                    @Override public long endTime() {
-                        return start + RETRY_TIMEOUT;
+                    finally {
+                        busyLock.leaveBusy();
                     }
-
-                    @Override public void onTimeout() {
-                        if (!busyLock.enterBusy())
-                            return;
-
-                        try {
-                            // Try again.
-                            onDeployment(dep, topVer);
-                        }
-                        finally {
-                            busyLock.leaveBusy();
-                        }
-                    }
-                });
+                }
+            });
         }
     }
 
