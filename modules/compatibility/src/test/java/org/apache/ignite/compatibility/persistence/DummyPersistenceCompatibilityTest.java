@@ -30,9 +30,9 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 
 /** */
-public class DummyPersistenceTest extends IgnitePersistenceAbstractTest {
+public class DummyPersistenceCompatibilityTest extends IgnitePersistenceCompatibilityAbstractTest {
     /** */
-    private static final String TEST_CACHE_NAME = DummyPersistenceTest.class.getSimpleName();
+    private static final String TEST_CACHE_NAME = DummyPersistenceCompatibilityTest.class.getSimpleName();
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {

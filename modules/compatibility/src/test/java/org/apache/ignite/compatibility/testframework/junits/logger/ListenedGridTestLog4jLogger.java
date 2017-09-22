@@ -24,6 +24,7 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
 import org.apache.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Listened version of {@link GridTestLog4jLogger} logger. Provides methods of registering and notifying listeners.
@@ -71,9 +72,9 @@ public class ListenedGridTestLog4jLogger extends GridTestLog4jLogger {
      *
      * @param key Key.
      * @param lsnr Listener.
-     * @return The previous value associated with the specified key, or null if there was no mapping for the key.
+     * @return The previous value associated with the specified key, or {@code null} if there was no mapping for the key.
      */
-    public IgniteInClosure<String> addListener(@NotNull UUID key, @NotNull IgniteInClosure<String> lsnr) {
+    @Nullable public IgniteInClosure<String> addListener(@NotNull UUID key, @NotNull IgniteInClosure<String> lsnr) {
         return lsnrs.putIfAbsent(key, lsnr);
     }
 
@@ -81,10 +82,10 @@ public class ListenedGridTestLog4jLogger extends GridTestLog4jLogger {
      * Removes listeners.
      *
      * @param key Key.
-     * @return Returns the value to which this map previously associated the key, or null if the map contained no
+     * @return Returns the value to which this map previously associated the key, or {@code null} if the map contained no
      * mapping for the key.
      */
-    public IgniteInClosure<String> removeListener(@NotNull UUID key) {
+    @Nullable public IgniteInClosure<String> removeListener(@NotNull UUID key) {
         return lsnrs.remove(key);
     }
 }

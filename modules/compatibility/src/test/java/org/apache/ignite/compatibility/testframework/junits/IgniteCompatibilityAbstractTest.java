@@ -224,11 +224,7 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
 
             assert ignite.configuration().getNodeId() == nodeId : "Started node has unexpected node id.";
 
-            assert GridTestUtils.waitForCondition(new GridAbsPredicate() {
-                @Override public boolean apply() {
-                    return ignite.cluster().node(syncNodeId) != null;
-                }
-            }, NODE_JOIN_TIMEOUT) : "Node has not joined [id=" + nodeId + "]";
+            assert ignite.cluster().node(syncNodeId) != null : "Node has not joined [id=" + nodeId + "]";
         }
         else
             ignite = super.startGrid(igniteInstanceName, cfg, ctx);
