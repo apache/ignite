@@ -30,7 +30,9 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
+import org.apache.ignite.internal.util.lang.GridAbsPredicateX;
 import org.apache.ignite.internal.util.typedef.CA;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteFuture;
@@ -129,6 +131,17 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
             startGrid(nodeCount() + i);
     }
 
+    /** */
+    protected void startExtraNodes(int servers, int clients) throws Exception {
+        startExtraNodes(servers);
+
+        for (int i = 0; i < clients; i++) {
+            final String nodeName = getTestGridName(nodeCount() + servers + i);
+
+            startGrid(nodeName, getConfiguration(nodeName).setClientMode(true));
+        }
+    }
+
     /**
      * @throws Exception If failed.
      */
@@ -176,8 +189,8 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
-    public void testDifferentConfiguration() throws Exception {
-        String name = "dupService";
+    public void testDifferentConfigurationOld() throws Exception {
+        String name = "dupServiceOld";
 
         IgniteServices svcs1 = randomGrid().services().withAsync();
         IgniteServices svcs2 = randomGrid().services().withAsync();
@@ -236,8 +249,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
         g.services().deployMultiple(name, new DummyService(), nodeCount() * 2, 3);
 
         GridTestUtils.retryAssert(log, 50, 200, new CA() {
-            @Override
-            public void apply() {
+            @Override public void apply() {
                 int cnt = 0;
 
                 for (int i = 0; i < nodeCount(); i++) {
@@ -332,7 +344,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
         IgniteServices svcs = g.services().withAsync();
 
         svcs.deployKeyAffinitySingleton(name, new AffinityService(affKey),
-                CACHE_NAME, affKey);
+            CACHE_NAME, affKey);
 
         IgniteFuture<?> fut = svcs.future();
 
@@ -506,6 +518,21 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
         }
 
         return sum;
+    }
+
+    /**
+     * @param srvcName Service name
+     * @param expectedDeps Expected number of service deployments
+     */
+    protected boolean waitForDeployment(final String srvcName,
+        final int expectedDeps) throws IgniteInterruptedCheckedException {
+        final Ignite g = randomGrid();
+
+        return GridTestUtils.waitForCondition(new GridAbsPredicateX() {
+            @Override public boolean applyx() {
+                return actualCount(srvcName, g.services().serviceDescriptors()) == expectedDeps;
+            }
+        }, 1500);
     }
 
     /**
