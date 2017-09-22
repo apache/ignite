@@ -465,6 +465,31 @@ namespace Apache.Ignite.Core.Tests
         }
 
         /// <summary>
+        /// Tests the consistent id.
+        /// </summary>
+        [Test]
+        [NUnit.Framework.Category(TestUtils.CategoryIntensive)]
+        public void TestConsistentId()
+        {
+            var ids = new object[]
+            {
+                null, new MyConsistentId {Data = "foo"}, "str", 1, 1.1, DateTime.Now, Guid.NewGuid()
+            };
+
+            var cfg = TestUtils.GetTestConfiguration();
+
+            foreach (var id in ids)
+            {
+                cfg.ConsistentId = id;
+
+                using (var ignite = Ignition.Start(cfg))
+                {
+                    Assert.AreEqual(id, ignite.GetConfiguration().ConsistentId);
+                }
+            }
+        }
+
+        /// <summary>
         /// Tests the ip finders.
         /// </summary>
         /// <param name="ipFinder">The ip finder.</param>
