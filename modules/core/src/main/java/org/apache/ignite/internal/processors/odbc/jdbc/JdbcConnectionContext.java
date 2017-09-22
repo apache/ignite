@@ -23,28 +23,28 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
-import org.apache.ignite.internal.processors.odbc.SqlListenerConnectionContext;
-import org.apache.ignite.internal.processors.odbc.SqlListenerMessageParser;
-import org.apache.ignite.internal.processors.odbc.SqlListenerProtocolVersion;
-import org.apache.ignite.internal.processors.odbc.SqlListenerRequestHandler;
+import org.apache.ignite.internal.processors.odbc.ClientListenerConnectionContext;
+import org.apache.ignite.internal.processors.odbc.ClientListenerMessageParser;
+import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
+import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 
 /**
  * ODBC Connection Context.
  */
-public class JdbcConnectionContext implements SqlListenerConnectionContext {
+public class JdbcConnectionContext implements ClientListenerConnectionContext {
     /** Version 2.1.0. */
-    private static final SqlListenerProtocolVersion VER_2_1_0 = SqlListenerProtocolVersion.create(2, 1, 0);
+    private static final ClientListenerProtocolVersion VER_2_1_0 = ClientListenerProtocolVersion.create(2, 1, 0);
 
     /** Version 2.1.5: added "lazy" flag. */
-    private static final SqlListenerProtocolVersion VER_2_1_5 = SqlListenerProtocolVersion.create(2, 1, 5);
+    private static final ClientListenerProtocolVersion VER_2_1_5 = ClientListenerProtocolVersion.create(2, 1, 5);
 
     /** Current version. */
-    private static final SqlListenerProtocolVersion CURRENT_VER = VER_2_1_5;
+    private static final ClientListenerProtocolVersion CURRENT_VER = VER_2_1_5;
 
     /** Supported versions. */
-    private static final Set<SqlListenerProtocolVersion> SUPPORTED_VERS = new HashSet<>();
+    private static final Set<ClientListenerProtocolVersion> SUPPORTED_VERS = new HashSet<>();
 
     /** Context. */
     private final GridKernalContext ctx;
@@ -61,9 +61,6 @@ public class JdbcConnectionContext implements SqlListenerConnectionContext {
     /** Request handler. */
     private JdbcRequestHandler hnd;
 
-    /** Session. */
-    private GridNioSession ses;
-
     /** Connection handler. */
     private JdbcConnectionHandler connHnd;
 
@@ -78,16 +75,14 @@ public class JdbcConnectionContext implements SqlListenerConnectionContext {
     /**
      * Constructor.
      * @param ctx Kernal Context.
-     * @param ses I/O Session.
      * @param connHnd Connection handler.
      * @param busyLock Shutdown busy lock.
      * @param maxCursors Maximum allowed cursors.
      * @param connId Connection ID.
      */
-    public JdbcConnectionContext(GridKernalContext ctx, GridNioSession ses, JdbcConnectionHandler connHnd,
+    public JdbcConnectionContext(GridKernalContext ctx, JdbcConnectionHandler connHnd,
         GridSpinBusyLock busyLock, int maxCursors, long connId) {
         this.ctx = ctx;
-        this.ses = ses;
         this.connHnd = connHnd;
         this.busyLock = busyLock;
         this.maxCursors = maxCursors;
@@ -95,17 +90,17 @@ public class JdbcConnectionContext implements SqlListenerConnectionContext {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isVersionSupported(SqlListenerProtocolVersion ver) {
+    @Override public boolean isVersionSupported(ClientListenerProtocolVersion ver) {
         return SUPPORTED_VERS.contains(ver);
     }
 
     /** {@inheritDoc} */
-    @Override public SqlListenerProtocolVersion currentVersion() {
+    @Override public ClientListenerProtocolVersion currentVersion() {
         return CURRENT_VER;
     }
 
     /** {@inheritDoc} */
-    @Override public void initializeFromHandshake(SqlListenerProtocolVersion ver, BinaryReaderExImpl reader) {
+    @Override public void initializeFromHandshake(ClientListenerProtocolVersion ver, BinaryReaderExImpl reader) {
         assert SUPPORTED_VERS.contains(ver): "Unsupported JDBC protocol version.";
 
         boolean distributedJoins = reader.readBoolean();
@@ -144,12 +139,12 @@ public class JdbcConnectionContext implements SqlListenerConnectionContext {
 
 
     /** {@inheritDoc} */
-    @Override public SqlListenerRequestHandler handler() {
+    @Override public ClientListenerRequestHandler handler() {
         return hnd;
     }
 
     /** {@inheritDoc} */
-    @Override public SqlListenerMessageParser parser() {
+    @Override public ClientListenerMessageParser parser() {
         return parser;
     }
 
@@ -158,12 +153,5 @@ public class JdbcConnectionContext implements SqlListenerConnectionContext {
         hnd.onDisconnect();
 
         connHnd.onDisconnect(connId);
-    }
-
-    /**
-     * @param res Responce.
-     */
-    void sendIntermediate(JdbcResponse res) {
-        ses.send(parser.encode(res));
     }
 }

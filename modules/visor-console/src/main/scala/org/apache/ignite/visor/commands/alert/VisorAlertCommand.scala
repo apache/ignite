@@ -85,7 +85,7 @@ import scala.util.control.Breaks._
  *             2) Alert condition as string.
  *             3, ...) Values of alert conditions ordered as in alert command.
  *     -i
- *         Configure alert notification minimal throttling interval in seconds. Default is 60 seconds.
+ *         Configure alert notification minimal throttling interval in seconds. Default is 0 seconds.
  *
  *     -<metric>
  *         This defines a mnemonic for the metric that will be measured:
@@ -267,7 +267,7 @@ class VisorAlertCommand extends VisorConsoleCommand {
                 var script: Option[String] = None
                 val conditions = mutable.ArrayBuffer.empty[VisorAlertCondition]
                 var freq = DFLT_FREQ
-                var interval = DFLT_FREQ
+                var interval = 0L
 
                 try {
                     args.foreach(arg => {
@@ -653,25 +653,26 @@ class VisorAlertCommand extends VisorConsoleCommand {
     private def executeAlertScript(alert: VisorAlert, node: ClusterNode, values: Seq[String]) {
         val n = alert.notification
 
+        if (n.notified && System.currentTimeMillis() - n.notifiedTime < n.throttleInterval)
+            return
+
         try {
             n.script.foreach(script => {
-                if (!n.notified && (n.notifiedTime < 0 || (System.currentTimeMillis() - n.notifiedTime) > n.throttleInterval)) {
-                    val scriptFile = new File(script)
+                val scriptFile = new File(script)
 
-                    if (!scriptFile.exists())
-                        throw new FileNotFoundException("Script/executable not found: " + script)
+                if (!scriptFile.exists())
+                    throw new FileNotFoundException("Script/executable not found: " + script)
 
-                    val scriptFolder = scriptFile.getParentFile
+                val scriptFolder = scriptFile.getParentFile
 
-                    val p = Process(Seq(script, alert.name.getOrElse(alert.id), alert.conditionSpec) ++ values,
-                        Some(scriptFolder))
+                val p = Process(Seq(script, alert.name.getOrElse(alert.id), alert.conditionSpec) ++ values,
+                    Some(scriptFolder))
 
-                    p.run(ProcessLogger((fn: String) => {}))
+                p.run(ProcessLogger((fn: String) => {}))
 
-                    n.notifiedTime = System.currentTimeMillis()
+                n.notifiedTime = System.currentTimeMillis()
 
-                    n.notified = true
-                }
+                n.notified = true
             })
         }
         catch {
@@ -865,7 +866,7 @@ object VisorAlertCommand {
                 "    2) Alert condition as string.",
                 "    3, ...) Values of alert conditions ordered as in alert command."
             ),
-            "-i" -> "Configure alert notification minimal throttling interval in seconds. Default is 60 seconds.",
+            "-i" -> "Configure alert notification minimal throttling interval in seconds. Default is 0 seconds.",
             "-<metric>" -> Seq(
                 "This defines a mnemonic for the metric that will be measured:",
                 "",

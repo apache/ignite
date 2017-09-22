@@ -35,15 +35,14 @@ public class JdbcConnectionHandler {
 
     /**
      * @param ctx Kernal Context.
-     * @param ses I/O Session.
      * @param busyLock Shutdown busy lock.
      * @param maxCursors Maximum allowed cursors.
      * @return JDBC connection context.
      */
-    public JdbcConnectionContext createContext(GridKernalContext ctx, GridNioSession ses, GridSpinBusyLock busyLock, int maxCursors) {
+    public JdbcConnectionContext createContext(GridKernalContext ctx, GridSpinBusyLock busyLock, int maxCursors) {
         long connId = CONN_ID_GEN.incrementAndGet();
 
-        JdbcConnectionContext cctx = new JdbcConnectionContext(ctx, ses, this, busyLock, maxCursors, connId);
+        JdbcConnectionContext cctx = new JdbcConnectionContext(ctx, this, busyLock, maxCursors, connId);
 
         ctxs.put(connId, cctx);
 

@@ -169,7 +169,7 @@ public class VisorNodeDataCollectorTaskResult extends VisorDataTransferObject {
     /**
      * @return All task monitoring state collected from nodes.
      */
-    public Map<UUID, Boolean> isTaskMonitoringEnabled() {
+    public Map<UUID, Boolean> getTaskMonitoringEnabled() {
         return taskMonitoringEnabled;
     }
 
@@ -283,7 +283,7 @@ public class VisorNodeDataCollectorTaskResult extends VisorDataTransferObject {
         unhandledEx.putAll(res.getUnhandledEx());
         gridNames.putAll(res.getGridNames());
         topVersions.putAll(res.getTopologyVersions());
-        taskMonitoringEnabled.putAll(res.isTaskMonitoringEnabled());
+        taskMonitoringEnabled.putAll(res.getTaskMonitoringEnabled());
         errCnts.putAll(res.getErrorCounts());
         evts.addAll(res.getEvents());
         evtsEx.putAll(res.getEventsEx());
