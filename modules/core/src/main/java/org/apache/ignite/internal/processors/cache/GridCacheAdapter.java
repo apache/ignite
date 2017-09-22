@@ -84,13 +84,13 @@ import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.affinity.GridCacheAffinityImpl;
-import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteExternalizableExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalAdapter;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
@@ -4200,24 +4200,22 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                                 return new GridFinishedFuture<>(
                                     new IgniteCheckedException("Operation has been cancelled (node is stopping)."));
 
-
-                                return op.op(tx0, opCtx).chain(new CX1<IgniteInternalFuture<T>, T>() {
-                                    @Override
-                                    public T applyx(IgniteInternalFuture<T> tFut) throws IgniteCheckedException {
+                            return op.op(tx0, opCtx).chain(new CX1<IgniteInternalFuture<T>, T>() {
+                                @Override public T applyx(IgniteInternalFuture<T> tFut) throws IgniteCheckedException {
+                                    try {
+                                        return tFut.get();
+                                    }
+                                    catch (IgniteTxRollbackCheckedException | NodeStoppingException e) {
+                                        throw e;
+                                    }
+                                    catch (IgniteCheckedException e1) {
                                         try {
-                                            return tFut.get();
+                                            tx0.rollbackNearTxLocalAsync();
                                         }
-                                        catch (IgniteTxRollbackCheckedException | NodeStoppingExceptione) {
-                                            throw e;
-                                        }
-                                        catch (IgniteCheckedException e1) {
-                                            try {
-                                                tx0.rollbackNearTxLocalAsync();
-                                            }
-                                            catch (Throwable e2) {
-                                                if (e1 !=e2)
+                                        catch (Throwable e2) {
+                                            if (e1 != e2)
                                                 e1.addSuppressed(e2);
-                                            }
+                                        }
 
                                         throw e1;
                                     }
@@ -4227,20 +4225,21 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                                 }
                             });
                         }
-                    });
+                    }
+                );
 
                 saveFuture(holder, f, retry);
 
                 return f;
             }
 
-            finalIgniteInternalFuture<T>
+            final IgniteInternalFuture<T>
                 f = op.op(tx, opCtx).chain(new CX1<IgniteInternalFuture<T>, T>() {
                     @Override public T applyx(IgniteInternalFuture<T> tFut) throws IgniteCheckedException {
                         try {
                             return tFut.get();
                         }
-                        catch (IgniteTxRollbackCheckedException | NodeStoppingExceptione) {
+                        catch (IgniteTxRollbackCheckedException | NodeStoppingException e) {
                             throw e;
                         }
                         catch (IgniteCheckedException e1) {
