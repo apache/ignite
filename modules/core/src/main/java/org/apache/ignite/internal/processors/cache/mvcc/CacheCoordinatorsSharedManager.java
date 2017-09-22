@@ -570,6 +570,8 @@ public class CacheCoordinatorsSharedManager<K, V> extends GridCacheSharedManager
 
             assert rmvd != null;
         }
+        else
+            activeQueries.put(mvccCntr, left);
     }
 
     /** */
