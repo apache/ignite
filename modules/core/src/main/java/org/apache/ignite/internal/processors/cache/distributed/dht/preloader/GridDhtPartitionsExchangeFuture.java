@@ -1415,7 +1415,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                 cacheCtx.continuousQueries().flushBackupQueue(res);
             }
-       }
+        }
 
         if (err == null) {
             if (centralizedAff) {

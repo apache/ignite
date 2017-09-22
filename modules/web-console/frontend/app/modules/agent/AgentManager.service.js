@@ -26,6 +26,8 @@ const State = {
     CONNECTED: 'CONNECTED'
 };
 
+const LAZY_QUERY_SINCE = [['2.1.4-p1', '2.2.0'], '2.2.1'];
+
 class ConnectionState {
     constructor(cluster) {
         this.agents = [];
@@ -101,7 +103,7 @@ export default class IgniteAgentManager {
 
         this.clusterVersion = '2.1.0';
 
-        if (!$root.IgniteDemoMode) {
+        if (!this.isDemoMode()) {
             this.connectionSbj.subscribe({
                 next: ({cluster}) => {
                     const version = _.get(cluster, 'clusterVersion');
@@ -113,6 +115,10 @@ export default class IgniteAgentManager {
                 }
             });
         }
+    }
+
+    isDemoMode() {
+        return this.$root.IgniteDemoMode;
     }
 
     available(sinceVersion) {
@@ -141,7 +147,7 @@ export default class IgniteAgentManager {
         self.socket.on('agents:stat', ({clusters, count}) => {
             const conn = self.connectionSbj.getValue();
 
-            conn.update(self.$root.IgniteDemoMode, count, clusters);
+            conn.update(self.isDemoMode(), count, clusters);
 
             self.connectionSbj.next(conn);
         });
@@ -495,7 +501,7 @@ export default class IgniteAgentManager {
      */
     querySql(nid, cacheName, query, nonCollocatedJoins, enforceJoinOrder, replicatedOnly, local, pageSz, lazy) {
         if (this.available('2.0.0')) {
-            const task = this.available('2.1.4-p1') ?
+            const task = this.available(...LAZY_QUERY_SINCE) ?
                 this.visorTask('querySqlX2', nid, cacheName, query, nonCollocatedJoins, enforceJoinOrder, replicatedOnly, local, pageSz, lazy) :
                 this.visorTask('querySqlX2', nid, cacheName, query, nonCollocatedJoins, enforceJoinOrder, replicatedOnly, local, pageSz);
 
