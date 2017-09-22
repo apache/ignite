@@ -132,8 +132,6 @@ public class IgniteCacheNearRestartRollbackSelfTest extends GridCommonAbstractTe
      */
     @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
     public void testRestarts() throws Exception {
-        fail("https://ggsystems.atlassian.net/browse/GG-12398");
-
         startGrids(4);
 
         Ignite tester = ignite(3);
