@@ -20,6 +20,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
+import java.nio.file.OpenOption;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.LockSupport;
@@ -49,6 +50,10 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+
+import static java.nio.file.StandardOpenOption.CREATE;
+import static java.nio.file.StandardOpenOption.READ;
+import static java.nio.file.StandardOpenOption.WRITE;
 
 /**
  *
@@ -288,12 +293,12 @@ public class PagesWriteThrottleSmokeTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public FileIO create(File file) throws IOException {
-            return create(file, "rw");
+            return create(file, CREATE, READ, WRITE);
         }
 
         /** {@inheritDoc} */
-        @Override public FileIO create(File file, String mode) throws IOException {
-            final FileIO delegate = delegateFactory.create(file, mode);
+        @Override public FileIO create(File file, OpenOption... openOption) throws IOException {
+            final FileIO delegate = delegateFactory.create(file, openOption);
 
             return new FileIODecorator(delegate) {
                 @Override public int write(ByteBuffer srcBuf) throws IOException {
