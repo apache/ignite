@@ -47,10 +47,10 @@ namespace Apache.Ignite.Core.Tests
     public class IgniteConfigurationTest
     {
         /// <summary>
-        /// Fixture setup.
+        /// Fixture tear down.
         /// </summary>
         [TestFixtureSetUp]
-        public void FixtureSetUp()
+        public void FixtureTearDown()
         {
             Ignition.StopAll(true);
         }
