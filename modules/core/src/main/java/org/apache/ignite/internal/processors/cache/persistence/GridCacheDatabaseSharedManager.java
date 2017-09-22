@@ -2281,6 +2281,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 for (DbCheckpointListener lsnr : lsnrs)
                     lsnr.onCheckpointBegin(ctx0);
 
+                if (curr.nextSnapshot)
+                    snapshotMgr.onMarkCheckPointBegin(curr.snapshotOperation, map);
+
                 for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
                     if (grp.isLocal())
                         continue;
@@ -2300,8 +2303,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     cpRec.addCacheGroupState(grp.groupId(), state);
                 }
 
-                if (curr.nextSnapshot)
-                    snapshotMgr.onMarkCheckPointBegin(curr.snapshotOperation, map);
 
                 cpPagesTuple = beginAllCheckpoints();
 
