@@ -30,7 +30,14 @@ import java.io.OutputStream;
 import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.EventListener;
+import java.util.HashMap;
+import java.util.IdentityHashMap;
+import java.util.LinkedList;
+import java.util.Map;
+import java.util.Queue;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -886,10 +893,7 @@ public class GridToStringBuilder {
                     }
 
                     if (!addNameWithHashToBuffer(buf, val, svdObjects))
-                        if (val != null)
-                            toStringAddVal(val.getClass(), val, buf, svdObjects);
-                        else
-                            buf.a("null");
+                        toStringAddVal(val, buf, svdObjects);
                 }
             }
 
@@ -924,14 +928,19 @@ public class GridToStringBuilder {
      * We need this method to count every Object to prevent infinite toString() loops.
      *
      * @param <T> Type of object.
-     * @param cls Class of the object.
+     * @param buf String builder.
      * @param obj Object for which to get string presentation.
      * @param svdObjects Map with objects already presented in the buffer.
      */
     @SuppressWarnings({"unchecked"})
-    private static <T> void toStringAddVal(Class cls, T obj, SB buf, IdentityHashMap<Object, Integer> svdObjects) {
-        assert cls != null;
-        assert obj != null;
+    private static <T> void toStringAddVal(T obj, SB buf, IdentityHashMap<Object, Integer> svdObjects) {
+        if (obj == null) {
+            buf.a("null");
+
+            return;
+        }
+
+        Class cls = obj.getClass();
 
         if (isPrimitiveWraper(cls)) {
             buf.a(String.valueOf(obj));
@@ -991,10 +1000,7 @@ public class GridToStringBuilder {
                     }
 
                     if (!addNameWithHashToBuffer(buf, val, svdObjects))
-                        if (val != null)
-                            toStringAddVal(val.getClass(), val, buf, svdObjects);
-                        else
-                            buf.a("null");
+                        toStringAddVal(val, buf, svdObjects);
                 }
             }
 
@@ -1583,10 +1589,7 @@ public class GridToStringBuilder {
 
                 buf.a(addNames[i]).a('=');
 
-                if (addVal != null)
-                    toStringAddVal(addVal.getClass(), addVal, buf, savedObjects.get());
-                else
-                    buf.a("null");
+                toStringAddVal(addVal, buf, savedObjects.get());
             }
         }
     }
@@ -1724,17 +1727,17 @@ public class GridToStringBuilder {
      * Increment positions of already presented objects afterward object.
      *
      * @param map Map with objects already presented in the buffer.
-     * @param o Object.
+     * @param obj Object.
      * @param hashLength Length of the object's hash.
      */
-    private static void incValues(IdentityHashMap<Object, Integer> map, Object o, int hashLength) {
-        Integer baseline = map.get(o);
+    private static void incValues(IdentityHashMap<Object, Integer> map, Object obj, int hashLength) {
+        Integer baseline = map.get(obj);
 
-        for (IdentityHashMap.Entry<Object, Integer> entry : map.entrySet()) {
-            Integer position = entry.getValue();
+        for (IdentityHashMap.Entry<Object, Integer> e : map.entrySet()) {
+            Integer position = e.getValue();
 
             if (position > baseline)
-                entry.setValue(position + hashLength);
+                e.setValue(position + hashLength);
         }
     }
 }

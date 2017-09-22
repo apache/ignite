@@ -273,13 +273,13 @@ public class GridP2PRemoteClassLoadersSelfTest extends GridCommonAbstractTest {
             assert results.size() == 1;
 
             ComputeJobResult res = results.get(0);
-            System.out.println("asd123 " + Thread.currentThread().getName() + " reduce before info()");
+
             if (log.isInfoEnabled())
                 log.info("Got job result for aggregation: " + res);
 
             if (res.getException() != null)
                 throw res.getException();
-            System.out.println("asd123 done " + Thread.currentThread().getName() + " reduce after info()");
+
             return res.getData();
         }
     }
