@@ -606,6 +606,7 @@ public class BinaryContext {
 
     /**
      * @param cls Class.
+     * @param deserialize If {@code false}, metadata will be updated.
      * @return Class descriptor.
      * @throws BinaryObjectException In case of error.
      */
@@ -658,6 +659,7 @@ public class BinaryContext {
      * @param userType User type or not.
      * @param typeId Type ID.
      * @param ldr Class loader.
+     * @param deserialize If {@code false}, metadata will be updated.
      * @return Class descriptor.
      */
     public BinaryClassDescriptor descriptorForTypeId(
@@ -713,6 +715,7 @@ public class BinaryContext {
      * Creates and registers {@link BinaryClassDescriptor} for the given {@code class}.
      *
      * @param cls Class.
+     * @param deserialize If {@code false}, metadata will be updated.
      * @return Class descriptor.
      */
     private BinaryClassDescriptor registerClassDescriptor(Class<?> cls, boolean deserialize) {
@@ -753,6 +756,7 @@ public class BinaryContext {
      * Creates and registers {@link BinaryClassDescriptor} for the given user {@code class}.
      *
      * @param cls Class.
+     * @param deserialize If {@code false}, metadata will be updated.
      * @return Class descriptor.
      */
     private BinaryClassDescriptor registerUserClassDescriptor(Class<?> cls, boolean deserialize) {

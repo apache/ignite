@@ -17,6 +17,8 @@
 
 import angular from 'angular';
 
+import templateUrl from 'views/settings/admin.tpl.pug';
+
 angular
 .module('ignite-console.states.admin', [
     'ui.router'
@@ -26,7 +28,7 @@ angular
     $stateProvider
     .state('settings.admin', {
         url: '/admin',
-        templateUrl: '/settings/admin.html',
+        templateUrl,
         onEnter: AclRoute.checkAccess('admin_page'),
         metaTags: {
             title: 'Admin panel'

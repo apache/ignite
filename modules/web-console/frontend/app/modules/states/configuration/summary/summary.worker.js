@@ -38,6 +38,25 @@ const generator = IgniteConfigurationGenerator;
 
 const escapeFileName = (name) => name.replace(/[\\\/*\"\[\],\.:;|=<>?]/g, '-').replace(/ /g, '_');
 
+const kubernetesConfig = (cluster) => {
+    if (!cluster.discovery.Kubernetes)
+        cluster.discovery.Kubernetes = { serviceName: 'ignite' };
+
+    return `apiVersion: v1\n\
+kind: Service\n\
+metadata:\n\
+  # Name of Ignite Service used by Kubernetes IP finder for IP addresses lookup.\n\
+  name: ${ cluster.discovery.Kubernetes.serviceName || 'ignite' }\n\
+spec:\n\
+  clusterIP: None # custom value.\n\
+  ports:\n\
+    - port: 9042 # custom value.\n\
+  selector:\n\
+    # Must be equal to one of the labels set in Ignite pods'\n\
+    # deployement configuration.\n\
+    app: ${ cluster.discovery.Kubernetes.serviceName || 'ignite' }`;
+};
+
 // eslint-disable-next-line no-undef
 onmessage = function(e) {
     const {cluster, data, demo} = e.data;
@@ -66,6 +85,9 @@ onmessage = function(e) {
     const clientXml = `${escapeFileName(cluster.name)}-client.xml`;
 
     const metaPath = `${resourcesPath}/META-INF`;
+
+    if (cluster.discovery.kind === 'Kubernetes')
+        zip.file(`${metaPath}/ignite-service.yaml`, kubernetesConfig(cluster));
 
     zip.file(`${metaPath}/${serverXml}`, spring.igniteConfiguration(cfg).asString());
     zip.file(`${metaPath}/${clientXml}`, spring.igniteConfiguration(clientCfg, clientNearCaches).asString());

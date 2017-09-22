@@ -20,12 +20,14 @@ package org.apache.ignite.internal.processors.cache.store;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheTestStore;
@@ -59,15 +61,28 @@ public abstract class GridCacheWriteBehindStoreAbstractSelfTest extends GridComm
     /**
      * Initializes store.
      *
-     * @param flushThreadCnt Count of flush threads
+     * @param flushThreadCnt Count of flush threads.
      * @throws Exception If failed.
      */
     protected void initStore(int flushThreadCnt) throws Exception {
+        initStore(flushThreadCnt, CacheConfiguration.DFLT_WRITE_BEHIND_COALESCING);
+    }
+
+    /**
+     * Initializes store.
+     *
+     * @param flushThreadCnt Count of flush threads.
+     * @param writeCoalescing write coalescing flag.
+     * @throws Exception If failed.
+     */
+    protected void initStore(int flushThreadCnt, boolean writeCoalescing) throws Exception {
         store = new GridCacheWriteBehindStore<>(null, "", "", log, delegate);
 
         store.setFlushFrequency(FLUSH_FREQUENCY);
 
         store.setFlushSize(CACHE_SIZE);
+
+        store.setWriteCoalescing(writeCoalescing);
 
         store.setFlushThreadCount(flushThreadCnt);
 
@@ -83,8 +98,11 @@ public abstract class GridCacheWriteBehindStoreAbstractSelfTest extends GridComm
      */
     protected void shutdownStore() throws Exception {
         store.stop();
-
-        assertTrue("Store cache must be empty after shutdown", store.writeCache().isEmpty());
+        if (store.getWriteCoalescing())
+            assertTrue("Store cache must be empty after shutdown", store.writeCache().isEmpty());
+        else
+            for (Map<?,?> fMap : store.flusherMaps())
+                assertTrue("Store flusher cache must be empty after shutdown", fMap.isEmpty());
     }
 
     /**

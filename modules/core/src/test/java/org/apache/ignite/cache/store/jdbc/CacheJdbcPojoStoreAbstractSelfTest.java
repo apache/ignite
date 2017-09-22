@@ -35,6 +35,7 @@ import org.apache.ignite.cache.store.jdbc.model.PersonKey;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -221,6 +222,7 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
         cc.setAtomicityMode(transactional ? TRANSACTIONAL : ATOMIC);
         cc.setSwapEnabled(false);
         cc.setWriteBehindEnabled(false);
+        cc.setStoreKeepBinary(storeKeepBinary());
 
         CacheJdbcPojoStoreFactory<Object, Object> storeFactory = new CacheJdbcPojoStoreFactory<>();
         storeFactory.setDialect(new H2Dialect());
@@ -235,6 +237,13 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
         cc.setLoadPreviousValue(true);
 
         return cc;
+    }
+
+    /**
+     * @return Flag indicate keep value in binary format or not.
+     */
+    protected boolean storeKeepBinary(){
+        return false;
     }
 
     /**
@@ -329,6 +338,55 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
     }
 
     /**
+     * Checks that data was loaded correctly with prepared statement.
+     */
+    protected void checkCacheLoadWithStatement() throws SQLException {
+        Connection conn = null;
+
+        PreparedStatement stmt = null;
+
+        try {
+            conn = getConnection();
+
+            conn.setAutoCommit(true);
+
+            String qry = "select id, org_id, name, birthday, gender from Person";
+
+            stmt = conn.prepareStatement(qry);
+
+            IgniteCache<Object, Object> c1 = grid().cache(CACHE_NAME);
+
+            c1.loadCache(null, "org.apache.ignite.cache.store.jdbc.model.PersonKey", stmt);
+
+            assertEquals(PERSON_CNT, c1.size());
+        }
+        finally {
+            U.closeQuiet(stmt);
+
+            U.closeQuiet(conn);
+        }
+
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testLoadCacheWithStatement() throws Exception {
+        startTestGrid(false, false, false, false, 512);
+
+        checkCacheLoadWithStatement();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testLoadCacheWithStatementTx() throws Exception {
+        startTestGrid(false, false, false, true, 512);
+
+        checkCacheLoadWithStatement();
+    }
+
+    /**
      * @throws Exception If failed.
      */
     public void testLoadCache() throws Exception {
@@ -397,6 +455,8 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
      * @throws Exception If failed.
      */
     private void checkPutRemove() throws Exception {
+        boolean binaryMarshaller = marshaller() instanceof BinaryMarshaller || marshaller() == null;
+
         IgniteCache<Object, Person> c1 = grid().cache(CACHE_NAME);
 
         Connection conn = getConnection();
@@ -429,7 +489,9 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
             assertEquals(-2, rs.getInt(2));
             assertEquals(testDate, rs.getDate(3));
             assertEquals("Person-to-test-put-insert", rs.getString(4));
-            assertEquals(testGender.toString(), rs.getString(5));
+
+            assertEquals(testGender.toString(),
+                binaryMarshaller ? Gender.values()[rs.getInt(5)].toString(): rs.getString(5));
 
             assertFalse("Unexpected more data in result set", rs.next());
 
@@ -448,7 +510,9 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
             assertEquals(-3, rs.getInt(2));
             assertEquals(testDate, rs.getDate(3));
             assertEquals("Person-to-test-put-update", rs.getString(4));
-            assertEquals(testGender.toString(), rs.getString(5));
+
+            assertEquals(testGender.toString(),
+                binaryMarshaller ? Gender.values()[rs.getInt(5)].toString(): rs.getString(5));
 
             assertFalse("Unexpected more data in result set", rs.next());
 
