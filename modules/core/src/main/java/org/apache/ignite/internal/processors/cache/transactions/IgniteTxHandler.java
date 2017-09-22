@@ -791,7 +791,7 @@ public class IgniteTxHandler {
      * @return Future.
      */
     @Nullable public IgniteInternalFuture<IgniteInternalTx> finish(UUID nodeId,
-        @Nullable GridNearTxLocal locTx,
+        @Nullable final GridNearTxLocal locTx,
         GridNearTxFinishRequest req)
     {
         assert nodeId != null;
