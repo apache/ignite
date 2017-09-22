@@ -467,9 +467,6 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
             opCtx != null && opCtx.isKeepBinary(),
             opCtx != null && opCtx.recovery());
 
-        if (!ctx.mvcc().addFuture(fut))
-            throw new IllegalStateException("Duplicate future ID: " + fut);
-
         fut.map();
 
         return fut;

@@ -75,7 +75,7 @@ public class IgniteDiagnosticPrepareContext {
      * @param keys Entry keys.
      * @param msg Initial message.
      */
-    public void  txKeyInfo(UUID nodeId, int cacheId, Collection<KeyCacheObject> keys, String msg) {
+    public void txKeyInfo(UUID nodeId, int cacheId, Collection<KeyCacheObject> keys, String msg) {
         closure(nodeId).add(msg, new TxEntriesInfoClosure(cacheId, keys));
     }
 

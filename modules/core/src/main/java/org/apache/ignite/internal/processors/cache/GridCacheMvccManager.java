@@ -478,13 +478,14 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     /**
      * @param fut Future.
      * @param futId Future ID.
+     * @return {@code True} if added.
      */
-    public void addFuture(final GridCacheFuture<?> fut, final IgniteUuid futId) {
+    public boolean addFuture(final GridCacheFuture<?> fut, final IgniteUuid futId) {
         GridCacheFuture<?> old = futs.put(futId, fut);
 
         assert old == null : old;
 
-        onFutureAdded(fut);
+        return onFutureAdded(fut);
     }
 
     /**
