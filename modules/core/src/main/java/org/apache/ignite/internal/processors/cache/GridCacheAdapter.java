@@ -78,6 +78,7 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgniteTransactionsEx;
 import org.apache.ignite.internal.IgnitionEx;
+import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
@@ -1857,7 +1858,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 return new GridFinishedFuture<>(e);
             }
 
-            tx = ctx.tm().threadLocalTx(ctx.systemTx() ? ctx : null);
+            tx = ctx.tm().threadLocalTx(ctx);
         }
 
         if (tx == null || tx.implicit()) {
@@ -4057,7 +4058,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
                     return t;
                 }
-                catch (IgniteInterruptedCheckedException | IgniteTxHeuristicCheckedException e) {
+                catch (IgniteInterruptedCheckedException | IgniteTxHeuristicCheckedException | NodeStoppingException e) {
                     throw e;
                 }
                 catch (IgniteCheckedException e) {
@@ -4071,7 +4072,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                         catch (IgniteCheckedException | AssertionError | RuntimeException e1) {
                             U.error(log, "Failed to rollback transaction (cache may contain stale locks): " + tx, e1);
 
-                            e.addSuppressed(e1);
+                            if (e != e1)
+                                e.addSuppressed(e1);
                         }
                     }
 
@@ -4202,7 +4204,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                                         try {
                                             return tFut.get();
                                         }
-                                        catch (IgniteTxRollbackCheckedException e) {
+                                        catch (IgniteTxRollbackCheckedException | NodeStoppingException e) {
                                             throw e;
                                         }
                                         catch (IgniteCheckedException e1) {
@@ -4210,7 +4212,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                                                 tx0.rollbackNearTxLocalAsync();
                                             }
                                             catch (Throwable e2) {
-                                                e1.addSuppressed(e2);
+                                                if (e1 != e2)
+                                                    e1.addSuppressed(e2);
                                             }
 
                                             throw e1;
@@ -4241,7 +4244,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                         try {
                             return tFut.get();
                         }
-                        catch (IgniteTxRollbackCheckedException e) {
+                        catch (IgniteTxRollbackCheckedException | NodeStoppingException e) {
                             throw e;
                         }
                         catch (IgniteCheckedException e1) {
@@ -4249,7 +4252,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                                 tx0.rollbackNearTxLocalAsync();
                             }
                             catch (Throwable e2) {
-                                e1.addSuppressed(e2);
+                                if (e2 != e1)
+                                    e1.addSuppressed(e2);
                             }
 
                             throw e1;
