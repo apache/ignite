@@ -74,7 +74,7 @@ public class IgnitePdsExchangeDuringCheckpointTest extends GridCommonAbstractTes
 
             awaitPartitionMapExchange();
 
-            ex.context().cache().context().database().wakeupForCheckpoint("test").get(10000);
+            ex.context().cache().context().database().wakeupForCheckpoint("test").get(100000);
 
             afterTest();
         }
