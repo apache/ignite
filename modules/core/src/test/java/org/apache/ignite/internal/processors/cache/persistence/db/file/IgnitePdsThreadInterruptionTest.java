@@ -41,7 +41,7 @@ public class IgnitePdsThreadInterruptionTest extends GridCommonAbstractTest {
     private static final int PAGE_SIZE = 1 << 12; // 4096
 
     /** */
-    public static final int THREADS_CNT = 1;
+    public static final int THREADS_CNT = 10;
 
     /**
      * Cache name.
