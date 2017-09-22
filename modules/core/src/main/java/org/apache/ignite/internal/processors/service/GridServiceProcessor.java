@@ -466,10 +466,11 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      * @param name Service name.
      * @param svc Service.
      * @param cacheName Cache name.
-     * @param  affKey Affinity key.
+     * @param affKey Affinity key.
      * @return Future.
      */
-    public IgniteInternalFuture<?> deployKeyAffinitySingleton(String name, Service svc, String cacheName, Object affKey) {
+    public IgniteInternalFuture<?> deployKeyAffinitySingleton(String name, Service svc, String cacheName,
+        Object affKey) {
         A.notNull(affKey, "affKey");
 
         ServiceConfiguration cfg = new ServiceConfiguration();
@@ -491,121 +492,133 @@ public class GridServiceProcessor extends GridProcessorAdapter {
     public IgniteInternalFuture<?> deploy(ServiceConfiguration cfg) {
         A.notNull(cfg, "cfg");
 
-        ServicesCompatibilityState state = markCompatibilityStateAsUsed();
+        if (!busyLock.enterBusy()) {
+            IgniteCheckedException e = new IgniteCheckedException("Service deployment has been cancelled (node is stopping): " +
+                cfg.getName());
 
-        validate(cfg);
-
-        if (!state.srvcCompatibility) {
-            Marshaller marsh = ctx.config().getMarshaller();
-
-            LazyServiceConfiguration cfg0;
-
-            try {
-                byte[] srvcBytes = U.marshal(marsh, cfg.getService());
-
-                cfg0 = new LazyServiceConfiguration(cfg, srvcBytes);
-            }
-            catch (IgniteCheckedException e) {
-                U.error(log, "Failed to marshal service with configured marshaller [srvc=" + cfg.getService()
-                    + ", marsh=" + marsh + "]", e);
-
-                return new GridFinishedFuture<>(e);
-            }
-
-            cfg = cfg0;
+            return new GridFinishedFuture<>(e);
         }
 
-        GridServiceDeploymentFuture fut = new GridServiceDeploymentFuture(cfg);
+        try {
+            ServicesCompatibilityState state = markCompatibilityStateAsUsed();
 
-        GridServiceDeploymentFuture old = depFuts.putIfAbsent(cfg.getName(), fut);
+            validate(cfg);
 
-        if (old != null) {
-            if (!old.configuration().equalsIgnoreNodeFilter(cfg)) {
-                fut.onDone(new IgniteCheckedException("Failed to deploy service (service already exists with " +
-                    "different configuration) [deployed=" + old.configuration() + ", new=" + cfg + ']'));
+            if (!state.srvcCompatibility) {
+                Marshaller marsh = ctx.config().getMarshaller();
 
-                return fut;
-            }
-
-            return old;
-        }
-
-        if (ctx.clientDisconnected()) {
-            fut.onDone(new IgniteClientDisconnectedCheckedException(ctx.cluster().clientReconnectFuture(),
-                "Failed to deploy service, client node disconnected."));
-
-            depFuts.remove(cfg.getName(), fut);
-        }
-
-        while (true) {
-            try {
-                GridServiceDeploymentKey key = new GridServiceDeploymentKey(cfg.getName());
-
-                if (ctx.deploy().enabled())
-                    ctx.cache().context().deploy().ignoreOwnership(true);
+                LazyServiceConfiguration cfg0;
 
                 try {
-                    GridServiceDeployment dep = (GridServiceDeployment)cache.getAndPutIfAbsent(key,
-                        new GridServiceDeployment(ctx.localNodeId(), cfg));
+                    byte[] srvcBytes = U.marshal(marsh, cfg.getService());
 
-                    if (dep != null) {
-                        if (!dep.configuration().equalsIgnoreNodeFilter(cfg)) {
-                            // Remove future from local map.
-                            depFuts.remove(cfg.getName(), fut);
+                    cfg0 = new LazyServiceConfiguration(cfg, srvcBytes);
+                }
+                catch (IgniteCheckedException e) {
+                    U.error(log, "Failed to marshal service with configured marshaller [srvc=" + cfg.getService()
+                        + ", marsh=" + marsh + "]", e);
 
-                            fut.onDone(new IgniteCheckedException("Failed to deploy service (service already exists with " +
-                                "different configuration) [deployed=" + dep.configuration() + ", new=" + cfg + ']'));
-                        }
-                        else {
-                            Iterator<Cache.Entry<Object, Object>> it = serviceEntries(
-                                ServiceAssignmentsPredicate.INSTANCE);
+                    return new GridFinishedFuture<>(e);
+                }
 
-                            while (it.hasNext()) {
-                                Cache.Entry<Object, Object> e = it.next();
+                cfg = cfg0;
+            }
 
-                                if (e.getKey() instanceof GridServiceAssignmentsKey) {
-                                    GridServiceAssignments assigns = (GridServiceAssignments)e.getValue();
+            GridServiceDeploymentFuture fut = new GridServiceDeploymentFuture(cfg);
 
-                                    if (assigns.name().equals(cfg.getName())) {
-                                        // Remove future from local map.
-                                        depFuts.remove(cfg.getName(), fut);
+            GridServiceDeploymentFuture old = depFuts.putIfAbsent(cfg.getName(), fut);
 
-                                        fut.onDone();
+            if (old != null) {
+                if (!old.configuration().equalsIgnoreNodeFilter(cfg)) {
+                    fut.onDone(new IgniteCheckedException("Failed to deploy service (service already exists with " +
+                        "different configuration) [deployed=" + old.configuration() + ", new=" + cfg + ']'));
 
-                                        break;
+                    return fut;
+                }
+
+                return old;
+            }
+
+            if (ctx.clientDisconnected()) {
+                fut.onDone(new IgniteClientDisconnectedCheckedException(ctx.cluster().clientReconnectFuture(),
+                    "Failed to deploy service, client node disconnected."));
+
+                depFuts.remove(cfg.getName(), fut);
+            }
+
+            while (true) {
+                try {
+                    GridServiceDeploymentKey key = new GridServiceDeploymentKey(cfg.getName());
+
+                    if (ctx.deploy().enabled())
+                        ctx.cache().context().deploy().ignoreOwnership(true);
+
+                    try {
+                        GridServiceDeployment dep = (GridServiceDeployment)cache.getAndPutIfAbsent(key,
+                            new GridServiceDeployment(ctx.localNodeId(), cfg));
+
+                        if (dep != null) {
+                            if (!dep.configuration().equalsIgnoreNodeFilter(cfg)) {
+                                // Remove future from local map.
+                                depFuts.remove(cfg.getName(), fut);
+
+                                fut.onDone(new IgniteCheckedException("Failed to deploy service (service already exists with " +
+                                    "different configuration) [deployed=" + dep.configuration() + ", new=" + cfg + ']'));
+                            }
+                            else {
+                                Iterator<Cache.Entry<Object, Object>> it = serviceEntries(
+                                    ServiceAssignmentsPredicate.INSTANCE);
+
+                                while (it.hasNext()) {
+                                    Cache.Entry<Object, Object> e = it.next();
+
+                                    if (e.getKey() instanceof GridServiceAssignmentsKey) {
+                                        GridServiceAssignments assigns = (GridServiceAssignments)e.getValue();
+
+                                        if (assigns.name().equals(cfg.getName())) {
+                                            // Remove future from local map.
+                                            depFuts.remove(cfg.getName(), fut);
+
+                                            fut.onDone();
+
+                                            break;
+                                        }
                                     }
                                 }
-                            }
 
-                            if (!dep.configuration().equalsIgnoreNodeFilter(cfg))
-                                U.warn(log, "Service already deployed with different configuration (will ignore) " +
-                                    "[deployed=" + dep.configuration() + ", new=" + cfg + ']');
+                                if (!dep.configuration().equalsIgnoreNodeFilter(cfg))
+                                    U.warn(log, "Service already deployed with different configuration (will ignore) " +
+                                        "[deployed=" + dep.configuration() + ", new=" + cfg + ']');
+                            }
                         }
                     }
-                }
-                finally {
-                    if (ctx.deploy().enabled())
-                        ctx.cache().context().deploy().ignoreOwnership(false);
-                }
+                    finally {
+                        if (ctx.deploy().enabled())
+                            ctx.cache().context().deploy().ignoreOwnership(false);
+                    }
 
-                return fut;
-            }
-            catch (ClusterTopologyCheckedException e) {
-                if (log.isDebugEnabled())
-                    log.debug("Topology changed while deploying service (will retry): " + e.getMessage());
-            }
-            catch (IgniteCheckedException e) {
-                if (e.hasCause(ClusterTopologyCheckedException.class)) {
+                    return fut;
+                }
+                catch (ClusterTopologyCheckedException e) {
                     if (log.isDebugEnabled())
                         log.debug("Topology changed while deploying service (will retry): " + e.getMessage());
-
-                    continue;
                 }
+                catch (IgniteCheckedException e) {
+                    if (e.hasCause(ClusterTopologyCheckedException.class)) {
+                        if (log.isDebugEnabled())
+                            log.debug("Topology changed while deploying service (will retry): " + e.getMessage());
 
-                U.error(log, "Failed to deploy service: " + cfg.getName(), e);
+                        continue;
+                    }
 
-                return new GridFinishedFuture<>(e);
+                    U.error(log, "Failed to deploy service: " + cfg.getName(), e);
+
+                    return new GridFinishedFuture<>(e);
+                }
             }
+        }
+        finally {
+            busyLock.leaveBusy();
         }
     }
 
@@ -882,7 +895,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         Collection<ServiceContextImpl> ctxs;
 
         synchronized (locSvcs) {
-             ctxs = locSvcs.get(name);
+            ctxs = locSvcs.get(name);
         }
 
         if (ctxs == null)
@@ -925,9 +938,9 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         while (true) {
             GridServiceAssignments assigns = new GridServiceAssignments(cfg, dep.nodeId(), topVer.topologyVersion());
 
-             Collection<ClusterNode> nodes;
+            Collection<ClusterNode> nodes;
 
-             // Call node filter outside of transaction.
+            // Call node filter outside of transaction.
             if (affKey == null) {
                 nodes = ctx.discovery().nodes(topVer);
 
@@ -1286,7 +1299,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                 GridCloseableIterator<Map.Entry<Object, Object>> iter = qry.executeScanQuery();
 
                 return cache.context().itHolder().iterator(iter,
-                    new CacheIteratorConverter<Cache.Entry<Object, Object>, Map.Entry<Object,Object>>() {
+                    new CacheIteratorConverter<Cache.Entry<Object, Object>, Map.Entry<Object, Object>>() {
                         @Override protected Cache.Entry<Object, Object> convert(Map.Entry<Object, Object> e) {
                             return new CacheEntryImpl<>(e.getKey(), e.getValue());
                         }
@@ -1510,60 +1523,60 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         }
     }
 
-        /**
-         * Deployment callback.
-         *
-         * @param dep Service deployment.
-         * @param topVer Topology version.
-         */
-        private void onDeployment(final GridServiceDeployment dep, final AffinityTopologyVersion topVer) {
-            // Retry forever.
-            try {
-                AffinityTopologyVersion newTopVer = ctx.discovery().topologyVersionEx();
+    /**
+     * Deployment callback.
+     *
+     * @param dep Service deployment.
+     * @param topVer Topology version.
+     */
+    private void onDeployment(final GridServiceDeployment dep, final AffinityTopologyVersion topVer) {
+        // Retry forever.
+        try {
+            AffinityTopologyVersion newTopVer = ctx.discovery().topologyVersionEx();
 
-                // If topology version changed, reassignment will happen from topology event.
-                if (newTopVer.equals(topVer))
-                    reassign(dep, topVer);
+            // If topology version changed, reassignment will happen from topology event.
+            if (newTopVer.equals(topVer))
+                reassign(dep, topVer);
+        }
+        catch (IgniteCheckedException e) {
+            if (!(e instanceof ClusterTopologyCheckedException))
+                log.error("Failed to do service reassignment (will retry): " + dep.configuration().getName(), e);
+
+            AffinityTopologyVersion newTopVer = ctx.discovery().topologyVersionEx();
+
+            if (!newTopVer.equals(topVer)) {
+                assert newTopVer.compareTo(topVer) > 0;
+
+                // Reassignment will happen from topology event.
+                return;
             }
-            catch (IgniteCheckedException e) {
-                if (!(e instanceof ClusterTopologyCheckedException))
-                    log.error("Failed to do service reassignment (will retry): " + dep.configuration().getName(), e);
 
-                AffinityTopologyVersion newTopVer = ctx.discovery().topologyVersionEx();
+            ctx.timeout().addTimeoutObject(new GridTimeoutObject() {
+                private IgniteUuid id = IgniteUuid.randomUuid();
 
-                if (!newTopVer.equals(topVer)) {
-                    assert newTopVer.compareTo(topVer) > 0;
+                private long start = System.currentTimeMillis();
 
-                    // Reassignment will happen from topology event.
-                    return;
+                @Override public IgniteUuid timeoutId() {
+                    return id;
                 }
 
-                ctx.timeout().addTimeoutObject(new GridTimeoutObject() {
-                    private IgniteUuid id = IgniteUuid.randomUuid();
+                @Override public long endTime() {
+                    return start + RETRY_TIMEOUT;
+                }
 
-                    private long start = System.currentTimeMillis();
+                @Override public void onTimeout() {
+                    if (!busyLock.enterBusy())
+                        return;
 
-                    @Override public IgniteUuid timeoutId() {
-                        return id;
+                    try {
+                        // Try again.
+                        onDeployment(dep, topVer);
                     }
-
-                    @Override public long endTime() {
-                        return start + RETRY_TIMEOUT;
+                    finally {
+                        busyLock.leaveBusy();
                     }
-
-                    @Override public void onTimeout() {
-                        if (!busyLock.enterBusy())
-                            return;
-
-                        try {
-                            // Try again.
-                            onDeployment(dep, topVer);
-                        }
-                        finally {
-                            busyLock.leaveBusy();
-                        }
-                    }
-                });
+                }
+            });
         }
     }
 
