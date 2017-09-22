@@ -78,6 +78,7 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgniteTransactionsEx;
 import org.apache.ignite.internal.IgnitionEx;
+import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
@@ -1857,7 +1858,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 return new GridFinishedFuture<>(e);
             }
 
-            tx = ctx.tm().threadLocalTx(ctx.systemTx() ? ctx : null);
+            tx = ctx.tm().threadLocalTx(ctx);
         }
 
         if (tx == null || tx.implicit()) {
@@ -3730,20 +3731,15 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         ClusterGroup grp = modes.near ? cluster.forCacheNodes(name(), true, true, false) : cluster.forDataNodes(name());
 
-        Collection<ClusterNode> nodes = grp.nodes();
+        Collection<ClusterNode> nodes = new ArrayList<>(grp.nodes());
 
         if (nodes.isEmpty())
             return new GridFinishedFuture<>(0);
 
         ctx.kernalContext().task().setThreadContext(TC_SUBGRID, nodes);
 
-        try {
-            return ctx.kernalContext().task().execute(
-                new SizeTask(ctx.name(), ctx.affinity().affinityTopologyVersion(), peekModes), null);
-        }
-        catch (ClusterGroupEmptyException e) {
-            return new GridFinishedFuture<>(0);
-        }
+        return ctx.kernalContext().task().execute(
+            new SizeTask(ctx.name(), ctx.affinity().affinityTopologyVersion(), peekModes), null);
     }
 
     /** {@inheritDoc} */
@@ -3756,7 +3752,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         ClusterGroup grp = modes.near ? cluster.forCacheNodes(name(), true, true, false) : cluster.forDataNodes(name());
 
-        Collection<ClusterNode> nodes = grp.nodes();
+        Collection<ClusterNode> nodes = new ArrayList<>(grp.nodes());
 
         if (nodes.isEmpty())
             return new GridFinishedFuture<>(0L);
@@ -3779,13 +3775,13 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         ClusterGroup grp = cluster.forDataNodes(name());
 
-        Collection<ClusterNode> nodes = grp.forPredicate(new IgnitePredicate<ClusterNode>() {
+        Collection<ClusterNode> nodes = new ArrayList<>(grp.forPredicate(new IgnitePredicate<ClusterNode>() {
             /** {@inheritDoc} */
             @Override public boolean apply(ClusterNode clusterNode) {
                 return ((modes.primary && aff.primaryByPartition(clusterNode, part, topVer)) ||
                         (modes.backup && aff.backupByPartition(clusterNode, part, topVer)));
             }
-        }).nodes();
+        }).nodes());
 
         if (nodes.isEmpty())
             return new GridFinishedFuture<>(0L);
@@ -4062,7 +4058,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
                     return t;
                 }
-                catch (IgniteInterruptedCheckedException | IgniteTxHeuristicCheckedException e) {
+                catch (IgniteInterruptedCheckedException | IgniteTxHeuristicCheckedException | NodeStoppingException e) {
                     throw e;
                 }
                 catch (IgniteCheckedException e) {
@@ -4076,7 +4072,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                         catch (IgniteCheckedException | AssertionError | RuntimeException e1) {
                             U.error(log, "Failed to rollback transaction (cache may contain stale locks): " + tx, e1);
 
-                            e.addSuppressed(e1);
+                            if (e != e1)
+                                e.addSuppressed(e1);
                         }
                     }
 
@@ -4207,7 +4204,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                                         try {
                                             return tFut.get();
                                         }
-                                        catch (IgniteTxRollbackCheckedException e) {
+                                        catch (IgniteTxRollbackCheckedException | NodeStoppingException e) {
                                             throw e;
                                         }
                                         catch (IgniteCheckedException e1) {
@@ -4215,7 +4212,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                                                 tx0.rollbackNearTxLocalAsync();
                                             }
                                             catch (Throwable e2) {
-                                                e1.addSuppressed(e2);
+                                                if (e1 != e2)
+                                                    e1.addSuppressed(e2);
                                             }
 
                                             throw e1;
@@ -4246,7 +4244,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                         try {
                             return tFut.get();
                         }
-                        catch (IgniteTxRollbackCheckedException e) {
+                        catch (IgniteTxRollbackCheckedException | NodeStoppingException e) {
                             throw e;
                         }
                         catch (IgniteCheckedException e1) {
@@ -4254,7 +4252,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                                 tx0.rollbackNearTxLocalAsync();
                             }
                             catch (Throwable e2) {
-                                e1.addSuppressed(e2);
+                                if (e2 != e1)
+                                    e1.addSuppressed(e2);
                             }
 
                             throw e1;

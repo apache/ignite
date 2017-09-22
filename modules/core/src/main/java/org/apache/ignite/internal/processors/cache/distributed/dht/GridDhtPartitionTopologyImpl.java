@@ -1815,8 +1815,10 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                                 //TODO https://issues.apache.org/jira/browse/IGNITE-6433
                                 locPart.tryEvict();
                                 locPart.rent(false).get();
-                            } catch (IgniteCheckedException e) {
-                                log.error("Erorr occur while waiting for partition eviction", e);
+                            }
+                            catch (IgniteCheckedException e) {
+                                U.error(log, "Failed to wait for RENTING partition eviction after partition LOST event",
+                                    e);
                             }
 
                         if (marked)

@@ -930,8 +930,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                         " node is configured to use loopback address, but " + secondNode + " node is not " +
                         "(consider changing 'localAddress' configuration parameter) " +
                         "[locNodeAddrs=" + U.addressesAsString(locNode) + ", rmtNodeAddrs=" +
-                        U.addressesAsString(msg.addresses(), msg.hostNames()) + "], msg.creatorNode=" +
-                        ring().node(msg.creatorNodeId()));
+                        U.addressesAsString(msg.addresses(), msg.hostNames()) +
+                        ", creatorNodeId=" + msg.creatorNodeId() + ']');
                 }
                 else
                     LT.warn(log, "Node has not been connected to topology and will repeat join process. " +

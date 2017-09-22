@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.platform.client;
 
-import org.apache.ignite.binary.BinaryRawWriter;
+import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 
 /**
  * Single string response.
@@ -39,7 +39,7 @@ public class ClientStringResponse extends ClientResponse {
     }
 
     /** {@inheritDoc} */
-    @Override public void encode(BinaryRawWriter writer) {
+    @Override public void encode(BinaryRawWriterEx writer) {
         super.encode(writer);
 
         writer.writeString(val);
