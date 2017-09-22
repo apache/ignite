@@ -189,7 +189,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
-    public void testDifferentConfigurationOld() throws Exception {
+    public void testDifferentConfiguration() throws Exception {
         String name = "dupServiceOld";
 
         IgniteServices svcs1 = randomGrid().services().withAsync();
@@ -524,8 +524,8 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
      * @param srvcName Service name
      * @param expectedDeps Expected number of service deployments
      */
-    protected boolean waitForDeployment(final String srvcName,
-        final int expectedDeps) throws IgniteInterruptedCheckedException {
+    protected boolean waitForDeployment(final String srvcName, final int expectedDeps)
+        throws IgniteInterruptedCheckedException {
         final Ignite g = randomGrid();
 
         return GridTestUtils.waitForCondition(new GridAbsPredicateX() {
