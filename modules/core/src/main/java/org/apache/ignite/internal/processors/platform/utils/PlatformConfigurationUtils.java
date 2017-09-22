@@ -576,7 +576,7 @@ public class PlatformConfigurationUtils {
 
         if (consId instanceof Serializable) {
             cfg.setConsistentId((Serializable) consId);
-        } else {
+        } else if (consId != null) {
             throw new IgniteException("IgniteConfiguration.ConsistentId should be Serializable.");
         }
 
