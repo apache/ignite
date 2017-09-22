@@ -33,6 +33,9 @@ public class BinaryConfiguration {
     /** Default compact footer flag setting. */
     public static final boolean DFLT_COMPACT_FOOTER = true;
 
+    /** Default compact nulls flag setting. */
+    public static final boolean DFLT_COMPACT_NULLS = false;
+
     /** ID mapper. */
     private BinaryIdMapper idMapper;
 
@@ -47,6 +50,9 @@ public class BinaryConfiguration {
 
     /** Compact footer flag. */
     private boolean compactFooter = DFLT_COMPACT_FOOTER;
+
+    /** Compact footer flag. */
+    private boolean compactNulls = DFLT_COMPACT_NULLS;
 
     /**
      * Sets class names of binary objects explicitly.
@@ -174,6 +180,25 @@ public class BinaryConfiguration {
      */
     public BinaryConfiguration setCompactFooter(boolean compactFooter) {
         this.compactFooter = compactFooter;
+
+        return this;
+    }
+
+    /**
+     * @return Whether to write null references in compact form.
+     */
+    public boolean isCompactNulls() {
+        return compactNulls;
+    }
+
+    /**
+     * Set whether to write null references in compact form.
+     *
+     * @param compactNulls Whether to write null references in compact form.
+     * @return {@code this} for chaining.
+     */
+    public BinaryConfiguration setCompactNulls(boolean compactNulls) {
+        this.compactNulls = compactNulls;
 
         return this;
     }
