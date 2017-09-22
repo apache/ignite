@@ -27,6 +27,7 @@ namespace Apache.Ignite.Core.Impl
     using System.Reflection;
     using System.Runtime.InteropServices;
     using System.Text;
+    using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary;
@@ -506,6 +507,26 @@ namespace Apache.Ignite.Core.Impl
                     if (pred(node))
                         res.Add(node);
                 }
+            }
+
+            return res;
+        }
+
+        /// <summary>
+        /// Encodes the peek modes into a single int value.
+        /// </summary>
+        public static int EncodePeekModes(CachePeekMode[] modes)
+        {
+            var res = 0;
+
+            if (modes == null)
+            {
+                return res;
+            }
+
+            foreach (var mode in modes)
+            {
+                res |= (int)mode;
             }
 
             return res;

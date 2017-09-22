@@ -54,7 +54,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         private readonly Marshaller _marsh;
 
         /** Keep binary flag. */
-        private bool _keepBinary = false;
+        private readonly bool _keepBinary = false;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CacheClient{TK, TV}" /> class.
@@ -94,6 +94,39 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         }
 
         /** <inheritDoc /> */
+        public bool TryGet(TK key, out TV value)
+        {
+            IgniteArgumentCheck.NotNull(key, "key");
+
+            var res = DoOutInOp(ClientOp.CacheGet, w => w.WriteObject(key), UnmarshalCacheResult<TV>);
+
+            value = res.Value;
+
+            return res.Success;
+        }
+
+        /** <inheritDoc /> */
+        public ICollection<ICacheEntry<TK, TV>> GetAll(IEnumerable<TK> keys)
+        {
+            IgniteArgumentCheck.NotNull(keys, "keys");
+
+            return DoOutInOp(ClientOp.CacheGetAll, w => w.WriteEnumerable(keys), stream =>
+            {
+                var reader = _marsh.StartUnmarshal(stream, _keepBinary);
+
+                var cnt = reader.ReadInt();
+                var res = new List<ICacheEntry<TK, TV>>(cnt);
+
+                for (var i = 0; i < cnt; i++)
+                {
+                    res.Add(new CacheEntry<TK, TV>(reader.ReadObject<TK>(), reader.ReadObject<TV>()));
+                }
+
+                return res;
+            });
+        }
+
+        /** <inheritDoc /> */
         public void Put(TK key, TV val)
         {
             IgniteArgumentCheck.NotNull(key, "key");
@@ -107,6 +140,22 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         }
 
         /** <inheritDoc /> */
+        public bool ContainsKey(TK key)
+        {
+            IgniteArgumentCheck.NotNull(key, "key");
+
+            return DoOutInOp(ClientOp.CacheContainsKey, w => w.WriteObjectDetached(key), r => r.ReadBool());
+        }
+
+        /** <inheritDoc /> */
+        public bool ContainsKeys(IEnumerable<TK> keys)
+        {
+            IgniteArgumentCheck.NotNull(keys, "keys");
+
+            return DoOutInOp(ClientOp.CacheContainsKeys, w => w.WriteEnumerable(keys), r => r.ReadBool());
+        }
+
+        /** <inheritDoc /> */
         public IQueryCursor<ICacheEntry<TK, TV>> Query(ScanQuery<TK, TV> scanQuery)
         {
             IgniteArgumentCheck.NotNull(scanQuery, "query");
@@ -115,6 +164,167 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             // For .NET it is a CacheEntryFilterHolder with a predefined id (BinaryTypeId.CacheEntryPredicateHolder).
             return DoOutInOp(ClientOp.QueryScan, w => WriteScanQuery(w, scanQuery),
                 s => new ClientQueryCursor<TK, TV>(_ignite, s.ReadLong(), _keepBinary, s));
+        }
+        
+        /** <inheritDoc /> */
+        public CacheResult<TV> GetAndPut(TK key, TV val)
+        {
+            IgniteArgumentCheck.NotNull(key, "key");
+            IgniteArgumentCheck.NotNull(val, "val");
+
+            return DoOutInOp(ClientOp.CacheGetAndPut, w =>
+            {
+                w.WriteObjectDetached(key);
+                w.WriteObjectDetached(val);
+            }, UnmarshalCacheResult<TV>);
+        }
+
+        /** <inheritDoc /> */
+        public CacheResult<TV> GetAndReplace(TK key, TV val)
+        {
+            IgniteArgumentCheck.NotNull(key, "key");
+            IgniteArgumentCheck.NotNull(val, "val");
+
+            return DoOutInOp(ClientOp.CacheGetAndReplace, w =>
+            {
+                w.WriteObjectDetached(key);
+                w.WriteObjectDetached(val);
+            }, UnmarshalCacheResult<TV>);
+        }
+
+        /** <inheritDoc /> */
+        public CacheResult<TV> GetAndRemove(TK key)
+        {
+            IgniteArgumentCheck.NotNull(key, "key");
+
+            return DoOutInOp(ClientOp.CacheGetAndRemove, w => w.WriteObjectDetached(key), 
+                UnmarshalCacheResult<TV>);
+        }
+
+        /** <inheritDoc /> */
+        public bool PutIfAbsent(TK key, TV val)
+        {
+            IgniteArgumentCheck.NotNull(key, "key");
+            IgniteArgumentCheck.NotNull(val, "val");
+
+            return DoOutInOp(ClientOp.CachePutIfAbsent, w =>
+            {
+                w.WriteObjectDetached(key);
+                w.WriteObjectDetached(val);
+            }, s => s.ReadBool());
+        }
+
+        /** <inheritDoc /> */
+        public CacheResult<TV> GetAndPutIfAbsent(TK key, TV val)
+        {
+            IgniteArgumentCheck.NotNull(key, "key");
+            IgniteArgumentCheck.NotNull(val, "val");
+
+            return DoOutInOp(ClientOp.CacheGetAndPutIfAbsent, w =>
+            {
+                w.WriteObjectDetached(key);
+                w.WriteObjectDetached(val);
+            }, UnmarshalCacheResult<TV>);
+        }
+
+        /** <inheritDoc /> */
+        public bool Replace(TK key, TV val)
+        {
+            IgniteArgumentCheck.NotNull(key, "key");
+            IgniteArgumentCheck.NotNull(val, "val");
+
+            return DoOutInOp(ClientOp.CacheReplace, w =>
+            {
+                w.WriteObjectDetached(key);
+                w.WriteObjectDetached(val);
+            }, s => s.ReadBool());
+        }
+
+        /** <inheritDoc /> */
+        public bool Replace(TK key, TV oldVal, TV newVal)
+        {
+            IgniteArgumentCheck.NotNull(key, "key");
+            IgniteArgumentCheck.NotNull(oldVal, "oldVal");
+            IgniteArgumentCheck.NotNull(newVal, "newVal");
+
+            return DoOutInOp(ClientOp.CacheReplace2, w =>
+            {
+                w.WriteObjectDetached(key);
+                w.WriteObjectDetached(oldVal);
+                w.WriteObjectDetached(newVal);
+            }, s => s.ReadBool());
+        }
+
+        /** <inheritDoc /> */
+        public void PutAll(IEnumerable<KeyValuePair<TK, TV>> vals)
+        {
+            IgniteArgumentCheck.NotNull(vals, "vals");
+
+            DoOutOp(ClientOp.CachePutAll, w => w.WriteDictionary(vals));
+        }
+
+        /** <inheritDoc /> */
+        public void Clear()
+        {
+            DoOutOp(ClientOp.CacheClear);
+        }
+
+        /** <inheritDoc /> */
+        public void Clear(TK key)
+        {
+            IgniteArgumentCheck.NotNull(key, "key");
+
+            DoOutOp(ClientOp.CacheClearKey, w => w.WriteObjectDetached(key));
+        }
+
+        /** <inheritDoc /> */
+        public void ClearAll(IEnumerable<TK> keys)
+        {
+            IgniteArgumentCheck.NotNull(keys, "keys");
+
+            DoOutOp(ClientOp.CacheClearKeys, w => w.WriteEnumerable(keys));
+        }
+
+        /** <inheritDoc /> */
+        public bool Remove(TK key)
+        {
+            IgniteArgumentCheck.NotNull(key, "key");
+
+            return DoOutInOp(ClientOp.CacheRemove, w => w.WriteObjectDetached(key), r => r.ReadBool());
+        }
+
+        /** <inheritDoc /> */
+        public bool Remove(TK key, TV val)
+        {
+            IgniteArgumentCheck.NotNull(key, "key");
+            IgniteArgumentCheck.NotNull(val, "val");
+
+            return DoOutInOp(ClientOp.CacheRemove2, w =>
+            {
+                w.WriteObjectDetached(key);
+                w.WriteObjectDetached(val);
+            }, r => r.ReadBool());
+        }
+
+        /** <inheritDoc /> */
+        public void RemoveAll(IEnumerable<TK> keys)
+        {
+            IgniteArgumentCheck.NotNull(keys, "keys");
+
+            DoOutOp(ClientOp.CacheRemoveKeys, w => w.WriteEnumerable(keys));
+        }
+
+        /** <inheritDoc /> */
+        public void RemoveAll()
+        {
+            DoOutOp(ClientOp.CacheRemoveAll);
+        }
+
+        /** <inheritDoc /> */
+        public int GetSize(params CachePeekMode[] modes)
+        {
+            return DoOutInOp(ClientOp.CacheGetSize, w => w.WriteInt(IgniteUtils.EncodePeekModes(modes)),
+                s => s.ReadInt());
         }
 
         /// <summary>
@@ -142,7 +352,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         /// <summary>
         /// Does the out op.
         /// </summary>
-        private void DoOutOp(ClientOp opId, Action<BinaryWriter> writeAction)
+        private void DoOutOp(ClientOp opId, Action<BinaryWriter> writeAction = null)
         {
             DoOutInOp<object>(opId, writeAction, null);
         }
@@ -162,6 +372,23 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             stream.Seek(-1, SeekOrigin.Current);
 
             return _marsh.Unmarshal<T>(stream);
+        }
+
+        /// <summary>
+        /// Unmarshals the value, wrapping in a cache result.
+        /// </summary>
+        private CacheResult<T> UnmarshalCacheResult<T>(IBinaryStream stream)
+        {
+            var hdr = stream.ReadByte();
+
+            if (hdr == BinaryUtils.HdrNull)
+            {
+                return new CacheResult<T>();
+            }
+
+            stream.Seek(-1, SeekOrigin.Current);
+
+            return new CacheResult<T>(_marsh.Unmarshal<T>(stream));
         }
 
         /// <summary>

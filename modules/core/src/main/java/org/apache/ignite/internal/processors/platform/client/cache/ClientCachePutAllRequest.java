@@ -19,27 +19,39 @@ package org.apache.ignite.internal.processors.platform.client.cache;
 
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
-import org.apache.ignite.internal.processors.platform.client.ClientObjectResponse;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
- * Cache get request.
+ * PutAll request.
  */
-public class ClientCacheGetRequest extends ClientCacheKeyRequest {
+public class ClientCachePutAllRequest extends ClientCacheRequest {
+    /** Map. */
+    private final Map<Object, Object> map;
+
     /**
      * Constructor.
      *
      * @param reader Reader.
      */
-    public ClientCacheGetRequest(BinaryRawReaderEx reader) {
+    public ClientCachePutAllRequest(BinaryRawReaderEx reader) {
         super(reader);
+
+        int cnt = reader.readInt();
+        map = new HashMap<>(cnt);
+
+        for (int i = 0; i < cnt; i++) {
+            map.put(reader.readObjectDetached(), reader.readObjectDetached());
+        }
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public ClientResponse process(ClientConnectionContext ctx) {
-        Object val = cache(ctx).get(key());
+        cache(ctx).putAll(map);
 
-        return new ClientObjectResponse(requestId(), val);
+        return super.process(ctx);
     }
 }

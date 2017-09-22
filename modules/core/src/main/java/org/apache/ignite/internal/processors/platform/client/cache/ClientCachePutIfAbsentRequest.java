@@ -18,28 +18,28 @@
 package org.apache.ignite.internal.processors.platform.client.cache;
 
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.processors.platform.client.ClientBooleanResponse;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
-import org.apache.ignite.internal.processors.platform.client.ClientObjectResponse;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 
 /**
- * Cache get request.
+ * Cache put if absent request.
  */
-public class ClientCacheGetRequest extends ClientCacheKeyRequest {
+public class ClientCachePutIfAbsentRequest extends ClientCacheKeyValRequest {
     /**
-     * Constructor.
+     * Ctor.
      *
      * @param reader Reader.
      */
-    public ClientCacheGetRequest(BinaryRawReaderEx reader) {
+    public ClientCachePutIfAbsentRequest(BinaryRawReaderEx reader) {
         super(reader);
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public ClientResponse process(ClientConnectionContext ctx) {
-        Object val = cache(ctx).get(key());
+        boolean res = cache(ctx).putIfAbsent(key(), val());
 
-        return new ClientObjectResponse(requestId(), val);
+        return new ClientBooleanResponse(requestId(), res);
     }
 }

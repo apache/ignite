@@ -30,6 +30,25 @@ namespace Apache.Ignite.Core.Impl.Client
         BinaryTypePut = 6,
         QueryScan = 7,
         QueryScanCursorGetPage = 8,
-        ResourceClose = 9
+        ResourceClose = 9,
+        CacheContainsKey = 10,
+        CacheContainsKeys = 11,
+        CacheGetAll = 12,
+        CacheGetAndPut = 13,
+        CacheGetAndReplace = 14,
+        CacheGetAndRemove = 15,
+        CachePutIfAbsent = 16,
+        CacheGetAndPutIfAbsent = 17,
+        CacheReplace = 18,
+        CacheReplace2 = 19,
+        CachePutAll = 20,
+        CacheClear = 21,
+        CacheClearKey = 22,
+        CacheClearKeys = 23,
+        CacheRemove = 24,
+        CacheRemove2 = 25,
+        CacheGetSize = 26,
+        CacheRemoveKeys = 27,
+        CacheRemoveAll = 28
     }
 }
