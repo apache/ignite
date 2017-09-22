@@ -67,6 +67,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionProxy;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyImpl;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
@@ -89,6 +90,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -108,7 +110,7 @@ import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxE
 import static org.apache.ignite.transactions.TransactionState.ACTIVE;
 import static org.apache.ignite.transactions.TransactionState.COMMITTED;
 import static org.apache.ignite.transactions.TransactionState.COMMITTING;
-import static org.apache.ignite.transactions.TransactionState.PREPARED;
+import static org.apache.ignite.transactions.TransactionState.MARKED_ROLLBACK;
 import static org.apache.ignite.transactions.TransactionState.PREPARING;
 import static org.apache.ignite.transactions.TransactionState.ROLLED_BACK;
 import static org.apache.ignite.transactions.TransactionState.ROLLING_BACK;
@@ -119,7 +121,7 @@ import static org.apache.ignite.transactions.TransactionState.UNKNOWN;
  * Replicated user transaction.
  */
 @SuppressWarnings("unchecked")
-public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoCloseable  {
+public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeoutObject, AutoCloseable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -128,12 +130,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
         AtomicReferenceFieldUpdater.newUpdater(GridNearTxLocal.class, IgniteInternalFuture.class, "prepFut");
 
     /** Prepare future updater. */
-    private static final AtomicReferenceFieldUpdater<GridNearTxLocal, GridNearTxFinishFuture> COMMIT_FUT_UPD =
-        AtomicReferenceFieldUpdater.newUpdater(GridNearTxLocal.class, GridNearTxFinishFuture.class, "commitFut");
-
-    /** Rollback future updater. */
-    private static final AtomicReferenceFieldUpdater<GridNearTxLocal, GridNearTxFinishFuture> ROLLBACK_FUT_UPD =
-        AtomicReferenceFieldUpdater.newUpdater(GridNearTxLocal.class, GridNearTxFinishFuture.class, "rollbackFut");
+    private static final AtomicReferenceFieldUpdater<GridNearTxLocal, NearTxFinishFuture> FINISH_FUT_UPD =
+        AtomicReferenceFieldUpdater.newUpdater(GridNearTxLocal.class, NearTxFinishFuture.class, "finishFut");
 
     /** DHT mappings. */
     private IgniteTxMappings mappings;
@@ -146,12 +144,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
     /** Commit future. */
     @SuppressWarnings("UnusedDeclaration")
     @GridToStringExclude
-    private volatile GridNearTxFinishFuture commitFut;
-
-    /** Rollback future. */
-    @SuppressWarnings("UnusedDeclaration")
-    @GridToStringExclude
-    private volatile GridNearTxFinishFuture rollbackFut;
+    private volatile NearTxFinishFuture finishFut;
 
     /** True if transaction contains near cache entries mapped to local node. */
     private boolean nearLocallyMapped;
@@ -170,6 +163,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
 
     /** If this transaction contains transform entries. */
     protected boolean transform;
+
+    /** */
+    private boolean trackTimeout;
 
     /** */
     @GridToStringExclude
@@ -231,6 +227,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
         mappings = implicitSingle ? new IgniteTxMappingsSingleImpl() : new IgniteTxMappingsImpl();
 
         initResult();
+
+        if (timeout() > 0 && !implicit())
+            trackTimeout = cctx.time().addTimeoutObject(this);
     }
 
     /** {@inheritDoc} */
@@ -2967,7 +2966,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
 
     /** {@inheritDoc} */
     @Override public boolean onOwnerChanged(GridCacheEntryEx entry, GridCacheMvccCandidate owner) {
-        GridCacheMvccFuture<IgniteInternalTx> fut = (GridCacheMvccFuture<IgniteInternalTx>)prepFut;
+        GridCacheVersionedFuture<IgniteInternalTx> fut = (GridCacheVersionedFuture<IgniteInternalTx>)prepFut;
 
         return fut != null && fut.onOwnerChanged(entry, owner);
     }
@@ -3046,7 +3045,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
 
     /** {@inheritDoc} */
     @SuppressWarnings({"CatchGenericClass", "ThrowableInstanceNeverThrown"})
-    @Override public boolean localFinish(boolean commit) throws IgniteCheckedException {
+    @Override public boolean localFinish(boolean commit, boolean clearThreadMap) throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("Finishing near local tx [tx=" + this + ", commit=" + commit + "]");
 
@@ -3082,7 +3081,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
             if (commit && !isRollbackOnly())
                 userCommit();
             else
-                userRollback();
+                userRollback(clearThreadMap);
         }
         catch (IgniteCheckedException e) {
             err = e;
@@ -3148,6 +3147,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
             if (!PREP_FUT_UPD.compareAndSet(this, null, fut))
                 return prepFut;
 
+            if (trackTimeout)
+                removeTimeoutHandler();
+
             if (timeout == -1) {
                 fut.onDone(this, timeoutException());
 
@@ -3175,15 +3177,11 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
     /**
      * @throws IgniteCheckedException If failed.
      */
-    public final void prepare() throws IgniteCheckedException {
-        prepareAsync().get();
-    }
+    public final void prepare(boolean awaitLastFuture) throws IgniteCheckedException {
+        if (awaitLastFuture)
+            txState().awaitLastFuture(cctx);
 
-    /**
-     * @return Prepare future.
-     */
-    private IgniteInternalFuture<?> prepareAsync() {
-        return prepareNearTxLocal();
+        prepareNearTxLocal().get();
     }
 
     /**
@@ -3200,42 +3198,43 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
         if (log.isDebugEnabled())
             log.debug("Committing near local tx: " + this);
 
+        NearTxFinishFuture fut = finishFut;
+
+        if (fut != null)
+            return chainFinishFuture(fut, true);
+
         if (fastFinish()) {
-            state(PREPARING);
-            state(PREPARED);
-            state(COMMITTING);
+            GridNearTxFastFinishFuture fut0;
 
-            cctx.tm().fastFinishTx(this, true);
+            if (!FINISH_FUT_UPD.compareAndSet(this, null, fut0 = new GridNearTxFastFinishFuture(this, true)))
+                return chainFinishFuture(finishFut, true);
 
-            state(COMMITTED);
+            fut0.finish();
 
-            return new GridFinishedFuture<>((IgniteInternalTx)this);
+            return fut0;
         }
+
+        final GridNearTxFinishFuture fut0;
+
+        if (!FINISH_FUT_UPD.compareAndSet(this, null, fut0 = new GridNearTxFinishFuture<>(cctx, this, true)))
+            return chainFinishFuture(finishFut, true);
+
+        cctx.mvcc().addFuture(fut0, fut0.futureId());
 
         final IgniteInternalFuture<?> prepareFut = prepareNearTxLocal();
 
-        GridNearTxFinishFuture fut = commitFut;
-
-        if (fut == null &&
-            !COMMIT_FUT_UPD.compareAndSet(this, null, fut = new GridNearTxFinishFuture<>(cctx, this, true)))
-            return commitFut;
-
-        cctx.mvcc().addFuture(fut, fut.futureId());
-
         prepareFut.listen(new CI1<IgniteInternalFuture<?>>() {
             @Override public void apply(IgniteInternalFuture<?> f) {
-                GridNearTxFinishFuture fut0 = commitFut;
-
                 try {
                     // Make sure that here are no exceptions.
                     prepareFut.get();
 
-                    fut0.finish(true);
+                    fut0.finish(true, true);
                 }
                 catch (Error | RuntimeException e) {
                     COMMIT_ERR_UPD.compareAndSet(GridNearTxLocal.this, null, e);
 
-                    fut0.finish(false);
+                    fut0.finish(false, true);
 
                     throw e;
                 }
@@ -3243,12 +3242,12 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
                     COMMIT_ERR_UPD.compareAndSet(GridNearTxLocal.this, null, e);
 
                     if (!(e instanceof NodeStoppingException))
-                        fut0.finish(false);
+                        fut0.finish(false, true);
                 }
             }
         });
 
-        return fut;
+        return fut0;
     }
 
     /** {@inheritDoc} */
@@ -3267,30 +3266,42 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
      * @return Rollback future.
      */
     public IgniteInternalFuture<IgniteInternalTx> rollbackNearTxLocalAsync() {
+        return rollbackNearTxLocalAsync(false);
+    }
+
+    /**
+     * @param onTimeout {@code True} if rolled back asynchronously on timeout.
+     * @return Rollback future.
+     */
+    private IgniteInternalFuture<IgniteInternalTx> rollbackNearTxLocalAsync(final boolean onTimeout) {
         if (log.isDebugEnabled())
             log.debug("Rolling back near tx: " + this);
 
-        if (fastFinish()) {
-            state(PREPARING);
-            state(PREPARED);
-            state(ROLLING_BACK);
+        if (!onTimeout && trackTimeout)
+            removeTimeoutHandler();
 
-            cctx.tm().fastFinishTx(this, false);
-
-            state(ROLLED_BACK);
-
-            return new GridFinishedFuture<>((IgniteInternalTx)this);
-        }
-
-        GridNearTxFinishFuture fut = rollbackFut;
+        NearTxFinishFuture fut = finishFut;
 
         if (fut != null)
-            return fut;
+            return chainFinishFuture(finishFut, false);
 
-        if (!ROLLBACK_FUT_UPD.compareAndSet(this, null, fut = new GridNearTxFinishFuture<>(cctx, this, false)))
-            return rollbackFut;
+        if (fastFinish()) {
+            GridNearTxFastFinishFuture fut0;
 
-        cctx.mvcc().addFuture(fut, fut.futureId());
+            if (!FINISH_FUT_UPD.compareAndSet(this, null, fut0 = new GridNearTxFastFinishFuture(this, false)))
+                return chainFinishFuture(finishFut, false);
+
+            fut0.finish();
+
+            return fut0;
+        }
+
+        final GridNearTxFinishFuture fut0;
+
+        if (!FINISH_FUT_UPD.compareAndSet(this, null, fut0 = new GridNearTxFinishFuture<>(cctx, this, false)))
+            return chainFinishFuture(finishFut, false);
+
+        cctx.mvcc().addFuture(fut0, fut0.futureId());
 
         IgniteInternalFuture<?> prepFut = this.prepFut;
 
@@ -3305,7 +3316,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
                     log.debug("Got optimistic tx failure [tx=" + this + ", err=" + e + ']');
             }
 
-            fut.finish(false);
+            fut0.finish(false, !onTimeout);
         }
         else {
             prepFut.listen(new CI1<IgniteInternalFuture<?>>() {
@@ -3319,19 +3330,75 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
                             log.debug("Got optimistic tx failure [tx=" + this + ", err=" + e + ']');
                     }
 
-                    GridNearTxFinishFuture fut0 = rollbackFut;
-
-                    fut0.finish(false);
+                    fut0.finish(false, !onTimeout);
                 }
             });
         }
 
-        return fut;
+        return fut0;
     }
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<IgniteInternalTx> rollbackAsync() {
         return rollbackNearTxLocalAsync();
+    }
+
+    /**
+     * @param fut Already started finish future.
+     * @param commit Commit flag.
+     * @return Finish future.
+     */
+    private IgniteInternalFuture<IgniteInternalTx> chainFinishFuture(final NearTxFinishFuture fut, final boolean commit) {
+        assert fut != null;
+
+        if (fut.commit() != commit) {
+            final GridNearTxLocal tx = this;
+
+            if (!commit) {
+                final GridNearTxFinishFuture rollbackFut = new GridNearTxFinishFuture<>(cctx, this, false);
+
+                fut.listen(new IgniteInClosure<IgniteInternalFuture<IgniteInternalTx>>() {
+                    @Override public void apply(IgniteInternalFuture<IgniteInternalTx> fut0) {
+                        if (FINISH_FUT_UPD.compareAndSet(tx, fut, rollbackFut)) {
+                            if (tx.state() == COMMITTED) {
+                                if (log.isDebugEnabled())
+                                    log.debug("Failed to rollback, transaction is already committed: " + tx);
+
+                                rollbackFut.forceFinish();
+
+                                assert rollbackFut.isDone() : rollbackFut;
+                            }
+                            else {
+                                if (!cctx.mvcc().addFuture(rollbackFut, rollbackFut.futureId()))
+                                    return;
+
+                                rollbackFut.finish(false, true);
+                            }
+                        }
+                    }
+                });
+
+                return rollbackFut;
+            }
+            else {
+                final GridFutureAdapter<IgniteInternalTx> fut0 = new GridFutureAdapter<>();
+
+                fut.listen(new IgniteInClosure<IgniteInternalFuture<IgniteInternalTx>>() {
+                    @Override public void apply(IgniteInternalFuture<IgniteInternalTx> fut) {
+                        if (timedOut())
+                            fut0.onDone(new IgniteTxTimeoutCheckedException("Failed to commit transaction, " +
+                                "transaction is concurrently rolled back on timeout: " + tx));
+                        else
+                            fut0.onDone(new IgniteCheckedException("Failed to commit transaction, " +
+                                "transaction is concurrently rolled back: " + tx));
+                    }
+                });
+
+                return fut0;
+            }
+        }
+
+        return fut;
     }
 
     /**
@@ -3344,19 +3411,11 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
     /**
      * Prepares next batch of entries in dht transaction.
      *
-     * @param reads Read entries.
-     * @param writes Write entries.
-     * @param txNodes Transaction nodes mapping.
-     * @param last {@code True} if this is last prepare request.
+     * @param req Prepare request.
      * @return Future that will be completed when locks are acquired.
      */
     @SuppressWarnings("TypeMayBeWeakened")
-    public IgniteInternalFuture<GridNearTxPrepareResponse> prepareAsyncLocal(
-        @Nullable Collection<IgniteTxEntry> reads,
-        @Nullable Collection<IgniteTxEntry> writes,
-        Map<UUID, Collection<UUID>> txNodes,
-        boolean last
-    ) {
+    public IgniteInternalFuture<GridNearTxPrepareResponse> prepareAsyncLocal(GridNearTxPrepareRequest req) {
         long timeout = remainingTime();
 
         if (state() != PREPARING) {
@@ -3381,11 +3440,11 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
             timeout,
             0,
             Collections.<IgniteTxKey, GridCacheVersion>emptyMap(),
-            last,
+            req.last(),
             needReturnValue() && implicit());
 
         try {
-            userPrepare((serializable() && optimistic()) ? F.concat(false, writes, reads) : writes);
+            userPrepare((serializable() && optimistic()) ? F.concat(false, req.writes(), req.reads()) : req.writes());
 
             // Make sure to add future before calling prepare on it.
             cctx.mvcc().addFuture(fut);
@@ -3393,7 +3452,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
             if (isSystemInvalidate())
                 fut.complete();
             else
-                fut.prepare(reads, writes, txNodes);
+                fut.prepare(req);
         }
         catch (IgniteTxTimeoutCheckedException | IgniteTxOptimisticCheckedException e) {
             fut.onError(e);
@@ -3699,38 +3758,53 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
     @Override public void close() throws IgniteCheckedException {
         TransactionState state = state();
 
-        if (state != ROLLING_BACK && state != ROLLED_BACK && state != COMMITTING && state != COMMITTED)
-            rollback();
+        try {
+            if (state == COMMITTED || state == ROLLED_BACK)
+                return;
 
-        synchronized (this) {
-            try {
-                while (!done())
-                    wait();
-            }
-            catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
+            if (trackTimeout)
+                removeTimeoutHandler();
 
-                if (!done())
-                    throw new IgniteCheckedException("Got interrupted while waiting for transaction to complete: " +
-                        this, e);
-            }
-        }
+            if (state != ROLLING_BACK && state != COMMITTING)
+                rollback();
 
-        if (accessMap != null) {
-            assert optimistic();
+            synchronized (this) {
+                try {
+                    while (!done())
+                        wait();
+                }
+                catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
 
-            for (Map.Entry<IgniteTxKey, IgniteCacheExpiryPolicy> e : accessMap.entrySet()) {
-                if (e.getValue().entries() != null) {
-                    GridCacheContext cctx0 = cctx.cacheContext(e.getKey().cacheId());
-
-                    if (cctx0.isNear())
-                        cctx0.near().dht().sendTtlUpdateRequest(e.getValue());
-                    else
-                        cctx0.dht().sendTtlUpdateRequest(e.getValue());
+                    if (!done())
+                        throw new IgniteCheckedException("Got interrupted while waiting for transaction to complete: " +
+                            this, e);
                 }
             }
+        }
+        finally {
+            // It is possible tx was rolled back asynchronously on timeout and thread map is not cleared yet.
+            boolean cleanup = state == ROLLED_BACK && timedOut();
 
-            accessMap = null;
+            if (cleanup)
+                cctx.tm().clearThreadMap(this);
+
+            if (accessMap != null) {
+                assert optimistic();
+
+                for (Map.Entry<IgniteTxKey, IgniteCacheExpiryPolicy> e : accessMap.entrySet()) {
+                    if (e.getValue().entries() != null) {
+                        GridCacheContext cctx0 = cctx.cacheContext(e.getKey().cacheId());
+
+                        if (cctx0.isNear())
+                            cctx0.near().dht().sendTtlUpdateRequest(e.getValue());
+                        else
+                            cctx0.dht().sendTtlUpdateRequest(e.getValue());
+                    }
+                }
+
+                accessMap = null;
+            }
         }
     }
 
@@ -4006,10 +4080,66 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
 
     /**
      * @param threadId new owner of transaction.
-     * @throws IgniteCheckedException if method executed not in the middle of resume or suspend.
      */
     public void threadId(long threadId) {
         this.threadId = threadId;
+    }
+
+    /**
+     * @return {@code True} if need register callback which cancels tx on timeout.
+     */
+    public boolean trackTimeout() {
+        return trackTimeout;
+    }
+
+    /**
+     * Removes timeout handler.
+     *
+     * @return {@code True} if handler was removed.
+     */
+    public boolean removeTimeoutHandler() {
+        assert trackTimeout;
+
+        return cctx.time().removeTimeoutObject(this);
+    }
+
+    /**
+     * @return {@code True} if handler was added.
+     */
+    public boolean addTimeoutHandler() {
+        assert trackTimeout;
+
+        return cctx.time().addTimeoutObject(this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteUuid timeoutId() {
+        return xid();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long endTime() {
+        return startTime() + timeout();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onTimeout() {
+        if (state(MARKED_ROLLBACK, true) || (state() == MARKED_ROLLBACK)) {
+            if (log.isDebugEnabled())
+                log.debug("Will rollback tx on timeout: " + this);
+
+            cctx.kernalContext().closure().runLocalSafe(new Runnable() {
+                @Override public void run() {
+                    // Note: if rollback asynchonously on timeout should not clear thread map
+                    // since thread started tx still should be able to see this tx.
+                    rollbackNearTxLocalAsync(true);
+                }
+            });
+        }
+        else {
+            if (log.isDebugEnabled())
+                log.debug("Skip rollback tx on timeout: " + this);
+        }
     }
 
     /**

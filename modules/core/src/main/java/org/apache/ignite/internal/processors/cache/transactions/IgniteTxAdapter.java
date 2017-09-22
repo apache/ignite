@@ -367,6 +367,13 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         consistentIdMapper = new ConsistentIdMapper(cctx.discovery());
     }
 
+    /**
+     * @return Shared cache context.
+     */
+    public GridCacheSharedContext<?, ?> context() {
+        return cctx;
+    }
+
     /** {@inheritDoc} */
     @Override public boolean localResult() {
         assert originatingNodeId() != null;
@@ -984,7 +991,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
      * @return {@code True} if state changed.
      */
     @SuppressWarnings({"TooBroadScope"})
-    protected boolean state(TransactionState state, boolean timedOut) {
+    protected final boolean state(TransactionState state, boolean timedOut) {
         boolean valid = false;
 
         TransactionState prev;
@@ -1065,7 +1072,9 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
             if (valid) {
                 this.state = state;
-                this.timedOut = timedOut;
+
+                if (timedOut)
+                    this.timedOut = true;
 
                 if (log.isDebugEnabled())
                     log.debug("Changed transaction state [prev=" + prev + ", new=" + this.state + ", tx=" + this + ']');

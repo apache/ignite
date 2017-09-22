@@ -328,7 +328,7 @@ public class CacheMetricsImpl implements CacheMetrics {
 
     /** {@inheritDoc} */
     @Override public int getTxDhtThreadMapSize() {
-        return cctx.isNear() && dhtCtx != null ? dhtCtx.tm().threadMapSize() : -1;
+        return cctx.tm().threadMapSize();
     }
 
     /** {@inheritDoc} */
