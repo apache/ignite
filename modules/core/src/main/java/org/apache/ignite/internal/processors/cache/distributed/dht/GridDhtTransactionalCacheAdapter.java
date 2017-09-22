@@ -465,155 +465,148 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      * @param req Request.
      */
     private void processDhtLockRequest0(UUID nodeId, GridDhtLockRequest req) {
+        assert nodeId != null;
+        assert req != null;
+        assert !nodeId.equals(locNodeId);
+
+        int cnt = F.size(req.keys());
+
+        GridDhtLockResponse res;
+
+        GridDhtTxRemote dhtTx = null;
+        GridNearTxRemote nearTx = null;
+
+        boolean fail = false;
+        boolean cancelled = false;
 
         try {
+            res = new GridDhtLockResponse(ctx.cacheId(), req.version(), req.futureId(), req.miniId(), cnt,
+                ctx.deploymentEnabled());
 
-            assert nodeId != null;
-            assert req != null;
-            assert !nodeId.equals(locNodeId);
+            dhtTx = startRemoteTx(nodeId, req, res);
+            nearTx = isNearEnabled(cacheCfg) ? near().startRemoteTx(nodeId, req) : null;
 
-            int cnt = F.size(req.keys());
+            if (nearTx != null && !nearTx.empty())
+                res.nearEvicted(nearTx.evicted());
+            else {
+                if (!F.isEmpty(req.nearKeys())) {
+                    Collection<IgniteTxKey> nearEvicted = new ArrayList<>(req.nearKeys().size());
 
-            GridDhtLockResponse res;
+                    nearEvicted.addAll(F.viewReadOnly(req.nearKeys(), new C1<KeyCacheObject, IgniteTxKey>() {
+                        @Override public IgniteTxKey apply(KeyCacheObject k) {
+                            return ctx.txKey(k);
+                        }
+                    }));
 
-            GridDhtTxRemote dhtTx = null;
-            GridNearTxRemote nearTx = null;
+                    res.nearEvicted(nearEvicted);
+                }
+            }
+        }
+        catch (IgniteTxRollbackCheckedException e) {
+            String err = "Failed processing DHT lock request (transaction has been completed): " + req;
 
-            boolean fail = false;
-            boolean cancelled = false;
+            U.error(log, err, e);
 
+            res = new GridDhtLockResponse(ctx.cacheId(), req.version(), req.futureId(), req.miniId(),
+                new IgniteTxRollbackCheckedException(err, e), ctx.deploymentEnabled());
+
+            fail = true;
+        }
+        catch (IgniteCheckedException e) {
+            String err = "Failed processing DHT lock request: " + req;
+
+            U.error(log, err, e);
+
+            res = new GridDhtLockResponse(ctx.cacheId(),
+                req.version(),
+                req.futureId(),
+                req.miniId(),
+                new IgniteCheckedException(err, e), ctx.deploymentEnabled());
+
+            fail = true;
+        }
+        catch (GridDistributedLockCancelledException ignored) {
+            // Received lock request for cancelled lock.
+            if (log.isDebugEnabled())
+                log.debug("Received lock request for canceled lock (will ignore): " + req);
+
+            res = null;
+
+            fail = true;
+            cancelled = true;
+        }
+
+        boolean releaseAll = false;
+
+        if (res != null) {
             try {
-                res = new GridDhtLockResponse(ctx.cacheId(), req.version(), req.futureId(), req.miniId(), cnt,
-                    ctx.deploymentEnabled());
+                // Reply back to sender.
+                ctx.io().send(nodeId, res, ctx.ioPolicy());
 
-                dhtTx = startRemoteTx(nodeId, req, res);
-                nearTx = isNearEnabled(cacheCfg) ? near().startRemoteTx(nodeId, req) : null;
-
-                if (nearTx != null && !nearTx.empty())
-                    res.nearEvicted(nearTx.evicted());
-                else {
-                    if (!F.isEmpty(req.nearKeys())) {
-                        Collection<IgniteTxKey> nearEvicted = new ArrayList<>(req.nearKeys().size());
-
-                        nearEvicted.addAll(F.viewReadOnly(req.nearKeys(), new C1<KeyCacheObject, IgniteTxKey>() {
-                            @Override public IgniteTxKey apply(KeyCacheObject k) {
-                                return ctx.txKey(k);
-                            }
-                        }));
-
-                        res.nearEvicted(nearEvicted);
-                    }
-                }
-            }
-            catch (IgniteTxRollbackCheckedException e) {
-                String err = "Failed processing DHT lock request (transaction has been completed): " + req;
-
-                U.error(log, err, e);
-
-                res = new GridDhtLockResponse(ctx.cacheId(), req.version(), req.futureId(), req.miniId(),
-                    new IgniteTxRollbackCheckedException(err, e), ctx.deploymentEnabled());
-
-                fail = true;
-            }
-            catch (IgniteCheckedException e) {
-                String err = "Failed processing DHT lock request: " + req;
-
-                U.error(log, err, e);
-
-                res = new GridDhtLockResponse(ctx.cacheId(),
-                    req.version(),
-                    req.futureId(),
-                    req.miniId(),
-                    new IgniteCheckedException(err, e), ctx.deploymentEnabled());
-
-                fail = true;
-            }
-            catch (GridDistributedLockCancelledException ignored) {
-                // Received lock request for cancelled lock.
-                if (log.isDebugEnabled())
-                    log.debug("Received lock request for canceled lock (will ignore): " + req);
-
-                res = null;
-
-                fail = true;
-                cancelled = true;
-            }
-
-            boolean releaseAll = false;
-
-            if (res != null) {
-                try {
-                    // Reply back to sender.
-                    ctx.io().send(nodeId, res, ctx.ioPolicy());
-
-                    if (txLockMsgLog.isDebugEnabled()) {
-                        txLockMsgLog.debug("Sent dht lock response [txId=" + req.nearXidVersion() +
-                            ", dhtTxId=" + req.version() +
-                            ", inTx=" + req.inTx() +
-                            ", node=" + nodeId + ']');
-                    }
-                }
-                catch (ClusterTopologyCheckedException ignored) {
-                    U.warn(txLockMsgLog, "Failed to send dht lock response, node failed [" +
-                        "txId=" + req.nearXidVersion() +
+                if (txLockMsgLog.isDebugEnabled()) {
+                    txLockMsgLog.debug("Sent dht lock response [txId=" + req.nearXidVersion() +
                         ", dhtTxId=" + req.version() +
                         ", inTx=" + req.inTx() +
                         ", node=" + nodeId + ']');
-
-                    fail = true;
-                    releaseAll = true;
-                }
-                catch (IgniteCheckedException e) {
-                    U.error(txLockMsgLog, "Failed to send dht lock response (lock will not be acquired) " +
-                        "txId=" + req.nearXidVersion() +
-                        ", dhtTxId=" + req.version() +
-                        ", inTx=" + req.inTx() +
-                        ", node=" + nodeId + ']', e);
-
-                    fail = true;
                 }
             }
+            catch (ClusterTopologyCheckedException ignored) {
+                U.warn(txLockMsgLog, "Failed to send dht lock response, node failed [" +
+                    "txId=" + req.nearXidVersion() +
+                    ", dhtTxId=" + req.version() +
+                    ", inTx=" + req.inTx() +
+                    ", node=" + nodeId + ']');
 
-            if (fail) {
-                if (dhtTx != null)
-                    dhtTx.rollbackRemoteTx();
+                fail = true;
+                releaseAll = true;
+            }
+            catch (IgniteCheckedException e) {
+                U.error(txLockMsgLog, "Failed to send dht lock response (lock will not be acquired) " +
+                    "txId=" + req.nearXidVersion() +
+                    ", dhtTxId=" + req.version() +
+                    ", inTx=" + req.inTx() +
+                    ", node=" + nodeId + ']', e);
 
-                if (nearTx != null) // Even though this should never happen, we leave this check for consistency.
-                    nearTx.rollbackRemoteTx();
+                fail = true;
+            }
+        }
 
-                List<KeyCacheObject> keys = req.keys();
+        if (fail) {
+            if (dhtTx != null)
+                dhtTx.rollbackRemoteTx();
 
-                if (keys != null) {
-                    for (KeyCacheObject key : keys) {
-                        while (true) {
-                            GridDistributedCacheEntry entry = peekExx(key);
+            if (nearTx != null) // Even though this should never happen, we leave this check for consistency.
+                nearTx.rollbackRemoteTx();
 
-                            try {
-                                if (entry != null) {
-                                    // Release all locks because sender node left grid.
-                                    if (releaseAll)
-                                        entry.removeExplicitNodeLocks(req.nodeId());
-                                    else
-                                        entry.removeLock(req.version());
-                                }
+            List<KeyCacheObject> keys = req.keys();
 
-                                break;
+            if (keys != null) {
+                for (KeyCacheObject key : keys) {
+                    while (true) {
+                        GridDistributedCacheEntry entry = peekExx(key);
+
+                        try {
+                            if (entry != null) {
+                                // Release all locks because sender node left grid.
+                                if (releaseAll)
+                                    entry.removeExplicitNodeLocks(req.nodeId());
+                                else
+                                    entry.removeLock(req.version());
                             }
-                            catch (GridCacheEntryRemovedException ignore) {
-                                if (log.isDebugEnabled())
-                                    log.debug("Attempted to remove lock on removed entity during during failure " +
-                                        "handling for dht lock request (will retry): " + entry);
-                            }
+
+                            break;
+                        }
+                        catch (GridCacheEntryRemovedException ignore) {
+                            if (log.isDebugEnabled())
+                                log.debug("Attempted to remove lock on removed entity during during failure " +
+                                    "handling for dht lock request (will retry): " + entry);
                         }
                     }
                 }
-
-                if (releaseAll && !cancelled)
-                    U.warn(log, "Sender node left grid in the midst of lock acquisition (locks have been released).");
             }
 
-        } finally {
-            throw new RuntimeException("[txs]processDhtLockRequest");
+            if (releaseAll && !cancelled)
+                U.warn(log, "Sender node left grid in the midst of lock acquisition (locks have been released).");
         }
     }
 
