@@ -40,9 +40,14 @@ public class GridNearTxFinishAndAckFuture extends GridFutureAdapter<IgniteIntern
     }
 
     /** {@inheritDoc} */
-    public void finish(boolean commit) {
+    @Override public boolean commit() {
+        return finishFut.commit();
+    }
+
+    /** {@inheritDoc} */
+    public void finish(boolean commit, boolean clearThreadMap) {
         if (commit) {
-            finishFut.finish(true);
+            finishFut.finish(true, clearThreadMap);
 
             finishFut.listen(new IgniteInClosure<GridNearTxFinishFuture>() {
                 @Override public void apply(final GridNearTxFinishFuture fut) {
@@ -87,7 +92,7 @@ public class GridNearTxFinishAndAckFuture extends GridFutureAdapter<IgniteIntern
             });
         }
         else {
-            finishFut.finish(false);
+            finishFut.finish(false, clearThreadMap);
 
             finishFut.listen(new IgniteInClosure<IgniteInternalFuture>() {
                 @Override public void apply(IgniteInternalFuture fut) {

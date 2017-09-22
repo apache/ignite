@@ -3199,6 +3199,12 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         commitNearTxLocalAsync().get();
     }
 
+    private NearTxFinishFuture commitFuture() {
+        GridNearTxFinishFuture fut = new GridNearTxFinishFuture<>(cctx, this, true);
+
+        return txState.mvccEnabled(cctx) ? new GridNearTxFinishAndAckFuture(fut) : fut;
+    }
+
     /**
      * @return Finish future.
      */
@@ -3217,17 +3223,15 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             if (!FINISH_FUT_UPD.compareAndSet(this, null, fut0 = new GridNearTxFastFinishFuture(this, true)))
                 return chainFinishFuture(finishFut, true);
 
-            fut0.finish();
+            fut0.finish(true, true);
 
             return fut0;
         }
 
-        final GridNearTxFinishFuture fut0;
+        final NearTxFinishFuture fut0;
 
-        if (!FINISH_FUT_UPD.compareAndSet(this, null, fut0 = new GridNearTxFinishFuture<>(cctx, this, true)))
+        if (!FINISH_FUT_UPD.compareAndSet(this, null, fut0 = commitFuture()))
             return chainFinishFuture(finishFut, true);
-
-        cctx.mvcc().addFuture(fut0, fut0.futureId());
 
         final IgniteInternalFuture<?> prepareFut = prepareNearTxLocal();
 
@@ -3299,7 +3303,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             if (!FINISH_FUT_UPD.compareAndSet(this, null, fut0 = new GridNearTxFastFinishFuture(this, false)))
                 return chainFinishFuture(finishFut, false);
 
-            fut0.finish();
+            fut0.finish(false, onTimeout);
 
             return fut0;
         }
@@ -3376,12 +3380,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
                                 assert rollbackFut.isDone() : rollbackFut;
                             }
-                            else {
-                                if (!cctx.mvcc().addFuture(rollbackFut, rollbackFut.futureId()))
-                                    return;
-
+                            else
                                 rollbackFut.finish(false, true);
-                            }
                         }
                     }
                 });

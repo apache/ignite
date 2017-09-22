@@ -51,10 +51,8 @@ public class GridNearTxFastFinishFuture extends GridFutureAdapter<IgniteInternal
         return commit;
     }
 
-    /**
-     *
-     */
-    public void finish() {
+    /** {@inheritDoc} */
+    public void finish(boolean commit, boolean clearThreadMap) {
         try {
             if (commit) {
                 tx.state(PREPARING);

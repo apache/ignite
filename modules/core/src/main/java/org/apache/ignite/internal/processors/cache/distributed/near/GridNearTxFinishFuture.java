@@ -402,15 +402,12 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
             fut.getClass() == CheckRemoteTxMiniFuture.class;
     }
 
-    /**
-     * Initializes future.
-     *
-     * @param commit Commit flag.
-     * @param clearThreadMap If {@code true} removes {@link GridNearTxLocal} from thread map.
-     */
-    @SuppressWarnings("ForLoopReplaceableByForEach")
     /** {@inheritDoc} */
+    @SuppressWarnings("ForLoopReplaceableByForEach")
     public void finish(boolean commit, boolean clearThreadMap) {
+        if (!cctx.mvcc().addFuture(this, futureId()))
+            return;
+
         if (tx.onNeedCheckBackup()) {
             assert tx.onePhaseCommit();
 
