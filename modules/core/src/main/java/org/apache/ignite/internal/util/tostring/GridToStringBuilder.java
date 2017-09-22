@@ -105,6 +105,7 @@ public class GridToStringBuilder {
         }
     };
 
+    /** Contains objects currently printing in the string builder.*/
     private static ThreadLocal<IdentityHashMap<Object, Integer>> savedObjects = new ThreadLocal<IdentityHashMap<Object, Integer>>() {
         @Override protected IdentityHashMap<Object, Integer> initialValue() {
             return new IdentityHashMap<>();
@@ -1026,6 +1027,10 @@ public class GridToStringBuilder {
         }
     }
 
+    /**
+     * @param cls Class to be checked.
+     * @return True - if given class is primitive and is possible to call object's toString().
+     */
     private static boolean isPrimitiveWraper(Class cls) {
         return cls == Byte.class || cls == Short.class || cls == Integer.class || cls == Long.class ||
             cls == Float.class || cls == Double.class  || cls == Boolean.class || cls == Character.class ||
@@ -1703,9 +1708,10 @@ public class GridToStringBuilder {
         if (map.containsKey(obj)) {
             Integer position = map.get(obj);
 
-            if (position == null)
+            if (position == null) {
                 throw new IllegalStateException("Method \"getPosition(Object o)\" must be called " +
                     "only after method isSaved(object) returned true.");
+            }
 
             String hash = '@' + Integer.toHexString(System.identityHashCode(obj));
 
@@ -1733,11 +1739,11 @@ public class GridToStringBuilder {
     private static void incValues(IdentityHashMap<Object, Integer> map, Object obj, int hashLength) {
         Integer baseline = map.get(obj);
 
-        for (IdentityHashMap.Entry<Object, Integer> e : map.entrySet()) {
-            Integer position = e.getValue();
+        for (IdentityHashMap.Entry<Object, Integer> entry : map.entrySet()) {
+            Integer position = entry.getValue();
 
             if (position > baseline)
-                e.setValue(position + hashLength);
+                entry.setValue(position + hashLength);
         }
     }
 }
