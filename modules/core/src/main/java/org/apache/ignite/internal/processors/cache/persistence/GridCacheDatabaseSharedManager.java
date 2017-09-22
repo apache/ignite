@@ -93,7 +93,6 @@ import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PageDeltaRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PartitionDestroyRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PartitionMetaStateRecord;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
@@ -691,66 +690,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         throws IgniteCheckedException {
         if (plcCfg.getPageEvictionMode() != DataPageEvictionMode.DISABLED)
             throw new IgniteCheckedException("Page eviction is not compatible with persistence: " + plcCfg.getName());
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void checkPageSize(MemoryConfiguration memCfg) {
-        if (memCfg.getPageSize() == 0) {
-            try {
-                assert cctx.pageStore() instanceof FilePageStoreManager :
-                    "Invalid page store manager was created: " + cctx.pageStore();
-
-                Path anyIdxPartFile = IgniteUtils.searchFileRecursively(
-                    ((FilePageStoreManager)cctx.pageStore()).workDir().toPath(), FilePageStoreManager.INDEX_FILE_NAME);
-
-                if (anyIdxPartFile != null) {
-                    memCfg.setPageSize(resolvePageSizeFromPartitionFile(anyIdxPartFile));
-
-                    return;
-                }
-            }
-            catch (IgniteCheckedException | IOException | IllegalArgumentException e) {
-                U.quietAndWarn(log, "Attempt to resolve pageSize from store files failed: " + e.getMessage());
-
-                U.quietAndWarn(log, "Default page size will be used: " + MemoryConfiguration.DFLT_PAGE_SIZE + " bytes");
-            }
-
-            memCfg.setPageSize(MemoryConfiguration.DFLT_PAGE_SIZE);
-        }
-    }
-
-    /**
-     * @param partFile Partition file.
-     */
-    private int resolvePageSizeFromPartitionFile(Path partFile) throws IOException, IgniteCheckedException {
-        try (FileIO fileIO = persistenceCfg.getFileIOFactory().create(partFile.toFile())) {
-            int minimalHdr = FilePageStore.HEADER_SIZE;
-
-            if (fileIO.size() < minimalHdr)
-                throw new IgniteCheckedException("Partition file is too small: " + partFile);
-
-            ByteBuffer hdr = ByteBuffer.allocate(minimalHdr).order(ByteOrder.LITTLE_ENDIAN);
-
-            while (hdr.remaining() > 0)
-                fileIO.read(hdr);
-
-            hdr.rewind();
-
-            hdr.getLong(); // Read signature.
-
-            hdr.getInt(); // Read version.
-
-            hdr.get(); // Read type.
-
-            int pageSize = hdr.getInt();
-
-            if (pageSize == 2048) {
-                U.quietAndWarn(log, "You are currently using persistent store with 2K pages (MemoryConfiguration#" +
-                    "pageSize). If you use SSD disk, consider migrating to 4K pages for better IO performance.");
-            }
-
-            return pageSize;
-        }
     }
 
     /**
