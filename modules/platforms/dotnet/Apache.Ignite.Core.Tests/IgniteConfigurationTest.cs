@@ -195,6 +195,8 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(cfg.UtilityCacheThreadPoolSize, resCfg.UtilityCacheThreadPoolSize);
                 Assert.AreEqual(cfg.QueryThreadPoolSize, resCfg.QueryThreadPoolSize);
 
+                Assert.AreEqual(cfg.ConsistentId, resCfg.ConsistentId);
+
                 var binCfg = cfg.BinaryConfiguration;
                 Assert.IsFalse(binCfg.CompactFooter);
 
@@ -636,7 +638,7 @@ namespace Apache.Ignite.Core.Tests
                     JoinTimeout = TimeSpan.FromSeconds(5),
                     IpFinder = new TcpDiscoveryStaticIpFinder
                     {
-                        Endpoints = new[] { "127.0.0.1:49900", "127.0.0.1:49901" }
+                        Endpoints = new[] {"127.0.0.1:49900", "127.0.0.1:49901"}
                     },
                     ClientReconnectDisabled = true,
                     ForceServerMode = true,
@@ -718,7 +720,7 @@ namespace Apache.Ignite.Core.Tests
                     }
                 },
                 // Skip cache check because with persistence the grid is not active by default.
-                PluginConfigurations = new[] { new TestIgnitePluginConfiguration{ SkipCacheCheck = true } },
+                PluginConfigurations = new[] {new TestIgnitePluginConfiguration {SkipCacheCheck = true}},
                 EventStorageSpi = new MemoryEventStorageSpi
                 {
                     ExpirationTimeout = TimeSpan.FromSeconds(5),
@@ -754,7 +756,7 @@ namespace Apache.Ignite.Core.Tests
                             EmptyPagesPoolSize = 66,
                             SwapFilePath = "somePath2",
                             MetricsEnabled = true
-                        } 
+                        }
                     }
                 },
                 PublicThreadPoolSize = 3,
@@ -798,8 +800,42 @@ namespace Apache.Ignite.Core.Tests
                     MetricsEnabled = true,
                     SubIntervals = 7,
                     RateTimeInterval = TimeSpan.FromSeconds(9)
-                }
+                },
+                ConsistentId = new MyConsistentId {Data = "abc"}
             };
+        }
+
+        private class MyConsistentId
+        {
+            public string Data { get; set; }
+
+            private bool Equals(MyConsistentId other)
+            {
+                return string.Equals(Data, other.Data);
+            }
+
+            public override bool Equals(object obj)
+            {
+                if (ReferenceEquals(null, obj)) return false;
+                if (ReferenceEquals(this, obj)) return true;
+                if (obj.GetType() != this.GetType()) return false;
+                return Equals((MyConsistentId) obj);
+            }
+
+            public override int GetHashCode()
+            {
+                return (Data != null ? Data.GetHashCode() : 0);
+            }
+
+            public static bool operator ==(MyConsistentId left, MyConsistentId right)
+            {
+                return Equals(left, right);
+            }
+
+            public static bool operator !=(MyConsistentId left, MyConsistentId right)
+            {
+                return !Equals(left, right);
+            }
         }
     }
 }
