@@ -1484,6 +1484,11 @@
                         </xs:sequence>
                     </xs:complexType>
                 </xs:element>
+                <xs:element name="consistentId" minOccurs="0">
+                    <xs:annotation>
+                        <xs:documentation>Consistent globally unique node identifier which survives node restarts.</xs:documentation>
+                    </xs:annotation>
+                </xs:element>
             </xs:all>
             <xs:attribute name="igniteInstanceName" type="xs:string">
                 <xs:annotation>
@@ -1703,11 +1708,6 @@
             <xs:attribute name="clientConnectorConfigurationEnabled" type="xs:boolean">
                 <xs:annotation>
                     <xs:documentation>Whether client connector should be enabled (allow thin clients, ODBC and JDBC drivers to work with Ignite).</xs:documentation>
-                </xs:annotation>
-            </xs:attribute>
-            <xs:attribute name="consistentId">
-                <xs:annotation>
-                    <xs:documentation>Consistent globally unique node identifier which survives node restarts.</xs:documentation>
                 </xs:annotation>
             </xs:attribute>
         </xs:complexType>
