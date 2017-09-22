@@ -73,9 +73,14 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
         list2.add(list1);
         list1.add(list2);
 
-
-        GridToStringBuilder.toString(ArrayList.class, list1);
-        GridToStringBuilder.toString(ArrayList.class, list2);
+        try {
+            assertTrue("Wrong toString behaviour",
+                GridToStringBuilder.toString(ArrayList.class, list1).length() == 18);
+            assertTrue("Wrong toString behaviour",
+                GridToStringBuilder.toString(ArrayList.class, list2).length() == 18);
+        } catch (StackOverflowError e) {
+            fail("Recursion happened.");
+        }
     }
 
     /**
@@ -88,8 +93,14 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
         list2.add(list1);
         list1.add(list2);
 
-        GridToStringBuilder.toString(ArrayList.class, list1, "name", list2);
-        GridToStringBuilder.toString(ArrayList.class, list2, "name", list1);
+        try {
+            assertTrue("Wrong toString behaviour",
+                GridToStringBuilder.toString(ArrayList.class, list1, "name", list2).length() == 43);
+            assertTrue("Wrong toString behaviour",
+                GridToStringBuilder.toString(ArrayList.class, list2, "name", list1).length() == 43);
+        } catch (StackOverflowError e) {
+            fail("Recursion happened.");
+        }
     }
 
     /**
@@ -111,10 +122,18 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
         n3.next = n4;
         n4.next = n3;
 
-        System.out.println(n1);
-        System.out.println(n2);
-        System.out.println(n3);
-        System.out.println(n4);
+        try {
+            assertTrue("Wrong toString behaviour",
+                n1.toString().length() == 106);
+            assertTrue("Wrong toString behaviour",
+                n2.toString().length() == 85);
+            assertTrue("Wrong toString behaviour",
+                n3.toString().length() == 64);
+            assertTrue("Wrong toString behaviour",
+                n4.toString().length() == 64);
+        } catch (StackOverflowError e) {
+            fail("Recursion happened.");
+        }
     }
 
     /** */
