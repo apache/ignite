@@ -61,6 +61,14 @@ public class KeyCacheObjectImpl extends CacheObjectAdapter implements KeyCacheOb
     }
 
     /** {@inheritDoc} */
+    @Override public KeyCacheObject copy(int part) {
+        if (this.part == part)
+            return this;
+
+        return new KeyCacheObjectImpl(val, valBytes, part);
+    }
+
+    /** {@inheritDoc} */
     @Override public int partition() {
         return part;
     }

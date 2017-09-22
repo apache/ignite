@@ -20,7 +20,7 @@ include ../../../../../app/helpers/jade/mixins.jade
 -var model = 'backupItem'
 
 //- Mixin for DB dialect.
-mixin dialect(lbl, model, name, tipTitle, genericDialectName, placeholder)
+mixin dialect(lbl, model, name, required, tipTitle, genericDialectName, placeholder)
     ignite-form-field
         ignite-form-field-label
             | #{lbl}
@@ -46,7 +46,7 @@ mixin dialect(lbl, model, name, tipTitle, genericDialectName, placeholder)
                 {value: "H2", label: "H2 database"}\
             ]'
             data-ng-model=model
-            data-ng-required='true'
+            data-ng-required=required
             data-placeholder=placeholder
         )
 
@@ -60,15 +60,15 @@ mixin hibernateField(items, field, valid, save, newItem)
     -var onBlur = valid + ' && ( ' + save + '); ' + resetOnBlur + ';'
 
     ignite-form-field-input-text(
-        data-name=field
+        data-name='#{field}{{ $index || "" }}'
         data-ng-model=field
         data-ng-required='true'
         data-placeholder='key=value'
         data-ignite-property-unique=items
         data-ignite-property-value-specified
         data-ignite-form-field-input-autofocus='true'
-        on-enter=onEnter
-        on-escape=reset
+        ignite-on-enter=onEnter
+        ignite-on-escape=reset
         ng-blur=onBlur
     )
         block
@@ -96,22 +96,23 @@ form.panel.panel-default(name=form novalidate)
                         ]',
                         'Factory for persistent storage for cache data'
                     )
-                    span(ng-if=storeFactoryKind ng-init='__.expanded = true')
+                    span(ng-show=storeFactoryKind ng-init='__.expanded = true')
                         a.customize(ng-show='__.expanded' ng-click='__.expanded = false') Hide settings
                         a.customize(ng-hide='__.expanded' ng-click='__.expanded = true') Show settings
-                        .panel-details(ng-if='__.expanded')
-                            div(ng-if='#{storeFactoryKind} === "CacheJdbcPojoStoreFactory"')
+                        .panel-details(ng-show='__.expanded')
+                            div(ng-show='#{storeFactoryKind} === "CacheJdbcPojoStoreFactory"')
                                 -var pojoStoreFactory = storeFactory + '.CacheJdbcPojoStoreFactory'
+                                -var required = storeFactoryKind + ' === "CacheJdbcPojoStoreFactory"'
 
                                 .details-row
                                     +text('Data source bean name:', pojoStoreFactory + '.dataSourceBean',
-                                        'pojoDataSourceBean', 'true', 'Input bean name',
+                                        'pojoDataSourceBean', required, 'Input bean name',
                                         'Name of the data source bean in Spring context')
                                 .details-row
-                                    +dialect('Dialect:', pojoStoreFactory + '.dialect', 'pojoDialect',
+                                    +dialect('Dialect:', pojoStoreFactory + '.dialect', 'pojoDialect', required,
                                         'Dialect of SQL implemented by a particular RDBMS:', 'Generic JDBC dialect',
                                         'Choose JDBC dialect')
-                            div(ng-if='#{storeFactoryKind} === "CacheJdbcBlobStoreFactory"')
+                            div(ng-show='#{storeFactoryKind} === "CacheJdbcBlobStoreFactory"')
                                 -var blobStoreFactory = storeFactory + '.CacheJdbcBlobStoreFactory'
                                 -var blobStoreFactoryVia = blobStoreFactory + '.connectVia'
 
@@ -126,20 +127,24 @@ form.panel.panel-default(name=form novalidate)
                                             <li>JDBC URL, for example: jdbc:h2:mem:myDatabase</li>\
                                             <li>Configured data source</li>\
                                         </ul>')
-                                div(ng-if='#{blobStoreFactoryVia} === "URL"')
+                                div(ng-show='#{blobStoreFactoryVia} === "URL"')
+                                    -var required = storeFactoryKind + ' === "CacheJdbcBlobStoreFactory" && ' + blobStoreFactoryVia + ' === "URL"'
+
                                     .details-row
-                                        +text('Connection URL:', blobStoreFactory + '.connectionUrl', 'connectionUrl', 'true', 'Input URL',
+                                        +text('Connection URL:', blobStoreFactory + '.connectionUrl', 'connectionUrl', required, 'Input URL',
                                             'URL for database access, for example: jdbc:h2:mem:myDatabase')
                                     .details-row
-                                        +text('User:', blobStoreFactory + '.user', 'user', 'true', 'Input user name', 'User name for database access')
+                                        +text('User:', blobStoreFactory + '.user', 'user', required, 'Input user name', 'User name for database access')
                                     .details-row
                                         label Note, password will be generated as stub
-                                div(ng-if='#{blobStoreFactoryVia} !== "URL"')
+                                div(ng-show='#{blobStoreFactoryVia} !== "URL"')
+                                    -var required = storeFactoryKind + ' === "CacheJdbcBlobStoreFactory" && ' + blobStoreFactoryVia + '!== "URL"'
+
                                     .details-row
-                                        +text('Data source bean name:', blobStoreFactory + '.dataSourceBean', 'blobDataSourceBean', 'true', 'Input bean name',
+                                        +text('Data source bean name:', blobStoreFactory + '.dataSourceBean', 'blobDataSourceBean', required, 'Input bean name',
                                             'Name of the data source bean in Spring context')
                                     .details-row
-                                        +dialect('Database:', blobStoreFactory + '.dialect', 'blobDialect', 'Supported databases:', 'Generic database', 'Choose database')
+                                        +dialect('Database:', blobStoreFactory + '.dialect', 'blobDialect', required, 'Supported databases:', 'Generic database', 'Choose database')
                                 .details-row
                                     +checkbox('Init schema', blobStoreFactory + '.initSchema', 'initSchema',
                                         'Flag indicating whether DB schema should be initialized by Ignite (default behaviour) or was explicitly created by user')
@@ -164,7 +169,7 @@ form.panel.panel-default(name=form novalidate)
                                         'Query for delete entry from underlying database<br/>\
                                         Default value: delete from ENTRIES where key=?')
 
-                            div(ng-if='#{storeFactoryKind} === "CacheHibernateBlobStoreFactory"')
+                            div(ng-show='#{storeFactoryKind} === "CacheHibernateBlobStoreFactory"')
                                 -var hibernateStoreFactory = storeFactory + '.CacheHibernateBlobStoreFactory'
                                 -var hibernateProperties = hibernateStoreFactory + '.hibernateProperties'
 

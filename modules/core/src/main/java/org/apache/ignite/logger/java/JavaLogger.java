@@ -113,6 +113,9 @@ public class JavaLogger implements IgniteLogger, LoggerNodeIdAware {
     /** Quiet flag. */
     private final boolean quiet;
 
+    /** Work directory. */
+    private volatile String workDir;
+
     /** Node ID. */
     private volatile UUID nodeId;
 
@@ -340,6 +343,15 @@ public class JavaLogger implements IgniteLogger, LoggerNodeIdAware {
         }
     }
 
+    /**
+     * Set work directory.
+     *
+     * @param workDir Work directory.
+     */
+    public void setWorkDirectory(String workDir) {
+        this.workDir = workDir;
+    }
+
     /** {@inheritDoc} */
     @Override public void setNodeId(UUID nodeId) {
         A.notNull(nodeId, "nodeId");
@@ -361,7 +373,7 @@ public class JavaLogger implements IgniteLogger, LoggerNodeIdAware {
             return;
 
         try {
-            fileHnd.nodeId(nodeId);
+            fileHnd.nodeId(nodeId, workDir);
         }
         catch (IgniteCheckedException | IOException e) {
             throw new RuntimeException("Failed to enable file handler.", e);

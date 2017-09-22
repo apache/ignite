@@ -26,7 +26,7 @@ import java.io.ObjectStreamException;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
@@ -49,6 +49,15 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatchEx, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** Internal latch is in unitialized state. */
+    private static final int UNINITIALIZED_LATCH_STATE = 0;
+
+    /** Internal latch is being created. */
+    private static final int CREATING_LATCH_STATE = 1;
+
+    /** Internal latch is ready for the usage. */
+    private static final int READY_LATCH_STATE = 2;
 
     /** Deserialization stash. */
     private static final ThreadLocal<IgniteBiTuple<GridKernalContext, String>> stash =
@@ -83,13 +92,16 @@ public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatc
     private boolean autoDel;
 
     /** Internal latch (transient). */
-    private volatile CountDownLatch internalLatch;
+    private CountDownLatch internalLatch;
 
     /** Initialization guard. */
-    private final AtomicBoolean initGuard = new AtomicBoolean();
+    private final AtomicInteger initGuard = new AtomicInteger();
 
     /** Initialization latch. */
     private final CountDownLatch initLatch = new CountDownLatch(1);
+
+    /** Latest latch value that is used at the stage while the internal latch is being initialized. */
+    private Integer lastLatchVal = null;
 
     /**
      * Empty constructor required by {@link Externalizable}.
@@ -236,15 +248,36 @@ public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatc
     @Override public void onUpdate(int cnt) {
         assert cnt >= 0;
 
-        while (internalLatch != null && internalLatch.getCount() > cnt)
-            internalLatch.countDown();
+        CountDownLatch latch0;
+
+        synchronized (initGuard) {
+            int state = initGuard.get();
+
+            if (state != READY_LATCH_STATE) {
+                /** Internal latch is not fully initialized yet. Remember latest latch value. */
+                lastLatchVal = cnt;
+
+                return;
+            }
+
+            /** 'synchronized' statement guarantees visibility of internalLatch. No need to make it volatile. */
+            latch0 = internalLatch;
+        }
+
+        /** Internal latch is fully initialized and ready for the usage. */
+
+        assert latch0 != null;
+
+        while (latch0.getCount() > cnt)
+            latch0.countDown();
+
     }
 
     /**
      * @throws IgniteCheckedException If operation failed.
      */
     private void initializeLatch() throws IgniteCheckedException {
-        if (initGuard.compareAndSet(false, true)) {
+        if (initGuard.compareAndSet(UNINITIALIZED_LATCH_STATE, CREATING_LATCH_STATE)) {
             try {
                 internalLatch = CU.outTx(
                     retryTopologySafe(new Callable<CountDownLatch>() {
@@ -267,6 +300,15 @@ public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatc
                     }),
                     ctx
                 );
+
+                synchronized (initGuard) {
+                    if (lastLatchVal != null) {
+                        while (internalLatch.getCount() > lastLatchVal)
+                            internalLatch.countDown();
+                    }
+
+                    initGuard.set(READY_LATCH_STATE);
+                }
 
                 if (log.isDebugEnabled())
                     log.debug("Initialized internal latch: " + internalLatch);

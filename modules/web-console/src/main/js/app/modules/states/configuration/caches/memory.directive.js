@@ -15,13 +15,13 @@
  * limitations under the License.
  */
 
-import template from './memory.jade!';
+import templateUrl from './memory.jade';
 
 export default ['igniteConfigurationCachesMemory', [() => {
     return {
         scope: true,
         restrict: 'E',
-        template,
+        templateUrl,
         replace: true
     };
 }]];

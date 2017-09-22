@@ -106,7 +106,7 @@ public class DbMetadataParserTest extends AbstractSchemaImportTest {
      *
      * @param type Type to check.
      */
-    public void checkSchemaHasFullDbName(PojoDescriptor type) {
+    private void checkSchemaHasFullDbName(PojoDescriptor type) {
         assertNotNull("The DB schema should have a non-null fullDbName", type.fullDbName());
     }
 
@@ -114,9 +114,9 @@ public class DbMetadataParserTest extends AbstractSchemaImportTest {
      * Test that metadata generated correctly.
      */
     public void testCheckMetadata() {
-        assertEquals("Metadata should contain 5 elements", 5, pojos.size());
+        assertEquals("Metadata should contain 5 elements", 5, all.size());
 
-        Iterator<PojoDescriptor> it = pojos.iterator();
+        Iterator<PojoDescriptor> it = all.iterator();
 
         PojoDescriptor schema = it.next();
 

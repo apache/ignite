@@ -46,6 +46,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashSet;
 import org.apache.ignite.internal.util.GridConcurrentFactory;
+import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -107,6 +108,9 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     /** Pending atomic futures. */
     private final ConcurrentMap<GridCacheVersion, GridCacheAtomicFuture<?>> atomicFuts =
         new ConcurrentHashMap8<>();
+
+    /** Pending data streamer futures. */
+    private final GridConcurrentHashSet<DataStreamerFuture> dataStreamerFuts = new GridConcurrentHashSet<>();
 
     /** */
     private final ConcurrentMap<IgniteUuid, GridCacheFuture<?>> futs = new ConcurrentHashMap8<>();
@@ -446,6 +450,13 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
+     * @return Collection of pending data streamer futures.
+     */
+    public Collection<DataStreamerFuture> dataStreamerFutures() {
+        return dataStreamerFuts;
+    }
+
+    /**
      * Gets future by given future ID.
      *
      * @param futVer Future ID.
@@ -474,6 +485,21 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
 
         onFutureAdded(fut);
     }
+
+    /**
+     * @param topVer Topology version.
+     */
+    public GridFutureAdapter addDataStreamerFuture(AffinityTopologyVersion topVer) {
+        final DataStreamerFuture fut = new DataStreamerFuture(topVer);
+
+        boolean add = dataStreamerFuts.add(fut);
+
+        assert add;
+
+        return fut;
+    }
+
+    /**
 
     /**
      * Adds future.
@@ -1056,6 +1082,22 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
+     *
+     * @return Finish update future.
+     */
+    @SuppressWarnings("unchecked")
+    public IgniteInternalFuture<?> finishDataStreamerUpdates() {
+        GridCompoundFuture<Object, Object> res = new GridCompoundFuture<>();
+
+        for (IgniteInternalFuture fut : dataStreamerFuts)
+            res.add(fut);
+
+        res.markInitialized();
+
+        return res;
+    }
+
+    /**
      * @param keys Key for which locks should be released.
      * @param cacheId Cache ID.
      * @param topVer Topology version.
@@ -1292,6 +1334,41 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
 
             return ClusterTopologyCheckedException.class.isAssignableFrom(cls) ||
                 CachePartialUpdateCheckedException.class.isAssignableFrom(cls);
+        }
+    }
+
+    /**
+     *
+     */
+    private class DataStreamerFuture extends GridFutureAdapter<Void> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** Topology version. Instance field for toString method only. */
+        @GridToStringInclude
+        private final AffinityTopologyVersion topVer;
+
+        /**
+         * @param topVer Topology version.
+         */
+        DataStreamerFuture(AffinityTopologyVersion topVer) {
+            this.topVer = topVer;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean onDone(@Nullable Void res, @Nullable Throwable err) {
+            if (super.onDone(res, err)) {
+                dataStreamerFuts.remove(this);
+
+                return true;
+            }
+
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(DataStreamerFuture.class, this, super.toString());
         }
     }
 }

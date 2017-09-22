@@ -351,41 +351,37 @@ public abstract class GridH2AbstractKeyValueRow extends GridH2Row {
 
     /** {@inheritDoc} */
     @Override public void setKeyAndVersion(SearchRow old) {
-        assert false;
+        throw new IllegalStateException();
     }
 
     /** {@inheritDoc} */
     @Override public void setKey(long key) {
-        assert false;
+        throw new IllegalStateException();
     }
 
     /** {@inheritDoc} */
     @Override public Row getCopy() {
-        assert false;
-
-        return null;
+        throw new IllegalStateException();
     }
 
     /** {@inheritDoc} */
     @Override public void setDeleted(boolean deleted) {
-        assert false;
+        throw new IllegalStateException();
     }
 
     /** {@inheritDoc} */
     @Override public long getKey() {
-        assert false;
-
-        return 0;
+        throw new IllegalStateException();
     }
 
     /** {@inheritDoc} */
     @Override public void setSessionId(int sesId) {
-        assert false;
+        throw new IllegalStateException();
     }
 
     /** {@inheritDoc} */
     @Override public void setVersion(int ver) {
-        assert false;
+        throw new IllegalStateException();
     }
 
     /**
@@ -468,5 +464,10 @@ public abstract class GridH2AbstractKeyValueRow extends GridH2Row {
         @Override public boolean equals(Object o) {
             throw new IllegalStateException();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public final int hashCode() {
+        throw new IllegalStateException();
     }
 }

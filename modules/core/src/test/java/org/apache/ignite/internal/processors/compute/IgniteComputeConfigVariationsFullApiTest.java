@@ -361,16 +361,18 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
     public void testApplyForCollection() throws Exception {
         runTest(closureFactories, new ComputeTest() {
             @Override public void test(Factory factory, Ignite ignite) throws Exception {
-                Collection<TestObject> params = new ArrayList<>(MAX_JOB_COUNT);
+                Collection params = new ArrayList<>(MAX_JOB_COUNT);
 
                 for (int i = 0; i < MAX_JOB_COUNT; ++i) {
                     // value(i - 1): use negative argument of the value method to generate nullong value.
-                    // Use type casting to avoid ambiguous for apply(Callable, Object) vs apply(Callable, Collection<Object>).
-                    params.add((TestObject)value(i - 1));
+                    params.add(value(i - 1));
                 }
 
-                Collection<Object> results = ignite.compute()
-                    .apply((IgniteClosure<TestObject, Object>)factory.create(), params);
+                IgniteClosure c = (IgniteClosure)factory.create();
+
+                // Use type casting to avoid ambiguous for apply(Callable, Object) vs apply(Callable, Collection<Object>).
+                Collection<Object> results = ignite.compute().apply((IgniteClosure<TestObject, Object>)c,
+                    (Collection<TestObject>)params);
 
                 checkResultsClassCount(MAX_JOB_COUNT - 1, results, value(0).getClass());
                 assertCollectionsEquals("Results value mismatch", createGoldenResults(), results);

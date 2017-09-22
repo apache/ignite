@@ -742,6 +742,21 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     *
+     */
+    public void testToSocketAddressesNoDuplicates() {
+        Collection<String> addrs = new ArrayList<>();
+
+        addrs.add("127.0.0.1");
+        addrs.add("localhost");
+
+        Collection<String> hostNames = new ArrayList<>();
+        int port = 1234;
+
+        assertEquals(1, U.toSocketAddresses(addrs, hostNames, port).size());
+    }
+
+    /**
      * Test enum.
      */
     private enum TestEnum {

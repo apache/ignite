@@ -20,11 +20,12 @@ package org.apache.ignite.plugin.security;
 import java.io.Serializable;
 import java.net.InetSocketAddress;
 import java.util.UUID;
+import org.apache.ignite.internal.LessNamingBean;
 
 /**
  * Security subject representing authenticated node with a set of permissions.
  */
-public interface SecuritySubject extends Serializable {
+public interface SecuritySubject extends Serializable, LessNamingBean {
     /**
      * Gets subject ID.
      *

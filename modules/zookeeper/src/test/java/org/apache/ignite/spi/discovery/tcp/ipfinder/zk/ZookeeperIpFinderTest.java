@@ -122,6 +122,7 @@ public class ZookeeperIpFinderTest extends GridCommonAbstractTest {
         // shall be configured through system property
         if (gridName.equals(getTestGridName(0)))
             zkIpFinder.setZkConnectionString(zkCluster.getConnectString());
+
         else if (gridName.equals(getTestGridName(1))) {
             zkIpFinder.setCurator(CuratorFrameworkFactory.newClient(zkCluster.getConnectString(),
                 new ExponentialBackoffRetry(100, 5)));
@@ -360,23 +361,16 @@ public class ZookeeperIpFinderTest extends GridCommonAbstractTest {
         // stop all grids
         stopAllGrids();
 
-        boolean wait = GridTestUtils.waitForCondition(new GridAbsPredicate() {
+        assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
                 try {
-                    return zkCurator.getChildren().forPath(SERVICES_IGNITE_ZK_PATH).size() == 0;
+                    return 0 == zkCurator.getChildren().forPath(SERVICES_IGNITE_ZK_PATH).size();
                 }
                 catch (Exception e) {
-                    fail("Unexpected error: ");
-
-                    return true;
+                    return false;
                 }
             }
-        }, 2 * 60000);
-
-        assertTrue(wait);
-
-        // check that all nodes are gone in ZK
-        assertEquals(0, zkCurator.getChildren().forPath(SERVICES_IGNITE_ZK_PATH).size());
+        }, 20000));
     }
 
     /**

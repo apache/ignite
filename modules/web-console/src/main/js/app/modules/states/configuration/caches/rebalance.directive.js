@@ -15,13 +15,13 @@
  * limitations under the License.
  */
 
-import template from './rebalance.jade!';
+import templateUrl from './rebalance.jade';
 
 export default ['igniteConfigurationCachesRebalance', [() => {
     return {
         scope: true,
         restrict: 'E',
-        template,
+        templateUrl,
         replace: true
     };
 }]];

@@ -157,7 +157,6 @@ public class GridClientConfiguration {
         tcpNoDelay = cfg.isTcpNoDelay();
         topRefreshFreq = cfg.getTopologyRefreshFrequency();
         daemon = cfg.isDaemon();
-        marshaller = cfg.getMarshaller();
 
         setDataConfigurations(cfg.getDataConfigurations());
     }

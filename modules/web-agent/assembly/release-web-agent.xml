@@ -42,7 +42,6 @@
         <fileSet>
             <directory>${basedir}/bin</directory>
             <outputDirectory>/</outputDirectory>
-            <filtered>true</filtered>
             <includes>
                 <include>**/*.bat</include>
             </includes>
@@ -50,7 +49,6 @@
         <fileSet>
             <directory>${basedir}/bin</directory>
             <outputDirectory>/</outputDirectory>
-            <filtered>true</filtered>
             <fileMode>0755</fileMode>
             <includes>
                 <include>**/*.sh</include>

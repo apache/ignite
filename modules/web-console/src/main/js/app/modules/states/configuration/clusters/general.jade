@@ -30,9 +30,7 @@ form.panel.panel-default(name=form novalidate)
                 .settings-row
                     +text('Name:', model + '.name', 'clusterName', 'true', 'Input name', 'Grid name')
                 .settings-row
-                    +dropdown-multiple('<span>Caches:</span><a ui-sref="base.configuration.caches({id: ' + model + '._id})"> (add)</a>',
-                        model + '.caches', 'caches', 'true', 'Choose caches', 'No caches configured', 'caches',
-                        'Select caches to start in cluster or add a new cache')
+                    +caches(model, 'Select caches to start in cluster or add a new cache')
                 .settings-row
                     +text-ip-address('Local host:', model + '.localHost', 'localHost', 'true', '0.0.0.0', 'System-wide local address or host for all Ignite components to bind to')
                 .settings-row
@@ -51,20 +49,20 @@ form.panel.panel-default(name=form novalidate)
                 .settings-row
                     .panel-details
                         ignite-configuration-clusters-general-discovery-cloud(
-                            ng-if='#{model}.discovery.kind === "Cloud"')
+                            ng-show='#{model}.discovery.kind === "Cloud"')
                         ignite-configuration-clusters-general-discovery-google(
-                            ng-if='#{model}.discovery.kind === "GoogleStorage"')
+                            ng-show='#{model}.discovery.kind === "GoogleStorage"')
                         ignite-configuration-clusters-general-discovery-jdbc(
-                            ng-if='#{model}.discovery.kind === "Jdbc"')
+                            ng-show='#{model}.discovery.kind === "Jdbc"')
                         ignite-configuration-clusters-general-discovery-multicast(
-                            ng-if='#{model}.discovery.kind === "Multicast"')
+                            ng-show='#{model}.discovery.kind === "Multicast"')
                         ignite-configuration-clusters-general-discovery-s3(
-                            ng-if='#{model}.discovery.kind === "S3"')
+                            ng-show='#{model}.discovery.kind === "S3"')
                         ignite-configuration-clusters-general-discovery-shared(
-                            ng-if='#{model}.discovery.kind === "SharedFs"')
+                            ng-show='#{model}.discovery.kind === "SharedFs"')
                         ignite-configuration-clusters-general-discovery-vm(
-                            ng-if='#{model}.discovery.kind === "Vm"')
+                            ng-show='#{model}.discovery.kind === "Vm"')
                         ignite-configuration-clusters-general-discovery-zookeeper(
-                            ng-if='#{model}.discovery.kind === "ZooKeeper"')
+                            ng-show='#{model}.discovery.kind === "ZooKeeper"')
             .col-sm-6
                 +preview-xml-java(model, 'clusterCaches', 'caches')

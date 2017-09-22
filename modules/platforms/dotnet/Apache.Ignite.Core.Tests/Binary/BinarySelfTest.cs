@@ -1230,8 +1230,7 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             if (detached)
             {
-                var reader = new BinaryReader(marsh, new Dictionary<long, IBinaryTypeDescriptor>(),
-                    new BinaryHeapStream(bytes), BinaryMode.ForceBinary, null);
+                var reader = new BinaryReader(marsh, new BinaryHeapStream(bytes), BinaryMode.ForceBinary, null);
 
                 reader.DetachNext();
 

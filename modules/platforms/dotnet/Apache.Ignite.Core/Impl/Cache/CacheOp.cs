@@ -61,6 +61,22 @@ namespace Apache.Ignite.Core.Impl.Cache
         Replace2 = 37,
         Replace3 = 38,
         GetConfig = 39,
-        LoadAll = 40
+        LoadAll = 40,
+        ClearCache = 41,
+        WithAsync = 42,
+        RemoveAll2 = 43,
+        WithKeepBinary = 44,
+        WithExpiryPolicy = 45,
+        WithNoRetries = 46,
+        WithSkipStore = 47,
+        Size = 48,
+        Iterator = 49,
+        LocIterator = 50,
+        EnterLock = 51,
+        ExitLock = 52,
+        TryEnterLock = 53,
+        CloseLock = 54,
+        Rebalance = 55,
+        SizeLoc = 56
     }
 }

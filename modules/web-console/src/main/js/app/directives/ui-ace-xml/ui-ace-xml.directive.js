@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import template from './ui-ace-xml.jade!';
+import templateUrl from './ui-ace-xml.jade';
 import controller from './ui-ace-xml.controller';
 
 export default ['igniteUiAceXml', ['GeneratorXml', (generator) => {
@@ -95,9 +95,9 @@ export default ['igniteUiAceXml', ['GeneratorXml', (generator) => {
             }
         }
 
-        if (typeof attrs.clusterCfg !== 'undefined') {
+        if (!_.isUndefined(attrs.clusterCfg)) {
             scope.$watch('cfg', (cfg) => {
-                if (typeof cfg !== 'undefined')
+                if (!_.isUndefined(cfg))
                     return;
 
                 scope.cfg = {};
@@ -125,7 +125,7 @@ export default ['igniteUiAceXml', ['GeneratorXml', (generator) => {
             data: '=?ngModel'
         },
         link,
-        template,
+        templateUrl,
         controller,
         controllerAs: 'ctrl',
         require: ['igniteUiAceXml', '?^igniteUiAceTabs', '?^form', '?ngModel']

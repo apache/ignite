@@ -32,8 +32,9 @@ using namespace ignite::odbc;
 
 std::string GetStrColumnValue(size_t rowIdx)
 {
-    std::stringstream generator("Column 2 test string, row num: ");
-    generator << rowIdx << ". Some trailing bytes";
+    std::stringstream generator;
+    generator << "Column 2 test string, row num: "
+              << rowIdx << ". Some trailing bytes";
 
     return generator.str();
 }
@@ -81,7 +82,7 @@ void CheckRowData(Row& row, size_t rowIdx)
     char strBuf[1024];
     SQLGUID guidBuf;
     char bitBuf;
-    size_t* offset = 0;
+    int* offset = 0;
 
     ApplicationDataBuffer appLongBuf(type_traits::IGNITE_ODBC_C_TYPE_SIGNED_LONG, &longBuf, sizeof(longBuf), &reslen, &offset);
     ApplicationDataBuffer appStrBuf(type_traits::IGNITE_ODBC_C_TYPE_CHAR, &strBuf, sizeof(strBuf), &reslen, &offset);

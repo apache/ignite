@@ -37,11 +37,11 @@ header#header.header
                     .settings-row
                         label.col-sm-1.required Password:
                         .col-sm-3
-                            input#user_password.form-control(enter-focus-next='user_confirm' type='password' ng-model='reset_info.password' placeholder='New password' required)
+                            input#user_password.form-control(ignite-on-enter-focus-move='user_confirm' type='password' ng-model='reset_info.password' placeholder='New password' required)
                     .settings-row
                         label.col-sm-1.required Confirm:
                         .col-sm-3
-                            input#user_confirm.form-control(type='password' ng-model='reset_info.confirm' match='reset_info.password' placeholder='Confirm new password' required on-enter='resetForm.$valid && resetPassword(user_info)')
+                            input#user_confirm.form-control(type='password' ng-model='reset_info.confirm' ignite-match='reset_info.password' placeholder='Confirm new password' required ignite-on-enter='resetForm.$valid && resetPassword(user_info)')
                     .settings-row
                         button.btn.btn-primary(ng-disabled='resetForm.$invalid' ng-click='resetPassword(reset_info)') Reset Password
 

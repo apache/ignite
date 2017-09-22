@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-export default ['$loading', ['$timeout', ($timeout) => {
+export default ['IgniteLoading', ['$timeout', ($timeout) => {
     const _overlays = {};
 
     const start = (key) => {

@@ -35,7 +35,7 @@
  * Common macro to read an array.
  */
 #define IGNITE_INTEROP_IN_READ_ARRAY(len, shift) { \
-    CopyAndShift(reinterpret_cast<int8_t*>(res), 0, len << shift); \
+    CopyAndShift(reinterpret_cast<int8_t*>(res), 0, ((len) << (shift))); \
 }
 
 namespace ignite
@@ -196,12 +196,12 @@ namespace ignite
 
             void InteropInputStream::Position(int32_t pos)
             {
-                if (pos > len) {
+                if (pos <= len)
+                    this->pos = pos;
+                else {
                     IGNITE_ERROR_FORMATTED_3(IgniteError::IGNITE_ERR_MEMORY, "Requested input stream position is out of bounds",
                         "memPtr", mem->PointerLong(), "len", len, "pos", pos);
                 }
-
-                this->pos = pos;
             }
 
             void InteropInputStream::Synchronize()
@@ -212,7 +212,9 @@ namespace ignite
 
             void InteropInputStream::EnsureEnoughData(int32_t cnt) const
             {
-                if (len - pos < cnt) {
+                if (len - pos >= cnt)
+                    return;
+                else {
                     IGNITE_ERROR_FORMATTED_4(IgniteError::IGNITE_ERR_MEMORY, "Not enough data in the stream",
                         "memPtr", mem->PointerLong(), "len", len, "pos", pos, "requested", cnt);
                 }
@@ -227,7 +229,7 @@ namespace ignite
                 Shift(cnt);
             }
 
-            void InteropInputStream::Shift(int32_t cnt)
+            inline void InteropInputStream::Shift(int32_t cnt)
             {
                 pos += cnt;
             }

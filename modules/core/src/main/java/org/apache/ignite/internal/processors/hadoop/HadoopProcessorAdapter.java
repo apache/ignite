@@ -94,4 +94,11 @@ public abstract class HadoopProcessorAdapter extends GridProcessorAdapter {
      * @throws IgniteCheckedException If failed.
      */
     public abstract boolean kill(HadoopJobId jobId) throws IgniteCheckedException;
+
+    /**
+     * Validate Hadoop environment.
+     *
+     * @throws IgniteCheckedException If failed.
+     */
+    public abstract void validateEnvironment() throws IgniteCheckedException;
 }

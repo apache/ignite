@@ -20,6 +20,8 @@ package org.apache.ignite.internal.processors.cache.distributed;
 import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.Collection;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.lang.IgniteUuid;
@@ -219,6 +221,11 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage {
      */
     public boolean replyRequired() {
         return commit ? syncCommit : syncRollback;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteLogger messageLogger(GridCacheSharedContext ctx) {
+        return ctx.txFinishMessageLogger();
     }
 
     /** {@inheritDoc} */

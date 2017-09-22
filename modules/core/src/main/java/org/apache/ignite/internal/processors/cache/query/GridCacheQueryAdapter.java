@@ -87,6 +87,9 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     /** */
     private final IgniteBiPredicate<Object, Object> filter;
 
+    /** Transformer. */
+    private IgniteClosure<?, ?> transform;
+
     /** Partition. */
     private Integer part;
 
@@ -122,6 +125,39 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
 
     /** */
     private int taskHash;
+
+    /**
+     * @param cctx Context.
+     * @param type Query type.
+     * @param filter Scan filter.
+     * @param part Partition.
+     * @param keepBinary Keep binary flag.
+     */
+    public GridCacheQueryAdapter(GridCacheContext<?, ?> cctx,
+        GridCacheQueryType type,
+        @Nullable IgniteBiPredicate<Object, Object> filter,
+        @Nullable IgniteClosure<Map.Entry, Object> transform,
+        @Nullable Integer part,
+        boolean keepBinary) {
+        assert cctx != null;
+        assert type != null;
+        assert part == null || part >= 0;
+
+        this.cctx = cctx;
+        this.type = type;
+        this.filter = filter;
+        this.transform = transform;
+        this.part = part;
+        this.keepBinary = keepBinary;
+
+        log = cctx.logger(getClass());
+
+        metrics = new GridCacheQueryMetricsAdapter();
+
+        this.incMeta = false;
+        this.clsName = null;
+        this.clause = null;
+    }
 
     /**
      * @param cctx Context.
@@ -376,6 +412,14 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     }
 
     /**
+     * @return Transformer.
+     */
+    @SuppressWarnings("unchecked")
+    @Nullable public <K, V> IgniteClosure<Map.Entry<K, V>, Object> transform() {
+        return (IgniteClosure<Map.Entry<K, V>, Object>) transform;
+    }
+
+    /**
      * @return Partition.
      */
     @Nullable public Integer partition() {
@@ -402,17 +446,12 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
 
     /** {@inheritDoc} */
     @Override public CacheQueryFuture<T> execute(@Nullable Object... args) {
-        return execute(null, null, args);
+        return execute0(null, args);
     }
 
     /** {@inheritDoc} */
     @Override public <R> CacheQueryFuture<R> execute(IgniteReducer<T, R> rmtReducer, @Nullable Object... args) {
-        return execute(rmtReducer, null, args);
-    }
-
-    /** {@inheritDoc} */
-    @Override public <R> CacheQueryFuture<R> execute(IgniteClosure<T, R> rmtTransform, @Nullable Object... args) {
-        return execute(null, rmtTransform, args);
+        return execute0(rmtReducer, args);
     }
 
     /** {@inheritDoc} */
@@ -427,13 +466,11 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
 
     /**
      * @param rmtReducer Optional reducer.
-     * @param rmtTransform Optional transformer.
      * @param args Arguments.
      * @return Future.
      */
     @SuppressWarnings({"IfMayBeConditional", "unchecked"})
-    private <R> CacheQueryFuture<R> execute(@Nullable IgniteReducer<T, R> rmtReducer,
-        @Nullable IgniteClosure<T, R> rmtTransform, @Nullable Object... args) {
+    private <R> CacheQueryFuture<R> execute0(@Nullable IgniteReducer<T, R> rmtReducer, @Nullable Object... args) {
         assert type != SCAN : this;
 
         Collection<ClusterNode> nodes;
@@ -455,7 +492,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
 
         if (cctx.deploymentEnabled()) {
             try {
-                cctx.deploy().registerClasses(filter, rmtReducer, rmtTransform);
+                cctx.deploy().registerClasses(filter, rmtReducer);
                 cctx.deploy().registerClasses(args);
             }
             catch (IgniteCheckedException e) {
@@ -469,7 +506,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         taskHash = cctx.kernalContext().job().currentTaskNameHash();
 
         final GridCacheQueryBean bean = new GridCacheQueryBean(this, (IgniteReducer<Object, Object>)rmtReducer,
-            (IgniteClosure<Object, Object>)rmtTransform, args);
+            null, args);
 
         final GridCacheQueryManager qryMgr = cctx.queries();
 
@@ -484,8 +521,8 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"IfMayBeConditional", "unchecked"})
-    @Override public <R extends Map.Entry> GridCloseableIterator<R> executeScanQuery() throws IgniteCheckedException {
-        assert type == SCAN: "Wrong processing of qyery: " + type;
+    @Override public GridCloseableIterator executeScanQuery() throws IgniteCheckedException {
+        assert type == SCAN : "Wrong processing of qyery: " + type;
 
         Collection<ClusterNode> nodes = nodes();
 
@@ -508,7 +545,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         final GridCacheQueryManager qryMgr = cctx.queries();
 
         if (part != null && !cctx.isLocal())
-            return (GridCloseableIterator<R>)new ScanQueryFallbackClosableIterator(part, this, qryMgr, cctx);
+            return new ScanQueryFallbackClosableIterator(part, this, qryMgr, cctx);
         else {
             boolean loc = nodes.size() == 1 && F.first(nodes).id().equals(cctx.localNodeId());
 
@@ -676,7 +713,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
                 try {
                     GridCloseableIterator it = qryMgr.scanQueryLocal(qry, true);
 
-                    tuple= new T2(it, null);
+                    tuple = new T2(it, null);
                 }
                 catch (IgniteClientDisconnectedCheckedException e) {
                     throw CU.convertToCacheException(e);

@@ -28,6 +28,7 @@ namespace ignite
     struct TestType
     {
         TestType() :
+            allNulls(false),
             i8Field(0),
             i16Field(0),
             i32Field(0),
@@ -45,6 +46,7 @@ namespace ignite
             int64_t i64Field, const std::string& strField, float floatField,
             double doubleField, bool boolField, const Guid& guidField,
             const Date& dateField, const Timestamp& timestampField) :
+            allNulls(false),
             i8Field(i8Field),
             i16Field(i16Field),
             i32Field(i32Field),
@@ -60,6 +62,7 @@ namespace ignite
             // No-op.
         }
 
+        bool allNulls;
         int8_t i8Field;
         int16_t i16Field;
         int32_t i32Field;
@@ -91,17 +94,34 @@ namespace ignite
 
             void Write(BinaryWriter& writer, TestType obj)
             {
-                writer.WriteInt8("i8Field", obj.i8Field);
-                writer.WriteInt16("i16Field", obj.i16Field);
-                writer.WriteInt32("i32Field", obj.i32Field);
-                writer.WriteInt64("i64Field", obj.i64Field);
-                writer.WriteString("strField", obj.strField);
-                writer.WriteFloat("floatField", obj.floatField);
-                writer.WriteDouble("doubleField", obj.doubleField);
-                writer.WriteBool("boolField", obj.boolField);
-                writer.WriteGuid("guidField", obj.guidField);
-                writer.WriteDate("dateField", obj.dateField);
-                writer.WriteTimestamp("timestampField", obj.timestampField);
+                if (!obj.allNulls)
+                {
+                    writer.WriteInt8("i8Field", obj.i8Field);
+                    writer.WriteInt16("i16Field", obj.i16Field);
+                    writer.WriteInt32("i32Field", obj.i32Field);
+                    writer.WriteInt64("i64Field", obj.i64Field);
+                    writer.WriteString("strField", obj.strField);
+                    writer.WriteFloat("floatField", obj.floatField);
+                    writer.WriteDouble("doubleField", obj.doubleField);
+                    writer.WriteBool("boolField", obj.boolField);
+                    writer.WriteGuid("guidField", obj.guidField);
+                    writer.WriteDate("dateField", obj.dateField);
+                    writer.WriteTimestamp("timestampField", obj.timestampField);
+                }
+                else
+                {
+                    writer.WriteNull("i8Field");
+                    writer.WriteNull("i16Field");
+                    writer.WriteNull("i32Field");
+                    writer.WriteNull("i64Field");
+                    writer.WriteNull("strField");
+                    writer.WriteNull("floatField");
+                    writer.WriteNull("doubleField");
+                    writer.WriteNull("boolField");
+                    writer.WriteNull("guidField");
+                    writer.WriteNull("dateField");
+                    writer.WriteNull("timestampField");
+                }
             }
 
             TestType Read(BinaryReader& reader)

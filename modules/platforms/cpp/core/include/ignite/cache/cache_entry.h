@@ -30,7 +30,7 @@ namespace ignite
     namespace cache
     {
         /**
-         * Cache entry class template.
+         * %Cache entry class template.
          *
          * Both key and value types should be default-constructable,
          * copy-constructable and assignable.
@@ -67,10 +67,10 @@ namespace ignite
              *
              * @param other Other instance.
              */
-            CacheEntry(const CacheEntry& other)
+            CacheEntry(const CacheEntry& other) :
+                key(other.key), val(other.val)
             {
-                key = other.key;
-                val = other.val;
+                // No-op.
             }
 
             /**
@@ -82,10 +82,8 @@ namespace ignite
             {
                 if (this != &other)
                 {
-                    CacheEntry tmp(other);
-
-                    std::swap(key, tmp.key);
-                    std::swap(val, tmp.val);
+                    key = other.key;
+                    val = other.val;
                 }
 
                 return *this;
@@ -121,4 +119,4 @@ namespace ignite
     }
 }
 
-#endif _IGNITE_CACHE_CACHE_ENTRY
+#endif //_IGNITE_CACHE_CACHE_ENTRY

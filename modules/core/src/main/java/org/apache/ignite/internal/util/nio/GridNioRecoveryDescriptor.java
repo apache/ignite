@@ -74,6 +74,9 @@ public class GridNioRecoveryDescriptor {
     /** Maximum size of unacknowledged messages queue. */
     private final int queueLimit;
 
+    /** Number of descriptor reservations (for info purposes). */
+    private int reserveCnt;
+
     /**
      * @param queueLimit Maximum size of unacknowledged messages queue.
      * @param node Node.
@@ -256,8 +259,11 @@ public class GridNioRecoveryDescriptor {
             while (!connected && reserved)
                 wait();
 
-            if (!connected)
+            if (!connected) {
                 reserved = true;
+
+                reserveCnt++;
+            }
 
             return !connected;
         }
@@ -375,8 +381,19 @@ public class GridNioRecoveryDescriptor {
             else {
                 reserved = true;
 
+                reserveCnt++;
+
                 return true;
             }
+        }
+    }
+
+    /**
+     * @return Number of descriptor reservations.
+     */
+    public int reserveCount() {
+        synchronized (this) {
+            return reserveCnt;
         }
     }
 

@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Tests
 {
     using System;
+    using System.Collections.Generic;
     using System.IO;
     using System.Linq;
     using System.Reflection;
@@ -37,11 +38,7 @@ namespace Apache.Ignite.Core.Tests
             var projFiles = GetDotNetSourceDir().GetFiles("*.csproj", SearchOption.AllDirectories);
             Assert.GreaterOrEqual(projFiles.Length, 7);
 
-            var invalidFiles =
-                projFiles.Where(x => !File.ReadAllText(x.FullName).Contains("ToolsVersion=\"4.0\"")).ToArray();
-
-            Assert.AreEqual(0, invalidFiles.Length,
-                "Invalid csproj files: " + string.Join(", ", invalidFiles.Select(x => x.FullName)));
+            CheckFiles(projFiles, x => !x.Contains("ToolsVersion=\"4.0\""), "Invalid csproj files: ");
         }
 
         /// <summary>
@@ -53,17 +50,31 @@ namespace Apache.Ignite.Core.Tests
             var slnFiles = GetDotNetSourceDir().GetFiles("*.sln", SearchOption.AllDirectories);
             Assert.GreaterOrEqual(slnFiles.Length, 2);
 
-            var invalidFiles =
-                slnFiles.Where(x =>
-                {
-                    var text = File.ReadAllText(x.FullName);
+            CheckFiles(slnFiles, x => !x.Contains("# Visual Studio 2010") ||
+                                      !x.Contains("Microsoft Visual Studio Solution File, Format Version 11.00"),
+                "Invalid sln files: ");
+        }
 
-                    return !text.Contains("# Visual Studio 2010") ||
-                           !text.Contains("Microsoft Visual Studio Solution File, Format Version 11.00");
-                }).ToArray();
+        /// <summary>
+        /// Tests that there are no Cyrillic C instead of English C (which are on the same keyboard key).
+        /// </summary>
+        [Test]
+        public void TestCyrillicChars()
+        {
+            var srcFiles = GetDotNetSourceDir().GetFiles("*.cs", SearchOption.AllDirectories);
+
+            CheckFiles(srcFiles, x => x.Contains('\u0441') || x.Contains('\u0421'), "Files with Cyrillic 'C': ");
+        }
+
+        /// <summary>
+        /// Checks the files.
+        /// </summary>
+        private static void CheckFiles(IEnumerable<FileInfo> files, Func<string, bool> isInvalid, string errorText)
+        {
+            var invalidFiles = files.Where(x => isInvalid(File.ReadAllText(x.FullName))).ToArray();
 
             Assert.AreEqual(0, invalidFiles.Length,
-                "Invalid sln files: " + string.Join(", ", invalidFiles.Select(x => x.FullName)));
+                errorText + string.Join(", ", invalidFiles.Select(x => x.FullName)));
         }
 
         /// <summary>

@@ -56,6 +56,7 @@ import org.apache.ignite.lang.IgniteAsyncSupport;
 import org.apache.ignite.lang.IgniteAsyncSupported;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.mxbean.CacheMetricsMXBean;
 import org.apache.ignite.transactions.TransactionHeuristicException;
@@ -295,6 +296,20 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     public <R> QueryCursor<R> query(Query<R> qry);
 
     /**
+     * Queries the cache transforming the entries on the server nodes. Can be used, for example,
+     * to avoid network overhead in case only one field out of the large is required by client.
+     * <p>
+     * Currently transformers are supported ONLY for {@link ScanQuery}. Passing any other
+     * subclass of {@link Query} interface to this method will end up with
+     * {@link UnsupportedOperationException}.
+     *
+     * @param qry Query.
+     * @param transformer Transformer.
+     * @return Cursor.
+     */
+    public <T, R> QueryCursor<R> query(Query<T> qry, IgniteClosure<T, R> transformer);
+
+    /**
      * Allows for iteration over local cache entries.
      *
      * @param peekModes Peek modes.
@@ -370,6 +385,20 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     public long sizeLong(CachePeekMode... peekModes) throws CacheException;
 
     /**
+     * Gets the number of all entries cached in a partition as a long value. By default, if {@code peekModes} value
+     * isn't defined, only size of primary copies across all nodes will be returned. This behavior is identical to
+     * calling this method with {@link CachePeekMode#PRIMARY} peek mode.
+     * <p>
+     * NOTE: this operation is distributed and will query all participating nodes for their partition cache sizes.
+     *
+     * @param partition partition.
+     * @param peekModes Optional peek modes. If not provided, then total partition cache size is returned.
+     * @return Partion cache size across all nodes.
+     */
+    @IgniteAsyncSupported
+    public long sizeLong(int partition, CachePeekMode... peekModes) throws CacheException;
+
+    /**
      * Gets the number of all entries cached on this node. By default, if {@code peekModes} value isn't defined,
      * only size of primary copies will be returned. This behavior is identical to calling this method with
      * {@link CachePeekMode#PRIMARY} peek mode.
@@ -388,6 +417,17 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @return Cache size on this node.
      */
     public long localSizeLong(CachePeekMode... peekModes);
+
+    /**
+     * Gets the number of all entries cached on this node for the partition as a long value. By default, if {@code peekModes} value isn't
+     * defined, only size of primary copies will be returned. This behavior is identical to calling this method with
+     * {@link CachePeekMode#PRIMARY} peek mode.
+     *
+     * @param partition partition.
+     * @param peekModes Optional peek modes. If not provided, then total cache size is returned.
+     * @return Cache size on this node.
+     */
+    public long localSizeLong(int partition, CachePeekMode... peekModes);
 
     /**
      * @param map Map containing keys and entry processors to be applied to values.

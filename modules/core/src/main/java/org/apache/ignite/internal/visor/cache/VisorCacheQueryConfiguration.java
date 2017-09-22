@@ -19,12 +19,13 @@ package org.apache.ignite.internal.visor.cache;
 
 import java.io.Serializable;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.LessNamingBean;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Data transfer object for cache query configuration data.
  */
-public class VisorCacheQueryConfiguration implements Serializable {
+public class VisorCacheQueryConfiguration implements Serializable, LessNamingBean {
     /** */
     private static final long serialVersionUID = 0L;
 

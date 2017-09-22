@@ -84,7 +84,7 @@ namespace ignite
                  *
                  * @return An informational message on the error or warning.
                  */
-                const std::string& GetMessage() const;
+                const std::string& GetMessageText() const;
 
                 /**
                  * Get connection name.

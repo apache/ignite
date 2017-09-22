@@ -230,7 +230,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
             zeroOnAccess(key);
         }
 
-        IgniteCache<Integer, Object> cache = jcache(0);
+        final IgniteCache<Integer, Object> cache = jcache(0);
 
         Integer key = primaryKey(cache);
 
@@ -240,11 +240,23 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
         cache.get(key); // Access using get.
 
+        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return !cache.iterator().hasNext();
+            }
+        }, 1000);
+
         assertFalse(cache.iterator().hasNext());
 
         cache0.put(key, 1);
 
         assertNotNull(cache.iterator().next()); // Access using iterator.
+
+        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return !cache.iterator().hasNext();
+            }
+        }, 1000);
 
         assertFalse(cache.iterator().hasNext());
     }
@@ -1124,7 +1136,8 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
                     if (e != null && e.deleted()) {
                         assertEquals(0, e.ttl());
 
-                        assertFalse(cache.affinity().isPrimaryOrBackup(grid.localNode(), key));
+                        assertFalse("Invalid entry [e=" + e + ", node=" + i + ']',
+                            cache.affinity().isPrimaryOrBackup(grid.localNode(), key));
 
                         continue;
                     }

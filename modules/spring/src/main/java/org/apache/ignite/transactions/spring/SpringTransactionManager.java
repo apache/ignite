@@ -21,12 +21,15 @@ import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSpring;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
 import org.springframework.transaction.CannotCreateTransactionException;
 import org.springframework.transaction.InvalidIsolationLevelException;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -194,7 +197,7 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
  * </pre>
  */
 public class SpringTransactionManager extends AbstractPlatformTransactionManager
-    implements ResourceTransactionManager, PlatformTransactionManager, InitializingBean {
+    implements ResourceTransactionManager, PlatformTransactionManager, InitializingBean, ApplicationContextAware {
     /**
      * Logger.
      */
@@ -224,6 +227,14 @@ public class SpringTransactionManager extends AbstractPlatformTransactionManager
      * Ignite instance.
      */
     private Ignite ignite;
+
+    /** Spring context */
+    private ApplicationContext springCtx;
+
+    /** {@inheritDoc} */
+    @Override public void setApplicationContext(ApplicationContext ctx) {
+        this.springCtx = ctx;
+    }
 
     /**
      * Constructs the transaction manager with no target Ignite instance. An
@@ -319,9 +330,9 @@ public class SpringTransactionManager extends AbstractPlatformTransactionManager
         }
 
         if (cfgPath != null)
-            ignite = Ignition.start(cfgPath);
+            ignite = IgniteSpring.start(cfgPath, springCtx);
         else if (cfg != null)
-            ignite = Ignition.start(cfg);
+            ignite = IgniteSpring.start(cfg, springCtx);
         else
             ignite = Ignition.ignite(gridName);
 
@@ -335,12 +346,12 @@ public class SpringTransactionManager extends AbstractPlatformTransactionManager
      * {@inheritDoc}
      */
     @Override protected Object doGetTransaction() throws TransactionException {
-        IgniteTransactionObject txObject = new IgniteTransactionObject();
+        IgniteTransactionObject txObj = new IgniteTransactionObject();
 
-        txObject.setTransactionHolder(
+        txObj.setTransactionHolder(
             (IgniteTransactionHolder)TransactionSynchronizationManager.getResource(this.ignite), false);
 
-        return txObject;
+        return txObj;
     }
 
     /**
@@ -350,11 +361,11 @@ public class SpringTransactionManager extends AbstractPlatformTransactionManager
         if (definition.getIsolationLevel() == TransactionDefinition.ISOLATION_READ_UNCOMMITTED)
             throw new InvalidIsolationLevelException("Ignite does not support READ_UNCOMMITTED isolation level.");
 
-        IgniteTransactionObject txObject = (IgniteTransactionObject)transaction;
+        IgniteTransactionObject txObj = (IgniteTransactionObject)transaction;
         Transaction tx = null;
 
         try {
-            if (txObject.getTransactionHolder() == null || txObject.getTransactionHolder().isSynchronizedWithTransaction()) {
+            if (txObj.getTransactionHolder() == null || txObj.getTransactionHolder().isSynchronizedWithTransaction()) {
                 long timeout = ignite.configuration().getTransactionConfiguration().getDefaultTxTimeout();
 
                 if (definition.getTimeout() > 0)
@@ -366,17 +377,17 @@ public class SpringTransactionManager extends AbstractPlatformTransactionManager
                 if (log.isDebugEnabled())
                     log.debug("Started Ignite transaction: " + newTx);
 
-                txObject.setTransactionHolder(new IgniteTransactionHolder(newTx), true);
+                txObj.setTransactionHolder(new IgniteTransactionHolder(newTx), true);
             }
 
-            txObject.getTransactionHolder().setSynchronizedWithTransaction(true);
-            txObject.getTransactionHolder().setTransactionActive(true);
+            txObj.getTransactionHolder().setSynchronizedWithTransaction(true);
+            txObj.getTransactionHolder().setTransactionActive(true);
 
-            tx = txObject.getTransactionHolder().getTransaction();
+            tx = txObj.getTransactionHolder().getTransaction();
 
             // Bind the session holder to the thread.
-            if (txObject.isNewTransactionHolder())
-                TransactionSynchronizationManager.bindResource(this.ignite, txObject.getTransactionHolder());
+            if (txObj.isNewTransactionHolder())
+                TransactionSynchronizationManager.bindResource(this.ignite, txObj.getTransactionHolder());
         }
         catch (Exception ex) {
             if (tx != null)
@@ -390,8 +401,8 @@ public class SpringTransactionManager extends AbstractPlatformTransactionManager
      * {@inheritDoc}
      */
     @Override protected void doCommit(DefaultTransactionStatus status) throws TransactionException {
-        IgniteTransactionObject txObject = (IgniteTransactionObject)status.getTransaction();
-        Transaction tx = txObject.getTransactionHolder().getTransaction();
+        IgniteTransactionObject txObj = (IgniteTransactionObject)status.getTransaction();
+        Transaction tx = txObj.getTransactionHolder().getTransaction();
 
         if (status.isDebug() && log.isDebugEnabled())
             log.debug("Committing Ignite transaction: " + tx);
@@ -408,8 +419,8 @@ public class SpringTransactionManager extends AbstractPlatformTransactionManager
      * {@inheritDoc}
      */
     @Override protected void doRollback(DefaultTransactionStatus status) throws TransactionException {
-        IgniteTransactionObject txObject = (IgniteTransactionObject)status.getTransaction();
-        Transaction tx = txObject.getTransactionHolder().getTransaction();
+        IgniteTransactionObject txObj = (IgniteTransactionObject)status.getTransaction();
+        Transaction tx = txObj.getTransactionHolder().getTransaction();
 
         if (status.isDebug() && log.isDebugEnabled())
             log.debug("Rolling back Ignite transaction: " + tx);
@@ -426,27 +437,27 @@ public class SpringTransactionManager extends AbstractPlatformTransactionManager
      * {@inheritDoc}
      */
     @Override protected void doCleanupAfterCompletion(Object transaction) {
-        IgniteTransactionObject txObject = (IgniteTransactionObject)transaction;
+        IgniteTransactionObject txObj = (IgniteTransactionObject)transaction;
 
         // Remove the transaction holder from the thread, if exposed.
-        if (txObject.isNewTransactionHolder()) {
-            Transaction tx = txObject.getTransactionHolder().getTransaction();
+        if (txObj.isNewTransactionHolder()) {
+            Transaction tx = txObj.getTransactionHolder().getTransaction();
             TransactionSynchronizationManager.unbindResource(this.ignite);
 
             if (log.isDebugEnabled())
                 log.debug("Releasing Ignite transaction: " + tx);
         }
 
-        txObject.getTransactionHolder().clear();
+        txObj.getTransactionHolder().clear();
     }
 
     /**
      * {@inheritDoc}
      */
     @Override protected boolean isExistingTransaction(Object transaction) throws TransactionException {
-        IgniteTransactionObject txObject = (IgniteTransactionObject)transaction;
+        IgniteTransactionObject txObj = (IgniteTransactionObject)transaction;
 
-        return (txObject.getTransactionHolder() != null && txObject.getTransactionHolder().isTransactionActive());
+        return (txObj.getTransactionHolder() != null && txObj.getTransactionHolder().isTransactionActive());
     }
 
     /**

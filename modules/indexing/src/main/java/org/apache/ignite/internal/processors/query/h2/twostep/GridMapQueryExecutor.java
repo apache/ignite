@@ -19,8 +19,6 @@ package org.apache.ignite.internal.processors.query.h2.twostep;
 
 import java.lang.reflect.Field;
 import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.AbstractCollection;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -52,7 +50,9 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartit
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
+import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueCacheObject;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryCancelRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryFailResponse;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageRequest;
@@ -277,7 +277,7 @@ public class GridMapQueryExecutor {
             if (cctx == null) // Cache was not found, probably was not deployed yet.
                 return false;
 
-            if (cctx.isLocal())
+            if (cctx.isLocal() || !cctx.rebalanceEnabled())
                 continue;
 
             // For replicated cache topology version does not make sense.
@@ -452,10 +452,12 @@ public class GridMapQueryExecutor {
 
             for (GridCacheSqlQuery qry : qrys) {
                 ResultSet rs = h2.executeSqlQueryWithTimer(req.space(),
-                    h2.connectionForSpace(req.space()),
-                    qry.query(),
-                    F.asList(qry.parameters()),
-                    true);
+                        h2.connectionForSpace(req.space()),
+                        qry.query(),
+                        F.asList(qry.parameters()),
+                        true,
+                        req.timeout(),
+                        qr.cancels[i]);
 
                 if (ctx.event().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
                     ctx.event().record(new CacheQueryExecutedEvent<>(
@@ -509,6 +511,15 @@ public class GridMapQueryExecutor {
             // Release reserved partitions.
             for (GridReservable r : reserved)
                 r.release();
+
+            // Ensure all cancels state is correct.
+            if (qr != null)
+                for (int i = 0; i < qr.cancels.length; i++) {
+                    GridQueryCancel cancel = qr.cancels[i];
+
+                    if (cancel != null)
+                        cancel.setCompleted();
+                }
         }
     }
 
@@ -637,6 +648,9 @@ public class GridMapQueryExecutor {
         private final AtomicReferenceArray<QueryResult> results;
 
         /** */
+        private final GridQueryCancel[] cancels;
+
+        /** */
         private final GridCacheContext<?,?> cctx;
 
         /** */
@@ -652,6 +666,10 @@ public class GridMapQueryExecutor {
             this.cctx = cctx;
 
             results = new AtomicReferenceArray<>(qrys);
+            cancels = new GridQueryCancel[qrys];
+
+            for (int i = 0; i < cancels.length; i++)
+                cancels[i] = new GridQueryCancel();
         }
 
         /**
@@ -687,6 +705,9 @@ public class GridMapQueryExecutor {
             return true;
         }
 
+        /**
+         * Cancels the query.
+         */
         void cancel() {
             if (canceled)
                 return;
@@ -696,8 +717,16 @@ public class GridMapQueryExecutor {
             for (int i = 0; i < results.length(); i++) {
                 QueryResult res = results.get(i);
 
-                if (res != null)
+                if (res != null) {
                     res.close();
+
+                    continue;
+                }
+
+                GridQueryCancel cancel = cancels[i];
+
+                if (cancel != null)
+                    cancel.cancel();
             }
         }
     }
@@ -731,6 +760,9 @@ public class GridMapQueryExecutor {
         private final int rowCount;
 
         /** */
+        private boolean cpNeeded;
+
+        /** */
         private volatile boolean closed;
 
         /**
@@ -739,11 +771,12 @@ public class GridMapQueryExecutor {
          * @param qrySrcNodeId Query source node.
          * @param qry Query.
          */
-        private QueryResult(ResultSet rs, GridCacheContext<?,?> cctx, UUID qrySrcNodeId, GridCacheSqlQuery qry) {
+        private QueryResult(ResultSet rs, GridCacheContext<?, ?> cctx, UUID qrySrcNodeId, GridCacheSqlQuery qry) {
             this.rs = rs;
             this.cctx = cctx;
             this.qry = qry;
             this.qrySrcNodeId = qrySrcNodeId;
+            this.cpNeeded = cctx.isLocalNode(qrySrcNodeId);
 
             try {
                 res = (ResultInterface)RESULT_FIELD.get(rs);
@@ -774,6 +807,33 @@ public class GridMapQueryExecutor {
                     return true;
 
                 Value[] row = res.currentRow();
+
+                if (cpNeeded) {
+                    boolean copied = false;
+
+                    for (int j = 0; j < row.length; j++) {
+                        Value val = row[j];
+
+                        if (val instanceof GridH2ValueCacheObject) {
+                            GridH2ValueCacheObject valCacheObj = (GridH2ValueCacheObject)val;
+
+                            GridCacheContext cctx = valCacheObj.getCacheContext();
+
+                            if (cctx != null && cctx.needValueCopy()) {
+                                row[j] = new GridH2ValueCacheObject(valCacheObj.getCacheContext(), valCacheObj.getCacheObject()) {
+                                    @Override public Object getObject() {
+                                        return getObject(true);
+                                    }
+                                };
+
+                                copied = true;
+                            }
+                        }
+                    }
+
+                    if (i == 0 && !copied)
+                        cpNeeded = false; // No copy on read caches, skip next checks.
+                }
 
                 assert row != null;
 

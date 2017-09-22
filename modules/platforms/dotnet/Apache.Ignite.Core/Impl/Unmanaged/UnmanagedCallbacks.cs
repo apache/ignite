@@ -21,14 +21,16 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
+    using System.IO;
     using System.Runtime.InteropServices;
     using System.Threading;
-
+    using Apache.Ignite.Core.Cache.Affinity;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Cache;
+    using Apache.Ignite.Core.Impl.Cache.Affinity;
     using Apache.Ignite.Core.Impl.Cache.Query.Continuous;
     using Apache.Ignite.Core.Impl.Cache.Store;
     using Apache.Ignite.Core.Impl.Common;
@@ -93,7 +95,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private const int OpPrepareDotNet = 1;
 
         private delegate long CacheStoreCreateCallbackDelegate(void* target, long memPtr);
-        private delegate int CacheStoreInvokeCallbackDelegate(void* target, long objPtr, long memPtr, void* cb);
+        private delegate int CacheStoreInvokeCallbackDelegate(void* target, long objPtr, long memPtr);
         private delegate void CacheStoreDestroyCallbackDelegate(void* target, long objPtr);
         private delegate long CacheStoreSessionCreateCallbackDelegate(void* target, long storePtr);
 
@@ -150,7 +152,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private delegate void ServiceCancelCallbackDelegate(void* target, long svcPtr, long memPtr);
         private delegate void ServiceInvokeMethodCallbackDelegate(void* target, long svcPtr, long inMemPtr, long outMemPtr);
 
-        private delegate int СlusterNodeFilterApplyCallbackDelegate(void* target, long memPtr);
+        private delegate int ClusterNodeFilterApplyCallbackDelegate(void* target, long memPtr);
 
         private delegate void NodeInfoCallbackDelegate(void* target, long memPtr);
 
@@ -164,6 +166,12 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         private delegate void OnClientDisconnectedDelegate(void* target);
         private delegate void OnClientReconnectedDelegate(void* target, bool clusterRestarted);
+
+        private delegate long AffinityFunctionInitDelegate(void* target, long memPtr, void* baseFunc);
+        private delegate int AffinityFunctionPartitionDelegate(void* target, long ptr, long memPtr);
+        private delegate void AffinityFunctionAssignPartitionsDelegate(void* target, long ptr, long inMemPtr, long outMemPtr);
+        private delegate void AffinityFunctionRemoveNodeDelegate(void* target, long ptr, long memPtr);
+        private delegate void AffinityFunctionDestroyDelegate(void* target, long ptr);
 
         /// <summary>
         /// constructor.
@@ -237,7 +245,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 serviceCancel = CreateFunctionPointer((ServiceCancelCallbackDelegate)ServiceCancel),
                 serviceInvokeMethod = CreateFunctionPointer((ServiceInvokeMethodCallbackDelegate)ServiceInvokeMethod),
 
-                clusterNodeFilterApply = CreateFunctionPointer((СlusterNodeFilterApplyCallbackDelegate)СlusterNodeFilterApply),
+                clusterNodeFilterApply = CreateFunctionPointer((ClusterNodeFilterApplyCallbackDelegate)ClusterNodeFilterApply),
                 
                 onStart = CreateFunctionPointer((OnStartCallbackDelegate)OnStart),
                 onStop = CreateFunctionPointer((OnStopCallbackDelegate)OnStop),
@@ -248,6 +256,12 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
                 onClientDisconnected = CreateFunctionPointer((OnClientDisconnectedDelegate)OnClientDisconnected),
                 ocClientReconnected = CreateFunctionPointer((OnClientReconnectedDelegate)OnClientReconnected),
+
+                affinityFunctionInit = CreateFunctionPointer((AffinityFunctionInitDelegate)AffinityFunctionInit),
+                affinityFunctionPartition = CreateFunctionPointer((AffinityFunctionPartitionDelegate)AffinityFunctionPartition),
+                affinityFunctionAssignPartitions = CreateFunctionPointer((AffinityFunctionAssignPartitionsDelegate)AffinityFunctionAssignPartitions),
+                affinityFunctionRemoveNode = CreateFunctionPointer((AffinityFunctionRemoveNodeDelegate)AffinityFunctionRemoveNode),
+                affinityFunctionDestroy = CreateFunctionPointer((AffinityFunctionDestroyDelegate)AffinityFunctionDestroy)
             };
 
             _cbsPtr = Marshal.AllocHGlobal(UU.HandlersSize());
@@ -291,20 +305,15 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         }
 
         [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
-        private int CacheStoreInvoke(void* target, long objPtr, long memPtr, void* cb)
+        private int CacheStoreInvoke(void* target, long objPtr, long memPtr)
         {
             return SafeCall(() =>
             {
                 var t = _handleRegistry.Get<CacheStore>(objPtr, true);
 
-                IUnmanagedTarget cb0 = null;
-
-                if ((long) cb != 0)
-                    cb0 = new UnmanagedNonReleaseableTarget(_ctx, cb);
-
                 using (PlatformMemoryStream stream = IgniteManager.Memory.Get(memPtr).GetStream())
                 {
-                    return t.Invoke(stream, cb0, _ignite);
+                    return t.Invoke(stream, _ignite);
                 }
             });
         }
@@ -612,7 +621,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         }
 
         [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
-        private void DataStreamerStreamReceiverInvoke(void* target, long rcvPtr, void* cache, long memPtr, 
+        private void DataStreamerStreamReceiverInvoke(void* target, long rcvPtr, void* cache, long memPtr,
             byte keepBinary)
         {
             SafeCall(() =>
@@ -979,7 +988,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             });
         }
 
-        private int СlusterNodeFilterApply(void* target, long memPtr)
+        private int ClusterNodeFilterApply(void* target, long memPtr)
         {
             return SafeCall(() =>
             {
@@ -1084,6 +1093,119 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             SafeCall(() =>
             {
                 _ignite.OnClientReconnected(clusterRestarted);
+            });
+        }
+
+        #endregion
+
+        #region AffinityFunction
+
+        private long AffinityFunctionInit(void* target, long memPtr, void* baseFunc)
+        {
+            return SafeCall(() =>
+            {
+                using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
+                {
+                    var reader = _ignite.Marshaller.StartUnmarshal(stream);
+
+                    var func = reader.ReadObjectEx<IAffinityFunction>();
+
+                    ResourceProcessor.Inject(func, _ignite);
+
+                    var affBase = func as AffinityFunctionBase;
+
+                    if (affBase != null)
+                        affBase.SetBaseFunction(new PlatformAffinityFunction(
+                            _ignite.InteropProcessor.ChangeTarget(baseFunc), _ignite.Marshaller));
+
+                    return _handleRegistry.Allocate(func);
+                }
+            });
+        }
+
+        private int AffinityFunctionPartition(void* target, long ptr, long memPtr)
+        {
+            return SafeCall(() =>
+            {
+                using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
+                {
+                    var key = _ignite.Marshaller.Unmarshal<object>(stream);
+
+                    return _handleRegistry.Get<IAffinityFunction>(ptr, true).GetPartition(key);
+                }
+            });
+        }
+
+        private void AffinityFunctionAssignPartitions(void* target, long ptr, long inMemPtr, long outMemPtr)
+        {
+            SafeCall(() =>
+            {
+                using (var inStream = IgniteManager.Memory.Get(inMemPtr).GetStream())
+                {
+                    var ctx = new AffinityFunctionContext(_ignite.Marshaller.StartUnmarshal(inStream));
+                    var func = _handleRegistry.Get<IAffinityFunction>(ptr, true);
+                    var parts = func.AssignPartitions(ctx);
+
+                    if (parts == null)
+                        throw new IgniteException(func.GetType() + ".AssignPartitions() returned invalid result: null");
+
+                    using (var outStream = IgniteManager.Memory.Get(outMemPtr).GetStream())
+                    {
+                        var writer = _ignite.Marshaller.StartMarshal(outStream);
+
+                        var partCnt = 0;
+                        writer.WriteInt(partCnt);  // reserve size
+
+                        foreach (var part in parts)
+                        {
+                            if (part == null)
+                                throw new IgniteException(func.GetType() +
+                                                          ".AssignPartitions() returned invalid partition: null");
+
+                            partCnt++;
+
+                            var nodeCnt = 0;
+                            var cntPos = outStream.Position;
+                            writer.WriteInt(nodeCnt);  // reserve size
+
+                            foreach (var node in part)
+                            {
+                                nodeCnt++;
+                                writer.WriteGuid(node.Id);
+                            }
+
+                            var endPos = outStream.Position;
+                            outStream.Seek(cntPos, SeekOrigin.Begin);
+                            outStream.WriteInt(nodeCnt);
+                            outStream.Seek(endPos, SeekOrigin.Begin);
+                        }
+
+                        outStream.SynchronizeOutput();
+                        outStream.Seek(0, SeekOrigin.Begin);
+                        writer.WriteInt(partCnt);
+                    }
+                }
+            });
+        }
+
+        private void AffinityFunctionRemoveNode(void* target, long ptr, long memPtr)
+        {
+            SafeCall(() =>
+            {
+                using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
+                {
+                    var nodeId = _ignite.Marshaller.Unmarshal<Guid>(stream);
+
+                    _handleRegistry.Get<IAffinityFunction>(ptr, true).RemoveNode(nodeId);
+                }
+            });
+        }
+
+        private void AffinityFunctionDestroy(void* target, long ptr)
+        {
+            SafeCall(() =>
+            {
+                _handleRegistry.Release(ptr);
             });
         }
 

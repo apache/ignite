@@ -18,7 +18,7 @@
 import angular from 'angular';
 
 // Getting started pages.
-import PAGES from 'app/data/getting-started.json!';
+import PAGES from 'app/data/getting-started.json';
 
 angular
     .module('ignite-console.getting-started', [])

@@ -17,12 +17,13 @@
 
 package org.apache.ignite.internal.client;
 
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import net.sf.json.JSON;
-import net.sf.json.JSONArray;
-import net.sf.json.JSONSerializer;
-import net.sf.json.JsonConfig;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeJobResultPolicy;
@@ -40,14 +41,28 @@ public class ClientHttpTask extends ComputeTaskSplitAdapter<String, Integer> {
     /** Task delegate. */
     private final ClientTcpTask delegate = new ClientTcpTask();
 
+    /** JSON to java mapper. */
+    private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
+
     /** {@inheritDoc} */
     @Override protected Collection<? extends ComputeJob> split(int gridSize, String arg) {
-        JSON json = JSONSerializer.toJSON(arg);
+        try {
+            JsonNode json = JSON_MAPPER.readTree(arg);
 
-        List list = json.isArray() ? JSONArray.toList((JSONArray)json, String.class, new JsonConfig()) : null;
+            List<String> list = null;
 
-        //noinspection unchecked
-        return delegate.split(gridSize, list);
+            if (json.isArray()) {
+                list = new ArrayList<>();
+
+                for (JsonNode child : json)
+                    list.add(child.asText());
+            }
+
+            return delegate.split(gridSize, list);
+        }
+        catch (IOException e) {
+            throw new IgniteException(e);
+        }
     }
 
     /** {@inheritDoc} */

@@ -17,22 +17,23 @@ Configuration file:
   Should be a file with simple line-oriented format as described here: http://docs.oracle.com/javase/7/docs/api/java/util/Properties.html#load(java.io.Reader)
 
   Available entries names:
-    token
+    tokens
     server-uri
     node-uri
     driver-folder
 
   Example configuration file:
-    token=1a2b3c4d5f
-    serverURI=http://console.example.com:3001
+    tokens=1a2b3c4d5f,2j1s134d12
+    serverURI=https://console.example.com:3001
 
-Security token:
-  1) By default token will be included into downloaded agent zip.
-  2) You can get/change token in your profile.
+Security tokens:
+  1) By default security token of current user will be included into "default.properties" inside downloaded "ignite-web-agent-x.x.x.zip".
+  2) One can get/reset token in Web Console profile (https://<your_console_address>/settings/profile).
+  3) One may specify several comma separated tokens using configuration file or command line arguments of web agent.
 
 Ignite Web agent requirements:
-  1) Ignite node should be started with REST server (move ignite-rest-http folder from lib/optional/ to lib/).
-  2) Pass Ignite node REST server URI to agent.
+  1) In order to communicate with web agent Ignite node should be started with REST server (move ignite-rest-http folder from lib/optional/ to lib/).
+  2) Configure web agent serverURI property by Ignite node REST server URI.
 
 Options:
   -h, --help
@@ -47,15 +48,15 @@ Options:
   -s, --server-uri
      URI for connect to Ignite Web Console via web-socket protocol, default
      value: http://localhost:3001
-  -t, --token
-     User's security token
+  -t, --tokens
+     User's security tokens
 
 How to build:
   To build from sources run following command in Ignite project root folder:
   mvn clean package -pl :ignite-web-agent -am -P web-console -DskipTests=true
 
 Demo of Ignite Web Agent:
- In order to simplify evaluation demo mode was implemented. To start demo, you need to to click button "Start demo".
+ In order to simplify evaluation demo mode was implemented. To start demo, you need to click button "Start demo".
  New tab will be open with prepared demo data.
 
  1) Demo for import domain model from database.
@@ -73,7 +74,7 @@ Demo of Ignite Web Agent:
      In this mode internal Ignite node will be started. Cache created and populated with data.
        2.1) Click "SQL" in Ignite Web Console top menu.
        2.2) "Demo" notebook with preconfigured queries will be opened.
-       2.3) You can also execute any SQL queries for tables: "Country, Department, Employee", "Parking, Car".
+       2.3) You can also execute any SQL queries for tables: "Country, Department, Employee, Parking, Car".
 
  For example:
    2.4) Enter SQL statement:

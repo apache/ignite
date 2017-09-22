@@ -42,13 +42,15 @@ module.exports.factory = (_, socketio, agentMgr, configure) => {
             configure.socketio(io);
 
             io.sockets.on('connection', (socket) => {
-                const user = socket.client.request.user;
+                const user = socket.request.user;
 
-                const demo = socket.client.request._query.IgniteDemoMode === 'true';
+                const demo = socket.request._query.IgniteDemoMode === 'true';
+
+                const accountId = () => user._id;
 
                 // Return available drivers to browser.
                 socket.on('schemaImport:drivers', (cb) => {
-                    agentMgr.findAgent(user._id)
+                    agentMgr.findAgent(accountId())
                         .then((agent) => agent.availableDrivers())
                         .then((drivers) => cb(null, drivers))
                         .catch((err) => cb(_errorToJson(err)));
@@ -56,7 +58,7 @@ module.exports.factory = (_, socketio, agentMgr, configure) => {
 
                 // Return schemas from database to browser.
                 socket.on('schemaImport:schemas', (preset, cb) => {
-                    agentMgr.findAgent(user._id)
+                    agentMgr.findAgent(accountId())
                         .then((agent) => {
                             const jdbcInfo = {user: preset.user, password: preset.password};
 
@@ -68,7 +70,7 @@ module.exports.factory = (_, socketio, agentMgr, configure) => {
 
                 // Return tables from database to browser.
                 socket.on('schemaImport:tables', (preset, cb) => {
-                    agentMgr.findAgent(user._id)
+                    agentMgr.findAgent(accountId())
                         .then((agent) => {
                             const jdbcInfo = {user: preset.user, password: preset.password};
 
@@ -81,7 +83,7 @@ module.exports.factory = (_, socketio, agentMgr, configure) => {
 
                 // Return topology command result from grid to browser.
                 socket.on('node:topology', (attr, mtr, cb) => {
-                    agentMgr.findAgent(user._id)
+                    agentMgr.findAgent(accountId())
                         .then((agent) => agent.topology(demo, attr, mtr))
                         .then((clusters) => cb(null, clusters))
                         .catch((err) => cb(_errorToJson(err)));
@@ -89,7 +91,7 @@ module.exports.factory = (_, socketio, agentMgr, configure) => {
 
                 // Close query on node.
                 socket.on('node:query:close', (queryId, cb) => {
-                    agentMgr.findAgent(user._id)
+                    agentMgr.findAgent(accountId())
                         .then((agent) => agent.queryClose(demo, queryId))
                         .then(() => cb())
                         .catch((err) => cb(_errorToJson(err)));
@@ -97,7 +99,7 @@ module.exports.factory = (_, socketio, agentMgr, configure) => {
 
                 // Execute query on node and return first page to browser.
                 socket.on('node:query', (cacheName, pageSize, query, cb) => {
-                    agentMgr.findAgent(user._id)
+                    agentMgr.findAgent(accountId())
                         .then((agent) => {
                             if (query === null)
                                 return agent.scan(demo, cacheName, pageSize);
@@ -110,7 +112,7 @@ module.exports.factory = (_, socketio, agentMgr, configure) => {
 
                 // Fetch next page for query and return result to browser.
                 socket.on('node:query:fetch', (queryId, pageSize, cb) => {
-                    agentMgr.findAgent(user._id)
+                    agentMgr.findAgent(accountId())
                         .then((agent) => agent.queryFetch(demo, queryId, pageSize))
                         .then((res) => cb(null, res))
                         .catch((err) => cb(_errorToJson(err)));
@@ -121,7 +123,7 @@ module.exports.factory = (_, socketio, agentMgr, configure) => {
                     // Set page size for query.
                     const pageSize = 1024;
 
-                    agentMgr.findAgent(user._id)
+                    agentMgr.findAgent(accountId())
                         .then((agent) => {
                             const firstPage = query === null ? agent.scan(demo, cacheName, pageSize)
                                 : agent.fieldsQuery(demo, cacheName, query, pageSize);
@@ -132,7 +134,7 @@ module.exports.factory = (_, socketio, agentMgr, configure) => {
 
                                 return agent.queryFetch(demo, acc.queryId, pageSize)
                                     .then((res) => {
-                                        acc.rows = acc.rows.concat(res.rows);
+                                        acc.items = acc.items.concat(res.items);
 
                                         acc.last = res.last;
 
@@ -149,7 +151,7 @@ module.exports.factory = (_, socketio, agentMgr, configure) => {
 
                 // Return cache metadata from all nodes in grid.
                 socket.on('node:cache:metadata', (cacheName, cb) => {
-                    agentMgr.findAgent(user._id)
+                    agentMgr.findAgent(accountId())
                         .then((agent) => agent.metadata(demo, cacheName))
                         .then((caches) => {
                             let types = [];
@@ -159,6 +161,8 @@ module.exports.factory = (_, socketio, agentMgr, configure) => {
                             };
 
                             const _typeMapper = (meta, typeName) => {
+                                const maskedName = _.isEmpty(meta.cacheName) ? '<default>' : meta.cacheName;
+
                                 let fields = meta.fields[typeName];
 
                                 let columns = [];
@@ -173,7 +177,8 @@ module.exports.factory = (_, socketio, agentMgr, configure) => {
                                             clazz: fieldClass,
                                             system: fieldName === '_KEY' || fieldName === '_VAL',
                                             cacheName: meta.cacheName,
-                                            typeName
+                                            typeName,
+                                            maskedName
                                         });
                                     }
                                 }
@@ -190,7 +195,8 @@ module.exports.factory = (_, socketio, agentMgr, configure) => {
                                             order: index.descendings.indexOf(field) < 0,
                                             unique: index.unique,
                                             cacheName: meta.cacheName,
-                                            typeName
+                                            typeName,
+                                            maskedName
                                         });
                                     }
 
@@ -200,7 +206,8 @@ module.exports.factory = (_, socketio, agentMgr, configure) => {
                                             name: index.name,
                                             children: fields,
                                             cacheName: meta.cacheName,
-                                            typeName
+                                            typeName,
+                                            maskedName
                                         });
                                     }
                                 }
@@ -213,6 +220,7 @@ module.exports.factory = (_, socketio, agentMgr, configure) => {
                                         name: 'Indexes',
                                         cacheName: meta.cacheName,
                                         typeName,
+                                        maskedName,
                                         children: indexes
                                     });
                                 }
@@ -221,6 +229,7 @@ module.exports.factory = (_, socketio, agentMgr, configure) => {
                                     type: 'type',
                                     cacheName: meta.cacheName || '',
                                     typeName,
+                                    maskedName,
                                     children: columns
                                 };
                             };
@@ -239,8 +248,34 @@ module.exports.factory = (_, socketio, agentMgr, configure) => {
 
                 // Fetch next page for query and return result to browser.
                 socket.on('node:visor:collect', (evtOrderKey, evtThrottleCntrKey, cb) => {
-                    agentMgr.findAgent(user._id)
+                    agentMgr.findAgent(accountId())
                         .then((agent) => agent.collect(demo, evtOrderKey, evtThrottleCntrKey))
+                        .then((data) => {
+                            if (data.finished)
+                                return cb(null, data.result);
+
+                            cb(_errorToJson(data.error));
+                        })
+                        .catch((err) => cb(_errorToJson(err)));
+                });
+
+                // Swap backups specified caches on specified node and return result to browser.
+                socket.on('node:cache:swap:backups', (nid, cacheNames, cb) => {
+                    agentMgr.findAgent(accountId())
+                        .then((agent) => agent.cacheSwapBackups(demo, nid, cacheNames))
+                        .then((data) => {
+                            if (data.finished)
+                                return cb(null, data.result);
+
+                            cb(_errorToJson(data.error));
+                        })
+                        .catch((err) => cb(_errorToJson(err)));
+                });
+
+                // Reset metrics specified cache on specified node and return result to browser.
+                socket.on('node:cache:reset:metrics', (nid, cacheName, cb) => {
+                    agentMgr.findAgent(accountId())
+                        .then((agent) => agent.cacheResetMetrics(demo, nid, cacheName))
                         .then((data) => {
                             if (data.finished)
                                 return cb(null, data.result);
@@ -252,7 +287,7 @@ module.exports.factory = (_, socketio, agentMgr, configure) => {
 
                 // Clear specified cache on specified node and return result to browser.
                 socket.on('node:cache:clear', (nid, cacheName, cb) => {
-                    agentMgr.findAgent(user._id)
+                    agentMgr.findAgent(accountId())
                         .then((agent) => agent.cacheClear(demo, nid, cacheName))
                         .then((data) => {
                             if (data.finished)
@@ -263,10 +298,23 @@ module.exports.factory = (_, socketio, agentMgr, configure) => {
                         .catch((err) => cb(_errorToJson(err)));
                 });
 
+                // Start specified cache and return result to browser.
+                socket.on('node:cache:start', (nids, near, cacheName, cfg, cb) => {
+                    agentMgr.findAgent(accountId())
+                        .then((agent) => agent.cacheStart(demo, nids, near, cacheName, cfg))
+                        .then((data) => {
+                            if (data.finished)
+                                return cb(null, data.result);
+
+                            cb(_errorToJson(data.error));
+                        })
+                        .catch((err) => cb(_errorToJson(err)));
+                });
+
                 // Stop specified cache on specified node and return result to browser.
-                socket.on('node:cache:stop', (nids, cacheName, cb) => {
-                    agentMgr.findAgent(user._id)
-                        .then((agent) => agent.cacheStop(demo, nids, cacheName))
+                socket.on('node:cache:stop', (nid, cacheName, cb) => {
+                    agentMgr.findAgent(accountId())
+                        .then((agent) => agent.cacheStop(demo, nid, cacheName))
                         .then((data) => {
                             if (data.finished)
                                 return cb(null, data.result);
@@ -278,9 +326,35 @@ module.exports.factory = (_, socketio, agentMgr, configure) => {
 
 
                 // Ping node and return result to browser.
-                socket.on('node:ping', (nid, cb) => {
-                    agentMgr.findAgent(user._id)
-                        .then((agent) => agent.ping(demo, nid))
+                socket.on('node:ping', (taskNid, nid, cb) => {
+                    agentMgr.findAgent(accountId())
+                        .then((agent) => agent.ping(demo, taskNid, nid))
+                        .then((data) => {
+                            if (data.finished)
+                                return cb(null, data.result);
+
+                            cb(_errorToJson(data.error));
+                        })
+                        .catch((err) => cb(_errorToJson(err)));
+                });
+
+                // GC node and return result to browser.
+                socket.on('node:gc', (nids, cb) => {
+                    agentMgr.findAgent(accountId())
+                        .then((agent) => agent.gc(demo, nids))
+                        .then((data) => {
+                            if (data.finished)
+                                return cb(null, data.result);
+
+                            cb(_errorToJson(data.error));
+                        })
+                        .catch((err) => cb(_errorToJson(err)));
+                });
+
+                // GC node and return result to browser.
+                socket.on('node:thread:dump', (nid, cb) => {
+                    agentMgr.findAgent(accountId())
+                        .then((agent) => agent.threadDump(demo, nid))
                         .then((data) => {
                             if (data.finished)
                                 return cb(null, data.result);

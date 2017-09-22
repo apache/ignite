@@ -190,7 +190,7 @@ namespace ignite
 
                     case IGNITE_SQL_DIAG_STATUS_MESSAGE_TEXT:
                     {
-                        buffer.PutString(record.GetMessage());
+                        buffer.PutString(record.GetMessageText());
 
                         return SQL_RESULT_SUCCESS;
                     }

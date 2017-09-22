@@ -26,7 +26,6 @@ import io.socket.emitter.Emitter;
 import java.io.File;
 import java.io.IOException;
 import java.net.ConnectException;
-import java.net.SocketException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -71,6 +70,9 @@ public class AgentLauncher {
 
     /** */
     private static final String EVENT_SCHEMA_IMPORT_METADATA = "schemaImport:metadata";
+
+    /** */
+    private static final String EVENT_AGENT_WARNING = "agent:warning";
 
     /** */
     private static final String EVENT_AGENT_CLOSE = "agent:close";
@@ -138,7 +140,7 @@ public class AgentLauncher {
      */
     private static final Emitter.Listener onDisconnect = new Emitter.Listener() {
         @Override public void call(Object... args) {
-            log.error(String.format("Connection closed: %s.", args[0]));
+            log.error(String.format("Connection closed: %s.", args));
         }
     };
 
@@ -198,7 +200,7 @@ public class AgentLauncher {
         System.out.println(cfg);
         System.out.println();
 
-        if (cfg.token() == null) {
+        if (cfg.tokens() == null) {
             String webHost;
 
             try {
@@ -213,9 +215,9 @@ public class AgentLauncher {
             System.out.println("Security token is required to establish connection to the web console.");
             System.out.println(String.format("It is available on the Profile page: https://%s/profile", webHost));
 
-            System.out.print("Enter security token: ");
+            System.out.print("Enter security tokens separated by comma: ");
 
-            cfg.token(System.console().readLine().trim());
+            cfg.tokens(Arrays.asList(System.console().readLine().trim().split(",")));
         }
 
         final RestHandler restHnd = new RestHandler(cfg);
@@ -258,7 +260,7 @@ public class AgentLauncher {
                         JSONObject authMsg = new JSONObject();
 
                         try {
-                            authMsg.put("token", cfg.token());
+                            authMsg.put("tokens", cfg.tokens());
 
                             String clsName = AgentLauncher.class.getSimpleName() + ".class";
 
@@ -280,7 +282,7 @@ public class AgentLauncher {
                                 @Override public void call(Object... args) {
                                     // Authentication failed if response contains args.
                                     if (args != null && args.length > 0) {
-                                        onDisconnect.call("Authentication failed: " + args[0]);
+                                        onDisconnect.call(args);
 
                                         System.exit(1);
                                     }
@@ -312,6 +314,11 @@ public class AgentLauncher {
                     .on(EVENT_SCHEMA_IMPORT_METADATA, dbHnd.metadataListener())
                     .on(EVENT_ERROR, onError)
                     .on(EVENT_DISCONNECT, onDisconnect)
+                    .on(EVENT_AGENT_WARNING, new Emitter.Listener() {
+                        @Override public void call(Object... args) {
+                            log.warn(args[0]);
+                        }
+                    })
                     .on(EVENT_AGENT_CLOSE, new Emitter.Listener() {
                         @Override public void call(Object... args) {
                             onDisconnect.call(args);

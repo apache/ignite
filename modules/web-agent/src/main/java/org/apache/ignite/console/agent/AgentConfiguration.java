@@ -23,6 +23,8 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.net.URL;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Properties;
 
 /**
@@ -45,11 +47,13 @@ public class AgentConfiguration {
     private static final String DFLT_NODE_URI = "http://localhost:8080";
 
     /** */
-    @Parameter(names = {"-t", "--token"}, description = "User's security token used to establish connection to Ignite Console.")
-    private String tok;
+    @Parameter(names = {"-t", "--tokens"},
+        description = "User's tokens separated by comma used to connect to Ignite Console.")
+    private List<String> tokens;
 
     /** */
-    @Parameter(names = {"-s", "--server-uri"}, description = "URI for connect to Ignite Console via web-socket protocol" +
+    @Parameter(names = {"-s", "--server-uri"},
+        description = "URI for connect to Ignite Console via web-socket protocol" +
         "           " +
         "      Default value: " + DFLT_SERVER_URI)
     private String srvUri;
@@ -80,17 +84,17 @@ public class AgentConfiguration {
     private Boolean help;
 
     /**
-     * @return Token.
+     * @return Tokens.
      */
-    public String token() {
-        return tok;
+    public List<String> tokens() {
+        return tokens;
     }
 
     /**
-     * @param tok Token.
+     * @param tokens Tokens.
      */
-    public void token(String tok) {
-        this.tok = tok;
+    public void tokens(List<String> tokens) {
+        this.tokens = tokens;
     }
 
     /**
@@ -173,10 +177,10 @@ public class AgentConfiguration {
             props.load(reader);
         }
 
-        String val = (String)props.remove("token");
+        String val = (String)props.remove("tokens");
 
         if (val != null)
-            token(val);
+            tokens(Arrays.asList(val.split(",")));
 
         val = (String)props.remove("server-uri");
 
@@ -198,8 +202,8 @@ public class AgentConfiguration {
      * @param cmd Command.
      */
     public void merge(AgentConfiguration cmd) {
-        if (tok == null)
-            token(cmd.token());
+        if (tokens == null)
+            tokens(cmd.tokens());
 
         if (srvUri == null)
             serverUri(cmd.serverUri());
@@ -221,16 +225,25 @@ public class AgentConfiguration {
     @Override public String toString() {
         StringBuilder sb = new StringBuilder();
 
-        if (tok != null && tok.length() > 0) {
-            sb.append("User's security token         : ");
+        if (tokens != null && tokens.size() > 0) {
+            sb.append("User's security tokens        : ");
 
-            if (tok.length() > 4) {
-                sb.append(new String(new char[tok.length() - 4]).replace('\0', '*'));
+            boolean first = true;
 
-                sb.append(tok.substring(tok.length() - 4));
+            for (String tok : tokens) {
+                if (first)
+                    first = false;
+                else
+                    sb.append(",");
+
+                if (tok.length() > 4) {
+                    sb.append(new String(new char[tok.length() - 4]).replace('\0', '*'));
+
+                    sb.append(tok.substring(tok.length() - 4));
+                }
+                else
+                    sb.append(new String(new char[tok.length()]).replace('\0', '*'));
             }
-            else
-                sb.append(new String(new char[tok.length()]).replace('\0', '*'));
 
             sb.append('\n');
         }

@@ -55,7 +55,7 @@ goto error_finish
 ::
 if "%JVM_OPTS%" == "" set JVM_OPTS=-Xms1g -Xmx1g -server -XX:+AggressiveOpts -XX:MaxPermSize=256m
 
-"%JAVA_HOME%\bin\java.exe" %JVM_OPTS% -cp ignite-web-agent-${version}.jar org.apache.ignite.console.agent.AgentLauncher  %*
+"%JAVA_HOME%\bin\java.exe" %JVM_OPTS% -cp "*" org.apache.ignite.console.agent.AgentLauncher  %*
 
 set JAVA_ERRORLEVEL=%ERRORLEVEL%
 

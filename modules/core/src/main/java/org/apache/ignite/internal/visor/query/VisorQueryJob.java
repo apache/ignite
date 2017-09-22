@@ -37,9 +37,12 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.util.VisorExceptionWrapper;
+import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
 
 import static org.apache.ignite.internal.visor.query.VisorQueryUtils.RMV_DELAY;
+import static org.apache.ignite.internal.visor.query.VisorQueryUtils.SCAN_CACHE_WITH_FILTER;
+import static org.apache.ignite.internal.visor.query.VisorQueryUtils.SCAN_CACHE_WITH_FILTER_CASE_SENSITIVE;
 import static org.apache.ignite.internal.visor.query.VisorQueryUtils.SCAN_COL_NAMES;
 import static org.apache.ignite.internal.visor.query.VisorQueryUtils.SCAN_QRY_NAME;
 import static org.apache.ignite.internal.visor.query.VisorQueryUtils.SCAN_NEAR_CACHE;
@@ -81,8 +84,9 @@ public class VisorQueryJob extends VisorJob<VisorQueryArg, IgniteBiTuple<? exten
      * @param arg Job argument with query parameters.
      * @return Query cursor.
      */
-    private QueryCursor<Cache.Entry<Object, Object>> scan(IgniteCache<Object, Object> c, VisorQueryArg arg) {
-        ScanQuery<Object, Object> qry = new ScanQuery<>(null);
+    private QueryCursor<Cache.Entry<Object, Object>> scan(IgniteCache<Object, Object> c, VisorQueryArg arg,
+        IgniteBiPredicate<Object, Object> filter) {
+        ScanQuery<Object, Object> qry = new ScanQuery<>(filter);
         qry.setPageSize(arg.pageSize());
         qry.setLocal(arg.local());
 
@@ -100,23 +104,41 @@ public class VisorQueryJob extends VisorJob<VisorQueryArg, IgniteBiTuple<? exten
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteBiTuple<? extends VisorExceptionWrapper, VisorQueryResultEx> run(VisorQueryArg arg) {
+    @Override protected IgniteBiTuple<? extends VisorExceptionWrapper, VisorQueryResultEx> run(final VisorQueryArg arg) {
         try {
             UUID nid = ignite.localNode().id();
 
-            boolean near = SCAN_NEAR_CACHE.equalsIgnoreCase(arg.queryTxt());
+            String qryTxt = arg.queryTxt();
 
-            boolean scan = arg.queryTxt() == null;
+            boolean scan = qryTxt == null;
+
+            boolean scanWithFilter = qryTxt != null && qryTxt.startsWith(SCAN_CACHE_WITH_FILTER);
+
+            boolean near = qryTxt != null && qryTxt.startsWith(SCAN_NEAR_CACHE);
+
+            boolean scanAny = scan || scanWithFilter || near;
 
             // Generate query ID to store query cursor in node local storage.
-            String qryId = ((scan || near) ? SCAN_QRY_NAME : SQL_QRY_NAME) + "-" + UUID.randomUUID();
+            String qryId = (scanAny ? SCAN_QRY_NAME : SQL_QRY_NAME) + "-" + UUID.randomUUID();
 
             IgniteCache<Object, Object> c = cache(arg.cacheName());
 
-            if (near || scan) {
+            if (scanAny) {
                 long start = U.currentTimeMillis();
 
-                VisorQueryCursor<Cache.Entry<Object, Object>> cur = new VisorQueryCursor<>(near ? near(c) : scan(c, arg));
+                IgniteBiPredicate<Object, Object> filter = null;
+
+                if (scanWithFilter) {
+                    boolean caseSensitive = qryTxt.startsWith(SCAN_CACHE_WITH_FILTER_CASE_SENSITIVE);
+
+                    String ptrn = caseSensitive
+                        ? qryTxt.substring(SCAN_CACHE_WITH_FILTER_CASE_SENSITIVE.length())
+                        : qryTxt.substring(SCAN_CACHE_WITH_FILTER.length());
+
+                    filter = new VisorQueryScanSubstringFilter(caseSensitive, ptrn);
+                }
+
+                VisorQueryCursor<Cache.Entry<Object, Object>> cur = new VisorQueryCursor<>(near ? near(c) : scan(c, arg, filter));
 
                 List<Object[]> rows = fetchScanQueryRows(cur, arg.pageSize());
 

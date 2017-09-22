@@ -30,14 +30,14 @@ include ../../app/helpers/jade/mixins.jade
                     thead
                         tr
                             th
-                                .col-sm-8
-                                    .col-sm-5
+                                .col-sm-9
+                                    .col-sm-6
                                         lable.labelHeader.labelFormField {{domainModelTitle()}}
-                                    .col-sm-7
+                                    .col-sm-6
                                         .pull-right.labelLogin.additional-filter(ng-if='(domains | domainsValidation:false:true).length > 0')
                                             a.labelFormField(ng-if='ui.showValid' ng-click='toggleValid()' bs-tooltip='' data-title='{{::ui.invalidKeyFieldsTooltip}}') Key fields should be configured: {{(displayedRows | domainsValidation:false:true).length}}&nbsp
                                             a.labelFormField(ng-if='!ui.showValid' ng-click='toggleValid()') Show all domain models: {{displayedRows.length}}&nbsp
-                                .col-sm-4
+                                .col-sm-3
                                     input.form-control.pull-right(type='text' st-search='valueType' placeholder='Filter domain models...')
                         tbody
                             tr

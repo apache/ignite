@@ -15,13 +15,13 @@
  * limitations under the License.
  */
 
-import template from './ssl.jade!';
+import templateUrl from './ssl.jade';
 
 export default ['igniteConfigurationClustersSsl', [() => {
     return {
         scope: true,
         restrict: 'E',
-        template,
+        templateUrl,
         replace: true
     };
 }]];

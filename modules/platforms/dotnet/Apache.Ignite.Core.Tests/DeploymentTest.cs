@@ -87,7 +87,7 @@ namespace Apache.Ignite.Core.Tests
             {
                 VerifyNodeStarted(exePath);
             }
-            finally 
+            finally
             {
                 proc.Kill();
 

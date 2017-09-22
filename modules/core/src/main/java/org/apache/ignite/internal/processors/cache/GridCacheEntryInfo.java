@@ -407,7 +407,7 @@ public class GridCacheEntryInfo implements Message {
 
             Object key0 = ctx.cacheObjects().unmarshal(cacheObjCtx, keyBytes, clsLdr);
 
-            key = ctx.cacheObjects().toCacheKeyObject(cacheObjCtx, key0, false);
+            key = ctx.cacheObjects().toCacheKeyObject(cacheObjCtx, ctx, key0, false);
         }
         else
             key.finishUnmarshal(ctx.cacheObjectContext(), clsLdr);

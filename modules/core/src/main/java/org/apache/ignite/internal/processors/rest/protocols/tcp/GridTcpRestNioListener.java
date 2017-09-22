@@ -250,14 +250,17 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
                             GridNioFuture<?> sf = ses.send(res);
 
                             // Check if send failed.
-                            if (sf.isDone())
-                                try {
-                                    sf.get();
+                            sf.listen(new CI1<IgniteInternalFuture<?>>() {
+                                @Override public void apply(IgniteInternalFuture<?> fut) {
+                                    try {
+                                        fut.get();
+                                    }
+                                    catch (IgniteCheckedException e) {
+                                        U.error(log, "Failed to process client request [ses=" + ses +
+                                            ", msg=" + msg + ']', e);
+                                    }
                                 }
-                                catch (Exception e) {
-                                    U.error(log, "Failed to process client request [ses=" + ses + ", msg=" + msg + ']',
-                                        e);
-                                }
+                            });
                         }
                     });
                 else

@@ -17,6 +17,12 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryRawReader;
+import org.apache.ignite.binary.BinaryRawWriter;
+import org.apache.ignite.binary.BinaryReader;
+import org.apache.ignite.binary.BinaryWriter;
+import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.igfs.IgfsFile;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -35,7 +41,7 @@ import java.util.Map;
 /**
  * File or directory information.
  */
-public final class IgfsFileImpl implements IgfsFile, Externalizable {
+public final class IgfsFileImpl implements IgfsFile, Externalizable, Binarylizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -60,6 +66,9 @@ public final class IgfsFileImpl implements IgfsFile, Externalizable {
     /** Last modification time. */
     private long modificationTime;
 
+    /** Flags. */
+    private byte flags;
+
     /** Properties. */
     private Map<String, String> props;
 
@@ -75,6 +84,7 @@ public final class IgfsFileImpl implements IgfsFile, Externalizable {
      * which is specified separately.
      *
      * @param igfsFile The file to copy.
+     * @param grpBlockSize Group block size.
      */
     public IgfsFileImpl(IgfsFile igfsFile, long grpBlockSize) {
         A.notNull(igfsFile, "igfsFile");
@@ -91,24 +101,28 @@ public final class IgfsFileImpl implements IgfsFile, Externalizable {
 
         this.accessTime = igfsFile.accessTime();
         this.modificationTime = igfsFile.modificationTime();
+        this.flags = IgfsUtils.flags(igfsFile.isDirectory(), igfsFile.isFile());
     }
 
     /**
      * Constructs directory info.
      *
      * @param path Path.
+     * @param info Entry info.
+     * @param globalGrpBlockSize Global group block size.
      */
     public IgfsFileImpl(IgfsPath path, IgfsEntryInfo info, long globalGrpBlockSize) {
         A.notNull(path, "path");
         A.notNull(info, "info");
 
         this.path = path;
+
         fileId = info.id();
+
+        flags = IgfsUtils.flags(info.isDirectory(), info.isFile());
 
         if (info.isFile()) {
             blockSize = info.blockSize();
-
-            assert blockSize > 0; // By contract file must have blockSize > 0, while directory's blockSize == 0.
 
             len = info.length();
 
@@ -139,12 +153,12 @@ public final class IgfsFileImpl implements IgfsFile, Externalizable {
 
     /** {@inheritDoc} */
     @Override public boolean isFile() {
-        return blockSize > 0;
+        return IgfsUtils.isFile(flags);
     }
 
     /** {@inheritDoc} */
     @Override public boolean isDirectory() {
-        return blockSize == 0;
+        return IgfsUtils.isDirectory(flags);
     }
 
     /** {@inheritDoc} */
@@ -208,6 +222,7 @@ public final class IgfsFileImpl implements IgfsFile, Externalizable {
         U.writeStringMap(out, props);
         out.writeLong(accessTime);
         out.writeLong(modificationTime);
+        out.writeByte(flags);
     }
 
     /**
@@ -216,16 +231,42 @@ public final class IgfsFileImpl implements IgfsFile, Externalizable {
      * @param in Data input.
      */
     @Override public void readExternal(ObjectInput in) throws IOException {
-        path = new IgfsPath();
-
-        path.readExternal(in);
-
+        path = IgfsUtils.readPath(in);
         blockSize = in.readInt();
         grpBlockSize = in.readLong();
         len = in.readLong();
         props = U.readStringMap(in);
         accessTime = in.readLong();
         modificationTime = in.readLong();
+        flags = in.readByte();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
+        BinaryRawWriter rawWriter = writer.rawWriter();
+
+        IgfsUtils.writePath(rawWriter, path);
+        rawWriter.writeInt(blockSize);
+        rawWriter.writeLong(grpBlockSize);
+        rawWriter.writeLong(len);
+        IgfsUtils.writeProperties(rawWriter, props);
+        rawWriter.writeLong(accessTime);
+        rawWriter.writeLong(modificationTime);
+        rawWriter.writeByte(flags);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
+        BinaryRawReader rawReader = reader.rawReader();
+
+        path = IgfsUtils.readPath(rawReader);
+        blockSize = rawReader.readInt();
+        grpBlockSize = rawReader.readLong();
+        len = rawReader.readLong();
+        props = IgfsUtils.readProperties(rawReader);
+        accessTime = rawReader.readLong();
+        modificationTime = rawReader.readLong();
+        flags = rawReader.readByte();
     }
 
     /** {@inheritDoc} */

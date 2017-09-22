@@ -48,8 +48,11 @@ public class IgfsMetaDirectoryCreateProcessor implements EntryProcessor<IgniteUu
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Create time. */
-    private long createTime;
+    /** Access time. */
+    private long accessTime;
+
+    /** Modification time. */
+    private long modificationTime;
 
     /** Properties. */
     private Map<String, String> props;
@@ -70,24 +73,27 @@ public class IgfsMetaDirectoryCreateProcessor implements EntryProcessor<IgniteUu
     /**
      * Constructor.
      *
-     * @param createTime Create time.
+     * @param accessTime Create time.
+     * @param modificationTime Modification time.
      * @param props Properties.
      */
-    public IgfsMetaDirectoryCreateProcessor(long createTime, Map<String, String> props) {
-        this(createTime, props, null, null);
+    public IgfsMetaDirectoryCreateProcessor(long accessTime, long modificationTime, Map<String, String> props) {
+        this(accessTime, modificationTime, props, null, null);
     }
 
     /**
      * Constructor.
      *
-     * @param createTime Create time.
+     * @param accessTime Create time.
+     * @param modificationTime Modification time.
      * @param props Properties.
      * @param childName Child name.
      * @param childEntry Child entry.
      */
-    public IgfsMetaDirectoryCreateProcessor(long createTime, Map<String, String> props, String childName,
-        IgfsListingEntry childEntry) {
-        this.createTime = createTime;
+    public IgfsMetaDirectoryCreateProcessor(long accessTime, long modificationTime, Map<String, String> props,
+        String childName, IgfsListingEntry childEntry) {
+        this.accessTime = accessTime;
+        this.modificationTime = modificationTime;
         this.props = props;
         this.childName = childName;
         this.childEntry = childEntry;
@@ -101,8 +107,8 @@ public class IgfsMetaDirectoryCreateProcessor implements EntryProcessor<IgniteUu
             entry.getKey(),
             null,
             props,
-            createTime,
-            createTime
+            accessTime,
+            modificationTime
         );
 
         if (childName != null)
@@ -115,7 +121,8 @@ public class IgfsMetaDirectoryCreateProcessor implements EntryProcessor<IgniteUu
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeLong(createTime);
+        out.writeLong(accessTime);
+        out.writeLong(modificationTime);
 
         IgfsUtils.writeProperties(out, props);
 
@@ -127,7 +134,8 @@ public class IgfsMetaDirectoryCreateProcessor implements EntryProcessor<IgniteUu
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        createTime = in.readLong();
+        accessTime = in.readLong();
+        modificationTime = in.readLong();
 
         props = IgfsUtils.readProperties(in);
 
@@ -141,7 +149,8 @@ public class IgfsMetaDirectoryCreateProcessor implements EntryProcessor<IgniteUu
     @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
         BinaryRawWriter out = writer.rawWriter();
 
-        out.writeLong(createTime);
+        out.writeLong(accessTime);
+        out.writeLong(modificationTime);
 
         IgfsUtils.writeProperties(out, props);
 
@@ -155,7 +164,8 @@ public class IgfsMetaDirectoryCreateProcessor implements EntryProcessor<IgniteUu
     @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
         BinaryRawReader in = reader.rawReader();
 
-        createTime = in.readLong();
+        accessTime = in.readLong();
+        modificationTime = in.readLong();
 
         props = IgfsUtils.readProperties(in);
 

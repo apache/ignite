@@ -32,8 +32,8 @@ form.panel.panel-default(name=form novalidate)
             .col-sm-6
                 .settings-row
                     +number('Maximum pending puts size:', model + '.dualModeMaxPendingPutsSize', 'dualModeMaxPendingPutsSize', 'true', '0', 'Number.MIN_SAFE_INTEGER',
-                        'Maximum amount of pending data read from the secondary file system and waiting to be written to data cache\
-                        0 or negative value stands for unlimited size')
+                        'Maximum amount of pending data read from the secondary file system and waiting to be written to data cache<br/>\
+                        Zero or negative value stands for unlimited size')
                 .settings-row
                     +java-class('Put executor service:', model + '.dualModePutExecutorService', 'dualModePutExecutorService', 'true', 'false', 'DUAL mode put operation executor service')
                 .settings-row

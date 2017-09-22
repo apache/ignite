@@ -44,13 +44,13 @@ angular
         const setOptions = (acee, session, opts) => {
             // Sets the ace worker path, if running from concatenated or minified source.
             if (angular.isDefined(opts.workerPath)) {
-                const config = window.ace.require('ace/config');
+                const config = window.ace.acequire('ace/config');
 
                 config.set('workerPath', opts.workerPath);
             }
 
             // Ace requires loading.
-            _.forEach(opts.require, (n) => window.ace.require(n));
+            _.forEach(opts.require, (n) => window.ace.acequire(n));
 
             // Boolean options.
             if (angular.isDefined(opts.showGutter))

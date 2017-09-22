@@ -15,6 +15,9 @@
  * limitations under the License.
  */
 
+// Java built-in class names.
+import POM_DEPENDENCIES from 'app/data/pom-dependencies.json';
+
 /**
  * Pom file generation entry point.
  */
@@ -31,7 +34,8 @@ class GeneratorPom {
     }
 
     addDependency(deps, groupId, artifactId, version, jar) {
-        deps.push({groupId, artifactId, version, jar});
+        if (!_.find(deps, (dep) => dep.groupId === groupId && dep.artifactId === artifactId))
+            deps.push({groupId, artifactId, version, jar});
     }
 
     addResource(res, dir, exclude) {
@@ -132,8 +136,8 @@ class GeneratorPom {
      */
     generate(cluster, igniteVersion, res) {
         const caches = cluster.caches;
-        const dialect = {};
         const deps = [];
+        const storeDeps = [];
         const excludeGroupIds = ['org.apache.ignite'];
 
         const blobStoreFactory = {cacheStoreFactory: {kind: 'CacheHibernateBlobStoreFactory'}};
@@ -145,8 +149,11 @@ class GeneratorPom {
             if (cache.cacheStoreFactory && cache.cacheStoreFactory.kind) {
                 const storeFactory = cache.cacheStoreFactory[cache.cacheStoreFactory.kind];
 
-                if (storeFactory.dialect && (!storeFactory.connectVia || storeFactory.connectVia === 'DataSource'))
-                    dialect[storeFactory.dialect] = true;
+                if (storeFactory.dialect && (!storeFactory.connectVia || storeFactory.connectVia === 'DataSource')) {
+                    const dep = POM_DEPENDENCIES[storeFactory.dialect];
+
+                    this.addDependency(storeDeps, dep.groupId, dep.artifactId, dep.version, dep.jar);
+                }
             }
         });
 
@@ -172,14 +179,10 @@ class GeneratorPom {
         this.addDependency(deps, 'org.apache.ignite', 'ignite-indexing', igniteVersion);
         this.addDependency(deps, 'org.apache.ignite', 'ignite-rest-http', igniteVersion);
 
-        if (cluster.discovery.kind === 'Cloud')
-            this.addDependency(deps, 'org.apache.ignite', 'ignite-cloud', igniteVersion);
-        else if (cluster.discovery.kind === 'S3')
-            this.addDependency(deps, 'org.apache.ignite', 'ignite-aws', igniteVersion);
-        else if (cluster.discovery.kind === 'GoogleStorage')
-            this.addDependency(deps, 'org.apache.ignite', 'ignite-gce', igniteVersion);
-        else if (cluster.discovery.kind === 'ZooKeeper')
-            this.addDependency(deps, 'org.apache.ignite', 'ignite-zookeeper', igniteVersion);
+        let dep = POM_DEPENDENCIES[cluster.discovery.kind];
+
+        if (dep)
+            this.addDependency(deps, 'org.apache.ignite', dep.artifactId, igniteVersion);
 
         if (_.find(cluster.igfss, (igfs) => igfs.secondaryFileSystemEnabled))
             this.addDependency(deps, 'org.apache.ignite', 'ignite-hadoop', igniteVersion);
@@ -187,21 +190,14 @@ class GeneratorPom {
         if (_.find(caches, blobStoreFactory))
             this.addDependency(deps, 'org.apache.ignite', 'ignite-hibernate', igniteVersion);
 
-        dialect.Generic && this.addDependency(deps, 'com.mchange', 'c3p0', '0.9.5.1');
+        if (cluster.logger && cluster.logger.kind) {
+            dep = POM_DEPENDENCIES[cluster.logger.kind];
 
-        dialect.MySQL && this.addDependency(deps, 'mysql', 'mysql-connector-java', '5.1.37');
+            if (dep)
+                this.addDependency(deps, 'org.apache.ignite', dep.artifactId, igniteVersion);
+        }
 
-        dialect.PostgreSQL && this.addDependency(deps, 'org.postgresql', 'postgresql', '9.4-1204-jdbc42');
-
-        dialect.H2 && this.addDependency(deps, 'com.h2database', 'h2', '1.3.175');
-
-        dialect.Oracle && this.addDependency(deps, 'oracle', 'jdbc', '11.2', 'ojdbc6.jar');
-
-        dialect.DB2 && this.addDependency(deps, 'ibm', 'jdbc', '4.19.26', 'db2jcc4.jar');
-
-        dialect.SQLServer && this.addDependency(deps, 'microsoft', 'jdbc', '4.1', 'sqljdbc41.jar');
-
-        this.dependencies(res, cluster, deps);
+        this.dependencies(res, cluster, deps.concat(storeDeps));
 
         res.needEmptyLine = true;
 

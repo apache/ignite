@@ -48,7 +48,8 @@ namespace Apache.Ignite.Core.Impl.Messaging
             SendMulti = 4,
             SendOrdered = 5,
             StopLocalListen = 6,
-            StopRemoteListen = 7
+            StopRemoteListen = 7,
+            WithAsync = 8
         }
 
         /** Map from user (func+topic) -> id, needed for unsubscription. */
@@ -89,7 +90,8 @@ namespace Apache.Ignite.Core.Impl.Messaging
         /// Initializes a new async instance.
         /// </summary>
         /// <param name="messaging">The messaging.</param>
-        private Messaging(Messaging messaging) : base(UU.MessagingWithASync(messaging.Target), messaging.Marshaller)
+        private Messaging(Messaging messaging) : base(
+            UU.TargetOutObject(messaging.Target, (int) Op.WithAsync), messaging.Marshaller)
         {
             _isAsync = true;
             _ignite = messaging._ignite;

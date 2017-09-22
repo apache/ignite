@@ -17,7 +17,7 @@
 
 const template = '<i ng-show="form.$dirty" class="fa fa-undo pull-right" ng-click="revert($event)"></i>';
 
-export default ['igniteFormRevert', ['$tooltip', '$table', ($tooltip, $table) => {
+export default ['igniteFormRevert', ['$tooltip', 'IgniteLegacyTable', ($tooltip, LegacyTable) => {
     const link = (scope, $element, $attrs, [form]) => {
         $tooltip($element, { title: 'Undo unsaved changes' });
 
@@ -26,7 +26,7 @@ export default ['igniteFormRevert', ['$tooltip', '$table', ($tooltip, $table) =>
         scope.revert = (e) => {
             e.stopPropagation();
 
-            $table.tableReset();
+            LegacyTable.tableReset();
 
             _.forOwn(form.$defaults, (value, name) => {
                 const field = form[name];

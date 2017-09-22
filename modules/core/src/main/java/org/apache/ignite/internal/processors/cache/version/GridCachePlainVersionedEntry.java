@@ -25,10 +25,10 @@ import org.jetbrains.annotations.Nullable;
  */
 public class GridCachePlainVersionedEntry<K, V> implements GridCacheVersionedEntryEx<K, V> {
     /** Key. */
-    private final K key;
+    protected K key;
 
     /** Value. */
-    private final V val;
+    protected V val;
 
     /** TTL. */
     private final long ttl;
@@ -63,9 +63,6 @@ public class GridCachePlainVersionedEntry<K, V> implements GridCacheVersionedEnt
      */
     public GridCachePlainVersionedEntry(K key, V val, long ttl, long expireTime, GridCacheVersion ver,
         boolean isStartVer) {
-        assert ver != null;
-        assert key != null;
-
         this.key = key;
         this.val = val;
         this.ttl = ttl;

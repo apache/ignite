@@ -69,6 +69,18 @@ public class PlatformEvents extends PlatformAbstractTarget {
     private static final int OP_GET_ENABLED_EVENTS = 10;
 
     /** */
+    private static final int OP_WITH_ASYNC = 11;
+
+    /** */
+    private static final int OP_IS_ENABLED = 12;
+
+    /** */
+    private static final int OP_LOCAL_LISTEN = 13;
+
+    /** */
+    private static final int OP_STOP_LOCAL_LISTEN = 14;
+
+    /** */
     private final IgniteEvents events;
 
     /** */
@@ -94,50 +106,6 @@ public class PlatformEvents extends PlatformAbstractTarget {
         eventColResWriter = new EventCollectionResultWriter(platformCtx);
     }
 
-    /**
-     * Gets events with asynchronous mode enabled.
-     *
-     * @return Events with asynchronous mode enabled.
-     */
-    public PlatformEvents withAsync() {
-        if (events.isAsync())
-            return this;
-
-        return new PlatformEvents(platformCtx, events.withAsync());
-    }
-
-    /**
-     * Adds an event listener for local events.
-     *
-     * @param hnd Interop listener handle.
-     * @param type Event type.
-     */
-    @SuppressWarnings({"unchecked"})
-    public void localListen(long hnd, int type) {
-        events.localListen(localFilter(hnd), type);
-    }
-
-    /**
-     * Removes an event listener for local events.
-     *
-     * @param hnd Interop listener handle.
-     */
-    @SuppressWarnings({"UnusedDeclaration", "unchecked"})
-    public boolean stopLocalListen(long hnd) {
-        return events.stopLocalListen(localFilter(hnd));
-    }
-
-    /**
-     * Check if event is enabled.
-     *
-     * @param type Event type.
-     * @return {@code True} if event of passed in type is enabled.
-     */
-    @SuppressWarnings("UnusedDeclaration")
-    public boolean isEnabled(int type) {
-        return events.isEnabled(type);
-    }
-
     /** {@inheritDoc} */
     @Override protected long processInStreamOutLong(int type, BinaryRawReaderEx reader)
         throws IgniteCheckedException {
@@ -160,6 +128,11 @@ public class PlatformEvents extends PlatformAbstractTarget {
 
             case OP_STOP_REMOTE_LISTEN:
                 events.stopRemoteListen(reader.readUuid());
+
+                return TRUE;
+
+            case OP_LOCAL_LISTEN:
+                events.localListen(localFilter(reader.readLong()), reader.readInt());
 
                 return TRUE;
 
@@ -270,12 +243,38 @@ public class PlatformEvents extends PlatformAbstractTarget {
         }
     }
 
-    /** <inheritDoc /> */
+    /** {@inheritDoc} */
+    @Override protected Object processOutObject(int type) throws IgniteCheckedException {
+        switch (type) {
+            case OP_WITH_ASYNC:
+                if (events.isAsync())
+                    return this;
+
+                return new PlatformEvents(platformCtx, events.withAsync());
+        }
+
+        return super.processOutObject(type);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected long processInLongOutLong(int type, long val) throws IgniteCheckedException {
+        switch (type) {
+            case OP_IS_ENABLED:
+                return events.isEnabled((int)val) ? TRUE : FALSE;
+
+            case OP_STOP_LOCAL_LISTEN:
+                return events.stopLocalListen(localFilter(val)) ? TRUE : FALSE;
+        }
+
+        return super.processInLongOutLong(type, val);
+    }
+
+    /** {@inheritDoc} */
     @Override protected IgniteInternalFuture currentFuture() throws IgniteCheckedException {
         return ((IgniteFutureImpl)events.future()).internalFuture();
     }
 
-    /** <inheritDoc /> */
+    /** {@inheritDoc} */
     @Nullable @Override protected PlatformFutureUtils.Writer futureWriter(int opId) {
         switch (opId) {
             case OP_WAIT_FOR_LOCAL:

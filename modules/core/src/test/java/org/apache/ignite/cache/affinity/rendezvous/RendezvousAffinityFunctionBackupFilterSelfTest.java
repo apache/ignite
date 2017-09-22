@@ -32,4 +32,13 @@ public class RendezvousAffinityFunctionBackupFilterSelfTest extends AffinityFunc
 
         return aff;
     }
+
+    /** {@inheritDoc} */
+    @Override protected AffinityFunction affinityFunctionWithAffinityBackupFilter() {
+        RendezvousAffinityFunction aff = new RendezvousAffinityFunction(false);
+
+        aff.setAffinityBackupFilter(affinityBackupFilter);
+
+        return aff;
+    }
 }

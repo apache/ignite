@@ -229,7 +229,7 @@ public class IgniteServicesImpl extends AsyncSupportAdapter implements IgniteSer
         guard();
 
         try {
-            return ctx.service().serviceProxy(prj, name, svcItf, sticky);
+            return (T)ctx.service().serviceProxy(prj, name, svcItf, sticky);
         }
         finally {
             unguard();

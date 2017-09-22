@@ -68,6 +68,6 @@ public class GridCachePartitionedOffHeapTieredMultiNodeFullApiSelfTest extends G
         assertEquals(5, primaryCache.localPeek(key, CachePeekMode.ONHEAP).intValue());
         assertNull(primaryCache.localPeek(key, CachePeekMode.OFFHEAP));
         assertEquals(5, cache.get(key).intValue());
-        assertEquals(5, map.get(key));
+        assertEquals(5, storeStgy.getFromStore(key));
     }
 }

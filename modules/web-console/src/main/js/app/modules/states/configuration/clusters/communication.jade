@@ -41,7 +41,7 @@ form.panel.panel-default(name=form novalidate)
                 .settings-row
                     +java-class('Communication listener:', communication + '.listener', 'comListener', 'true', 'false', 'Communication listener')
                 .settings-row
-                    +text-ip-address('Local IP address:', communication + '.localAddress', 'comLocalAddress', 'true', '228.1.2.4', 'Local host address for socket binding')
+                    +text-ip-address('Local IP address:', communication + '.localAddress', 'comLocalAddress', 'true', '0.0.0.0', 'Local host address for socket binding')
                 .settings-row
                     +number-min-max('Local port:', communication + '.localPort', 'comLocalPort', 'true', '47100', '1024', '65535', 'Local port for socket binding')
                 .settings-row
@@ -50,12 +50,6 @@ form.panel.panel-default(name=form novalidate)
                     +number-min-max('Shared memory port:', communication + '.sharedMemoryPort', 'sharedMemoryPort', 'true', '48100', '-1', '65535',
                         'Local port to accept shared memory connections<br/>\
                         If set to #[b -1] shared memory communication will be disabled')
-                .settings-row
-                    +checkbox('Direct buffer', communication + '.directBuffer', 'directBuffer',
-                        'If value is true, then SPI will use ByteBuffer.allocateDirect(int) call<br/>\
-                        Otherwise, SPI will use ByteBuffer.allocate(int) call.')
-                .settings-row
-                    +checkbox('Direct send buffer', communication + '.directSendBuffer', 'directSendBuffer', 'Flag defining whether direct send buffer should be used')
                 .settings-row
                     +number('Idle connection timeout:', communication + '.idleConnectionTimeout', 'idleConnectionTimeout', 'true', '30000', '1',
                         'Maximum idle connection timeout upon which a connection to client will be closed')
@@ -71,20 +65,32 @@ form.panel.panel-default(name=form novalidate)
                 .settings-row
                     +number('Socket receive buffer:', communication + '.socketReceiveBuffer', 'socketReceiveBuffer', 'true', '32768', '0', 'Receive buffer size for sockets created or accepted by this SPI')
                 .settings-row
-                    +number('Message queue limit:', communication + '.messageQueueLimit', 'messageQueueLimit', 'true', '1024', '0', 'Message queue limit for incoming and outgoing messages')
-                .settings-row
                     +number('Slow client queue limit:', communication + '.slowClientQueueLimit', 'slowClientQueueLimit', 'true', '0', '0', 'Slow client queue limit')
-                .settings-row
-                    +checkbox('TCP_NODELAY option', communication + '.tcpNoDelay', 'tcpNoDelay', 'Value for TCP_NODELAY socket option')
                 .settings-row
                     +number('Ack send threshold:', communication + '.ackSendThreshold', 'ackSendThreshold', 'true', '16', '1', 'Number of received messages per connection to node after which acknowledgment message is sent')
                 .settings-row
-                    +number('Unacknowledged messages:', communication + '.unacknowledgedMessagesBufferSize', 'unacknowledgedMessagesBufferSize', 'true', '0', '0', 'Maximum number of stored unacknowledged messages per connection to node')
+                    +number('Message queue limit:', communication + '.messageQueueLimit', 'messageQueueLimit', 'true', '1024', '0', 'Message queue limit for incoming and outgoing messages')
+                .settings-row
+                    +number('Unacknowledged messages:', communication + '.unacknowledgedMessagesBufferSize', 'unacknowledgedMessagesBufferSize', 'true', '0', '0',
+                        'Maximum number of stored unacknowledged messages per connection to node<br/>\
+                        If specified non zero value it should be\
+                        <ul>\
+                            <li>At least ack send threshold * 5</li>\
+                            <li>At least message queue limit * 5</li>\
+                        </ul>')
                 .settings-row
                     +number('Socket write timeout:', communication + '.socketWriteTimeout', 'socketWriteTimeout', 'true', '2000', '0', 'Socket write timeout')
                 .settings-row
                     +number('Selectors count:', communication + '.selectorsCount', 'selectorsCount', 'true', 'min(4, availableProcessors)', '1', 'Count of selectors te be used in TCP server')
                 .settings-row
                     +java-class('Address resolver:', communication + '.addressResolver', 'comAddressResolver', 'true', 'false', 'Address resolver')
+                .settings-row
+                    +checkbox('Direct buffer', communication + '.directBuffer', 'directBuffer',
+                    'If value is true, then SPI will use ByteBuffer.allocateDirect(int) call<br/>\
+                    Otherwise, SPI will use ByteBuffer.allocate(int) call.')
+                .settings-row
+                    +checkbox('Direct send buffer', communication + '.directSendBuffer', 'directSendBuffer', 'Flag defining whether direct send buffer should be used')
+                .settings-row
+                    +checkbox('TCP_NODELAY option', communication + '.tcpNoDelay', 'tcpNoDelay', 'Value for TCP_NODELAY socket option')
             .col-sm-6
                 +preview-xml-java(model, 'clusterCommunication')

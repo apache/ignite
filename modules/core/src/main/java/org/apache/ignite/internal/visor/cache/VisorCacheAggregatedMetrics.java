@@ -23,12 +23,13 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.internal.LessNamingBean;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Data transfer object for aggregated cache metrics.
  */
-public class VisorCacheAggregatedMetrics implements Serializable {
+public class VisorCacheAggregatedMetrics implements Serializable, LessNamingBean {
     /** */
     private static final long serialVersionUID = 0L;
 

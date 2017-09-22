@@ -81,6 +81,6 @@ public class SampleValue implements Externalizable, Binarylizable {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return "Value [id=" + id + ']';
+        return "SampleValue [id=" + id + ']';
     }
 }

@@ -322,6 +322,7 @@ namespace Apache.Ignite.Core.Tests.Services
 
             // .. but setter does not
             var ex = Assert.Throws<ServiceInvocationException>(() => { prx.TestProperty = new object(); });
+            Assert.IsNotNull(ex.InnerException);
             Assert.AreEqual("Object of type 'System.Object' cannot be converted to type 'System.Int32'.",
                 ex.InnerException.Message);
         }

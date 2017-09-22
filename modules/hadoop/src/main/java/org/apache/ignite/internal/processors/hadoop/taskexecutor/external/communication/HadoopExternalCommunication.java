@@ -177,6 +177,9 @@ public class HadoopExternalCommunication {
     /** Grid name. */
     private String gridName;
 
+    /** Work directory. */
+    private String workDir;
+
     /** Complex variable that represents this node IP address. */
     private volatile InetAddress locHost;
 
@@ -254,6 +257,7 @@ public class HadoopExternalCommunication {
      * @param log Logger.
      * @param execSvc Executor service for message notification.
      * @param gridName Grid name.
+     * @param workDir Work directory.
      */
     public HadoopExternalCommunication(
         UUID parentNodeId,
@@ -261,7 +265,8 @@ public class HadoopExternalCommunication {
         Marshaller marsh,
         IgniteLogger log,
         ExecutorService execSvc,
-        String gridName
+        String gridName,
+        String workDir
     ) {
         locProcDesc = new HadoopProcessDescriptor(parentNodeId, procId);
 
@@ -269,6 +274,7 @@ public class HadoopExternalCommunication {
         this.log = log.getLogger(HadoopExternalCommunication.class);
         this.execSvc = execSvc;
         this.gridName = gridName;
+        this.workDir = workDir;
     }
 
     /**
@@ -685,7 +691,7 @@ public class HadoopExternalCommunication {
             try {
                 IpcSharedMemoryServerEndpoint srv = new IpcSharedMemoryServerEndpoint(
                     log.getLogger(IpcSharedMemoryServerEndpoint.class),
-                    locProcDesc.processId(), gridName);
+                    locProcDesc.processId(), gridName, workDir);
 
                 srv.setPort(port);
 

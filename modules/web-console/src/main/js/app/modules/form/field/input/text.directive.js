@@ -15,10 +15,10 @@
  * limitations under the License.
  */
 
-import template from './text.jade!';
-import './text.css!';
+import templateUrl from './text.jade';
+import './text.css';
 
-export default ['igniteFormFieldInputText', ['IgniteFormGUID', '$table', (guid, $table) => {
+export default ['igniteFormFieldInputText', ['IgniteFormGUID', 'IgniteLegacyTable', (guid, LegacyTable) => {
     const link = (scope, element, attrs, [ngModel, form, label], transclude) => {
         const {id, ngModelName} = scope;
 
@@ -37,11 +37,14 @@ export default ['igniteFormFieldInputText', ['IgniteFormGUID', '$table', (guid, 
             label.for = scope.id;
 
             scope.label = label;
+            scope.labelName = label.name;
 
             scope.$watch('required', (required) => {
                 label.required = required || false;
             });
         }
+        else
+            scope.labelName = attrs.igniteLabelName || 'Value';
 
         form.$defaults = form.$defaults || {};
 
@@ -75,10 +78,10 @@ export default ['igniteFormFieldInputText', ['IgniteFormGUID', '$table', (guid, 
         scope.ngChange = () => {
             ngModel.$setViewValue(scope.value);
 
-            if (JSON.stringify(scope.value) !== JSON.stringify(form.$defaults[name]))
-                ngModel.$setDirty();
-            else
+            if (_.isEqual(scope.value, form.$defaults[name]))
                 ngModel.$setPristine();
+            else
+                ngModel.$setDirty();
 
             setTimeout(checkValid, 100); // Use setTimeout() workaround of problem of two controllers.
         };
@@ -87,9 +90,8 @@ export default ['igniteFormFieldInputText', ['IgniteFormGUID', '$table', (guid, 
             scope.value = ngModel.$modelValue;
         };
 
-        // TODO LEGACY
         scope.tableReset = () => {
-            $table.tableSaveAndReset();
+            LegacyTable.tableSaveAndReset();
         };
 
         transclude(scope.$parent, function(clone, tscope) {
@@ -116,7 +118,7 @@ export default ['igniteFormFieldInputText', ['IgniteFormGUID', '$table', (guid, 
             autofocus: '=igniteFormFieldInputAutofocus'
         },
         link,
-        template,
+        templateUrl,
         replace: true,
         transclude: true,
         require: ['ngModel', '^form', '?^igniteFormField']
