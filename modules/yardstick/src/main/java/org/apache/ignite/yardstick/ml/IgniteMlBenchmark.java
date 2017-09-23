@@ -18,6 +18,7 @@
 package org.apache.ignite.yardstick.ml;
 
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.yardstick.cache.IgniteCacheAbstractBenchmark;
 import org.apache.ignite.yardstick.cache.model.SampleValue;
@@ -26,9 +27,16 @@ import org.apache.ignite.yardstick.cache.model.SampleValue;
  * Ignite benchmark that performs ML Grid operations.
  * Todo rework this benchmark (taken as-is from IgnitePutBenchmark) into ml.
  */
+@SuppressWarnings("unused")
 public class IgniteMlBenchmark extends IgniteCacheAbstractBenchmark<Integer, Object> {
+    /** */
+    private static AtomicBoolean startLogged = new AtomicBoolean(false);
+
     /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
+        if (!startLogged.getAndSet(true))
+            System.out.println(">>> Starting " + this.getClass().getSimpleName());
+
         int key = nextRandom(args.range());
 
         IgniteCache<Integer, Object> cache = cacheForOperation();
