@@ -27,10 +27,9 @@ import org.apache.ignite.yardstick.IgniteAbstractBenchmark;
 
 /**
  * Ignite benchmark that performs ML Grid operations.
- * Todo rework this benchmark (taken as-is from IgnitePutBenchmark) into ml.
  */
 @SuppressWarnings("unused")
-public class IgniteMlBenchmark extends IgniteAbstractBenchmark {
+public class IgniteKMeansLocalClustererBenchmark extends IgniteAbstractBenchmark {
     /** */
     private static AtomicBoolean startLogged = new AtomicBoolean(false);
 
