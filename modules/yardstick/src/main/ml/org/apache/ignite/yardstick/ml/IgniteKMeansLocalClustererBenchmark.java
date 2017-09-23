@@ -24,6 +24,7 @@ import org.apache.ignite.ml.clustering.KMeansModel;
 import org.apache.ignite.ml.math.EuclideanDistance;
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.yardstick.IgniteAbstractBenchmark;
+import org.yardstickframework.BenchmarkUtils;
 
 /**
  * Ignite benchmark that performs ML Grid operations.
@@ -36,7 +37,7 @@ public class IgniteKMeansLocalClustererBenchmark extends IgniteAbstractBenchmark
     /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
         if (!startLogged.getAndSet(true))
-            System.out.println(">>> Starting " + this.getClass().getSimpleName());
+            BenchmarkUtils.println("Starting " + this.getClass().getSimpleName());
 
         // IMPL NOTE originally taken from KMeansLocalClustererTest
         KMeansLocalClusterer clusterer = new KMeansLocalClusterer(new EuclideanDistance(), 1, 1L);
