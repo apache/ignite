@@ -19,16 +19,18 @@ package org.apache.ignite.yardstick.ml;
 
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
-import org.apache.ignite.IgniteCache;
-import org.apache.ignite.yardstick.cache.IgniteCacheAbstractBenchmark;
-import org.apache.ignite.yardstick.cache.model.SampleValue;
+import org.apache.ignite.ml.clustering.KMeansLocalClusterer;
+import org.apache.ignite.ml.clustering.KMeansModel;
+import org.apache.ignite.ml.math.EuclideanDistance;
+import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
+import org.apache.ignite.yardstick.IgniteAbstractBenchmark;
 
 /**
  * Ignite benchmark that performs ML Grid operations.
  * Todo rework this benchmark (taken as-is from IgnitePutBenchmark) into ml.
  */
 @SuppressWarnings("unused")
-public class IgniteMlBenchmark extends IgniteCacheAbstractBenchmark<Integer, Object> {
+public class IgniteMlBenchmark extends IgniteAbstractBenchmark {
     /** */
     private static AtomicBoolean startLogged = new AtomicBoolean(false);
 
@@ -37,17 +39,18 @@ public class IgniteMlBenchmark extends IgniteCacheAbstractBenchmark<Integer, Obj
         if (!startLogged.getAndSet(true))
             System.out.println(">>> Starting " + this.getClass().getSimpleName());
 
-        int key = nextRandom(args.range());
+        // IMPL NOTE originally taken from KMeansLocalClustererTest
+        KMeansLocalClusterer clusterer = new KMeansLocalClusterer(new EuclideanDistance(), 1, 1L);
 
-        IgniteCache<Integer, Object> cache = cacheForOperation();
+        double[] v1 = new double[] {1959, 325100};
+        double[] v2 = new double[] {1960, 373200};
 
-        cache.put(key, new SampleValue(key));
+        DenseLocalOnHeapMatrix points = new DenseLocalOnHeapMatrix(new double[][] {
+            v1,
+            v2});
+
+        KMeansModel mdl = clusterer.cluster(points, 1);
 
         return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteCache<Integer, Object> cache() {
-        return ignite().cache("atomic");
     }
 }
