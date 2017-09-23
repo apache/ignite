@@ -167,12 +167,9 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
 
                 StringBuilder pathBuilder = new StringBuilder();
 
-                // The path separator is always a slash (/) in case of getting path via ClassLoader
                 String corePathTemplate = "modules/core/target/classes";
                 String coreTestsPathTemplate = "modules/core/target/test-classes";
 
-                // 'System.getProperty("java.path.class")' mustn't be used here,
-                // because it doesn't work properly in case of start by 'mvn test'
                 for (URL url : ldr.getURLs()) {
                     String path = url.getPath();
 
