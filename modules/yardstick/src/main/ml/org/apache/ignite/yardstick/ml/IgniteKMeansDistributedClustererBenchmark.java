@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.ml.clustering.KMeansDistributedClusterer;
 import org.apache.ignite.ml.clustering.KMeansModel;
 import org.apache.ignite.ml.math.EuclideanDistance;
@@ -43,7 +44,7 @@ public class IgniteKMeansDistributedClustererBenchmark extends IgniteAbstractBen
         if (!startLogged.getAndSet(true))
             BenchmarkUtils.println("Starting " + this.getClass().getSimpleName());
 
-        try (Ignite ignite = Ignition.localIgnite()) {
+        try (Ignite ignite = Ignition.getOrStart(new IgniteConfiguration())) {
             // Create IgniteThread, we must work with SparseDistributedMatrix inside IgniteThread
             // because we create ignite cache internally.
             IgniteThread igniteThread = new IgniteThread(ignite.configuration().getIgniteInstanceName(),
