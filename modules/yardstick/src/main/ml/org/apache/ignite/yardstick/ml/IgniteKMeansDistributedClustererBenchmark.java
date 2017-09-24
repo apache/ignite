@@ -74,6 +74,6 @@ public class IgniteKMeansDistributedClustererBenchmark extends IgniteAbstractBen
             igniteThread.join();
         }
 
-        return true;
+        return false;
     }
 }
