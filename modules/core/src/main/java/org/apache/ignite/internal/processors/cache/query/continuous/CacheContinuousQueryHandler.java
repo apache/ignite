@@ -465,40 +465,21 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
 
                     ClusterNode node = ctx.discovery().node(nodeId);
 
-                    IgniteClosure<CacheEntryEvent<? extends K, ? extends V>, ?> trans = getTransformer();
-
                     for (Map.Entry<Integer, CacheContinuousQueryEventBuffer> bufE : entryBufs.entrySet()) {
                         CacheContinuousQueryEventBuffer buf = bufE.getValue();
 
                         Collection<CacheContinuousQueryEntry> backupQueue = buf.flushOnExchange();
 
                         if (backupQueue != null && node != null) {
-                            Collection<CacheContinuousQueryEntry> transBackupQueue =
-                                trans != null ?
-                                    new ArrayList<CacheContinuousQueryEntry>(backupQueue.size()) :
-                                    null;
-
-                            Cache cache = cctx.kernalContext().cache().jcache(cctx.name());
-
                             for (CacheContinuousQueryEntry e : backupQueue) {
                                 e.markBackup();
 
                                 if (!e.isFiltered()) {
-                                    if (trans != null) {
-                                        e = transformToEntry(trans, new CacheContinuousQueryEvent<K, V>(cache, cctx, e));
-
-                                        transBackupQueue.add(e);
-                                    }
-
                                     prepareEntry(cctx, nodeId, e);
                                 }
                             }
 
-                            ctx.continuous().addBackupNotification(
-                                nodeId,
-                                routineId,
-                                trans != null ? transBackupQueue: backupQueue,
-                                topic);
+                            ctx.continuous().addBackupNotification(nodeId, routineId, backupQueue, topic);
                         }
                     }
                 }
@@ -876,24 +857,24 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
 
             CacheContinuousQueryEntry entry = evt.entry();
 
+            IgniteClosure<CacheEntryEvent<? extends K, ? extends V>, ?> trans = getTransformer();
+
             if (loc) {
                 if (!locCache) {
                     Collection<CacheEntryEvent<? extends K, ? extends V>> evts = handleEvent(ctx, entry);
 
-                    notifyLocalListener(evts, getTransformer());
+                    notifyLocalListener(evts, trans);
 
                     if (!internal && !skipPrimaryCheck)
                         sendBackupAcknowledge(ackBuf.onAcknowledged(entry), routineId, ctx);
                 }
                 else {
                     if (!entry.isFiltered())
-                        notifyLocalListener(F.<CacheEntryEvent<? extends K, ? extends V>>asList(evt), getTransformer());
+                        notifyLocalListener(F.<CacheEntryEvent<? extends K, ? extends V>>asList(evt), trans);
                 }
             }
             else {
                 if (!entry.isFiltered()) {
-                    IgniteClosure<CacheEntryEvent<? extends K, ? extends V>, ?> trans = getTransformer();
-
                     if (trans != null)
                         entry = transformToEntry(trans, evt);
 
