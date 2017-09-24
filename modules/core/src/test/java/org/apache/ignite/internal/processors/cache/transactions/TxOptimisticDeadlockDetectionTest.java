@@ -19,11 +19,10 @@ package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -31,26 +30,22 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
-import org.apache.ignite.internal.processors.cache.CacheObjectContext;
-import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxLocal;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -58,7 +53,6 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionDeadlockException;
@@ -176,10 +170,8 @@ public class TxOptimisticDeadlockDetectionTest extends AbstractDeadlockDetection
      */
     public void testDeadlocksPartitionedNearTxOnPrimary() throws Exception {
         for (CacheWriteSynchronizationMode syncMode : CacheWriteSynchronizationMode.values()) {
-            doTestDeadlocksTxOnPrimary(createCache(PARTITIONED, syncMode, true), 3, ORDINAL_START_KEY);
-            doTestDeadlocksTxOnPrimary(createCache(PARTITIONED, syncMode, true), 3, CUSTOM_START_KEY);
-            doTestDeadlocksTxOnPrimary(createCache(PARTITIONED, syncMode, true), 4, ORDINAL_START_KEY);
-            doTestDeadlocksTxOnPrimary(createCache(PARTITIONED, syncMode, true), 4, CUSTOM_START_KEY);
+            doTestDeadlocksTxOnPrimary(createCache(PARTITIONED, syncMode, true),  ORDINAL_START_KEY);
+            doTestDeadlocksTxOnPrimary(createCache(PARTITIONED, syncMode, true),  CUSTOM_START_KEY);
         }
     }
 
@@ -246,22 +238,20 @@ public class TxOptimisticDeadlockDetectionTest extends AbstractDeadlockDetection
      * @param cache Cache.
      * @param startKey Start key.
      */
-    private void doTestDeadlocksTxOnPrimary(IgniteCache cache, int txCnt, Object startKey) {
+    private void doTestDeadlocksTxOnPrimary(IgniteCache cache, Object startKey) {
         try {
             awaitPartitionMapExchange();
 
-            getOrCreateStrLoggerForGrid(0).reset();
+            doTestDeadlock(3, false, false, startKey, true);
 
-            List<List<Object>> ordinalKeys = generateKeys(txCnt, startKey, false, true);
-
-            startWaiterThread(ordinalKeys.get(0).get(0));
-
-            doTestDeadlock(txCnt, false, ordinalKeys, 0);
-
+            doTestDeadlock(4, false, false, startKey, true);
         }
         catch (Throwable e) {
-            assertTrue("Deadlock detection has not been called on 0 node.",
-                getOrCreateStrLoggerForGrid(0).toString().contains("Deadlock detection started"));
+            U.error(log, "Unexpected exception: ", e);
+
+            //TODO "if" statement will be removed after fixing https://issues.apache.org/jira/browse/IGNITE-6445
+            if (!e.getMessage().equals("Failed to detect deadlock"))
+                fail();
         }
         finally {
             if (cache != null)
@@ -274,10 +264,7 @@ public class TxOptimisticDeadlockDetectionTest extends AbstractDeadlockDetection
      */
     private void doTestDeadlock(int txCnt, boolean lockPrimaryFirst, boolean clientTx,
         Object startKey) throws Exception {
-        log.info(">>> Test deadlock [txCnt=" + txCnt + ", lockPrimaryFirst=" + lockPrimaryFirst +
-            ", clientTx=" + clientTx + ", startKey=" + startKey + ']');
-
-        doTestDeadlock(txCnt, clientTx, generateKeys(txCnt, startKey, !lockPrimaryFirst, false), -10);
+        doTestDeadlock(txCnt, lockPrimaryFirst, clientTx, startKey, false);
     }
 
     /**
@@ -285,16 +272,22 @@ public class TxOptimisticDeadlockDetectionTest extends AbstractDeadlockDetection
      */
     private void doTestDeadlock(
         final int txCnt,
+        boolean lockPrimaryFirst,
         final boolean clientTx,
-        final List<List<Object>> keySets,
-        final int lastNodeId
+        Object startKey,
+        boolean txOnPrimary
     ) throws Exception {
+
+        log.info(">>> Test deadlock [txCnt=" + txCnt + ", lockPrimaryFirst=" + lockPrimaryFirst +
+            ", clientTx=" + clientTx + ", startKey=" + startKey + ", txOnPrimary=" + txOnPrimary + ']');
 
         TestCommunicationSpi.init(txCnt);
 
         final AtomicInteger threadCnt = new AtomicInteger();
 
         final AtomicReference<TransactionDeadlockException> deadlockErr = new AtomicReference<>();
+
+        final List<List<Object>> keySets = generateKeys(txCnt, startKey, !lockPrimaryFirst, txOnPrimary);
 
         final Set<Object> involvedKeys = new GridConcurrentHashSet<>();
         final Set<Object> involvedLockedKeys = new GridConcurrentHashSet<>();
@@ -336,13 +329,11 @@ public class TxOptimisticDeadlockDetectionTest extends AbstractDeadlockDetection
                         ((IgniteCacheProxy)cache).context().affinity().primaryByKey(key, NONE);
 
                     List<Object> primaryKeys = primaryKeys(
-                        grid(primaryNode).cache(CACHE_NAME), 5, incrementKey(key , (100 * threadNum)));
+                        grid(primaryNode).cache(CACHE_NAME), 5, incrementKey(key, (100 * threadNum)));
 
-                    Map<Object, Integer> entries = new HashMap<>();
+                    Map<Object, Integer> entries = new LinkedHashMap<>();
 
                     involvedKeys.add(key);
-
-                    entries.put(key, 0);
 
                     for (Object o : primaryKeys) {
                         involvedKeys.add(o);
@@ -356,22 +347,24 @@ public class TxOptimisticDeadlockDetectionTest extends AbstractDeadlockDetection
                         entries.put(k, 2);
                     }
 
+                    entries.put(key, 0);
+
                     log.info(">>> Performs put [node=" + ((IgniteKernal)ignite).localNode().id() +
                         ", tx=" + tx.xid() + ", entries=" + entries + ']');
 
                     cache.putAll(entries);
-
-                    if (threadNum == lastNodeId + 1) {
-                        while (TestCommunicationSpi.TX_IDS.size() < TestCommunicationSpi.TX_CNT - 1)
-                            U.sleep(50);
-                    }
 
                     tx.commit();
                 }
                 catch (Throwable e) {
                     log.info("Expected exception: " + e);
 
-                    e.printStackTrace(System.out);
+                    String stackTrace = X.getFullStackTrace(e);
+
+                    log.info(stackTrace);
+
+                    assertTrue("DeadlockDetection hasn't executed at "+ (threadNum - 1) + " node.",
+                        stackTrace.contains(TxDeadlockDetection.class.getName()));
 
                     // At least one stack trace should contain TransactionDeadlockException.
                     if (hasCause(e, TransactionTimeoutException.class) &&
@@ -430,15 +423,10 @@ public class TxOptimisticDeadlockDetectionTest extends AbstractDeadlockDetection
             List<T> keys = new ArrayList<>(2);
 
             int n1 = i + 1;
-            int n2 = n1 + 1;
+            int n2 = txOnPrimary ? i :n1 + 1;
 
             int i1 = n1 < nodesCnt ? n1 : n1 - nodesCnt;
             int i2 = n2 < nodesCnt ? n2 : n2 - nodesCnt;
-
-            if(txOnPrimary){
-                i1 = i1 >=1 && i1 <= 2 ? 0 : i1;
-                i2 = i2 >=1 && i2 <= 2 ? 0 : i2;
-            }
 
             keys.add(primaryKey(ignite(i1).cache(CACHE_NAME), startKey));
             keys.add(primaryKey(ignite(i2).cache(CACHE_NAME), startKey));
@@ -449,89 +437,6 @@ public class TxOptimisticDeadlockDetectionTest extends AbstractDeadlockDetection
         }
 
         return keySets;
-
-    }
-
-    /**
-     * Start a thread that waits for the key to lock.
-     *
-     * @param key Key.
-     */
-    private void startWaiterThread(final Object key) {
-        GridTestUtils.runAsync(new Runnable() {
-            @Override public void run() {
-                try {
-                    U.sleep(100);
-
-                    ClusterNode primaryNode =
-                        ((IgniteCacheProxy)grid(0).cache(CACHE_NAME)).context().affinity().primaryByKey(key, NONE);
-
-                    IgniteEx grid = (IgniteEx)grid(primaryNode);
-
-                    IgniteTxManager tm = grid.context().cache().context().tm();
-
-                    CacheObjectContext ctx =
-                        ((IgniteCacheProxy)grid.cache(CACHE_NAME)).context().cacheObjectContext();
-
-                    UUID nodeId = grid.context().localNodeId();
-
-                    IgniteTxEntry entry = null;
-
-                    while (entry == null) {
-                        for (IgniteInternalTx internalTx : tm.activeTransactions()) {
-                            if ((internalTx instanceof GridDhtTxLocal && internalTx.nodeId().equals(nodeId))) {
-                                for (IgniteTxEntry e : internalTx.allEntries()) {
-                                    Object val = e.key().value(ctx, false);
-
-                                    if (val != null && val.equals(key)) {
-                                        entry = e;
-
-                                        break;
-                                    }
-
-                                }
-
-                                if (entry != null)
-                                    break;
-                            }
-                        }
-
-                        U.sleep(50);
-                    }
-                    while (((GridCacheMapEntry)entry.cached()).mvccAllLocal() == null)
-                        U.sleep(50);
-
-                }
-                catch (IgniteInterruptedCheckedException e) {
-                    e.printStackTrace(System.out);
-
-                }
-
-                TestCommunicationSpi.TX_IDS.add(new GridCacheVersion());
-            }
-        });
-    }
-
-    /**
-     * @param gridId Grid id.
-     */
-    private GridStringLogger getOrCreateStrLoggerForGrid(int gridId) {
-        IgniteTxManager tm = grid(gridId).context().cache().context().tm();
-
-        TxDeadlockDetection dd = GridTestUtils.getFieldValue(tm, IgniteTxManager.class, "txDeadlockDetection");
-
-        IgniteLogger log = GridTestUtils.getFieldValue(dd, TxDeadlockDetection.class, "log");
-
-        if (log instanceof GridStringLogger)
-            return (GridStringLogger)log;
-        else {
-            GridStringLogger strLog = new GridStringLogger(true, log);
-
-            GridTestUtils.setFieldValue(dd, "log", strLog);
-
-            return strLog;
-        }
-
     }
 
     /**
