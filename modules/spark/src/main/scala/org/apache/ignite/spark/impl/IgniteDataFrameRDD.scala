@@ -17,29 +17,32 @@
 
 package org.apache.ignite.spark.impl
 
+import org.apache.ignite.Ignition
 import org.apache.ignite.cache.CacheMode
 import org.apache.ignite.cache.query.SqlFieldsQuery
-import org.apache.ignite.configuration.CacheConfiguration
-import org.apache.ignite.spark.IgniteContext
-import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode
+import org.apache.ignite.cluster.ClusterNode
+import org.apache.ignite.configuration.{CacheConfiguration, IgniteConfiguration}
+import org.apache.spark.internal.Logging
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.expressions.GenericRowWithSchema
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.{Partition, TaskContext}
+import org.apache.spark.{Partition, SparkContext, TaskContext}
 
 import scala.collection.JavaConverters._
 import scala.collection.JavaConversions._
+import scala.collection.mutable.ArrayBuffer
 
 /**
   * Implementation of Spark RDD for Apache Ignite to support Data Frame API.
   */
 class IgniteDataFrameRDD(
-    ctx: IgniteContext,
+    @transient sparkContext: SparkContext,
+    cfg: () ⇒ IgniteConfiguration,
     cacheName: String,
     schema: StructType,
     query: String,
-    args: List[Any]) extends RDD[Row](ctx.sparkContext, Nil) {
+    args: List[Any]) extends RDD[Row](sparkContext, Nil) with Logging {
 
     /**
       *
@@ -48,18 +51,23 @@ class IgniteDataFrameRDD(
       * @return Results of query for specific partition.
       */
     override def compute(partition: Partition, context: TaskContext): Iterator[Row] = {
-        val ignite = ctx.ignite()
+        val igniteDataFramePartition = partition.asInstanceOf[IgniteDataFramePartition]
+
+        val config = cfg()
+
+        val ignite = Ignition.getOrStart(config)
 
         val cache = ignite.cache[Any, Any](cacheName)
 
         val qry = new SqlFieldsQuery(query)
+
         if (args.nonEmpty)
-            qry.setArgs(args.map(_.asInstanceOf[AnyRef]): _*)
+            qry.setArgs(args.map(_.asInstanceOf[Object]): _*)
 
         val ccfg = cache.getConfiguration(classOf[CacheConfiguration[Any, Any]])
 
         if (ccfg.getCacheMode != CacheMode.REPLICATED)
-            qry.setPartitions(partition.index)
+            qry.setPartitions(igniteDataFramePartition.ignitePartitions:_*)
 
         val cur = cache.query(qry)
 
@@ -79,39 +87,44 @@ class IgniteDataFrameRDD(
       * @return Array of IgnitePartition for this RDD
       */
     override protected def getPartitions: Array[Partition] = {
-        val ignite = ctx.ignite()
+        val ignite = Ignition.getOrStart(cfg())
 
         val cache = ignite.cache[Any, Any](cacheName)
 
         val ccfg = cache.getConfiguration(classOf[CacheConfiguration[Any, Any]])
 
         if (ccfg.getCacheMode == CacheMode.REPLICATED) {
-            Array(IgnitePartition(0))
+            val serverNodes = ignite.cluster().forCacheNodes(cacheName).forServers().nodes().asScala
+
+            Array(IgniteDataFramePartition(0, serverNodes.iterator.next, Stream.from(1).take(1024).toList))
         }
         else {
             val parts = ignite.affinity(cache.getName).partitions()
+            val aff = ignite.affinity(cacheName)
 
-            (0 until parts).map(IgnitePartition).toArray
+            val nodesToPartitions = (0 until parts).foldLeft(Map[ClusterNode, ArrayBuffer[Int]]()) {
+                case(nodeToPartitions, ignitePartitionIdx) ⇒
+                    val primary = aff.mapPartitionToPrimaryAndBackups(ignitePartitionIdx).iterator().next()
+
+                    if (nodeToPartitions.contains(primary)) {
+                        nodeToPartitions(primary) += ignitePartitionIdx
+
+                        nodeToPartitions
+                    } else
+                        nodeToPartitions + (primary → ArrayBuffer[Int](ignitePartitionIdx))
+            }
+
+            val partitions = nodesToPartitions.zipWithIndex.map { case ((node, partitions), i) ⇒
+                IgniteDataFramePartition(i, node, partitions.toList)
+            }
+
+            partitions.toArray
         }
     }
-
-    /**
-      * Gets preferred locations for the given partition.
-      *
-      * @param split Split partition.
-      * @return Sequence of preferred locations.
-      */
-    override protected[spark] def getPreferredLocations(split: Partition): Seq[String] = {
-        val ignite = ctx.ignite()
-
-        ignite.affinity(cacheName).mapPartitionToPrimaryAndBackups(split.index)
-            .flatMap(_.asInstanceOf[TcpDiscoveryNode].socketAddresses()).map(_.getHostName).toList
-    }
-
 }
 
 object IgniteDataFrameRDD {
-    def apply(ctx: IgniteContext, cacheName: String, schema: StructType, query: String,
+    def apply(sparkContext: SparkContext, cfg: () ⇒ IgniteConfiguration, cacheName: String, schema: StructType, query: String,
         arguments: List[Any]) =
-        new IgniteDataFrameRDD(ctx, cacheName, schema, query, arguments)
+        new IgniteDataFrameRDD(sparkContext, cfg, cacheName, schema, query, arguments)
 }

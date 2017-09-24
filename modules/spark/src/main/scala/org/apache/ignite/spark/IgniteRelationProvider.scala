@@ -17,8 +17,11 @@
 
 package org.apache.ignite.spark
 
+import org.apache.ignite.Ignition
 import org.apache.ignite.configuration.IgniteConfiguration
 import org.apache.ignite.internal.IgnitionEx
+import org.apache.ignite.internal.util.IgniteUtils
+import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd}
 import org.apache.spark.sql.SQLContext
 import org.apache.spark.sql.sources._
 
@@ -47,18 +50,43 @@ class IgniteRelationProvider extends RelationProvider with DataSourceRegister {
       * @see IgnitionEx#grid(String)
       */
     override def createRelation(sqlCtx: SQLContext, params: Map[String, String]): BaseRelation = {
-        def configProvider: () ⇒ IgniteConfiguration =
+        val igniteHome = IgniteUtils.getIgniteHome
+
+        def configProvider: () ⇒ IgniteConfiguration = {
             if (params.contains("config"))
-                () ⇒ IgnitionEx.loadConfiguration(params("config")).get1()
+                () ⇒ {
+                    IgniteContext.setIgniteHome(igniteHome)
+
+                    val cfg = IgnitionEx.loadConfiguration(params("config")).get1()
+
+                    cfg.setClientMode(true)
+
+                    cfg
+                }
             else if (params.contains("grid"))
-                () ⇒ IgnitionEx.grid(params("grid")).configuration()
+                () ⇒ {
+                    IgniteContext.setIgniteHome(igniteHome)
+
+                    val cfg = IgnitionEx.grid(params("grid")).configuration()
+
+                    cfg.setClientMode(true)
+
+                    cfg
+                }
             else
                 sys.error("'config' or 'grid' must be specified for loading ignite data.")
+        }
 
         val table = params.getOrElse("table", sys.error("'table' config option must be specified"))
 
-        val igniteCtx = new IgniteContext(sqlCtx.sparkContext, configProvider, false)
+        val cfg = configProvider()
 
-        IgniteRelation(igniteCtx, table.toUpperCase)(sqlCtx)
+        sqlCtx.sparkContext.addSparkListener(new SparkListener {
+            override def onApplicationEnd(applicationEnd: SparkListenerApplicationEnd): Unit = {
+                Ignition.stop(cfg.getIgniteInstanceName, true)
+            }
+        })
+
+        IgniteRelation(configProvider, table.toUpperCase)(sqlCtx)
     }
 }

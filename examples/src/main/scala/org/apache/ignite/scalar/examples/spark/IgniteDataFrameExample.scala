@@ -25,8 +25,6 @@ import org.apache.log4j.{Level, Logger}
 import org.apache.spark.sql.SparkSession
 import java.lang.{Long ⇒ JLong}
 
-import org.apache.ignite.spark.IgniteContext
-
 import scala.collection.JavaConverters._
 import org.apache.spark.sql.functions._
 

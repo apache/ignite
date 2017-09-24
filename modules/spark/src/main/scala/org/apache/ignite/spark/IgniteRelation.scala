@@ -32,11 +32,11 @@ import scala.collection.JavaConverters._
 /**
   * Apache Ignite implementation of Spark BaseRelation with PrunedFilteredScan
   */
-case class IgniteRelation(ctx: IgniteContext, tableName: String)(@transient val sqlContext: SQLContext)
+case class IgniteRelation(cfg: () ⇒ IgniteConfiguration, tableName: String)(@transient val sqlContext: SQLContext)
     extends BaseRelation with PrunedFilteredScan with Logging {
 
     override def schema: StructType = {
-        val cache = ctx.ignite().cache[Any, Any](IgniteRelation.cacheName(tableName))
+        val cache = Ignition.getOrStart(cfg()).cache[Any, Any](IgniteRelation.cacheName(tableName))
 
         val ccfg = cache.getConfiguration(classOf[CacheConfiguration[Any, Any]])
 
@@ -63,7 +63,7 @@ case class IgniteRelation(ctx: IgniteContext, tableName: String)(@transient val 
                 (s"SELECT ${columns.mkString(",")} FROM $tableName", List.empty)
         }
 
-        IgniteDataFrameRDD(ctx, IgniteRelation.cacheName(tableName), schema, qryAndArgs._1, qryAndArgs._2)
+        IgniteDataFrameRDD(sqlContext.sparkContext, cfg, IgniteRelation.cacheName(tableName), schema, qryAndArgs._1, qryAndArgs._2)
     }
 
     /**
