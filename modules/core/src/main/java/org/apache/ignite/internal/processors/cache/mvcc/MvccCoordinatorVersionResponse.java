@@ -78,6 +78,10 @@ public class MvccCoordinatorVersionResponse implements MvccCoordinatorMessage, M
         txs[txsCnt++] = txId;
     }
 
+    void resetTransactionsCount() {
+        txsCnt = 0;
+    }
+
     /** {@inheritDoc} */
     @Override public int size() {
         return txsCnt;

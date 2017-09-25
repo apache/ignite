@@ -1671,9 +1671,11 @@ public class CacheMvccTransactionsTest extends GridCommonAbstractTest {
     }
 
     /**
+     * TODO IGNITE-3478.
+     *
      * @throws Exception If failed.
      */
-    public void testReadInProgressCoordinatorFails() throws Exception {
+    public void _testReadInProgressCoordinatorFails() throws Exception {
         testSpi = true;
 
         startGrids(4);
