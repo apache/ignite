@@ -23,6 +23,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.BrokenBarrierException;
+import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.Cache;
 import javax.cache.expiry.ExpiryPolicy;
@@ -95,6 +97,8 @@ import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
 public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter implements GridCacheEntryEx {
     /** */
     private static final byte IS_DELETED_MASK = 0x01;
+
+    private static final Object mux = new Object();
 
     /** */
     private static final byte IS_UNSWAPPED_MASK = 0x02;
@@ -1655,6 +1659,24 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             Map<UUID, CacheContinuousQueryListener> lsnrs = cctx.continuousQueries().updateListeners(internal, false);
 
+            if(key.value(cctx.cacheObjectContext(), false).equals(1)) {
+                //assert lsnrs == null;
+                try {
+                    synchronized (mux) {
+
+                        mux.wait();
+
+                    }
+                }
+                catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+
+            if(key.value(cctx.cacheObjectContext(), false).equals(2)){
+                //assert lsnrs != null;
+            }
+
             boolean needVal = lsnrs != null || intercept || retval || op == GridCacheOperation.TRANSFORM
                 || !F.isEmptyOrNulls(filter);
 
@@ -1692,7 +1714,31 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             else
                 cctx.offheap().invoke(cctx, key, localPartition(), c);
 
+            if(lsnrs == null && !readThrough) {
+                lsnrs = cctx.continuousQueries().updateListeners(internal, false);
+
+                if (lsnrs != null) {
+                    needVal = lsnrs != null || intercept || retval || op == GridCacheOperation.TRANSFORM
+                        || !F.isEmptyOrNulls(filter);
+                }
+            }
+
             GridCacheUpdateAtomicResult updateRes = c.updateRes;
+
+            if(key.value(cctx.cacheObjectContext(), false).equals(2)){
+                //assert lsnrs != null;
+                //assert c.updateRes.updateCounter() == 1;
+                synchronized (mux) {
+
+                    mux.notify();
+                }
+            }
+
+            if(key.value(cctx.cacheObjectContext(), false).equals(1)){
+                //assert lsnrs == null;
+                //assert c.updateRes.updateCounter() == 2;
+                //mux.notify();
+            }
 
             assert updateRes != null : c;
 
