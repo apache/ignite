@@ -1021,6 +1021,7 @@ public class GridNioServer<T> {
      */
     private class ByteBufferNioClientWorker extends AbstractNioClientWorker {
         /** Read buffer. */
+        @GridToStringExclude
         private final ByteBuffer readBuf;
 
         /**
