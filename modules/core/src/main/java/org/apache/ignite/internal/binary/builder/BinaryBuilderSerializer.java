@@ -63,14 +63,16 @@ class BinaryBuilderSerializer {
     public void writeValue(BinaryWriterExImpl writer, Object val, boolean forceCol, boolean forceMap) {
         assert !(forceCol && forceMap);
 
-        if (val == null) {
+        boolean compNulls = writer.context().isCompactNulls();
+
+        if (val == null && !compNulls) {
             writer.writeByte(GridBinaryMarshaller.NULL);
 
             return;
         }
 
         if (val instanceof BinaryBuilderSerializationAware) {
-            if (!writer.context().isCompactFooter())
+            if (!compNulls)
                 ((BinaryBuilderSerializationAware)val).writeTo(writer, this);
 
             return;

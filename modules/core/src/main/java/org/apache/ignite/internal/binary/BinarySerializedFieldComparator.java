@@ -98,7 +98,7 @@ public class BinarySerializedFieldComparator {
                 BinaryUtils.fieldOffsetRelativeOffheap(ptr, pos, fieldOffLen)
                 : BinaryUtils.fieldOffsetRelativeHeap(arr, pos, fieldOffLen);
 
-            if (!BinaryUtils.isNullOffset(fieldOff, fieldOffLen) && obj.context().isCompactNulls())
+            if (!BinaryUtils.isNullOffset(fieldOff, fieldOffLen) || !obj.context().isCompactNulls())
                 curFieldPos = startOff + fieldOff;
             else
                 curFieldPos = POS_NOT_FOUND_OR_NULL_VAL;

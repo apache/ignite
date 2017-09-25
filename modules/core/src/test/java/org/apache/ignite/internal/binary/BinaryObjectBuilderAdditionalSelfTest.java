@@ -94,6 +94,8 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
 
         bCfg.setCompactFooter(compactFooter());
 
+        bCfg.setCompactNulls(compactNulls());
+
         bCfg.setClassNames(Arrays.asList("org.apache.ignite.internal.binary.mutabletest.*"));
 
         cfg.setMarshaller(new BinaryMarshaller());
@@ -121,6 +123,13 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
      */
     protected boolean compactFooter() {
         return true;
+    }
+
+    /**
+     * @return Compact nulls.
+     */
+    protected boolean compactNulls() {
+        return false;
     }
 
     /**
@@ -192,33 +201,6 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
         GridBinaryTestClasses.TestObjectAllTypes res = mutPo.build().deserialize();
 
         GridTestUtils.deepEquals(exp, res);
-    }
-
-
-    public static class Q {
-        Integer n;
-        int a = 0x11223344;
-    }
-
-    /**
-     * @throws Exception If any error occurs.
-     */
-    public void testDbgNull() throws Exception {
-        Q q = new Q();
-
-        BinaryObjectBuilderImpl mutPo = wrap(q);
-
-        BinaryObjectExImpl bo = (BinaryObjectExImpl)mutPo.build();
-
-        byte[] data = bo.array();
-
-        System.out.print("+++ ");
-        for (byte b : data)
-            System.out.printf("%02X ", b);
-
-        Q res = mutPo.build().deserialize();
-
-        GridTestUtils.deepEquals(q, res);
     }
 
     /**
@@ -1449,6 +1431,38 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
         binBuilder2.build();
     }
 
+    public static class Q {
+        Integer n;
+        int a = 0x11223344;
+
+        Q q;
+    }
+
+    /**
+     * @throws Exception If any error occurs.
+     */
+    public void testDbgNull() throws Exception {
+        Q q = new Q();
+
+        q.q = new Q();
+
+        BinaryObjectBuilderImpl mutPo = wrap(q);
+
+        BinaryObjectExImpl bo = (BinaryObjectExImpl)mutPo.build();
+
+        System.out.println("Compact footer: " + bo.context().isCompactFooter());
+
+        byte[] data = bo.array();
+
+        System.out.print("+++ ");
+        for (byte b : data)
+            System.out.printf("%02X ", b);
+
+        Q res = mutPo.build().deserialize();
+
+        GridTestUtils.deepEquals(q, res);
+    }
+
     /**
      * @param obj Object.
      * @return Object in binary format.
@@ -1461,7 +1475,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
      * @param obj Object.
      * @return GridMutableBinaryObject.
      */
-    private BinaryObjectBuilderImpl wrap(Object obj) {
+    protected BinaryObjectBuilderImpl wrap(Object obj) {
         return BinaryObjectBuilderImpl.wrap(toBinary(obj));
     }
 
