@@ -39,7 +39,7 @@
         <mysql.connector.version>5.1.39</mysql.connector.version>
         <postgres.connector.version>9.4.1208.jre7</postgres.connector.version>
         <spring.version>4.1.0.RELEASE</spring.version>
-        <!-- will be changed by profile activation. allows to combine profiles. -->
+        <!-- Will be changed by profile activation. Allows to combine profiles. -->
         <ml.folder>src/main/java</ml.folder>
     </properties>
 
@@ -125,10 +125,11 @@
 
     <profiles>
         <profile>
-            <!--
-               TODO: add profile activation condition Java 8+ and copy ml related stuff to pom-standalone (IGNITE-6193)
-            -->
             <id>ml</id>
+
+            <activation>
+                <jdk>[1.8,)</jdk>
+            </activation>
 
             <properties>
                 <ml.folder>src/main/ml</ml.folder>
