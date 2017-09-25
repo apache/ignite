@@ -23,7 +23,6 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.ml.clustering.KMeansDistributedClusterer;
-import org.apache.ignite.ml.clustering.KMeansModel;
 import org.apache.ignite.ml.math.EuclideanDistance;
 import org.apache.ignite.ml.math.StorageConstants;
 import org.apache.ignite.ml.math.impls.matrix.SparseDistributedMatrix;
@@ -65,7 +64,7 @@ public class IgniteKMeansDistributedClustererBenchmark extends IgniteAbstractBen
                     points.setRow(0, v1);
                     points.setRow(1, v2);
 
-                    KMeansModel mdl = clusterer.cluster(points, 1);
+                    clusterer.cluster(points, 1);
                 }
             });
 

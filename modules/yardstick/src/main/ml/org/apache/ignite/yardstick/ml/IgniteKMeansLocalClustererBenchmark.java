@@ -20,7 +20,6 @@ package org.apache.ignite.yardstick.ml;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.ml.clustering.KMeansLocalClusterer;
-import org.apache.ignite.ml.clustering.KMeansModel;
 import org.apache.ignite.ml.math.EuclideanDistance;
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.yardstick.IgniteAbstractBenchmark;
@@ -49,7 +48,7 @@ public class IgniteKMeansLocalClustererBenchmark extends IgniteAbstractBenchmark
             v1,
             v2});
 
-        KMeansModel mdl = clusterer.cluster(points, 1);
+        clusterer.cluster(points, 1);
 
         return true;
     }

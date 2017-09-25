@@ -75,13 +75,13 @@ public class IgniteOLSMultipleLinearRegressionBenchmark extends IgniteAbstractBe
         mdl.newSampleData(design, nobs, nvars, new DenseLocalOnHeapMatrix());
 
         // Check expected beta values from NIST
-        double[] betaHat = mdl.estimateRegressionParameters();
+        mdl.estimateRegressionParameters();
 
         // Check expected residuals from R
-        double[] residuals = mdl.estimateResiduals();
+        mdl.estimateResiduals();
 
         // Check standard errors from NIST
-        double[] errors = mdl.estimateRegressionParametersStandardErrors();
+        mdl.estimateRegressionParametersStandardErrors();
 
         // Estimate model without intercept
         mdl.setNoIntercept(true);
