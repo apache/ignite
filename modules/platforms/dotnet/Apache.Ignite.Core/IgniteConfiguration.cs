@@ -281,6 +281,7 @@ namespace Apache.Ignite.Core
             writer.WriteTimeSpanAsLongNullable(_clientFailureDetectionTimeout);
             writer.WriteTimeSpanAsLongNullable(_longQueryWarningTimeout);
             writer.WriteBooleanNullable(_isActiveOnStart);
+            writer.WriteObjectDetached(ConsistentId);
 
             // Thread pools
             writer.WriteIntNullable(_publicThreadPoolSize);
@@ -546,6 +547,7 @@ namespace Apache.Ignite.Core
             _clientFailureDetectionTimeout = r.ReadTimeSpanNullable();
             _longQueryWarningTimeout = r.ReadTimeSpanNullable();
             _isActiveOnStart = r.ReadBooleanNullable();
+            ConsistentId = r.ReadObject<object>();
 
             // Thread pools
             _publicThreadPoolSize = r.ReadIntNullable();
@@ -1272,5 +1274,10 @@ namespace Apache.Ignite.Core
             get { return _isActiveOnStart ?? DefaultIsActiveOnStart; }
             set { _isActiveOnStart = value; }
         }
+
+        /// <summary>
+        /// Gets or sets consistent globally unique node identifier which survives node restarts.
+        /// </summary>
+        public object ConsistentId { get; set; }
     }
 }

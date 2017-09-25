@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.platform.utils;
 
+import java.io.Serializable;
 import java.lang.management.ManagementFactory;
 import java.net.InetSocketAddress;
 import java.security.AccessController;
@@ -571,6 +572,14 @@ public class PlatformConfigurationUtils {
         if (in.readBoolean())
             cfg.setActiveOnStart(in.readBoolean());
 
+        Object consId = in.readObjectDetached();
+
+        if (consId instanceof Serializable) {
+            cfg.setConsistentId((Serializable) consId);
+        } else if (consId != null) {
+            throw new IgniteException("IgniteConfiguration.ConsistentId should be Serializable.");
+        }
+
         // Thread pools.
         if (in.readBoolean())
             cfg.setPublicThreadPoolSize(in.readInt());
@@ -1025,6 +1034,7 @@ public class PlatformConfigurationUtils {
         w.writeLong(cfg.getLongQueryWarningTimeout());
         w.writeBoolean(true);
         w.writeBoolean(cfg.isActiveOnStart());
+        w.writeObject(cfg.getConsistentId());
 
         // Thread pools.
         w.writeBoolean(true);

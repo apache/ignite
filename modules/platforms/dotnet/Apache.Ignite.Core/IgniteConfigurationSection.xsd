@@ -1484,6 +1484,11 @@
                         </xs:sequence>
                     </xs:complexType>
                 </xs:element>
+                <xs:element name="consistentId" minOccurs="0">
+                    <xs:annotation>
+                        <xs:documentation>Consistent globally unique node identifier which survives node restarts.</xs:documentation>
+                    </xs:annotation>
+                </xs:element>
             </xs:all>
             <xs:attribute name="igniteInstanceName" type="xs:string">
                 <xs:annotation>
