@@ -196,7 +196,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
 
 
     public static class Q {
-        Object n;
+        Integer n;
         int a = 0x11223344;
     }
 
