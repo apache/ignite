@@ -422,8 +422,8 @@ public class TxOptimisticDeadlockDetectionTest extends AbstractDeadlockDetection
         for (int i = 0; i < nodesCnt; i++) {
             List<T> keys = new ArrayList<>(2);
 
-            int n1 = i + 1;
-            int n2 = txOnPrimary ? i :n1 + 1;
+            int n1 = txOnPrimary ? i : i + 1;
+            int n2 = n1 + 1;
 
             int i1 = n1 < nodesCnt ? n1 : n1 - nodesCnt;
             int i2 = n2 < nodesCnt ? n2 : n2 - nodesCnt;
